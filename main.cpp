@@ -1,5 +1,5 @@
 #include <iostream>
-#include <irrlicht.h>
+#include <irrlicht/irrlicht.h>
 #include <sstream>
 #include "nier_test.h"
 
