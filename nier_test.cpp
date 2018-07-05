@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "BasicShaderLoader.h"
+#include "wallpaperengine/Project.h"
 
 irr::io::path _example_base_folder = "../res/";
 irr::f32 g_AnimationSpeed = 0.1f;
@@ -126,6 +127,10 @@ public:
 
 int nier_test ()
 {
+    irr::io::path _wp_engine_folder = "/home/almamu/Development/tmp/nier__automata_-_become_as_gods_edition";
+
+    Project* wp_project = new Project (_wp_engine_folder);
+
     irr::io::path _water_example = _example_base_folder; _water_example += "materials/water-intact.png";
     irr::io::path _mud_example = _example_base_folder; _mud_example += "materials/plant-on-water.png";
     irr::io::path _background_example = _example_base_folder; _background_example += "materials/top-part.png";

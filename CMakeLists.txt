@@ -11,8 +11,8 @@ find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(Irrlicht REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR})
+include_directories(${X11_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} .)
 
-add_executable(wallengine main.cpp common.h nier_test.cpp BasicShaderLoader.h BasicShaderLoader.cpp nier_test.h)
+add_executable(wallengine main.cpp common.h nier_test.cpp BasicShaderLoader.h BasicShaderLoader.cpp nier_test.h wallpaperengine/Project.cpp wallpaperengine/Project.h wallpaperengine/Scene.cpp wallpaperengine/Scene.h wallpaperengine/Object.cpp wallpaperengine/Object.h)
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY})

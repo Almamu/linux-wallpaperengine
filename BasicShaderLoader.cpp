@@ -6,14 +6,15 @@
 #include "nier_test.h"
 #include "common.h"
 
-BasicShaderLoader::BasicShaderLoader (irr::io::path file, Type type, bool recursive = false)
+BasicShaderLoader::BasicShaderLoader (irr::io::path file, Type type, bool recursive)
 {
     // begin with an space so it gets ignored properly on parse
     if (recursive == false)
     {
-        this->m_content =	"#version 120\n"
-                             "#define texSample2D texture2D\n"
-                             "#define frac fract\n";
+        this->m_content =   "#version 120\n"
+                            "#define texSample2D texture2D\n"
+                            "#define frac fract\n"
+                            "vec4 mul(vec4 x, mat4 y) { return x * y; }\n";
     }
     else
     {
@@ -218,8 +219,6 @@ std::string* BasicShaderLoader::precompile ()
     // search preprocessor macros and parse them
     while (it != this->m_content.end () && this->m_error == false)
     {
-        // TODO: on precompilation steps search for attributes and replace them
-        // TODO: with the correct opengl shader variable
         if (*it == ' ' || *it == '\t' || *it == '\n' || *it == '\r' || *it == '\0' || *it == '{' || *it == '}' || *it == '[' || *it == ']' || *it == '.')
         {
             this->m_compiledContent += *it;
@@ -351,13 +350,17 @@ std::string* BasicShaderLoader::precompile ()
 #undef BREAK_IF_ERROR
 }
 
-static std::map<std::string, std::string>  BasicShaderLoader::sVariableReplacement =
+std::map<std::string, std::string>  BasicShaderLoader::sVariableReplacement =
 {
-    {"a_Position", "gl_Vertex"},
-    {"a_TexCoord", "gl_MultiTexCoord0"},
+    // attribute vec3 a_position
+    {"a_Position", "gl_Vertex.xyz"},
+    // attribute vec2 a_TexCoord
+    {"a_TexCoord", "gl_MultiTexCoord0.xy"},
+    // attribute vec3 a_Normal
+    {"a_Normal", "gl_Normal.xyz"}
 };
 
-static std::vector<std::string> BasicShaderLoader::sTypes =
+std::vector<std::string> BasicShaderLoader::sTypes =
 {
     "vec4", "vec3", "vec2", "float"
 };
