@@ -31,4 +31,19 @@ namespace wp
             this->m_up = core::ato3vf(up.c_str());
         }
     }
+
+    irr::core::vector3df camera::getCenter ()
+    {
+        return this->m_center;
+    }
+
+    irr::core::vector3df camera::getEye ()
+    {
+        return this->m_eye;
+    }
+
+    irr::core::vector3df camera::getUp ()
+    {
+        return this->m_up;
+    }
 }

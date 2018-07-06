@@ -55,4 +55,9 @@ namespace wp
         // free camera
         delete this->m_camera;
     }
+
+    camera* scene::getCamera ()
+    {
+        return this->m_camera;
+    }
 }

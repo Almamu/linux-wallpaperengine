@@ -9,7 +9,7 @@
 
 namespace wp
 {
-    project::project (irr::io::path baseDirectory)
+    project::project ()
     {
         irr::io::path projectFile = wp::fs::resolver.resolveOnWorkingDirectory ("project.json");
 
@@ -38,5 +38,10 @@ namespace wp
         {
             this->m_title = name_it.value ();
         }
+    }
+
+    scene* project::getScene ()
+    {
+        return this->m_scene;
     }
 }

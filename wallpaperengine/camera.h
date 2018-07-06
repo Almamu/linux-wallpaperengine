@@ -12,6 +12,10 @@ namespace wp
     {
     public:
         camera (json json_data);
+
+        irr::core::vector3df getCenter ();
+        irr::core::vector3df getEye ();
+        irr::core::vector3df getUp ();
     private:
         irr::core::vector3df m_center, m_eye, m_up;
     };

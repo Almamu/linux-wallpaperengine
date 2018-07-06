@@ -70,7 +70,7 @@ public:
         m_material.Wireframe = false;
         m_material.Lighting = false;
 
-        m_vertices[0].Pos = irr::core::vector3df ( _map_size.X,  _map_size.Y, 0.0f); // bottom right
+        /*m_vertices[0].Pos = irr::core::vector3df ( _map_size.X,  _map_size.Y, 0.0f); // bottom right
         m_vertices[1].Pos = irr::core::vector3df ( _map_size.X, -_map_size.Y, 0.0f); // top right
         m_vertices[2].Pos = irr::core::vector3df (-_map_size.X, -_map_size.Y, 0.0f); // top left
         m_vertices[3].Pos = irr::core::vector3df (-_map_size.X,  _map_size.Y, 0.0f); // bottom left
@@ -89,7 +89,17 @@ public:
         for (int32_t i = 1; i < 4; i ++)
         {
             m_box.addInternalPoint (m_vertices [i].Pos);
-        }
+        }*/
+        irr::video::SColor color; color.set (255, 255, 255, 255);
+        irr::f32 xright = 1920.0f / 2.0f;
+        irr::f32 xleft = -xright;
+        irr::f32 ztop = 1080.0f / 2.0f;
+        irr::f32 zbottom = -xright;
+
+        this->m_vertices [0] = irr::video::S3DVertex (xleft,    ztop,0, 0, 0,0, color,1,0);
+        this->m_vertices [1] = irr::video::S3DVertex(xright,   ztop,0, 0, 0,0, color,0,0);
+        this->m_vertices [2] = irr::video::S3DVertex(xright,zbottom,0, 0, 0,0, color,0,1);
+        this->m_vertices [3] = irr::video::S3DVertex(xleft, zbottom,0, 0, 0,0, color,1,1);
     }
 
     virtual void OnRegisterSceneNode ()
@@ -102,14 +112,17 @@ public:
 
     virtual void render ()
     {
-        uint16_t indices[] = {
+        /*uint16_t indices[] = {
                 0, 1, 2, 3
-        };
+        };*/
 
+        uint16_t indices[] = {   0,2,3, 2,1,3, 1,0,3, 2,0,1   };
         irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
 
         driver->setMaterial (m_material);
-        driver->drawVertexPrimitiveList (m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
+        driver->setTransform(irr::video::ETS_WORLD, AbsoluteTransformation);
+        // driver->drawVertexPrimitiveList (m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
+        driver->drawVertexPrimitiveList(&this->m_vertices[0], 4, &indices[0], 4, irr::video::EVT_STANDARD, irr::scene::EPT_TRIANGLES, irr::video::EIT_16BIT);
     }
 
     virtual const irr::core::aabbox3d <irr::f32>& getBoundingBox () const
@@ -134,7 +147,7 @@ int nier_test ()
 
     // set our working directory
     wp::fs::resolver.changeWorkingDirectory (_wp_engine_folder);
-    wp::project* wp_project = new wp::project (_wp_engine_folder);
+    wp::project* wp_project = new wp::project ();
     wp::fs::resolver.changeWorkingDirectory (wp::config::path::resources);
 
     irr::io::path _water_example = wp::fs::resolver.resolve ("materials/water-intact.png");
@@ -144,19 +157,6 @@ int nier_test ()
     irr::io::path _waterripple_frag_shader = wp::fs::resolver.resolve ("shaders/effects/waterripple_opengl.frag");
     irr::io::path _waterripple_vert_shader = wp::fs::resolver.resolve ("shaders/effects/waterripple_opengl.vert");
     irr::io::path _white = wp::fs::resolver.resolve ("materials/white.png");
-    // irr::io::path _water_example = _example_base_folder; _water_example += "materials/water-intact.png";
-    // irr::io::path _mud_example = _example_base_folder; _mud_example += "materials/plant-on-water.png";
-    // irr::io::path _background_example = _example_base_folder; _background_example += "materials/top-part.png";
-    // irr::io::path _waterripple_normal = _example_base_folder; _waterripple_normal += "materials/effects/waterripplenormal.png";
-    // irr::io::path _waterripple_frag_shader = _example_base_folder; _waterripple_frag_shader += "shaders/effects/waterripple_opengl.frag";
-    // irr::io::path _waterripple_vert_shader = _example_base_folder; _waterripple_vert_shader += "shaders/effects/waterripple_opengl.vert";
-    // irr::io::path _white = _example_base_folder; _white += "materials/white.png";
-
-    /*irr::video::E_DRIVER_TYPE driverType = irr::video::E_DRIVER_TYPE::EDT_OPENGL;
-    device = irr::createDevice (driverType, irr::core::dimension2d<uint32_t>(1280, 720));
-
-    device->setWindowCaption (L"Wallpaper engine simulation v0.1");
-    driver = device->getVideoDriver ();*/
 
     // check for ps and vs support
     if (wp::irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false && wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
@@ -201,7 +201,9 @@ int nier_test ()
     // get scene manager
     irr::scene::ISceneManager* sceneManager = wp::irrlicht::device->getSceneManager ();
 
-    sceneManager->addCameraSceneNode (0, irr::core::vector3df (0.0f, 0.0f, -_map_size.Z), irr::core::vector3df (0.0f, 0.0f, _map_size.Z));
+    _map_size = wp_project->getScene ()->getCamera ()->getCenter ();
+    sceneManager->addCameraSceneNode (0, wp_project->getScene ()->getCamera ()->getCenter (), wp_project->getScene ()->getCamera ()->getEye ());
+    // sceneManager->addCameraSceneNode (0, irr::core::vector3df (0.0f, 0.0f, -_map_size.Z), irr::core::vector3df (0.0f, 0.0f, _map_size.Z));
 
     QuadSceneNode* backgroundNode = new QuadSceneNode (sceneManager->getRootSceneNode (), sceneManager, 666);
     QuadSceneNode* waterNode = new QuadSceneNode (sceneManager->getRootSceneNode (), sceneManager, 667);
@@ -221,12 +223,12 @@ int nier_test ()
     waterNode->getMaterial (0).setTexture (2, whiteTexture);
     waterNode->setMaterialType ( (irr::video::E_MATERIAL_TYPE) materialType1);
 
-    irr::core::matrix4 identity; identity.makeIdentity ();
-    irr::core::matrix4 orthoProjection; orthoProjection.buildProjectionMatrixOrthoLH (1.0f, 1.0f, 0.0f, 1.0f);
+    /*irr::core::matrix4 identity; identity.makeIdentity ();
+    irr::core::matrix4 orthoProjection; orthoProjection.buildProjectionMatrixOrthoLH (wp_project->getScene ()->getCamera ()->getEye ().X, wp_project->getScene ()->getCamera ()->getEye ().Y, wp_project->getScene ()->getCamera ()->getEye ().Z, wp_project->getScene ()->getCamera ()->getCenter ().Z);
 
     wp::irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
     wp::irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
-    wp::irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);
+    wp::irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);*/
 
     int32_t lastTime = 0;
     int32_t minimumTime = 1000 / 90;

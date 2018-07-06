@@ -17,6 +17,8 @@ namespace wp
         scene (irr::io::path file);
         ~scene ();
 
+        camera* getCamera ();
+
     private:
         irr::io::path m_file;
         std::string m_content;
