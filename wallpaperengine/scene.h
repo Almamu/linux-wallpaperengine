@@ -14,7 +14,7 @@ namespace wp
     class scene
     {
     public:
-        scene (irr::io::path file, irr::io::path basepath);
+        scene (irr::io::path file);
         ~scene ();
 
     private:

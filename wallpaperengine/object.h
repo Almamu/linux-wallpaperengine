@@ -15,7 +15,7 @@ namespace wp
     {
     public:
 
-        object (json json_data, irr::io::path basepath);
+        object (json json_data);
         ~object ();
 
     private:

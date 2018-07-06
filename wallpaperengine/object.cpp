@@ -12,7 +12,7 @@ namespace wp
 {
     using json = nlohmann::json;
 
-    object::object (json json_data, irr::io::path basepath)
+    object::object (json json_data)
     {
         json::const_iterator size = json_data.find ("size");
         json::const_iterator scale = json_data.find ("scale");
@@ -84,7 +84,7 @@ namespace wp
         switch (_type)
         {
             case object3d::Type::Type_Image:
-                this->m_object3d = new wp::image (json_data, basepath);
+                this->m_object3d = new wp::image (json_data);
                 break;
 
             case object3d::Type::Type_Model:
@@ -103,7 +103,7 @@ namespace wp
 
             for (; cur != end; cur ++)
             {
-                this->m_effects.push_back (new effect (*cur, basepath));
+                this->m_effects.push_back (new effect (*cur));
             }
         }
     }

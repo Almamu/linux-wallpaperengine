@@ -1,6 +1,7 @@
 #include <irrlicht/irrlicht.h>
 #include <cstdint>
 #include <iostream>
+#include <wallpaperengine/config.h>
 
 #include "common.h"
 #include "wallpaperengine/shaders/compiler.h"
@@ -133,11 +134,8 @@ int nier_test ()
 
     // set our working directory
     wp::fs::resolver.changeWorkingDirectory (_wp_engine_folder);
-    // also append base folder for resources
-    wp::fs::resolver.appendEnvironment ("");
-
     wp::project* wp_project = new wp::project (_wp_engine_folder);
-    wp::fs::resolver.changeWorkingDirectory ("../res");
+    wp::fs::resolver.changeWorkingDirectory (wp::config::path::resources);
 
     irr::io::path _water_example = wp::fs::resolver.resolve ("materials/water-intact.png");
     irr::io::path _mud_example = wp::fs::resolver.resolve ("materials/plant-on-water.png");

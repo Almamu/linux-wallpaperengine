@@ -20,7 +20,7 @@ namespace wp
 
         std::string m_title;
         std::string m_type;
-        std::string m_file;
+        irr::io::path m_file;
         scene* m_scene;
     };
 };

@@ -11,7 +11,7 @@ namespace wp
     class image : public object3d
     {
     public:
-        image(json json_data, irr::io::path basepath);
+        image(json json_data);
 
     private:
         bool m_visible;

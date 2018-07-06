@@ -9,7 +9,7 @@ namespace wp
 {
     using json = nlohmann::json;
 
-    scene::scene (irr::io::path file, irr::io::path basepath)
+    scene::scene (irr::io::path file)
     {
         std::ifstream _in (file.c_str ());
         this->m_content = "";
@@ -33,7 +33,7 @@ namespace wp
 
             for (; cur != end; cur ++)
             {
-                this->m_objects.push_back (new object (*cur, basepath));
+                this->m_objects.push_back (new object (*cur));
             }
         }
     }

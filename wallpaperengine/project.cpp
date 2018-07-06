@@ -2,13 +2,16 @@
 #include <iostream>
 #include <fstream>
 
+#include "fs/fileResolver.h"
+
 #include "project.h"
+#include "irrlicht.h"
 
 namespace wp
 {
     project::project (irr::io::path baseDirectory)
     {
-        irr::io::path projectFile = baseDirectory + "/project.json";
+        irr::io::path projectFile = wp::fs::resolver.resolveOnWorkingDirectory ("project.json");
 
         std::ifstream _in (projectFile.c_str ());
         this->m_content = "";
@@ -22,11 +25,8 @@ namespace wp
         if (file_it != this->m_projectFile.end ())
         {
             // load scene file
-            this->m_file = file_it.value ();
-            this->m_file = baseDirectory.c_str ();
-            this->m_file += "/";
-            this->m_file += this->m_projectFile ["file"];
-            this->m_scene = new scene (this->m_file.c_str (), baseDirectory);
+            this->m_file = wp::fs::resolver.resolveOnWorkingDirectory (*file_it);
+            this->m_scene = new scene (this->m_file.c_str ());
         }
 
         if (type_it != this->m_projectFile.end ())

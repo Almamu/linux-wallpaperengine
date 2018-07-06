@@ -8,8 +8,8 @@ namespace wp
 {
     namespace config
     {
-        static irr::io::path path::resources;
-        static irr::io::path path::base;
-        static irr::io::path path::shaders;
+        irr::io::path path::resources;
+        irr::io::path path::base;
+        irr::io::path path::shaders;
     }
 }

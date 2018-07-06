@@ -11,7 +11,7 @@ namespace wp
     class effect
     {
     public:
-        effect (json json_data, irr::io::path basepath);
+        effect (json json_data);
 
     private:
         irr::io::path m_file;

@@ -2,6 +2,7 @@
 #include <irrlicht/irrlicht.h>
 #include <sstream>
 #include <wallpaperengine/config.h>
+#include <wallpaperengine/fs/fileResolver.h>
 #include "nier_test.h"
 #include "wallpaperengine/irrlicht.h"
 
@@ -64,6 +65,8 @@ void preconfigure_wallpaper_engine ()
     wp::config::path::base = wp::irrlicht::device->getFileSystem ()->getAbsolutePath ("../");
     wp::config::path::resources = wp::config::path::base + "/res";
     wp::config::path::shaders = wp::config::path::resources + "/shaders";
+
+    wp::fs::resolver.changeWorkingDirectory(wp::config::path::base);
 }
 
 int game_test_main ()
