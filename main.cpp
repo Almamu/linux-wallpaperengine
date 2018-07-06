@@ -1,7 +1,9 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <sstream>
+#include <wallpaperengine/config.h>
 #include "nier_test.h"
+#include "wallpaperengine/irrlicht.h"
 
 int WinID = 0;
 
@@ -22,11 +24,9 @@ int main(int argc, char* argv[])
     return game_test_main ();
 }
 
-irr::IrrlichtDevice* device = nullptr;
-irr::video::IVideoDriver* driver = nullptr;
 irr::SIrrlichtCreationParameters _irr_params;
 
-int init_driver ()
+int init_irrlicht()
 {
     // prepare basic configuration for irrlicht
     _irr_params.AntiAlias = 8;
@@ -46,26 +46,34 @@ int init_driver ()
     _irr_params.LoggingLevel = irr::ELL_DEBUG;
     _irr_params.WindowId = reinterpret_cast<void*> (WinID);
 
-    device = irr::createDeviceEx (_irr_params);
+    wp::irrlicht::device = irr::createDeviceEx (_irr_params);
 
-    if (device == nullptr)
+    if (wp::irrlicht::device == nullptr)
     {
         return 1;
     }
 
-    device->setWindowCaption (L"Test game");
-    driver = device->getVideoDriver();
+    wp::irrlicht::device->setWindowCaption (L"Test game");
+    wp::irrlicht::driver = wp::irrlicht::device->getVideoDriver();
 
     return 0;
 }
 
+void preconfigure_wallpaper_engine ()
+{
+    wp::config::path::base = wp::irrlicht::device->getFileSystem ()->getAbsolutePath ("../");
+    wp::config::path::resources = wp::config::path::base + "/res";
+    wp::config::path::shaders = wp::config::path::resources + "/shaders";
+}
+
 int game_test_main ()
 {
-    if (init_driver())
+    if (init_irrlicht())
     {
         return 1;
     }
 
+    preconfigure_wallpaper_engine ();
     nier_test ();
 
     return 0;

@@ -3,8 +3,10 @@
 #include <iostream>
 
 #include "common.h"
-#include "BasicShaderLoader.h"
-#include "wallpaperengine/Project.h"
+#include "wallpaperengine/shaders/compiler.h"
+#include "wallpaperengine/fs/fileResolver.h"
+#include "wallpaperengine/project.h"
+#include "wallpaperengine/irrlicht.h"
 
 irr::io::path _example_base_folder = "../res/";
 irr::f32 g_AnimationSpeed = 0.1f;
@@ -127,17 +129,30 @@ public:
 
 int nier_test ()
 {
-    irr::io::path _wp_engine_folder = "/home/almamu/Development/tmp/nier__automata_-_become_as_gods_edition";
+    irr::io::path _wp_engine_folder = "/home/almamu/Downloads/nier__automata_-_become_as_gods_edition/";
 
-    Project* wp_project = new Project (_wp_engine_folder);
+    // set our working directory
+    wp::fs::resolver.changeWorkingDirectory (_wp_engine_folder);
+    // also append base folder for resources
+    wp::fs::resolver.appendEnvironment ("");
 
-    irr::io::path _water_example = _example_base_folder; _water_example += "materials/water-intact.png";
-    irr::io::path _mud_example = _example_base_folder; _mud_example += "materials/plant-on-water.png";
-    irr::io::path _background_example = _example_base_folder; _background_example += "materials/top-part.png";
-    irr::io::path _waterripple_normal = _example_base_folder; _waterripple_normal += "materials/effects/waterripplenormal.png";
-    irr::io::path _waterripple_frag_shader = _example_base_folder; _waterripple_frag_shader += "shaders/effects/waterripple_opengl.frag";
-    irr::io::path _waterripple_vert_shader = _example_base_folder; _waterripple_vert_shader += "shaders/effects/waterripple_opengl.vert";
-    irr::io::path _white = _example_base_folder; _white += "materials/white.png";
+    wp::project* wp_project = new wp::project (_wp_engine_folder);
+    wp::fs::resolver.changeWorkingDirectory ("../res");
+
+    irr::io::path _water_example = wp::fs::resolver.resolve ("materials/water-intact.png");
+    irr::io::path _mud_example = wp::fs::resolver.resolve ("materials/plant-on-water.png");
+    irr::io::path _background_example = wp::fs::resolver.resolve ("materials/top-part.png");
+    irr::io::path _waterripple_normal = wp::fs::resolver.resolve ("materials/effects/waterripplenormal.png");
+    irr::io::path _waterripple_frag_shader = wp::fs::resolver.resolve ("shaders/effects/waterripple_opengl.frag");
+    irr::io::path _waterripple_vert_shader = wp::fs::resolver.resolve ("shaders/effects/waterripple_opengl.vert");
+    irr::io::path _white = wp::fs::resolver.resolve ("materials/white.png");
+    // irr::io::path _water_example = _example_base_folder; _water_example += "materials/water-intact.png";
+    // irr::io::path _mud_example = _example_base_folder; _mud_example += "materials/plant-on-water.png";
+    // irr::io::path _background_example = _example_base_folder; _background_example += "materials/top-part.png";
+    // irr::io::path _waterripple_normal = _example_base_folder; _waterripple_normal += "materials/effects/waterripplenormal.png";
+    // irr::io::path _waterripple_frag_shader = _example_base_folder; _waterripple_frag_shader += "shaders/effects/waterripple_opengl.frag";
+    // irr::io::path _waterripple_vert_shader = _example_base_folder; _waterripple_vert_shader += "shaders/effects/waterripple_opengl.vert";
+    // irr::io::path _white = _example_base_folder; _white += "materials/white.png";
 
     /*irr::video::E_DRIVER_TYPE driverType = irr::video::E_DRIVER_TYPE::EDT_OPENGL;
     device = irr::createDevice (driverType, irr::core::dimension2d<uint32_t>(1280, 720));
@@ -146,19 +161,19 @@ int nier_test ()
     driver = device->getVideoDriver ();*/
 
     // check for ps and vs support
-    if (driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false && driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
+    if (wp::irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false && wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
     {
-        device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
+        wp::irrlicht::device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
         _waterripple_frag_shader = "";
     }
 
-    if (driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false && driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
+    if (wp::irrlicht::driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false && wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
     {
-        device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
+        wp::irrlicht::device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
         _waterripple_vert_shader = "";
     }
 
-    irr::video::IGPUProgrammingServices* gpuProgrammingServices = driver->getGPUProgrammingServices ();
+    irr::video::IGPUProgrammingServices* gpuProgrammingServices = wp::irrlicht::driver->getGPUProgrammingServices ();
 
     int32_t materialType1 = 0;
 
@@ -166,12 +181,12 @@ int nier_test ()
     {
         MyShaderCallback* shader = new MyShaderCallback ();
 
-        BasicShaderLoader _vert(_waterripple_vert_shader, BasicShaderLoader::Type::Type_Vertex);
-        BasicShaderLoader _frag(_waterripple_frag_shader, BasicShaderLoader::Type::Type_Pixel);
+        wp::shaders::compiler _vert(_waterripple_vert_shader, wp::shaders::compiler::Type::Type_Vertex);
+        wp::shaders::compiler _frag(_waterripple_frag_shader, wp::shaders::compiler::Type::Type_Pixel);
 
         materialType1 = gpuProgrammingServices->addHighLevelShaderMaterial(
-                _vert.precompile ()->c_str (), "vertexMain", irr::video::EVST_VS_2_0,
-                _frag.precompile ()->c_str (), "pixelMain", irr::video::EPST_PS_2_0,
+                _vert.precompile ().c_str (), "vertexMain", irr::video::EVST_VS_2_0,
+                _frag.precompile ().c_str (), "pixelMain", irr::video::EPST_PS_2_0,
                 shader, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
         );
 
@@ -179,14 +194,14 @@ int nier_test ()
     }
 
     // load some basic textures
-    irr::video::ITexture*	waterTexture = driver->getTexture (_water_example.c_str ());
-    irr::video::ITexture*	mudTexture = driver->getTexture (_mud_example.c_str ());
-    irr::video::ITexture*	backgroundExample = driver->getTexture (_background_example.c_str ());
-    irr::video::ITexture*	waterRippleNormalTexture = driver->getTexture (_waterripple_normal.c_str ());
-    irr::video::ITexture*	whiteTexture = driver->getTexture (_white.c_str ());
+    irr::video::ITexture*	waterTexture = wp::irrlicht::driver->getTexture (_water_example.c_str ());
+    irr::video::ITexture*	mudTexture = wp::irrlicht::driver->getTexture (_mud_example.c_str ());
+    irr::video::ITexture*	backgroundExample = wp::irrlicht::driver->getTexture (_background_example.c_str ());
+    irr::video::ITexture*	waterRippleNormalTexture = wp::irrlicht::driver->getTexture (_waterripple_normal.c_str ());
+    irr::video::ITexture*	whiteTexture = wp::irrlicht::driver->getTexture (_white.c_str ());
 
     // get scene manager
-    irr::scene::ISceneManager* sceneManager = device->getSceneManager ();
+    irr::scene::ISceneManager* sceneManager = wp::irrlicht::device->getSceneManager ();
 
     sceneManager->addCameraSceneNode (0, irr::core::vector3df (0.0f, 0.0f, -_map_size.Z), irr::core::vector3df (0.0f, 0.0f, _map_size.Z));
 
@@ -211,35 +226,33 @@ int nier_test ()
     irr::core::matrix4 identity; identity.makeIdentity ();
     irr::core::matrix4 orthoProjection; orthoProjection.buildProjectionMatrixOrthoLH (1.0f, 1.0f, 0.0f, 1.0f);
 
-    driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
-    driver->setTransform (irr::video::ETS_VIEW, identity);
-    driver->setTransform (irr::video::ETS_WORLD, identity);
+    wp::irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
+    wp::irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
+    wp::irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);
 
     int32_t lastTime = 0;
     int32_t minimumTime = 1000 / 90;
     int32_t currentTime = 0;
 
-    while (device->run () && driver)
+    while (wp::irrlicht::device->run () && wp::irrlicht::driver)
     {
         // if (device->isWindowActive ())
         {
-            currentTime = device->getTimer ()->getTime ();
+            currentTime = wp::irrlicht::device->getTimer ()->getTime ();
             g_Time = currentTime / 1000.0f;
 
             if (currentTime - lastTime > minimumTime)
             {
-                driver->beginScene (true, true, irr::video::SColor(0, 0, 0, 0));
+                wp::irrlicht::driver->beginScene (true, true, irr::video::SColor(0, 0, 0, 0));
                 sceneManager->drawAll ();
-                driver->endScene ();
+                wp::irrlicht::driver->endScene ();
 
                 lastTime = currentTime;
             }
             else
             {
-                device->sleep (1, false);
+                wp::irrlicht::device->sleep (1, false);
             }
-
-            // printf ("FPS: %d\n", driver->getFPS ());
         }
     }
 
