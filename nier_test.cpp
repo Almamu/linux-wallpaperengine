@@ -2,14 +2,15 @@
 #include <cstdint>
 #include <iostream>
 #include <wallpaperengine/config.h>
+#include <wallpaperengine/video/renderer.h>
+#include <wallpaperengine/video/material.h>
 
 #include "common.h"
 #include "wallpaperengine/shaders/compiler.h"
-#include "wallpaperengine/fs/fileResolver.h"
 #include "wallpaperengine/project.h"
 #include "wallpaperengine/irrlicht.h"
+#include "nier_test.h"
 
-irr::io::path _example_base_folder = "../res/";
 irr::f32 g_AnimationSpeed = 0.1f;
 irr::f32 g_Scale = 2.5f;
 irr::f32 g_ScrollSpeed = 0.0f;
@@ -23,7 +24,6 @@ irr::f32 g_Texture0 = 0;
 irr::f32 g_Texture1 = 1;
 irr::f32 g_Texture2 = 2;
 irr::f32 g_Time = 0;
-irr::core::vector3df _map_size = irr::core::vector3df (21, 11.5f, 16);
 
 class MyShaderCallback : public irr::video::IShaderConstantSetCallBack
 {
@@ -57,98 +57,15 @@ class MyShaderCallback : public irr::video::IShaderConstantSetCallBack
     }
 };
 
-class QuadSceneNode : public irr::scene::ISceneNode
-{
-    irr::core::aabbox3d <irr::f32> m_box;
-    irr::video::S3DVertex m_vertices [4];
-    irr::video::SMaterial m_material;
-
-public:
-    QuadSceneNode (irr::scene::ISceneNode* parent, irr::scene::ISceneManager* sceneManager, int32_t id)
-            : irr::scene::ISceneNode (parent, sceneManager, id)
-    {
-        m_material.Wireframe = false;
-        m_material.Lighting = false;
-
-        /*m_vertices[0].Pos = irr::core::vector3df ( _map_size.X,  _map_size.Y, 0.0f); // bottom right
-        m_vertices[1].Pos = irr::core::vector3df ( _map_size.X, -_map_size.Y, 0.0f); // top right
-        m_vertices[2].Pos = irr::core::vector3df (-_map_size.X, -_map_size.Y, 0.0f); // top left
-        m_vertices[3].Pos = irr::core::vector3df (-_map_size.X,  _map_size.Y, 0.0f); // bottom left
-
-        m_vertices[0].TCoords = irr::core::vector2df (1.0f, 0.0f);
-        m_vertices[1].TCoords = irr::core::vector2df (1.0f, 1.0f);
-        m_vertices[2].TCoords = irr::core::vector2df (0.0f, 1.0f);
-        m_vertices[3].TCoords = irr::core::vector2df (0.0f, 0.0f);
-
-        m_vertices[0].Color = irr::video::SColor (255, 255, 255, 255);
-        m_vertices[1].Color = irr::video::SColor (255, 255, 255, 255);
-        m_vertices[2].Color = irr::video::SColor (255, 255, 255, 255);
-        m_vertices[3].Color = irr::video::SColor (255, 255, 255, 255);
-
-        m_box.reset (m_vertices[0].Pos);
-        for (int32_t i = 1; i < 4; i ++)
-        {
-            m_box.addInternalPoint (m_vertices [i].Pos);
-        }*/
-        irr::video::SColor color; color.set (255, 255, 255, 255);
-        irr::f32 xright = 1920.0f / 2.0f;
-        irr::f32 xleft = -xright;
-        irr::f32 ztop = 1080.0f / 2.0f;
-        irr::f32 zbottom = -xright;
-
-        this->m_vertices [0] = irr::video::S3DVertex (xleft,    ztop,0, 0, 0,0, color,1,0);
-        this->m_vertices [1] = irr::video::S3DVertex(xright,   ztop,0, 0, 0,0, color,0,0);
-        this->m_vertices [2] = irr::video::S3DVertex(xright,zbottom,0, 0, 0,0, color,0,1);
-        this->m_vertices [3] = irr::video::S3DVertex(xleft, zbottom,0, 0, 0,0, color,1,1);
-    }
-
-    virtual void OnRegisterSceneNode ()
-    {
-        if (IsVisible)
-            SceneManager->registerNodeForRendering (this);
-
-        ISceneNode::OnRegisterSceneNode ();
-    }
-
-    virtual void render ()
-    {
-        /*uint16_t indices[] = {
-                0, 1, 2, 3
-        };*/
-
-        uint16_t indices[] = {   0,2,3, 2,1,3, 1,0,3, 2,0,1   };
-        irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
-
-        driver->setMaterial (m_material);
-        driver->setTransform(irr::video::ETS_WORLD, AbsoluteTransformation);
-        // driver->drawVertexPrimitiveList (m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
-        driver->drawVertexPrimitiveList(&this->m_vertices[0], 4, &indices[0], 4, irr::video::EVT_STANDARD, irr::scene::EPT_TRIANGLES, irr::video::EIT_16BIT);
-    }
-
-    virtual const irr::core::aabbox3d <irr::f32>& getBoundingBox () const
-    {
-        return m_box;
-    }
-
-    virtual uint32_t getMaterialCount () const
-    {
-        return 1;
-    }
-
-    virtual irr::video::SMaterial& getMaterial (uint32_t i)
-    {
-        return m_material;
-    }
-};
-
 int nier_test ()
 {
-    irr::io::path _wp_engine_folder = "/home/almamu/Downloads/nier__automata_-_become_as_gods_edition/";
+    do_decompress ();
+    irr::io::path _wp_engine_folder = "/home/almamu/Development/tmp/nier__automata_-_become_as_gods_edition/";
 
     // set our working directory
     wp::fs::resolver.changeWorkingDirectory (_wp_engine_folder);
     wp::project* wp_project = new wp::project ();
-    wp::fs::resolver.changeWorkingDirectory (wp::config::path::resources);
+    /*wp::fs::resolver.changeWorkingDirectory (wp::config::path::resources);
 
     irr::io::path _water_example = wp::fs::resolver.resolve ("materials/water-intact.png");
     irr::io::path _mud_example = wp::fs::resolver.resolve ("materials/plant-on-water.png");
@@ -199,36 +116,48 @@ int nier_test ()
     irr::video::ITexture*	whiteTexture = wp::irrlicht::driver->getTexture (_white.c_str ());
 
     // get scene manager
-    irr::scene::ISceneManager* sceneManager = wp::irrlicht::device->getSceneManager ();
+    irr::scene::ISceneManager* sceneManager = wp::irrlicht::device->getSceneManager ();*/
 
-    _map_size = wp_project->getScene ()->getCamera ()->getCenter ();
-    sceneManager->addCameraSceneNode (0, wp_project->getScene ()->getCamera ()->getCenter (), wp_project->getScene ()->getCamera ()->getEye ());
-    // sceneManager->addCameraSceneNode (0, irr::core::vector3df (0.0f, 0.0f, -_map_size.Z), irr::core::vector3df (0.0f, 0.0f, _map_size.Z));
+    if (wp_project->getScene ()->isOrthogonal() == true)
+    {
+        wp::video::renderer::setupOrthographicCamera (
+                wp_project->getScene ()->getProjectionWidth (),
+                wp_project->getScene ()->getProjectionHeight (),
+                wp_project->getScene ()->getCamera ()->getCenter (),
+                wp_project->getScene ()->getCamera ()->getEye (),
+                wp_project->getScene ()->getCamera ()->getUp ().X,
+                wp_project->getScene ()->getCamera ()->getUp ().Y
+        );
+    }
+    else
+    {
+        wp::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!");
+        return 0;
+    }
 
-    QuadSceneNode* backgroundNode = new QuadSceneNode (sceneManager->getRootSceneNode (), sceneManager, 666);
-    QuadSceneNode* waterNode = new QuadSceneNode (sceneManager->getRootSceneNode (), sceneManager, 667);
-    QuadSceneNode* mudNode = new QuadSceneNode (sceneManager->getRootSceneNode (), sceneManager, 668);
+/*    wp::video::material* waterNode = new wp::video::material (irr::core::vector3df (960.0f, 540.0f, 0.0f), wp_project->getScene ());
+    wp::video::material* backgroundNode = new wp::video::material (irr::core::vector3df (960.0f, 540.0f, 0.0f), wp_project->getScene ());
+    wp::video::material* mudNode = new wp::video::material (irr::core::vector3df (960.0f, 540.0f, 0.0f), wp_project->getScene ());
 
-    backgroundNode->getMaterial (0).setTexture (0, backgroundExample);
-    backgroundNode->setMaterialType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
+    backgroundNode->getMaterial ().setTexture (0, backgroundExample);
+    backgroundNode->setType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
 
-    mudNode->getMaterial (0).setTexture (0, mudTexture);
-    mudNode->setMaterialType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
+    mudNode->getMaterial ().setTexture (0, mudTexture);
+    mudNode->setType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
 
-    waterNode->setMaterialFlag(irr::video::EMF_LIGHTING, false);
-    waterNode->setMaterialFlag(irr::video::EMF_BLEND_OPERATION, true);
+    waterNode->setFlag (irr::video::EMF_LIGHTING, false);
+    waterNode->setFlag (irr::video::EMF_BLEND_OPERATION, true);
 
-    waterNode->getMaterial (0).setTexture (0, waterTexture);
-    waterNode->getMaterial (0).setTexture (1, waterRippleNormalTexture);
-    waterNode->getMaterial (0).setTexture (2, whiteTexture);
-    waterNode->setMaterialType ( (irr::video::E_MATERIAL_TYPE) materialType1);
+    waterNode->getMaterial ().setTexture (0, waterTexture);
+    waterNode->getMaterial ().setTexture (1, waterRippleNormalTexture);
+    waterNode->getMaterial ().setTexture (2, whiteTexture);
+    waterNode->setType ( (irr::video::E_MATERIAL_TYPE) materialType1);*/
 
-    /*irr::core::matrix4 identity; identity.makeIdentity ();
-    irr::core::matrix4 orthoProjection; orthoProjection.buildProjectionMatrixOrthoLH (wp_project->getScene ()->getCamera ()->getEye ().X, wp_project->getScene ()->getCamera ()->getEye ().Y, wp_project->getScene ()->getCamera ()->getEye ().Z, wp_project->getScene ()->getCamera ()->getCenter ().Z);
-
-    wp::irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
-    wp::irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
-    wp::irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);*/
+    // register nodes
+    wp::video::renderer::queueNode (wp_project->getScene ());
+    // wp::video::renderer::queueNode (backgroundNode);
+    // wp::video::renderer::queueNode (mudNode);
+    // wp::video::renderer::queueNode (waterNode);
 
     int32_t lastTime = 0;
     int32_t minimumTime = 1000 / 90;
@@ -243,10 +172,7 @@ int nier_test ()
 
             if (currentTime - lastTime > minimumTime)
             {
-                wp::irrlicht::driver->beginScene (true, true, irr::video::SColor(0, 0, 0, 0));
-                sceneManager->drawAll ();
-                wp::irrlicht::driver->endScene ();
-
+                wp::video::renderer::render ();
                 lastTime = currentTime;
             }
             else

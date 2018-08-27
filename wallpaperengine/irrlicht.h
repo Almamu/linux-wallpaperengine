@@ -10,6 +10,7 @@ namespace wp
     public:
         static irr::video::IVideoDriver* driver;
         static irr::IrrlichtDevice* device;
+        static irr::scene::ICameraSceneNode* camera;
     };
 }
 

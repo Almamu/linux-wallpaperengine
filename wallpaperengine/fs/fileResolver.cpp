@@ -1,123 +1,137 @@
+#include <cstdint>
 #include <sys/stat.h>
+
+// filesystem includes
+#include <wallpaperengine/fs/fileResolver.h>
+
+// engine includes
 #include <wallpaperengine/irrlicht.h>
-#include "fileResolver.h"
 
 namespace wp
 {
-    fs::fileResolver::fileResolver ()
+    namespace fs
     {
-        this->m_environment.push_back (".");
-    }
-
-    fs::fileResolver::fileResolver (std::vector<irr::io::path> environment)
-    {
-        this->m_environment.push_back (".");
-        this->m_environment.insert (this->m_environment.end (), environment.begin (), environment.end ());
-    }
-    void fs::fileResolver::appendEnvironment (irr::io::path path)
-    {
-        this->m_environment.push_back (wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path));
-    }
-
-    void fs::fileResolver::removeEnvironment(irr::io::path path)
-    {
-        std::vector<irr::io::path>::const_iterator cur = this->m_environment.begin ();
-        std::vector<irr::io::path>::const_iterator end = this->m_environment.end ();
-        irr::io::path absolute = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path);
-
-        for (; cur != end; cur ++)
+        fileResolver::fileResolver ()
         {
-            if (*cur == path)
-            {
-                this->m_environment.erase (cur);
-                return;
-            }
+            this->m_environment.push_back (".");
         }
-    }
 
-    void fs::fileResolver::prependEnvironment (irr::io::path path)
-    {
-        this->m_environment.insert (
-                this->m_environment.begin (),
-                wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path)
-        );
-    }
-
-    void fs::fileResolver::changeWorkingDirectory (irr::io::path newpath)
-    {
-        this->m_environment.erase (this->m_environment.begin ());
-        this->prependEnvironment (newpath);
-    }
-
-    irr::io::path fs::fileResolver::getWorkingDirectory ()
-    {
-        return *this->m_environment.begin ();
-    }
-
-    fs::fileResolver fs::fileResolver::clone ()
-    {
-        return fileResolver (this->m_environment);
-    }
-
-    irr::io::path fs::fileResolver::resolve (irr::io::path name)
-    {
-        std::vector<irr::io::path>::const_iterator cur = this->m_environment.begin ();
-        std::vector<irr::io::path>::const_iterator end = this->m_environment.end ();
-        irr::io::path tmp = "";
-
-        // try to resolve the path
-        for (; cur != end; cur ++)
+        fileResolver::fileResolver (std::vector<irr::io::path> environment)
         {
-            tmp = *cur;
-            tmp += "/";
-            tmp += name;
+            this->m_environment.push_back (".");
+            this->m_environment.insert (this->m_environment.end (), environment.begin (), environment.end ());
+        }
 
-            if (wp::irrlicht::device->getFileSystem ()->existFile (tmp) == true)
+        void fileResolver::appendEnvironment (irr::io::path path)
+        {
+            this->m_environment.push_back (wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path));
+        }
+
+        void fileResolver::removeEnvironment(irr::io::path path)
+        {
+            std::vector<irr::io::path>::const_iterator cur = this->m_environment.begin ();
+            std::vector<irr::io::path>::const_iterator end = this->m_environment.end ();
+            irr::io::path absolute = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path);
+
+            for (; cur != end; cur ++)
             {
-                wp::irrlicht::device->getLogger ()->log ("Resolved file to", tmp.c_str ());
-                return tmp;
+                if (*cur == path)
+                {
+                    this->m_environment.erase (cur);
+                    return;
+                }
             }
         }
 
-        wp::irrlicht::device->getLogger ()->log ("Failed resolving file ", name.c_str (), irr::ELL_ERROR);
-
-        return "";
-    }
-
-    irr::io::path fs::fileResolver::resolveOnWorkingDirectory (irr::io::path name)
-    {
-        irr::io::path file = *this->m_environment.begin () + "/" + name;
-
-        if (wp::irrlicht::device->getFileSystem ()->existFile (file) == true)
+        void fileResolver::prependEnvironment (irr::io::path path)
         {
-            wp::irrlicht::device->getLogger ()->log ("Resolved file in working directory to", file.c_str ());
-            return file;
+            this->m_environment.insert (
+                    this->m_environment.begin (),
+                    wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path)
+            );
         }
 
-        return "";
-    }
+        void fileResolver::changeWorkingDirectory (irr::io::path newpath)
+        {
+            this->m_environment.erase (this->m_environment.begin ());
+            this->prependEnvironment (newpath);
+        }
 
-    irr::io::path fs::fileResolver::resolve (json name)
-    {
-        std::string tmp = name;
-        return this->resolve (tmp.c_str ());
-    }
+        irr::io::path fileResolver::getWorkingDirectory ()
+        {
+            return *this->m_environment.begin ();
+        }
 
-    irr::io::path fs::fileResolver::resolveOnWorkingDirectory (json name)
-    {
-        std::string tmp = name;
-        return this->resolveOnWorkingDirectory (tmp.c_str ());
-    }
+        fs::fileResolver fileResolver::clone ()
+        {
+            return fileResolver (this->m_environment);
+        }
 
-    irr::io::path fs::fileResolver::resolve (const char* name)
-    {
-        return this->resolve (irr::io::path(name));
-    }
+        irr::io::path fileResolver::resolve (irr::io::path name)
+        {
+            std::vector<irr::io::path>::const_iterator cur = this->m_environment.begin ();
+            std::vector<irr::io::path>::const_iterator end = this->m_environment.end ();
+            irr::io::path tmp = "";
 
-    irr::io::path fs::fileResolver::resolveOnWorkingDirectory (const char* name)
-    {
-        return this->resolveOnWorkingDirectory(irr::io::path (name));
-    }
+            // try to resolve the path
+            for (; cur != end; cur ++)
+            {
+                tmp = *cur;
+                tmp += "/";
+                tmp += name;
 
-    fs::fileResolver fs::resolver;
+                if (wp::irrlicht::device->getFileSystem ()->existFile (tmp) == true)
+                {
+                    wp::irrlicht::device->getLogger ()->log ("Resolved file to", tmp.c_str ());
+
+                    return tmp;
+                }
+            }
+
+            wp::irrlicht::device->getLogger ()->log ("Failed resolving file ", name.c_str (), irr::ELL_ERROR);
+
+            return "";
+        }
+
+        irr::io::path fileResolver::resolveOnWorkingDirectory (irr::io::path name)
+        {
+            irr::io::path file = *this->m_environment.begin () + "/" + name;
+
+            if (wp::irrlicht::device->getFileSystem ()->existFile (file) == true)
+            {
+                wp::irrlicht::device->getLogger ()->log ("Resolved file in working directory to", file.c_str ());
+
+                // perform stat over the file to check for directory
+                return file;
+            }
+
+            wp::irrlicht::device->getLogger ()->log ("Failed resolving file on working directory for ", name.c_str (), irr::ELL_ERROR);
+
+            return "";
+        }
+
+        irr::io::path fileResolver::resolve (json name)
+        {
+            std::string tmp = name;
+            return this->resolve (tmp.c_str ());
+        }
+
+        irr::io::path fileResolver::resolveOnWorkingDirectory (json name)
+        {
+            std::string tmp = name;
+            return this->resolveOnWorkingDirectory (tmp.c_str ());
+        }
+
+        irr::io::path fileResolver::resolve (const char* name)
+        {
+            return this->resolve (irr::io::path(name));
+        }
+
+        irr::io::path fileResolver::resolveOnWorkingDirectory (const char* name)
+        {
+            return this->resolveOnWorkingDirectory(irr::io::path (name));
+        }
+
+        fileResolver resolver;
+    }
 }

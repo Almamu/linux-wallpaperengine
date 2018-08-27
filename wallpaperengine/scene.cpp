@@ -2,8 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "scene.h"
-#include "camera.h"
+
+#include <wallpaperengine/scene.h>
+#include <wallpaperengine/camera.h>
 
 namespace wp
 {
@@ -33,7 +34,25 @@ namespace wp
 
             for (; cur != end; cur ++)
             {
-                this->m_objects.push_back (new object (*cur));
+                this->m_objects.push_back (new object (*cur, this));
+            }
+        }
+
+        json::const_iterator orthogonalprojection = (*general_it).find ("orthogonalprojection");
+
+        if (orthogonalprojection != (*general_it).end () && (*orthogonalprojection).is_object () == true)
+        {
+            json::const_iterator width = (*orthogonalprojection).find ("width");
+            json::const_iterator height = (*orthogonalprojection).find ("height");
+
+            if (width != (*orthogonalprojection).end () && (*width).is_number () == true)
+            {
+                this->m_width = *width;
+            }
+
+            if (height != (*orthogonalprojection).end () && (*height).is_number () == true)
+            {
+                this->m_height= *height;
             }
         }
     }
@@ -59,5 +78,31 @@ namespace wp
     camera* scene::getCamera ()
     {
         return this->m_camera;
+    }
+
+    bool scene::isOrthogonal ()
+    {
+        return this->m_isOrthogonal;
+    }
+
+    float scene::getProjectionWidth ()
+    {
+        return this->m_width;
+    }
+
+    float scene::getProjectionHeight ()
+    {
+        return this->m_height;
+    }
+
+    void scene::render ()
+    {
+        std::vector<object*>::const_iterator cur = this->m_objects.begin ();
+        std::vector<object*>::const_iterator end = this->m_objects.end ();
+
+        for (; cur != end; cur ++)
+        {
+            (*cur)->render ();
+        }
     }
 }

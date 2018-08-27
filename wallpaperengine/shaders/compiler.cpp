@@ -2,13 +2,18 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+
+// system configuration
 #include <wallpaperengine/config.h>
 
-#include "compiler.h"
-#include "nier_test.h"
-#include "common.h"
-#include "../irrlicht.h"
-#include "../fs/fileResolver.h"
+// filesystem
+#include <wallpaperengine/fs/fileResolver.h>
+
+// video engine
+#include <wallpaperengine/irrlicht.h>
+
+// shader compiler
+#include <wallpaperengine/shaders/compiler.h>
 
 namespace wp
 {
@@ -31,6 +36,8 @@ namespace wp
 
             std::ifstream _in (file.c_str ());
             this->m_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
+
+            // append file content
             this->m_type = type;
 
             this->m_resolver = wp::fs::resolver.clone ();
@@ -179,13 +186,10 @@ namespace wp
 
         std::string compiler::lookupShaderFile (std::string filename)
         {
+            // get file information
             irr::io::path shader = this->m_resolver.resolve (filename.c_str ());
-            irr::io::IFileSystem *fs = wp::irrlicht::device->getFileSystem ();
 
-            // by default try to load from current folder
-            // we might want, in the future, to load things from different folders
-            // to provide standard functionality
-            if (fs->existFile (shader) == false)
+            if (shader == "")
             {
                 this->m_error = true;
                 this->m_errorInfo = "Cannot find file " + filename + " to include";

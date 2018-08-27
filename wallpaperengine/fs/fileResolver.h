@@ -9,9 +9,8 @@
 namespace wp
 {
     using json = nlohmann::json;
-    class fs
+    namespace fs
     {
-    public:
         class fileResolver
         {
         public:
@@ -37,7 +36,7 @@ namespace wp
             std::vector<irr::io::path> m_environment;
         };
 
-        static fileResolver resolver;
+        extern fileResolver resolver;
     };
 }
 

@@ -1,23 +1,32 @@
 #ifndef WALLENGINE_OBJECT3D_H
 #define WALLENGINE_OBJECT3D_H
 
+#include <wallpaperengine/video/node.h>
+
+#include <wallpaperengine/scene.h>
+
 namespace wp
 {
-    class object3d
+    class object3d : wp::video::node
     {
     public:
         enum Type
         {
-            Type_Image = 0,
+            Type_Material = 0,
             Type_Model = 1,
             Type_Particle = 2,
             Type_None = 3
         };
 
-        object3d (Type type);
+        object3d (Type type, wp::scene* scene);
+
+        virtual void render ();
 
         template <class T> T* as();
         template <class T> bool is();
+
+    protected:
+        wp::scene* m_scene;
 
     private:
         Type m_type;

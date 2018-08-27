@@ -4,22 +4,32 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
-#include "object.h"
-#include "camera.h"
+#include <wallpaperengine/object.h>
+#include <wallpaperengine/camera.h>
+#include <wallpaperengine/video/node.h>
 
 namespace wp
 {
     using json = nlohmann::json;
 
-    class scene
+    class object;
+    class scene : public wp::video::node
     {
     public:
         scene (irr::io::path file);
         ~scene ();
 
         camera* getCamera ();
+        bool isOrthogonal ();
+        float getProjectionWidth ();
+        float getProjectionHeight ();
+        void render ();
 
     private:
+        float m_width;
+        float m_height;
+        bool m_isOrthogonal;
+
         irr::io::path m_file;
         std::string m_content;
         camera* m_camera;

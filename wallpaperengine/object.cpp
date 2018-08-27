@@ -3,17 +3,19 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-#include "object.h"
-#include "core.h"
-#include "object3d.h"
-#include "image.h"
+#include <wallpaperengine/object.h>
+#include <wallpaperengine/core.h>
+#include <wallpaperengine/object3d.h>
+#include <wallpaperengine/image.h>
 
 namespace wp
 {
     using json = nlohmann::json;
 
-    object::object (json json_data)
+    object::object (json json_data, wp::scene* scene) : m_object3d (nullptr)
     {
+        this->m_scene = scene;
+
         json::const_iterator size = json_data.find ("size");
         json::const_iterator scale = json_data.find ("scale");
         json::const_iterator origin = json_data.find ("origin");
@@ -68,7 +70,7 @@ namespace wp
 
         if (image != json_data.end () && (*image).is_null () == false)
         {
-            _type = object3d::Type::Type_Image;
+            _type = object3d::Type::Type_Material;
         }
 
         if (model != json_data.end () && (*model).is_null () == false)
@@ -83,8 +85,8 @@ namespace wp
 
         switch (_type)
         {
-            case object3d::Type::Type_Image:
-                this->m_object3d = new wp::image (json_data);
+            case object3d::Type::Type_Material:
+                this->m_object3d = new wp::image (json_data, this->m_scene);
                 break;
 
             case object3d::Type::Type_Model:
@@ -113,6 +115,14 @@ namespace wp
         if (this->m_object3d != nullptr)
         {
             delete this->m_object3d;
+        }
+    }
+
+    void object::render ()
+    {
+        if (this->m_object3d != nullptr)
+        {
+            this->m_object3d->render ();
         }
     }
 }

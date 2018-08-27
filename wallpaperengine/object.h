@@ -4,22 +4,29 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
-#include "effect.h"
+#include <wallpaperengine/video/node.h>
+#include <wallpaperengine/effect.h>
+#include <wallpaperengine/scene.h>
 
 namespace wp
 {
     using json = nlohmann::json;
 
     class object3d;
-    class object
+    class scene;
+
+    class object : public wp::video::node
     {
     public:
 
-        object (json json_data);
+        object (json json_data, wp::scene* scene);
         ~object ();
 
+        void render ();
     private:
         int m_id;
+
+        wp::scene* m_scene;
 
         std::string m_name;
 

@@ -5,8 +5,7 @@
 #ifndef WALLENGINE_NIER_TEST_H
 #define WALLENGINE_NIER_TEST_H
 
-extern irr::io::path _example_base_folder;
-
+void do_decompress ();
 int nier_test ();
 
 #endif //WALLENGINE_NIER_TEST_H

@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 
-#include "../fs/fileResolver.h"
+#include <wallpaperengine/fs/fileResolver.h>
 
 namespace wp
 {
