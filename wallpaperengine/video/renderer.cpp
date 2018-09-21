@@ -10,6 +10,18 @@ namespace wp
             s_nodes.push_back (node);
         }
 
+        void renderer::setupOrthographicCamera (wp::scene* scene)
+        {
+            setupOrthographicCamera (
+                    scene->getProjectionWidth (),
+                    scene->getProjectionHeight (),
+                    scene->getCamera ()->getCenter (),
+                    scene->getCamera ()->getEye (),
+                    scene->getCamera ()->getUp ().X,
+                    scene->getCamera ()->getUp ().Y
+            );
+        }
+
         void renderer::setupOrthographicCamera (irr::f32 width, irr::f32 height, irr::core::vector3df position, irr::core::vector3df lookat, irr::f32 znear, irr::f32 zfar)
         {
             irr::core::matrix4 identity; identity.makeIdentity ();
