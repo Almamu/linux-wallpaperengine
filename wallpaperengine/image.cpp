@@ -129,8 +129,12 @@ namespace wp
         {
             this->getMaterial ().setTexture (i, (*cur)->getIrrTexture ());
         }
-    }
 
+        // set basic material flags
+        this->setType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
+        this->setFlag (irr::video::EMF_LIGHTING, false);
+        this->setFlag (irr::video::EMF_BLEND_OPERATION, true);
+    }
 
 
     void image::setFlag(irr::video::E_MATERIAL_FLAG flag, bool newvalue)
@@ -150,12 +154,14 @@ namespace wp
 
     void image::render ()
     {
+        if (this->m_visible == false) return;
+
         uint16_t indices[] =
         {
                 0, 1, 2, 3
         };
 
-        wp::irrlicht::driver->setMaterial (this->m_material);
+        wp::irrlicht::driver->setMaterial (this->getMaterial ());
         wp::irrlicht::driver->drawVertexPrimitiveList (this->m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
     }
 

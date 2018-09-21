@@ -13,10 +13,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="18bb2960-e23f-4286-86eb-946e53957973" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/main.cpp" afterPath="$PROJECT_DIR$/main.cpp" />
-      <change beforePath="$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp" afterPath="$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp" />
       <change beforePath="$PROJECT_DIR$/wallpaperengine/image.cpp" afterPath="$PROJECT_DIR$/wallpaperengine/image.cpp" />
+      <change beforePath="$PROJECT_DIR$/wallpaperengine/texture.cpp" afterPath="$PROJECT_DIR$/wallpaperengine/texture.cpp" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -29,11 +27,11 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="main.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="main.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="364">
-              <caret line="156" column="34" lean-forward="true" selection-start-line="156" selection-start-column="34" selection-end-line="156" selection-end-column="34" />
+            <state relative-caret-position="880">
+              <caret line="155" column="0" lean-forward="false" selection-start-line="155" selection-start-column="0" selection-end-line="155" selection-end-column="0" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -41,31 +39,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="irrString.h" pinned="false" current-in-tab="false">
-        <entry file="file:///usr/include/irrlicht/irrString.h">
+      <file leaf-file-name="renderer.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wallpaperengine/video/renderer.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="214">
-              <caret line="305" column="0" lean-forward="false" selection-start-line="305" selection-start-column="0" selection-end-line="305" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="irrAllocator.h" pinned="false" current-in-tab="false">
-        <entry file="file:///usr/include/irrlicht/irrAllocator.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="142">
-              <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="compiler.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/wallpaperengine/shaders/compiler.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1596">
-              <caret line="133" column="83" lean-forward="false" selection-start-line="133" selection-start-column="83" selection-end-line="133" selection-end-column="83" />
+            <state relative-caret-position="476">
+              <caret line="52" column="0" lean-forward="false" selection-start-line="52" selection-start-column="0" selection-end-line="52" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -84,9 +62,11 @@
       <file leaf-file-name="texture.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/wallpaperengine/texture.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="156">
-              <caret line="13" column="23" lean-forward="false" selection-start-line="13" selection-start-column="23" selection-end-line="13" selection-end-column="23" />
-              <folding />
+            <state relative-caret-position="168">
+              <caret line="14" column="30" lean-forward="false" selection-start-line="14" selection-start-column="30" selection-end-line="14" selection-end-column="30" />
+              <folding>
+                <element signature="e#0#36#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -94,18 +74,40 @@
       <file leaf-file-name="image.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/wallpaperengine/image.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="72">
-              <caret line="6" column="44" lean-forward="false" selection-start-line="6" selection-start-column="44" selection-end-line="6" selection-end-column="44" />
+            <state relative-caret-position="312">
+              <caret line="26" column="40" lean-forward="false" selection-start-line="26" selection-start-column="30" selection-end-line="26" selection-end-column="40" />
+              <folding>
+                <element signature="e#55#83#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="image.cpp" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/wallpaperengine/image.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="492">
+              <caret line="88" column="103" lean-forward="true" selection-start-line="88" selection-start-column="103" selection-end-line="88" selection-end-column="103" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="image.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/wallpaperengine/image.cpp">
+      <file leaf-file-name="scene.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wallpaperengine/scene.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="104">
-              <caret line="127" column="21" lean-forward="false" selection-start-line="127" selection-start-column="21" selection-end-line="127" selection-end-column="21" />
+            <state relative-caret-position="536">
+              <caret line="104" column="0" lean-forward="false" selection-start-line="104" selection-start-column="0" selection-end-line="104" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="object.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wallpaperengine/object.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="530">
+              <caret line="124" column="0" lean-forward="false" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -124,8 +126,8 @@
       <file leaf-file-name="fileResolver.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="404">
-              <caret line="121" column="0" lean-forward="false" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
+            <state relative-caret-position="224">
+              <caret line="106" column="0" lean-forward="false" selection-start-line="106" selection-start-column="0" selection-end-line="106" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -135,7 +137,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>context</find>
       <find>GL_INVA</find>
       <find>GLSL TEST</find>
       <find>arb</find>
@@ -164,6 +165,7 @@
       <find>changeWorkingDirectory</find>
       <find>::fileResolver</find>
       <find>&quot;.&quot;</find>
+      <find>-&gt;render</find>
       <find>Failed</find>
     </findStrings>
   </component>
@@ -214,7 +216,6 @@
         <option value="$PROJECT_DIR$/wallpaperengine/object.cpp" />
         <option value="$PROJECT_DIR$/wallpaperengine/texture.h" />
         <option value="$PROJECT_DIR$/wallpaperengine/image.h" />
-        <option value="$PROJECT_DIR$/wallpaperengine/texture.cpp" />
         <option value="$PROJECT_DIR$/nier_test.h" />
         <option value="$PROJECT_DIR$/s3tc.cpp" />
         <option value="$PROJECT_DIR$/wallpaperengine/video/renderer.h" />
@@ -223,6 +224,7 @@
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/main.cpp" />
         <option value="$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp" />
+        <option value="$PROJECT_DIR$/wallpaperengine/texture.cpp" />
         <option value="$PROJECT_DIR$/wallpaperengine/image.cpp" />
       </list>
     </option>
@@ -341,12 +343,12 @@
       <workItem from="1531002668909" duration="7171000" />
       <workItem from="1531833563019" duration="18910000" />
       <workItem from="1535381505231" duration="2647000" />
-      <workItem from="1537556584820" duration="2401000" />
+      <workItem from="1537556584820" duration="4148000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="130617000" />
+    <option name="totallyTimeSpent" value="132364000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1099" y="309" width="1882" height="1032" extended-state="0" />
@@ -422,12 +424,12 @@
           <option name="timeStamp" value="45" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp</url>
-          <line>106</line>
-          <option name="timeStamp" value="135" />
+          <url>file://$PROJECT_DIR$/wallpaperengine/video/renderer.cpp</url>
+          <line>52</line>
+          <option name="timeStamp" value="137" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="137" />
+      <option name="time" value="140" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -473,6 +475,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="132">
           <caret line="11" column="43" lean-forward="false" selection-start-line="11" selection-start-column="43" selection-end-line="12" selection-end-column="52" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -564,20 +567,11 @@
       </provider>
     </entry>
     <entry file="file:///usr/include/c++/8.1.1/bits/stl_iterator.h" />
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/object.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="530">
-          <caret line="124" column="0" lean-forward="false" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#30#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/wallpaperengine/video/node.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -589,19 +583,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/scene.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1248">
-          <caret line="104" column="0" lean-forward="false" selection-start-line="104" selection-start-column="0" selection-end-line="104" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/s3tc.cpp" />
     <entry file="file://$PROJECT_DIR$/wallpaperengine/video/node.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="39" lean-forward="false" selection-start-line="0" selection-start-column="39" selection-end-line="0" selection-end-column="39" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -612,14 +599,6 @@
           <folding>
             <element signature="e#57#74#0" expanded="false" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/video/renderer.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="392">
-          <caret line="45" column="0" lean-forward="false" selection-start-line="45" selection-start-column="0" selection-end-line="45" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -652,22 +631,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="84">
           <caret line="7" column="20" lean-forward="false" selection-start-line="7" selection-start-column="20" selection-end-line="7" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/texture.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="10" column="37" lean-forward="false" selection-start-line="10" selection-start-column="37" selection-end-line="10" selection-end-column="37" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/texture.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="156">
-          <caret line="13" column="23" lean-forward="false" selection-start-line="13" selection-start-column="23" selection-end-line="13" selection-end-column="23" />
           <folding />
         </state>
       </provider>
@@ -731,35 +694,79 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/wallpaperengine/fs/fileResolver.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="404">
-          <caret line="121" column="0" lean-forward="false" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
+        <state relative-caret-position="224">
+          <caret line="106" column="0" lean-forward="false" selection-start-line="106" selection-start-column="0" selection-end-line="106" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/image.h">
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/object.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="72">
-          <caret line="6" column="44" lean-forward="false" selection-start-line="6" selection-start-column="44" selection-end-line="6" selection-end-column="44" />
+        <state relative-caret-position="530">
+          <caret line="124" column="0" lean-forward="false" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/wallpaperengine/image.cpp">
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/scene.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="104">
-          <caret line="127" column="21" lean-forward="false" selection-start-line="127" selection-start-column="21" selection-end-line="127" selection-end-column="21" />
+        <state relative-caret-position="536">
+          <caret line="104" column="0" lean-forward="false" selection-start-line="104" selection-start-column="0" selection-end-line="104" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="364">
-          <caret line="156" column="34" lean-forward="true" selection-start-line="156" selection-start-column="34" selection-end-line="156" selection-end-column="34" />
+        <state relative-caret-position="880">
+          <caret line="155" column="0" lean-forward="false" selection-start-line="155" selection-start-column="0" selection-end-line="155" selection-end-column="0" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/video/renderer.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="476">
+          <caret line="52" column="0" lean-forward="false" selection-start-line="52" selection-start-column="0" selection-end-line="52" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/texture.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="10" column="37" lean-forward="false" selection-start-line="10" selection-start-column="37" selection-end-line="10" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/image.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="26" column="40" lean-forward="false" selection-start-line="26" selection-start-column="30" selection-end-line="26" selection-end-column="40" />
+          <folding>
+            <element signature="e#55#83#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/texture.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="168">
+          <caret line="14" column="30" lean-forward="false" selection-start-line="14" selection-start-column="30" selection-end-line="14" selection-end-column="30" />
+          <folding>
+            <element signature="e#0#36#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wallpaperengine/image.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="492">
+          <caret line="88" column="103" lean-forward="true" selection-start-line="88" selection-start-column="103" selection-end-line="88" selection-end-column="103" />
+          <folding />
         </state>
       </provider>
     </entry>
