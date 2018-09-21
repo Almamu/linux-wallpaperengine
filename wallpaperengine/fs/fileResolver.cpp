@@ -18,7 +18,6 @@ namespace wp
 
         fileResolver::fileResolver (std::vector<irr::io::path> environment)
         {
-            this->m_environment.push_back (".");
             this->m_environment.insert (this->m_environment.end (), environment.begin (), environment.end ());
         }
 

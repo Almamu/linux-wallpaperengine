@@ -97,10 +97,10 @@ void preconfigure_wallpaper_engine ()
     wp::config::path::resources = wp::config::path::base + "/res";
     wp::config::path::shaders = wp::config::path::resources + "/shaders";
 
-    wp::fs::resolver.changeWorkingDirectory(wp::config::path::base);
+    wp::fs::resolver.changeWorkingDirectory (wp::config::path::base);
 }
 
-int main(int argc, char* argv[])
+int main (int argc, char* argv[])
 {
     // parse the integer if it exists
     if (argc >= 1)
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         ss >> WinID;
     }
 
-    printf("Initializing X11 to %d\n", WinID);
+    printf ("Initializing X11 to %d\n", WinID);
 
 
     if (init_irrlicht())

@@ -64,7 +64,19 @@ namespace wp
 
                             for (; texturesCur != texturesEnd; texturesCur ++)
                             {
+                                // TODO: SUPPORT PROPER WALLPAPERENGINE FORMATS
                                 irr::io::path texturePath = this->m_resolver.resolveOnWorkingDirectory ((*texturesCur));
+                                std::string basename = (*texturesCur);
+
+                                // TRY NORMAL EXTENSIONS FOR NOW...
+                                if (texturePath == "")
+                                {
+                                    texturePath = this->m_resolver.resolveOnWorkingDirectory (basename + ".png");
+                                }
+                                if (texturePath == "")
+                                {
+                                    texturePath = this->m_resolver.resolveOnWorkingDirectory (basename + ".jpg");
+                                }
 
                                 this->m_textures.push_back (new wp::texture (texturePath));
                             }
@@ -113,7 +125,7 @@ namespace wp
         std::vector<wp::texture*>::const_iterator cur = this->m_textures.begin ();
         std::vector<wp::texture*>::const_iterator end = this->m_textures.end ();
 
-        for (int i = 0; cur != end; cur ++, i ++)
+        for (irr::u32 i = 0; cur != end; cur ++, i ++)
         {
             this->getMaterial ().setTexture (i, (*cur)->getIrrTexture ());
         }
