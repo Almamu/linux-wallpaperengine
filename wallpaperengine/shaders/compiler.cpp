@@ -24,10 +24,24 @@ namespace wp
             // begin with an space so it gets ignored properly on parse
             if (recursive == false)
             {
+                // compatibility layer for OpenGL shaders
                 this->m_content =   "#version 120\n"
-                                    "#define texSample2D texture2D\n"
+                                    "#define highp\n"
+                                    "#define mediump\n"
+                                    "#define lowp\n"
+                                    "#define mul(x, y) (y * x)\n"
                                     "#define frac fract\n"
-                                    "vec4 mul(vec4 x, mat4 y) { return x * y; }\n";
+                                    "#define CAST2(x) (vec2(x))\n"
+                                    "#define CAST3(x) (vec3(x))\n"
+                                    "#define CAST4(x) (vec4(x))\n"
+                                    "#define CAST3X3(x) (mat3(x))\n"
+                                    "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
+                                    "#define texSample2D texture2D\n"
+                                    "#define texSample2DLod texture2DLod\n"
+                                    "#define atan2 atan\n"
+                                    "#define ddx dFdx\n"
+                                    "#define ddy(x) dFdy(-(x))\n"
+                                    "#define GLSL 1\n";
             }
             else
             {

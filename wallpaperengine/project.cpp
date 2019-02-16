@@ -38,6 +38,11 @@ namespace wp
         {
             this->m_title = name_it.value ();
         }
+
+        if (this->m_type != "scene")
+        {
+            throw "Only scene wallpapers supported for now";
+        }
     }
 
     scene* project::getScene ()

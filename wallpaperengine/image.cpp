@@ -87,6 +87,20 @@ namespace wp
         }
 
         // TODO: CHECK EFFECT PASSES HERE SO WE CAN TAKE IN ACCOUNT THE EXTRA TEXTURES FOR SHADERS, ETC
+        json::const_iterator effects = json_data.find ("effects");
+
+        if (effects != json_data.end ())
+        {
+            // TODO: SUPPORT MULTIPLE EFFECTS
+            json::const_iterator effectsItem = (*effects).begin ();
+
+            if (effectsItem != (*effects).end ())
+            {
+                // TODO: SUPPORT MULTIPLE PASSES FOR EFFECTS
+                json::const_iterator passes = (*effectsItem).find ("passes");
+                json::const_iterator file = (*effectsItem).find ("file");
+            }
+        }
 
         if (origin_it != json_data.end ())
         {
