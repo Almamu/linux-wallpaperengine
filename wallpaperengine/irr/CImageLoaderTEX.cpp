@@ -138,7 +138,7 @@ namespace irr {
                 input->read (decompressedBuffer, mipmap_uncompressed_size);
             }
 
-            image = wp::irrlicht::driver->createImage (ECF_A8R8G8B8, irr::core::dimension2d<u32> (texture_width, texture_height));
+            image = wp::irrlicht::driver->createImage (ECF_A8R8G8B8, irr::core::dimension2d<u32> (width, height));
 
             if (!image)
             {
@@ -151,17 +151,17 @@ namespace irr {
             u32 bytesPerPixel = image->getBytesPerPixel ();
             char *imagedata = (char *) image->lock ();
 
-            for (u32 y = 0; y < height; y++)
+            for (u32 y = 0; y < height; y ++)
             {
                 u32 baseDestination = y * image->getPitch ();
-                u32 baseOrigin = y * (texture_width * 4);
+                u32 baseOrigin = y * (mipmap_width * 4);
 
-                for (u32 x = 0; x < width; x++)
+                for (u32 x = 0; x < width; x ++)
                 {
-                    imagedata[baseDestination + (x * bytesPerPixel) + 0] = decompressedBuffer[baseOrigin + ((texture_width - x) * 4) + 0];
-                    imagedata[baseDestination + (x * bytesPerPixel) + 1] = decompressedBuffer[baseOrigin + ((texture_width - x) * 4) + 1];
-                    imagedata[baseDestination + (x * bytesPerPixel) + 2] = decompressedBuffer[baseOrigin + ((texture_width - x) * 4) + 2];
-                    imagedata[baseDestination + (x * bytesPerPixel) + 3] = decompressedBuffer[baseOrigin + ((texture_width - x) * 4) + 3];
+                    imagedata [baseDestination + (x * bytesPerPixel) + 2] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 0]; // r
+                    imagedata [baseDestination + (x * bytesPerPixel) + 1] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 1]; // g
+                    imagedata [baseDestination + (x * bytesPerPixel) + 0] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 2]; // b
+                    imagedata [baseDestination + (x * bytesPerPixel) + 3] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 3]; // alpha
                 }
             }
 
