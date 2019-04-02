@@ -65,18 +65,10 @@ namespace wp
                             for (; texturesCur != texturesEnd; texturesCur ++)
                             {
                                 // TODO: SUPPORT PROPER WALLPAPERENGINE FORMATS
-                                irr::io::path texturePath = this->m_resolver.resolveOnWorkingDirectory ((*texturesCur));
+                                std::string name = (*texturesCur);
+                                name += ".tex";
+                                irr::io::path texturePath = this->m_resolver.resolveOnWorkingDirectory (name);
                                 std::string basename = (*texturesCur);
-
-                                // TRY NORMAL EXTENSIONS FOR NOW...
-                                if (texturePath == "")
-                                {
-                                    texturePath = this->m_resolver.resolveOnWorkingDirectory (basename + ".png");
-                                }
-                                if (texturePath == "")
-                                {
-                                    texturePath = this->m_resolver.resolveOnWorkingDirectory (basename + ".jpg");
-                                }
 
                                 this->m_textures.push_back (new wp::texture (texturePath));
                             }

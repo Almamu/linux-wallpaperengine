@@ -8,6 +8,7 @@
 #include "wallpaperengine/shaders/compiler.h"
 #include "wallpaperengine/project.h"
 #include "wallpaperengine/irrlicht.h"
+#include "wallpaperengine/irr/CImageLoaderTEX.h"
 
 int WinID = 0;
 irr::SIrrlichtCreationParameters _irr_params;
@@ -125,6 +126,10 @@ int main (int argc, char* argv[])
 
     // set our working directory
     wp::fs::resolver.changeWorkingDirectory (_wp_engine_folder);
+
+    // register custom loader
+    wp::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
+
     wp::project* wp_project = new wp::project ();
 
     if (wp_project->getScene ()->isOrthogonal() == true)

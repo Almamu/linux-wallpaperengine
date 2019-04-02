@@ -1,6 +1,7 @@
 #include <irrlicht/irrlicht.h>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 
 #include "fs/fileResolver.h"
 
@@ -41,7 +42,7 @@ namespace wp
 
         if (this->m_type != "scene")
         {
-            throw "Only scene wallpapers supported for now";
+            throw std::runtime_error ("Only scene wallpapers are supported");
         }
     }
 
