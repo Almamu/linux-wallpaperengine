@@ -158,10 +158,10 @@ namespace irr {
 
                 for (u32 x = 0; x < width; x ++)
                 {
-                    imagedata [baseDestination + (x * bytesPerPixel) + 2] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 0]; // r
-                    imagedata [baseDestination + (x * bytesPerPixel) + 1] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 1]; // g
-                    imagedata [baseDestination + (x * bytesPerPixel) + 0] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 2]; // b
-                    imagedata [baseDestination + (x * bytesPerPixel) + 3] = decompressedBuffer [baseOrigin + ((mipmap_width - x) * 4) + 3]; // alpha
+                    imagedata [baseDestination + (x * bytesPerPixel) + 2] = decompressedBuffer [baseOrigin + ((width - x) * 4) + 0]; // r
+                    imagedata [baseDestination + (x * bytesPerPixel) + 1] = decompressedBuffer [baseOrigin + ((width - x) * 4) + 1]; // g
+                    imagedata [baseDestination + (x * bytesPerPixel) + 0] = decompressedBuffer [baseOrigin + ((width - x) * 4) + 2]; // b
+                    imagedata [baseDestination + (x * bytesPerPixel) + 3] = decompressedBuffer [baseOrigin + ((width - x) * 4) + 3]; // alpha
                 }
             }
 
