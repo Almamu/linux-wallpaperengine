@@ -1,13 +1,5 @@
-// Copyright (C) 2002-2012 Nikolaus Gebhardt
-// This file is part of the "Irrlicht Engine".
-// For conditions of distribution and use, see copyright notice in irrlicht.h
-
-// this file was created by rt (www.tomkorp.com), based on ttk's png-reader
-// i wanted to be able to read in PNG images with irrlicht :)
-// why?  lossless compression with 8-bit alpha channel!
-
 #ifndef __C_IMAGE_LOADER_TEX_H_INCLUDED__
-#define __C_IMAGE_LOADER_PNG_H_INCLUDED__
+#define __C_IMAGE_LOADER_TEX_H_INCLUDED__
 
 #include <irrlicht/irrlicht.h>
 
@@ -31,7 +23,18 @@ public:
 	//! creates a surface from the file
 	virtual IImage* loadImage(io::IReadFile* input) const;
 
+	virtual void loadImageFromARGB8Data (IImage* output, const char* input, u32 width, u32 height, u32 mipmap_width) const;
+
+    virtual void loadImageFromDXT1 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
+    virtual void loadImageFromDXT5 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
+
 private:
+    void BlockDecompressImageDXT1(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
+    void DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
+    unsigned long PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) const;
+    void BlockDecompressImageDXT5(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
+    void DecompressBlockDXT5(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
+
     enum TextureFormat
     {
         ARGB8888,
@@ -41,11 +44,54 @@ private:
         DXT3,
         DXT1
     };
+
+    // extracted from the free image library
+    enum FREE_IMAGE_FORMAT
+    {
+        FIF_UNKNOWN = -1,
+        FIF_BMP		= 0,
+        FIF_ICO		= 1,
+        FIF_JPEG	= 2,
+        FIF_JNG		= 3,
+        FIF_KOALA	= 4,
+        FIF_LBM		= 5,
+        FIF_IFF     = FIF_LBM,
+        FIF_MNG		= 6,
+        FIF_PBM		= 7,
+        FIF_PBMRAW	= 8,
+        FIF_PCD		= 9,
+        FIF_PCX		= 10,
+        FIF_PGM		= 11,
+        FIF_PGMRAW	= 12,
+        FIF_PNG		= 13,
+        FIF_PPM		= 14,
+        FIF_PPMRAW	= 15,
+        FIF_RAS		= 16,
+        FIF_TARGA	= 17,
+        FIF_TIFF	= 18,
+        FIF_WBMP	= 19,
+        FIF_PSD		= 20,
+        FIF_CUT		= 21,
+        FIF_XBM		= 22,
+        FIF_XPM		= 23,
+        FIF_DDS		= 24,
+        FIF_GIF     = 25,
+        FIF_HDR		= 26,
+        FIF_FAXG3	= 27,
+        FIF_SGI		= 28,
+        FIF_EXR		= 29,
+        FIF_J2K		= 30,
+        FIF_JP2		= 31,
+        FIF_PFM		= 32,
+        FIF_PICT	= 33,
+        FIF_RAW		= 34,
+        FIF_WEBP	= 35,
+        FIF_JXR     = 36
+    };
 };
 
 
 } // end namespace video
 } // end namespace irr
 
-#endif
-
+#endif /* !__C_IMAGE_LOADER_TEX_H_INCLUDED__ */
