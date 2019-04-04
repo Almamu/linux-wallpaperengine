@@ -7,7 +7,7 @@
 #include <wallpaperengine/config.h>
 
 // filesystem
-#include <wallpaperengine/fs/fileResolver.h>
+#include <wallpaperengine/fs/utils.h>
 
 // video engine
 #include <wallpaperengine/irrlicht.h>
@@ -53,9 +53,6 @@ namespace wp
 
             // append file content
             this->m_type = type;
-
-            this->m_resolver = wp::fs::resolver.clone ();
-            this->m_resolver.appendEnvironment (wp::config::path::shaders);
 
             this->m_file = file;
         }
@@ -201,7 +198,7 @@ namespace wp
         std::string compiler::lookupShaderFile (std::string filename)
         {
             // get file information
-            irr::io::path shader = this->m_resolver.resolve (filename.c_str ());
+            irr::io::path shader = ("shaders/" + filename).c_str ();
 
             if (shader == "")
             {

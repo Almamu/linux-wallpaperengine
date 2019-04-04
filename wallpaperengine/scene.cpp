@@ -6,15 +6,15 @@
 #include <wallpaperengine/scene.h>
 #include <wallpaperengine/camera.h>
 
+#include "wallpaperengine/fs/utils.h"
+
 namespace wp
 {
     using json = nlohmann::json;
 
-    scene::scene (irr::io::path file)
+    scene::scene (irr::io::path& file)
     {
-        std::ifstream _in (file.c_str ());
-        this->m_content = "";
-        this->m_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
+        this->m_content = wp::fs::utils::loadFullFile (file);
         this->m_json = json::parse (this->m_content);
 
         // check basic elements

@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 
-#include <wallpaperengine/fs/fileResolver.h>
+#include <wallpaperengine/fs/utils.h>
 
 namespace wp
 {
@@ -193,7 +193,7 @@ namespace wp
             /**
              * The file resolver to be used by the compiler to load the files
              */
-            wp::fs::fileResolver m_resolver;
+            wp::fs::utils m_resolver;
         };
     }
 }

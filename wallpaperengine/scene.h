@@ -16,7 +16,7 @@ namespace wp
     class scene : public wp::video::node
     {
     public:
-        scene (irr::io::path file);
+        scene (irr::io::path& file);
         ~scene ();
 
         camera* getCamera ();

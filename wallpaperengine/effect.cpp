@@ -1,4 +1,4 @@
-#include <wallpaperengine/fs/fileResolver.h>
+#include <wallpaperengine/fs/utils.h>
 #include "effect.h"
 
 namespace wp
@@ -10,7 +10,7 @@ namespace wp
 
         if (file != json_data.end () && (*file).is_string () == true)
         {
-            this->m_file = wp::fs::resolver.resolve (*file);
+            this->m_file = ("effects/" + (*file).get <std::string> ()).c_str ();
         }
     }
 };

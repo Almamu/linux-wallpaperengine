@@ -1,7 +1,7 @@
 #include <irrlicht/irrlicht.h>
 #include <fstream>
 
-#include <wallpaperengine/fs/fileResolver.h>
+#include <wallpaperengine/fs/utils.h>
 #include <wallpaperengine/object3d.h>
 #include <wallpaperengine/image.h>
 
@@ -24,26 +24,17 @@ namespace wp
         // basic texture, main thing to assign first
         if (file_it != json_data.end () && (*file_it).is_string () == true)
         {
-            this->m_file = wp::fs::resolver.resolve (*file_it);
+            this->m_file = (*file_it).get <std::string> ().c_str ();
+            this->m_content = wp::fs::utils::loadFullFile (this->m_file);
 
-            this->m_content = "";
-            std::ifstream _in (this->m_file.c_str ());
-            this->m_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
             json content = json::parse (this->m_content);
             json::const_iterator it = content.find ("material");
 
             if (it != content.end () && (*it).is_string () == true)
             {
-                irr::io::path materialfile = wp::fs::resolver.resolveOnWorkingDirectory ((*it));
-
-                std::ifstream _in (materialfile.c_str ());
-                std::string texturejson_content = "";
-                texturejson_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
+                irr::io::path materialfile = (*it).get <std::string> ().c_str ();
+                std::string texturejson_content = wp::fs::utils::loadFullFile (materialfile);
                 json materialcontent = json::parse (texturejson_content);
-
-                // change working directory for the resolver to the materials folder
-                this->m_resolver = wp::fs::resolver.clone ();
-                this->m_resolver.changeWorkingDirectory(this->m_resolver.resolveOnWorkingDirectory ("materials"));
 
                 // now try to read the texture if any
                 json::const_iterator it = materialcontent.find ("passes");
@@ -64,13 +55,9 @@ namespace wp
 
                             for (; texturesCur != texturesEnd; texturesCur ++)
                             {
-                                // TODO: SUPPORT PROPER WALLPAPERENGINE FORMATS
-                                std::string name = (*texturesCur);
-                                name += ".tex";
-                                irr::io::path texturePath = this->m_resolver.resolveOnWorkingDirectory (name);
-                                std::string basename = (*texturesCur);
+                                irr::io::path texturepath = ("materials/" + (*texturesCur).get <std::string> () + ".tex").c_str ();
 
-                                this->m_textures.push_back (new wp::texture (texturePath));
+                                this->m_textures.push_back (new wp::texture (texturepath));
                             }
                         }
                     }

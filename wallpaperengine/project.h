@@ -12,7 +12,7 @@ namespace wp
     class project
     {
     public:
-        project ();
+        project (irr::io::path& jsonfile_path);
 
         scene* getScene ();
 

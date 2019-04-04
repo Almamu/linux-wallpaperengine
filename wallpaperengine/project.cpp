@@ -3,20 +3,16 @@
 #include <fstream>
 #include <stdexcept>
 
-#include "fs/fileResolver.h"
+#include "wallpaperengine/fs/utils.h"
 
 #include "project.h"
 #include "irrlicht.h"
 
 namespace wp
 {
-    project::project ()
+    project::project (irr::io::path& jsonfile_path)
     {
-        irr::io::path projectFile = wp::fs::resolver.resolveOnWorkingDirectory ("project.json");
-
-        std::ifstream _in (projectFile.c_str ());
-        this->m_content = "";
-        this->m_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
+        this->m_content = wp::fs::utils::loadFullFile (jsonfile_path);
         this->m_projectFile = json::parse (this->m_content);
 
         json::const_iterator file_it = this->m_projectFile.find ("file");
@@ -26,8 +22,8 @@ namespace wp
         if (file_it != this->m_projectFile.end ())
         {
             // load scene file
-            this->m_file = wp::fs::resolver.resolveOnWorkingDirectory (*file_it);
-            this->m_scene = new scene (this->m_file.c_str ());
+            this->m_file = (*file_it).get <std::string> ().c_str ();
+            this->m_scene = new scene (this->m_file);
         }
 
         if (type_it != this->m_projectFile.end ())

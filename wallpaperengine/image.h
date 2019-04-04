@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
 
-#include <wallpaperengine/fs/fileResolver.h>
+#include <wallpaperengine/fs/utils.h>
 #include <wallpaperengine/texture.h>
 
 namespace wp
@@ -26,7 +26,6 @@ namespace wp
         irr::video::S3DVertex m_vertices [4];
         irr::video::SMaterial m_material;
 
-        wp::fs::fileResolver m_resolver;
         irr::core::vector3df m_origin;
         irr::io::path m_file;
         std::string m_content;

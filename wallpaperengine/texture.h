@@ -8,7 +8,7 @@ namespace wp
     class texture
     {
     public:
-        texture (irr::io::path file);
+        texture (irr::io::path& file);
 
         irr::video::ITexture* getIrrTexture ();
 

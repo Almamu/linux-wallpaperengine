@@ -6,7 +6,7 @@
 
 namespace wp
 {
-    texture::texture (irr::io::path file)
+    texture::texture (irr::io::path& file)
     {
         this->m_texture = wp::irrlicht::driver->getTexture (file);
     }
