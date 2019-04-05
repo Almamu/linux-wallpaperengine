@@ -62,7 +62,7 @@ namespace wp
              * @param type The type of shader
              * @param recursive Whether the compiler should add base definitions or not
              */
-            compiler (irr::io::path file, Type type, bool recursive = false);
+            compiler (irr::io::path& file, Type type, bool recursive = false);
             /**
              * Performs the actual pre-compilation/pre-processing over the shader files
              * This step is kinda big, replaces variables names on sVariableReplacement,

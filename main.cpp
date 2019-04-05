@@ -14,51 +14,7 @@
 int WinID = 0;
 irr::SIrrlichtCreationParameters _irr_params;
 
-irr::f32 g_AnimationSpeed = 0.1f;
-irr::f32 g_Scale = 2.5f;
-irr::f32 g_ScrollSpeed = 0.0f;
-irr::f32 g_Direction = 0.0f;
-irr::f32 g_Strength = 0.07f;
-irr::f32 g_SpecularPower = 1.0f;
-irr::f32 g_SpecularStrength = 1.0f;
-irr::f32 g_SpecularColor [3] = {1.0f, 1.0f, 1.0f};
-irr::f32 g_Texture1Resolution [4] = {1.0f, 1.0f, 1.0f, 1.0f};
-irr::f32 g_Texture0 = 0;
-irr::f32 g_Texture1 = 1;
-irr::f32 g_Texture2 = 2;
 irr::f32 g_Time = 0;
-
-class MyShaderCallback : public irr::video::IShaderConstantSetCallBack
-{
-    virtual void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData)
-    {
-        irr::video::IVideoDriver* driver = services->getVideoDriver ();
-
-        irr::core::matrix4 worldViewProj;
-        worldViewProj = driver->getTransform(irr::video::ETS_PROJECTION);
-        worldViewProj *= driver->getTransform(irr::video::ETS_VIEW);
-        worldViewProj *= driver->getTransform(irr::video::ETS_WORLD);
-
-        services->setVertexShaderConstant ("g_AnimationSpeed", &g_AnimationSpeed, 1);
-        services->setVertexShaderConstant ("g_Scale", &g_Scale, 1);
-        services->setVertexShaderConstant ("g_ScrollSpeed", &g_ScrollSpeed, 1);
-        services->setVertexShaderConstant ("g_Direction", &g_Direction, 1);
-        services->setVertexShaderConstant ("g_Time", &g_Time, 1);
-        services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
-        services->setVertexShaderConstant ("g_Texture0Resolution", &g_Texture1Resolution [0], 4);
-        services->setVertexShaderConstant ("g_Texture1Resolution", &g_Texture1Resolution [1], 4);
-        services->setVertexShaderConstant ("g_Texture2Resolution", &g_Texture1Resolution [2], 4);
-
-        // TODO: Support up to 7 materials (as wallpaper engine)
-        services->setPixelShaderConstant ("g_Strength", &g_Strength, 1);
-        services->setPixelShaderConstant ("g_SpecularPower", &g_SpecularPower, 1);
-        services->setPixelShaderConstant ("g_SpecularStrength", &g_SpecularStrength, 1);
-        services->setPixelShaderConstant ("g_SpecularColor", g_SpecularColor, 3);
-        services->setPixelShaderConstant ("g_Texture0", &g_Texture0, 1);
-        services->setPixelShaderConstant ("g_Texture1", &g_Texture1, 1);
-        services->setPixelShaderConstant ("g_Texture2", &g_Texture2, 1);
-    }
-};
 
 int init_irrlicht()
 {
@@ -90,6 +46,21 @@ int init_irrlicht()
     wp::irrlicht::device->setWindowCaption (L"Test game");
     wp::irrlicht::driver = wp::irrlicht::device->getVideoDriver();
 
+    // check for ps and vs support
+    if (
+            wp::irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false &&
+            wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
+    {
+        wp::irrlicht::device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
+    }
+
+    if (
+            wp::irrlicht::driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false &&
+            wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
+    {
+        wp::irrlicht::device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
+    }
+
     return 0;
 }
 
@@ -111,7 +82,6 @@ int main (int argc, char* argv[])
     }
 
     printf ("Initializing X11 to %d\n", WinID);
-
 
     if (init_irrlicht())
     {

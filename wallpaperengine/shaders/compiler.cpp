@@ -19,7 +19,7 @@ namespace wp
 {
     namespace shaders
     {
-        compiler::compiler (irr::io::path file, Type type, bool recursive)
+        compiler::compiler (irr::io::path& file, Type type, bool recursive)
         {
             // begin with an space so it gets ignored properly on parse
             if (recursive == false)
@@ -41,15 +41,14 @@ namespace wp
                                     "#define atan2 atan\n"
                                     "#define ddx dFdx\n"
                                     "#define ddy(x) dFdy(-(x))\n"
-                                    "#define GLSL 1\n";
+                                    "#define GLSL 1\n\n";
             }
             else
             {
                 this->m_content = "";
             }
 
-            std::ifstream _in (file.c_str ());
-            this->m_content.append (std::istreambuf_iterator<char> (_in), std::istreambuf_iterator<char> ());
+            this->m_content.append (wp::fs::utils::loadFullFile (file));
 
             // append file content
             this->m_type = type;
@@ -235,7 +234,7 @@ namespace wp
 
         std::string compiler::precompile()
         {
-        #define BREAK_IF_ERROR if (this->m_error == true) { wp::irrlicht::device->getLogger ()->log ("ERROR COMPILING SHADER"); wp::irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str ()); return ""; }
+        #define BREAK_IF_ERROR if (this->m_error == true) { wp::irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER"); wp::irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str ()); return ""; }
             // parse the shader and find #includes and such things and translate them to the correct name
             // also remove any #version definition to prevent errors
             std::string::const_iterator it = this->m_content.begin ();

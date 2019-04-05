@@ -90,10 +90,10 @@ namespace wp
             wp::shaders::compiler* fragcompiler = new wp::shaders::compiler (fragpath, wp::shaders::compiler::Type::Type_Pixel, false);
             wp::shaders::compiler* vertcompiler = new wp::shaders::compiler (vertpath, wp::shaders::compiler::Type::Type_Vertex, false);
 
-            wp::irrlicht::driver->getGPUProgrammingServices ()
+            this->m_materialType = wp::irrlicht::driver->getGPUProgrammingServices ()
                 ->addHighLevelShaderMaterial (
-                    fragcompiler->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
-                    vertcompiler->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
+                    vertcompiler->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
+                    fragcompiler->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
                     this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
                 );
 
