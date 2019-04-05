@@ -1,10 +1,10 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <sstream>
-#include <wallpaperengine/config.h>
 #include <wallpaperengine/video/renderer.h>
 #include <wallpaperengine/video/material.h>
 #include <wallpaperengine/irr/CPkgReader.h>
+#include <getopt.h>
 
 #include "wallpaperengine/shaders/compiler.h"
 #include "wallpaperengine/project.h"
@@ -66,13 +66,19 @@ int init_irrlicht()
 
 void preconfigure_wallpaper_engine ()
 {
-    wp::config::path::base = wp::irrlicht::device->getFileSystem ()->getAbsolutePath ("../");
-    wp::config::path::resources = wp::config::path::base + "/res";
-    wp::config::path::shaders = wp::config::path::resources + "/shaders";
+    // load the assets from wallpaper engine
+    wp::irrlicht::device->getFileSystem ()->addFileArchive ("assets.zip", true, false);
+
+    // register custom loaders
+    wp::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
+    wp::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (wp::irrlicht::device->getFileSystem ()));
 }
 
 int main (int argc, char* argv[])
 {
+    int mode = 0;
+    std::string path;
+
     // parse the integer if it exists
     if (argc >= 1)
     {
@@ -81,7 +87,45 @@ int main (int argc, char* argv[])
         ss >> WinID;
     }
 
-    printf ("Initializing X11 to %d\n", WinID);
+    int option_index = 0;
+
+    static struct option long_options [] = {
+            {"win",     required_argument, 0, 'w'},
+            {"pkg",     required_argument, 0, 'p'},
+            {"dir",     required_argument, 0, 'd'},
+            {nullptr,                   0, 0,   0}
+    };
+
+    while (true)
+    {
+        int c = getopt_long (argc, argv, "w:p:d:", long_options, &option_index);
+
+        if (c == -1)
+            break;
+
+        switch (c)
+        {
+            case 'w':
+                if (optarg)
+                    WinID = atoi (optarg);
+                break;
+
+            case 'p':
+                mode = 1;
+                path = optarg;
+                break;
+
+            case 'd':
+                mode = 2;
+                path = optarg;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    printf ("Initializing irrlicht to WindowID %d\n", WinID);
 
     if (init_irrlicht())
     {
@@ -90,22 +134,35 @@ int main (int argc, char* argv[])
 
     preconfigure_wallpaper_engine ();
 
-    // do_decompress ();
-    irr::io::path _wp_engine_folder = "/home/almamu/Development/tmp/nier__automata_-_become_as_gods_edition/";
-    irr::io::path _wp_project_file = _wp_engine_folder + "project.json";
+    irr::io::path wallpaper_path;
+    irr::io::path project_path;
+    irr::io::path scene_path;
 
-    // load the assets folder from wallpaper engine
-    wp::irrlicht::device->getFileSystem ()->addFileArchive ("../assets.zip", true, false);
+    switch (mode)
+    {
+        // pkg mode
+        case 1:
+            wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            project_path = wallpaper_path + "project.json";
+            scene_path = wallpaper_path + "scene.pkg";
+            break;
+
+        // folder mode
+        case 2:
+            wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            project_path = wallpaper_path + "project.json";
+            break;
+
+        default:
+            break;
+    }
 
     // set our working directory
-    wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (_wp_engine_folder);
+    wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
 
-    // register custom loader
-    wp::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
-    wp::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (wp::irrlicht::device->getFileSystem ()));
     // wp::irrlicht::device->getFileSystem ()->addFileArchive (_wp_engine_folder + "scene.pkg", true, false); // add the pkg file to the lookup list
 
-    wp::project* wp_project = new wp::project (_wp_project_file);
+    wp::project* wp_project = new wp::project (project_path);
 
     if (wp_project->getScene ()->isOrthogonal() == true)
     {

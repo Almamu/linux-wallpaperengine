@@ -3,9 +3,6 @@
 #include <fstream>
 #include <string>
 
-// system configuration
-#include <wallpaperengine/config.h>
-
 // filesystem
 #include <wallpaperengine/fs/utils.h>
 

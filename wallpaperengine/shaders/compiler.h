@@ -35,6 +35,14 @@ namespace wp
                 int size;
             };
 
+            struct ShaderParameters
+            {
+                char* variableName;
+                void* defaultValue;
+                void* range [2];
+                char* type;
+            };
+
             /**
              * Types of shaders
              */
@@ -191,9 +199,9 @@ namespace wp
              */
             Type m_type;
             /**
-             * The file resolver to be used by the compiler to load the files
+             * Tha parameters the shader needs
              */
-            wp::fs::utils m_resolver;
+            std::vector <ShaderParameters*> m_parameters;
         };
     }
 }
