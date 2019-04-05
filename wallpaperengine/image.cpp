@@ -10,8 +10,10 @@
 
 namespace wp
 {
-    image::image (json json_data, wp::scene* scene) : object3d (object3d::Type::Type_Material, scene)
+    image::image (json json_data, wp::object* parent) : object3d (object3d::Type::Type_Material, parent)
     {
+        this->m_parent = parent;
+
         json::const_iterator visible_it = json_data.find ("visible");
         json::const_iterator file_it = json_data.find ("image");
         json::const_iterator origin_it = json_data.find ("origin");
@@ -65,39 +67,12 @@ namespace wp
             }
         }
 
-        // TODO: CHECK EFFECT PASSES HERE SO WE CAN TAKE IN ACCOUNT THE EXTRA TEXTURES FOR SHADERS, ETC
-        json::const_iterator effects = json_data.find ("effects");
-
-        if (effects != json_data.end ())
-        {
-            // TODO: SUPPORT MULTIPLE EFFECTS
-            json::const_iterator effectsItem = (*effects).begin ();
-
-            if (effectsItem != (*effects).end ())
-            {
-                // TODO: SUPPORT MULTIPLE PASSES FOR EFFECTS
-                json::const_iterator passes = (*effectsItem).find ("passes");
-                json::const_iterator file = (*effectsItem).find ("file");
-            }
-        }
-
-        if (origin_it != json_data.end ())
-        {
-            std::string origin = *origin_it;
-            this->m_origin = wp::core::ato3vf (origin.c_str ());
-        }
-        else
-        {
-            // TOOD: CHANGE TO CENTER?
-            this->m_origin = irr::core::vector3df (0.0f, 0.0f, 0.0f);
-        }
-
         // initialize actual material properties
-        irr::f32 xright = this->m_origin.X;
-        irr::f32 xleft = -this->m_origin.X;
-        irr::f32 ztop = this->m_origin.Y;
-        irr::f32 zbottom = -this->m_origin.Y;
-        irr::f32 z = this->m_scene->getCamera ()->getEye ().Z;
+        irr::f32 xright = this->m_parent->getOrigin ().X;
+        irr::f32 xleft = -this->m_parent->getOrigin ().X;
+        irr::f32 ztop = this->m_parent->getOrigin ().Y;
+        irr::f32 zbottom = -this->m_parent->getOrigin ().Y;
+        irr::f32 z = this->m_parent->getScene ()->getCamera ()->getEye ().Z;
 
         m_vertices [0].Pos = irr::core::vector3df (xleft,   ztop,    z); // top left
         m_vertices [1].Pos = irr::core::vector3df (xright,  ztop,    z); // top right
@@ -123,8 +98,32 @@ namespace wp
             this->getMaterial ().setTexture (i, (*cur)->getIrrTexture ());
         }
 
+        std::vector<wp::effect*>::const_iterator effect = this->m_parent->getEffects ().begin ();
+
+        if (effect != this->m_parent->getEffects ().end ())
+        {
+            // loop through the textures the effect is using
+            std::vector<wp::texture*> list = (*effect)->getTextureList ();
+
+            std::vector<wp::texture*>::const_iterator curtex = list.begin ();
+            std::vector<wp::texture*>::const_iterator endtex = list.end ();
+
+            for (int current = 0; curtex != endtex; curtex ++, current ++)
+            {
+                if ((*curtex) == nullptr)
+                    continue;
+
+                this->getMaterial ().setTexture (current, (*curtex)->getIrrTexture ());
+            }
+
+            this->setType ((irr::video::E_MATERIAL_TYPE) (*effect)->getMaterialType ());
+        }
+        else
+        {
+            this->setType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
+        }
+
         // set basic material flags
-        this->setType (irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL);
         this->setFlag (irr::video::EMF_LIGHTING, false);
         this->setFlag (irr::video::EMF_BLEND_OPERATION, true);
     }

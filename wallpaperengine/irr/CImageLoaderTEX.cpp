@@ -87,6 +87,11 @@ namespace irr {
 
                 input->seek (4, true);
             }
+            else if (memcmp (buffer, "TEXB0001", 9) == 0)
+            {
+                containerVersion = 1;
+                input->seek (4, true);
+            }
             else
             {
                 wp::irrlicht::device->getLogger ()->log ("LOAD TEX: Unknown container type\n", input->getFileName ().c_str (), irr::ELL_ERROR);
@@ -117,8 +122,13 @@ namespace irr {
 
             input->read (&mipmap_width, 4);
             input->read (&mipmap_height, 4);
-            input->read (&mipmap_compression, 4);
-            input->read (&mipmap_uncompressed_size, 4);
+
+            if (containerVersion > 1)
+            {
+                input->read (&mipmap_compression, 4);
+                input->read (&mipmap_uncompressed_size, 4);
+            }
+
             input->read (&mipmap_compressed_size, 4);
 
             char *decompressedBuffer = new char [mipmap_uncompressed_size];
@@ -146,7 +156,7 @@ namespace irr {
                 input->read (decompressedBuffer, mipmap_uncompressed_size);
             }
 
-            if (containerVersion == 2)
+            if (containerVersion == 2 || containerVersion == 1)
             {
                 image = wp::irrlicht::driver->createImage (ECF_A8R8G8B8, irr::core::dimension2d<u32> (width, height));
 

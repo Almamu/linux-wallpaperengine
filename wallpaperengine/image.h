@@ -14,7 +14,7 @@ namespace wp
     class image : public object3d
     {
     public:
-        image(json json_data, wp::scene* scene);
+        image(json json_data, wp::object* parent);
         irr::video::SMaterial& getMaterial ();
         void setFlag(irr::video::E_MATERIAL_FLAG flag, bool newvalue);
         void setType(irr::video::E_MATERIAL_TYPE newType);
@@ -26,7 +26,6 @@ namespace wp
         irr::video::S3DVertex m_vertices [4];
         irr::video::SMaterial m_material;
 
-        irr::core::vector3df m_origin;
         irr::io::path m_file;
         std::string m_content;
 

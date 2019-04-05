@@ -54,6 +54,8 @@ namespace wp
             {
                 this->m_height= *height;
             }
+
+            this->m_isOrthogonal = true;
         }
     }
 

@@ -22,6 +22,16 @@ namespace wp
         object (json json_data, wp::scene* scene);
         ~object ();
 
+        irr::core::vector2df& getSize ();
+        irr::core::vector3df& getScale ();
+        irr::core::vector3df& getOrigin ();
+
+        irr::core::vector3df& getAngles ();
+
+        std::vector<effect*>& getEffects ();
+
+        wp::scene* getScene ();
+
         void render ();
     private:
         int m_id;

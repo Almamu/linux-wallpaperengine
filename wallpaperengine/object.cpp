@@ -83,19 +83,7 @@ namespace wp
             _type = object3d::Type::Type_Particle;
         }
 
-        switch (_type)
-        {
-            case object3d::Type::Type_Material:
-                this->m_object3d = new wp::image (json_data, this->m_scene);
-                break;
-
-            case object3d::Type::Type_Model:
-                break;
-
-            case object3d::Type::Type_Particle:
-                break;
-        }
-
+        // load the effects first so we have access to the textures needed
         json::const_iterator effects = json_data.find ("effects");
 
         if (effects != json_data.end () && (*effects).is_array () == true)
@@ -107,6 +95,19 @@ namespace wp
             {
                 this->m_effects.push_back (new effect (*cur));
             }
+        }
+
+        switch (_type)
+        {
+            case object3d::Type::Type_Material:
+                this->m_object3d = new wp::image (json_data, this);
+                break;
+
+            case object3d::Type::Type_Model:
+                break;
+
+            case object3d::Type::Type_Particle:
+                break;
         }
     }
 
@@ -124,5 +125,36 @@ namespace wp
         {
             this->m_object3d->render ();
         }
+    }
+
+
+    irr::core::vector2df& object::getSize ()
+    {
+        return this->m_size;
+    }
+
+    irr::core::vector3df& object::getScale ()
+    {
+        return this->m_scale;
+    }
+
+    irr::core::vector3df& object::getOrigin ()
+    {
+        return this->m_origin;
+    }
+
+    irr::core::vector3df& object::getAngles ()
+    {
+        return this->m_angles;
+    }
+
+    std::vector<effect*>& object::getEffects ()
+    {
+        return this->m_effects;
+    }
+
+    wp::scene* object::getScene ()
+    {
+        return this->m_scene;
     }
 }

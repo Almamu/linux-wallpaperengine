@@ -3,10 +3,9 @@
 
 namespace wp
 {
-    object3d::object3d (object3d::Type type, wp::scene* scene)
+    object3d::object3d (object3d::Type type, wp::object* parent)
     {
         this->m_type = type;
-        this->m_scene = scene;
     }
 
     template <class T> T* object3d::as()

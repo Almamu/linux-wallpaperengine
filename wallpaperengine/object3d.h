@@ -18,7 +18,7 @@ namespace wp
             Type_None = 3
         };
 
-        object3d (Type type, wp::scene* scene);
+        object3d (Type type, wp::object* parent);
 
         virtual void render ();
 
@@ -26,7 +26,7 @@ namespace wp
         template <class T> bool is();
 
     protected:
-        wp::scene* m_scene;
+        wp::object* m_parent;
 
     private:
         Type m_type;

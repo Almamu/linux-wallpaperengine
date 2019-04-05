@@ -45,9 +45,9 @@ class MyShaderCallback : public irr::video::IShaderConstantSetCallBack
         services->setVertexShaderConstant ("g_Direction", &g_Direction, 1);
         services->setVertexShaderConstant ("g_Time", &g_Time, 1);
         services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
-        services->setVertexShaderConstant ("g_Texture0Resolution", g_Texture1Resolution, 4);
-        services->setVertexShaderConstant ("g_Texture1Resolution", g_Texture1Resolution, 4);
-        services->setVertexShaderConstant ("g_Texture2Resolution", g_Texture1Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture0Resolution", &g_Texture1Resolution [0], 4);
+        services->setVertexShaderConstant ("g_Texture1Resolution", &g_Texture1Resolution [1], 4);
+        services->setVertexShaderConstant ("g_Texture2Resolution", &g_Texture1Resolution [2], 4);
 
         // TODO: Support up to 7 materials (as wallpaper engine)
         services->setPixelShaderConstant ("g_Strength", &g_Strength, 1);
@@ -124,13 +124,15 @@ int main (int argc, char* argv[])
     irr::io::path _wp_engine_folder = "/home/almamu/Development/tmp/nier__automata_-_become_as_gods_edition/";
     irr::io::path _wp_project_file = _wp_engine_folder + "project.json";
 
+    // load the assets folder from wallpaper engine
+    wp::irrlicht::device->getFileSystem ()->addFileArchive ("../assets.zip", true, false);
+
     // set our working directory
     wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (_wp_engine_folder);
 
     // register custom loader
     wp::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
     wp::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (wp::irrlicht::device->getFileSystem ()));
-    // wp::irrlicht::device->getFileSystem ()->addFileArchive ("./", true, false, irr::io::E_FILE_ARCHIVE_TYPE::EFAT_FOLDER);
     // wp::irrlicht::device->getFileSystem ()->addFileArchive (_wp_engine_folder + "scene.pkg", true, false); // add the pkg file to the lookup list
 
     wp::project* wp_project = new wp::project (_wp_project_file);
