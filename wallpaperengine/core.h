@@ -4,6 +4,7 @@
 #include <iostream>
 #include <irrlicht/vector3d.h>
 #include <irrlicht/vector2d.h>
+#include <irrlicht/matrix4.h>
 
 namespace wp
 {

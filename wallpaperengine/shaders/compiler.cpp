@@ -11,6 +11,7 @@
 
 // shader compiler
 #include <wallpaperengine/shaders/compiler.h>
+#include <wallpaperengine/core.h>
 
 namespace wp
 {
@@ -270,6 +271,38 @@ namespace wp
                         it ++;
                     }
                 }
+                else if (*it == 'u')
+                {
+                    // uniforms might have extra information for their values
+                    if (this->peekString ("uniform", it) == true)
+                    {
+                        this->ignoreSpaces (it);
+                        std::string type = this->extractType (it); BREAK_IF_ERROR
+                        this->ignoreSpaces (it);
+                        std::string name = this->extractName (it); BREAK_IF_ERROR
+                        this->ignoreSpaces (it);
+                        this->expectSemicolon (it); BREAK_IF_ERROR
+                        this->ignoreSpaces (it);
+
+                        // check if there is any actual extra information and parse it
+                        if (this->peekString ("//", it) == true)
+                        {
+                            this->ignoreSpaces (it);
+                            std::string::const_iterator begin = it;
+                            this->ignoreUpToNextLineFeed (it);
+
+                            std::string configuration; configuration.append (begin, it);
+
+                            // parse the parameter information
+                            this->parseParameterConfiguration (type, name, configuration); BREAK_IF_ERROR
+                            this->m_compiledContent += "uniform " + type + " " + name + "; // " + configuration;
+                        }
+                        else
+                        {
+                            this->m_compiledContent += "uniform " + type + " " + name + ";";
+                        }
+                    }
+                }
                 else if (*it == 'a')
                 {
                     // find attribute definitions
@@ -373,6 +406,126 @@ namespace wp
         #undef BREAK_IF_ERROR
         }
 
+        void compiler::parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content)
+        {
+            json data = json::parse (content);
+            json::const_iterator material = data.find ("material");
+            json::const_iterator defvalue = data.find ("default");
+            json::const_iterator range = data.find ("range");
+
+            // this is not a real parameter
+            if (material == data.end () || defvalue == data.end ())
+            {
+                return;
+            }
+
+            ShaderParameter* param = new ShaderParameter;
+
+            param->identifierName = (*material).get <std::string> ();
+            param->variableName = name;
+            param->type = type;
+
+            if (type == "vec4" || type == "vec3")
+            {
+                if ((*defvalue).is_string () == false)
+                {
+                    irr::core::vector3df* vector = new irr::core::vector3df;
+
+                    vector->X = 0.0f;
+                    vector->Y = 0.0f;
+                    vector->Z = 0.0f;
+
+                    param->defaultValue = vector;
+                }
+                else
+                {
+                    irr::core::vector3df tmp = wp::core::ato3vf ((*defvalue).get <std::string> ().c_str ());
+                    irr::core::vector3df* vector = new irr::core::vector3df;
+
+                    vector->X = tmp.X;
+                    vector->Y = tmp.Y;
+                    vector->Z = tmp.Z;
+
+                    param->defaultValue = vector;
+                }
+            }
+            else if (type == "vec2")
+            {
+                if ((*defvalue).is_string () == false)
+                {
+                    irr::core::vector2df* vector = new irr::core::vector2df;
+
+                    vector->X = 0.0f;
+                    vector->Y = 0.0f;
+
+                    param->defaultValue = vector;
+                }
+                else
+                {
+                    irr::core::vector2df* vector = new irr::core::vector2df;
+                    irr::core::vector2df tmp = wp::core::ato2vf ((*defvalue).get <std::string> ().c_str ());
+
+                    vector->X = tmp.X;
+                    vector->Y = tmp.Y;
+
+                    param->defaultValue = vector;
+                }
+            }
+            else if (type == "float")
+            {
+                if ((*defvalue).is_number () == false)
+                {
+                    irr::f32* val = new irr::f32;
+
+                    *val = 0.0f;
+
+                    param->defaultValue = val;
+
+                }
+                else
+                {
+                    irr::f32* val = new irr::f32;
+
+                    *val = (*defvalue).get <irr::f32> ();
+
+                    param->defaultValue = val;
+                }
+            }
+            else if (type == "sampler2D")
+            {
+                param->defaultValue = nullptr;
+            }
+            else
+            {
+                this->m_error = true;
+                this->m_errorInfo = "Unknown parameter type: " + type + " for " + param->identifierName + " (" + param->variableName + ")";
+                return;
+            }
+
+            this->m_parameters.push_back (param);
+        }
+
+        compiler::ShaderParameter* compiler::findParameter (std::string identifier)
+        {
+            std::vector<ShaderParameter*>::const_iterator cur = this->m_parameters.begin ();
+            std::vector<ShaderParameter*>::const_iterator end = this->m_parameters.end ();
+
+            for (; cur != end; cur ++)
+            {
+                if ((*cur)->identifierName == identifier)
+                {
+                    return (*cur);
+                }
+            }
+
+            return nullptr;
+        }
+
+        std::vector <compiler::ShaderParameter*>& compiler::getParameters ()
+        {
+            return this->m_parameters;
+        }
+
         std::map<std::string, std::string>  compiler::sVariableReplacement =
         {
             // attribute vec3 a_position
@@ -385,7 +538,7 @@ namespace wp
 
         std::vector<std::string> compiler::sTypes =
         {
-            "vec4", "vec3", "vec2", "float"
+            "vec4", "vec3", "vec2", "float", "sampler2D", "mat4"
         };
     }
 }

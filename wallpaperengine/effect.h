@@ -5,6 +5,7 @@
 #include <irrlicht/irrlicht.h>
 
 #include "texture.h"
+#include "shaders/compiler.h"
 
 namespace wp
 {
@@ -20,6 +21,30 @@ namespace wp
         std::vector <wp::texture*>& getTextureList ();
         irr::s32 getMaterialType ();
     private:
+        enum ParameterType
+        {
+            TYPE_VEC4,
+            TYPE_VEC3,
+            TYPE_VEC2,
+            TYPE_FLOAT,
+            TYPE_INT
+        };
+
+        struct ShaderParameter
+        {
+            void* value;
+            ParameterType type;
+        };
+
+        void parseConstantValues (json data);
+
+        wp::shaders::compiler* m_fragShader;
+        wp::shaders::compiler* m_vertShader;
+
+        std::map <std::string, ShaderParameter*> m_vertexVariables;
+        std::map <std::string, ShaderParameter*> m_pixelVariables;
+
+        std::map <std::string, void*> m_constants;
         std::vector <wp::texture*> m_textures;
         std::string m_content;
         json m_json;

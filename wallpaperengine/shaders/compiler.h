@@ -35,12 +35,13 @@ namespace wp
                 int size;
             };
 
-            struct ShaderParameters
+            struct ShaderParameter
             {
-                char* variableName;
+                std::string type;
+                std::string variableName;
+                std::string identifierName;
                 void* defaultValue;
                 void* range [2];
-                char* type;
             };
 
             /**
@@ -79,7 +80,19 @@ namespace wp
              *
              * @return The shader contents ready to be used by OpenGL
              */
-            std::string precompile();
+            std::string precompile ();
+            /**
+             * Searches the list of parameters available for the parameter with the given value
+             *
+             * @param identifier The identifier to search for
+             * @return The shader information
+             */
+            ShaderParameter* findParameter (std::string identifier);
+
+            /**
+             * @return The list of parameters available for this shader with their default values
+             */
+            std::vector <ShaderParameter*>& getParameters ();
 
         private:
             /**
@@ -173,7 +186,14 @@ namespace wp
              * @return Whether the character in the current position is a number or not
              */
             bool isNumeric (std::string::const_iterator& it);
-
+            /**
+             * Parses a parameter extra metadata created by wallpaper engine
+             *
+             * @param type The type of variable to parse
+             * @param name The name of the variable in the shader (for actual variable declaration)
+             * @param content The parameter configuration
+             */
+            void parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content);
             /**
              * The shader file this instance is loading
              */
@@ -201,7 +221,7 @@ namespace wp
             /**
              * Tha parameters the shader needs
              */
-            std::vector <ShaderParameters*> m_parameters;
+            std::vector <ShaderParameter*> m_parameters;
         };
     }
 }
