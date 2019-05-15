@@ -200,5 +200,7 @@ int main (int argc, char* argv[])
         }
     }
 
+    delete wp_project;
+
     return 0;
 }

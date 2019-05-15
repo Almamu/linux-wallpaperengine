@@ -116,12 +116,18 @@ namespace wp
         {
             wp::shaders::compiler::ShaderParameter* param = (*cur);
             ShaderParameter* parameter = new ShaderParameter;
+            void* defaultValue = param->defaultValue;
+
+            std::map<std::string,void*>::const_iterator constant = this->m_constants.find (param->identifierName);
+
+            if (constant != this->m_constants.end ())
+                defaultValue = (*constant).second;
 
             parameter->value = nullptr;
 
             if (param->type == "vec4")
             {
-                irr::core::vector3df* vec = (irr::core::vector3df*) param->defaultValue;
+                irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
                 irr::f32* val = new irr::f32 [4];
 
                 val [0] = vec->X;
@@ -134,7 +140,7 @@ namespace wp
             }
             else if (param->type == "vec3")
             {
-                irr::core::vector3df* vec = (irr::core::vector3df*) param->defaultValue;
+                irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
                 irr::f32* val = new irr::f32 [3];
 
                 val [0] = vec->X;
@@ -146,7 +152,7 @@ namespace wp
             }
             else if (param->type == "vec2")
             {
-                irr::core::vector2df* vec = (irr::core::vector2df*) param->defaultValue;
+                irr::core::vector2df* vec = (irr::core::vector2df*) defaultValue;
                 irr::f32* val = new irr::f32 [2];
 
                 val [0] = vec->X;
@@ -157,7 +163,7 @@ namespace wp
             }
             else if (param->type == "float")
             {
-                irr::f32* org = (irr::f32*) param->defaultValue;
+                irr::f32* org = (irr::f32*) defaultValue;
                 irr::f32* val = new irr::f32;
 
                 *val = *org;
@@ -167,7 +173,7 @@ namespace wp
             }
             else if (param->type == "int")
             {
-                irr::s32* org = (irr::s32*) param->defaultValue;
+                irr::s32* org = (irr::s32*) defaultValue;
                 irr::s32* val = new irr::s32;
 
                 *val = *org;
@@ -196,13 +202,20 @@ namespace wp
             if (param == nullptr)
                 continue;
 
+            void* defaultValue = param->defaultValue;
+
+            std::map<std::string,void*>::const_iterator constant = this->m_constants.find (param->identifierName);
+
+            if (constant != this->m_constants.end ())
+                defaultValue = (*constant).second;
+
             ShaderParameter* parameter = new ShaderParameter;
 
             parameter->value = nullptr;
 
             if (param->type == "vec4")
             {
-                irr::core::vector3df* vec = (irr::core::vector3df*) param->defaultValue;
+                irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
 
                 parameter->value = new irr::f32 [4];
 
@@ -215,7 +228,7 @@ namespace wp
             }
             else if (param->type == "vec3")
             {
-                irr::core::vector3df* vec = (irr::core::vector3df*) param->defaultValue;
+                irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
 
                 parameter->value = new irr::f32 [3];
 
@@ -227,7 +240,7 @@ namespace wp
             }
             else if (param->type == "vec2")
             {
-                irr::core::vector2df* vec = (irr::core::vector2df*) param->defaultValue;
+                irr::core::vector2df* vec = (irr::core::vector2df*) defaultValue;
 
                 parameter->value = new irr::f32 [2];
 
@@ -239,14 +252,14 @@ namespace wp
             else if (param->type == "float")
             {
                 parameter->value = new irr::f32;
-                *(irr::f32*) parameter->value = *(irr::f32*) param->defaultValue;
+                *(irr::f32*) parameter->value = *(irr::f32*) defaultValue;
 
                 parameter->type = ParameterType::TYPE_FLOAT;
             }
             else if (param->type == "int")
             {
                 parameter->value = new irr::s32;
-                *(irr::s32*) parameter->value = *(irr::s32*) param->defaultValue;
+                *(irr::s32*) parameter->value = *(irr::s32*) defaultValue;
 
                 parameter->type = ParameterType::TYPE_INT;
             }
@@ -413,19 +426,19 @@ namespace wp
             switch ((*vertcur).second->type)
             {
                 case ParameterType::TYPE_FLOAT:
-                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second, 1);
+                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second->value, 1);
                     break;
                 case ParameterType::TYPE_VEC2:
-                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second, 2);
+                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second->value, 2);
                     break;
                 case ParameterType::TYPE_VEC3:
-                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second, 3);
+                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second->value, 3);
                     break;
                 case ParameterType::TYPE_VEC4:
-                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second, 4);
+                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::f32*) (*vertcur).second->value, 4);
                     break;
                 case ParameterType::TYPE_INT:
-                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::s32*) (*vertcur).second, 1);
+                    services->setVertexShaderConstant ((*vertcur).first.c_str (), (irr::s32*) (*vertcur).second->value, 1);
                     break;
 
             }
@@ -439,19 +452,19 @@ namespace wp
             switch ((*pixelcur).second->type)
             {
                 case ParameterType::TYPE_FLOAT:
-                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second, 1);
+                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second->value, 1);
                     break;
                 case ParameterType::TYPE_VEC2:
-                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second, 2);
+                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second->value, 2);
                     break;
                 case ParameterType::TYPE_VEC3:
-                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second, 3);
+                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second->value, 3);
                     break;
                 case ParameterType::TYPE_VEC4:
-                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second, 4);
+                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::f32*) (*pixelcur).second->value, 4);
                     break;
                 case ParameterType::TYPE_INT:
-                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::s32*) (*pixelcur).second, 1);
+                    services->setPixelShaderConstant ((*pixelcur).first.c_str (), (irr::s32*) (*pixelcur).second->value, 1);
                     break;
 
             }

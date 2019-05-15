@@ -22,6 +22,7 @@ namespace wp
             memset (filedata, 0, reader->getSize () + 1);
 
             reader->read (filedata, reader->getSize ());
+            reader->drop ();
 
             std::string content = filedata;
             delete [] filedata;
