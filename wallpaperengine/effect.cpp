@@ -216,51 +216,57 @@ namespace wp
             if (param->type == "vec4")
             {
                 irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
+                irr::f32* val = new irr::f32 [4];
 
-                parameter->value = new irr::f32 [4];
+                val [0] = vec->X;
+                val [1] = vec->Y;
+                val [2] = vec->Z;
+                val [3] = 0.0f;
 
-                (*(irr::f32**) parameter->value) [0] = vec->X;
-                (*(irr::f32**) parameter->value) [1] = vec->Y;
-                (*(irr::f32**) parameter->value) [2] = vec->Z;
-                (*(irr::f32**) parameter->value) [3] = 0.0f;
-
+                parameter->value = val;
                 parameter->type = ParameterType::TYPE_VEC4;
             }
             else if (param->type == "vec3")
             {
                 irr::core::vector3df* vec = (irr::core::vector3df*) defaultValue;
+                irr::f32* val = new irr::f32 [3];
 
-                parameter->value = new irr::f32 [3];
+                val [0] = vec->X;
+                val [1] = vec->Y;
+                val [2] = vec->Z;
 
-                (*(irr::f32**) parameter->value) [0] = vec->X;
-                (*(irr::f32**) parameter->value) [1] = vec->Y;
-                (*(irr::f32**) parameter->value) [2] = vec->Z;
-
+                parameter->value = val;
                 parameter->type = ParameterType::TYPE_VEC3;
             }
             else if (param->type == "vec2")
             {
                 irr::core::vector2df* vec = (irr::core::vector2df*) defaultValue;
+                irr::f32* val = new irr::f32 [2];
 
-                parameter->value = new irr::f32 [2];
+                val [0] = vec->X;
+                val [1] = vec->Y;
 
-                (*(irr::f32**) parameter->value) [0] = vec->X;
-                (*(irr::f32**) parameter->value) [1] = vec->Y;
-
+                parameter->value = val;
                 parameter->type = ParameterType::TYPE_VEC2;
             }
             else if (param->type == "float")
             {
-                parameter->value = new irr::f32;
-                *(irr::f32*) parameter->value = *(irr::f32*) defaultValue;
+                irr::f32* org = (irr::f32*) defaultValue;
+                irr::f32* val = new irr::f32;
 
+                *val = *org;
+
+                parameter->value = val;
                 parameter->type = ParameterType::TYPE_FLOAT;
             }
             else if (param->type == "int")
             {
-                parameter->value = new irr::s32;
-                *(irr::s32*) parameter->value = *(irr::s32*) defaultValue;
+                irr::s32* org = (irr::s32*) defaultValue;
+                irr::s32* val = new irr::s32;
 
+                *val = *org;
+
+                parameter->value = val;
                 parameter->type = ParameterType::TYPE_INT;
             }
             else if (param->type == "sampler2D")

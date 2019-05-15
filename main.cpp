@@ -145,22 +145,22 @@ int main (int argc, char* argv[])
             wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
             scene_path = wallpaper_path + "scene.pkg";
+
+            wp::irrlicht::device->getFileSystem ()->addFileArchive (scene_path, true, false); // add the pkg file to the lookup list
             break;
 
         // folder mode
         case 2:
             wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
+
+            // set our working directory
+            wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
             break;
 
         default:
             break;
     }
-
-    // set our working directory
-    wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
-
-    // wp::irrlicht::device->getFileSystem ()->addFileArchive (_wp_engine_folder + "scene.pkg", true, false); // add the pkg file to the lookup list
 
     wp::project* wp_project = new wp::project (project_path);
 

@@ -36,10 +36,12 @@ namespace wp
                                     "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
                                     "#define texSample2D texture2D\n"
                                     "#define texSample2DLod texture2DLod\n"
+                                    "#define texture2DLod texture2D\n"
                                     "#define atan2 atan\n"
                                     "#define ddx dFdx\n"
                                     "#define ddy(x) dFdy(-(x))\n"
                                     "#define GLSL 1\n\n";
+                // TODO: Parse COMBO options from shaders and set at least default values
             }
             else
             {
@@ -232,7 +234,7 @@ namespace wp
 
         std::string compiler::precompile()
         {
-        #define BREAK_IF_ERROR if (this->m_error == true) { wp::irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER"); wp::irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str ()); return ""; }
+        #define BREAK_IF_ERROR if (this->m_error == true) { wp::irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER", irr::ELL_ERROR); wp::irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str (), irr::ELL_ERROR); return ""; }
             // parse the shader and find #includes and such things and translate them to the correct name
             // also remove any #version definition to prevent errors
             std::string::const_iterator it = this->m_content.begin ();
