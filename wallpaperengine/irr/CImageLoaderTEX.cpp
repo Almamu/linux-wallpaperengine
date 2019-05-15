@@ -156,7 +156,7 @@ namespace irr {
                 input->read (decompressedBuffer, mipmap_uncompressed_size);
             }
 
-            if (containerVersion == 2 || containerVersion == 1)
+            if (imageFormat == FREE_IMAGE_FORMAT::FIF_UNKNOWN)
             {
                 image = wp::irrlicht::driver->createImage (ECF_A8R8G8B8, irr::core::dimension2d<u32> (width, height));
 
