@@ -356,8 +356,27 @@ namespace wp
                     if (this->peekString ("//", it) == true)
                     {
                         std::string::const_iterator begin = it - 2;
-                        this->ignoreUpToNextLineFeed (it);
-                        this->m_compiledContent.append (begin, it);
+                        // is there a COMBO mark to take care of?
+                        this->ignoreSpaces (it);
+
+                        if (this->peekString ("[COMBO]", it) == true)
+                        {
+                            // parse combo json data to define the proper variables
+                            this->ignoreSpaces (it);
+                            begin = it;
+                            this->ignoreUpToNextLineFeed (it);
+
+                            std::string configuration; configuration.append (begin, it);
+
+                            this->m_compiledContent += "// [COMBO] " + configuration;
+
+                            this->parseComboConfiguration (configuration); BREAK_IF_ERROR;
+                        }
+                        else
+                        {
+                            this->ignoreUpToNextLineFeed (it);
+                            this->m_compiledContent.append (begin, it);
+                        }
                     }
                     else if (this->peekString ("/*", it) == true)
                     {
@@ -408,6 +427,41 @@ namespace wp
         #undef BREAK_IF_ERROR
         }
 
+        void compiler::parseComboConfiguration (const std::string& content)
+        {
+            json data = json::parse (content);
+            json::const_iterator combo = data.find ("combo");
+            json::const_iterator defvalue = data.find ("default");
+
+            // add line feed just in case
+            this->m_compiledContent += "\n";
+
+            // {"material":"ui_editor_properties_perspective","combo":"PERSPECTIVE","type":"options","default":0}
+
+            if (combo == data.end () || defvalue == data.end ())
+            {
+                wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information", irr::ELL_ERROR);
+                return;
+            }
+
+            if ((*defvalue).is_number_float ())
+            {
+                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::f32> ()) + "\n";
+            }
+            else if ((*defvalue).is_number_integer ())
+            {
+                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::s32> ()) + "\n";
+            }
+            else if ((*defvalue).is_string ())
+            {
+                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + (*defvalue).get <std::string> () + "\n";
+            }
+            else
+            {
+                wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
+            }
+        }
+
         void compiler::parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content)
         {
             json data = json::parse (content);
@@ -418,6 +472,7 @@ namespace wp
             // this is not a real parameter
             if (material == data.end () || defvalue == data.end ())
             {
+                wp::irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
                 return;
             }
 

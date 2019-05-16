@@ -187,6 +187,12 @@ namespace wp
              */
             bool isNumeric (std::string::const_iterator& it);
             /**
+             * Parses a COMBO value to add the proper define to the code
+             *
+             * @param content The parameter configuration
+             */
+            void parseComboConfiguration (const std::string& content);
+            /**
              * Parses a parameter extra metadata created by wallpaper engine
              *
              * @param type The type of variable to parse
