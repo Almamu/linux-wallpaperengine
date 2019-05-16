@@ -71,7 +71,7 @@ namespace wp
              * @param type The type of shader
              * @param recursive Whether the compiler should add base definitions or not
              */
-            compiler (irr::io::path& file, Type type, bool recursive = false);
+            compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive = false);
             /**
              * Performs the actual pre-compilation/pre-processing over the shader files
              * This step is kinda big, replaces variables names on sVariableReplacement,
@@ -225,9 +225,17 @@ namespace wp
              */
             Type m_type;
             /**
-             * Tha parameters the shader needs
+             * The parameters the shader needs
              */
             std::vector <ShaderParameter*> m_parameters;
+            /**
+             * The combos the shader should be generated with
+             */
+             std::map <std::string, int>* m_combos;
+             /**
+              * Whether this compilation is a recursive one or not
+              */
+             bool m_recursive;
         };
     }
 }

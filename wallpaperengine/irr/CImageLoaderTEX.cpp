@@ -131,6 +131,14 @@ namespace irr {
 
             input->read (&mipmap_compressed_size, 4);
 
+            // TODO: BETTER POSITION FOR THIS
+            if (mipmap_compression == 0)
+            {
+                // this might be better named as mipmap_bytes_size instead of compressed_size
+                // as in uncompressed files this variable actually holds the file length
+                mipmap_uncompressed_size = mipmap_compressed_size;
+            }
+
             char *decompressedBuffer = new char [mipmap_uncompressed_size];
 
             if (mipmap_compression == 1)
@@ -216,6 +224,11 @@ namespace irr {
                     case FREE_IMAGE_FORMAT::FIF_JPEG:
                         // add extension to the file
                         filename += ".jpg";
+                        wp::irrlicht::device->getFileSystem ()->createAndWriteFile ("/tmp/test.jpg", false)->write (filebuffer, mipmap_uncompressed_size);
+                        file = wp::irrlicht::device->getFileSystem ()->createMemoryReadFile (filebuffer, mipmap_uncompressed_size, filename.c_str (), true);
+                        break;
+                    case FREE_IMAGE_FORMAT::FIF_GIF:
+                        filename += ".gif";
                         file = wp::irrlicht::device->getFileSystem ()->createMemoryReadFile (filebuffer, mipmap_uncompressed_size, filename.c_str (), true);
                         break;
                     default:

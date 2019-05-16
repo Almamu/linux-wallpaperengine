@@ -17,8 +17,11 @@ namespace wp
 {
     namespace shaders
     {
-        compiler::compiler (irr::io::path& file, Type type, bool recursive)
+        compiler::compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive)
         {
+            this->m_recursive = recursive;
+            this->m_combos = combos;
+
             // begin with an space so it gets ignored properly on parse
             if (recursive == false)
             {
@@ -208,7 +211,7 @@ namespace wp
 
             // now compile the new shader
             // do not include the default header (as it's already included in the parent)
-            compiler loader (shader, this->m_type, true);
+            compiler loader (shader, this->m_type, this->m_combos, true);
 
             return loader.precompile ();
         }
@@ -372,6 +375,19 @@ namespace wp
 
                             this->parseComboConfiguration (configuration); BREAK_IF_ERROR;
                         }
+                        else if (this->peekString ("[COMBO_OFF]", it) == true)
+                        {
+                            // parse combo json data to define the proper variables
+                            this->ignoreSpaces (it);
+                            begin = it;
+                            this->ignoreUpToNextLineFeed (it);
+
+                            std::string configuration; configuration.append (begin, it);
+
+                            this->m_compiledContent += "// [COMBO_OFF] " + configuration;
+
+                            this->parseComboConfiguration (configuration); BREAK_IF_ERROR;
+                        }
                         else
                         {
                             this->ignoreUpToNextLineFeed (it);
@@ -420,8 +436,11 @@ namespace wp
                 }
             }
 
-            wp::irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
-            wp::irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
+            if (this->m_recursive == false)
+            {
+                wp::irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
+                wp::irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
+            }
 
             return this->m_compiledContent;
         #undef BREAK_IF_ERROR
@@ -436,29 +455,38 @@ namespace wp
             // add line feed just in case
             this->m_compiledContent += "\n";
 
-            // {"material":"ui_editor_properties_perspective","combo":"PERSPECTIVE","type":"options","default":0}
-
             if (combo == data.end () || defvalue == data.end ())
             {
                 wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information", irr::ELL_ERROR);
                 return;
             }
 
-            if ((*defvalue).is_number_float ())
+            // check the combos
+            std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
+
+            if (entry == this->m_combos->end ())
             {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::f32> ()) + "\n";
-            }
-            else if ((*defvalue).is_number_integer ())
-            {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::s32> ()) + "\n";
-            }
-            else if ((*defvalue).is_string ())
-            {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + (*defvalue).get <std::string> () + "\n";
+                // if no combo is defined just load the default settings
+                if ((*defvalue).is_number_float ())
+                {
+                    this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::f32> ()) + "\n";
+                }
+                else if ((*defvalue).is_number_integer ())
+                {
+                    this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::s32> ()) + "\n";
+                }
+                else if ((*defvalue).is_string ())
+                {
+                    this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + (*defvalue).get <std::string> () + "\n";
+                }
+                else
+                {
+                    wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
+                }
             }
             else
             {
-                wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
+                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*entry).second);
             }
         }
 
@@ -472,7 +500,9 @@ namespace wp
             // this is not a real parameter
             if (material == data.end () || defvalue == data.end ())
             {
-                wp::irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
+                if (type != "sampler2D")
+                    wp::irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
+
                 return;
             }
 
@@ -550,7 +580,9 @@ namespace wp
             }
             else if (type == "sampler2D")
             {
-                param->defaultValue = nullptr;
+                // samplers are not saved, we can ignore them for now
+                delete param;
+                return;
             }
             else
             {

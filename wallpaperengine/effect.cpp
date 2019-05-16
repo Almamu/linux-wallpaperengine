@@ -30,9 +30,13 @@ namespace wp
             return;
 
         json::const_iterator textures = (*curpass).find ("textures");
+        json::const_iterator combos = (*curpass).find ("combos");
 
         if (textures == (*curpass).end () || (*textures).is_array () == false)
             return;
+
+        if (combos != (*curpass).end ())
+            this->parseCombos (*combos);
 
         json::const_iterator curtex = (*textures).begin ();
         json::const_iterator endtex = (*textures).end ();
@@ -88,8 +92,8 @@ namespace wp
             irr::io::path fragpath = shaderpath + ".frag";
             irr::io::path vertpath = shaderpath + ".vert";
 
-            this->m_fragShader = new wp::shaders::compiler (fragpath, wp::shaders::compiler::Type::Type_Pixel, false);
-            this->m_vertShader = new wp::shaders::compiler (vertpath, wp::shaders::compiler::Type::Type_Vertex, false);
+            this->m_fragShader = new wp::shaders::compiler (fragpath, wp::shaders::compiler::Type::Type_Pixel, &this->m_combos, false);
+            this->m_vertShader = new wp::shaders::compiler (vertpath, wp::shaders::compiler::Type::Type_Vertex, &this->m_combos, false);
 
             this->m_materialType = wp::irrlicht::driver->getGPUProgrammingServices ()
                 ->addHighLevelShaderMaterial (
@@ -312,6 +316,26 @@ namespace wp
             }
 
             this->m_constants.insert (std::pair <std::string, void*> (name, value));
+        }
+    }
+
+    void effect::parseCombos (json data)
+    {
+        json::const_iterator cur = data.begin ();
+        json::const_iterator end = data.end ();
+
+        for (; cur != end; cur ++)
+        {
+            std::string name = cur.key ();
+
+            if ((*cur).is_number_integer () == true)
+            {
+                this->m_combos.insert (std::pair <std::string, int> (name, (*cur).get <int> ()));
+            }
+            else
+            {
+                wp::irrlicht::device->getLogger ()->log ("Unknown type for combo value", name.c_str (), irr::ELL_ERROR);
+            }
         }
     }
 

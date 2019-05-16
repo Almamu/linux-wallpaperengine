@@ -37,12 +37,14 @@ namespace wp
         };
 
         void parseConstantValues (json data);
+        void parseCombos (json data);
 
         wp::shaders::compiler* m_fragShader;
         wp::shaders::compiler* m_vertShader;
 
         std::map <std::string, ShaderParameter*> m_vertexVariables;
         std::map <std::string, ShaderParameter*> m_pixelVariables;
+        std::map <std::string, int> m_combos;
 
         std::map <std::string, void*> m_constants;
         std::vector <wp::texture*> m_textures;
