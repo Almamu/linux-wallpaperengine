@@ -170,7 +170,7 @@ int main (int argc, char* argv[])
     }
     else
     {
-        wp::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!");
+        wp::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR);
         return 0;
     }
 

@@ -5,16 +5,19 @@
 #include <irrlicht/irrlicht.h>
 
 #include "texture.h"
+#include "object.h"
 #include "shaders/compiler.h"
 
 namespace wp
 {
     using json = nlohmann::json;
 
+    class object;
+
     class effect : public irr::video::IShaderConstantSetCallBack
     {
     public:
-        effect (json json_data);
+        effect (json json_data, wp::object* parent);
 
         virtual void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData);
 
@@ -53,6 +56,7 @@ namespace wp
         irr::io::path m_file;
         irr::s32 m_materialType;
         std::vector<void*> m_passes;
+        wp::object* m_parent;
     };
 }
 

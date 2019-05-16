@@ -9,8 +9,10 @@ extern irr::f32 g_Time;
 
 namespace wp
 {
-    effect::effect (json json_data)
+    effect::effect (json json_data, wp::object* parent)
     {
+        this->m_parent = parent;
+
         json::const_iterator file = json_data.find ("file");
         json::const_iterator pass = json_data.find ("passes");
 
@@ -351,19 +353,32 @@ namespace wp
 
     void effect::OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData)
     {
-        // TODO: IMPLEMENT PROPER SHADER CODE
-        irr::f32 g_AnimationSpeed = 0.1f;
-        irr::f32 g_Scale = 2.5f;
-        irr::f32 g_ScrollSpeed = 0.0f;
-        irr::f32 g_Direction = 0.0f;
-        irr::f32 g_Strength = 0.07f;
-        irr::f32 g_SpecularPower = 1.0f;
-        irr::f32 g_SpecularStrength = 1.0f;
-        irr::f32 g_SpecularColor [3] = {1.0f, 1.0f, 1.0f};
-        irr::f32 g_Texture1Resolution [4] = {1.0f, 1.0f, 1.0f, 1.0f};
         irr::f32 g_Texture0 = 0;
         irr::f32 g_Texture1 = 1;
         irr::f32 g_Texture2 = 2;
+        irr::f32 g_Texture3 = 3;
+        irr::f32 g_Texture4 = 4;
+        irr::f32 g_Texture5 = 5;
+        irr::f32 g_Texture6 = 6;
+        irr::f32 g_Texture7 = 7;
+
+        irr::f32 g_Texture0Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture1Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture2Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture3Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture4Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture5Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture6Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+        irr::f32 g_Texture7Rotation [4] = { this->m_parent->getAngles ().X, this->m_parent->getAngles ().Y, this->m_parent->getAngles ().Z, this->m_parent->getAngles ().Z};
+
+        irr::f32 g_Texture0Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture1Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture2Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture3Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture4Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture5Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture6Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
+        irr::f32 g_Texture7Resolution [4] = { this->m_parent->getSize ().X, this->m_parent->getSize ().Y, this->m_parent->getSize ().X, this->m_parent->getSize ().Y};
 
         irr::video::IVideoDriver* driver = services->getVideoDriver ();
 
@@ -500,24 +515,33 @@ namespace wp
             }
         }
 
-        /*services->setVertexShaderConstant ("g_AnimationSpeed", &g_AnimationSpeed, 1);
-        services->setVertexShaderConstant ("g_Scale", &g_Scale, 1);
-        services->setVertexShaderConstant ("g_ScrollSpeed", &g_ScrollSpeed, 1);
-        services->setVertexShaderConstant ("g_Direction", &g_Direction, 1);*/
         services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
 
-
-        services->setVertexShaderConstant ("g_Texture0Resolution", g_Texture1Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture0Resolution", g_Texture0Resolution, 4);
         services->setVertexShaderConstant ("g_Texture1Resolution", g_Texture1Resolution, 4);
-        services->setVertexShaderConstant ("g_Texture2Resolution", g_Texture1Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture2Resolution", g_Texture2Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture3Resolution", g_Texture3Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture4Resolution", g_Texture4Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture5Resolution", g_Texture5Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture6Resolution", g_Texture6Resolution, 4);
+        services->setVertexShaderConstant ("g_Texture7Resolution", g_Texture7Resolution, 4);
 
-        // TODO: Support up to 7 materials (as wallpaper engine)
-        /*services->setPixelShaderConstant ("g_Strength", &g_Strength, 1);
-        services->setPixelShaderConstant ("g_SpecularPower", &g_SpecularPower, 1);
-        services->setPixelShaderConstant ("g_SpecularStrength", &g_SpecularStrength, 1);
-        services->setPixelShaderConstant ("g_SpecularColor", g_SpecularColor, 3);*/
+        services->setVertexShaderConstant ("g_Texture0Rotation", g_Texture0Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture1Rotation", g_Texture1Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture2Rotation", g_Texture2Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture3Rotation", g_Texture3Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture4Rotation", g_Texture4Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture5Rotation", g_Texture5Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture6Rotation", g_Texture6Rotation, 4);
+        services->setVertexShaderConstant ("g_Texture7Rotation", g_Texture7Rotation, 4);
+
         services->setPixelShaderConstant ("g_Texture0", &g_Texture0, 1);
         services->setPixelShaderConstant ("g_Texture1", &g_Texture1, 1);
         services->setPixelShaderConstant ("g_Texture2", &g_Texture2, 1);
+        services->setPixelShaderConstant ("g_Texture3", &g_Texture3, 1);
+        services->setPixelShaderConstant ("g_Texture4", &g_Texture4, 1);
+        services->setPixelShaderConstant ("g_Texture5", &g_Texture5, 1);
+        services->setPixelShaderConstant ("g_Texture6", &g_Texture6, 1);
+        services->setPixelShaderConstant ("g_Texture7", &g_Texture7, 1);
     }
 };

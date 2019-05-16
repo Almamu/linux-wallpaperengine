@@ -14,6 +14,7 @@ namespace wp
 
     class object3d;
     class scene;
+    class effect;
 
     class object : public wp::video::node
     {

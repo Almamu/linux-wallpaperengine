@@ -93,7 +93,7 @@ namespace wp
 
             for (; cur != end; cur ++)
             {
-                this->m_effects.push_back (new effect (*cur));
+                this->m_effects.push_back (new effect (*cur, this));
             }
         }
 
