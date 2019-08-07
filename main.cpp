@@ -76,19 +76,22 @@ void preconfigure_wallpaper_engine ()
     wp::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (wp::irrlicht::device->getFileSystem ()));
 }
 
+void print_help (const char* route)
+{
+    std::cout
+        << "Usage:" << route << " [options] " << std::endl
+        << "options:" << std::endl
+        << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
+        << "  --dir <folder>\tLoads an uncompressed background from the given <folder>" << std::endl
+        << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder>" << std::endl
+        << "  --win <WindowID>\tX Window ID to attach to" << std::endl;
+}
+
 int main (int argc, char* argv[])
 {
     int mode = 0;
     bool audio_support = true;
     std::string path;
-
-    // parse the integer if it exists
-    if (argc >= 1)
-    {
-        std::stringstream ss;
-        ss << std::hex << argv[1];
-        ss >> WinID;
-    }
 
     int option_index = 0;
 
@@ -97,12 +100,13 @@ int main (int argc, char* argv[])
             {"pkg",     required_argument, 0, 'p'},
             {"dir",     required_argument, 0, 'd'},
             {"silent",  optional_argument, 0, 's'},
+            {"help",    optional_argument, 0, 'h'},
             {nullptr,                   0, 0,   0}
     };
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "w:p:d:s", long_options, &option_index);
+        int c = getopt_long (argc, argv, "w:p:d:sh", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -128,12 +132,16 @@ int main (int argc, char* argv[])
                 audio_support = false;
                 break;
 
+            case 'h':
+                print_help (argv [0]);
+                return 0;
+
             default:
                 break;
         }
     }
 
-    printf ("Initializing irrlicht to WindowID %d\n", WinID);
+    std::cout << "Initializing irrlicht to WindowID " << WinID << std::endl;
 
     if (init_irrlicht())
     {
@@ -148,6 +156,10 @@ int main (int argc, char* argv[])
 
     switch (mode)
     {
+        case 0:
+            print_help (argv [0]);
+            return 0;
+
         // pkg mode
         case 1:
             wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
@@ -193,7 +205,7 @@ int main (int argc, char* argv[])
     else
     {
         wp::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR);
-        return 0;
+        return -2;
     }
 
     // register nodes
