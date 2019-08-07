@@ -5,6 +5,8 @@
 #include <wallpaperengine/video/material.h>
 #include <wallpaperengine/irr/CPkgReader.h>
 #include <getopt.h>
+#include <SDL_mixer.h>
+#include <SDL.h>
 
 #include "wallpaperengine/shaders/compiler.h"
 #include "wallpaperengine/project.h"
@@ -77,6 +79,7 @@ void preconfigure_wallpaper_engine ()
 int main (int argc, char* argv[])
 {
     int mode = 0;
+    bool audio_support = true;
     std::string path;
 
     // parse the integer if it exists
@@ -93,12 +96,13 @@ int main (int argc, char* argv[])
             {"win",     required_argument, 0, 'w'},
             {"pkg",     required_argument, 0, 'p'},
             {"dir",     required_argument, 0, 'd'},
+            {"silent",  optional_argument, 0, 's'},
             {nullptr,                   0, 0,   0}
     };
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "w:p:d:", long_options, &option_index);
+        int c = getopt_long (argc, argv, "w:p:d:s", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -118,6 +122,10 @@ int main (int argc, char* argv[])
             case 'd':
                 mode = 2;
                 path = optarg;
+                break;
+
+            case 's':
+                audio_support = false;
                 break;
 
             default:
@@ -162,6 +170,20 @@ int main (int argc, char* argv[])
             break;
     }
 
+    if (audio_support == true)
+    {
+        int mixer_flags = MIX_INIT_MP3 | MIX_INIT_FLAC | MIX_INIT_OGG;
+
+        if (SDL_Init (SDL_INIT_AUDIO) < 0 || mixer_flags != Mix_Init (mixer_flags))
+        {
+            wp::irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
+            return -1;
+        }
+
+        // initialize audio engine
+        Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
+    }
+
     wp::project* wp_project = new wp::project (project_path);
 
     if (wp_project->getScene ()->isOrthogonal() == true)
@@ -200,6 +222,7 @@ int main (int argc, char* argv[])
         }
     }
 
+    SDL_Quit ();
     delete wp_project;
 
     return 0;

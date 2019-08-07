@@ -7,6 +7,7 @@
 #include <wallpaperengine/core.h>
 #include <wallpaperengine/object3d.h>
 #include <wallpaperengine/image.h>
+#include <wallpaperengine/sound.h>
 
 namespace wp
 {
@@ -65,6 +66,7 @@ namespace wp
         json::const_iterator image = json_data.find ("image");
         json::const_iterator model = json_data.find ("model");
         json::const_iterator particle = json_data.find ("particle");
+        json::const_iterator sound = json_data.find ("sound");
 
         object3d::Type _type = object3d::Type::Type_None;
 
@@ -81,6 +83,11 @@ namespace wp
         if (particle != json_data.end () && (*particle).is_null () == false)
         {
             _type = object3d::Type::Type_Particle;
+        }
+
+        if (sound != json_data.end () && (*sound).is_null () == false)
+        {
+            _type = object3d::Type::Type_Sound;
         }
 
         // load the effects first so we have access to the textures needed
@@ -107,6 +114,10 @@ namespace wp
                 break;
 
             case object3d::Type::Type_Particle:
+                break;
+
+            case object3d::Type::Type_Sound:
+                this->m_object3d = new wp::sound ((*sound), this);
                 break;
         }
     }

@@ -15,7 +15,8 @@ namespace wp
             Type_Material = 0,
             Type_Model = 1,
             Type_Particle = 2,
-            Type_None = 3
+            Type_Sound = 3,
+            Type_None = 4
         };
 
         object3d (Type type, wp::object* parent);
