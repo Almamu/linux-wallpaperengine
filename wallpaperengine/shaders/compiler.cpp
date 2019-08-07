@@ -44,7 +44,14 @@ namespace wp
                                     "#define ddx dFdx\n"
                                     "#define ddy(x) dFdy(-(x))\n"
                                     "#define GLSL 1\n\n";
-                // TODO: Parse COMBO options from shaders and set at least default values
+
+                std::map<std::string, int>::const_iterator cur = this->m_combos->begin ();
+                std::map<std::string, int>::const_iterator end = this->m_combos->end ();
+
+                for (; cur != end; cur ++)
+                {
+                    this->m_content += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
+                }
             }
             else
             {
@@ -464,6 +471,8 @@ namespace wp
             // check the combos
             std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
 
+            // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
+            // so only define the ones that are not already defined
             if (entry == this->m_combos->end ())
             {
                 // if no combo is defined just load the default settings
@@ -483,10 +492,6 @@ namespace wp
                 {
                     wp::irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
                 }
-            }
-            else
-            {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*entry).second);
             }
         }
 
