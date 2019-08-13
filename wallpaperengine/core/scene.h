@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "project.h"
+#include "object.h"
 
 #include "scenes/camera.h"
 #include "scenes/projection.h"
@@ -13,6 +14,7 @@ namespace wp::core
     using json = nlohmann::json;
 
     class project;
+    class object;
 
     class scene
     {
@@ -67,6 +69,7 @@ namespace wp::core
             irr::video::SColorf skylightColor
         );
 
+        void insertObject (object* object);
     private:
         project* m_project;
         scenes::camera* m_camera;
@@ -89,5 +92,7 @@ namespace wp::core
         irr::video::SColorf m_clearColor;
         scenes::projection* m_orthogonalProjection;
         irr::video::SColorf m_skylightColor;
+
+        std::vector<object*> m_objects;
     };
 };

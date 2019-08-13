@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(wallengine)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-fpermissive")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
@@ -58,6 +58,27 @@ add_executable(
         wallpaperengine/irr/CFileList.cpp
         wallpaperengine/sound.cpp
         wallpaperengine/sound.h
+
+        wallpaperengine/core/project.cpp
+        wallpaperengine/core/project.h
+        wallpaperengine/core/scene.cpp
+        wallpaperengine/core/scene.h
+        wallpaperengine/core/object.cpp
+        wallpaperengine/core/object.h
+
+        wallpaperengine/core/scenes/camera.cpp
+        wallpaperengine/core/scenes/camera.h
+        wallpaperengine/core/scenes/projection.cpp
+        wallpaperengine/core/scenes/projection.h
+
+        wallpaperengine/core/objects/image.cpp
+        wallpaperengine/core/objects/image.h
+
+        wallpaperengine/core/objects/images/material.cpp
+        wallpaperengine/core/objects/images/material.h
+
+        wallpaperengine/core/objects/images/materials/passes.cpp
+        wallpaperengine/core/objects/images/materials/passes.h
 )
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})

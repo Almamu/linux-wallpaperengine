@@ -52,6 +52,7 @@ scene* scene::fromFile (const irr::io::path& filename)
 
     json::const_iterator camera_it = content.find ("camera");
     json::const_iterator general_it = content.find ("general");
+    json::const_iterator objects_it = content.find ("objects");
 
     if (camera_it == content.end ())
     {
@@ -61,6 +62,11 @@ scene* scene::fromFile (const irr::io::path& filename)
     if (general_it == content.end ())
     {
         throw std::runtime_error ("Scenes must have a general section");
+    }
+
+    if (objects_it == content.end ())
+    {
+        throw std::runtime_error ("Scenes must have a list of objects to display");
     }
 
     json::const_iterator ambientcolor_it = (*general_it).find ("ambientcolor");
@@ -166,7 +172,7 @@ scene* scene::fromFile (const irr::io::path& filename)
         throw std::runtime_error ("General section must have skylight color");
     }
 
-    return new scene (
+    scene* scene = new class scene (
         scenes::camera::fromJSON (*camera_it),
         wp::core::atoSColorf (*ambientcolor_it),
         *bloom_it,
@@ -186,6 +192,24 @@ scene* scene::fromFile (const irr::io::path& filename)
         scenes::projection::fromJSON (*orthogonalprojection_it),
         wp::core::atoSColorf (*skylightcolor_it)
     );
+
+    json::const_iterator cur = (*objects_it).begin ();
+    json::const_iterator end = (*objects_it).end ();
+
+    for (; cur != end; cur ++)
+    {
+        scene->insertObject (
+            object::fromJSON (*cur)
+        );
+    }
+
+    return scene;
+}
+
+
+void scene::insertObject (object* object)
+{
+    this->m_objects.push_back (object);
 }
 
 project* scene::getProject ()
