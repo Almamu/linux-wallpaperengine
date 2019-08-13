@@ -207,6 +207,11 @@ scene* scene::fromFile (const irr::io::path& filename)
 }
 
 
+std::vector<object*>* scene::getObjects ()
+{
+    return &this->m_objects;
+}
+
 void scene::insertObject (object* object)
 {
     this->m_objects.push_back (object);

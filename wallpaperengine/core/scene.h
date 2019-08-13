@@ -22,6 +22,7 @@ namespace wp::core
         static scene* fromFile (const irr::io::path& filename);
 
         project* getProject ();
+        std::vector<object*>* getObjects ();
 
 
         const irr::video::SColorf &getAmbientColor() const;

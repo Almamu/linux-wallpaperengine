@@ -1,5 +1,6 @@
 #include "object.h"
 #include "objects/image.h"
+#include "objects/sound.h"
 
 #include "../core.h"
 
@@ -66,10 +67,13 @@ object* object::fromJSON (json data)
     }
 
     json::const_iterator image_it = data.find ("image");
+    json::const_iterator sound_it = data.find ("sound");
+
+    object* object = nullptr;
 
     if (image_it != data.end () && (*image_it).is_null () == false)
     {
-        return objects::image::fromJSON (
+        object = objects::image::fromJSON (
             data,
             visible,
             *id_it,
@@ -79,4 +83,18 @@ object* object::fromJSON (json data)
             wp::core::ato3vf (*angles_it)
         );
     }
+    else if (sound_it != data.end ())
+    {
+        object = objects::sound::fromJSON (
+            data,
+            visible,
+            *id_it,
+            *name_it,
+            wp::core::ato3vf (*origin_it),
+            wp::core::ato3vf (*scale_it),
+            wp::core::ato3vf (*angles_it)
+        );
+    }
+
+    return object;
 }
