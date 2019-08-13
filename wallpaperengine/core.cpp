@@ -27,3 +27,19 @@ irr::core::vector2df wp::core::ato2vf (const std::string& str)
 {
     return wp::core::ato2vf (str.c_str ());
 }
+
+irr::video::SColorf wp::core::atoSColorf (const char *str)
+{
+    irr::core::vector3df vector = wp::core::ato3vf (str);
+
+    return irr::video::SColorf (
+        vector.X,
+        vector.Y,
+        vector.Z
+    );
+}
+
+irr::video::SColorf wp::core::atoSColorf (const std::string& str)
+{
+    return wp::core::atoSColorf (str.c_str ());
+}

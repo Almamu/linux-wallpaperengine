@@ -11,4 +11,7 @@ namespace wp::core
 
     irr::core::vector3df ato3vf (const std::string& str);
     irr::core::vector2df ato2vf (const std::string& str);
+
+    irr::video::SColorf atoSColorf (const char *str);
+    irr::video::SColorf atoSColorf (const std::string& str);
 };
