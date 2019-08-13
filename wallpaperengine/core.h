@@ -1,20 +1,14 @@
-#ifndef WALLENGINE_CORE_H
-#define WALLENGINE_CORE_H
+#pragma once
 
-#include <iostream>
-#include <irrlicht/vector3d.h>
-#include <irrlicht/vector2d.h>
-#include <irrlicht/matrix4.h>
+#include <string>
 
-namespace wp
+#include <irrlicht/irrlicht.h>
+
+namespace wp::core
 {
+    irr::core::vector3df ato3vf (const char *str);
+    irr::core::vector2df ato2vf (const char *str);
 
-    class core
-    {
-    public:
-        static irr::core::vector3df ato3vf (const char *str);
-        static irr::core::vector2df ato2vf (const char *str);
-    };
+    irr::core::vector3df ato3vf (const std::string& str);
+    irr::core::vector2df ato2vf (const std::string& str);
 };
-
-#endif //WALLENGINE_CORE_H

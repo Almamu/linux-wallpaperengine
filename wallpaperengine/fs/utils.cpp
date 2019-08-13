@@ -16,7 +16,7 @@ namespace wp
             irr::io::IReadFile* reader = wp::irrlicht::device->getFileSystem ()->createAndOpenFile (file);
 
             if (reader == NULL)
-                return "";
+                throw std::runtime_error ("Cannot open file " + std::string (file.c_str ()) + " for reading");
 
             char* filedata = new char [reader->getSize () + 1];
             memset (filedata, 0, reader->getSize () + 1);
