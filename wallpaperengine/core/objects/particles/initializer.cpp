@@ -5,6 +5,7 @@
 #include "initializers/rotationrandom.h"
 #include "initializers/velocityrandom.h"
 #include "initializers/colorrandom.h"
+#include "initializers/alpharandom.h"
 
 using namespace wp::core::objects::particles;
 
@@ -42,6 +43,10 @@ initializer* initializer::fromJSON (json data)
     else if (*name_it == "colorrandom")
     {
         return initializers::colorrandom::fromJSON (data, *id_it);
+    }
+    else if (*name_it == "alpharandom")
+    {
+        return initializers::alpharandom::fromJSON (data, *id_it);
     }
     else
     {

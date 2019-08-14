@@ -27,12 +27,12 @@ rotationrandom::rotationrandom (irr::u32 id, irr::f64 min, irr::f64 max) :
 {
 }
 
-irr::u32 rotationrandom::getMinimum ()
+irr::f64 rotationrandom::getMinimum ()
 {
     return this->m_min;
 }
 
-irr::u32 rotationrandom::getMaximum ()
+irr::f64 rotationrandom::getMaximum ()
 {
     return this->m_max;
 }
