@@ -57,14 +57,12 @@ passes* passes::fromJSON (json data)
         throw std::runtime_error ("Material pass must have shader specified");
     }
 
-    if (textures_it == data.end ())
+    if (textures_it != data.end ())
     {
-        throw std::runtime_error ("Material pass must have textures specified");
-    }
-
-    if ((*textures_it).is_array () == false)
-    {
-        throw std::runtime_error ("Textures for material must be a list");
+        if ((*textures_it).is_array () == false)
+        {
+            throw std::runtime_error ("Textures for material must be a list");
+        }
     }
 
     passes* pass = new passes (
@@ -75,18 +73,21 @@ passes* passes::fromJSON (json data)
         *shader_it
     );
 
-    json::const_iterator cur = (*textures_it).begin ();
-    json::const_iterator end = (*textures_it).end ();
-
-    for (;cur != end; cur ++)
+    if (textures_it != data.end ())
     {
-        if ((*cur).is_null () == true)
+        json::const_iterator cur = (*textures_it).begin ();
+        json::const_iterator end = (*textures_it).end ();
+
+        for (;cur != end; cur ++)
         {
-            pass->insertTexture ("");
-        }
-        else
-        {
-            pass->insertTexture (*cur);
+            if ((*cur).is_null () == true)
+            {
+                pass->insertTexture ("");
+            }
+            else
+            {
+                pass->insertTexture (*cur);
+            }
         }
     }
 
