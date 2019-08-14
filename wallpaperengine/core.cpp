@@ -33,13 +33,27 @@ irr::video::SColorf wp::core::atoSColorf (const char *str)
     irr::core::vector3df vector = wp::core::ato3vf (str);
 
     return irr::video::SColorf (
-        vector.X,
-        vector.Y,
-        vector.Z
+            vector.X,
+            vector.Y,
+            vector.Z
     );
 }
 
 irr::video::SColorf wp::core::atoSColorf (const std::string& str)
 {
     return wp::core::atoSColorf (str.c_str ());
+}
+
+irr::video::SColor wp::core::atoSColor (const char *str)
+{
+    irr::f32 r = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
+    irr::f32 g = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
+    irr::f32 b = irr::core::strtoul10 (str, &str);
+
+    return irr::video::SColor (255, r, g, b);
+}
+
+irr::video::SColor wp::core::atoSColor (const std::string& str)
+{
+    return wp::core::atoSColor (str.c_str ());
 }

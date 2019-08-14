@@ -1,6 +1,9 @@
 #include "object.h"
+
+#include <utility>
 #include "objects/image.h"
 #include "objects/sound.h"
+#include "objects/particles/particle.h"
 
 #include "../core.h"
 
@@ -16,7 +19,7 @@ object::object (
         const irr::core::vector3df& angles) :
     m_visible (visible),
     m_id (id),
-    m_name (name),
+    m_name (std::move(name)),
     m_origin (origin),
     m_scale (scale),
     m_angles (angles)
@@ -69,6 +72,7 @@ object* object::fromJSON (json data)
 
     json::const_iterator image_it = data.find ("image");
     json::const_iterator sound_it = data.find ("sound");
+    json::const_iterator particle_it = data.find ("particle");
 
     object* object = nullptr;
 
@@ -95,6 +99,20 @@ object* object::fromJSON (json data)
             wp::core::ato3vf (*scale_it),
             wp::core::ato3vf (*angles_it)
         );
+    }
+    else if (particle_it != data.end ())
+    {
+        object = objects::particles::particle::fromFile (
+            (*particle_it).get <std::string> ().c_str (),
+            *id_it,
+            *name_it,
+            wp::core::ato3vf (*origin_it),
+            wp::core::ato3vf (*scale_it)
+        );
+    }
+    else
+    {
+        throw std::runtime_error ("Unkonwn object type detected");
     }
 
     if (effects_it != data.end () && (*effects_it).is_array () == true && object != nullptr)

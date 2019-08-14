@@ -94,7 +94,7 @@ passes* passes::fromJSON (json data)
 }
 
 
-void passes::insertTexture (std::string texture)
+void passes::insertTexture (const std::string& texture)
 {
     this->m_textures.push_back (texture);
 }

@@ -15,7 +15,7 @@ namespace wp::core::objects::images::materials
     protected:
         passes (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader);
 
-        void insertTexture (std::string texture);
+        void insertTexture (const std::string& texture);
     private:
         std::string m_blending;
         std::string m_cullmode;

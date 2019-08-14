@@ -14,4 +14,7 @@ namespace wp::core
 
     irr::video::SColorf atoSColorf (const char *str);
     irr::video::SColorf atoSColorf (const std::string& str);
+
+    irr::video::SColor atoSColor (const char *str);
+    irr::video::SColor atoSColor (const std::string& str);
 };

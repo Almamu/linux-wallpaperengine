@@ -77,6 +77,26 @@ add_executable(
         wallpaperengine/core/objects/sound.h
         wallpaperengine/core/objects/effect.cpp
         wallpaperengine/core/objects/effect.h
+        wallpaperengine/core/objects/particles/particle.cpp
+        wallpaperengine/core/objects/particles/particle.h
+
+        wallpaperengine/core/objects/particles/controlpoint.cpp
+        wallpaperengine/core/objects/particles/controlpoint.h
+        wallpaperengine/core/objects/particles/emitter.cpp
+        wallpaperengine/core/objects/particles/emitter.h
+        wallpaperengine/core/objects/particles/initializer.cpp
+        wallpaperengine/core/objects/particles/initializer.h
+
+        wallpaperengine/core/objects/particles/initializers/lifetimerandom.cpp
+        wallpaperengine/core/objects/particles/initializers/lifetimerandom.h
+        wallpaperengine/core/objects/particles/initializers/sizerandom.cpp
+        wallpaperengine/core/objects/particles/initializers/sizerandom.h
+        wallpaperengine/core/objects/particles/initializers/rotationrandom.cpp
+        wallpaperengine/core/objects/particles/initializers/rotationrandom.h
+        wallpaperengine/core/objects/particles/initializers/velocityrandom.cpp
+        wallpaperengine/core/objects/particles/initializers/velocityrandom.h
+        wallpaperengine/core/objects/particles/initializers/colorrandom.cpp
+        wallpaperengine/core/objects/particles/initializers/colorrandom.h
 
         wallpaperengine/core/objects/images/material.cpp
         wallpaperengine/core/objects/images/material.h
