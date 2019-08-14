@@ -24,7 +24,6 @@ namespace wp::core
         project* getProject ();
         std::vector<object*>* getObjects ();
 
-
         const irr::video::SColorf &getAmbientColor() const;
         bool isBloom() const;
         irr::f64 getBloomStrength() const;

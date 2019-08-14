@@ -80,7 +80,14 @@ passes* passes::fromJSON (json data)
 
     for (;cur != end; cur ++)
     {
-        pass->insertTexture (*cur);
+        if ((*cur).is_null () == true)
+        {
+            pass->insertTexture ("");
+        }
+        else
+        {
+            pass->insertTexture (*cur);
+        }
     }
 
     return pass;

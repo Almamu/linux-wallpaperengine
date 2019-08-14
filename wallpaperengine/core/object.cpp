@@ -32,6 +32,7 @@ object* object::fromJSON (json data)
     json::const_iterator size_it = data.find ("size");
     json::const_iterator angles_it = data.find ("angles");
     json::const_iterator name_it = data.find ("name");
+    json::const_iterator effects_it = data.find ("effects");
 
     bool visible = true;
 
@@ -96,5 +97,28 @@ object* object::fromJSON (json data)
         );
     }
 
+    if (effects_it != data.end () && (*effects_it).is_array () == true && object != nullptr)
+    {
+        json::const_iterator cur = (*effects_it).begin ();
+        json::const_iterator end = (*effects_it).end ();
+
+        for (; cur != end; cur ++)
+        {
+            object->insertEffect (
+                objects::effect::fromJSON (*cur)
+            );
+        }
+    }
+
     return object;
+}
+
+std::vector<objects::effect*>* object::getEffects ()
+{
+    return &this->m_effects;
+}
+
+void object::insertEffect (objects::effect* effect)
+{
+    this->m_effects.push_back (effect);
 }

@@ -13,6 +13,7 @@ namespace wp::core::objects::images
     {
     public:
         static material* fromFile (irr::io::path filename);
+        static material* fromJSON (json data);
 
         void insertPass (materials::passes* mass);
 

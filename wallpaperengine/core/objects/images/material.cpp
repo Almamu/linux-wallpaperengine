@@ -13,11 +13,16 @@ material::material ()
 
 material* material::fromFile (irr::io::path filename)
 {
-    json content = json::parse (wp::fs::utils::loadFullFile (filename));
+    return fromJSON (
+        json::parse (wp::fs::utils::loadFullFile (filename))
+    );
+}
 
-    json::const_iterator passes_it = content.find ("passes");
+material* material::fromJSON (json data)
+{
+    json::const_iterator passes_it = data.find ("passes");
 
-    if (passes_it == content.end ())
+    if (passes_it == data.end ())
     {
         throw std::runtime_error ("Material must have at least one pass");
     }

@@ -75,6 +75,8 @@ add_executable(
         wallpaperengine/core/objects/image.h
         wallpaperengine/core/objects/sound.cpp
         wallpaperengine/core/objects/sound.h
+        wallpaperengine/core/objects/effect.cpp
+        wallpaperengine/core/objects/effect.h
 
         wallpaperengine/core/objects/images/material.cpp
         wallpaperengine/core/objects/images/material.h
