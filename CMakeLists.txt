@@ -59,50 +59,54 @@ add_executable(
         wallpaperengine/sound.cpp
         wallpaperengine/sound.h
 
-        wallpaperengine/core/project.cpp
-        wallpaperengine/core/project.h
-        wallpaperengine/core/scene.cpp
-        wallpaperengine/core/scene.h
-        wallpaperengine/core/object.cpp
-        wallpaperengine/core/object.h
+        wallpaperengine/core/CProject.cpp
+        wallpaperengine/core/CProject.h
+        wallpaperengine/core/CScene.cpp
+        wallpaperengine/core/CScene.h
+        wallpaperengine/core/CObject.cpp
+        wallpaperengine/core/CObject.h
 
-        wallpaperengine/core/scenes/camera.cpp
-        wallpaperengine/core/scenes/camera.h
-        wallpaperengine/core/scenes/projection.cpp
-        wallpaperengine/core/scenes/projection.h
+        wallpaperengine/core/Scenes/CCamera.cpp
+        wallpaperengine/core/Scenes/CCamera.h
+        wallpaperengine/core/Scenes/CProjection.cpp
+        wallpaperengine/core/Scenes/CProjection.h
 
-        wallpaperengine/core/objects/image.cpp
-        wallpaperengine/core/objects/image.h
-        wallpaperengine/core/objects/sound.cpp
-        wallpaperengine/core/objects/sound.h
-        wallpaperengine/core/objects/effect.cpp
-        wallpaperengine/core/objects/effect.h
-        wallpaperengine/core/objects/particles/particle.cpp
-        wallpaperengine/core/objects/particles/particle.h
+        wallpaperengine/core/Objects/CImage.cpp
+        wallpaperengine/core/Objects/CImage.h
+        wallpaperengine/core/Objects/CSound.cpp
+        wallpaperengine/core/Objects/CSound.h
+        wallpaperengine/core/Objects/CEffect.cpp
+        wallpaperengine/core/Objects/CEffect.h
+        wallpaperengine/core/Objects/Particles/CParticle.cpp
+        wallpaperengine/core/Objects/Particles/CParticle.h
 
-        wallpaperengine/core/objects/particles/controlpoint.cpp
-        wallpaperengine/core/objects/particles/controlpoint.h
-        wallpaperengine/core/objects/particles/emitter.cpp
-        wallpaperengine/core/objects/particles/emitter.h
-        wallpaperengine/core/objects/particles/initializer.cpp
-        wallpaperengine/core/objects/particles/initializer.h
+        wallpaperengine/core/Objects/Particles/CControlPoint.cpp
+        wallpaperengine/core/Objects/Particles/CControlPoint.h
+        wallpaperengine/core/Objects/Particles/CEmitter.cpp
+        wallpaperengine/core/Objects/Particles/CEmitter.h
+        wallpaperengine/core/Objects/Particles/CInitializer.cpp
+        wallpaperengine/core/Objects/Particles/CInitializer.h
 
-        wallpaperengine/core/objects/particles/initializers/lifetimerandom.cpp
-        wallpaperengine/core/objects/particles/initializers/lifetimerandom.h
-        wallpaperengine/core/objects/particles/initializers/sizerandom.cpp
-        wallpaperengine/core/objects/particles/initializers/sizerandom.h
-        wallpaperengine/core/objects/particles/initializers/rotationrandom.cpp
-        wallpaperengine/core/objects/particles/initializers/rotationrandom.h
-        wallpaperengine/core/objects/particles/initializers/velocityrandom.cpp
-        wallpaperengine/core/objects/particles/initializers/velocityrandom.h
-        wallpaperengine/core/objects/particles/initializers/colorrandom.cpp
-        wallpaperengine/core/objects/particles/initializers/colorrandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CLifeTimeRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CSizeRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CSizeRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CRotationRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CRotationRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CVelocityRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CVelocityRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CColorRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CColorRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CAlphaRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CAlphaRandom.h
+        wallpaperengine/core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
+        wallpaperengine/core/Objects/Particles/Initializers/CAngularVelocityRandom.h
 
-        wallpaperengine/core/objects/images/material.cpp
-        wallpaperengine/core/objects/images/material.h
+        wallpaperengine/core/Objects/Images/CMaterial.cpp
+        wallpaperengine/core/Objects/Images/CMaterial.h
 
-        wallpaperengine/core/objects/images/materials/passes.cpp
-        wallpaperengine/core/objects/images/materials/passes.h
+        wallpaperengine/core/Objects/Images/Materials/CPassess.cpp
+        wallpaperengine/core/Objects/Images/Materials/CPassess.h
 )
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})
