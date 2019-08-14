@@ -1,17 +1,19 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <sstream>
-#include <wallpaperengine/video/renderer.h>
-#include <wallpaperengine/video/material.h>
-#include <wallpaperengine/irr/CPkgReader.h>
+#include <WallpaperEngine/video/renderer.h>
+#include <WallpaperEngine/video/material.h>
+#include <WallpaperEngine/irr/CPkgReader.h>
 #include <getopt.h>
 #include <SDL_mixer.h>
 #include <SDL.h>
 
-#include "wallpaperengine/shaders/compiler.h"
-#include "wallpaperengine/project.h"
-#include "wallpaperengine/irrlicht.h"
-#include "wallpaperengine/irr/CImageLoaderTEX.h"
+#include "WallpaperEngine/shaders/compiler.h"
+#include "WallpaperEngine/project.h"
+#include "WallpaperEngine/irrlicht.h"
+#include "WallpaperEngine/irr/CImageLoaderTEX.h"
+
+#include "WallpaperEngine/Core/CProject.h"
 
 int WinID = 0;
 irr::SIrrlichtCreationParameters _irr_params;
@@ -38,29 +40,29 @@ int init_irrlicht()
     _irr_params.LoggingLevel = irr::ELL_DEBUG;
     _irr_params.WindowId = reinterpret_cast<void*> (WinID);
 
-    wp::irrlicht::device = irr::createDeviceEx (_irr_params);
+    WallpaperEngine::irrlicht::device = irr::createDeviceEx (_irr_params);
 
-    if (wp::irrlicht::device == nullptr)
+    if (WallpaperEngine::irrlicht::device == nullptr)
     {
         return 1;
     }
 
-    wp::irrlicht::device->setWindowCaption (L"Test game");
-    wp::irrlicht::driver = wp::irrlicht::device->getVideoDriver();
+    WallpaperEngine::irrlicht::device->setWindowCaption (L"Test game");
+    WallpaperEngine::irrlicht::driver = WallpaperEngine::irrlicht::device->getVideoDriver();
 
     // check for ps and vs support
     if (
-            wp::irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false &&
-            wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
+            WallpaperEngine::irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false &&
+            WallpaperEngine::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
     {
-        wp::irrlicht::device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
+        WallpaperEngine::irrlicht::device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
     }
 
     if (
-            wp::irrlicht::driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false &&
-            wp::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
+            WallpaperEngine::irrlicht::driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false &&
+            WallpaperEngine::irrlicht::driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
     {
-        wp::irrlicht::device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
+        WallpaperEngine::irrlicht::device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
     }
 
     return 0;
@@ -69,11 +71,11 @@ int init_irrlicht()
 void preconfigure_wallpaper_engine ()
 {
     // load the assets from wallpaper engine
-    wp::irrlicht::device->getFileSystem ()->addFileArchive ("assets.zip", true, false);
+    WallpaperEngine::irrlicht::device->getFileSystem ()->addFileArchive ("assets.zip", true, false);
 
     // register custom loaders
-    wp::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
-    wp::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (wp::irrlicht::device->getFileSystem ()));
+    WallpaperEngine::irrlicht::driver->addExternalImageLoader (new irr::video::CImageLoaderTex ());
+    WallpaperEngine::irrlicht::device->getFileSystem ()->addArchiveLoader (new CArchiveLoaderPkg (WallpaperEngine::irrlicht::device->getFileSystem ()));
 }
 
 void print_help (const char* route)
@@ -162,20 +164,20 @@ int main (int argc, char* argv[])
 
         // pkg mode
         case 1:
-            wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            wallpaper_path = WallpaperEngine::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
             scene_path = wallpaper_path + "scene.pkg";
 
-            wp::irrlicht::device->getFileSystem ()->addFileArchive (scene_path, true, false); // add the pkg file to the lookup list
+            WallpaperEngine::irrlicht::device->getFileSystem ()->addFileArchive (scene_path, true, false); // add the pkg file to the lookup list
             break;
 
         // folder mode
         case 2:
-            wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            wallpaper_path = WallpaperEngine::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
 
             // set our working directory
-            wp::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
+            WallpaperEngine::irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
             break;
 
         default:
@@ -188,7 +190,7 @@ int main (int argc, char* argv[])
 
         if (SDL_Init (SDL_INIT_AUDIO) < 0 || mixer_flags != Mix_Init (mixer_flags))
         {
-            wp::irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
+            WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
             return -1;
         }
 
@@ -196,40 +198,40 @@ int main (int argc, char* argv[])
         Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
     }
 
-    wp::project* wp_project = new wp::project (project_path);
+    WallpaperEngine::project* wp_project = new WallpaperEngine::project (project_path);
 
     if (wp_project->getScene ()->isOrthogonal() == true)
     {
-        wp::video::renderer::setupOrthographicCamera (wp_project->getScene ());
+        WallpaperEngine::video::renderer::setupOrthographicCamera (wp_project->getScene ());
     }
     else
     {
-        wp::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR);
+        WallpaperEngine::irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR);
         return -2;
     }
 
     // register nodes
-    wp::video::renderer::queueNode (wp_project->getScene ());
+    WallpaperEngine::video::renderer::queueNode (wp_project->getScene ());
 
     int32_t lastTime = 0;
     int32_t minimumTime = 1000 / 90;
     int32_t currentTime = 0;
 
-    while (wp::irrlicht::device->run () && wp::irrlicht::driver)
+    while (WallpaperEngine::irrlicht::device->run () && WallpaperEngine::irrlicht::driver)
     {
         // if (device->isWindowActive ())
         {
-            currentTime = wp::irrlicht::device->getTimer ()->getTime ();
+            currentTime = WallpaperEngine::irrlicht::device->getTimer ()->getTime ();
             g_Time = currentTime / 1000.0f;
 
             if (currentTime - lastTime > minimumTime)
             {
-                wp::video::renderer::render ();
+                WallpaperEngine::video::renderer::render ();
                 lastTime = currentTime;
             }
             else
             {
-                wp::irrlicht::device->sleep (1, false);
+                WallpaperEngine::irrlicht::device->sleep (1, false);
             }
         }
     }
