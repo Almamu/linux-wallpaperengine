@@ -3,7 +3,7 @@
 #include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
 
-#include "../../../fs/utils.h"
+#include "../../../FileSystem/utils.h"
 
 using namespace WallpaperEngine::Core::Objects::Images;
 

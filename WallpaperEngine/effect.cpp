@@ -1,4 +1,4 @@
-#include <WallpaperEngine/fs/utils.h>
+#include <WallpaperEngine/FileSystem/utils.h>
 
 #include "shaders/compiler.h"
 #include "effect.h"

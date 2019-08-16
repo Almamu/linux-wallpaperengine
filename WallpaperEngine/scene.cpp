@@ -6,7 +6,7 @@
 #include <WallpaperEngine/scene.h>
 #include <WallpaperEngine/camera.h>
 
-#include "WallpaperEngine/fs/utils.h"
+#include "WallpaperEngine/FileSystem/utils.h"
 
 namespace WallpaperEngine
 {

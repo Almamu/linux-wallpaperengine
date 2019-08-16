@@ -4,7 +4,7 @@
 #include <string>
 
 // filesystem
-#include <WallpaperEngine/fs/utils.h>
+#include <WallpaperEngine/FileSystem/utils.h>
 
 // video engine
 #include <WallpaperEngine/Irrlicht/Irrlicht.h>

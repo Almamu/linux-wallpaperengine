@@ -1,8 +1,8 @@
-#include <WallpaperEngine/fs/utils.h>
+#include <WallpaperEngine/FileSystem/utils.h>
 
 #include "CProject.h"
 
-#include "../fs/utils.h"
+#include "../FileSystem/utils.h"
 
 using namespace WallpaperEngine::Core;
 

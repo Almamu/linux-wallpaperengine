@@ -7,7 +7,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 
-#include <WallpaperEngine/fs/utils.h>
+#include <WallpaperEngine/FileSystem/utils.h>
 
 namespace WallpaperEngine
 {
