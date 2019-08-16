@@ -6,13 +6,13 @@
 #include "WallpaperEngine/fs/utils.h"
 
 #include "project.h"
-#include "irrlicht.h"
+#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 
 namespace WallpaperEngine
 {
     project::project (irr::io::path& jsonfile_path)
     {
-        this->m_content = WallpaperEngine::fs::utils::loadFullFile (jsonfile_path);
+        this->m_content = WallpaperEngine::FileSystem::loadFullFile (jsonfile_path);
         this->m_projectFile = json::parse (this->m_content);
 
         json::const_iterator file_it = this->m_projectFile.find ("file");

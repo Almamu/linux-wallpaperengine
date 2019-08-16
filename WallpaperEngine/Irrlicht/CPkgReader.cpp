@@ -1,9 +1,7 @@
-//
-// Created by almamu on 4/04/19.
-//
-
-#include <WallpaperEngine/irrlicht.h>
+#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 #include "CPkgReader.h"
+
+using namespace WallpaperEngine::Irrlicht;
 
 CArchiveLoaderPkg::CArchiveLoaderPkg(irr::io::IFileSystem* fs)
         : FileSystem(fs)
@@ -123,7 +121,7 @@ void CPkgReader::scanPkgHeader ()
 
     if (strcmp ("PKGV0002", headerVersion) != 0 && strcmp ("PKGV0001", headerVersion) != 0)
     {
-        WallpaperEngine::irrlicht::device->getLogger ()->log ("Unexpected package header... Aborting load", this->mFile->getFileName ().c_str (), irr::ELL_ERROR);
+        WallpaperEngine::Irrlicht::device->getLogger ()->log ("Unexpected package header... Aborting load", this->mFile->getFileName ().c_str (), irr::ELL_ERROR);
 
         delete [] headerVersion;
         return;
@@ -189,6 +187,6 @@ irr::io::IReadFile* CPkgReader::createAndOpenFile (irr::u32 index)
     if (index > this->Files.size ())
         return nullptr;
 
-    const irr::io::SFileListEntry entry = Files [index];
+    const SFileListEntry entry = Files [index];
     return irr::io::createLimitReadFile (entry.FullName, mFile, entry.Offset, entry.Size);
 }

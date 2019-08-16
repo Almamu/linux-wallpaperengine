@@ -5,7 +5,7 @@
 #include <WallpaperEngine/object3d.h>
 #include <WallpaperEngine/image.h>
 
-#include <WallpaperEngine/irrlicht.h>
+#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 #include <WallpaperEngine/Core/Core.h>
 
 namespace WallpaperEngine
@@ -27,7 +27,7 @@ namespace WallpaperEngine
         if (file_it != json_data.end () && (*file_it).is_string () == true)
         {
             this->m_file = (*file_it).get <std::string> ().c_str ();
-            this->m_content = WallpaperEngine::fs::utils::loadFullFile (this->m_file);
+            this->m_content = WallpaperEngine::FileSystem::loadFullFile (this->m_file);
 
             json content = json::parse (this->m_content);
             json::const_iterator it = content.find ("material");
@@ -35,7 +35,7 @@ namespace WallpaperEngine
             if (it != content.end () && (*it).is_string () == true)
             {
                 irr::io::path materialfile = (*it).get <std::string> ().c_str ();
-                std::string texturejson_content = WallpaperEngine::fs::utils::loadFullFile (materialfile);
+                std::string texturejson_content = WallpaperEngine::FileSystem::loadFullFile (materialfile);
                 json materialcontent = json::parse (texturejson_content);
 
                 // now try to read the texture if any
@@ -153,8 +153,8 @@ namespace WallpaperEngine
                 0, 1, 2, 3
         };
 
-        WallpaperEngine::irrlicht::driver->setMaterial (this->getMaterial ());
-        WallpaperEngine::irrlicht::driver->drawVertexPrimitiveList (this->m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
+        WallpaperEngine::Irrlicht::driver->setMaterial (this->getMaterial ());
+        WallpaperEngine::Irrlicht::driver->drawVertexPrimitiveList (this->m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
     }
 
 }

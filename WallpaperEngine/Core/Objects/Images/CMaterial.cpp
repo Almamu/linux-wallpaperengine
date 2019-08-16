@@ -14,7 +14,7 @@ CMaterial::CMaterial ()
 CMaterial* CMaterial::fromFile (irr::io::path filename)
 {
     return fromJSON (
-        json::parse (WallpaperEngine::fs::utils::loadFullFile (filename))
+        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename))
     );
 }
 

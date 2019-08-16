@@ -38,7 +38,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         throw std::runtime_error ("Images must have size");
     }
 
-    json content = json::parse (WallpaperEngine::fs::utils::loadFullFile ((*image_it).get <std::string> ().c_str ()));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> ().c_str ()));
 
     json::const_iterator material_it = content.find ("material");
 

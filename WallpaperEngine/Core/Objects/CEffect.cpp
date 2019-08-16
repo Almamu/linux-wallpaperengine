@@ -27,7 +27,7 @@ CEffect* CEffect::fromJSON (json data)
         throw std::runtime_error ("Object effect must have a file");
     }
 
-    json content = json::parse (WallpaperEngine::fs::utils::loadFullFile ((*file_it).get <std::string> ().c_str ()));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> ().c_str ()));
 
     json::const_iterator name_it = content.find ("name");
     json::const_iterator description_it = content.find ("description");

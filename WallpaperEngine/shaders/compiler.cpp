@@ -7,7 +7,7 @@
 #include <WallpaperEngine/fs/utils.h>
 
 // video engine
-#include <WallpaperEngine/irrlicht.h>
+#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 
 // shader compiler
 #include <WallpaperEngine/shaders/compiler.h>
@@ -58,7 +58,7 @@ namespace WallpaperEngine
                 this->m_content = "";
             }
 
-            this->m_content.append (WallpaperEngine::fs::utils::loadFullFile (file));
+            this->m_content.append (WallpaperEngine::FileSystem::loadFullFile (file));
 
             // append file content
             this->m_type = type;
@@ -244,7 +244,7 @@ namespace WallpaperEngine
 
         std::string compiler::precompile()
         {
-        #define BREAK_IF_ERROR if (this->m_error == true) { WallpaperEngine::irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER", irr::ELL_ERROR); WallpaperEngine::irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str (), irr::ELL_ERROR); return ""; }
+        #define BREAK_IF_ERROR if (this->m_error == true) { WallpaperEngine::Irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER", irr::ELL_ERROR); WallpaperEngine::Irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str (), irr::ELL_ERROR); return ""; }
             // parse the shader and find #includes and such things and translate them to the correct name
             // also remove any #version definition to prevent errors
             std::string::const_iterator it = this->m_content.begin ();
@@ -445,8 +445,8 @@ namespace WallpaperEngine
 
             if (this->m_recursive == false)
             {
-                WallpaperEngine::irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
-                WallpaperEngine::irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
+                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
+                WallpaperEngine::Irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
             }
 
             return this->m_compiledContent;
@@ -464,7 +464,7 @@ namespace WallpaperEngine
 
             if (combo == data.end () || defvalue == data.end ())
             {
-                WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot parse combo information", irr::ELL_ERROR);
+                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse combo information", irr::ELL_ERROR);
                 return;
             }
 
@@ -490,7 +490,7 @@ namespace WallpaperEngine
                 }
                 else
                 {
-                    WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
+                    WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
                 }
             }
         }
@@ -506,7 +506,7 @@ namespace WallpaperEngine
             if (material == data.end () || defvalue == data.end ())
             {
                 if (type != "sampler2D")
-                    WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
+                    WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
 
                 return;
             }

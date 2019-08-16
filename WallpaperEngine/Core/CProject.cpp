@@ -16,7 +16,7 @@ CProject::CProject (std::string title, std::string type, CScene *scene) :
 
 CProject* CProject::fromFile (const irr::io::path& filename)
 {
-    json content = json::parse (WallpaperEngine::fs::utils::loadFullFile (filename));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
     json::const_iterator title = content.find ("title");
     json::const_iterator type = content.find ("type");

@@ -12,7 +12,7 @@ CParticle* CParticle::fromFile (
     const irr::core::vector3df& origin,
     const irr::core::vector3df& scale)
 {
-    json data = json::parse (WallpaperEngine::fs::utils::loadFullFile (filename));
+    json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
     json::const_iterator controlpoint_it = data.find ("controlpoint");
     json::const_iterator starttime_it = data.find ("starttime");
     json::const_iterator maxcount_it = data.find ("maxcount");

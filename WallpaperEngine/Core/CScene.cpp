@@ -48,7 +48,7 @@ CScene::CScene (
 
 CScene* CScene::fromFile (const irr::io::path& filename)
 {
-    json content = json::parse (WallpaperEngine::fs::utils::loadFullFile (filename));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
     json::const_iterator camera_it = content.find ("camera");
     json::const_iterator general_it = content.find ("general");

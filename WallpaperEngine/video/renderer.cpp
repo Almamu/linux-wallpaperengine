@@ -1,4 +1,4 @@
-#include <WallpaperEngine/irrlicht.h>
+#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 #include <WallpaperEngine/video/renderer.h>
 
 namespace WallpaperEngine
@@ -31,19 +31,19 @@ namespace WallpaperEngine
                     znear,
                     zfar
             );
-            WallpaperEngine::irrlicht::camera = WallpaperEngine::irrlicht::device->getSceneManager ()->addCameraSceneNode (0, position, lookat);
-            WallpaperEngine::irrlicht::camera->setProjectionMatrix (orthoProjection);
+            WallpaperEngine::Irrlicht::camera = WallpaperEngine::Irrlicht::device->getSceneManager ()->addCameraSceneNode (0, position, lookat);
+            WallpaperEngine::Irrlicht::camera->setProjectionMatrix (orthoProjection);
 
-            WallpaperEngine::irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
-            WallpaperEngine::irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
-            WallpaperEngine::irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);
+            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
+            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
+            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);
         }
 
         void renderer::render ()
         {
-            if (WallpaperEngine::irrlicht::driver == nullptr) return;
+            if (WallpaperEngine::Irrlicht::driver == nullptr) return;
 
-            WallpaperEngine::irrlicht::driver->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
+            WallpaperEngine::Irrlicht::driver->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
 
             std::vector<node*>::const_iterator cur = s_nodes.begin ();
             std::vector<node*>::const_iterator end = s_nodes.end ();
@@ -53,7 +53,7 @@ namespace WallpaperEngine
                 (*cur)->render ();
             }
 
-            WallpaperEngine::irrlicht::driver->endScene ();
+            WallpaperEngine::Irrlicht::driver->endScene ();
         }
 
         std::vector<node*> renderer::s_nodes;

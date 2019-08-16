@@ -38,10 +38,8 @@ add_executable(
         WallpaperEngine/object3d.h
         WallpaperEngine/effect.cpp
         WallpaperEngine/effect.h
-        WallpaperEngine/fs/utils.cpp
-        WallpaperEngine/fs/utils.h
-        WallpaperEngine/irrlicht.cpp
-        WallpaperEngine/irrlicht.h
+        WallpaperEngine/FileSystem/utils.cpp
+        WallpaperEngine/FileSystem/utils.h
         WallpaperEngine/video/renderer.cpp
         WallpaperEngine/video/renderer.h
         WallpaperEngine/video/node.cpp
@@ -50,12 +48,14 @@ add_executable(
         WallpaperEngine/video/material.h
         WallpaperEngine/texture.cpp
         WallpaperEngine/texture.h
-        WallpaperEngine/irr/CImageLoaderTEX.h
-        WallpaperEngine/irr/CImageLoaderTEX.cpp
-        WallpaperEngine/irr/CPkgReader.h
-        WallpaperEngine/irr/CPkgReader.cpp
-        WallpaperEngine/irr/CFileList.h
-        WallpaperEngine/irr/CFileList.cpp
+        WallpaperEngine/Irrlicht/CImageLoaderTEX.h
+        WallpaperEngine/Irrlicht/CImageLoaderTEX.cpp
+        WallpaperEngine/Irrlicht/CPkgReader.h
+        WallpaperEngine/Irrlicht/CPkgReader.cpp
+        WallpaperEngine/Irrlicht/CFileList.h
+        WallpaperEngine/Irrlicht/CFileList.cpp
+        WallpaperEngine/Irrlicht/Irrlicht.cpp
+        WallpaperEngine/Irrlicht/Irrlicht.h
         WallpaperEngine/sound.cpp
         WallpaperEngine/sound.h
 

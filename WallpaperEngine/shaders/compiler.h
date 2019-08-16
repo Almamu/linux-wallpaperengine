@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <nlohmann/json.hpp>
 
 #include <WallpaperEngine/fs/utils.h>
 
@@ -12,6 +13,8 @@ namespace WallpaperEngine
 {
     namespace shaders
     {
+        using json = nlohmann::json;
+
         /**
          * A basic shader loader that adds basic function definitions to every loaded shader
          */

@@ -5,7 +5,7 @@
 #include <SDL_rwops.h>
 #include <SDL_mixer.h>
 #include "sound.h"
-#include "irrlicht.h"
+#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 
 namespace WallpaperEngine
 {
@@ -31,7 +31,7 @@ namespace WallpaperEngine
         {
             SDL_RWops* sdlRwops = nullptr;
             Mix_Music* music = nullptr;
-            irr::io::IReadFile* readfile = WallpaperEngine::irrlicht::device->getFileSystem ()->createAndOpenFile ((*cur).c_str ());
+            irr::io::IReadFile* readfile = WallpaperEngine::Irrlicht::device->getFileSystem ()->createAndOpenFile ((*cur).c_str ());
             int filesize = readfile->getSize ();
             char* filebuffer = new char [filesize];
 
@@ -43,7 +43,7 @@ namespace WallpaperEngine
 
             if (music == nullptr)
             {
-                WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot load audio", Mix_GetError (), irr::ELL_ERROR);
+                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot load audio", Mix_GetError (), irr::ELL_ERROR);
             }
 
             this->m_bufferReader.push_back (sdlRwops);
@@ -58,7 +58,7 @@ namespace WallpaperEngine
         {
             if (Mix_PlayMusic ((*mixcur), -1) == -1)
             {
-                WallpaperEngine::irrlicht::device->getLogger ()->log ("Cannot play audio", Mix_GetError (), irr::ELL_ERROR);
+                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot play audio", Mix_GetError (), irr::ELL_ERROR);
             }
         }
     }

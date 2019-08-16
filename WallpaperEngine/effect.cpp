@@ -2,7 +2,7 @@
 
 #include "shaders/compiler.h"
 #include "effect.h"
-#include "irrlicht.h"
+#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 #include "WallpaperEngine/Core/Core.h"
 
 extern irr::f32 g_Time;
@@ -57,7 +57,7 @@ namespace WallpaperEngine
             }
         }
 
-        this->m_content = WallpaperEngine::fs::utils::loadFullFile (this->m_file);
+        this->m_content = WallpaperEngine::FileSystem::loadFullFile (this->m_file);
         this->m_json = json::parse (this->m_content);
 
         json::const_iterator passes = this->m_json.find ("passes");
@@ -76,7 +76,7 @@ namespace WallpaperEngine
                 continue;
 
             irr::io::path material = (*material_it).get <std::string> ().c_str ();
-            std::string content = WallpaperEngine::fs::utils::loadFullFile (material);
+            std::string content = WallpaperEngine::FileSystem::loadFullFile (material);
             json material_json = json::parse (content);
 
             json::const_iterator shader_passes = material_json.find ("passes");
@@ -97,7 +97,7 @@ namespace WallpaperEngine
             this->m_fragShader = new WallpaperEngine::shaders::compiler (fragpath, WallpaperEngine::shaders::compiler::Type::Type_Pixel, &this->m_combos, false);
             this->m_vertShader = new WallpaperEngine::shaders::compiler (vertpath, WallpaperEngine::shaders::compiler::Type::Type_Vertex, &this->m_combos, false);
 
-            this->m_materialType = WallpaperEngine::irrlicht::driver->getGPUProgrammingServices ()
+            this->m_materialType = WallpaperEngine::Irrlicht::driver->getGPUProgrammingServices ()
                 ->addHighLevelShaderMaterial (
                     this->m_vertShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
                     this->m_fragShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
@@ -336,7 +336,7 @@ namespace WallpaperEngine
             }
             else
             {
-                WallpaperEngine::irrlicht::device->getLogger ()->log ("Unknown type for combo value", name.c_str (), irr::ELL_ERROR);
+                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Unknown type for combo value", name.c_str (), irr::ELL_ERROR);
             }
         }
     }

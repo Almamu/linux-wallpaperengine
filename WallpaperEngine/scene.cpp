@@ -14,7 +14,7 @@ namespace WallpaperEngine
 
     scene::scene (irr::io::path& file)
     {
-        this->m_content = WallpaperEngine::fs::utils::loadFullFile (file);
+        this->m_content = WallpaperEngine::FileSystem::loadFullFile (file);
         this->m_json = json::parse (this->m_content);
 
         // check basic elements
