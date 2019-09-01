@@ -87,6 +87,19 @@ void print_help (const char* route)
         << "  --win <WindowID>\tX Window ID to attach to" << std::endl;
 }
 
+std::string stringPathFixes(const std::string& s){
+    std::string str(s);
+    if(str.empty())
+        return s;
+    if(str[0] == '\'' && str[str.size() - 1] == '\''){
+        str.erase(str.size() - 1, 1);
+        str.erase(0,1);
+    }
+    if(str[str.size() - 1] != '/')
+        str += '/';
+    return std::move(str);
+}
+
 int main (int argc, char* argv[])
 {
     int mode = 0;
@@ -162,6 +175,7 @@ int main (int argc, char* argv[])
 
         // pkg mode
         case 1:
+            path = stringPathFixes(path);
             wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
             scene_path = wallpaper_path + "scene.pkg";
@@ -171,6 +185,7 @@ int main (int argc, char* argv[])
 
         // folder mode
         case 2:
+            path = stringPathFixes(path);
             wallpaper_path = wp::irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
 
