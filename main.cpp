@@ -8,7 +8,7 @@
 #include <SDL_mixer.h>
 #include <SDL.h>
 
-#include "WallpaperEngine/shaders/compiler.h"
+#include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "WallpaperEngine/project.h"
 #include "WallpaperEngine/Irrlicht/Irrlicht.h"
 #include "WallpaperEngine/Irrlicht/CImageLoaderTEX.h"

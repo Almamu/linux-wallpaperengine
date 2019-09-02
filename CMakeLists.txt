@@ -20,8 +20,8 @@ include_directories(${X11_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR
 add_executable(
         wallengine
         main.cpp
-        WallpaperEngine/shaders/compiler.h
-        WallpaperEngine/shaders/compiler.cpp
+        WallpaperEngine/Render/Shaders/Compiler.h
+        WallpaperEngine/Render/Shaders/Compiler.cpp
         WallpaperEngine/project.cpp
         WallpaperEngine/project.h
         WallpaperEngine/scene.cpp

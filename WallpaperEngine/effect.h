@@ -6,7 +6,7 @@
 
 #include "texture.h"
 #include "object.h"
-#include "shaders/compiler.h"
+#include "WallpaperEngine/Render/Shaders/Compiler.h"
 
 namespace WallpaperEngine
 {
@@ -42,8 +42,8 @@ namespace WallpaperEngine
         void parseConstantValues (json data);
         void parseCombos (json data);
 
-        WallpaperEngine::shaders::compiler* m_fragShader;
-        WallpaperEngine::shaders::compiler* m_vertShader;
+        WallpaperEngine::Render::Shaders::Compiler* m_fragShader;
+        WallpaperEngine::Render::Shaders::Compiler* m_vertShader;
 
         std::map <std::string, ShaderParameter*> m_vertexVariables;
         std::map <std::string, ShaderParameter*> m_pixelVariables;

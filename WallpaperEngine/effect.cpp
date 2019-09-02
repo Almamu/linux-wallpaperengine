@@ -1,6 +1,6 @@
 #include <WallpaperEngine/FileSystem/utils.h>
 
-#include "shaders/compiler.h"
+#include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "effect.h"
 #include "WallpaperEngine/Irrlicht/Irrlicht.h"
 #include "WallpaperEngine/Core/Core.h"
@@ -94,8 +94,8 @@ namespace WallpaperEngine
             irr::io::path fragpath = shaderpath + ".frag";
             irr::io::path vertpath = shaderpath + ".vert";
 
-            this->m_fragShader = new WallpaperEngine::shaders::compiler (fragpath, WallpaperEngine::shaders::compiler::Type::Type_Pixel, &this->m_combos, false);
-            this->m_vertShader = new WallpaperEngine::shaders::compiler (vertpath, WallpaperEngine::shaders::compiler::Type::Type_Vertex, &this->m_combos, false);
+            this->m_fragShader = new WallpaperEngine::Render::Shaders::Compiler (fragpath, WallpaperEngine::Render::Shaders::Compiler::Type::Type_Pixel, &this->m_combos, false);
+            this->m_vertShader = new WallpaperEngine::Render::Shaders::Compiler (vertpath, WallpaperEngine::Render::Shaders::Compiler::Type::Type_Vertex, &this->m_combos, false);
 
             this->m_materialType = WallpaperEngine::Irrlicht::driver->getGPUProgrammingServices ()
                 ->addHighLevelShaderMaterial (
@@ -111,8 +111,8 @@ namespace WallpaperEngine
             this->parseConstantValues ((*constantvalues));
 
         // last step is creating the actual variables for the shaders
-        std::vector <shaders::compiler::ShaderParameter*>::const_iterator cur;
-        std::vector <shaders::compiler::ShaderParameter*>::const_iterator end;
+        std::vector <Render::Shaders::Compiler::ShaderParameter*>::const_iterator cur;
+        std::vector <Render::Shaders::Compiler::ShaderParameter*>::const_iterator end;
 
         cur = this->m_fragShader->getParameters ().begin ();
         end = this->m_fragShader->getParameters ().end ();
@@ -120,7 +120,7 @@ namespace WallpaperEngine
         // first do fragment shaders
         for (; cur != end; cur ++)
         {
-            WallpaperEngine::shaders::compiler::ShaderParameter* param = (*cur);
+            WallpaperEngine::Render::Shaders::Compiler::ShaderParameter* param = (*cur);
             ShaderParameter* parameter = new ShaderParameter;
             void* defaultValue = param->defaultValue;
 
@@ -203,7 +203,7 @@ namespace WallpaperEngine
         // second do vertex shaders
         for (;cur != end; cur ++)
         {
-            WallpaperEngine::shaders::compiler::ShaderParameter* param = (*cur);
+            WallpaperEngine::Render::Shaders::Compiler::ShaderParameter* param = (*cur);
 
             if (param == nullptr)
                 continue;
