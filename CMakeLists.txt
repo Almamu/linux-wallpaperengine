@@ -66,6 +66,11 @@ add_executable(
         WallpaperEngine/Core/CObject.cpp
         WallpaperEngine/Core/CObject.h
 
+        WallpaperEngine/Core/Projects/CProperty.h
+        WallpaperEngine/Core/Projects/CProperty.cpp
+        WallpaperEngine/Core/Projects/CPropertyColor.h
+        WallpaperEngine/Core/Projects/CPropertyColor.cpp
+
         WallpaperEngine/Core/Scenes/CCamera.cpp
         WallpaperEngine/Core/Scenes/CCamera.h
         WallpaperEngine/Core/Scenes/CProjection.cpp

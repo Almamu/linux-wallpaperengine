@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "CScene.h"
+#include "Projects/CProperty.h"
 
 namespace WallpaperEngine::Core
 {
@@ -20,9 +21,15 @@ namespace WallpaperEngine::Core
 
         std::string getTitle ();
         std::string getType ();
+        std::vector<Projects::CProperty*>* getProperties ();
+
     protected:
         CProject (std::string title, std::string type, CScene* scene);
+
+        void insertProperty (Projects::CProperty* property);
     private:
+        std::vector<Projects::CProperty*> m_properties;
+
         std::string m_title;
         std::string m_type;
         CScene* m_scene;
