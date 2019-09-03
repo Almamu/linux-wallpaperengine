@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
 
-#include <WallpaperEngine/FileSystem/utils.h>
+#include <WallpaperEngine/FileSystem/FileSystem.h>
 #include <WallpaperEngine/texture.h>
 
 namespace WallpaperEngine

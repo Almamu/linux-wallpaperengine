@@ -6,7 +6,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 
-#include <WallpaperEngine/FileSystem/utils.h>
+#include <WallpaperEngine/FileSystem/FileSystem.h>
 
 namespace WallpaperEngine::Render::Shaders
 {

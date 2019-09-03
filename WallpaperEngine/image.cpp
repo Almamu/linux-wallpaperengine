@@ -1,7 +1,7 @@
 #include <irrlicht/irrlicht.h>
 #include <fstream>
 
-#include <WallpaperEngine/FileSystem/utils.h>
+#include <WallpaperEngine/FileSystem/FileSystem.h>
 #include <WallpaperEngine/object3d.h>
 #include <WallpaperEngine/image.h>
 

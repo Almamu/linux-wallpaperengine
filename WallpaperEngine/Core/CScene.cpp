@@ -2,7 +2,7 @@
 #include "CProject.h"
 
 #include "Core.h"
-#include "../FileSystem/utils.h"
+#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
 

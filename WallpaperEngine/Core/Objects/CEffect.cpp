@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "../../FileSystem/utils.h"
+#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
 

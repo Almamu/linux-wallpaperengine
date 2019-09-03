@@ -3,7 +3,7 @@
 #include <fstream>
 #include <stdexcept>
 
-#include "WallpaperEngine/FileSystem/utils.h"
+#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 #include "project.h"
 #include "WallpaperEngine/Irrlicht/Irrlicht.h"
