@@ -15,103 +15,103 @@ find_package(SDL REQUIRED)
 find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} .)
+include_directories(${X11_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} src include)
 
 add_executable(
         wallengine
         main.cpp
-        WallpaperEngine/Render/Shaders/Compiler.h
-        WallpaperEngine/Render/Shaders/Compiler.cpp
-        WallpaperEngine/project.cpp
-        WallpaperEngine/project.h
-        WallpaperEngine/scene.cpp
-        WallpaperEngine/scene.h
-        WallpaperEngine/object.cpp
-        WallpaperEngine/object.h
-        WallpaperEngine/camera.cpp
-        WallpaperEngine/camera.h
-        WallpaperEngine/Core/Core.cpp
-        WallpaperEngine/Core/Core.h
-        WallpaperEngine/image.cpp
-        WallpaperEngine/image.h
-        WallpaperEngine/object3d.cpp
-        WallpaperEngine/object3d.h
-        WallpaperEngine/effect.cpp
-        WallpaperEngine/effect.h
-        WallpaperEngine/FileSystem/utils.cpp
-        WallpaperEngine/FileSystem/utils.h
-        WallpaperEngine/video/renderer.cpp
-        WallpaperEngine/video/renderer.h
-        WallpaperEngine/video/node.cpp
-        WallpaperEngine/video/node.h
-        WallpaperEngine/video/material.cpp
-        WallpaperEngine/video/material.h
-        WallpaperEngine/texture.cpp
-        WallpaperEngine/texture.h
-        WallpaperEngine/Irrlicht/CImageLoaderTEX.h
-        WallpaperEngine/Irrlicht/CImageLoaderTEX.cpp
-        WallpaperEngine/Irrlicht/CPkgReader.h
-        WallpaperEngine/Irrlicht/CPkgReader.cpp
-        WallpaperEngine/Irrlicht/CFileList.h
-        WallpaperEngine/Irrlicht/CFileList.cpp
-        WallpaperEngine/Irrlicht/Irrlicht.cpp
-        WallpaperEngine/Irrlicht/Irrlicht.h
-        WallpaperEngine/sound.cpp
-        WallpaperEngine/sound.h
+        src/WallpaperEngine/Render/Shaders/Compiler.h
+        src/WallpaperEngine/Render/Shaders/Compiler.cpp
+        src/WallpaperEngine/project.cpp
+        src/WallpaperEngine/project.h
+        src/WallpaperEngine/scene.cpp
+        src/WallpaperEngine/scene.h
+        src/WallpaperEngine/object.cpp
+        src/WallpaperEngine/object.h
+        src/WallpaperEngine/camera.cpp
+        src/WallpaperEngine/camera.h
+        src/WallpaperEngine/Core/Core.cpp
+        src/WallpaperEngine/Core/Core.h
+        src/WallpaperEngine/image.cpp
+        src/WallpaperEngine/image.h
+        src/WallpaperEngine/object3d.cpp
+        src/WallpaperEngine/object3d.h
+        src/WallpaperEngine/effect.cpp
+        src/WallpaperEngine/effect.h
+        src/WallpaperEngine/FileSystem/FileSystem.cpp
+        src/WallpaperEngine/FileSystem/FileSystem.h
+        src/WallpaperEngine/video/renderer.cpp
+        src/WallpaperEngine/video/renderer.h
+        src/WallpaperEngine/video/node.cpp
+        src/WallpaperEngine/video/node.h
+        src/WallpaperEngine/video/material.cpp
+        src/WallpaperEngine/video/material.h
+        src/WallpaperEngine/texture.cpp
+        src/WallpaperEngine/texture.h
+        src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h
+        src/WallpaperEngine/Irrlicht/CImageLoaderTEX.cpp
+        src/WallpaperEngine/Irrlicht/CPkgReader.h
+        src/WallpaperEngine/Irrlicht/CPkgReader.cpp
+        src/WallpaperEngine/Irrlicht/CFileList.h
+        src/WallpaperEngine/Irrlicht/CFileList.cpp
+        src/WallpaperEngine/Irrlicht/Irrlicht.cpp
+        src/WallpaperEngine/Irrlicht/Irrlicht.h
+        src/WallpaperEngine/sound.cpp
+        src/WallpaperEngine/sound.h
 
-        WallpaperEngine/Core/CProject.cpp
-        WallpaperEngine/Core/CProject.h
-        WallpaperEngine/Core/CScene.cpp
-        WallpaperEngine/Core/CScene.h
-        WallpaperEngine/Core/CObject.cpp
-        WallpaperEngine/Core/CObject.h
+        src/WallpaperEngine/Core/CProject.cpp
+        src/WallpaperEngine/Core/CProject.h
+        src/WallpaperEngine/Core/CScene.cpp
+        src/WallpaperEngine/Core/CScene.h
+        src/WallpaperEngine/Core/CObject.cpp
+        src/WallpaperEngine/Core/CObject.h
 
-        WallpaperEngine/Core/Projects/CProperty.h
-        WallpaperEngine/Core/Projects/CProperty.cpp
-        WallpaperEngine/Core/Projects/CPropertyColor.h
-        WallpaperEngine/Core/Projects/CPropertyColor.cpp
+        src/WallpaperEngine/Core/Projects/CProperty.h
+        src/WallpaperEngine/Core/Projects/CProperty.cpp
+        src/WallpaperEngine/Core/Projects/CPropertyColor.h
+        src/WallpaperEngine/Core/Projects/CPropertyColor.cpp
 
-        WallpaperEngine/Core/Scenes/CCamera.cpp
-        WallpaperEngine/Core/Scenes/CCamera.h
-        WallpaperEngine/Core/Scenes/CProjection.cpp
-        WallpaperEngine/Core/Scenes/CProjection.h
+        src/WallpaperEngine/Core/Scenes/CCamera.cpp
+        src/WallpaperEngine/Core/Scenes/CCamera.h
+        src/WallpaperEngine/Core/Scenes/CProjection.cpp
+        src/WallpaperEngine/Core/Scenes/CProjection.h
 
-        WallpaperEngine/Core/Objects/CImage.cpp
-        WallpaperEngine/Core/Objects/CImage.h
-        WallpaperEngine/Core/Objects/CSound.cpp
-        WallpaperEngine/Core/Objects/CSound.h
-        WallpaperEngine/Core/Objects/CEffect.cpp
-        WallpaperEngine/Core/Objects/CEffect.h
-        WallpaperEngine/Core/Objects/Particles/CParticle.cpp
-        WallpaperEngine/Core/Objects/Particles/CParticle.h
+        src/WallpaperEngine/Core/Objects/CImage.cpp
+        src/WallpaperEngine/Core/Objects/CImage.h
+        src/WallpaperEngine/Core/Objects/CSound.cpp
+        src/WallpaperEngine/Core/Objects/CSound.h
+        src/WallpaperEngine/Core/Objects/CEffect.cpp
+        src/WallpaperEngine/Core/Objects/CEffect.h
+        src/WallpaperEngine/Core/Objects/Particles/CParticle.cpp
+        src/WallpaperEngine/Core/Objects/Particles/CParticle.h
 
-        WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
-        WallpaperEngine/Core/Objects/Particles/CControlPoint.h
-        WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
-        WallpaperEngine/Core/Objects/Particles/CEmitter.h
-        WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
-        WallpaperEngine/Core/Objects/Particles/CInitializer.h
+        src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
+        src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
+        src/WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
+        src/WallpaperEngine/Core/Objects/Particles/CEmitter.h
+        src/WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
+        src/WallpaperEngine/Core/Objects/Particles/CInitializer.h
 
-        WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
-        WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
-        WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
 
-        WallpaperEngine/Core/Objects/Images/CMaterial.cpp
-        WallpaperEngine/Core/Objects/Images/CMaterial.h
+        src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
+        src/WallpaperEngine/Core/Objects/Images/CMaterial.h
 
-        WallpaperEngine/Core/Objects/Images/Materials/CPassess.cpp
-        WallpaperEngine/Core/Objects/Images/Materials/CPassess.h
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.cpp
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.h
 )
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})
