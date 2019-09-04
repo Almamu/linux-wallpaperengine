@@ -8,6 +8,10 @@
 #include <SDL_mixer.h>
 #include <SDL.h>
 
+// support for randr extended screens
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "WallpaperEngine/project.h"
 #include "WallpaperEngine/Irrlicht/Irrlicht.h"
@@ -15,10 +19,73 @@
 
 #include "WallpaperEngine/Core/CProject.h"
 
-int WinID = 0;
+bool IsRootWindow = false;
+std::vector<std::string> Screens;
+std::vector<irr::core::rect<irr::s32>> Viewports;
+
 irr::SIrrlichtCreationParameters _irr_params;
 
 irr::f32 g_Time = 0;
+
+void initialize_viewports ()
+{
+    if (IsRootWindow == false || Screens.size () == 0)
+        return;
+
+    Display* display = XOpenDisplay (NULL);
+    int xrandr_result, xrandr_error;
+
+    if (!XRRQueryExtension (display, &xrandr_result, &xrandr_error))
+    {
+        std::cerr << "XRandr is not present, cannot detect specified screens, running in window mode" << std::endl;
+        return;
+    }
+
+    XRRScreenResources* screenResources = XRRGetScreenResources (display, DefaultRootWindow (display));
+
+    // there are some situations where xrandr returns null (like screen not using the extension)
+    if (screenResources == nullptr)
+        return;
+
+    for (int i = 0; i < screenResources->noutput; i ++)
+    {
+        XRROutputInfo* info = XRRGetOutputInfo (display, screenResources, screenResources->outputs [i]);
+
+        // there are some situations where xrandr returns null (like screen not using the extension)
+        if (info == nullptr)
+            continue;
+
+        std::vector<std::string>::iterator cur = Screens.begin ();
+        std::vector<std::string>::iterator end = Screens.end ();
+
+        for (; cur != end; cur ++)
+        {
+            if (info->connection == RR_Connected && strcmp (info->name, (*cur).c_str ()) == 0)
+            {
+                XRRCrtcInfo* crtc = XRRGetCrtcInfo (display, screenResources, info->crtc);
+
+                std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
+
+                irr::core::rect<irr::s32> viewport;
+
+                viewport.UpperLeftCorner.X = crtc->x;
+                viewport.UpperLeftCorner.Y = crtc->y;
+                viewport.LowerRightCorner.X = crtc->x + crtc->width;
+                viewport.LowerRightCorner.Y = crtc->y + crtc->height;
+
+                Viewports.push_back (viewport);
+
+                XRRFreeCrtcInfo (crtc);
+            }
+        }
+
+        XRRFreeOutputInfo (info);
+    }
+
+    XRRFreeScreenResources (screenResources);
+
+    _irr_params.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
+}
 
 int init_irrlicht()
 {
@@ -27,7 +94,7 @@ int init_irrlicht()
     _irr_params.Bits = 16;
     // _irr_params.DeviceType = Irrlicht::EIDT_X11;
     _irr_params.DriverType = irr::video::EDT_OPENGL;
-    _irr_params.Doublebuffer = true;
+    _irr_params.Doublebuffer = false;
     _irr_params.EventReceiver = nullptr;
     _irr_params.Fullscreen = false;
     _irr_params.HandleSRGB = false;
@@ -38,7 +105,8 @@ int init_irrlicht()
     _irr_params.WithAlphaChannel = false;
     _irr_params.ZBufferBits = 24;
     _irr_params.LoggingLevel = irr::ELL_DEBUG;
-    _irr_params.WindowId = reinterpret_cast<void*> (WinID);
+
+    initialize_viewports ();
 
     WallpaperEngine::Irrlicht::device = irr::createDeviceEx (_irr_params);
 
@@ -86,7 +154,7 @@ void print_help (const char* route)
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
         << "  --dir <folder>\tLoads an uncompressed background from the given <folder>" << std::endl
         << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder>" << std::endl
-        << "  --win <WindowID>\tX Window ID to attach to" << std::endl;
+        << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s){
@@ -111,26 +179,26 @@ int main (int argc, char* argv[])
     int option_index = 0;
 
     static struct option long_options [] = {
-            {"win",     required_argument, 0, 'w'},
-            {"pkg",     required_argument, 0, 'p'},
-            {"dir",     required_argument, 0, 'd'},
-            {"silent",  optional_argument, 0, 's'},
-            {"help",    optional_argument, 0, 'h'},
+            {"screen-root", required_argument, 0, 'r'},
+            {"pkg",         required_argument, 0, 'p'},
+            {"dir",         required_argument, 0, 'd'},
+            {"silent",      optional_argument, 0, 's'},
+            {"help",        optional_argument, 0, 'h'},
             {nullptr,                   0, 0,   0}
     };
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "w:p:d:sh", long_options, &option_index);
+        int c = getopt_long (argc, argv, "r:p:d:sh", long_options, &option_index);
 
         if (c == -1)
             break;
 
         switch (c)
         {
-            case 'w':
-                if (optarg)
-                    WinID = atoi (optarg);
+            case 'r':
+                IsRootWindow = true;
+                Screens.push_back (optarg);
                 break;
 
             case 'p':
@@ -155,8 +223,6 @@ int main (int argc, char* argv[])
                 break;
         }
     }
-
-    std::cout << "Initializing irrlicht to WindowID " << WinID << std::endl;
 
     if (init_irrlicht())
     {
@@ -241,7 +307,16 @@ int main (int argc, char* argv[])
 
             if (currentTime - lastTime > minimumTime)
             {
-                WallpaperEngine::video::renderer::render ();
+                std::vector<irr::core::rect<irr::s32>>::iterator cur = Viewports.begin ();
+                std::vector<irr::core::rect<irr::s32>>::iterator end = Viewports.end ();
+
+                for (; cur != end; cur ++)
+                {
+                    // change viewport to render to the correct portion of the display
+                    WallpaperEngine::Irrlicht::driver->setViewPort (*cur);
+                    WallpaperEngine::video::renderer::render ();
+                }
+
                 lastTime = currentTime;
             }
             else

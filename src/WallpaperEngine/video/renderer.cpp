@@ -43,7 +43,7 @@ namespace WallpaperEngine
         {
             if (WallpaperEngine::Irrlicht::driver == nullptr) return;
 
-            WallpaperEngine::Irrlicht::driver->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
+            WallpaperEngine::Irrlicht::driver->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
 
             std::vector<node*>::const_iterator cur = s_nodes.begin ();
             std::vector<node*>::const_iterator end = s_nodes.end ();

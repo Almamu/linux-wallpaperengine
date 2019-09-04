@@ -15,6 +15,8 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - ZLIB
 - SDL
 - SDL_mixer
+- X11
+- Xrandr
 
 # 5. How to use
 ## 5.1. Pre-requirements
@@ -67,6 +69,14 @@ Uncompressed backgrounds are just plain folders including all the resources and 
 ```
 ./wallengine --dir folder
 ```
+
+#### 5.4.3. Running as a screen's background
+Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
+```
+./wallengine --screen-root HDMI-1 --screen-root DVI-D-1
+```
+
+**IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
 
 ###### Example background
 This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
