@@ -43,7 +43,7 @@ namespace wp
         {
             if (wp::irrlicht::driver == nullptr) return;
 
-            wp::irrlicht::driver->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
+            wp::irrlicht::driver->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
 
             std::vector<node*>::const_iterator cur = s_nodes.begin ();
             std::vector<node*>::const_iterator end = s_nodes.end ();
