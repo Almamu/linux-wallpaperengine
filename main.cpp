@@ -25,6 +25,66 @@ irr::SIrrlichtCreationParameters _irr_params;
 
 irr::f32 g_Time = 0;
 
+void initialize_viewports ()
+{
+    if (IsRootWindow == false || Screens.size () == 0)
+        return;
+
+    Display* display = XOpenDisplay (NULL);
+    int xrandr_result, xrandr_error;
+
+    if (!XRRQueryExtension (display, &xrandr_result, &xrandr_error))
+    {
+        std::cerr << "XRandr is not present, cannot detect specified screens, running in window mode" << std::endl;
+        return;
+    }
+
+    XRRScreenResources* screenResources = XRRGetScreenResources (display, DefaultRootWindow (display));
+
+    // there are some situations where xrandr returns null (like screen not using the extension)
+    if (screenResources == nullptr)
+        return;
+
+    for (int i = 0; i < screenResources->noutput; i ++)
+    {
+        XRROutputInfo* info = XRRGetOutputInfo (display, screenResources, screenResources->outputs [i]);
+
+        // there are some situations where xrandr returns null (like screen not using the extension)
+        if (info == nullptr)
+            continue;
+
+        std::vector<std::string>::iterator cur = Screens.begin ();
+        std::vector<std::string>::iterator end = Screens.end ();
+
+        for (; cur != end; cur ++)
+        {
+            if (info->connection == RR_Connected && strcmp (info->name, (*cur).c_str ()) == 0)
+            {
+                XRRCrtcInfo* crtc = XRRGetCrtcInfo (display, screenResources, info->crtc);
+
+                std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
+
+                irr::core::rect<irr::s32> viewport;
+
+                viewport.UpperLeftCorner.X = crtc->x;
+                viewport.UpperLeftCorner.Y = crtc->y;
+                viewport.LowerRightCorner.X = crtc->x + crtc->width;
+                viewport.LowerRightCorner.Y = crtc->y + crtc->height;
+
+                Viewports.push_back (viewport);
+
+                XRRFreeCrtcInfo (crtc);
+            }
+        }
+
+        XRRFreeOutputInfo (info);
+    }
+
+    XRRFreeScreenResources (screenResources);
+
+    _irr_params.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
+}
+
 int init_irrlicht()
 {
     // prepare basic configuration for irrlicht
@@ -44,54 +104,7 @@ int init_irrlicht()
     _irr_params.ZBufferBits = 24;
     _irr_params.LoggingLevel = irr::ELL_DEBUG;
 
-    if (IsRootWindow == true)
-    {
-        Display* display = XOpenDisplay (NULL);
-        XRRScreenResources* screenResources = XRRGetScreenResources (display, DefaultRootWindow (display));
-
-        // there are some situations where xrandr returns null (like screen not using the extension)
-        if (screenResources != nullptr)
-        {
-            for (int i = 0; i < screenResources->noutput; i ++)
-            {
-                XRROutputInfo* info = XRRGetOutputInfo (display, screenResources, screenResources->outputs [i]);
-
-                // there are some situations where xrandr returns null (like screen not using the extension)
-                if (info == nullptr)
-                    continue;
-
-                std::vector<std::string>::iterator cur = Screens.begin ();
-                std::vector<std::string>::iterator end = Screens.end ();
-
-                for (; cur != end; cur ++)
-                {
-                    if (info->connection == RR_Connected && strcmp (info->name, (*cur).c_str ()) == 0)
-                    {
-                        XRRCrtcInfo* crtc = XRRGetCrtcInfo (display, screenResources, info->crtc);
-
-                        std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
-
-                        irr::core::rect<irr::s32> viewport;
-
-                        viewport.UpperLeftCorner.X = crtc->x;
-                        viewport.UpperLeftCorner.Y = crtc->y;
-                        viewport.LowerRightCorner.X = crtc->x + crtc->width;
-                        viewport.LowerRightCorner.Y = crtc->y + crtc->height;
-
-                        Viewports.push_back (viewport);
-
-                        XRRFreeCrtcInfo (crtc);
-                    }
-                }
-
-                XRRFreeOutputInfo (info);
-            }
-
-            XRRFreeScreenResources (screenResources);
-        }
-
-        _irr_params.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
-    }
+    initialize_viewports ();
 
     wp::irrlicht::device = irr::createDeviceEx (_irr_params);
 
