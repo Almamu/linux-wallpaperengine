@@ -6,9 +6,6 @@
 // filesystem
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
-// video engine
-#include <WallpaperEngine/Irrlicht/Irrlicht.h>
-
 // shader compiler
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
 #include <WallpaperEngine/Core/Core.h>
@@ -242,7 +239,7 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::precompile()
     {
-    #define BREAK_IF_ERROR if (this->m_error == true) { WallpaperEngine::Irrlicht::device->getLogger ()->log ("ERROR PRE-COMPILING SHADER", irr::ELL_ERROR); WallpaperEngine::Irrlicht::device->getLogger ()->log (this->m_errorInfo.c_str (), irr::ELL_ERROR); return ""; }
+    #define BREAK_IF_ERROR if (this->m_error == true) { throw std::runtime_error ("ERROR PRE-COMPILING SHADER" + this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
         // also remove any #version definition to prevent errors
         std::string::const_iterator it = this->m_content.begin ();
@@ -441,12 +438,6 @@ namespace WallpaperEngine::Render::Shaders
             }
         }
 
-        if (this->m_recursive == false)
-        {
-            WallpaperEngine::Irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
-            WallpaperEngine::Irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
-        }
-
         return this->m_compiledContent;
     #undef BREAK_IF_ERROR
     }
@@ -462,8 +453,7 @@ namespace WallpaperEngine::Render::Shaders
 
         if (combo == data.end () || defvalue == data.end ())
         {
-            WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse combo information", irr::ELL_ERROR);
-            return;
+            throw std::runtime_error ("cannot parse combo information");
         }
 
         // check the combos
@@ -488,7 +478,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else
             {
-                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse combo information, unknown type", irr::ELL_ERROR);
+                throw std::runtime_error ("cannot parse combo information, unknown type");
             }
         }
     }
@@ -504,7 +494,7 @@ namespace WallpaperEngine::Render::Shaders
         if (material == data.end () || defvalue == data.end ())
         {
             if (type != "sampler2D")
-                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot parse parameter info for ", name.c_str (), irr::ELL_ERROR);
+                throw std::runtime_error ("cannot parse parameter info for " + name);
 
             return;
         }

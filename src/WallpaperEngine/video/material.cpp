@@ -1,5 +1,7 @@
-#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 #include <WallpaperEngine/video/material.h>
+#include <WallpaperEngine/Irrlicht/CContext.h>
+
+extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine
 {
@@ -56,8 +58,10 @@ namespace WallpaperEngine
                     0, 1, 2, 3
             };
 
-            WallpaperEngine::Irrlicht::driver->setMaterial (m_material);
-            WallpaperEngine::Irrlicht::driver->drawVertexPrimitiveList (m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
+            IrrlichtContext->getDevice ()->getVideoDriver ()->setMaterial (m_material);
+            IrrlichtContext->getDevice ()->getVideoDriver ()->drawVertexPrimitiveList (
+                m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
+            );
         }
     }
 }

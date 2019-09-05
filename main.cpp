@@ -8,20 +8,26 @@
 #include <SDL_mixer.h>
 #include <SDL.h>
 
+#include <X11/Xlib.h>
+
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "WallpaperEngine/project.h"
-#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 #include "WallpaperEngine/Irrlicht/CImageLoaderTEX.h"
 
 #include "WallpaperEngine/Core/CProject.h"
+#include "WallpaperEngine/Irrlicht/CContext.h"
 
 int WinID = 0;
 irr::SIrrlichtCreationParameters _irr_params;
 
 irr::f32 g_Time = 0;
 
+WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
+
 int init_irrlicht()
 {
+    IrrlichtContext = new WallpaperEngine::Irrlicht::CContext ();
+
     // prepare basic configuration for irrlicht
     _irr_params.AntiAlias = 8;
     _irr_params.Bits = 16;
@@ -38,31 +44,34 @@ int init_irrlicht()
     _irr_params.WithAlphaChannel = false;
     _irr_params.ZBufferBits = 24;
     _irr_params.LoggingLevel = irr::ELL_DEBUG;
-    _irr_params.WindowId = reinterpret_cast<void*> (WinID);
 
-    WallpaperEngine::Irrlicht::device = irr::createDeviceEx (_irr_params);
+    Display* display = XOpenDisplay (NULL);
+    int screen = XDefaultScreen (display);
 
-    if (WallpaperEngine::Irrlicht::device == nullptr)
+    _irr_params.WindowId = reinterpret_cast<void*> (XRootWindow (display, screen));
+
+    IrrlichtContext->setDevice (irr::createDeviceEx (_irr_params));
+
+    if (IrrlichtContext->getDevice () == nullptr)
     {
         return 1;
     }
 
-    WallpaperEngine::Irrlicht::device->setWindowCaption (L"Test game");
-    WallpaperEngine::Irrlicht::driver = WallpaperEngine::Irrlicht::device->getVideoDriver();
+    IrrlichtContext->getDevice ()->setWindowCaption (L"Test game");
 
     // check for ps and vs support
     if (
-            WallpaperEngine::Irrlicht::driver->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false &&
-            WallpaperEngine::Irrlicht::driver->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
+            IrrlichtContext->getDevice ()->getVideoDriver()->queryFeature (irr::video::EVDF_PIXEL_SHADER_1_1) == false &&
+            IrrlichtContext->getDevice ()->getVideoDriver()->queryFeature (irr::video::EVDF_ARB_FRAGMENT_PROGRAM_1) == false)
     {
-        WallpaperEngine::Irrlicht::device->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
+        IrrlichtContext->getDevice ()->getLogger ()->log ("WARNING: Pixel shaders disabled because of missing driver/hardware support");
     }
 
     if (
-            WallpaperEngine::Irrlicht::driver->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false &&
-            WallpaperEngine::Irrlicht::driver->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
+            IrrlichtContext->getDevice ()->getVideoDriver()->queryFeature (irr::video::EVDF_VERTEX_SHADER_1_1) == false &&
+            IrrlichtContext->getDevice ()->getVideoDriver()->queryFeature (irr::video::EVDF_ARB_VERTEX_PROGRAM_1) == false)
     {
-        WallpaperEngine::Irrlicht::device->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
+        IrrlichtContext->getDevice ()->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
     }
 
     return 0;
@@ -71,11 +80,15 @@ int init_irrlicht()
 void preconfigure_wallpaper_engine ()
 {
     // load the assets from wallpaper engine
-    WallpaperEngine::Irrlicht::device->getFileSystem ()->addFileArchive ("assets.zip", true, false);
+    IrrlichtContext->getDevice ()->getFileSystem ()->addFileArchive ("assets.zip", true, false);
 
     // register custom loaders
-    WallpaperEngine::Irrlicht::driver->addExternalImageLoader (new WallpaperEngine::Irrlicht::CImageLoaderTex ());
-    WallpaperEngine::Irrlicht::device->getFileSystem ()->addArchiveLoader (new WallpaperEngine::Irrlicht::CArchiveLoaderPkg (WallpaperEngine::Irrlicht::device->getFileSystem ()));
+    IrrlichtContext->getDevice ()->getVideoDriver()->addExternalImageLoader (
+        new WallpaperEngine::Irrlicht::CImageLoaderTex (IrrlichtContext)
+    );
+    IrrlichtContext->getDevice ()->getFileSystem ()->addArchiveLoader (
+        new WallpaperEngine::Irrlicht::CArchiveLoaderPkg (IrrlichtContext)
+    );
 }
 
 void print_help (const char* route)
@@ -158,7 +171,7 @@ int main (int argc, char* argv[])
 
     std::cout << "Initializing irrlicht to WindowID " << WinID << std::endl;
 
-    if (init_irrlicht())
+    if (init_irrlicht ())
     {
         return 1;
     }
@@ -178,21 +191,21 @@ int main (int argc, char* argv[])
         // pkg mode
         case 1:
             path = stringPathFixes(path);
-            wallpaper_path = WallpaperEngine::Irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            wallpaper_path = IrrlichtContext->getDevice ()->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
             scene_path = wallpaper_path + "scene.pkg";
 
-            WallpaperEngine::Irrlicht::device->getFileSystem ()->addFileArchive (scene_path, true, false); // add the pkg file to the lookup list
+            IrrlichtContext->getDevice ()->getFileSystem ()->addFileArchive (scene_path, true, false); // add the pkg file to the lookup list
             break;
 
         // folder mode
         case 2:
             path = stringPathFixes(path);
-            wallpaper_path = WallpaperEngine::Irrlicht::device->getFileSystem ()->getAbsolutePath (path.c_str ());
+            wallpaper_path = IrrlichtContext->getDevice ()->getFileSystem ()->getAbsolutePath (path.c_str ());
             project_path = wallpaper_path + "project.json";
 
             // set our working directory
-            WallpaperEngine::Irrlicht::device->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
+            IrrlichtContext->getDevice ()->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
             break;
 
         default:
@@ -205,7 +218,7 @@ int main (int argc, char* argv[])
 
         if (SDL_Init (SDL_INIT_AUDIO) < 0 || mixer_flags != Mix_Init (mixer_flags))
         {
-            WallpaperEngine::Irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
+            IrrlichtContext->getDevice ()->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
             return -1;
         }
 
@@ -221,7 +234,10 @@ int main (int argc, char* argv[])
     }
     else
     {
-        WallpaperEngine::Irrlicht::device->getLogger ()->log ("Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR);
+        IrrlichtContext->getDevice ()->getLogger ()->log (
+            "Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR
+        );
+
         return -2;
     }
 
@@ -232,11 +248,11 @@ int main (int argc, char* argv[])
     int32_t minimumTime = 1000 / 90;
     int32_t currentTime = 0;
 
-    while (WallpaperEngine::Irrlicht::device->run () && WallpaperEngine::Irrlicht::driver)
+    while (IrrlichtContext->getDevice ()->run () && IrrlichtContext && IrrlichtContext->getDevice ())
     {
         // if (device->isWindowActive ())
         {
-            currentTime = WallpaperEngine::Irrlicht::device->getTimer ()->getTime ();
+            currentTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
             g_Time = currentTime / 1000.0f;
 
             if (currentTime - lastTime > minimumTime)
@@ -246,7 +262,7 @@ int main (int argc, char* argv[])
             }
             else
             {
-                WallpaperEngine::Irrlicht::device->sleep (1, false);
+                IrrlichtContext->getDevice ()->sleep (1, false);
             }
         }
     }

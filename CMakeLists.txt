@@ -48,14 +48,14 @@ add_executable(
         src/WallpaperEngine/video/material.h
         src/WallpaperEngine/texture.cpp
         src/WallpaperEngine/texture.h
+        src/WallpaperEngine/Irrlicht/CContext.h
+        src/WallpaperEngine/Irrlicht/CContext.cpp
         src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h
         src/WallpaperEngine/Irrlicht/CImageLoaderTEX.cpp
         src/WallpaperEngine/Irrlicht/CPkgReader.h
         src/WallpaperEngine/Irrlicht/CPkgReader.cpp
         src/WallpaperEngine/Irrlicht/CFileList.h
         src/WallpaperEngine/Irrlicht/CFileList.cpp
-        src/WallpaperEngine/Irrlicht/Irrlicht.cpp
-        src/WallpaperEngine/Irrlicht/Irrlicht.h
         src/WallpaperEngine/sound.cpp
         src/WallpaperEngine/sound.h
 

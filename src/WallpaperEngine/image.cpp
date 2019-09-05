@@ -5,8 +5,10 @@
 #include <WallpaperEngine/object3d.h>
 #include <WallpaperEngine/image.h>
 
-#include <WallpaperEngine/Irrlicht/Irrlicht.h>
+#include <WallpaperEngine/Irrlicht/CContext.h>
 #include <WallpaperEngine/Core/Core.h>
+
+extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine
 {
@@ -153,8 +155,8 @@ namespace WallpaperEngine
                 0, 1, 2, 3
         };
 
-        WallpaperEngine::Irrlicht::driver->setMaterial (this->getMaterial ());
-        WallpaperEngine::Irrlicht::driver->drawVertexPrimitiveList (this->m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
+        IrrlichtContext->getDevice ()->getVideoDriver ()->setMaterial (this->getMaterial ());
+        IrrlichtContext->getDevice ()->getVideoDriver ()->drawVertexPrimitiveList (this->m_vertices, 4, indices, 1, irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT);
     }
 
 }

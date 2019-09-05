@@ -1,33 +1,123 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
+#include <vector>
 
-using namespace irr;
-using namespace irr::video;
+#include <irrlicht/irrlicht.h>
+#include "CContext.h"
 
 namespace WallpaperEngine::Irrlicht
 {
     //!  Surface Loader for PNG files
-    class CImageLoaderTex : public IImageLoader
+    class CImageLoaderTex : public irr::video::IImageLoader
     {
     public:
+        CImageLoaderTex (CContext* context);
 
         //! returns true if the file maybe is able to be loaded by this class
         //! based on the file extension (e.g. ".png")
-        virtual bool isALoadableFileExtension(const io::path& filename) const;
+        virtual bool isALoadableFileExtension(const irr::io::path& filename) const;
 
         //! returns true if the file maybe is able to be loaded by this class
-        virtual bool isALoadableFileFormat(io::IReadFile* file) const;
+        virtual bool isALoadableFileFormat(irr::io::IReadFile* file) const;
 
         //! creates a surface from the file
-        virtual IImage* loadImage(io::IReadFile* input) const;
+        virtual irr::video::IImage* loadImage(irr::io::IReadFile* input) const;
 
-        virtual void loadImageFromARGB8Data (IImage* output, const char* input, u32 width, u32 height, u32 mipmap_width) const;
+        virtual void loadImageFromARGB8Data (irr::video::IImage* output, const char* input, irr::u32 width, irr::u32 height, irr::u32 mipmap_width) const;
 
-        virtual void loadImageFromDXT1 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
-        virtual void loadImageFromDXT5 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
+        virtual void loadImageFromDXT1 (irr::video::IImage* output, const char* input, irr::u32 destination_width, irr::u32 destination_height, irr::u32 origin_width, irr::u32 origin_height) const;
+        virtual void loadImageFromDXT5 (irr::video::IImage* output, const char* input, irr::u32 destination_width, irr::u32 destination_height, irr::u32 origin_width, irr::u32 origin_height) const;
 
     private:
+        enum ContainerVersion
+        {
+            UNKNOWN = -1,
+            TEXB0003 = 3,
+            TEXB0002 = 2,
+            TEXB0001 = 1
+        };
+
+        class TextureMipmap
+        {
+        public:
+            TextureMipmap ();
+            ~TextureMipmap ();
+
+            /** Width of the mipmap */
+            irr::u32 width;
+            /** Height of the mipmap */
+            irr::u32 height;
+            /** If the mipmap data is compressed */
+            irr::u32 compression;
+            /** Uncompressed size of the mipmap */
+            irr::u32 uncompressedSize;
+            /** Compress size of the mipmap */
+            irr::u32 compressedSize;
+            /** Pointer to the compressed data */
+            char* compressedData = nullptr;
+            /** Pointer to the uncompressed data */
+            char* uncompressedData = nullptr;
+            /**
+             * Performs actual decompression of the compressed data
+             */
+            void decompressData ();
+        };
+
+        class TextureContainer
+        {
+        public:
+            TextureContainer ();
+            ~TextureContainer ();
+
+            /** The version of the texture container */
+            ContainerVersion containerVersion = ContainerVersion::UNKNOWN;
+            /** Real width of the texture */
+            irr::u32 width;
+            /** Real height of the texture */
+            irr::u32 height;
+            /** Texture width in memory (power of 2) */
+            irr::u32 textureWidth;
+            /** Texture height in memory (power of 2) */
+            irr::u32 textureHeight;
+            /** Texture data format */
+            irr::u32 format;
+            /** Free Image format */
+            irr::u32 freeimageFormat;
+            /** Number of mipmap levels for the texture */
+            irr::u32 mipmapCount;
+            /** List of mipmaps */
+            std::vector <TextureMipmap*> mipmaps;
+        };
+
+        /** Irrlicht context */
+        CContext* m_context;
+
+        /**
+         * Parses the container file and returns a texture ready to be used
+         *
+         * @param input The file to parse the data from
+         *
+         * @return The texture ready to be used
+         */
+        irr::video::IImage* parseFile (irr::io::IReadFile* input) const;
+        /**
+         * Parses the container header and returns it's information
+         *
+         * @param input The file to parse the data from
+         *
+         * @return The container header data
+         */
+        TextureContainer* parseHeader (irr::io::IReadFile* input) const;
+        /**
+         * Parses a mipmap level and returns it's information
+         *
+         * @param header The container header where this mipmap is contained
+         * @param input The file to parse the data from
+         *
+         * @return The mipmap info ready
+         */
+        TextureMipmap* parseMipmap (TextureContainer* header, irr::io::IReadFile* input) const;
+
         void BlockDecompressImageDXT1(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
         void DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
         unsigned long PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) const;

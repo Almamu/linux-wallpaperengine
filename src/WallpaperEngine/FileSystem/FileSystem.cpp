@@ -2,13 +2,15 @@
 #include "FileSystem.h"
 
 // engine includes
-#include "WallpaperEngine/Irrlicht/Irrlicht.h"
+#include "WallpaperEngine/Irrlicht/CContext.h"
+
+extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine::FileSystem
 {
     std::string loadFullFile (irr::io::path file)
     {
-        irr::io::IReadFile* reader = WallpaperEngine::Irrlicht::device->getFileSystem ()->createAndOpenFile (file);
+        irr::io::IReadFile* reader = IrrlichtContext->getDevice ()->getFileSystem ()->createAndOpenFile (file);
 
         if (reader == NULL)
             throw std::runtime_error ("Cannot open file " + std::string (file.c_str ()) + " for reading");

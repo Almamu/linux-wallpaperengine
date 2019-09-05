@@ -2,145 +2,135 @@
 
 #include "CFileList.h"
 
-using namespace WallpaperEngine::Irrlicht;
-using namespace irr;
-
-static const io::path emptyFileListEntry;
-
-CFileList::CFileList(const io::path& path, bool ignoreCase, bool ignorePaths)
-        : IgnorePaths(ignorePaths), IgnoreCase(ignoreCase), Path(path)
+namespace WallpaperEngine::Irrlicht
 {
-    Path.replace('\\', '/');
-}
+    static const irr::io::path emptyFileListEntry;
 
-CFileList::~CFileList()
-{
-    Files.clear();
-}
+    CFileList::CFileList (const irr::io::path& path, bool ignoreCase, bool ignorePaths) :
+            m_ignorePaths (ignorePaths),
+            m_ignoreCase (ignoreCase),
+            m_path(path)
+    {
+        this->m_path.replace ('\\', '/');
+    }
 
-u32 CFileList::getFileCount() const
-{
-    return Files.size();
-}
+    CFileList::~CFileList ()
+    {
+        this->m_files.clear ();
+    }
 
-void CFileList::sort()
-{
-    Files.sort();
-}
+    irr::u32 CFileList::getFileCount () const
+    {
+        return this->m_files.size ();
+    }
 
-const io::path& CFileList::getFileName(u32 index) const
-{
-    if (index >= Files.size())
-        return emptyFileListEntry;
+    void CFileList::sort ()
+    {
+        this->m_files.sort ();
+    }
 
-    return Files[index].Name;
-}
+    const irr::io::path& CFileList::getFileName (irr::u32 index) const
+    {
+        return (index < this->m_files.size ()) ? this->m_files [index].Name : emptyFileListEntry;
+    }
 
 
 //! Gets the full name of a file in the list, path included, based on an index.
-const io::path& CFileList::getFullFileName(u32 index) const
-{
-    if (index >= Files.size())
-        return emptyFileListEntry;
-
-    return Files[index].FullName;
-}
-
-//! adds a file or folder
-u32 CFileList::addItem(const io::path& fullPath, u32 offset, u32 size, bool isDirectory, u32 id)
-{
-    SFileListEntry entry;
-    entry.ID   = id ? id : Files.size();
-    entry.Offset = offset;
-    entry.Size = size;
-    entry.Name = fullPath;
-    entry.Name.replace('\\', '/');
-    entry.IsDirectory = isDirectory;
-
-    // remove trailing slash
-    if (entry.Name.lastChar() == '/')
+    const irr::io::path& CFileList::getFullFileName (irr::u32 index) const
     {
-        entry.IsDirectory = true;
-        entry.Name[entry.Name.size()-1] = 0;
-        entry.Name.validate();
+        return (index < this->m_files.size ()) ? this->m_files [index].FullName : emptyFileListEntry;
     }
 
-    if (IgnoreCase)
-        entry.Name.make_lower();
+//! adds a file or folder
+    irr::u32 CFileList::addItem (const irr::io::path& fullPath, irr::u32 offset, irr::u32 size, bool isDirectory, irr::u32 id)
+    {
+        SFileListEntry entry;
+        entry.ID   = id ? id : this->m_files.size ();
+        entry.Offset = offset;
+        entry.Size = size;
+        entry.Name = fullPath;
+        entry.Name.replace ('\\', '/');
+        entry.IsDirectory = isDirectory;
 
-    entry.FullName = entry.Name;
+        // remove trailing slash
+        if (entry.Name.lastChar () == '/')
+        {
+            entry.IsDirectory = true;
+            entry.Name [entry.Name.size ()-1] = 0;
+            entry.Name.validate ();
+        }
 
-    core::deletePathFromFilename(entry.Name);
+        if (this->m_ignoreCase)
+            entry.Name.make_lower ();
 
-    if (IgnorePaths)
         entry.FullName = entry.Name;
 
-    //os::Printer::log(Path.c_str(), entry.FullName);
+        irr::core::deletePathFromFilename (entry.Name);
 
-    Files.push_back(entry);
+        if (this->m_ignorePaths)
+            entry.FullName = entry.Name;
 
-    return Files.size() - 1;
-}
+        this->m_files.push_back (entry);
+
+        return this->m_files.size () - 1;
+    }
 
 //! Returns the ID of a file in the file list, based on an index.
-u32 CFileList::getID(u32 index) const
-{
-    return index < Files.size() ? Files[index].ID : 0;
-}
+    irr::u32 CFileList::getID (irr::u32 index) const
+    {
+        return (index < this->m_files.size ()) ? this->m_files [index].ID : 0;
+    }
 
-bool CFileList::isDirectory(u32 index) const
-{
-    bool ret = false;
-    if (index < Files.size())
-        ret = Files[index].IsDirectory;
-
-    return ret;
-}
+    bool CFileList::isDirectory (irr::u32 index) const
+    {
+        return (index < this->m_files.size ()) ? this->m_files [index].IsDirectory : false;
+    }
 
 //! Returns the size of a file
-u32 CFileList::getFileSize(u32 index) const
-{
-    return index < Files.size() ? Files[index].Size : 0;
-}
+    irr::u32 CFileList::getFileSize (irr::u32 index) const
+    {
+        return (index < this->m_files.size ()) ? this->m_files [index].Size : 0;
+    }
 
 //! Returns the size of a file
-u32 CFileList::getFileOffset(u32 index) const
-{
-    return index < Files.size() ? Files[index].Offset : 0;
-}
+    irr::u32 CFileList::getFileOffset (irr::u32 index) const
+    {
+        return (index < this->m_files.size ()) ? this->m_files [index].Offset : 0;
+    }
 
 
 //! Searches for a file or folder within the list, returns the index
-s32 CFileList::findFile(const io::path& filename, bool isDirectory = false) const
-{
-    SFileListEntry entry;
-    // we only need FullName to be set for the search
-    entry.FullName = filename;
-    entry.IsDirectory = isDirectory;
-
-    // exchange
-    entry.FullName.replace('\\', '/');
-
-    // remove trailing slash
-    if (entry.FullName.lastChar() == '/')
+    irr::s32 CFileList::findFile (const irr::io::path& filename, bool isDirectory = false) const
     {
-        entry.IsDirectory = true;
-        entry.FullName[entry.FullName.size()-1] = 0;
-        entry.FullName.validate();
+        SFileListEntry entry;
+        // we only need FullName to be set for the search
+        entry.FullName = filename;
+        entry.IsDirectory = isDirectory;
+
+        // exchange
+        entry.FullName.replace('\\', '/');
+
+        // remove trailing slash
+        if (entry.FullName.lastChar () == '/')
+        {
+            entry.IsDirectory = true;
+            entry.FullName [entry.FullName.size ()-1] = 0;
+            entry.FullName.validate ();
+        }
+
+        if (this->m_ignoreCase)
+            entry.FullName.make_lower ();
+
+        if (this->m_ignorePaths)
+            irr::core::deletePathFromFilename (entry.FullName);
+
+        return this->m_files.binary_search (entry);
     }
-
-    if (IgnoreCase)
-        entry.FullName.make_lower();
-
-    if (IgnorePaths)
-        core::deletePathFromFilename(entry.FullName);
-
-    return Files.binary_search(entry);
-}
 
 
 //! Returns the base path of the file list
-const io::path& CFileList::getPath() const
-{
-    return Path;
-}
+    const irr::io::path& CFileList::getPath () const
+    {
+        return m_path;
+    }
+};

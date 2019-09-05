@@ -20,6 +20,7 @@ namespace WallpaperEngine
 
         private:
             static std::vector<node*> s_nodes;
+            static irr::scene::ICameraSceneNode* s_camera;
         };
     }
 }

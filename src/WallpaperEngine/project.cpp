@@ -6,7 +6,6 @@
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 #include "project.h"
-#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 
 namespace WallpaperEngine
 {

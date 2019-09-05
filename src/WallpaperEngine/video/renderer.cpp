@@ -1,5 +1,7 @@
-#include <WallpaperEngine/Irrlicht/Irrlicht.h>
 #include <WallpaperEngine/video/renderer.h>
+#include <WallpaperEngine/Irrlicht/CContext.h>
+
+extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine
 {
@@ -31,19 +33,19 @@ namespace WallpaperEngine
                     znear,
                     zfar
             );
-            WallpaperEngine::Irrlicht::camera = WallpaperEngine::Irrlicht::device->getSceneManager ()->addCameraSceneNode (0, position, lookat);
-            WallpaperEngine::Irrlicht::camera->setProjectionMatrix (orthoProjection);
+            s_camera = IrrlichtContext->getDevice ()->getSceneManager ()->addCameraSceneNode (0, position, lookat);
+            s_camera->setProjectionMatrix (orthoProjection);
 
-            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
-            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_VIEW, identity);
-            WallpaperEngine::Irrlicht::driver->setTransform (irr::video::ETS_WORLD, identity);
+            IrrlichtContext->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_PROJECTION, orthoProjection);
+            IrrlichtContext->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_VIEW, identity);
+            IrrlichtContext->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_WORLD, identity);
         }
 
         void renderer::render ()
         {
-            if (WallpaperEngine::Irrlicht::driver == nullptr) return;
+            if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr) return;
 
-            WallpaperEngine::Irrlicht::driver->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
+            IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
 
             std::vector<node*>::const_iterator cur = s_nodes.begin ();
             std::vector<node*>::const_iterator end = s_nodes.end ();
@@ -53,9 +55,10 @@ namespace WallpaperEngine
                 (*cur)->render ();
             }
 
-            WallpaperEngine::Irrlicht::driver->endScene ();
+            IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
         }
 
         std::vector<node*> renderer::s_nodes;
+        irr::scene::ICameraSceneNode* renderer::s_camera;
     }
 };

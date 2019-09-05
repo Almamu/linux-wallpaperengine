@@ -1,11 +1,12 @@
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
+#include "WallpaperEngine/Irrlicht/CContext.h"
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "effect.h"
-#include "WallpaperEngine/Irrlicht/Irrlicht.h"
 #include "WallpaperEngine/Core/Core.h"
 
 extern irr::f32 g_Time;
+extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine
 {
@@ -97,7 +98,7 @@ namespace WallpaperEngine
             this->m_fragShader = new WallpaperEngine::Render::Shaders::Compiler (fragpath, WallpaperEngine::Render::Shaders::Compiler::Type::Type_Pixel, &this->m_combos, false);
             this->m_vertShader = new WallpaperEngine::Render::Shaders::Compiler (vertpath, WallpaperEngine::Render::Shaders::Compiler::Type::Type_Vertex, &this->m_combos, false);
 
-            this->m_materialType = WallpaperEngine::Irrlicht::driver->getGPUProgrammingServices ()
+            this->m_materialType = IrrlichtContext->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()
                 ->addHighLevelShaderMaterial (
                     this->m_vertShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
                     this->m_fragShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
@@ -336,7 +337,7 @@ namespace WallpaperEngine
             }
             else
             {
-                WallpaperEngine::Irrlicht::device->getLogger ()->log ("Unknown type for combo value", name.c_str (), irr::ELL_ERROR);
+                IrrlichtContext->getDevice ()->getLogger ()->log ("Unknown type for combo value", name.c_str (), irr::ELL_ERROR);
             }
         }
     }
