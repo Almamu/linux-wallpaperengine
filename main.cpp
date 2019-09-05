@@ -190,7 +190,7 @@ int main (int argc, char* argv[])
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "r:p:d:sh", long_options, &option_index);
+        int c = getopt_long (argc, argv, "r:p:d:shf:", long_options, &option_index);
 
         if (c == -1)
             break;
