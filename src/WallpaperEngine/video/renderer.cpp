@@ -43,9 +43,10 @@ namespace WallpaperEngine
 
         void renderer::render ()
         {
-            if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr) return;
+            if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
+                return;
 
-            IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(true, true, irr::video::SColor(0, 0, 0, 0));
+            IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
 
             std::vector<node*>::const_iterator cur = s_nodes.begin ();
             std::vector<node*>::const_iterator end = s_nodes.end ();
