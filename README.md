@@ -78,6 +78,12 @@ Only screens configured with the XRandr extension are supported. To specify the 
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
 
+#### 5.4.4. Limiting FPS
+To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, specially useful for laptops:
+```
+./wallengine --fps 30
+```
+
 ###### Example background
 This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 

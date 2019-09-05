@@ -152,7 +152,8 @@ void print_help (const char* route)
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
         << "  --dir <folder>\tLoads an uncompressed background from the given <folder>" << std::endl
         << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder>" << std::endl
-        << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl;
+        << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
+        << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s){
@@ -171,6 +172,7 @@ std::string stringPathFixes(const std::string& s){
 int main (int argc, char* argv[])
 {
     int mode = 0;
+    int max_fps = 30;
     bool audio_support = true;
     std::string path;
 
@@ -180,9 +182,10 @@ int main (int argc, char* argv[])
             {"screen-root", required_argument, 0, 'r'},
             {"pkg",         required_argument, 0, 'p'},
             {"dir",         required_argument, 0, 'd'},
-            {"silent",      optional_argument, 0, 's'},
-            {"help",        optional_argument, 0, 'h'},
-            {nullptr,                   0, 0,   0}
+            {"silent",      no_argument,       0, 's'},
+            {"help",        no_argument,       0, 'h'},
+            {"fps",         required_argument, 0, 'f'},
+            {nullptr,              0, 0,   0}
     };
 
     while (true)
@@ -216,6 +219,10 @@ int main (int argc, char* argv[])
             case 'h':
                 print_help (argv [0]);
                 return 0;
+
+            case 'f':
+                max_fps = atoi (optarg);
+                break;
 
             default:
                 break;
@@ -292,18 +299,21 @@ int main (int argc, char* argv[])
     // register nodes
     wp::video::renderer::queueNode (wp_project->getScene ());
 
-    int32_t lastTime = 0;
-    int32_t minimumTime = 1000 / 90;
-    int32_t currentTime = 0;
+    irr::u32 lastTime = 0;
+    irr::u32 minimumTime = 1000 / max_fps;
+    irr::u32 currentTime = 0;
+
+    irr::u32 startTime = 0;
+    irr::u32 endTime = 0;
 
     while (wp::irrlicht::device->run () && wp::irrlicht::driver)
     {
         // if (device->isWindowActive ())
         {
-            currentTime = wp::irrlicht::device->getTimer ()->getTime ();
+            currentTime = startTime = wp::irrlicht::device->getTimer ()->getTime ();
             g_Time = currentTime / 1000.0f;
 
-            if (currentTime - lastTime > minimumTime)
+            if (Viewports.size () > 0)
             {
                 std::vector<irr::core::rect<irr::s32>>::iterator cur = Viewports.begin ();
                 std::vector<irr::core::rect<irr::s32>>::iterator end = Viewports.end ();
@@ -314,13 +324,15 @@ int main (int argc, char* argv[])
                     wp::irrlicht::driver->setViewPort (*cur);
                     wp::video::renderer::render ();
                 }
-
-                lastTime = currentTime;
             }
             else
             {
-                wp::irrlicht::device->sleep (1, false);
+                wp::video::renderer::render ();
             }
+
+            endTime = wp::irrlicht::device->getTimer ()->getTime ();
+
+            wp::irrlicht::device->sleep (minimumTime - (endTime - startTime), false);
         }
     }
 
