@@ -3,23 +3,24 @@
 #include <utility>
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
-#include "WallpaperEngine/Core/Objects/Particles/CParticle.h"
+#include "WallpaperEngine/Core/Objects/CParticle.h"
 
 #include "Core.h"
 
 using namespace WallpaperEngine::Core;
 
-
 CObject::CObject (
         bool visible,
         irr::u32 id,
         std::string name,
+        std::string type,
         const irr::core::vector3df& origin,
         const irr::core::vector3df& scale,
         const irr::core::vector3df& angles) :
     m_visible (visible),
     m_id (id),
     m_name (std::move(name)),
+    m_type (type),
     m_origin (origin),
     m_scale (scale),
     m_angles (angles)
@@ -102,7 +103,7 @@ CObject* CObject::fromJSON (json data)
     }
     else if (particle_it != data.end ())
     {
-        object = Objects::Particles::CParticle::fromFile (
+        object = Objects::CParticle::fromFile (
                 (*particle_it).get <std::string> ().c_str (),
                 *id_it,
                 *name_it,
@@ -115,7 +116,7 @@ CObject* CObject::fromJSON (json data)
         throw std::runtime_error ("Unkonwn object type detected");
     }
 
-    if (effects_it != data.end () && (*effects_it).is_array () == true && object != nullptr)
+    if (effects_it != data.end () && (*effects_it).is_array () == true)
     {
         json::const_iterator cur = (*effects_it).begin ();
         json::const_iterator end = (*effects_it).end ();
@@ -123,7 +124,7 @@ CObject* CObject::fromJSON (json data)
         for (; cur != end; cur ++)
         {
             object->insertEffect (
-                    Objects::CEffect::fromJSON (*cur)
+                    Objects::CEffect::fromJSON (*cur, object)
             );
         }
     }
@@ -131,9 +132,29 @@ CObject* CObject::fromJSON (json data)
     return object;
 }
 
+irr::core::vector3df* CObject::getOrigin ()
+{
+    return &this->m_origin;
+}
+
+irr::core::vector3df* CObject::getScale ()
+{
+    return &this->m_scale;
+}
+
+irr::core::vector3df* CObject::getAngles ()
+{
+    return &this->m_angles;
+}
+
 std::vector<Objects::CEffect*>* CObject::getEffects ()
 {
     return &this->m_effects;
+}
+
+int CObject::getId ()
+{
+    return this->m_id;
 }
 
 void CObject::insertEffect (Objects::CEffect* effect)

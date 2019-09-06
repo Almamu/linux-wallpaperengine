@@ -1,8 +1,6 @@
 #include <iostream>
 #include <irrlicht/irrlicht.h>
 #include <sstream>
-#include <WallpaperEngine/video/renderer.h>
-#include <WallpaperEngine/video/material.h>
 #include <WallpaperEngine/Irrlicht/CPkgReader.h>
 #include <getopt.h>
 #include <SDL_mixer.h>
@@ -12,11 +10,11 @@
 #include <X11/extensions/Xrandr.h>
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
-#include "WallpaperEngine/project.h"
 #include "WallpaperEngine/Irrlicht/CImageLoaderTEX.h"
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Irrlicht/CContext.h"
+#include "WallpaperEngine/Render/CScene.h"
 
 bool IsRootWindow = false;
 std::vector<std::string> Screens;
@@ -291,23 +289,8 @@ int main (int argc, char* argv[])
         Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
     }
 
-    WallpaperEngine::project* wp_project = new WallpaperEngine::project (project_path);
-
-    if (wp_project->getScene ()->isOrthogonal() == true)
-    {
-        WallpaperEngine::video::renderer::setupOrthographicCamera (wp_project->getScene ());
-    }
-    else
-    {
-        IrrlichtContext->getDevice ()->getLogger ()->log (
-            "Non-orthogonal cameras not supported yet!!", irr::ELL_ERROR
-        );
-
-        return -2;
-    }
-
-    // register nodes
-    WallpaperEngine::video::renderer::queueNode (wp_project->getScene ());
+    WallpaperEngine::Core::CProject* project = WallpaperEngine::Core::CProject::fromFile (project_path);
+    WallpaperEngine::Render::CScene* sceneRender = new WallpaperEngine::Render::CScene (project, IrrlichtContext);
 
     irr::u32 lastTime = 0;
     irr::u32 minimumTime = 1000 / max_fps;
@@ -316,7 +299,7 @@ int main (int argc, char* argv[])
     irr::u32 startTime = 0;
     irr::u32 endTime = 0;
 
-    while (IrrlichtContext->getDevice ()->run () && IrrlichtContext && IrrlichtContext->getDevice ())
+    while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
     {
         // if (device->isWindowActive ())
         {
@@ -332,12 +315,20 @@ int main (int argc, char* argv[])
                 {
                     // change viewport to render to the correct portion of the display
                     IrrlichtContext->getDevice ()->getVideoDriver ()->setViewPort (*cur);
-                    WallpaperEngine::video::renderer::render ();
+
+                    if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
+                        continue;
+
+                    IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
+                    IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
+                    IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
                 }
             }
             else
             {
-                WallpaperEngine::video::renderer::render ();
+                IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
+                IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
+                IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
             }
 
             endTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
@@ -347,7 +338,5 @@ int main (int argc, char* argv[])
     }
 
     SDL_Quit ();
-    delete wp_project;
-
     return 0;
 }

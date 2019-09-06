@@ -4,6 +4,7 @@
 #include "CSound.h"
 
 using namespace WallpaperEngine::Core::Objects;
+
 CSound::CSound (
         bool visible,
         irr::u32 id,
@@ -11,7 +12,7 @@ CSound::CSound (
         const irr::core::vector3df& origin,
         const irr::core::vector3df& scale,
         const irr::core::vector3df& angles) :
-        CObject (visible, id, std::move(name), origin, scale, angles)
+        CObject (visible, id, std::move(name), Type, origin, scale, angles)
 {
 }
 
@@ -65,3 +66,5 @@ std::vector<std::string>* CSound::getSounds ()
 {
     return &this->m_sounds;
 }
+
+const std::string CSound::Type = "sound";

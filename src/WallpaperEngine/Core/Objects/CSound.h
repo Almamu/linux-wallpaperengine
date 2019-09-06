@@ -9,8 +9,10 @@ namespace WallpaperEngine::Core::Objects
 {
     using json = nlohmann::json;
 
-    class CSound : CObject
+    class CSound : public CObject
     {
+        friend class CObject;
+
     public:
         static CObject* fromJSON (
             json data,
@@ -24,8 +26,8 @@ namespace WallpaperEngine::Core::Objects
 
         void insertSound (std::string filename);
         std::vector<std::string>* getSounds ();
-    protected:
 
+    protected:
         CSound (
             bool visible,
             irr::u32 id,
@@ -34,6 +36,8 @@ namespace WallpaperEngine::Core::Objects
             const irr::core::vector3df& scale,
             const irr::core::vector3df& angles
         );
+
+        static const std::string Type;
     private:
         std::vector<std::string> m_sounds;
     };

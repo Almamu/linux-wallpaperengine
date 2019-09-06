@@ -2,25 +2,30 @@
 
 #include <utility>
 
+#include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
+using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Objects;
 
 CEffect::CEffect (
         std::string name,
         std::string description,
         std::string group,
-        std::string preview):
+        std::string preview,
+        Core::CObject* object):
     m_name (std::move(name)),
     m_description (std::move(description)),
     m_group (std::move(group)),
-    m_preview (std::move(preview))
+    m_preview (std::move(preview)),
+    m_object (object)
 {
 }
 
-CEffect* CEffect::fromJSON (json data)
+CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 {
     json::const_iterator file_it = data.find ("file");
+    json::const_iterator effectpasses_it = data.find ("passes");
 
     if (file_it == data.end ())
     {
@@ -70,7 +75,8 @@ CEffect* CEffect::fromJSON (json data)
         *name_it,
         *description_it,
         *group_it,
-        *preview_it
+        *preview_it,
+        object
     );
 
     json::const_iterator cur = (*passes_it).begin ();
@@ -96,6 +102,61 @@ CEffect* CEffect::fromJSON (json data)
     for (; cur != end; cur ++)
     {
         effect->insertDependency (*cur);
+    }
+
+    if (effectpasses_it != data.end ())
+    {
+        cur = (*effectpasses_it).begin ();
+        end = (*effectpasses_it).end ();
+
+        for (int passNumber = 0; cur != end; cur ++, passNumber ++)
+        {
+            json::const_iterator textures_it = (*cur).find ("textures");
+
+            if (textures_it == (*cur).end ())
+                continue;
+
+            Images::CMaterial* material = effect->getMaterials ()->at (passNumber);
+            std::vector<Images::Materials::CPassess*>::const_iterator materialCur = material->getPasses ()->begin ();
+            std::vector<Images::Materials::CPassess*>::const_iterator materialEnd = material->getPasses ()->end ();
+
+            for (; materialCur != materialEnd; materialCur ++)
+            {
+                json::const_iterator texturesCur = (*textures_it).begin ();
+                json::const_iterator texturesEnd = (*textures_it).end ();
+
+                for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++)
+                {
+                    std::string texture;
+
+                    if ((*texturesCur).is_null () == true)
+                    {
+                        if (object->Is <CImage> () == false)
+                        {
+                            throw std::runtime_error ("unexpected null texture for non-image object");
+                        }
+
+                        CImage* image = object->As <CImage> ();
+
+                        texture = (*(*image->getMaterial ()->getPasses ()->begin ())->getTextures ()->begin ());
+                    }
+                    else
+                    {
+                        texture = *texturesCur;
+                    }
+
+                    std::vector<std::string>* passTextures = (*materialCur)->getTextures ();
+
+                    if (textureNumber < passTextures->size ())
+                        passTextures->at (textureNumber) = texture;
+                    else
+                        passTextures->push_back (texture);
+
+                    textureNumber ++;
+                }
+            }
+
+        }
     }
 
     return effect;

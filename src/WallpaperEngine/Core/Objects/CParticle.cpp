@@ -3,7 +3,7 @@
 
 #include <irrlicht/irrlicht.h>
 
-using namespace WallpaperEngine::Core::Objects::Particles;
+using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (
     const irr::io::path& filename,
@@ -56,7 +56,7 @@ CParticle* CParticle::fromFile (
         for (; cur != end; cur ++)
         {
             particle->insertControlPoint (
-                    CControlPoint::fromJSON (*cur)
+                    Particles::CControlPoint::fromJSON (*cur)
             );
         }
     }
@@ -67,7 +67,7 @@ CParticle* CParticle::fromFile (
     for (; cur != end; cur ++)
     {
         particle->insertEmitter (
-                CEmitter::fromJSON (*cur)
+                Particles::CEmitter::fromJSON (*cur)
         );
     }
 
@@ -77,7 +77,7 @@ CParticle* CParticle::fromFile (
     for (; cur != end; cur ++)
     {
         particle->insertInitializer (
-                CInitializer::fromJSON (*cur)
+                Particles::CInitializer::fromJSON (*cur)
         );
     }
 
@@ -91,38 +91,40 @@ CParticle::CParticle (
         std::string name,
         const irr::core::vector3df& origin,
         const irr::core::vector3df& scale):
-        CObject (true, id, std::move(name), origin, scale, irr::core::vector3df ()),
+        CObject (true, id, std::move(name), Type, origin, scale, irr::core::vector3df ()),
         m_starttime (starttime),
         m_maxcount (maxcount)
 {
 }
 
-std::vector<CEmitter*>* CParticle::getEmitters ()
+std::vector<Particles::CEmitter*>* CParticle::getEmitters ()
 {
     return &this->m_emitters;
 }
 
-std::vector<CControlPoint*>* CParticle::getControlPoints ()
+std::vector<Particles::CControlPoint*>* CParticle::getControlPoints ()
 {
     return &this->m_controlpoints;
 }
 
-std::vector<CInitializer*>* CParticle::getInitializers ()
+std::vector<Particles::CInitializer*>* CParticle::getInitializers ()
 {
     return &this->m_initializers;
 }
 
-void CParticle::insertControlPoint (CControlPoint* controlpoint)
+void CParticle::insertControlPoint (Particles::CControlPoint* controlpoint)
 {
     this->m_controlpoints.push_back (controlpoint);
 }
 
-void CParticle::insertEmitter (CEmitter* emitter)
+void CParticle::insertEmitter (Particles::CEmitter* emitter)
 {
     this->m_emitters.push_back (emitter);
 }
 
-void CParticle::insertInitializer (CInitializer* initializer)
+void CParticle::insertInitializer (Particles::CInitializer* initializer)
 {
     this->m_initializers.push_back (initializer);
 }
+
+const std::string CParticle::Type = "particle";

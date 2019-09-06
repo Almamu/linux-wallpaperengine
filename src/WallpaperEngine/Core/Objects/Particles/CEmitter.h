@@ -10,6 +10,8 @@ namespace WallpaperEngine::Core::Objects::Particles
     class CEmitter
     {
     public:
+        static CEmitter* fromJSON (json data);
+
         const std::string& getName () const;
         irr::u32 getDistanceMax () const;
         irr::u32 getDistanceMin () const;
@@ -17,10 +19,6 @@ namespace WallpaperEngine::Core::Objects::Particles
         irr::core::vector3df* getOrigin ();
         irr::f64 getRate () const;
     protected:
-        friend class CParticle;
-
-        static CEmitter* fromJSON (json data);
-
         CEmitter (
             const irr::core::vector3df& directions,
             irr::u32 distancemax,

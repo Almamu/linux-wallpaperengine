@@ -10,13 +10,11 @@ namespace WallpaperEngine::Core::Objects::Particles
     class CInitializer
     {
     public:
+        static CInitializer* fromJSON (json data);
+
         std::string& getName ();
         irr::u32 getId ();
     protected:
-        friend class CParticle;
-
-        static CInitializer* fromJSON (json data);
-
         CInitializer (irr::u32 id, std::string name);
     private:
         irr::u32 m_id;

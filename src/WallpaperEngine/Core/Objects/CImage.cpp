@@ -15,10 +15,10 @@ CImage::CImage (
         const irr::core::vector3df& scale,
         const irr::core::vector3df& angles,
         const irr::core::vector2df& size) :
-        CObject (visible, id, std::move(name), origin, scale, angles),
-        m_size (size)
+        CObject (visible, id, std::move(name), Type, origin, scale, angles),
+        m_size (size),
+        m_material (material)
 {
-
 }
 
 WallpaperEngine::Core::CObject* CImage::fromJSON (
@@ -48,13 +48,20 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     }
 
     return new CImage (
-            Images::CMaterial::fromFile ((*material_it).get <std::string> ().c_str ()),
-            visible,
-            id,
-            name,
-            origin,
-            scale,
-            angles,
-            WallpaperEngine::Core::ato2vf (*size_it)
+        Images::CMaterial::fromFile ((*material_it).get <std::string> ().c_str ()),
+        visible,
+        id,
+        name,
+        origin,
+        scale,
+        angles,
+        WallpaperEngine::Core::ato2vf (*size_it)
     );
 }
+
+Images::CMaterial* CImage::getMaterial ()
+{
+    return this->m_material;
+}
+
+const std::string CImage::Type = "image";

@@ -41,12 +41,12 @@ namespace WallpaperEngine::Core
         const irr::video::SColorf &getClearColor() const;
         Scenes::CProjection *getOrthogonalProjection() const;
         const irr::video::SColorf &getSkylightColor() const;
+        Scenes::CCamera* getCamera ();
 
     protected:
         friend class CProject;
 
         void setProject (CProject* project);
-        Scenes::CCamera* getCamera ();
 
         CScene (
                 Scenes::CCamera* camera,

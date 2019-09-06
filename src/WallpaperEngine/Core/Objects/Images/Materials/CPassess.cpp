@@ -24,6 +24,7 @@ CPassess* CPassess::fromJSON (json data)
     json::const_iterator depthwrite_it = data.find ("depthwrite");
     json::const_iterator shader_it = data.find ("shader");
     json::const_iterator textures_it = data.find ("textures");
+    json::const_iterator combos_it = data.find ("combos");
 
     if (blending_it == data.end ())
     {
@@ -52,6 +53,7 @@ CPassess* CPassess::fromJSON (json data)
 
     if (textures_it != data.end ())
     {
+        // TODO: FETCH THIS FROM CImage TO MAKE IT COMPATIBLE WITH OLDER WALLPAPERS
         if ((*textures_it).is_array () == false)
         {
             throw std::runtime_error ("Textures for material must be a list");
@@ -84,6 +86,26 @@ CPassess* CPassess::fromJSON (json data)
         }
     }
 
+    if (combos_it != data.end ())
+    {
+        json::const_iterator cur = (*combos_it).begin ();
+        json::const_iterator end = (*combos_it).end ();
+
+        for (; cur != end; cur ++)
+        {
+            std::string name = cur.key ();
+
+            if ((*cur).is_number_integer () == true)
+            {
+                pass->insertCombo (name, *cur);
+            }
+            else
+            {
+                throw std::runtime_error ("unexpected non-integer combo");
+            }
+        }
+    }
+
     return pass;
 }
 
@@ -91,4 +113,19 @@ CPassess* CPassess::fromJSON (json data)
 void CPassess::insertTexture (const std::string& texture)
 {
     this->m_textures.push_back (texture);
+}
+
+void CPassess::insertCombo (const std::string& name, int value)
+{
+    this->m_combos.insert (std::pair <std::string, int> (name, value));
+}
+
+std::map<std::string, int>* CPassess::getCombos ()
+{
+    return &this->m_combos;
+}
+
+std::string CPassess::getShader ()
+{
+    return this->m_shader;
 }

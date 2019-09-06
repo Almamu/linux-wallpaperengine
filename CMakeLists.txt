@@ -21,34 +21,26 @@ include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_
 add_executable(
         wallengine
         main.cpp
+
+        src/WallpaperEngine/Core/Core.h
+        src/WallpaperEngine/Core/Core.cpp
+
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
-        src/WallpaperEngine/project.cpp
-        src/WallpaperEngine/project.h
-        src/WallpaperEngine/scene.cpp
-        src/WallpaperEngine/scene.h
-        src/WallpaperEngine/object.cpp
-        src/WallpaperEngine/object.h
-        src/WallpaperEngine/camera.cpp
-        src/WallpaperEngine/camera.h
-        src/WallpaperEngine/Core/Core.cpp
-        src/WallpaperEngine/Core/Core.h
-        src/WallpaperEngine/image.cpp
-        src/WallpaperEngine/image.h
-        src/WallpaperEngine/object3d.cpp
-        src/WallpaperEngine/object3d.h
-        src/WallpaperEngine/effect.cpp
-        src/WallpaperEngine/effect.h
+
+        src/WallpaperEngine/Render/CScene.h
+        src/WallpaperEngine/Render/CScene.cpp
+        src/WallpaperEngine/Render/CCamera.h
+        src/WallpaperEngine/Render/CCamera.cpp
+        src/WallpaperEngine/Render/CObject.h
+        src/WallpaperEngine/Render/CObject.cpp
+
+        src/WallpaperEngine/Render/Objects/CImage.h
+        src/WallpaperEngine/Render/Objects/CImage.cpp
+
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
-        src/WallpaperEngine/video/renderer.cpp
-        src/WallpaperEngine/video/renderer.h
-        src/WallpaperEngine/video/node.cpp
-        src/WallpaperEngine/video/node.h
-        src/WallpaperEngine/video/material.cpp
-        src/WallpaperEngine/video/material.h
-        src/WallpaperEngine/texture.cpp
-        src/WallpaperEngine/texture.h
+
         src/WallpaperEngine/Irrlicht/CContext.h
         src/WallpaperEngine/Irrlicht/CContext.cpp
         src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h
@@ -57,8 +49,6 @@ add_executable(
         src/WallpaperEngine/Irrlicht/CPkgReader.cpp
         src/WallpaperEngine/Irrlicht/CFileList.h
         src/WallpaperEngine/Irrlicht/CFileList.cpp
-        src/WallpaperEngine/sound.cpp
-        src/WallpaperEngine/sound.h
 
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
@@ -83,8 +73,8 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CSound.h
         src/WallpaperEngine/Core/Objects/CEffect.cpp
         src/WallpaperEngine/Core/Objects/CEffect.h
-        src/WallpaperEngine/Core/Objects/Particles/CParticle.cpp
-        src/WallpaperEngine/Core/Objects/Particles/CParticle.h
+        src/WallpaperEngine/Core/Objects/CParticle.cpp
+        src/WallpaperEngine/Core/Objects/CParticle.h
 
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
