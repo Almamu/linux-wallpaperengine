@@ -5,6 +5,8 @@
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/CScene.h"
 
+#include "WallpaperEngine/Render/Shaders/Compiler.h"
+
 using namespace WallpaperEngine;
 
 namespace WallpaperEngine::Render::Objects
@@ -32,5 +34,8 @@ namespace WallpaperEngine::Render::Objects
 
         Core::Objects::CImage* m_image;
         irr::core::aabbox3d<irr::f32> m_boundingBox;
+
+        Render::Shaders::Compiler* m_vertexShader;
+        Render::Shaders::Compiler* m_pixelShader;
     };
 }

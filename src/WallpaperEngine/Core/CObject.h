@@ -31,6 +31,7 @@ namespace WallpaperEngine::Core
         irr::core::vector3df* getScale ();
         irr::core::vector3df* getAngles ();
 
+        bool isVisible ();
     protected:
         CObject (
             bool visible,

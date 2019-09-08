@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
 
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
 #include "WallpaperEngine/Core/CObject.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 
@@ -30,9 +31,11 @@ namespace WallpaperEngine::Core::Objects
 
         std::vector<std::string>* getDependencies ();
         std::vector<Images::CMaterial*>* getMaterials ();
+        std::map<std::string, Effects::CShaderConstant*>* getConstants ();
     protected:
         void insertDependency (const std::string& dep);
         void insertMaterial (Images::CMaterial* material);
+        void insertConstant (const std::string& name, Effects::CShaderConstant* constant);
     private:
         std::string m_name;
         std::string m_description;
@@ -42,5 +45,6 @@ namespace WallpaperEngine::Core::Objects
 
         std::vector<std::string> m_dependencies;
         std::vector<Images::CMaterial*> m_materials;
+        std::map<std::string, Effects::CShaderConstant*> m_constants;
     };
 }

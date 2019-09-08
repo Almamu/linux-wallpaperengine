@@ -25,6 +25,19 @@ add_executable(
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
 
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.cpp
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.cpp
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.cpp
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.cpp
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.cpp
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h
+        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.cpp
+
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
@@ -75,6 +88,15 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CEffect.h
         src/WallpaperEngine/Core/Objects/CParticle.cpp
         src/WallpaperEngine/Core/Objects/CParticle.h
+
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstant.h
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstant.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantString.h
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantString.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h
+        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.cpp
 
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h

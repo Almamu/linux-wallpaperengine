@@ -3,6 +3,10 @@
 #include <utility>
 
 #include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantString.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine;
@@ -111,6 +115,38 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 
         for (int passNumber = 0; cur != end; cur ++, passNumber ++)
         {
+            json::const_iterator constants_it = (*cur).find ("constantshadervalues");
+
+            if (constants_it == (*cur).end ())
+                continue;
+
+            json::const_iterator constantCur = (*constants_it).begin ();
+            json::const_iterator constantEnd = (*constants_it).end ();
+
+            for (; constantCur != constantEnd; constantCur ++)
+            {
+                Effects::CShaderConstant* constant = nullptr;
+
+                if ((*constantCur).is_number_float () == true)
+                {
+                    constant = new Effects::CShaderConstantFloat ((*constantCur).get <irr::f32> ());
+                }
+                else if ((*constantCur).is_number_integer () == true)
+                {
+                    constant = new Effects::CShaderConstantInteger ((*constantCur).get <irr::s32> ());
+                }
+                else if ((*constantCur).is_string () == true)
+                {
+                    constant = new Effects::CShaderConstantString ((*constantCur).get <std::string> ());
+                }
+                else
+                {
+                    throw std::runtime_error ("unknown shader constant type");
+                }
+
+                effect->insertConstant (constantCur.key (), constant);
+            }
+
             json::const_iterator textures_it = (*cur).find ("textures");
 
             if (textures_it == (*cur).end ())
@@ -172,6 +208,11 @@ std::vector<Images::CMaterial*>* CEffect::getMaterials ()
     return &this->m_materials;
 }
 
+std::map<std::string, Effects::CShaderConstant*>* CEffect::getConstants ()
+{
+    return &this->m_constants;
+}
+
 void CEffect::insertDependency (const std::string& dep)
 {
     this->m_dependencies.push_back (dep);
@@ -180,4 +221,9 @@ void CEffect::insertDependency (const std::string& dep)
 void CEffect::insertMaterial (Images::CMaterial* material)
 {
     this->m_materials.push_back (material);
+}
+
+void CEffect::insertConstant (const std::string& name, Effects::CShaderConstant* constant)
+{
+    this->m_constants.insert (std::pair <std::string, Effects::CShaderConstant*> (name, constant));
 }

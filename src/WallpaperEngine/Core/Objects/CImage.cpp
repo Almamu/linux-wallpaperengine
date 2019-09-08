@@ -64,4 +64,10 @@ Images::CMaterial* CImage::getMaterial ()
     return this->m_material;
 }
 
+irr::core::vector2df* CImage::getSize ()
+{
+    return &this->m_size;
+}
+
+
 const std::string CImage::Type = "image";

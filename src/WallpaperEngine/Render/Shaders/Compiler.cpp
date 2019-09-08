@@ -10,6 +10,13 @@
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
 #include <WallpaperEngine/Core/Core.h>
 
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h"
+
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive)
@@ -438,6 +445,13 @@ namespace WallpaperEngine::Render::Shaders
             }
         }
 
+        if (this->m_recursive == false)
+        {
+
+            std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            std::cout << this->m_compiledContent << std::endl;
+        }
+
         return this->m_compiledContent;
     #undef BREAK_IF_ERROR
     }
@@ -499,102 +513,60 @@ namespace WallpaperEngine::Render::Shaders
             return;
         }
 
-        ShaderParameter* param = new ShaderParameter;
+        Parameters::CShaderParameter* parameter = nullptr;
 
-        param->identifierName = (*material).get <std::string> ();
-        param->variableName = name;
-        param->type = type;
-
-        if (type == "vec4" || type == "vec3")
+        if (type == "vec4")
         {
-            if ((*defvalue).is_string () == false)
-            {
-                irr::core::vector3df* vector = new irr::core::vector3df;
-
-                vector->X = 0.0f;
-                vector->Y = 0.0f;
-                vector->Z = 0.0f;
-
-                param->defaultValue = vector;
-            }
-            else
-            {
-                irr::core::vector3df tmp = WallpaperEngine::Core::ato3vf ((*defvalue).get <std::string> ().c_str ());
-                irr::core::vector3df* vector = new irr::core::vector3df;
-
-                vector->X = tmp.X;
-                vector->Y = tmp.Y;
-                vector->Z = tmp.Z;
-
-                param->defaultValue = vector;
-            }
+            parameter = new Parameters::CShaderParameterVector4 (
+                    WallpaperEngine::Core::ato3vf (*defvalue)
+            );
+        }
+        else if (type == "vec3")
+        {
+            parameter = new Parameters::CShaderParameterVector3 (
+                WallpaperEngine::Core::ato3vf (*defvalue)
+            );
         }
         else if (type == "vec2")
         {
-            if ((*defvalue).is_string () == false)
-            {
-                irr::core::vector2df* vector = new irr::core::vector2df;
-
-                vector->X = 0.0f;
-                vector->Y = 0.0f;
-
-                param->defaultValue = vector;
-            }
-            else
-            {
-                irr::core::vector2df* vector = new irr::core::vector2df;
-                irr::core::vector2df tmp = WallpaperEngine::Core::ato2vf ((*defvalue).get <std::string> ().c_str ());
-
-                vector->X = tmp.X;
-                vector->Y = tmp.Y;
-
-                param->defaultValue = vector;
-            }
+            parameter = new Parameters::CShaderParameterVector2 (
+                WallpaperEngine::Core::ato2vf (*defvalue)
+            );
         }
         else if (type == "float")
         {
-            if ((*defvalue).is_number () == false)
-            {
-                irr::f32* val = new irr::f32;
-
-                *val = 0.0f;
-
-                param->defaultValue = val;
-
-            }
-            else
-            {
-                irr::f32* val = new irr::f32;
-
-                *val = (*defvalue).get <irr::f32> ();
-
-                param->defaultValue = val;
-            }
+            parameter = new Parameters::CShaderParameterFloat ((*defvalue).get <irr::f32> ());
+        }
+        else if (type == "int")
+        {
+            parameter = new Parameters::CShaderParameterInteger ((*defvalue).get <irr::s32> ());
         }
         else if (type == "sampler2D")
         {
             // samplers are not saved, we can ignore them for now
-            delete param;
             return;
         }
         else
         {
             this->m_error = true;
-            this->m_errorInfo = "Unknown parameter type: " + type + " for " + param->identifierName + " (" + param->variableName + ")";
+            this->m_errorInfo = "Unknown parameter type: " + type + " for " + name;
             return;
         }
 
-        this->m_parameters.push_back (param);
+        parameter->setIdentifierName (*material);
+        parameter->setName (name);
+
+        this->m_parameters.push_back (parameter);
     }
 
-    Compiler::ShaderParameter* Compiler::findParameter (std::string identifier)
+    Parameters::CShaderParameter* Compiler::findParameter (std::string identifier)
     {
-        std::vector<ShaderParameter*>::const_iterator cur = this->m_parameters.begin ();
-        std::vector<ShaderParameter*>::const_iterator end = this->m_parameters.end ();
+        std::vector<Parameters::CShaderParameter*>::const_iterator cur = this->m_parameters.begin ();
+        std::vector<Parameters::CShaderParameter*>::const_iterator end = this->m_parameters.end ();
 
         for (; cur != end; cur ++)
         {
-            if ((*cur)->identifierName == identifier)
+            if ((*cur)->getIdentifierName () == identifier)
             {
                 return (*cur);
             }
@@ -603,7 +575,7 @@ namespace WallpaperEngine::Render::Shaders
         return nullptr;
     }
 
-    std::vector <Compiler::ShaderParameter*>& Compiler::getParameters ()
+    std::vector <Parameters::CShaderParameter*>& Compiler::getParameters ()
     {
         return this->m_parameters;
     }

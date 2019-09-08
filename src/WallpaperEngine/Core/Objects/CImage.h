@@ -27,6 +27,7 @@ namespace WallpaperEngine::Core::Objects
         );
 
         Images::CMaterial* getMaterial ();
+        irr::core::vector2df* getSize ();
 
     protected:
         CImage (

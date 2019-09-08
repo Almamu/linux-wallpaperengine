@@ -33,7 +33,6 @@ CObject* CObject::fromJSON (json data)
     json::const_iterator visible_it = data.find ("visible");
     json::const_iterator origin_it = data.find ("origin");
     json::const_iterator scale_it = data.find ("scale");
-    json::const_iterator size_it = data.find ("size");
     json::const_iterator angles_it = data.find ("angles");
     json::const_iterator name_it = data.find ("name");
     json::const_iterator effects_it = data.find ("effects");
@@ -150,6 +149,11 @@ irr::core::vector3df* CObject::getAngles ()
 std::vector<Objects::CEffect*>* CObject::getEffects ()
 {
     return &this->m_effects;
+}
+
+bool CObject::isVisible ()
+{
+    return this->m_visible;
 }
 
 int CObject::getId ()

@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <WallpaperEngine/FileSystem/FileSystem.h>
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
@@ -18,32 +19,6 @@ namespace WallpaperEngine::Render::Shaders
     class Compiler
     {
     public:
-        /**
-         * Basic struct used to define all the shader variables
-         * the compiler will replace in pre-processing time
-         * to make sure the shaders compile under OpenGL
-         */
-        struct VariableReplacement
-        {
-            const char* original;
-            const char* replacement;
-        };
-
-        struct TypeName
-        {
-            const char* name;
-            int size;
-        };
-
-        struct ShaderParameter
-        {
-            std::string type;
-            std::string variableName;
-            std::string identifierName;
-            void* defaultValue;
-            void* range [2];
-        };
-
         /**
          * Types of shaders
          */
@@ -87,12 +62,12 @@ namespace WallpaperEngine::Render::Shaders
          * @param identifier The identifier to search for
          * @return The shader information
          */
-        ShaderParameter* findParameter (std::string identifier);
+        Parameters::CShaderParameter* findParameter (std::string identifier);
 
         /**
          * @return The list of parameters available for this shader with their default values
          */
-        std::vector <ShaderParameter*>& getParameters ();
+        std::vector <Parameters::CShaderParameter*>& getParameters ();
 
     private:
         /**
@@ -227,7 +202,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The parameters the shader needs
          */
-        std::vector <ShaderParameter*> m_parameters;
+        std::vector <Parameters::CShaderParameter*> m_parameters;
         /**
          * The combos the shader should be generated with
          */

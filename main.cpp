@@ -301,6 +301,9 @@ int main (int argc, char* argv[])
 
     while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
     {
+        if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
+            continue;
+
         // if (device->isWindowActive ())
         {
             currentTime = startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
@@ -316,17 +319,14 @@ int main (int argc, char* argv[])
                     // change viewport to render to the correct portion of the display
                     IrrlichtContext->getDevice ()->getVideoDriver ()->setViewPort (*cur);
 
-                    if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
-                        continue;
-
-                    IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
+                    IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (false, true, irr::video::SColor(0, 0, 0, 0));
                     IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
                     IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
                 }
             }
             else
             {
-                IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene(false, true, irr::video::SColor(0, 0, 0, 0));
+                IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (true, true, irr::video::SColor(0, 0, 0, 0));
                 IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
                 IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
             }

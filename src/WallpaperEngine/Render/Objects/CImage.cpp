@@ -1,9 +1,18 @@
 #include "CImage.h"
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h"
+#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
+using namespace WallpaperEngine::Render::Shaders::Parameters;
+
+extern irr::f32 g_Time;
 
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
@@ -82,17 +91,17 @@ void CImage::generateMaterial ()
     // TODO: MOVE SHADER INITIALIZATION ELSEWHERE
     irr::io::path vertpath = std::string ("shaders/" + shader + ".vert").c_str ();
     irr::io::path fragpath = std::string ("shaders/" + shader + ".frag").c_str ();
-    Render::Shaders::Compiler* vertshader = new Render::Shaders::Compiler (vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
-    Render::Shaders::Compiler* fragshader = new Render::Shaders::Compiler (fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
+    this->m_vertexShader = new Render::Shaders::Compiler (vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
+    this->m_pixelShader = new Render::Shaders::Compiler (fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
 
     this->m_material.MaterialType = (irr::video::E_MATERIAL_TYPE)
-            this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
-                vertshader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
-                fragshader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
-                this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
-            );
+        this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
+            this->m_vertexShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
+            this->m_pixelShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
+            this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
+        );
 
-    this->m_material.MaterialType = irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+    // this->m_material.MaterialType = irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL;
     this->m_material.setFlag (irr::video::EMF_LIGHTING, false);
     this->m_material.setFlag (irr::video::EMF_BLEND_OPERATION, true);
 }
@@ -105,14 +114,133 @@ const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
 
 void CImage::OnRegisterSceneNode ()
 {
-    SceneManager->registerNodeForRendering (this);
+    if (this->m_image->isVisible () == true)
+        SceneManager->registerNodeForRendering (this);
 
     ISceneNode::OnRegisterSceneNode ();
 }
 
 void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
 {
-    // TODO: SUPPORT SHADER PARAMETERS HERE
+    irr::f32 g_Texture0 = 0;
+    irr::f32 g_Texture1 = 1;
+    irr::f32 g_Texture2 = 2;
+    irr::f32 g_Texture3 = 3;
+    irr::f32 g_Texture4 = 4;
+    irr::f32 g_Texture5 = 5;
+    irr::f32 g_Texture6 = 6;
+    irr::f32 g_Texture7 = 7;
+
+    irr::f32 g_Texture0Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture1Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture2Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture3Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture4Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture5Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture6Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture7Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+
+    irr::f32 g_Texture0Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture1Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture2Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture3Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture4Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture5Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture6Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture7Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+
+    irr::video::IVideoDriver* driver = services->getVideoDriver ();
+
+    irr::core::matrix4 worldViewProj;worldViewProj.makeIdentity();
+    worldViewProj = driver->getTransform(irr::video::ETS_PROJECTION);
+    worldViewProj *= driver->getTransform(irr::video::ETS_VIEW);
+    worldViewProj *= driver->getTransform(irr::video::ETS_WORLD);
+
+    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator cur = this->m_vertexShader->getParameters ().begin ();
+    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator end = this->m_vertexShader->getParameters ().end ();
+
+    for (; cur != end; cur ++)
+    {
+        if ((*cur)->Is <CShaderParameterInteger> () == true)
+        {
+            services->setVertexShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::s32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+        }
+        else if (
+            (*cur)->Is <CShaderParameterFloat> () == true ||
+            (*cur)->Is <CShaderParameterVector2> () == true ||
+            (*cur)->Is <CShaderParameterVector3> () == true ||
+            (*cur)->Is <CShaderParameterVector4> () == true)
+        {
+            services->setVertexShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::f32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+        }
+    }
+
+    cur = this->m_pixelShader->getParameters ().begin ();
+    end = this->m_pixelShader->getParameters ().end ();
+
+    for (; cur != end; cur ++)
+    {
+        if ((*cur)->Is <CShaderParameterInteger> () == true)
+        {
+            services->setPixelShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::s32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+        }
+        else if (
+            (*cur)->Is <CShaderParameterFloat> () == true ||
+            (*cur)->Is <CShaderParameterVector2> () == true ||
+            (*cur)->Is <CShaderParameterVector3> () == true ||
+            (*cur)->Is <CShaderParameterVector4> () == true)
+        {
+            services->setPixelShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::f32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+        }
+    }
+
+    services->setVertexShaderConstant ("g_Time", &g_Time, 1);
+    services->setPixelShaderConstant  ("g_Time", &g_Time, 1);
+
+    services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
+
+    services->setVertexShaderConstant ("g_Texture0Resolution", g_Texture0Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture1Resolution", g_Texture1Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture2Resolution", g_Texture2Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture3Resolution", g_Texture3Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture4Resolution", g_Texture4Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture5Resolution", g_Texture5Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture6Resolution", g_Texture6Resolution, 4);
+    services->setVertexShaderConstant ("g_Texture7Resolution", g_Texture7Resolution, 4);
+
+    services->setVertexShaderConstant ("g_Texture0Rotation", g_Texture0Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture1Rotation", g_Texture1Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture2Rotation", g_Texture2Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture3Rotation", g_Texture3Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture4Rotation", g_Texture4Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture5Rotation", g_Texture5Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture6Rotation", g_Texture6Rotation, 4);
+    services->setVertexShaderConstant ("g_Texture7Rotation", g_Texture7Rotation, 4);
+
+    services->setPixelShaderConstant ("g_Texture0", &g_Texture0, 1);
+    services->setPixelShaderConstant ("g_Texture1", &g_Texture1, 1);
+    services->setPixelShaderConstant ("g_Texture2", &g_Texture2, 1);
+    services->setPixelShaderConstant ("g_Texture3", &g_Texture3, 1);
+    services->setPixelShaderConstant ("g_Texture4", &g_Texture4, 1);
+    services->setPixelShaderConstant ("g_Texture5", &g_Texture5, 1);
+    services->setPixelShaderConstant ("g_Texture6", &g_Texture6, 1);
+    services->setPixelShaderConstant ("g_Texture7", &g_Texture7, 1);
 }
 
 const std::string CImage::Type = "image";
