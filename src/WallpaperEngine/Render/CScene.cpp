@@ -1,5 +1,9 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/CSound.h"
+
 #include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/Objects/CSound.h"
+
 #include "CScene.h"
 
 using namespace WallpaperEngine;
@@ -27,6 +31,10 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
         if ((*cur)->Is <Core::Objects::CImage> () == true)
         {
             new Objects::CImage (this, (*cur)->As <Core::Objects::CImage> ());
+        }
+        else if ((*cur)->Is <Core::Objects::CSound> () == true)
+        {
+            new Objects::CSound (this, (*cur)->As <Core::Objects::CSound> ());
         }
     }
 

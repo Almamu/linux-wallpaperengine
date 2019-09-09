@@ -50,6 +50,8 @@ add_executable(
 
         src/WallpaperEngine/Render/Objects/CImage.h
         src/WallpaperEngine/Render/Objects/CImage.cpp
+        src/WallpaperEngine/Render/Objects/CSound.h
+        src/WallpaperEngine/Render/Objects/CSound.cpp
 
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h

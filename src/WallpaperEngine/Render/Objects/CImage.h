@@ -21,7 +21,6 @@ namespace WallpaperEngine::Render::Objects
 
         void render () override;
         const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
-        void OnRegisterSceneNode () override;
 
     protected:
         static const std::string Type;

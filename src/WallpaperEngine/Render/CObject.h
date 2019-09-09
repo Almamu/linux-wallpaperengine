@@ -23,6 +23,8 @@ namespace WallpaperEngine::Render
         CObject (CScene* scene, std::string type, Core::CObject *object);
         ~CObject ();
 
+        void OnRegisterSceneNode () override;
+
         CScene* getScene ();
 
     private:

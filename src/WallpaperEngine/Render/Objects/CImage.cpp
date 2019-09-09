@@ -181,14 +181,6 @@ const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
     return this->m_boundingBox;
 }
 
-void CImage::OnRegisterSceneNode ()
-{
-    if (this->m_image->isVisible () == true)
-        SceneManager->registerNodeForRendering (this);
-
-    ISceneNode::OnRegisterSceneNode ();
-}
-
 void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
 {
     irr::f32 g_Texture0 = 0;

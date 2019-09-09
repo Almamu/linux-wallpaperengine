@@ -23,3 +23,11 @@ CScene* CObject::getScene ()
 {
     return this->m_scene;
 }
+
+void CObject::OnRegisterSceneNode ()
+{
+    if (this->m_object->isVisible () == true)
+        SceneManager->registerNodeForRendering (this);
+
+    ISceneNode::OnRegisterSceneNode ();
+}
