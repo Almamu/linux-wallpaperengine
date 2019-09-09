@@ -37,7 +37,7 @@ void CCamera::setOrthogonalProjection (irr::f32 width, irr::f32 height)
     irr::core::matrix4 identity; identity.makeIdentity ();
     irr::core::matrix4 orthogonalProjection; orthogonalProjection.buildProjectionMatrixOrthoLH (
             width, height,
-            this->m_camera->getUp ()->X,
+            0.0f,
             this->m_camera->getUp ()->Y
     );
 

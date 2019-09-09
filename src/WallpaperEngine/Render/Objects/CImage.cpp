@@ -24,7 +24,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     irr::f32 xleft      = -this->m_image->getOrigin ()->X;
     irr::f32 ztop       = this->m_image->getOrigin ()->Y;
     irr::f32 zbottom    = -this->m_image->getOrigin ()->Y;
-    irr::f32 z          = this->getScene ()->getCamera ()->getEye ()->Z;
+    irr::f32 z          = this->m_image->getOrigin ()->Z;
 
     // top left
     this->m_vertex [0].Pos = irr::core::vector3df (xleft,  ztop,    z);
@@ -93,7 +93,7 @@ void CImage::generateMaterial ()
     std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator cur = this->m_image->getMaterial ()->getPasses ()->begin ();
     std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator end = this->m_image->getMaterial ()->getPasses ()->end ();
 
-    for (; cur != end; cur ++, this->m_passes ++)
+    for (; cur != end; cur++)
     {
         this->generatePass (*cur);
     }
@@ -101,17 +101,17 @@ void CImage::generateMaterial ()
     std::vector<Core::Objects::CEffect*>::const_iterator effectCur = this->m_image->getEffects ()->begin ();
     std::vector<Core::Objects::CEffect*>::const_iterator effectEnd = this->m_image->getEffects ()->end ();
 
-    for (; effectCur != effectEnd; effectCur ++)
+    for (; effectCur != effectEnd; effectCur++)
     {
         std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialCur = (*effectCur)->getMaterials ()->begin ();
         std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialEnd = (*effectCur)->getMaterials ()->end ();
 
-        for (; materialCur != materialEnd; materialCur ++)
+        for (; materialCur != materialEnd; materialCur++)
         {
             cur = (*materialCur)->getPasses ()->begin ();
             end = (*materialCur)->getPasses ()->end ();
 
-            for (; cur != end; cur ++, this->m_passes ++)
+            for (; cur != end; cur++)
             {
                 this->generatePass (*cur);
             }
@@ -139,7 +139,7 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
                 irr::core::dimension2d<irr::u32> (
                     this->getScene ()->getScene ()->getOrthogonalProjection()->getWidth (),
                     this->getScene ()->getScene ()->getOrthogonalProjection()->getHeight ()
-                ), ("_RT_" + this->m_image->getName ()).c_str ()
+                ), ("_RT_" + this->m_image->getName () + std::to_string (textureNumber) + "_" + std::to_string (this->m_passes)).c_str ()
             );
 
             this->m_renderTextures.push_back (texture);
@@ -167,10 +167,13 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
 
     material.setFlag (irr::video::EMF_LIGHTING, false);
     material.setFlag (irr::video::EMF_BLEND_OPERATION, true);
+    material.Wireframe = false;
+    material.Lighting = false;
 
     this->m_vertexShaders.push_back (vertexShader);
     this->m_pixelShaders.push_back (pixelShader);
     this->m_materials.push_back (material);
+    this->m_passes ++;
 }
 
 const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
