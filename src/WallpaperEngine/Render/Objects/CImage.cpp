@@ -16,7 +16,8 @@ extern irr::f32 g_Time;
 
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
-    m_image (image)
+    m_image (image),
+    m_passes (0)
 {
     // TODO: INITIALIZE NEEDED EFFECTS AND PROPERLY CALCULATE THESE?
     irr::f32 xright     = this->m_image->getOrigin ()->X;
@@ -58,11 +59,30 @@ void CImage::render()
 
     irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
 
-    driver->setMaterial (this->m_material);
-    driver->drawVertexPrimitiveList (
-        this->m_vertex, 4, indices, 1,
-        irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
-    );
+    std::vector<irr::video::SMaterial>::const_iterator cur = this->m_materials.begin ();
+    std::vector<irr::video::SMaterial>::const_iterator end = this->m_materials.end ();
+
+    std::vector<irr::video::ITexture*>::const_iterator textureCur = this->m_renderTextures.begin ();
+    std::vector<irr::video::ITexture*>::const_iterator textureEnd = this->m_renderTextures.end ();
+
+    for (; cur != end; cur ++)
+    {
+        if (textureCur == textureEnd)
+        {
+            driver->setRenderTarget (0, false, false);
+        }
+        else
+        {
+            driver->setRenderTarget (*textureCur, true, true, irr::video::SColor (0, 0, 0, 0));
+            textureCur ++;
+        }
+
+        driver->setMaterial (*cur);
+        driver->drawVertexPrimitiveList (
+            this->m_vertex, 4, indices, 1,
+            irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
+        );
+    }
 }
 
 void CImage::generateMaterial ()
@@ -70,42 +90,88 @@ void CImage::generateMaterial ()
     if (this->m_image->getMaterial ()->getPasses ()->empty () == true)
         return;
 
-    // TODO: SUPPORT OBJECT EFFECTS AND MULTIPLE MATERIAL PASSES
-    Core::Objects::Images::Materials::CPassess* pass = *this->m_image->getMaterial ()->getPasses ()->begin ();
-    std::string shader = pass->getShader ();
+    std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator cur = this->m_image->getMaterial ()->getPasses ()->begin ();
+    std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator end = this->m_image->getMaterial ()->getPasses ()->end ();
+
+    for (; cur != end; cur ++, this->m_passes ++)
+    {
+        this->generatePass (*cur);
+    }
+
+    std::vector<Core::Objects::CEffect*>::const_iterator effectCur = this->m_image->getEffects ()->begin ();
+    std::vector<Core::Objects::CEffect*>::const_iterator effectEnd = this->m_image->getEffects ()->end ();
+
+    for (; effectCur != effectEnd; effectCur ++)
+    {
+        std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialCur = (*effectCur)->getMaterials ()->begin ();
+        std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialEnd = (*effectCur)->getMaterials ()->end ();
+
+        for (; materialCur != materialEnd; materialCur ++)
+        {
+            cur = (*materialCur)->getPasses ()->begin ();
+            end = (*materialCur)->getPasses ()->end ();
+
+            for (; cur != end; cur ++, this->m_passes ++)
+            {
+                this->generatePass (*cur);
+            }
+        }
+    }
+}
+
+void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
+{
     std::vector<std::string>* textures = pass->getTextures ();
+    irr::video::SMaterial material;
 
-    std::vector<std::string>::const_iterator cur = textures->begin ();
-    std::vector<std::string>::const_iterator end = textures->end ();
+    std::vector<std::string>::const_iterator texturesCur = textures->begin ();
+    std::vector<std::string>::const_iterator texturesEnd = textures->end ();
 
-    for (int textureNumber = 0; cur != end; cur ++, textureNumber ++)
+    for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++, textureNumber ++)
     {
         // TODO: LOOK THIS UP PROPERLY
-        irr::io::path texturepath = std::string ("materials/" + (*cur) + ".tex").c_str ();
+        irr::io::path texturepath = std::string ("materials/" + (*texturesCur) + ".tex").c_str ();
+        irr::video::ITexture* texture = nullptr;
 
-        irr::video::ITexture* texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getTexture (texturepath);
+        if (textureNumber == 0 && this->m_passes > 0)
+        {
+            texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->addRenderTargetTexture (
+                irr::core::dimension2d<irr::u32> (
+                    this->getScene ()->getScene ()->getOrthogonalProjection()->getWidth (),
+                    this->getScene ()->getScene ()->getOrthogonalProjection()->getHeight ()
+                ), ("_RT_" + this->m_image->getName ()).c_str ()
+            );
 
-        this->m_material.setTexture (textureNumber, texture);
+            this->m_renderTextures.push_back (texture);
+        }
+        else
+        {
+            texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getTexture (texturepath);
+        }
+
+        material.setTexture (textureNumber, texture);
     }
 
     // TODO: MOVE SHADER INITIALIZATION ELSEWHERE
-    irr::io::path vertpath = std::string ("shaders/" + shader + ".vert").c_str ();
-    irr::io::path fragpath = std::string ("shaders/" + shader + ".frag").c_str ();
-    this->m_vertexShader = new Render::Shaders::Compiler (vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
-    this->m_pixelShader = new Render::Shaders::Compiler (fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
+    irr::io::path vertpath = std::string ("shaders/" + pass->getShader () + ".vert").c_str ();
+    irr::io::path fragpath = std::string ("shaders/" + pass->getShader () + ".frag").c_str ();
+    Render::Shaders::Compiler* vertexShader = new Render::Shaders::Compiler (vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
+    Render::Shaders::Compiler* pixelShader = new Render::Shaders::Compiler (fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
 
-    this->m_material.MaterialType = (irr::video::E_MATERIAL_TYPE)
+    material.MaterialType = (irr::video::E_MATERIAL_TYPE)
         this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
-            this->m_vertexShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
-            this->m_pixelShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
-            this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
+            vertexShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
+            pixelShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
+            this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, this->m_passes, irr::video::EGSL_DEFAULT
         );
 
-    // this->m_material.MaterialType = irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL;
-    this->m_material.setFlag (irr::video::EMF_LIGHTING, false);
-    this->m_material.setFlag (irr::video::EMF_BLEND_OPERATION, true);
-}
+    material.setFlag (irr::video::EMF_LIGHTING, false);
+    material.setFlag (irr::video::EMF_BLEND_OPERATION, true);
 
+    this->m_vertexShaders.push_back (vertexShader);
+    this->m_pixelShaders.push_back (pixelShader);
+    this->m_materials.push_back (material);
+}
 
 const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
 {
@@ -156,8 +222,11 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
     worldViewProj *= driver->getTransform(irr::video::ETS_VIEW);
     worldViewProj *= driver->getTransform(irr::video::ETS_WORLD);
 
-    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator cur = this->m_vertexShader->getParameters ().begin ();
-    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator end = this->m_vertexShader->getParameters ().end ();
+    Render::Shaders::Compiler* vertexShader = this->m_vertexShaders.at (userData);
+    Render::Shaders::Compiler* pixelShader = this->m_pixelShaders.at (userData);
+
+    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator cur = vertexShader->getParameters ().begin ();
+    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator end = vertexShader->getParameters ().end ();
 
     for (; cur != end; cur ++)
     {
@@ -183,8 +252,8 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
         }
     }
 
-    cur = this->m_pixelShader->getParameters ().begin ();
-    end = this->m_pixelShader->getParameters ().end ();
+    cur = pixelShader->getParameters ().begin ();
+    end = pixelShader->getParameters ().end ();
 
     for (; cur != end; cur ++)
     {

@@ -28,14 +28,17 @@ namespace WallpaperEngine::Render::Objects
 
     private:
         void generateMaterial ();
+        void generatePass (Core::Objects::Images::Materials::CPassess* pass);
 
         irr::video::S3DVertex m_vertex [4];
-        irr::video::SMaterial m_material;
+        irr::u32 m_passes;
+        std::vector<irr::video::SMaterial> m_materials;
+        std::vector<irr::video::ITexture*> m_renderTextures;
 
         Core::Objects::CImage* m_image;
         irr::core::aabbox3d<irr::f32> m_boundingBox;
 
-        Render::Shaders::Compiler* m_vertexShader;
-        Render::Shaders::Compiler* m_pixelShader;
+        std::vector<Render::Shaders::Compiler*> m_vertexShaders;
+        std::vector<Render::Shaders::Compiler*> m_pixelShaders;
     };
 }

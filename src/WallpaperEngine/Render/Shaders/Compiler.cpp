@@ -447,7 +447,6 @@ namespace WallpaperEngine::Render::Shaders
 
         if (this->m_recursive == false)
         {
-
             std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
             std::cout << this->m_compiledContent << std::endl;
         }

@@ -30,6 +30,7 @@ namespace WallpaperEngine::Core
         irr::core::vector3df* getOrigin ();
         irr::core::vector3df* getScale ();
         irr::core::vector3df* getAngles ();
+        std::string getName ();
 
         bool isVisible ();
     protected:

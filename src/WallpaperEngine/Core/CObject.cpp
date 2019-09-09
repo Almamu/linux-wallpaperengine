@@ -146,6 +146,11 @@ irr::core::vector3df* CObject::getAngles ()
     return &this->m_angles;
 }
 
+std::string CObject::getName ()
+{
+    return this->m_name;
+}
+
 std::vector<Objects::CEffect*>* CObject::getEffects ()
 {
     return &this->m_effects;

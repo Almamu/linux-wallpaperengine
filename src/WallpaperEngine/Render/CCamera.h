@@ -14,7 +14,7 @@ namespace WallpaperEngine::Render
         CCamera (CScene* scene, Core::Scenes::CCamera* camera);
         ~CCamera ();
 
-        void setOrthogonalProjection (irr::u32 width, irr::u32 height);
+        void setOrthogonalProjection (irr::f32 width, irr::f32 height);
 
         irr::core::vector3df* getCenter ();
         irr::core::vector3df* getEye ();
