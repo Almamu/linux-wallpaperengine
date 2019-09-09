@@ -18,6 +18,12 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
     m_scene (project->getScene ()),
     m_context (context)
 {
+    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
+    this->m_camera->setOrthogonalProjection (
+            this->m_scene->getOrthogonalProjection ()->getWidth (),
+            this->m_scene->getOrthogonalProjection ()->getHeight ()
+    );
+
     std::vector<Core::CObject*>::const_iterator cur = this->m_scene->getObjects ()->begin ();
     std::vector<Core::CObject*>::const_iterator end = this->m_scene->getObjects ()->end ();
 
@@ -41,12 +47,6 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
     this->m_nextId = ++highestId;
     this->setAutomaticCulling (irr::scene::EAC_OFF);
     this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
-
-    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
-    this->m_camera->setOrthogonalProjection (
-        this->m_scene->getOrthogonalProjection ()->getWidth (),
-        this->m_scene->getOrthogonalProjection ()->getHeight ()
-    );
 }
 
 CScene::~CScene ()
@@ -77,7 +77,7 @@ void CScene::render ()
 {
 }
 
-const irr::core::aabbox3d<irr::f32>& CScene::getBoundingBox() const
+const irr::core::aabbox3d<irr::f32>& CScene::getBoundingBox () const
 {
     return this->m_boundingBox;
 }

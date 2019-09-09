@@ -47,8 +47,8 @@ CCamera* CCamera::fromJSON (json data)
     }
 
     return new CCamera (
-            WallpaperEngine::Core::ato3vf (*center_it),
-            WallpaperEngine::Core::ato3vf (*eye_it),
-            WallpaperEngine::Core::ato3vf (*up_it)
+        WallpaperEngine::Core::ato3vf (*center_it),
+        WallpaperEngine::Core::ato3vf (*eye_it),
+        WallpaperEngine::Core::ato3vf (*up_it)
     );
 }

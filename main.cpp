@@ -132,6 +132,12 @@ int init_irrlicht()
         IrrlichtContext->getDevice ()->getLogger ()->log ("WARNING: Vertex shaders disabled because of missing driver/hardware support");
     }
 
+    if (IrrlichtContext->getDevice ()->getVideoDriver ()->queryFeature (irr::video::EVDF_RENDER_TO_TARGET) == false)
+    {
+        IrrlichtContext->getDevice ()->getLogger ()->log ("ERROR: Your hardware or this renderer do not support rendering to texture");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -299,6 +305,7 @@ int main (int argc, char* argv[])
     irr::u32 startTime = 0;
     irr::u32 endTime = 0;
 
+    IrrlichtContext->getDevice ()->getSceneManager ()->setAmbientLight (sceneRender->getScene ()->getAmbientColor ().toSColor ());
     while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
     {
         if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)

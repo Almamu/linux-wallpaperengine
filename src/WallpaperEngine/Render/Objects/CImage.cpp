@@ -54,7 +54,7 @@ void CImage::render()
 {
     uint16_t indices [] =
     {
-            0, 1, 2, 3
+            3, 2, 1, 0
     };
 
     irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
@@ -69,7 +69,7 @@ void CImage::render()
     {
         if (textureCur == textureEnd)
         {
-            driver->setRenderTarget (0, false, false);
+            driver->setRenderTarget (irr::video::ERT_FRAME_BUFFER, false, false);
         }
         else
         {
@@ -87,9 +87,6 @@ void CImage::render()
 
 void CImage::generateMaterial ()
 {
-    if (this->m_image->getMaterial ()->getPasses ()->empty () == true)
-        return;
-
     std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator cur = this->m_image->getMaterial ()->getPasses ()->begin ();
     std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator end = this->m_image->getMaterial ()->getPasses ()->end ();
 
@@ -135,12 +132,16 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
 
         if (textureNumber == 0 && this->m_passes > 0)
         {
+            irr::video::ITexture* originalTexture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getTexture (texturepath);
+
             texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->addRenderTargetTexture (
                 irr::core::dimension2d<irr::u32> (
-                    this->getScene ()->getScene ()->getOrthogonalProjection()->getWidth (),
-                    this->getScene ()->getScene ()->getOrthogonalProjection()->getHeight ()
+                    originalTexture->getSize ().Width,
+                    originalTexture->getSize ().Height
                 ), ("_RT_" + this->m_image->getName () + std::to_string (textureNumber) + "_" + std::to_string (this->m_passes)).c_str ()
             );
+
+            //originalTexture->drop ();
 
             this->m_renderTextures.push_back (texture);
         }
@@ -148,6 +149,8 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
         {
             texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getTexture (texturepath);
         }
+
+        //texture->grab ();
 
         material.setTexture (textureNumber, texture);
     }
@@ -165,6 +168,7 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
             this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, this->m_passes, irr::video::EGSL_DEFAULT
         );
 
+    // TODO: TAKE INTO ACCOUNT BLENDING AND CULLING METHODS FROM THE JSON
     material.setFlag (irr::video::EMF_LIGHTING, false);
     material.setFlag (irr::video::EMF_BLEND_OPERATION, true);
     material.Wireframe = false;
@@ -192,30 +196,30 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
     irr::f32 g_Texture6 = 6;
     irr::f32 g_Texture7 = 7;
 
-    irr::f32 g_Texture0Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture1Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture2Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture3Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture4Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture5Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture6Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
-    irr::f32 g_Texture7Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z};
+    irr::f32 g_Texture0Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture1Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture2Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture3Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture4Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture5Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture6Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture7Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
 
-    irr::f32 g_Texture0Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture1Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture2Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture3Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture4Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture5Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture6Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
-    irr::f32 g_Texture7Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y};
+    irr::f32 g_Texture0Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture1Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture2Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture3Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture4Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture5Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture6Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture7Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
 
     irr::video::IVideoDriver* driver = services->getVideoDriver ();
 
-    irr::core::matrix4 worldViewProj;worldViewProj.makeIdentity();
-    worldViewProj = driver->getTransform(irr::video::ETS_PROJECTION);
-    worldViewProj *= driver->getTransform(irr::video::ETS_VIEW);
-    worldViewProj *= driver->getTransform(irr::video::ETS_WORLD);
+    irr::core::matrix4 worldViewProj;
+    worldViewProj = driver->getTransform (irr::video::ETS_PROJECTION);
+    worldViewProj *= driver->getTransform (irr::video::ETS_VIEW);
+    worldViewProj *= driver->getTransform (irr::video::ETS_WORLD);
 
     Render::Shaders::Compiler* vertexShader = this->m_vertexShaders.at (userData);
     Render::Shaders::Compiler* pixelShader = this->m_pixelShaders.at (userData);
