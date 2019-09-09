@@ -8,7 +8,7 @@ CCamera::CCamera (CScene* scene, Core::Scenes::CCamera* camera) :
     m_scene (scene)
 {
     this->m_sceneCamera = scene->getContext ()->getDevice ()->getSceneManager ()->addCameraSceneNode (
-        scene, *this->m_camera->getCenter (), *this->m_camera->getEye (), scene->nextId ()
+        scene, *this->getCenter (), *this->getEye (), scene->nextId ()
     );
 }
 
@@ -37,8 +37,8 @@ void CCamera::setOrthogonalProjection (irr::f32 width, irr::f32 height)
     irr::core::matrix4 identity; identity.makeIdentity ();
     irr::core::matrix4 orthogonalProjection; orthogonalProjection.buildProjectionMatrixOrthoLH (
             width, height,
-            0.0f,
-            this->m_camera->getUp ()->Y
+            this->getEye ()->Z,
+            this->getCenter ()->Z
     );
 
     this->m_sceneCamera->setProjectionMatrix (orthogonalProjection);

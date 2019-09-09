@@ -319,14 +319,14 @@ int main (int argc, char* argv[])
                     // change viewport to render to the correct portion of the display
                     IrrlichtContext->getDevice ()->getVideoDriver ()->setViewPort (*cur);
 
-                    IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (false, true, irr::video::SColor(0, 0, 0, 0));
+                    IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (false, true, sceneRender->getScene ()->getClearColor ().toSColor());
                     IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
                     IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
                 }
             }
             else
             {
-                IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (true, true, irr::video::SColor(0, 0, 0, 0));
+                IrrlichtContext->getDevice ()->getVideoDriver ()->beginScene (true, true, sceneRender->getScene ()->getClearColor ().toSColor());
                 IrrlichtContext->getDevice ()->getSceneManager ()->drawAll ();
                 IrrlichtContext->getDevice ()->getVideoDriver ()->endScene ();
             }
