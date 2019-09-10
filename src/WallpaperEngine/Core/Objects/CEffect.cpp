@@ -98,7 +98,7 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
         }
 
         effect->insertMaterial (
-                Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str ())
+            Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str ())
         );
     }
 
@@ -118,82 +118,96 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
         for (int passNumber = 0; cur != end; cur ++, passNumber ++)
         {
             auto constants_it = (*cur).find ("constantshadervalues");
-
-            if (constants_it == (*cur).end ())
-                continue;
-
-            auto constantCur = (*constants_it).begin ();
-            auto constantEnd = (*constants_it).end ();
-
-            for (; constantCur != constantEnd; constantCur ++)
-            {
-                Effects::CShaderConstant* constant = nullptr;
-
-                if ((*constantCur).is_number_float () == true)
-                {
-                    constant = new Effects::CShaderConstantFloat ((*constantCur).get <irr::f32> ());
-                }
-                else if ((*constantCur).is_number_integer () == true)
-                {
-                    constant = new Effects::CShaderConstantInteger ((*constantCur).get <irr::s32> ());
-                }
-                else if ((*constantCur).is_string () == true)
-                {
-                    constant = new Effects::CShaderConstantVector3 (WallpaperEngine::Core::ato3vf (*constantCur));
-                }
-                else
-                {
-                    throw std::runtime_error ("unknown shader constant type");
-                }
-
-                effect->insertConstant (constantCur.key (), constant);
-            }
-
+            auto combos_it = (*cur).find ("combos");
             auto textures_it = (*cur).find ("textures");
 
-            if (textures_it == (*cur).end ())
+            if (constants_it == (*cur).end () && combos_it == (*cur).end () && textures_it == (*cur).end ())
                 continue;
 
             Images::CMaterial* material = effect->getMaterials ().at (passNumber);
+
             auto passCur = material->getPasses ().begin ();
             auto passEnd = material->getPasses ().end ();
 
             for (; passCur != passEnd; passCur ++)
             {
-                auto texturesCur = (*textures_it).begin ();
-                auto texturesEnd = (*textures_it).end ();
-
-                for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++)
+                if (textures_it != (*cur).end ())
                 {
-                    std::string texture;
+                    auto texturesCur = (*textures_it).begin ();
+                    auto texturesEnd = (*textures_it).end ();
 
-                    if ((*texturesCur).is_null () == true)
+                    for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++)
                     {
-                        if (object->is<CImage>() == false)
+                        std::string texture;
+
+                        if ((*texturesCur).is_null () == true)
                         {
-                            throw std::runtime_error ("unexpected null texture for non-image object");
+                            if (object->is <CImage> () == false)
+                            {
+                                throw std::runtime_error ("unexpected null texture for non-image object");
+                            }
+
+                            CImage* image = object->as <CImage> ();
+
+                            texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ()->begin ());
+                        }
+                        else
+                        {
+                            texture = *texturesCur;
                         }
 
-                        CImage* image = object->as<CImage>();
+                        std::vector<std::string>* passTextures = (*passCur)->getTextures ();
 
-                        texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ()->begin ());
+                        if (textureNumber < passTextures->size ())
+                            passTextures->at (textureNumber) = texture;
+                        else
+                            passTextures->push_back (texture);
+
+                        textureNumber ++;
                     }
-                    else
+                }
+
+                if (combos_it != (*cur).end ())
+                {
+                    auto comboCur = (*combos_it).begin ();
+                    auto comboEnd = (*combos_it).end ();
+
+                    for (; comboCur != comboEnd; comboCur ++)
                     {
-                        texture = *texturesCur;
+                        (*passCur)->insertCombo (comboCur.key (), *comboCur);
                     }
+                }
 
-                    std::vector<std::string>* passTextures = (*passCur)->getTextures ();
+                if (constants_it != (*cur).end ())
+                {
+                    auto constantCur = (*constants_it).begin ();
+                    auto constantEnd = (*constants_it).end ();
 
-                    if (textureNumber < passTextures->size ())
-                        passTextures->at (textureNumber) = texture;
-                    else
-                        passTextures->push_back (texture);
+                    for (; constantCur != constantEnd; constantCur ++)
+                    {
+                        Effects::CShaderConstant* constant = nullptr;
 
-                    textureNumber ++;
+                        if ((*constantCur).is_number_float () == true)
+                        {
+                            constant = new Effects::CShaderConstantFloat ((*constantCur).get <irr::f32> ());
+                        }
+                        else if ((*constantCur).is_number_integer () == true)
+                        {
+                            constant = new Effects::CShaderConstantInteger ((*constantCur).get <irr::s32> ());
+                        }
+                        else if ((*constantCur).is_string () == true)
+                        {
+                            constant = new Effects::CShaderConstantVector3 (WallpaperEngine::Core::ato3vf (*constantCur));
+                        }
+                        else
+                        {
+                            throw std::runtime_error ("unknown shader constant type");
+                        }
+
+                        (*passCur)->insertConstant (constantCur.key (), constant);
+                    }
                 }
             }
-
         }
     }
 
@@ -210,11 +224,6 @@ const std::vector<Images::CMaterial*>& CEffect::getMaterials () const
     return this->m_materials;
 }
 
-const std::map<std::string, Effects::CShaderConstant*>& CEffect::getConstants () const
-{
-    return this->m_constants;
-}
-
 void CEffect::insertDependency (const std::string& dep)
 {
     this->m_dependencies.push_back (dep);
@@ -223,9 +232,4 @@ void CEffect::insertDependency (const std::string& dep)
 void CEffect::insertMaterial (Images::CMaterial* material)
 {
     this->m_materials.push_back (material);
-}
-
-void CEffect::insertConstant (const std::string& name, Effects::CShaderConstant* constant)
-{
-    this->m_constants.insert (std::pair <std::string, Effects::CShaderConstant*> (name, constant));
 }

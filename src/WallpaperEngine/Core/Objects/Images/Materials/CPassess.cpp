@@ -1,5 +1,6 @@
 #include "CPassess.h"
 
+using namespace WallpaperEngine::Core::Objects::Effects;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
 CPassess::CPassess (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader) :
@@ -119,6 +120,11 @@ std::vector<std::string>* CPassess::getTextures ()
     return &this->m_textures;
 }
 
+const std::map<std::string, CShaderConstant*>& CPassess::getConstants () const
+{
+    return this->m_constants;
+}
+
 const std::map<std::string, int>& CPassess::getCombos () const
 {
     return this->m_combos;
@@ -147,4 +153,9 @@ const std::string& CPassess::getDepthTest () const
 const std::string& CPassess::getDepthWrite ()const
 {
     return this->m_depthwrite;
+}
+
+void CPassess::insertConstant (const std::string& name, CShaderConstant* constant)
+{
+    this->m_constants.insert (std::pair <std::string, CShaderConstant*> (name, constant));
 }

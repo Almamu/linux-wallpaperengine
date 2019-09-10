@@ -31,11 +31,9 @@ namespace WallpaperEngine::Core::Objects
 
         const std::vector<std::string>& getDependencies () const;
         const std::vector<Images::CMaterial*>& getMaterials () const;
-        const std::map<std::string, Effects::CShaderConstant*>& getConstants () const;
     protected:
         void insertDependency (const std::string& dep);
         void insertMaterial (Images::CMaterial* material);
-        void insertConstant (const std::string& name, Effects::CShaderConstant* constant);
     private:
         std::string m_name;
         std::string m_description;
@@ -45,6 +43,5 @@ namespace WallpaperEngine::Core::Objects
 
         std::vector<std::string> m_dependencies;
         std::vector<Images::CMaterial*> m_materials;
-        std::map<std::string, Effects::CShaderConstant*> m_constants;
     };
 }

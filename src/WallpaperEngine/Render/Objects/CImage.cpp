@@ -174,47 +174,44 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Cor
             this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, this->m_passes, irr::video::EGSL_DEFAULT
         );
 
-    if (effect)
+    // find variables in the shaders and set the value with the constants if possible
+    auto cur = pass->getConstants ().begin ();
+    auto end = pass->getConstants ().end ();
+
+    for (; cur != end; cur ++)
     {
-        // find variables in the shaders and set the value with the constants if possible
-        auto cur = effect->getConstants ().begin ();
-        auto end = effect->getConstants ().end ();
+        CShaderVariable* vertexVar = vertexShader->findParameter ((*cur).first);
+        CShaderVariable* pixelVar = pixelShader->findParameter ((*cur).first);
 
-        for (; cur != end; cur ++)
+        if (pixelVar)
         {
-            CShaderVariable* vertexVar = vertexShader->findParameter ((*cur).first);
-            CShaderVariable* pixelVar = pixelShader->findParameter ((*cur).first);
-
-            if (pixelVar)
+            if (pixelVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
             {
-                if (pixelVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
-                {
-                    pixelVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
-                }
-                else if (pixelVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
-                {
-                    pixelVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
-                }
-                else if (pixelVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
-                {
-                    pixelVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
-                }
+                pixelVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
             }
-
-            if (vertexVar)
+            else if (pixelVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
             {
-                if (vertexVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
-                {
-                    vertexVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
-                }
-                else if (vertexVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
-                {
-                    vertexVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
-                }
-                else if (vertexVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
-                {
-                    vertexVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
-                }
+                pixelVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
+            }
+            else if (pixelVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
+            {
+                pixelVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
+            }
+        }
+
+        if (vertexVar)
+        {
+            if (vertexVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
+            {
+                vertexVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
+            }
+            else if (vertexVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
+            {
+                vertexVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
+            }
+            else if (vertexVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
+            {
+                vertexVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
             }
         }
     }
