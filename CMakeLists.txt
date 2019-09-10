@@ -102,8 +102,6 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Effects/CShaderConstant.cpp
         src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h
         src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.cpp
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantString.h
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantString.cpp
         src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h
         src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.cpp
 

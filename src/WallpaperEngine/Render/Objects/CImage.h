@@ -26,7 +26,7 @@ namespace WallpaperEngine::Render::Objects
 
     private:
         void generateMaterial ();
-        void generatePass (Core::Objects::Images::Materials::CPassess* pass);
+        void generatePass (Core::Objects::Images::Materials::CPassess* pass, Core::Objects::CEffect* effect);
 
         irr::video::S3DVertex m_vertex [4];
         irr::u32 m_passes;

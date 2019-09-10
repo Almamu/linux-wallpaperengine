@@ -4,8 +4,6 @@
 #include <SDL_mixer.h>
 #include <SDL.h>
 
-#include "WallpaperEngine/Render/Shaders/Compiler.h"
-
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Irrlicht/CContext.h"
 #include "WallpaperEngine/Render/CScene.h"
@@ -132,7 +130,6 @@ int main (int argc, char* argv[])
 
     irr::io::path wallpaper_path = IrrlichtContext->getDevice ()->getFileSystem ()->getAbsolutePath (path.c_str ());
     irr::io::path project_path = wallpaper_path + "project.json";
-    irr::io::path scene_path;
 
     if (mode == RUN_MODE_PACKAGE)
     {

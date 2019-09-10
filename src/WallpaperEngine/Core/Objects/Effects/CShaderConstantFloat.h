@@ -14,9 +14,8 @@ namespace WallpaperEngine::Core::Objects::Effects
 
         irr::f32* getValue ();
 
+        static const std::string Type;
     protected:
         irr::f32 m_value;
-
-        static const std::string Type;
     };
 }

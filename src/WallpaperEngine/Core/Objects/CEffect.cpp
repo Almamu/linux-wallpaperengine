@@ -5,7 +5,6 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantString.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
@@ -137,7 +136,7 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
                 }
                 else if ((*constantCur).is_string () == true)
                 {
-                    constant = new Effects::CShaderConstantString ((*constantCur).get <std::string> ());
+                    throw std::runtime_error ("String constants not supported yet");
                 }
                 else
                 {

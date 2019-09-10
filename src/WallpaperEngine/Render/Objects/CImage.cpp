@@ -7,10 +7,17 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
-
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h"
+
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
 
 using namespace WallpaperEngine;
+
+using namespace WallpaperEngine::Core::Objects::Effects;
+
 using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
@@ -94,7 +101,7 @@ void CImage::generateMaterial ()
 
     for (; cur != end; cur++)
     {
-        this->generatePass (*cur);
+        this->generatePass (*cur, nullptr);
     }
 
     auto effectCur = this->m_image->getEffects ().begin ();
@@ -112,13 +119,13 @@ void CImage::generateMaterial ()
 
             for (; cur != end; cur++)
             {
-                this->generatePass (*cur);
+                this->generatePass (*cur, *effectCur);
             }
         }
     }
 }
 
-void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
+void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Core::Objects::CEffect* effect)
 {
     std::vector<std::string>* textures = pass->getTextures ();
     irr::video::SMaterial material;
@@ -165,6 +172,43 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
             pixelShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
             this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, this->m_passes, irr::video::EGSL_DEFAULT
         );
+
+    if (effect)
+    {
+        // find variables in the shaders and set the value with the constants if possible
+        auto cur = effect->getConstants ().begin ();
+        auto end = effect->getConstants ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            CShaderVariable* vertexVar = vertexShader->findParameter ((*cur).first);
+            CShaderVariable* pixelVar = pixelShader->findParameter ((*cur).first);
+
+            if (pixelVar)
+            {
+                if (pixelVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
+                {
+                    pixelVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
+                }
+                else if (pixelVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
+                {
+                    pixelVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
+                }
+            }
+
+            if (vertexVar)
+            {
+                if (vertexVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
+                {
+                    vertexVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
+                }
+                else if (vertexVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
+                {
+                    vertexVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
+                }
+            }
+        }
+    }
 
     // TODO: TAKE INTO ACCOUNT BLENDING AND CULLING METHODS FROM THE JSON
     material.setFlag (irr::video::EMF_LIGHTING, false);
