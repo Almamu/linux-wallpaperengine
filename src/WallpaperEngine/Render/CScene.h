@@ -7,6 +7,11 @@
 
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
+namespace WallpaperEngine::Irrlicht
+{
+    class CContext;
+};
+
 namespace WallpaperEngine::Render
 {
     class CCamera;

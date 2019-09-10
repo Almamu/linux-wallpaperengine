@@ -11,7 +11,6 @@ using namespace WallpaperEngine;
 
 namespace WallpaperEngine::Render::Objects
 {
-    // TODO: MOVE IShaderConstantSetCallBack TO IT'S OWN CLASS OR ORGANIZE THIS BETTER
     class CImage : public CObject, public irr::video::IShaderConstantSetCallBack
     {
     public:

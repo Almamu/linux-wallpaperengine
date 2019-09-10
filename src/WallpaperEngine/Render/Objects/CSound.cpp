@@ -1,3 +1,4 @@
+#include <SDL.h>
 #include <SDL_rwops.h>
 #include <SDL_mixer.h>
 
@@ -18,8 +19,13 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
 
 void CSound::load ()
 {
-    std::vector<std::string>::const_iterator cur = this->m_sound->getSounds ().begin ();
-    std::vector<std::string>::const_iterator end = this->m_sound->getSounds ().end ();
+    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
+    {
+        return;
+    }
+
+    auto cur = this->m_sound->getSounds ().begin ();
+    auto end = this->m_sound->getSounds ().end ();
 
     for (; cur != end; cur ++)
     {
@@ -51,8 +57,13 @@ void CSound::load ()
 }
 void CSound::play ()
 {
-    std::vector<Mix_Music*>::const_iterator mixcur = this->m_sdl.begin ();
-    std::vector<Mix_Music*>::const_iterator mixend = this->m_sdl.end ();
+    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
+    {
+        return;
+    }
+
+    auto mixcur = this->m_sdl.begin ();
+    auto mixend = this->m_sdl.end ();
 
     for (; mixcur != mixend; mixcur ++)
     {

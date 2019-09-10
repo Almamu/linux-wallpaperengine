@@ -1,3 +1,5 @@
+#include "WallpaperEngine/Irrlicht/CContext.h"
+
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 

@@ -126,7 +126,6 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
 
     for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++, textureNumber ++)
     {
-        // TODO: LOOK THIS UP PROPERLY
         irr::io::path texturepath = this->getScene ()->getContext ()->resolveMaterials (*texturesCur);
         irr::video::ITexture* texture = nullptr;
 
