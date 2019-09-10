@@ -20,14 +20,12 @@ bool IsRootWindow = false;
 std::vector<std::string> Screens;
 std::vector<irr::core::rect<irr::s32>> Viewports;
 
-irr::SIrrlichtCreationParameters _irr_params;
-
 irr::f32 g_Time = 0;
 
 WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
-void initialize_viewports ()
+void initialize_viewports (irr::SIrrlichtCreationParameters& irrlichtCreationParameters)
 {
-    if (IsRootWindow == false || Screens.size () == 0)
+    if (IsRootWindow == false || Screens.empty () == true)
         return;
 
     Display* display = XOpenDisplay (NULL);
@@ -82,33 +80,34 @@ void initialize_viewports ()
 
     XRRFreeScreenResources (screenResources);
 
-    _irr_params.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
+    irrlichtCreationParameters.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
 }
 
 int init_irrlicht()
 {
     IrrlichtContext = new WallpaperEngine::Irrlicht::CContext ();
 
+    irr::SIrrlichtCreationParameters irrlichtCreationParameters;
     // prepare basic configuration for irrlicht
-    _irr_params.AntiAlias = 8;
-    _irr_params.Bits = 16;
+    irrlichtCreationParameters.AntiAlias = 8;
+    irrlichtCreationParameters.Bits = 16;
     // _irr_params.DeviceType = Irrlicht::EIDT_X11;
-    _irr_params.DriverType = irr::video::EDT_OPENGL;
-    _irr_params.Doublebuffer = false;
-    _irr_params.EventReceiver = nullptr;
-    _irr_params.Fullscreen = false;
-    _irr_params.HandleSRGB = false;
-    _irr_params.IgnoreInput = true;
-    _irr_params.Stencilbuffer = true;
-    _irr_params.UsePerformanceTimer = false;
-    _irr_params.Vsync = false;
-    _irr_params.WithAlphaChannel = false;
-    _irr_params.ZBufferBits = 24;
-    _irr_params.LoggingLevel = irr::ELL_DEBUG;
+    irrlichtCreationParameters.DriverType = irr::video::EDT_OPENGL;
+    irrlichtCreationParameters.Doublebuffer = false;
+    irrlichtCreationParameters.EventReceiver = nullptr;
+    irrlichtCreationParameters.Fullscreen = false;
+    irrlichtCreationParameters.HandleSRGB = false;
+    irrlichtCreationParameters.IgnoreInput = true;
+    irrlichtCreationParameters.Stencilbuffer = true;
+    irrlichtCreationParameters.UsePerformanceTimer = false;
+    irrlichtCreationParameters.Vsync = false;
+    irrlichtCreationParameters.WithAlphaChannel = false;
+    irrlichtCreationParameters.ZBufferBits = 24;
+    irrlichtCreationParameters.LoggingLevel = irr::ELL_DEBUG;
 
-    initialize_viewports ();
+    initialize_viewports (irrlichtCreationParameters);
 
-    IrrlichtContext->setDevice (irr::createDeviceEx (_irr_params));
+    IrrlichtContext->setDevice (irr::createDeviceEx (irrlichtCreationParameters));
 
     if (IrrlichtContext->getDevice () == nullptr)
     {
@@ -210,7 +209,7 @@ int main (int argc, char* argv[])
         {
             case 'r':
                 IsRootWindow = true;
-                Screens.push_back (optarg);
+                Screens.emplace_back (optarg);
                 break;
 
             case 'p':

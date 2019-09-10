@@ -6,7 +6,10 @@
 #include <map>
 #include <nlohmann/json.hpp>
 
-#include <WallpaperEngine/FileSystem/FileSystem.h>
+#include "WallpaperEngine/FileSystem/FileSystem.h"
+
+#include "WallpaperEngine/Irrlicht/CContext.h"
+
 #include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
 
 namespace WallpaperEngine::Render::Shaders
@@ -42,11 +45,13 @@ namespace WallpaperEngine::Render::Shaders
          * the pre-processing and compilation of the shader, adding
          * required definitions if needed
          *
+         * @param context The irrlicht context
          * @param file The file to load
          * @param type The type of shader
+         * @param combos Settings for the shader
          * @param recursive Whether the compiler should add base definitions or not
          */
-        Compiler (irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive = false);
+        Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive = false);
         /**
          * Performs the actual pre-compilation/pre-processing over the shader files
          * This step is kinda big, replaces variables names on sVariableReplacement,
@@ -211,5 +216,9 @@ namespace WallpaperEngine::Render::Shaders
           * Whether this compilation is a recursive one or not
           */
          bool m_recursive;
+         /**
+          * The irrlicht context in use
+          */
+         Irrlicht::CContext* m_context;
     };
 }

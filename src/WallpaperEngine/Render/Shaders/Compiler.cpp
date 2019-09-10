@@ -19,13 +19,14 @@
 
 namespace WallpaperEngine::Render::Shaders
 {
-    Compiler::Compiler (irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive) :
+    Compiler::Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive) :
         m_combos (combos),
         m_recursive (recursive),
         m_type (type),
         m_file (file),
         m_error (""),
-        m_errorInfo ("")
+        m_errorInfo (""),
+        m_context (context)
     {
         // begin with an space so it gets ignored properly on parse
         if (this->m_recursive == false)
@@ -207,7 +208,7 @@ namespace WallpaperEngine::Render::Shaders
     std::string Compiler::lookupShaderFile (std::string filename)
     {
         // get file information
-        irr::io::path shader = ("shaders/" + filename).c_str ();
+        irr::io::path shader = this->m_context->resolveIncludeShader (filename);
 
         if (shader == "")
         {
@@ -218,7 +219,7 @@ namespace WallpaperEngine::Render::Shaders
 
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (shader, this->m_type, this->m_combos, true);
+        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, true);
 
         return loader.precompile ();
     }

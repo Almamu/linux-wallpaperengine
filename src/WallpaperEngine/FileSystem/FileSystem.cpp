@@ -6,24 +6,23 @@
 
 extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
-namespace WallpaperEngine::FileSystem
+using namespace WallpaperEngine;
+
+std::string FileSystem::loadFullFile (const irr::io::path& file)
 {
-    std::string loadFullFile (const irr::io::path& file)
-    {
-        irr::io::IReadFile* reader = IrrlichtContext->getDevice ()->getFileSystem ()->createAndOpenFile (file);
+    irr::io::IReadFile* reader = IrrlichtContext->getDevice ()->getFileSystem ()->createAndOpenFile (file);
 
-        if (reader == NULL)
-            throw std::runtime_error ("Cannot open file " + std::string (file.c_str ()) + " for reading");
+    if (reader == nullptr)
+        throw std::runtime_error ("Cannot open file " + std::string (file.c_str ()) + " for reading");
 
-        char* filedata = new char [reader->getSize () + 1];
-        memset (filedata, 0, reader->getSize () + 1);
+    char* filedata = new char [reader->getSize () + 1];
+    memset (filedata, 0, reader->getSize () + 1);
 
-        reader->read (filedata, reader->getSize ());
-        reader->drop ();
+    reader->read (filedata, reader->getSize ());
+    reader->drop ();
 
-        std::string content = filedata;
-        delete [] filedata;
+    std::string content = filedata;
+    delete [] filedata;
 
-        return content;
-    }
-};
+    return content;
+}

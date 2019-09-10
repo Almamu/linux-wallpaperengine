@@ -127,7 +127,7 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
     for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++, textureNumber ++)
     {
         // TODO: LOOK THIS UP PROPERLY
-        irr::io::path texturepath = std::string ("materials/" + (*texturesCur) + ".tex").c_str ();
+        irr::io::path texturepath = this->getScene ()->getContext ()->resolveMaterials (*texturesCur);
         irr::video::ITexture* texture = nullptr;
 
         if (textureNumber == 0 && this->m_passes > 0)
@@ -152,10 +152,11 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
     }
 
     // TODO: MOVE SHADER INITIALIZATION ELSEWHERE
-    irr::io::path vertpath = std::string ("shaders/" + pass->getShader () + ".vert").c_str ();
-    irr::io::path fragpath = std::string ("shaders/" + pass->getShader () + ".frag").c_str ();
-    Render::Shaders::Compiler* vertexShader = new Render::Shaders::Compiler (vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
-    Render::Shaders::Compiler* pixelShader = new Render::Shaders::Compiler (fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
+    irr::io::path vertpath = this->getScene ()->getContext ()->resolveVertexShader (pass->getShader ());
+    irr::io::path fragpath = this->getScene ()->getContext ()->resolveFragmentShader (pass->getShader ());
+
+    auto vertexShader = new Render::Shaders::Compiler (this->getScene ()->getContext (), vertpath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false);
+    auto pixelShader = new Render::Shaders::Compiler (this->getScene ()->getContext (), fragpath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false);
 
     material.MaterialType = (irr::video::E_MATERIAL_TYPE)
         this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
