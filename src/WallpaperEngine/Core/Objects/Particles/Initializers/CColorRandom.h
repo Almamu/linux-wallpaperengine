@@ -10,8 +10,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CColorRandom : CInitializer
     {
     public:
-        irr::video::SColor* getMinimum ();
-        irr::video::SColor* getMaximum ();
+        const irr::video::SColor& getMinimum () const;
+        const irr::video::SColor& getMaximum () const;
     protected:
         friend class CInitializer;
 

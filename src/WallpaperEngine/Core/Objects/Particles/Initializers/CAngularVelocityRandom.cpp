@@ -6,8 +6,8 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CAngularVelocityRandom* CAngularVelocityRandom::fromJSON (json data, irr::u32 id)
 {
-    json::const_iterator min_it = data.find ("min");
-    json::const_iterator max_it = data.find ("max");
+    auto min_it = data.find ("min");
+    auto max_it = data.find ("max");
 
     if (min_it == data.end ())
     {
@@ -34,12 +34,12 @@ CAngularVelocityRandom::CAngularVelocityRandom (irr::u32 id, irr::core::vector3d
 {
 }
 
-irr::core::vector3df* CAngularVelocityRandom::getMinimum ()
+const irr::core::vector3df& CAngularVelocityRandom::getMinimum () const
 {
-    return &this->m_min;
+    return this->m_min;
 }
 
-irr::core::vector3df* CAngularVelocityRandom::getMaximum ()
+const irr::core::vector3df& CAngularVelocityRandom::getMaximum () const
 {
-    return &this->m_max;
+    return this->m_max;
 }

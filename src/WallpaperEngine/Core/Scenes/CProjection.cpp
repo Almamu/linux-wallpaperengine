@@ -9,20 +9,20 @@ CProjection::CProjection (irr::u32 width, irr::u32 height) :
 {
 }
 
-irr::u32 CProjection::getWidth ()
+const irr::u32& CProjection::getWidth () const
 {
     return this->m_width;
 }
 
-irr::u32 CProjection::getHeight ()
+const irr::u32& CProjection::getHeight () const
 {
     return this->m_height;
 }
 
 CProjection* CProjection::fromJSON (json data)
 {
-    json::const_iterator width_it = data.find ("width");
-    json::const_iterator height_it = data.find ("height");
+    auto width_it = data.find ("width");
+    auto height_it = data.find ("height");
 
     if (width_it == data.end ())
     {

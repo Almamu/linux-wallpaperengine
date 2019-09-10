@@ -13,7 +13,7 @@ namespace WallpaperEngine::Core::Projects
     public:
         static CPropertyColor* fromJSON (json data, const std::string& name);
 
-        irr::video::SColor* getValue ();
+        const irr::video::SColor& getValue () const;
 
         static const std::string Type;
 

@@ -16,7 +16,7 @@ void CShaderParameterVector4::setValue (irr::core::vector3df value)
     CShaderParameter::setValue (&this->m_value);
 }
 
-int CShaderParameterVector4::getSize ()
+const int CShaderParameterVector4::getSize () const
 {
     return 4;
 }

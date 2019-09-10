@@ -11,7 +11,7 @@ namespace WallpaperEngine::Render::Shaders::Parameters
     public:
         CShaderParameterVector2 (const irr::core::vector2df& defaultValue);
 
-        int getSize () override;
+        const int getSize () const override;
 
         void setValue (irr::core::vector2df value);
 

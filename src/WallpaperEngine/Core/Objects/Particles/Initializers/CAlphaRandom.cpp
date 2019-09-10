@@ -4,8 +4,8 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CAlphaRandom* CAlphaRandom::fromJSON (json data, irr::u32 id)
 {
-    json::const_iterator min_it = data.find ("min");
-    json::const_iterator max_it = data.find ("max");
+    auto min_it = data.find ("min");
+    auto max_it = data.find ("max");
 
     if (min_it == data.end ())
     {
@@ -27,12 +27,12 @@ CAlphaRandom::CAlphaRandom (irr::u32 id, irr::f64 min, irr::f64 max) :
 {
 }
 
-irr::f64 CAlphaRandom::getMinimum ()
+const irr::f64 CAlphaRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-irr::f64 CAlphaRandom::getMaximum ()
+const irr::f64 CAlphaRandom::getMaximum () const
 {
     return this->m_max;
 }

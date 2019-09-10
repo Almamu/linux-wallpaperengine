@@ -10,8 +10,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CLifeTimeRandom : CInitializer
     {
     public:
-        irr::u32 getMinimum ();
-        irr::u32 getMaximum ();
+        const irr::u32 getMinimum () const;
+        const irr::u32 getMaximum () const;
     protected:
         friend class CInitializer;
 

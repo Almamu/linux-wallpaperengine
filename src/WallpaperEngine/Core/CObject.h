@@ -19,18 +19,18 @@ namespace WallpaperEngine::Core
     public:
         static CObject* fromJSON (json data);
 
-        template<class T> const T* As () const { assert (Is<T> ()); return (const T*) this; }
-        template<class T> T* As () { assert (Is<T> ()); return (T*) this; }
+        template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
+        template<class T> T* as () { assert (is <T> ()); return (T*) this; }
 
-        template<class T> bool Is () { return this->m_type == T::Type; }
+        template<class T> bool is () { return this->m_type == T::Type; }
 
-        std::vector<Objects::CEffect*>* getEffects ();
-        int getId ();
+        const std::vector<Objects::CEffect*>& getEffects () const;
+        const int getId () const;
 
-        irr::core::vector3df* getOrigin ();
-        irr::core::vector3df* getScale ();
-        irr::core::vector3df* getAngles ();
-        std::string getName ();
+        const irr::core::vector3df& getOrigin () const;
+        const irr::core::vector3df& getScale () const;
+        const irr::core::vector3df& getAngles () const;
+        const std::string& getName () const;
 
         bool isVisible ();
     protected:

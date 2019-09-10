@@ -18,8 +18,8 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
 
 void CSound::load ()
 {
-    std::vector<std::string>::const_iterator cur = this->m_sound->getSounds ()->begin ();
-    std::vector<std::string>::const_iterator end = this->m_sound->getSounds ()->end ();
+    std::vector<std::string>::const_iterator cur = this->m_sound->getSounds ().begin ();
+    std::vector<std::string>::const_iterator end = this->m_sound->getSounds ().end ();
 
     for (; cur != end; cur ++)
     {
@@ -31,7 +31,7 @@ void CSound::load ()
 
         readfile->read (filebuffer, filesize);
 
-        sdlRwops = SDL_RWFromConstMem(filebuffer, filesize);
+        sdlRwops = SDL_RWFromConstMem (filebuffer, filesize);
         music = Mix_LoadMUS_RW (sdlRwops);
         readfile->drop ();
 

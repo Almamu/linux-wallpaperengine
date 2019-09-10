@@ -17,7 +17,7 @@ namespace WallpaperEngine::Core::Objects::Images
 
         void insertPass (Materials::CPassess* mass);
 
-        std::vector <Materials::CPassess*>* getPasses ();
+        const std::vector <Materials::CPassess*>& getPasses () const;
     protected:
         CMaterial ();
     private:

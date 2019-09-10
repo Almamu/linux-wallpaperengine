@@ -26,9 +26,9 @@ namespace WallpaperEngine::Core::Objects
                 const irr::core::vector3df& scale
         );
 
-        std::vector<Particles::CEmitter*>* getEmitters ();
-        std::vector<Particles::CControlPoint*>* getControlPoints ();
-        std::vector<Particles::CInitializer*>* getInitializers ();
+        const std::vector<Particles::CEmitter*>& getEmitters () const;
+        const std::vector<Particles::CControlPoint*>& getControlPoints () const;
+        const std::vector<Particles::CInitializer*>& getInitializers () const;
 
     protected:
         CParticle (

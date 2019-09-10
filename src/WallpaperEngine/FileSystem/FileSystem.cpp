@@ -8,7 +8,7 @@ extern WallpaperEngine::Irrlicht::CContext* IrrlichtContext;
 
 namespace WallpaperEngine::FileSystem
 {
-    std::string loadFullFile (irr::io::path file)
+    std::string loadFullFile (const irr::io::path& file)
     {
         irr::io::IReadFile* reader = IrrlichtContext->getDevice ()->getFileSystem ()->createAndOpenFile (file);
 

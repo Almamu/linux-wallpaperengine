@@ -16,10 +16,10 @@ CProject* CProject::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    json::const_iterator title = content.find ("title");
-    json::const_iterator type = content.find ("type");
-    json::const_iterator file = content.find ("file");
-    json::const_iterator general = content.find ("general");
+    auto title = content.find ("title");
+    auto type = content.find ("type");
+    auto file = content.find ("file");
+    auto general = content.find ("general");
 
     if (title == content.end ())
     {
@@ -44,12 +44,12 @@ CProject* CProject::fromFile (const irr::io::path& filename)
 
     if (general != content.end ())
     {
-        json::const_iterator properties = (*general).find ("properties");
+        auto properties = (*general).find ("properties");
 
         if (properties != (*general).end ())
         {
-            json::const_iterator cur = (*properties).begin ();
-            json::const_iterator end = (*properties).end ();
+            auto cur = (*properties).begin ();
+            auto end = (*properties).end ();
 
             for (; cur != end; cur ++)
             {
@@ -63,24 +63,24 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     return project;
 }
 
-CScene* CProject::getScene ()
+const CScene* CProject::getScene () const
 {
     return this->m_scene;
 }
 
-std::string CProject::getTitle ()
+const std::string& CProject::getTitle () const
 {
     return this->m_title;
 }
 
-std::string CProject::getType ()
+const std::string& CProject::getType () const
 {
     return this->m_type;
 }
 
-std::vector<Projects::CProperty*>* CProject::getProperties ()
+const std::vector<Projects::CProperty*>& CProject::getProperties () const
 {
-    return &this->m_properties;
+    return this->m_properties;
 }
 
 void CProject::insertProperty (Projects::CProperty* property)

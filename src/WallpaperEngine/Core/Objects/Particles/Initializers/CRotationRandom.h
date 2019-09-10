@@ -10,8 +10,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CRotationRandom : CInitializer
     {
     public:
-        irr::f64 getMinimum ();
-        irr::f64 getMaximum ();
+        const irr::f64 getMinimum () const;
+        const irr::f64 getMaximum () const;
     protected:
         friend class CInitializer;
 

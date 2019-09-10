@@ -12,8 +12,8 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CControlPoint* fromJSON (json data);
 
-        irr::core::vector3df* getOffset ();
-        irr::u32 getFlags ();
+        const irr::core::vector3df& getOffset () const;
+        const irr::u32 getFlags () const;
     protected:
         CControlPoint (irr::u32 id, irr::u32 flags = 0);
 

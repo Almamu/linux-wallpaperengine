@@ -30,8 +30,8 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     const irr::core::vector3df& scale,
     const irr::core::vector3df& angles)
 {
-    json::const_iterator image_it = data.find ("image");
-    json::const_iterator size_it = data.find ("size");
+    auto image_it = data.find ("image");
+    auto size_it = data.find ("size");
 
     if (size_it == data.end ())
     {
@@ -40,7 +40,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> ().c_str ()));
 
-    json::const_iterator material_it = content.find ("material");
+    auto material_it = content.find ("material");
 
     if (material_it == content.end ())
     {
@@ -59,14 +59,14 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     );
 }
 
-Images::CMaterial* CImage::getMaterial ()
+const Images::CMaterial* CImage::getMaterial () const
 {
     return this->m_material;
 }
 
-irr::core::vector2df* CImage::getSize ()
+const irr::core::vector2df& CImage::getSize () const
 {
-    return &this->m_size;
+    return this->m_size;
 }
 
 

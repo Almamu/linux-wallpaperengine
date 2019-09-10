@@ -20,11 +20,11 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     m_passes (0)
 {
     // TODO: INITIALIZE NEEDED EFFECTS AND PROPERLY CALCULATE THESE?
-    irr::f32 xright     = this->m_image->getOrigin ()->X;
-    irr::f32 xleft      = -this->m_image->getOrigin ()->X;
-    irr::f32 ztop       = this->m_image->getOrigin ()->Y;
-    irr::f32 zbottom    = -this->m_image->getOrigin ()->Y;
-    irr::f32 z          = this->m_image->getOrigin ()->Z;
+    irr::f32 xright     = this->m_image->getOrigin ().X;
+    irr::f32 xleft      = -this->m_image->getOrigin ().X;
+    irr::f32 ztop       = this->m_image->getOrigin ().Y;
+    irr::f32 zbottom    = -this->m_image->getOrigin ().Y;
+    irr::f32 z          = this->m_image->getOrigin ().Z;
 
     // top left
     this->m_vertex [0].Pos = irr::core::vector3df (xleft,  ztop,    z);
@@ -59,11 +59,11 @@ void CImage::render()
 
     irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
 
-    std::vector<irr::video::SMaterial>::const_iterator cur = this->m_materials.begin ();
-    std::vector<irr::video::SMaterial>::const_iterator end = this->m_materials.end ();
+    auto cur = this->m_materials.begin ();
+    auto end = this->m_materials.end ();
 
-    std::vector<irr::video::ITexture*>::const_iterator textureCur = this->m_renderTextures.begin ();
-    std::vector<irr::video::ITexture*>::const_iterator textureEnd = this->m_renderTextures.end ();
+    auto textureCur = this->m_renderTextures.begin ();
+    auto textureEnd = this->m_renderTextures.end ();
 
     for (; cur != end; cur ++)
     {
@@ -87,26 +87,26 @@ void CImage::render()
 
 void CImage::generateMaterial ()
 {
-    std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator cur = this->m_image->getMaterial ()->getPasses ()->begin ();
-    std::vector<Core::Objects::Images::Materials::CPassess*>::const_iterator end = this->m_image->getMaterial ()->getPasses ()->end ();
+    auto cur = this->m_image->getMaterial ()->getPasses ().begin ();
+    auto end = this->m_image->getMaterial ()->getPasses ().end ();
 
     for (; cur != end; cur++)
     {
         this->generatePass (*cur);
     }
 
-    std::vector<Core::Objects::CEffect*>::const_iterator effectCur = this->m_image->getEffects ()->begin ();
-    std::vector<Core::Objects::CEffect*>::const_iterator effectEnd = this->m_image->getEffects ()->end ();
+    auto effectCur = this->m_image->getEffects ().begin ();
+    auto effectEnd = this->m_image->getEffects ().end ();
 
     for (; effectCur != effectEnd; effectCur++)
     {
-        std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialCur = (*effectCur)->getMaterials ()->begin ();
-        std::vector<Core::Objects::Images::CMaterial*>::const_iterator materialEnd = (*effectCur)->getMaterials ()->end ();
+        auto materialCur = (*effectCur)->getMaterials ().begin ();
+        auto materialEnd = (*effectCur)->getMaterials ().end ();
 
         for (; materialCur != materialEnd; materialCur++)
         {
-            cur = (*materialCur)->getPasses ()->begin ();
-            end = (*materialCur)->getPasses ()->end ();
+            cur = (*materialCur)->getPasses ().begin ();
+            end = (*materialCur)->getPasses ().end ();
 
             for (; cur != end; cur++)
             {
@@ -121,8 +121,8 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
     std::vector<std::string>* textures = pass->getTextures ();
     irr::video::SMaterial material;
 
-    std::vector<std::string>::const_iterator texturesCur = textures->begin ();
-    std::vector<std::string>::const_iterator texturesEnd = textures->end ();
+    auto texturesCur = textures->begin ();
+    auto texturesEnd = textures->end ();
 
     for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++, textureNumber ++)
     {
@@ -141,16 +141,12 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass)
                 ), ("_RT_" + this->m_image->getName () + std::to_string (textureNumber) + "_" + std::to_string (this->m_passes)).c_str ()
             );
 
-            //originalTexture->drop ();
-
             this->m_renderTextures.push_back (texture);
         }
         else
         {
             texture = this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getTexture (texturepath);
         }
-
-        //texture->grab ();
 
         material.setTexture (textureNumber, texture);
     }
@@ -196,23 +192,23 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
     irr::f32 g_Texture6 = 6;
     irr::f32 g_Texture7 = 7;
 
-    irr::f32 g_Texture0Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture1Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture2Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture3Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture4Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture5Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture6Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
-    irr::f32 g_Texture7Rotation [4] = { this->m_image->getAngles ()->X, this->m_image->getAngles ()->Y, this->m_image->getAngles ()->Z, this->m_image->getAngles ()->Z };
+    irr::f32 g_Texture0Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture1Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture2Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture3Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture4Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture5Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture6Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
+    irr::f32 g_Texture7Rotation [4] = { this->m_image->getAngles ().X, this->m_image->getAngles ().Y, this->m_image->getAngles ().Z, this->m_image->getAngles ().Z };
 
-    irr::f32 g_Texture0Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture1Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture2Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture3Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture4Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture5Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture6Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
-    irr::f32 g_Texture7Resolution [4] = { this->m_image->getSize ()->X, this->m_image->getSize ()->Y, this->m_image->getSize ()->X, this->m_image->getSize ()->Y };
+    irr::f32 g_Texture0Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture1Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture2Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture3Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture4Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture5Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture6Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
+    irr::f32 g_Texture7Resolution [4] = { this->m_image->getSize ().X, this->m_image->getSize ().Y, this->m_image->getSize ().X, this->m_image->getSize ().Y };
 
     irr::video::IVideoDriver* driver = services->getVideoDriver ();
 
@@ -224,12 +220,12 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
     Render::Shaders::Compiler* vertexShader = this->m_vertexShaders.at (userData);
     Render::Shaders::Compiler* pixelShader = this->m_pixelShaders.at (userData);
 
-    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator cur = vertexShader->getParameters ().begin ();
-    std::vector<Render::Shaders::Parameters::CShaderParameter*>::const_iterator end = vertexShader->getParameters ().end ();
+    auto cur = vertexShader->getParameters ().begin ();
+    auto end = vertexShader->getParameters ().end ();
 
     for (; cur != end; cur ++)
     {
-        if ((*cur)->Is <CShaderParameterInteger> () == true)
+        if ((*cur)->is <CShaderParameterInteger> () == true)
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -238,10 +234,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-            (*cur)->Is <CShaderParameterFloat> () == true ||
-            (*cur)->Is <CShaderParameterVector2> () == true ||
-            (*cur)->Is <CShaderParameterVector3> () == true ||
-            (*cur)->Is <CShaderParameterVector4> () == true)
+            (*cur)->is <CShaderParameterFloat> () == true ||
+            (*cur)->is <CShaderParameterVector2> () == true ||
+            (*cur)->is <CShaderParameterVector3> () == true ||
+            (*cur)->is <CShaderParameterVector4> () == true)
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -256,7 +252,7 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
 
     for (; cur != end; cur ++)
     {
-        if ((*cur)->Is <CShaderParameterInteger> () == true)
+        if ((*cur)->is <CShaderParameterInteger> () == true)
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -265,10 +261,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-            (*cur)->Is <CShaderParameterFloat> () == true ||
-            (*cur)->Is <CShaderParameterVector2> () == true ||
-            (*cur)->Is <CShaderParameterVector3> () == true ||
-            (*cur)->Is <CShaderParameterVector4> () == true)
+            (*cur)->is <CShaderParameterFloat> () == true ||
+            (*cur)->is <CShaderParameterVector2> () == true ||
+            (*cur)->is <CShaderParameterVector3> () == true ||
+            (*cur)->is <CShaderParameterVector4> () == true)
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),

@@ -19,13 +19,16 @@
 
 namespace WallpaperEngine::Render::Shaders
 {
-    Compiler::Compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive)
+    Compiler::Compiler (irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive) :
+        m_combos (combos),
+        m_recursive (recursive),
+        m_type (type),
+        m_file (file),
+        m_error (""),
+        m_errorInfo ("")
     {
-        this->m_recursive = recursive;
-        this->m_combos = combos;
-
         // begin with an space so it gets ignored properly on parse
-        if (recursive == false)
+        if (this->m_recursive == false)
         {
             // compatibility layer for OpenGL shaders
             this->m_content =   "#version 120\n"
@@ -47,8 +50,8 @@ namespace WallpaperEngine::Render::Shaders
                                 "#define ddy(x) dFdy(-(x))\n"
                                 "#define GLSL 1\n\n";
 
-            std::map<std::string, int>::const_iterator cur = this->m_combos->begin ();
-            std::map<std::string, int>::const_iterator end = this->m_combos->end ();
+            auto cur = this->m_combos.begin ();
+            auto end = this->m_combos.end ();
 
             for (; cur != end; cur ++)
             {
@@ -61,11 +64,6 @@ namespace WallpaperEngine::Render::Shaders
         }
 
         this->m_content.append (WallpaperEngine::FileSystem::loadFullFile (file));
-
-        // append file content
-        this->m_type = type;
-
-        this->m_file = file;
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -126,8 +124,8 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::extractType (std::string::const_iterator& it)
     {
-        std::vector<std::string>::const_iterator cur = sTypes.begin ();
-        std::vector<std::string>::const_iterator end = sTypes.end ();
+        auto cur = sTypes.begin ();
+        auto end = sTypes.end ();
 
         while (cur != end)
         {
@@ -227,8 +225,8 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::lookupReplaceSymbol (std::string symbol)
     {
-        std::map<std::string, std::string>::const_iterator cur = sVariableReplacement.begin ();
-        std::map<std::string, std::string>::const_iterator end = sVariableReplacement.end ();
+        auto cur = sVariableReplacement.begin ();
+        auto end = sVariableReplacement.end ();
 
         while (cur != end)
         {
@@ -458,8 +456,8 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseComboConfiguration (const std::string& content)
     {
         json data = json::parse (content);
-        json::const_iterator combo = data.find ("combo");
-        json::const_iterator defvalue = data.find ("default");
+        auto combo = data.find ("combo");
+        auto defvalue = data.find ("default");
 
         // add line feed just in case
         this->m_compiledContent += "\n";
@@ -470,11 +468,11 @@ namespace WallpaperEngine::Render::Shaders
         }
 
         // check the combos
-        std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
+        std::map<std::string, int>::const_iterator entry = this->m_combos.find ((*combo).get <std::string> ());
 
         // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
         // so only define the ones that are not already defined
-        if (entry == this->m_combos->end ())
+        if (entry == this->m_combos.end ())
         {
             // if no combo is defined just load the default settings
             if ((*defvalue).is_number_float ())
@@ -499,9 +497,9 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content)
     {
         json data = json::parse (content);
-        json::const_iterator material = data.find ("material");
-        json::const_iterator defvalue = data.find ("default");
-        json::const_iterator range = data.find ("range");
+        auto material = data.find ("material");
+        auto defvalue = data.find ("default");
+        auto range = data.find ("range");
 
         // this is not a real parameter
         if (material == data.end () || defvalue == data.end ())
@@ -558,10 +556,10 @@ namespace WallpaperEngine::Render::Shaders
         this->m_parameters.push_back (parameter);
     }
 
-    Parameters::CShaderParameter* Compiler::findParameter (std::string identifier)
+    Parameters::CShaderParameter* Compiler::findParameter (const std::string& identifier)
     {
-        std::vector<Parameters::CShaderParameter*>::const_iterator cur = this->m_parameters.begin ();
-        std::vector<Parameters::CShaderParameter*>::const_iterator end = this->m_parameters.end ();
+        auto cur = this->m_parameters.begin ();
+        auto end = this->m_parameters.end ();
 
         for (; cur != end; cur ++)
         {
@@ -574,7 +572,7 @@ namespace WallpaperEngine::Render::Shaders
         return nullptr;
     }
 
-    std::vector <Parameters::CShaderParameter*>& Compiler::getParameters ()
+    const std::vector <Parameters::CShaderParameter*>& Compiler::getParameters () const
     {
         return this->m_parameters;
     }

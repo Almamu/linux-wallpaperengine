@@ -9,19 +9,19 @@ namespace WallpaperEngine::Render::Shaders::Parameters
     public:
         CShaderParameter (void* defaultValue, void* value, std::string type);
 
-        template<class T> const T* As () const { assert (Is<T> ()); return (const T*) this; }
-        template<class T> T* As () { assert (Is<T> ()); return (T*) this; }
+        template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
+        template<class T> T* as () { assert (is <T> ()); return (T*) this; }
 
-        template<class T> bool Is () { return this->m_type == T::Type; }
+        template<class T> bool is () { return this->m_type == T::Type; }
 
-        std::string getIdentifierName ();
-        std::string getName ();
+        const std::string& getIdentifierName () const;
+        const std::string& getName () const;
 
         void setIdentifierName (std::string identifierName);
         void setName (std::string name);
-        void* getValue ();
+        const void* getValue () const;
 
-        virtual int getSize () = 0;
+        virtual const int getSize () const = 0;
 
     protected:
         void setValue (void* value);

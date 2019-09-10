@@ -6,13 +6,13 @@ using namespace WallpaperEngine::Core::Objects::Particles;
 
 CEmitter* CEmitter::fromJSON (json data)
 {
-    json::const_iterator directions_it = data.find ("directions");
-    json::const_iterator distancemax_it = data.find ("distancemax");
-    json::const_iterator distancemin_it = data.find ("distancemin");
-    json::const_iterator id_it = data.find ("id");
-    json::const_iterator name_it = data.find ("name");
-    json::const_iterator origin_it = data.find ("origin");
-    json::const_iterator rate_it = data.find ("rate");
+    auto directions_it = data.find ("directions");
+    auto distancemax_it = data.find ("distancemax");
+    auto distancemin_it = data.find ("distancemin");
+    auto id_it = data.find ("id");
+    auto name_it = data.find ("name");
+    auto origin_it = data.find ("origin");
+    auto rate_it = data.find ("rate");
 
     if (directions_it == data.end ())
     {
@@ -79,27 +79,27 @@ const std::string& CEmitter::getName () const
     return this->m_name;
 }
 
-irr::u32 CEmitter::getDistanceMax () const
+const irr::u32 CEmitter::getDistanceMax () const
 {
     return this->m_distancemax;
 }
 
-irr::u32 CEmitter::getDistanceMin () const
+const irr::u32 CEmitter::getDistanceMin () const
 {
     return this->m_distancemin;
 }
 
-irr::core::vector3df* CEmitter::getDirections ()
+const irr::core::vector3df& CEmitter::getDirections () const
 {
-    return &this->m_directions;
+    return this->m_directions;
 }
 
-irr::core::vector3df* CEmitter::getOrigin ()
+const irr::core::vector3df& CEmitter::getOrigin () const
 {
-    return &this->m_origin;
+    return this->m_origin;
 }
 
-irr::f64 CEmitter::getRate () const
+const irr::f64 CEmitter::getRate () const
 {
     return this->m_rate;
 }

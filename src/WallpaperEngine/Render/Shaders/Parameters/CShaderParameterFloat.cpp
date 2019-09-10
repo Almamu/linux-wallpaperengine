@@ -17,7 +17,7 @@ void CShaderParameterFloat::setValue (irr::f32 value)
     CShaderParameter::setValue (&this->m_value);
 }
 
-int CShaderParameterFloat::getSize ()
+const int CShaderParameterFloat::getSize () const
 {
     return 1;
 }

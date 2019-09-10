@@ -20,7 +20,7 @@ CMaterial* CMaterial::fromFile (irr::io::path filename)
 
 CMaterial* CMaterial::fromJSON (json data)
 {
-    json::const_iterator passes_it = data.find ("passes");
+    auto passes_it = data.find ("passes");
 
     if (passes_it == data.end ())
     {
@@ -29,8 +29,8 @@ CMaterial* CMaterial::fromJSON (json data)
 
     CMaterial* material = new CMaterial ();
 
-    json::const_iterator cur = (*passes_it).begin ();
-    json::const_iterator end = (*passes_it).end ();
+    auto cur = (*passes_it).begin ();
+    auto end = (*passes_it).end ();
 
     for (; cur != end; cur ++)
     {
@@ -47,7 +47,7 @@ void CMaterial::insertPass (Materials::CPassess* mass)
     this->m_passes.push_back (mass);
 }
 
-std::vector <Materials::CPassess*>* CMaterial::getPasses ()
+const std::vector <Materials::CPassess*>& CMaterial::getPasses () const
 {
-    return &this->m_passes;
+    return this->m_passes;
 }

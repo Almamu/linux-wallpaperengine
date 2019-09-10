@@ -10,26 +10,26 @@ CCamera::CCamera (irr::core::vector3df center, irr::core::vector3df eye, irr::co
 {
 }
 
-irr::core::vector3df* CCamera::getCenter ()
+const irr::core::vector3df& CCamera::getCenter () const
 {
-    return &this->m_center;
+    return this->m_center;
 }
 
-irr::core::vector3df* CCamera::getEye ()
+const irr::core::vector3df& CCamera::getEye () const
 {
-    return &this->m_eye;
+    return this->m_eye;
 }
 
-irr::core::vector3df* CCamera::getUp ()
+const irr::core::vector3df& CCamera::getUp () const
 {
-    return &this->m_up;
+    return this->m_up;
 }
 
 CCamera* CCamera::fromJSON (json data)
 {
-    json::const_iterator center_it = data.find ("center");
-    json::const_iterator eye_it = data.find ("eye");
-    json::const_iterator up_it = data.find ("up");
+    auto center_it = data.find ("center");
+    auto eye_it = data.find ("eye");
+    auto up_it = data.find ("up");
 
     if (center_it == data.end ())
     {

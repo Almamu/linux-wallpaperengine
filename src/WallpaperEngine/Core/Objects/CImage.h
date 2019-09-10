@@ -26,8 +26,8 @@ namespace WallpaperEngine::Core::Objects
                 const irr::core::vector3df& angles
         );
 
-        Images::CMaterial* getMaterial ();
-        irr::core::vector2df* getSize ();
+        const Images::CMaterial* getMaterial () const;
+        const irr::core::vector2df& getSize () const;
 
     protected:
         CImage (

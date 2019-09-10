@@ -22,26 +22,26 @@ namespace WallpaperEngine::Core
         static CScene* fromFile (const irr::io::path& filename);
 
         CProject* getProject ();
-        std::vector<CObject*>* getObjects ();
+        const std::vector<CObject*>& getObjects () const;
 
-        const irr::video::SColorf &getAmbientColor() const;
-        bool isBloom() const;
-        irr::f64 getBloomStrength() const;
-        irr::f64 getBloomThreshold() const;
-        bool isCameraFade() const;
-        bool isCameraParallax() const;
-        irr::f64 getCameraParallaxAmount() const;
-        irr::f64 getCameraParallaxDelay() const;
-        irr::f64 getCameraParallaxMouseInfluence() const;
-        bool isCameraPreview() const;
-        bool isCameraShake() const;
-        irr::f64 getCameraShakeAmplitude() const;
-        irr::f64 getCameraShakeRoughness() const;
-        irr::f64 getCameraShakeSpeed() const;
-        const irr::video::SColorf &getClearColor() const;
-        Scenes::CProjection *getOrthogonalProjection() const;
-        const irr::video::SColorf &getSkylightColor() const;
-        Scenes::CCamera* getCamera ();
+        const irr::video::SColorf& getAmbientColor() const;
+        const bool isBloom() const;
+        const irr::f64 getBloomStrength() const;
+        const irr::f64 getBloomThreshold() const;
+        const bool isCameraFade() const;
+        const bool isCameraParallax() const;
+        const irr::f64 getCameraParallaxAmount() const;
+        const irr::f64 getCameraParallaxDelay() const;
+        const irr::f64 getCameraParallaxMouseInfluence() const;
+        const bool isCameraPreview() const;
+        const bool isCameraShake() const;
+        const irr::f64 getCameraShakeAmplitude() const;
+        const irr::f64 getCameraShakeRoughness() const;
+        const irr::f64 getCameraShakeSpeed() const;
+        const irr::video::SColorf& getClearColor() const;
+        const Scenes::CProjection* getOrthogonalProjection() const;
+        const irr::video::SColorf& getSkylightColor() const;
+        const Scenes::CCamera* getCamera () const;
 
     protected:
         friend class CProject;

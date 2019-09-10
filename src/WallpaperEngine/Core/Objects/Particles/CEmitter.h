@@ -13,11 +13,11 @@ namespace WallpaperEngine::Core::Objects::Particles
         static CEmitter* fromJSON (json data);
 
         const std::string& getName () const;
-        irr::u32 getDistanceMax () const;
-        irr::u32 getDistanceMin () const;
-        irr::core::vector3df* getDirections ();
-        irr::core::vector3df* getOrigin ();
-        irr::f64 getRate () const;
+        const irr::u32 getDistanceMax () const;
+        const irr::u32 getDistanceMin () const;
+        const irr::core::vector3df& getDirections () const;
+        const irr::core::vector3df& getOrigin () const;
+        const irr::f64 getRate () const;
     protected:
         CEmitter (
             const irr::core::vector3df& directions,

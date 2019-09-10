@@ -25,7 +25,7 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         const irr::core::vector3df& scale,
         const irr::core::vector3df& angles)
 {
-    json::const_iterator sound_it = data.find ("sound");
+    auto sound_it = data.find ("sound");
 
     if (sound_it == data.end ())
     {
@@ -46,8 +46,8 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         angles
     );
 
-    json::const_iterator cur = (*sound_it).begin ();
-    json::const_iterator end = (*sound_it).end ();
+    auto cur = (*sound_it).begin ();
+    auto end = (*sound_it).end ();
 
     for (; cur != end; cur ++)
     {
@@ -62,9 +62,9 @@ void CSound::insertSound (std::string filename)
     this->m_sounds.push_back (filename);
 }
 
-std::vector<std::string>* CSound::getSounds ()
+const std::vector<std::string>& CSound::getSounds () const
 {
-    return &this->m_sounds;
+    return this->m_sounds;
 }
 
 const std::string CSound::Type = "sound";

@@ -12,8 +12,8 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CInitializer* fromJSON (json data);
 
-        std::string& getName ();
-        irr::u32 getId ();
+        const std::string& getName () const;
+        const irr::u32 getId () const;
     protected:
         CInitializer (irr::u32 id, std::string name);
     private:

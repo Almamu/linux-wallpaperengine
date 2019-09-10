@@ -50,9 +50,9 @@ CScene* CScene::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    json::const_iterator camera_it = content.find ("camera");
-    json::const_iterator general_it = content.find ("general");
-    json::const_iterator objects_it = content.find ("objects");
+    auto camera_it = content.find ("camera");
+    auto general_it = content.find ("general");
+    auto objects_it = content.find ("objects");
 
     if (camera_it == content.end ())
     {
@@ -69,23 +69,23 @@ CScene* CScene::fromFile (const irr::io::path& filename)
         throw std::runtime_error ("Scenes must have a list of objects to display");
     }
 
-    json::const_iterator ambientcolor_it = (*general_it).find ("ambientcolor");
-    json::const_iterator bloom_it = (*general_it).find ("bloom");
-    json::const_iterator bloomstrength_it = (*general_it).find ("bloomstrength");
-    json::const_iterator bloomthreshold_it = (*general_it).find ("bloomthreshold");
-    json::const_iterator camerafade_it = (*general_it).find ("camerafade");
-    json::const_iterator cameraparallax_it = (*general_it).find ("cameraparallax");
-    json::const_iterator cameraparallaxamount_it = (*general_it).find ("cameraparallaxamount");
-    json::const_iterator cameraparallaxdelay_it = (*general_it).find ("cameraparallaxdelay");
-    json::const_iterator cameraparallaxmouseinfluence_it = (*general_it).find ("cameraparallaxmouseinfluence");
-    json::const_iterator camerapreview_it = (*general_it).find ("camerapreview");
-    json::const_iterator camerashake_it = (*general_it).find ("camerashake");
-    json::const_iterator camerashakeamplitude_it = (*general_it).find ("camerashakeamplitude");
-    json::const_iterator camerashakeroughness_it = (*general_it).find ("camerashakeroughness");
-    json::const_iterator camerashakespeed_it = (*general_it).find ("camerashakespeed");
-    json::const_iterator clearcolor_it = (*general_it).find ("clearcolor");
-    json::const_iterator orthogonalprojection_it = (*general_it).find ("orthogonalprojection");
-    json::const_iterator skylightcolor_it = (*general_it).find ("skylightcolor");
+    auto ambientcolor_it = (*general_it).find ("ambientcolor");
+    auto bloom_it = (*general_it).find ("bloom");
+    auto bloomstrength_it = (*general_it).find ("bloomstrength");
+    auto bloomthreshold_it = (*general_it).find ("bloomthreshold");
+    auto camerafade_it = (*general_it).find ("camerafade");
+    auto cameraparallax_it = (*general_it).find ("cameraparallax");
+    auto cameraparallaxamount_it = (*general_it).find ("cameraparallaxamount");
+    auto cameraparallaxdelay_it = (*general_it).find ("cameraparallaxdelay");
+    auto cameraparallaxmouseinfluence_it = (*general_it).find ("cameraparallaxmouseinfluence");
+    auto camerapreview_it = (*general_it).find ("camerapreview");
+    auto camerashake_it = (*general_it).find ("camerashake");
+    auto camerashakeamplitude_it = (*general_it).find ("camerashakeamplitude");
+    auto camerashakeroughness_it = (*general_it).find ("camerashakeroughness");
+    auto camerashakespeed_it = (*general_it).find ("camerashakespeed");
+    auto clearcolor_it = (*general_it).find ("clearcolor");
+    auto orthogonalprojection_it = (*general_it).find ("orthogonalprojection");
+    auto skylightcolor_it = (*general_it).find ("skylightcolor");
 
     if (ambientcolor_it == (*general_it).end ())
     {
@@ -193,8 +193,8 @@ CScene* CScene::fromFile (const irr::io::path& filename)
             WallpaperEngine::Core::atoSColorf (*skylightcolor_it)
     );
 
-    json::const_iterator cur = (*objects_it).begin ();
-    json::const_iterator end = (*objects_it).end ();
+    auto cur = (*objects_it).begin ();
+    auto end = (*objects_it).end ();
 
     for (; cur != end; cur ++)
     {
@@ -207,9 +207,9 @@ CScene* CScene::fromFile (const irr::io::path& filename)
 }
 
 
-std::vector<CObject*>* CScene::getObjects ()
+const std::vector<CObject*>& CScene::getObjects () const
 {
-    return &this->m_objects;
+    return this->m_objects;
 }
 
 void CScene::insertObject (CObject* object)
@@ -227,7 +227,7 @@ void CScene::setProject (CProject* project)
     this->m_project = project;
 }
 
-Scenes::CCamera* CScene::getCamera ()
+const Scenes::CCamera* CScene::getCamera () const
 {
     return this->m_camera;
 }
@@ -237,82 +237,82 @@ const irr::video::SColorf &CScene::getAmbientColor() const
     return this->m_ambientColor;
 }
 
-bool CScene::isBloom () const
+const bool CScene::isBloom () const
 {
     return this->m_bloom;
 }
 
-irr::f64 CScene::getBloomStrength () const
+const irr::f64 CScene::getBloomStrength () const
 {
     return this->m_bloomStrength;
 }
 
-irr::f64 CScene::getBloomThreshold () const
+const irr::f64 CScene::getBloomThreshold () const
 {
     return this->m_bloomThreshold;
 }
 
-bool CScene::isCameraFade () const
+const bool CScene::isCameraFade () const
 {
     return this->m_cameraFade;
 }
 
-bool CScene::isCameraParallax () const
+const bool CScene::isCameraParallax () const
 {
     return this->m_cameraParallax;
 }
 
-irr::f64 CScene::getCameraParallaxAmount () const
+const irr::f64 CScene::getCameraParallaxAmount () const
 {
     return this->m_cameraParallaxAmount;
 }
 
-irr::f64 CScene::getCameraParallaxDelay () const
+const irr::f64 CScene::getCameraParallaxDelay () const
 {
     return this->m_cameraParallaxDelay;
 }
 
-irr::f64 CScene::getCameraParallaxMouseInfluence () const
+const irr::f64 CScene::getCameraParallaxMouseInfluence () const
 {
     return this->m_cameraParallaxMouseInfluence;
 }
 
-bool CScene::isCameraPreview () const
+const bool CScene::isCameraPreview () const
 {
     return this->m_cameraPreview;
 }
 
-bool CScene::isCameraShake () const
+const bool CScene::isCameraShake () const
 {
     return this->m_cameraShake;
 }
 
-irr::f64 CScene::getCameraShakeAmplitude () const
+const irr::f64 CScene::getCameraShakeAmplitude () const
 {
     return this->m_cameraShakeAmplitude;
 }
 
-irr::f64 CScene::getCameraShakeRoughness () const
+const irr::f64 CScene::getCameraShakeRoughness () const
 {
     return this->m_cameraShakeRoughness;
 }
 
-irr::f64 CScene::getCameraShakeSpeed () const
+const irr::f64 CScene::getCameraShakeSpeed () const
 {
     return this->m_cameraShakeSpeed;
 }
 
-const irr::video::SColorf &CScene::getClearColor () const
+const irr::video::SColorf& CScene::getClearColor () const
 {
     return this->m_clearColor;
 }
 
-Scenes::CProjection* CScene::getOrthogonalProjection () const
+const Scenes::CProjection* CScene::getOrthogonalProjection () const
 {
     return this->m_orthogonalProjection;
 }
 
-const irr::video::SColorf &CScene::getSkylightColor () const
+const irr::video::SColorf& CScene::getSkylightColor () const
 {
     return this->m_skylightColor;
 }

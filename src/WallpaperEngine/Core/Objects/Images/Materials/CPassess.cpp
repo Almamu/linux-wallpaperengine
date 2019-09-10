@@ -11,20 +11,15 @@ CPassess::CPassess (std::string blending, std::string cullmode, std::string dept
 {
 }
 
-std::vector<std::string>* CPassess::getTextures ()
-{
-    return &this->m_textures;
-}
-
 CPassess* CPassess::fromJSON (json data)
 {
-    json::const_iterator blending_it = data.find ("blending");
-    json::const_iterator cullmode_it = data.find ("cullmode");
-    json::const_iterator depthtest_it = data.find ("depthtest");
-    json::const_iterator depthwrite_it = data.find ("depthwrite");
-    json::const_iterator shader_it = data.find ("shader");
-    json::const_iterator textures_it = data.find ("textures");
-    json::const_iterator combos_it = data.find ("combos");
+    auto blending_it = data.find ("blending");
+    auto cullmode_it = data.find ("cullmode");
+    auto depthtest_it = data.find ("depthtest");
+    auto depthwrite_it = data.find ("depthwrite");
+    auto shader_it = data.find ("shader");
+    auto textures_it = data.find ("textures");
+    auto combos_it = data.find ("combos");
 
     if (blending_it == data.end ())
     {
@@ -70,8 +65,8 @@ CPassess* CPassess::fromJSON (json data)
 
     if (textures_it != data.end ())
     {
-        json::const_iterator cur = (*textures_it).begin ();
-        json::const_iterator end = (*textures_it).end ();
+        auto cur = (*textures_it).begin ();
+        auto end = (*textures_it).end ();
 
         for (;cur != end; cur ++)
         {
@@ -88,8 +83,8 @@ CPassess* CPassess::fromJSON (json data)
 
     if (combos_it != data.end ())
     {
-        json::const_iterator cur = (*combos_it).begin ();
-        json::const_iterator end = (*combos_it).end ();
+        auto cur = (*combos_it).begin ();
+        auto end = (*combos_it).end ();
 
         for (; cur != end; cur ++)
         {
@@ -109,7 +104,6 @@ CPassess* CPassess::fromJSON (json data)
     return pass;
 }
 
-
 void CPassess::insertTexture (const std::string& texture)
 {
     this->m_textures.push_back (texture);
@@ -120,12 +114,37 @@ void CPassess::insertCombo (const std::string& name, int value)
     this->m_combos.insert (std::pair <std::string, int> (name, value));
 }
 
-std::map<std::string, int>* CPassess::getCombos ()
+std::vector<std::string>* CPassess::getTextures ()
 {
-    return &this->m_combos;
+    return &this->m_textures;
 }
 
-std::string CPassess::getShader ()
+const std::map<std::string, int>& CPassess::getCombos () const
+{
+    return this->m_combos;
+}
+
+const std::string& CPassess::getShader () const
 {
     return this->m_shader;
+}
+
+const std::string& CPassess::getBlendingMode () const
+{
+    return this->m_blending;
+}
+
+const std::string& CPassess::getCullingMode () const
+{
+    return this->m_cullmode;
+}
+
+const std::string& CPassess::getDepthTest () const
+{
+    return this->m_depthtest;
+}
+
+const std::string& CPassess::getDepthWrite ()const
+{
+    return this->m_depthwrite;
 }

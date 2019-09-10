@@ -11,17 +11,17 @@ namespace WallpaperEngine::Render
     class CCamera
     {
     public:
-        CCamera (CScene* scene, Core::Scenes::CCamera* camera);
+        CCamera (CScene* scene, const Core::Scenes::CCamera* camera);
         ~CCamera ();
 
         void setOrthogonalProjection (irr::f32 width, irr::f32 height);
 
-        irr::core::vector3df* getCenter ();
-        irr::core::vector3df* getEye ();
-        irr::core::vector3df* getUp ();
+        const irr::core::vector3df& getCenter () const;
+        const irr::core::vector3df& getEye () const;
+        const irr::core::vector3df& getUp () const;
 
     private:
-        Core::Scenes::CCamera* m_camera;
+        const Core::Scenes::CCamera* m_camera;
         irr::scene::ICameraSceneNode* m_sceneCamera;
         CScene* m_scene;
     };

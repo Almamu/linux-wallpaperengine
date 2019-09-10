@@ -14,20 +14,20 @@ namespace WallpaperEngine::Render
     class CScene : public irr::scene::ISceneNode
     {
     public:
-        CScene (Core::CProject* project, Irrlicht::CContext* context);
-        ~CScene ();
+        CScene (const Core::CProject* project, Irrlicht::CContext* context);
+        ~CScene () override;
 
         Irrlicht::CContext* getContext ();
-        Core::CScene* getScene ();
-        CCamera* getCamera ();
+        const Core::CScene* getScene () const;
+        CCamera* getCamera () const;
         int nextId ();
 
         void render () override;
         const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
         void OnRegisterSceneNode () override;
     private:
-        Core::CProject* m_project;
-        Core::CScene* m_scene;
+        const Core::CProject* m_project;
+        const Core::CScene* m_scene;
         CCamera* m_camera;
         Irrlicht::CContext* m_context;
         irr::u32 m_nextId;

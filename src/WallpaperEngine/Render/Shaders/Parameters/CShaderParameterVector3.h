@@ -11,7 +11,7 @@ namespace WallpaperEngine::Render::Shaders::Parameters
     public:
         CShaderParameterVector3 (const irr::core::vector3df& defaultValue);
 
-        int getSize () override;
+        const int getSize () const override;
 
         void setValue (irr::core::vector3df value);
 

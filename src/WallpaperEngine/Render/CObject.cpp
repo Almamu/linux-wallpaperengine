@@ -19,7 +19,7 @@ CObject::~CObject()
 {
 }
 
-CScene* CObject::getScene ()
+CScene* CObject::getScene () const
 {
     return this->m_scene;
 }

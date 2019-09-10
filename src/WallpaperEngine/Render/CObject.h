@@ -21,11 +21,11 @@ namespace WallpaperEngine::Render
 
     protected:
         CObject (CScene* scene, std::string type, Core::CObject *object);
-        ~CObject ();
+        ~CObject () override;
 
         void OnRegisterSceneNode () override;
 
-        CScene* getScene ();
+        CScene* getScene () const;
 
     private:
         std::string m_type;

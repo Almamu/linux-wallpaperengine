@@ -17,11 +17,11 @@ namespace WallpaperEngine::Core
     public:
         static CProject* fromFile (const irr::io::path& filename);
 
-        CScene* getScene ();
+        const CScene* getScene () const;
 
-        std::string getTitle ();
-        std::string getType ();
-        std::vector<Projects::CProperty*>* getProperties ();
+        const std::string& getTitle () const;
+        const std::string& getType () const;
+        const std::vector<Projects::CProperty*>& getProperties () const;
 
     protected:
         CProject (std::string title, std::string type, CScene* scene);

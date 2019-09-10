@@ -12,7 +12,7 @@ CShaderParameter::CShaderParameter (void* defaultValue, void* value, std::string
 
 }
 
-void* CShaderParameter::getValue ()
+const void* CShaderParameter::getValue () const
 {
     if (this->m_value)
         return this->m_value;
@@ -25,12 +25,12 @@ void CShaderParameter::setValue (void* value)
     this->m_value = value;
 }
 
-std::string CShaderParameter::getIdentifierName ()
+const std::string& CShaderParameter::getIdentifierName () const
 {
     return this->m_identifierName;
 }
 
-std::string CShaderParameter::getName ()
+const std::string& CShaderParameter::getName () const
 {
     return this->m_name;
 }

@@ -53,8 +53,8 @@ void initialize_viewports ()
         if (info == nullptr)
             continue;
 
-        std::vector<std::string>::iterator cur = Screens.begin ();
-        std::vector<std::string>::iterator end = Screens.end ();
+        auto cur = Screens.begin ();
+        auto end = Screens.end ();
 
         for (; cur != end; cur ++)
         {
@@ -318,8 +318,8 @@ int main (int argc, char* argv[])
 
             if (Viewports.size () > 0)
             {
-                std::vector<irr::core::rect<irr::s32>>::iterator cur = Viewports.begin ();
-                std::vector<irr::core::rect<irr::s32>>::iterator end = Viewports.end ();
+                auto cur = Viewports.begin ();
+                auto end = Viewports.end ();
 
                 for (; cur != end; cur ++)
                 {

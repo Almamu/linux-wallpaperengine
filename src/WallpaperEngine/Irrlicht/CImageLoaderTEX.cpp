@@ -46,8 +46,8 @@ namespace WallpaperEngine::Irrlicht
 
     CImageLoaderTex::TextureContainer::~TextureContainer ()
     {
-        std::vector <TextureMipmap*>::const_iterator cur = this->mipmaps.begin ();
-        std::vector <TextureMipmap*>::const_iterator end = this->mipmaps.end ();
+        auto cur = this->mipmaps.begin ();
+        auto end = this->mipmaps.end ();
 
         for (; cur != end; cur ++)
         {

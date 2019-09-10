@@ -46,7 +46,7 @@ namespace WallpaperEngine::Render::Shaders
          * @param type The type of shader
          * @param recursive Whether the compiler should add base definitions or not
          */
-        Compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive = false);
+        Compiler (irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive = false);
         /**
          * Performs the actual pre-compilation/pre-processing over the shader files
          * This step is kinda big, replaces variables names on sVariableReplacement,
@@ -62,12 +62,12 @@ namespace WallpaperEngine::Render::Shaders
          * @param identifier The identifier to search for
          * @return The shader information
          */
-        Parameters::CShaderParameter* findParameter (std::string identifier);
+        Parameters::CShaderParameter* findParameter (const std::string& identifier);
 
         /**
          * @return The list of parameters available for this shader with their default values
          */
-        std::vector <Parameters::CShaderParameter*>& getParameters ();
+        const std::vector <Parameters::CShaderParameter*>& getParameters () const;
 
     private:
         /**
@@ -206,7 +206,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The combos the shader should be generated with
          */
-         std::map <std::string, int>* m_combos;
+         const std::map <std::string, int>& m_combos;
          /**
           * Whether this compilation is a recursive one or not
           */

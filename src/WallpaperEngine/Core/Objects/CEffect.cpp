@@ -28,8 +28,8 @@ CEffect::CEffect (
 
 CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 {
-    json::const_iterator file_it = data.find ("file");
-    json::const_iterator effectpasses_it = data.find ("passes");
+    auto file_it = data.find ("file");
+    auto effectpasses_it = data.find ("passes");
 
     if (file_it == data.end ())
     {
@@ -38,12 +38,12 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> ().c_str ()));
 
-    json::const_iterator name_it = content.find ("name");
-    json::const_iterator description_it = content.find ("description");
-    json::const_iterator group_it = content.find ("group");
-    json::const_iterator preview_it = content.find ("preview");
-    json::const_iterator passes_it = content.find ("passes");
-    json::const_iterator dependencies_it = content.find ("dependencies");
+    auto name_it = content.find ("name");
+    auto description_it = content.find ("description");
+    auto group_it = content.find ("group");
+    auto preview_it = content.find ("preview");
+    auto passes_it = content.find ("passes");
+    auto dependencies_it = content.find ("dependencies");
 
     if (name_it == content.end ())
     {
@@ -83,12 +83,12 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
         object
     );
 
-    json::const_iterator cur = (*passes_it).begin ();
-    json::const_iterator end = (*passes_it).end ();
+    auto cur = (*passes_it).begin ();
+    auto end = (*passes_it).end ();
 
     for (; cur != end; cur ++)
     {
-        json::const_iterator materialfile = (*cur).find ("material");
+        auto materialfile = (*cur).find ("material");
 
         if (materialfile == (*cur).end ())
         {
@@ -115,13 +115,13 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 
         for (int passNumber = 0; cur != end; cur ++, passNumber ++)
         {
-            json::const_iterator constants_it = (*cur).find ("constantshadervalues");
+            auto constants_it = (*cur).find ("constantshadervalues");
 
             if (constants_it == (*cur).end ())
                 continue;
 
-            json::const_iterator constantCur = (*constants_it).begin ();
-            json::const_iterator constantEnd = (*constants_it).end ();
+            auto constantCur = (*constants_it).begin ();
+            auto constantEnd = (*constants_it).end ();
 
             for (; constantCur != constantEnd; constantCur ++)
             {
@@ -147,19 +147,19 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
                 effect->insertConstant (constantCur.key (), constant);
             }
 
-            json::const_iterator textures_it = (*cur).find ("textures");
+            auto textures_it = (*cur).find ("textures");
 
             if (textures_it == (*cur).end ())
                 continue;
 
-            Images::CMaterial* material = effect->getMaterials ()->at (passNumber);
-            std::vector<Images::Materials::CPassess*>::const_iterator materialCur = material->getPasses ()->begin ();
-            std::vector<Images::Materials::CPassess*>::const_iterator materialEnd = material->getPasses ()->end ();
+            Images::CMaterial* material = effect->getMaterials ().at (passNumber);
+            auto passCur = material->getPasses ().begin ();
+            auto passEnd = material->getPasses ().end ();
 
-            for (; materialCur != materialEnd; materialCur ++)
+            for (; passCur != passEnd; passCur ++)
             {
-                json::const_iterator texturesCur = (*textures_it).begin ();
-                json::const_iterator texturesEnd = (*textures_it).end ();
+                auto texturesCur = (*textures_it).begin ();
+                auto texturesEnd = (*textures_it).end ();
 
                 for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++)
                 {
@@ -167,21 +167,21 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 
                     if ((*texturesCur).is_null () == true)
                     {
-                        if (object->Is <CImage> () == false)
+                        if (object->is<CImage>() == false)
                         {
                             throw std::runtime_error ("unexpected null texture for non-image object");
                         }
 
-                        CImage* image = object->As <CImage> ();
+                        CImage* image = object->as<CImage>();
 
-                        texture = (*(*image->getMaterial ()->getPasses ()->begin ())->getTextures ()->begin ());
+                        texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ()->begin ());
                     }
                     else
                     {
                         texture = *texturesCur;
                     }
 
-                    std::vector<std::string>* passTextures = (*materialCur)->getTextures ();
+                    std::vector<std::string>* passTextures = (*passCur)->getTextures ();
 
                     if (textureNumber < passTextures->size ())
                         passTextures->at (textureNumber) = texture;
@@ -198,19 +198,19 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
     return effect;
 }
 
-std::vector<std::string>* CEffect::getDependencies ()
+const std::vector<std::string>& CEffect::getDependencies () const
 {
-    return &this->m_dependencies;
+    return this->m_dependencies;
 }
 
-std::vector<Images::CMaterial*>* CEffect::getMaterials ()
+const std::vector<Images::CMaterial*>& CEffect::getMaterials () const
 {
-    return &this->m_materials;
+    return this->m_materials;
 }
 
-std::map<std::string, Effects::CShaderConstant*>* CEffect::getConstants ()
+const std::map<std::string, Effects::CShaderConstant*>& CEffect::getConstants () const
 {
-    return &this->m_constants;
+    return this->m_constants;
 }
 
 void CEffect::insertDependency (const std::string& dep)

@@ -12,8 +12,14 @@ namespace WallpaperEngine::Core::Objects::Images::Materials
         static CPassess* fromJSON (json data);
 
         std::vector<std::string>* getTextures ();
-        std::map<std::string, int>* getCombos ();
-        std::string getShader ();
+
+        const std::map<std::string, int>& getCombos () const;
+        const std::string& getShader () const;
+        const std::string& getBlendingMode () const;
+        const std::string& getCullingMode () const;
+        const std::string& getDepthTest () const;
+        const std::string& getDepthWrite () const;
+
     protected:
         CPassess (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader);
 

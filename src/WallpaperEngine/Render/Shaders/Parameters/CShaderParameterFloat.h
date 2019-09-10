@@ -11,7 +11,7 @@ namespace WallpaperEngine::Render::Shaders::Parameters
     public:
         CShaderParameterFloat (irr::f32 defaultValue);
 
-        int getSize () override;
+        const int getSize () const override;
 
         void setValue (irr::f32 value);
 

@@ -16,7 +16,7 @@ void CShaderParameterInteger::setValue (irr::s32 value)
     CShaderParameter::setValue (&this->m_value);
 }
 
-int CShaderParameterInteger::getSize ()
+const int CShaderParameterInteger::getSize () const
 {
     return 1;
 }

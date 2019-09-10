@@ -9,7 +9,7 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
+CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
     irr::scene::ISceneNode (
         context->getDevice ()->getSceneManager ()->getRootSceneNode (),
         context->getDevice ()->getSceneManager ()
@@ -24,8 +24,8 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
             this->m_scene->getOrthogonalProjection ()->getHeight ()
     );
 
-    std::vector<Core::CObject*>::const_iterator cur = this->m_scene->getObjects ()->begin ();
-    std::vector<Core::CObject*>::const_iterator end = this->m_scene->getObjects ()->end ();
+    auto cur = this->m_scene->getObjects ().begin ();
+    auto end = this->m_scene->getObjects ().end ();
 
     int highestId = 0;
 
@@ -34,13 +34,13 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
         if ((*cur)->getId () > highestId)
             highestId = (*cur)->getId ();
 
-        if ((*cur)->Is <Core::Objects::CImage> () == true)
+        if ((*cur)->is<Core::Objects::CImage>() == true)
         {
-            new Objects::CImage (this, (*cur)->As <Core::Objects::CImage> ());
+            new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
         }
-        else if ((*cur)->Is <Core::Objects::CSound> () == true)
+        else if ((*cur)->is<Core::Objects::CSound>() == true)
         {
-            new Objects::CSound (this, (*cur)->As <Core::Objects::CSound> ());
+            new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
         }
     }
 
@@ -58,12 +58,12 @@ Irrlicht::CContext* CScene::getContext ()
     return this->m_context;
 }
 
-Core::CScene* CScene::getScene ()
+const Core::CScene* CScene::getScene () const
 {
     return this->m_scene;
 }
 
-CCamera* CScene::getCamera ()
+CCamera* CScene::getCamera () const
 {
     return this->m_camera;
 }

@@ -29,9 +29,9 @@ namespace WallpaperEngine::Core::Objects
 
         static CEffect* fromJSON (json data, Core::CObject* object);
 
-        std::vector<std::string>* getDependencies ();
-        std::vector<Images::CMaterial*>* getMaterials ();
-        std::map<std::string, Effects::CShaderConstant*>* getConstants ();
+        const std::vector<std::string>& getDependencies () const;
+        const std::vector<Images::CMaterial*>& getMaterials () const;
+        const std::map<std::string, Effects::CShaderConstant*>& getConstants () const;
     protected:
         void insertDependency (const std::string& dep);
         void insertMaterial (Images::CMaterial* material);

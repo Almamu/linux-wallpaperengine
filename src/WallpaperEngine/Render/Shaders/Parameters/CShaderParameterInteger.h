@@ -11,7 +11,7 @@ namespace WallpaperEngine::Render::Shaders::Parameters
     public:
         CShaderParameterInteger (irr::s32 defaultValue);
 
-        int getSize () override;
+        const int getSize () const override;
 
         static const std::string Type;
 

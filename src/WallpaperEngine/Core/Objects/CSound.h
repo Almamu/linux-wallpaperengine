@@ -25,7 +25,7 @@ namespace WallpaperEngine::Core::Objects
         );
 
         void insertSound (std::string filename);
-        std::vector<std::string>* getSounds ();
+        const std::vector<std::string>& getSounds () const;
 
     protected:
         CSound (
