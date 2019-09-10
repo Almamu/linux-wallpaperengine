@@ -5,14 +5,12 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 
-CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value, int size) :
-    m_size (size),
+CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value) :
     CShaderVariable (value, nullptr, Type)
 {
 }
 
-CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value, int size, std::string name) :
-    m_size (size),
+CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value, std::string name) :
     CShaderVariable (value, nullptr, Type)
 {
     this->setName (std::move(name));
@@ -20,7 +18,7 @@ CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value, int si
 
 const int CShaderVariableFloatPointer::getSize () const
 {
-    return this->m_size;
+    return 1;
 }
 
-const std::string CShaderVariableFloatPointer::Type = "pointer";
+const std::string CShaderVariableFloatPointer::Type = "pointer_float";

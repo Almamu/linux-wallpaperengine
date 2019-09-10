@@ -9,6 +9,8 @@
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
+#include "CEventReceiver.h"
+
 namespace WallpaperEngine::Render
 {
     class CScene;
@@ -40,10 +42,12 @@ namespace WallpaperEngine::Irrlicht
         irr::io::path resolveFile (const irr::io::path& file);
 
         irr::IrrlichtDevice* m_device;
+        CEventReceiver* m_eventReceiver;
 
         std::vector<Render::Shaders::Variables::CShaderVariable*> m_globalShaderVariables;
 
         irr::f32 m_time;
+        irr::core::vector2df m_pointerPosition;
 
         std::vector<std::string> m_screens;
         std::vector<irr::core::recti> m_viewports;

@@ -9,6 +9,7 @@
 #include "WallpaperEngine/Irrlicht/CPkgReader.h"
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h"
 
 #include "CContext.h"
 
@@ -30,16 +31,19 @@ void CContext::initializeContext ()
 {
     irr::SIrrlichtCreationParameters irrlichtCreationParameters;
 
+    // initialize event receiver first
+    this->m_eventReceiver = new CEventReceiver ();
+
     // prepare basic configuration for irrlicht
     irrlichtCreationParameters.AntiAlias = 8;
     irrlichtCreationParameters.Bits = 16;
     // _irr_params.DeviceType = Irrlicht::EIDT_X11;
     irrlichtCreationParameters.DriverType = irr::video::EDT_OPENGL;
     irrlichtCreationParameters.Doublebuffer = false;
-    irrlichtCreationParameters.EventReceiver = nullptr;
+    irrlichtCreationParameters.EventReceiver = this->m_eventReceiver;
     irrlichtCreationParameters.Fullscreen = false;
     irrlichtCreationParameters.HandleSRGB = false;
-    irrlichtCreationParameters.IgnoreInput = true;
+    irrlichtCreationParameters.IgnoreInput = false;
     irrlichtCreationParameters.Stencilbuffer = true;
     irrlichtCreationParameters.UsePerformanceTimer = false;
     irrlichtCreationParameters.Vsync = false;
@@ -90,7 +94,11 @@ void CContext::initializeContext ()
     );
     // register time shader variable
     this->insertShaderVariable (
-        new Render::Shaders::Variables::CShaderVariableFloatPointer (&this->m_time, 1, "g_Time")
+        new Render::Shaders::Variables::CShaderVariableFloatPointer (&this->m_time, "g_Time")
+    );
+    // register normalized uv position for mouse
+    this->insertShaderVariable (
+        new Render::Shaders::Variables::CShaderVariableVector2Pointer (&this->m_pointerPosition, "g_PointerPosition")
     );
 }
 
@@ -157,6 +165,8 @@ void CContext::initializeViewports (irr::SIrrlichtCreationParameters &irrlichtCr
 void CContext::renderFrame (Render::CScene* scene)
 {
     this->m_time = this->getDevice ()->getTimer ()->getTime () / 1000.0f;
+    this->m_pointerPosition.X = this->m_eventReceiver->getPosition ().X / (irr::f32) this->getDevice ()->getVideoDriver ()->getScreenSize ().Width;
+    this->m_pointerPosition.Y = this->m_eventReceiver->getPosition ().Y / (irr::f32) this->getDevice ()->getVideoDriver ()->getScreenSize ().Height;
 
     if (this->m_viewports.empty () == true)
     {

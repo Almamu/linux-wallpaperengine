@@ -6,15 +6,14 @@
 
 namespace WallpaperEngine::Render::Shaders::Variables
 {
-    class CShaderVariableFloatPointer : public CShaderVariable
+    class CShaderVariableVector2Pointer : public CShaderVariable
     {
     public:
-        explicit CShaderVariableFloatPointer (irr::f32* value);
-        CShaderVariableFloatPointer (irr::f32* value, std::string name);
+        CShaderVariableVector2Pointer (irr::core::vector2df* value);
+        CShaderVariableVector2Pointer (irr::core::vector2df* value, std::string name);
 
         const int getSize () const override;
 
         static const std::string Type;
-    private:
     };
 }

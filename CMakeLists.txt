@@ -40,6 +40,8 @@ add_executable(
 
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.cpp
 
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
@@ -59,6 +61,8 @@ add_executable(
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
 
+        src/WallpaperEngine/Irrlicht/CEventReceiver.h
+        src/WallpaperEngine/Irrlicht/CEventReceiver.cpp
         src/WallpaperEngine/Irrlicht/CContext.h
         src/WallpaperEngine/Irrlicht/CContext.cpp
         src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h

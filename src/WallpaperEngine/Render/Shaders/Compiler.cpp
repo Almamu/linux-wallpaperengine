@@ -516,7 +516,7 @@ namespace WallpaperEngine::Render::Shaders
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
-                    WallpaperEngine::Core::ato3vf (*defvalue)
+                WallpaperEngine::Core::ato3vf (*defvalue)
             );
         }
         else if (type == "vec3")

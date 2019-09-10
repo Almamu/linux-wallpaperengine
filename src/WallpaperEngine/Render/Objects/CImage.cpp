@@ -236,10 +236,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-                (*cur)->is <CShaderVariableFloat> () == true ||
-                (*cur)->is <CShaderVariableVector2> () == true ||
-                (*cur)->is <CShaderVariableVector3> () == true ||
-                (*cur)->is <CShaderVariableVector4> () == true)
+            (*cur)->is <CShaderVariableFloat> () == true ||
+            (*cur)->is <CShaderVariableVector2> () == true ||
+            (*cur)->is <CShaderVariableVector3> () == true ||
+            (*cur)->is <CShaderVariableVector4> () == true)
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -263,10 +263,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-                (*cur)->is <CShaderVariableFloat> () == true ||
-                (*cur)->is <CShaderVariableVector2> () == true ||
-                (*cur)->is <CShaderVariableVector3> () == true ||
-                (*cur)->is <CShaderVariableVector4> () == true)
+            (*cur)->is <CShaderVariableFloat> () == true ||
+            (*cur)->is <CShaderVariableVector2> () == true ||
+            (*cur)->is <CShaderVariableVector3> () == true ||
+            (*cur)->is <CShaderVariableVector4> () == true)
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
