@@ -2,10 +2,13 @@
 
 #include <utility>
 
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantVector3.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
+
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine;
@@ -136,7 +139,7 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
                 }
                 else if ((*constantCur).is_string () == true)
                 {
-                    throw std::runtime_error ("String constants not supported yet");
+                    constant = new Effects::CShaderConstantVector3 (WallpaperEngine::Core::ato3vf (*constantCur));
                 }
                 else
                 {

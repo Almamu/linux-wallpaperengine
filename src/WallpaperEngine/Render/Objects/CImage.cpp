@@ -13,6 +13,7 @@
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
+#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantVector3.h"
 
 using namespace WallpaperEngine;
 
@@ -194,6 +195,10 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Cor
                 {
                     pixelVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
                 }
+                else if (pixelVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
+                {
+                    pixelVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
+                }
             }
 
             if (vertexVar)
@@ -205,6 +210,10 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Cor
                 else if (vertexVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
                 {
                     vertexVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
+                }
+                else if (vertexVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
+                {
+                    vertexVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
                 }
             }
         }
