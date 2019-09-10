@@ -10,12 +10,12 @@
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
 #include <WallpaperEngine/Core/Core.h>
 
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
@@ -511,33 +511,33 @@ namespace WallpaperEngine::Render::Shaders
             return;
         }
 
-        Parameters::CShaderParameter* parameter = nullptr;
+        Variables::CShaderVariable* parameter = nullptr;
 
         if (type == "vec4")
         {
-            parameter = new Parameters::CShaderParameterVector4 (
+            parameter = new Variables::CShaderVariableVector4 (
                     WallpaperEngine::Core::ato3vf (*defvalue)
             );
         }
         else if (type == "vec3")
         {
-            parameter = new Parameters::CShaderParameterVector3 (
+            parameter = new Variables::CShaderVariableVector3 (
                 WallpaperEngine::Core::ato3vf (*defvalue)
             );
         }
         else if (type == "vec2")
         {
-            parameter = new Parameters::CShaderParameterVector2 (
+            parameter = new Variables::CShaderVariableVector2 (
                 WallpaperEngine::Core::ato2vf (*defvalue)
             );
         }
         else if (type == "float")
         {
-            parameter = new Parameters::CShaderParameterFloat ((*defvalue).get <irr::f32> ());
+            parameter = new Variables::CShaderVariableFloat ((*defvalue).get <irr::f32> ());
         }
         else if (type == "int")
         {
-            parameter = new Parameters::CShaderParameterInteger ((*defvalue).get <irr::s32> ());
+            parameter = new Variables::CShaderVariableInteger ((*defvalue).get <irr::s32> ());
         }
         else if (type == "sampler2D")
         {
@@ -557,7 +557,7 @@ namespace WallpaperEngine::Render::Shaders
         this->m_parameters.push_back (parameter);
     }
 
-    Parameters::CShaderParameter* Compiler::findParameter (const std::string& identifier)
+    Variables::CShaderVariable* Compiler::findParameter (const std::string& identifier)
     {
         auto cur = this->m_parameters.begin ();
         auto end = this->m_parameters.end ();
@@ -573,7 +573,7 @@ namespace WallpaperEngine::Render::Shaders
         return nullptr;
     }
 
-    const std::vector <Parameters::CShaderParameter*>& Compiler::getParameters () const
+    const std::vector <Variables::CShaderVariable*>& Compiler::getParameters () const
     {
         return this->m_parameters;
     }

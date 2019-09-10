@@ -10,7 +10,7 @@
 
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
@@ -67,12 +67,12 @@ namespace WallpaperEngine::Render::Shaders
          * @param identifier The identifier to search for
          * @return The shader information
          */
-        Parameters::CShaderParameter* findParameter (const std::string& identifier);
+        Variables::CShaderVariable* findParameter (const std::string& identifier);
 
         /**
          * @return The list of parameters available for this shader with their default values
          */
-        const std::vector <Parameters::CShaderParameter*>& getParameters () const;
+        const std::vector <Variables::CShaderVariable*>& getParameters () const;
 
     private:
         /**
@@ -207,7 +207,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The parameters the shader needs
          */
-        std::vector <Parameters::CShaderParameter*> m_parameters;
+        std::vector <Variables::CShaderVariable*> m_parameters;
         /**
          * The combos the shader should be generated with
          */

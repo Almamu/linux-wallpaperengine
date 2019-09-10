@@ -8,8 +8,11 @@
 #include "WallpaperEngine/Irrlicht/CImageLoaderTEX.h"
 #include "WallpaperEngine/Irrlicht/CPkgReader.h"
 
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
+
 #include "CContext.h"
 
+using namespace WallpaperEngine;
 using namespace WallpaperEngine::Irrlicht;
 
 CContext::CContext (std::vector<std::string>  screens, bool isRootWindow) :
@@ -85,6 +88,10 @@ void CContext::initializeContext ()
     this->getDevice ()->getFileSystem ()->addArchiveLoader (
             new WallpaperEngine::Irrlicht::CArchiveLoaderPkg (this)
     );
+    // register time shader variable
+    this->insertShaderVariable (
+        new Render::Shaders::Variables::CShaderVariableFloatPointer (&this->m_time, 1, "g_Time")
+    );
 }
 
 void CContext::initializeViewports (irr::SIrrlichtCreationParameters &irrlichtCreationParameters)
@@ -149,6 +156,8 @@ void CContext::initializeViewports (irr::SIrrlichtCreationParameters &irrlichtCr
 
 void CContext::renderFrame (Render::CScene* scene)
 {
+    this->m_time = this->getDevice ()->getTimer ()->getTime () / 1000.0f;
+
     if (this->m_viewports.empty () == true)
     {
         this->getDevice ()->getVideoDriver ()->beginScene (true, true, scene->getScene ()->getClearColor ().toSColor());
@@ -170,6 +179,16 @@ void CContext::renderFrame (Render::CScene* scene)
             this->getDevice ()->getVideoDriver ()->endScene ();
         }
     }
+}
+
+void CContext::insertShaderVariable (Render::Shaders::Variables::CShaderVariable* variable)
+{
+    this->m_globalShaderVariables.push_back (variable);
+}
+
+const std::vector<Render::Shaders::Variables::CShaderVariable*>& CContext::getShaderVariables () const
+{
+    return this->m_globalShaderVariables;
 }
 
 irr::IrrlichtDevice* CContext::getDevice ()

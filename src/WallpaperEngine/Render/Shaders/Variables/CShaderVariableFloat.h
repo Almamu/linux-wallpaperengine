@@ -1,15 +1,16 @@
 #pragma once
 
-#include "CShaderParameter.h"
+#include "CShaderVariable.h"
 
 #include <irrlicht/irrlicht.h>
 
-namespace WallpaperEngine::Render::Shaders::Parameters
+namespace WallpaperEngine::Render::Shaders::Variables
 {
-    class CShaderParameterFloat : public CShaderParameter
+    class CShaderVariableFloat : public CShaderVariable
     {
     public:
-        CShaderParameterFloat (irr::f32 defaultValue);
+        explicit CShaderVariableFloat (irr::f32 defaultValue);
+        CShaderVariableFloat (irr::f32 defaultValue, std::string name);
 
         const int getSize () const override;
 

@@ -25,18 +25,21 @@ add_executable(
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
 
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.cpp
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.cpp
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.cpp
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.cpp
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.cpp
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h
-        src/WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
+
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.cpp
 
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp

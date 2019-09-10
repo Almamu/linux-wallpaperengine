@@ -2,12 +2,12 @@
 
 #include <string>
 
-namespace WallpaperEngine::Render::Shaders::Parameters
+namespace WallpaperEngine::Render::Shaders::Variables
 {
-    class CShaderParameter
+    class CShaderVariable
     {
     public:
-        CShaderParameter (void* defaultValue, void* value, std::string type);
+        CShaderVariable (void* defaultValue, void* value, std::string type);
 
         template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }

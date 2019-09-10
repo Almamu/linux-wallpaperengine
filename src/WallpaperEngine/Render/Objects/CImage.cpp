@@ -1,16 +1,18 @@
 #include "CImage.h"
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameter.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterFloat.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterInteger.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector2.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector3.h"
-#include "WallpaperEngine/Render/Shaders/Parameters/CShaderParameterVector4.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
+
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
-using namespace WallpaperEngine::Render::Shaders::Parameters;
+using namespace WallpaperEngine::Render::Shaders::Variables;
 
 extern irr::f32 g_Time;
 
@@ -225,7 +227,7 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
 
     for (; cur != end; cur ++)
     {
-        if ((*cur)->is <CShaderParameterInteger> () == true)
+        if ((*cur)->is <CShaderVariableInteger> () == true)
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -234,10 +236,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-            (*cur)->is <CShaderParameterFloat> () == true ||
-            (*cur)->is <CShaderParameterVector2> () == true ||
-            (*cur)->is <CShaderParameterVector3> () == true ||
-            (*cur)->is <CShaderParameterVector4> () == true)
+                (*cur)->is <CShaderVariableFloat> () == true ||
+                (*cur)->is <CShaderVariableVector2> () == true ||
+                (*cur)->is <CShaderVariableVector3> () == true ||
+                (*cur)->is <CShaderVariableVector4> () == true)
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -252,7 +254,7 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
 
     for (; cur != end; cur ++)
     {
-        if ((*cur)->is <CShaderParameterInteger> () == true)
+        if ((*cur)->is <CShaderVariableInteger> () == true)
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -261,10 +263,10 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
             );
         }
         else if (
-            (*cur)->is <CShaderParameterFloat> () == true ||
-            (*cur)->is <CShaderParameterVector2> () == true ||
-            (*cur)->is <CShaderParameterVector3> () == true ||
-            (*cur)->is <CShaderParameterVector4> () == true)
+                (*cur)->is <CShaderVariableFloat> () == true ||
+                (*cur)->is <CShaderVariableVector2> () == true ||
+                (*cur)->is <CShaderVariableVector3> () == true ||
+                (*cur)->is <CShaderVariableVector4> () == true)
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
@@ -274,8 +276,25 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
         }
     }
 
-    services->setVertexShaderConstant ("g_Time", &g_Time, 1);
-    services->setPixelShaderConstant  ("g_Time", &g_Time, 1);
+    cur = this->getScene ()->getContext ()->getShaderVariables ().begin ();
+    end = this->getScene ()->getContext ()->getShaderVariables ().end ();
+
+    for (; cur != end; cur ++)
+    {
+        if ((*cur)->is <CShaderVariableFloatPointer> () == true)
+        {
+            services->setPixelShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::f32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+            services->setVertexShaderConstant (
+                (*cur)->getName ().c_str (),
+                (irr::f32*) (*cur)->getValue (),
+                (*cur)->getSize ()
+            );
+        }
+    }
 
     services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
 

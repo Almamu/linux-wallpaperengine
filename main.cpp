@@ -18,9 +18,6 @@ enum BACKGROUND_RUN_MODE
     RUN_MODE_PACKAGE = 3
 };
 
-// TODO: MOVE GLOBAL SHADER VARIABLES TO THEIR OWN CLASS
-irr::f32 g_Time = 0;
-
 WallpaperEngine::Irrlicht::CContext* IrrlichtContext = nullptr;
 
 void print_help (const char* route)
@@ -168,8 +165,6 @@ int main (int argc, char* argv[])
     WallpaperEngine::Render::CScene* scene = new WallpaperEngine::Render::CScene (project, IrrlichtContext);
 
     irr::u32 minimumTime = 1000 / maximumFPS;
-    irr::u32 currentTime = 0;
-
     irr::u32 startTime = 0;
     irr::u32 endTime = 0;
 
@@ -180,8 +175,7 @@ int main (int argc, char* argv[])
         if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
             continue;
 
-        currentTime = startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
-        g_Time = currentTime / 1000.0f;
+        startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
 
         IrrlichtContext->renderFrame (scene);
 
