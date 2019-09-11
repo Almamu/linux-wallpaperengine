@@ -19,7 +19,7 @@ CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect, Irrlicht::CCont
             "_rt_WALLENGINELINUX_OUTPUT_" +
             std::to_string (image->getImage ()->getId ()) + "_" +
             std::to_string (this->m_image->getEffects ().size ()) +
-            "_output"
+            "_effect_output"
         ).c_str ()
     );
 
@@ -67,12 +67,16 @@ void CEffect::generatePasses ()
 {
     auto cur = this->m_effect->getMaterials ().begin ();
     auto end = this->m_effect->getMaterials ().end ();
+    const irr::video::ITexture* inputTexture = this->getInputTexture ();
 
     for (; cur != end; cur ++)
     {
-        this->m_materials.push_back (
-            new Effects::CMaterial (this->m_context, this, *cur)
-        );
+        Effects::CMaterial* material = new Effects::CMaterial (this->m_context, this, *cur, inputTexture);
+
+        // next input texture will be the output texture of the material
+        inputTexture = material->getOutputTexture ();
+
+        this->m_materials.push_back (material);
     }
 }
 

@@ -14,7 +14,7 @@ namespace WallpaperEngine::Render::Objects::Effects
     class CPass : public irr::video::IShaderConstantSetCallBack
     {
     public:
-        CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
+        CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, const irr::video::ITexture* texture);
 
         void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData) override;
 
@@ -30,7 +30,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         Core::Objects::Images::Materials::CPass* m_pass;
         Irrlicht::CContext* m_context;
 
-        irr::video::ITexture* m_inputTexture;
+        const irr::video::ITexture* m_inputTexture;
         irr::video::ITexture* m_outputTexture;
 
         irr::video::SMaterial m_irrlichtMaterial;

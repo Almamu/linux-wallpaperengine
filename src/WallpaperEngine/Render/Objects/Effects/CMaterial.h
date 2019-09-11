@@ -28,7 +28,7 @@ namespace WallpaperEngine::Render::Objects::Effects
     {
         friend class CPass;
     public:
-        CMaterial (Irrlicht::CContext* context, Render::Objects::CEffect* effect, Core::Objects::Images::CMaterial* material);
+        CMaterial (Irrlicht::CContext* context, Render::Objects::CEffect* effect, Core::Objects::Images::CMaterial* material, const irr::video::ITexture* texture);
 
         const irr::video::ITexture* getOutputTexture () const;
         const irr::video::ITexture* getInputTexture () const;
@@ -41,7 +41,7 @@ namespace WallpaperEngine::Render::Objects::Effects
 
         Irrlicht::CContext* m_context;
 
-        irr::video::ITexture* m_inputTexture;
+        const irr::video::ITexture* m_inputTexture;
         irr::video::ITexture* m_outputTexture;
 
         Render::Objects::CEffect* m_effect;

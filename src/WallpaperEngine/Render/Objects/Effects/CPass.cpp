@@ -19,13 +19,23 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 
 using namespace WallpaperEngine::Render::Objects::Effects;
 
-CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass) :
+CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, const irr::video::ITexture* texture) :
     m_material (material),
     m_pass (pass),
     m_context (context),
-    m_inputTexture (nullptr),
+    m_inputTexture (texture),
     m_outputTexture (nullptr)
 {
+    this->m_outputTexture = this->m_context->getDevice ()->getVideoDriver ()->addRenderTargetTexture (
+        this->m_inputTexture->getSize (),
+        (
+            "_rt_WALLENGINELINUX_OUTPUT_" +
+            std::to_string (this->m_material->getImage ()->getImage ()->getId ()) + "_" +
+            std::to_string (this->m_material->getImage ()->getEffects ().size ()) +
+            "_pass_output"
+        ).c_str ()
+    );
+
     irr::io::path vertPath = this->m_context->resolveVertexShader (pass->getShader ());
     irr::io::path fragPath = this->m_context->resolveFragmentShader (pass->getShader ());
     // register fragment shader
@@ -36,7 +46,6 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     this->m_vertShader = new Render::Shaders::Compiler (
         this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false
     );
-
     // initialize material data and compile shader used for this pass
     this->m_irrlichtMaterial.Wireframe = false;
     this->m_irrlichtMaterial.Lighting = false;
