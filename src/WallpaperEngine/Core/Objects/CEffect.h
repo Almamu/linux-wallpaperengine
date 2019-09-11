@@ -36,8 +36,8 @@ namespace WallpaperEngine::Core::Objects
 
         Effects::CFBO* findFBO (const std::string& name);
     protected:
-        static void constantsFromJSON (json::const_iterator constants_it, Core::Objects::Images::Materials::CPassess* pass);
-        static void combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPassess* pass);
+        static void constantsFromJSON (json::const_iterator constants_it, Core::Objects::Images::Materials::CPass* pass);
+        static void combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPass* pass);
         static void fbosFromJSON (json::const_iterator fbos_it, CEffect* effect);
         static void dependencyFromJSON (json::const_iterator dependencies_it, CEffect* effect);
         static void materialsFromJSON (json::const_iterator passes_it, CEffect* effect);

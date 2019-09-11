@@ -57,6 +57,15 @@ add_executable(
         src/WallpaperEngine/Render/Objects/CImage.cpp
         src/WallpaperEngine/Render/Objects/CSound.h
         src/WallpaperEngine/Render/Objects/CSound.cpp
+        src/WallpaperEngine/Render/Objects/CEffect.h
+        src/WallpaperEngine/Render/Objects/CEffect.cpp
+
+        src/WallpaperEngine/Render/Objects/Effects/CFBO.h
+        src/WallpaperEngine/Render/Objects/Effects/CFBO.cpp
+        src/WallpaperEngine/Render/Objects/Effects/CPass.h
+        src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
+        src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
+        src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
@@ -100,6 +109,8 @@ add_executable(
 
         src/WallpaperEngine/Core/Objects/Effects/CFBO.h
         src/WallpaperEngine/Core/Objects/Effects/CFBO.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CBind.h
+        src/WallpaperEngine/Core/Objects/Effects/CBind.cpp
 
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
@@ -135,8 +146,8 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
         src/WallpaperEngine/Core/Objects/Images/CMaterial.h
 
-        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.cpp
-        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.h
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})

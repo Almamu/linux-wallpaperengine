@@ -5,6 +5,7 @@
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
+using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
 CMaterial::CMaterial () :
@@ -51,16 +52,21 @@ CMaterial* CMaterial::fromJSON (json data)
     for (; cur != end; cur ++)
     {
         material->insertPass (
-            Materials::CPassess::fromJSON (*cur)
+            Materials::CPass::fromJSON (*cur)
         );
     }
 
     return material;
 }
 
-void CMaterial::insertPass (Materials::CPassess* mass)
+void CMaterial::insertPass (Materials::CPass* mass)
 {
     this->m_passes.push_back (mass);
+}
+
+void CMaterial::insertTextureBind (Effects::CBind* bind)
+{
+    this->m_textureBindings.push_back (bind);
 }
 
 void CMaterial::setTarget (const std::string& target)
@@ -68,10 +74,15 @@ void CMaterial::setTarget (const std::string& target)
     this->m_target = target;
 }
 
-const std::vector <Materials::CPassess*>& CMaterial::getPasses () const
+const std::vector <Materials::CPass*>& CMaterial::getPasses () const
 {
     return this->m_passes;
 }
+const std::vector <Effects::CBind*>& CMaterial::getTextureBinds () const
+{
+    return this->m_textureBindings;
+}
+
 const std::string& CMaterial::getTarget () const
 {
     return this->m_target;

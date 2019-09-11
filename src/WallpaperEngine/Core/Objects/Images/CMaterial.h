@@ -3,7 +3,8 @@
 #include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
 
-#include "WallpaperEngine/Core/Objects/Images/Materials/CPassess.h"
+#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
+#include "WallpaperEngine/Core/Objects/Effects/CBind.h"
 
 namespace WallpaperEngine::Core::Objects::Images
 {
@@ -17,9 +18,11 @@ namespace WallpaperEngine::Core::Objects::Images
         static CMaterial* fromFile (const irr::io::path& filename, const std::string& target);
         static CMaterial* fromJSON (json data, const std::string& target);
 
-        void insertPass (Materials::CPassess* mass);
+        void insertPass (Materials::CPass* mass);
+        void insertTextureBind (Effects::CBind* bind);
 
-        const std::vector <Materials::CPassess*>& getPasses () const;
+        const std::vector <Materials::CPass*>& getPasses () const;
+        const std::vector <Effects::CBind*>& getTextureBinds () const;
         const std::string& getTarget () const;
         const bool hasTarget () const;
     protected:
@@ -27,7 +30,8 @@ namespace WallpaperEngine::Core::Objects::Images
 
         void setTarget (const std::string& target);
     private:
-        std::vector <Materials::CPassess*> m_passes;
+        std::vector <Materials::CPass*> m_passes;
+        std::vector <Effects::CBind*> m_textureBindings;
         std::string m_target;
     };
 };

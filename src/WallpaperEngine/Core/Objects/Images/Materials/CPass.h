@@ -13,11 +13,11 @@ namespace WallpaperEngine::Core::Objects::Images::Materials
 {
     using json = nlohmann::json;
 
-    class CPassess
+    class CPass
     {
         friend class Core::Objects::CEffect;
     public:
-        static CPassess* fromJSON (json data);
+        static CPass* fromJSON (json data);
 
         const std::vector<std::string>& getTextures () const;
         const std::map<std::string, Effects::Constants::CShaderConstant*>& getConstants () const;
@@ -33,7 +33,7 @@ namespace WallpaperEngine::Core::Objects::Images::Materials
         void insertConstant (const std::string& name, Effects::Constants::CShaderConstant* constant);
 
     protected:
-        CPassess (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader);
+        CPass (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader);
 
         void insertTexture (const std::string& texture);
         void setTexture (int index, const std::string& texture);

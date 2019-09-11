@@ -1,9 +1,9 @@
-#include "CPassess.h"
+#include "CPass.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
-CPassess::CPassess (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader) :
+CPass::CPass (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader) :
     m_blending (std::move(blending)),
     m_cullmode (std::move(cullmode)),
     m_depthtest (std::move(depthtest)),
@@ -12,7 +12,7 @@ CPassess::CPassess (std::string blending, std::string cullmode, std::string dept
 {
 }
 
-CPassess* CPassess::fromJSON (json data)
+CPass* CPass::fromJSON (json data)
 {
     auto blending_it = data.find ("blending");
     auto cullmode_it = data.find ("cullmode");
@@ -56,7 +56,7 @@ CPassess* CPassess::fromJSON (json data)
         }
     }
 
-    CPassess* pass = new CPassess (
+    CPass* pass = new CPass (
         *blending_it,
         *cullmode_it,
         *depthtest_it,
@@ -105,62 +105,62 @@ CPassess* CPassess::fromJSON (json data)
     return pass;
 }
 
-void CPassess::insertTexture (const std::string& texture)
+void CPass::insertTexture (const std::string& texture)
 {
     this->m_textures.push_back (texture);
 }
 
-void CPassess::setTexture (int index, const std::string& texture)
+void CPass::setTexture (int index, const std::string& texture)
 {
     this->m_textures.at (index) = texture;
 }
 
-void CPassess::insertCombo (const std::string& name, int value)
+void CPass::insertCombo (const std::string& name, int value)
 {
     this->m_combos.insert (std::pair <std::string, int> (name, value));
 }
 
-const std::vector<std::string>& CPassess::getTextures () const
+const std::vector<std::string>& CPass::getTextures () const
 {
     return this->m_textures;
 }
 
-const std::map<std::string, CShaderConstant*>& CPassess::getConstants () const
+const std::map<std::string, CShaderConstant*>& CPass::getConstants () const
 {
     return this->m_constants;
 }
 
-const std::map<std::string, int>& CPassess::getCombos () const
+const std::map<std::string, int>& CPass::getCombos () const
 {
     return this->m_combos;
 }
 
-const std::string& CPassess::getShader () const
+const std::string& CPass::getShader () const
 {
     return this->m_shader;
 }
 
-const std::string& CPassess::getBlendingMode () const
+const std::string& CPass::getBlendingMode () const
 {
     return this->m_blending;
 }
 
-const std::string& CPassess::getCullingMode () const
+const std::string& CPass::getCullingMode () const
 {
     return this->m_cullmode;
 }
 
-const std::string& CPassess::getDepthTest () const
+const std::string& CPass::getDepthTest () const
 {
     return this->m_depthtest;
 }
 
-const std::string& CPassess::getDepthWrite ()const
+const std::string& CPass::getDepthWrite ()const
 {
     return this->m_depthwrite;
 }
 
-void CPassess::insertConstant (const std::string& name, CShaderConstant* constant)
+void CPass::insertConstant (const std::string& name, CShaderConstant* constant)
 {
     this->m_constants.insert (std::pair <std::string, CShaderConstant*> (name, constant));
 }

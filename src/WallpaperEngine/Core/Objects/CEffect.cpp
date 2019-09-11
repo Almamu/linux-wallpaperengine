@@ -167,7 +167,7 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
     return effect;
 }
 
-void CEffect::combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPassess* pass)
+void CEffect::combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPass* pass)
 {
     auto cur = (*combos_it).begin ();
     auto end = (*combos_it).end ();
@@ -178,7 +178,7 @@ void CEffect::combosFromJSON (json::const_iterator combos_it, Core::Objects::Ima
     }
 }
 
-void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Objects::Images::Materials::CPassess* pass)
+void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Objects::Images::Materials::CPass* pass)
 {
     auto cur = (*constants_it).begin ();
     auto end = (*constants_it).end ();
@@ -241,24 +241,38 @@ void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect
     {
         auto materialfile = (*cur).find ("material");
         auto target = (*cur).find ("target");
+        auto bind = (*cur).find ("bind");
 
         if (materialfile == (*cur).end ())
         {
             throw std::runtime_error ("Effect pass must have a material file");
         }
 
+        Images::CMaterial* material = nullptr;
+
         if (target == (*cur).end ())
         {
-            effect->insertMaterial (
-                    Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str ())
-            );
+            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str ());
         }
         else
         {
-            effect->insertMaterial (
-                    Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str (), *target)
-            );
+            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str (), *target);
         }
+
+        if (bind != (*cur).end ())
+        {
+            auto bindCur = (*bind).begin ();
+            auto bindEnd = (*bind).end ();
+
+            for (; bindCur != bindEnd; bindCur ++)
+            {
+                material->insertTextureBind (
+                    Effects::CBind::fromJSON (*bindCur)
+                );
+            }
+        }
+
+        effect->insertMaterial (material);
     }
 }
 

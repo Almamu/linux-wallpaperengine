@@ -102,7 +102,7 @@ void CImage::generateMaterial ()
 
     for (; cur != end; cur++)
     {
-        this->generatePass (*cur, nullptr);
+        this->generatePass (*cur);
     }
 
     auto effectCur = this->m_image->getEffects ().begin ();
@@ -120,13 +120,13 @@ void CImage::generateMaterial ()
 
             for (; cur != end; cur++)
             {
-                this->generatePass (*cur, *effectCur);
+                this->generatePass (*cur);
             }
         }
     }
 }
 
-void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Core::Objects::CEffect* effect)
+void CImage::generatePass (Core::Objects::Images::Materials::CPass* pass)
 {
     std::vector<std::string> textures = pass->getTextures ();
     irr::video::SMaterial material;
@@ -231,6 +231,16 @@ void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Cor
 const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
 {
     return this->m_boundingBox;
+}
+
+const Core::Objects::CImage* CImage::getImage () const
+{
+    return this->m_image;
+}
+
+const std::vector<CEffect*>& CImage::getEffects () const
+{
+    return this->m_effects;
 }
 
 void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
