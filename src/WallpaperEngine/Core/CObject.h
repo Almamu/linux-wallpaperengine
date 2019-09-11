@@ -25,6 +25,7 @@ namespace WallpaperEngine::Core
         template<class T> bool is () { return this->m_type == T::Type; }
 
         const std::vector<Objects::CEffect*>& getEffects () const;
+        const std::vector<irr::u32>& getDependencies () const;
         const int getId () const;
 
         const irr::core::vector3df& getOrigin () const;
@@ -45,6 +46,7 @@ namespace WallpaperEngine::Core
         );
 
         void insertEffect (Objects::CEffect* effect);
+        void insertDependency (irr::u32 dependency);
     private:
         std::string m_type;
 
@@ -56,5 +58,6 @@ namespace WallpaperEngine::Core
         irr::core::vector3df m_angles;
 
         std::vector<Objects::CEffect*> m_effects;
+        std::vector<irr::u32> m_dependencies;
     };
 };

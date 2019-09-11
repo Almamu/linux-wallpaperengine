@@ -1,6 +1,6 @@
 #include "CShaderConstantFloat.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects;
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 
 CShaderConstantFloat::CShaderConstantFloat (irr::f32 value) :

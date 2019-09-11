@@ -1,6 +1,6 @@
 #include "CShaderConstantInteger.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects;
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 
 CShaderConstantInteger::CShaderConstantInteger (irr::s32 value) :

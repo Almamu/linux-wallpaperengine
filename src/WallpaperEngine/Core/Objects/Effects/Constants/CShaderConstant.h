@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace WallpaperEngine::Core::Objects::Effects
+namespace WallpaperEngine::Core::Objects::Effects::Constants
 {
     class CShaderConstant
     {

@@ -36,6 +36,7 @@ CObject* CObject::fromJSON (json data)
     auto angles_it = data.find ("angles");
     auto name_it = data.find ("name");
     auto effects_it = data.find ("effects");
+    auto dependencies_it = data.find ("dependencies");
 
     bool visible = true;
 
@@ -128,6 +129,17 @@ CObject* CObject::fromJSON (json data)
         }
     }
 
+    if (dependencies_it != data.end () && (*dependencies_it).is_array () == true)
+    {
+        auto cur = (*dependencies_it).begin ();
+        auto end = (*dependencies_it).end ();
+
+        for (; cur != end; cur ++)
+        {
+            object->insertDependency (*cur);
+        }
+    }
+
     return object;
 }
 
@@ -156,6 +168,11 @@ const std::vector<Objects::CEffect*>& CObject::getEffects () const
     return this->m_effects;
 }
 
+const std::vector<irr::u32>& CObject::getDependencies () const
+{
+    return this->m_dependencies;
+}
+
 bool CObject::isVisible ()
 {
     return this->m_visible;
@@ -169,4 +186,8 @@ const int CObject::getId () const
 void CObject::insertEffect (Objects::CEffect* effect)
 {
     this->m_effects.push_back (effect);
+}
+void CObject::insertDependency (irr::u32 dependency)
+{
+    this->m_dependencies.push_back (dependency);
 }

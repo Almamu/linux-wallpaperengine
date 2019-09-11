@@ -7,15 +7,31 @@
 
 using namespace WallpaperEngine::Core::Objects::Images;
 
-CMaterial::CMaterial ()
+CMaterial::CMaterial () :
+    m_target ("")
 {
 }
 
-CMaterial* CMaterial::fromFile (irr::io::path filename)
+CMaterial* CMaterial::fromFile (const irr::io::path& filename)
 {
     return fromJSON (
         json::parse (WallpaperEngine::FileSystem::loadFullFile (filename))
     );
+}
+CMaterial* CMaterial::fromFile (const irr::io::path& filename, const std::string& target)
+{
+    return fromJSON (
+        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename)), target
+    );
+}
+
+CMaterial* CMaterial::fromJSON (json data, const std::string& target)
+{
+    CMaterial* material = fromJSON (data);
+
+    material->setTarget (target);
+
+    return material;
 }
 
 CMaterial* CMaterial::fromJSON (json data)
@@ -35,7 +51,7 @@ CMaterial* CMaterial::fromJSON (json data)
     for (; cur != end; cur ++)
     {
         material->insertPass (
-                Materials::CPassess::fromJSON (*cur)
+            Materials::CPassess::fromJSON (*cur)
         );
     }
 
@@ -47,7 +63,21 @@ void CMaterial::insertPass (Materials::CPassess* mass)
     this->m_passes.push_back (mass);
 }
 
+void CMaterial::setTarget (const std::string& target)
+{
+    this->m_target = target;
+}
+
 const std::vector <Materials::CPassess*>& CMaterial::getPasses () const
 {
     return this->m_passes;
+}
+const std::string& CMaterial::getTarget () const
+{
+    return this->m_target;
+}
+
+const bool CMaterial::hasTarget () const
+{
+    return this->m_target.empty () == false;
 }

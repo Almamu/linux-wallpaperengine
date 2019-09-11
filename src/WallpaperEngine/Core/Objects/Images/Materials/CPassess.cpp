@@ -1,6 +1,6 @@
 #include "CPassess.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects;
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
 CPassess::CPassess (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite, std::string shader) :
@@ -110,14 +110,19 @@ void CPassess::insertTexture (const std::string& texture)
     this->m_textures.push_back (texture);
 }
 
+void CPassess::setTexture (int index, const std::string& texture)
+{
+    this->m_textures.at (index) = texture;
+}
+
 void CPassess::insertCombo (const std::string& name, int value)
 {
     this->m_combos.insert (std::pair <std::string, int> (name, value));
 }
 
-std::vector<std::string>* CPassess::getTextures ()
+const std::vector<std::string>& CPassess::getTextures () const
 {
-    return &this->m_textures;
+    return this->m_textures;
 }
 
 const std::map<std::string, CShaderConstant*>& CPassess::getConstants () const

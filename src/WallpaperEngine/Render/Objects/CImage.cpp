@@ -10,14 +10,14 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h"
 
-#include "WallpaperEngine/Core/Objects/Effects/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/CShaderConstantVector3.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
 
 using namespace WallpaperEngine;
 
-using namespace WallpaperEngine::Core::Objects::Effects;
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render::Shaders::Variables;
@@ -128,11 +128,11 @@ void CImage::generateMaterial ()
 
 void CImage::generatePass (Core::Objects::Images::Materials::CPassess* pass, Core::Objects::CEffect* effect)
 {
-    std::vector<std::string>* textures = pass->getTextures ();
+    std::vector<std::string> textures = pass->getTextures ();
     irr::video::SMaterial material;
 
-    auto texturesCur = textures->begin ();
-    auto texturesEnd = textures->end ();
+    auto texturesCur = textures.begin ();
+    auto texturesEnd = textures.end ();
 
     for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++, textureNumber ++)
     {

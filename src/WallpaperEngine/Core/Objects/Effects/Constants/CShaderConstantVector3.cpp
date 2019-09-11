@@ -1,6 +1,6 @@
 #include "CShaderConstantVector3.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects;
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 
 CShaderConstantVector3::CShaderConstantVector3 (irr::core::vector3df value) :

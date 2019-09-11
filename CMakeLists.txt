@@ -98,14 +98,17 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CParticle.cpp
         src/WallpaperEngine/Core/Objects/CParticle.h
 
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstant.h
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstant.cpp
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.h
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantFloat.cpp
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantVector3.h
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantVector3.cpp
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.h
-        src/WallpaperEngine/Core/Objects/Effects/CShaderConstantInteger.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CFBO.h
+        src/WallpaperEngine/Core/Objects/Effects/CFBO.cpp
+
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
 
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h

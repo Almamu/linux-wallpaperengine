@@ -5,7 +5,7 @@
 #include <string>
 #include <irrlicht/irrlicht.h>
 
-namespace WallpaperEngine::Core::Objects::Effects
+namespace WallpaperEngine::Core::Objects::Effects::Constants
 {
     class CShaderConstantInteger : public CShaderConstant
     {
