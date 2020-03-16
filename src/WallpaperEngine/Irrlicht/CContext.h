@@ -38,6 +38,7 @@ namespace WallpaperEngine::Irrlicht
         irr::io::path resolveIncludeShader (const std::string& includeShader);
     private:
         void initializeViewports (irr::SIrrlichtCreationParameters& irrlichtCreationParameters);
+        void drawScene(Render::CScene* scene, bool backBuffer);
 
         irr::io::path resolveFile (const irr::io::path& file);
 
