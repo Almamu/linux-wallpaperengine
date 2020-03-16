@@ -170,7 +170,7 @@ void CContext::renderFrame (Render::CScene* scene)
 
     if (this->m_viewports.empty () == true)
     {
-        this->drawScene(scene, true);
+        this->drawScene (scene, true);
     }
     else
     {
@@ -181,12 +181,12 @@ void CContext::renderFrame (Render::CScene* scene)
         {
             // change viewport to render to the correct portion of the display
             this->getDevice ()->getVideoDriver ()->setViewPort (*cur);
-            this->drawScene(scene, false);
+            this->drawScene (scene, false);
         }
     }
 }
 
-void CContext::drawScene(Render::CScene* scene, bool backBuffer)
+void CContext::drawScene (Render::CScene* scene, bool backBuffer)
 {
     this->getDevice ()->getVideoDriver ()->beginScene (false, true, scene->getScene ()->getClearColor ().toSColor());
     this->getDevice ()->getSceneManager ()->drawAll ();
