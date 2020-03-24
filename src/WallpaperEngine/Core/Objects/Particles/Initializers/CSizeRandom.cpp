@@ -7,7 +7,7 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 CSizeRandom* CSizeRandom::fromJSON (json data, irr::u32 id)
 {
     auto min_it = jsonFindRequired (&data, "min", "Sizerandom initializer must have a minimum value");
-    auto max_it = jsonFindRequired (&data, "min", "Sizerandom initializer must have a maximum value");
+    auto max_it = jsonFindRequired (&data, "max", "Sizerandom initializer must have a maximum value");
 
     return new CSizeRandom (id, *min_it, *max_it);
 }
