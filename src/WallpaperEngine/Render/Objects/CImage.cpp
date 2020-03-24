@@ -45,10 +45,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // bottom left
     this->m_vertex [3].Pos = irr::core::vector3df (xleft,  zbottom, z);
 
-    this->m_vertex [0].TCoords = irr::core::vector2df (1.0f, 0.0f);
-    this->m_vertex [1].TCoords = irr::core::vector2df (0.0f, 0.0f);
-    this->m_vertex [2].TCoords = irr::core::vector2df (0.0f, 1.0f);
-    this->m_vertex [3].TCoords = irr::core::vector2df (1.0f, 1.0f);
+    this->m_vertex [1].TCoords = irr::core::vector2df (1.0f, 0.0f);
+    this->m_vertex [0].TCoords = irr::core::vector2df (0.0f, 0.0f);
+    this->m_vertex [3].TCoords = irr::core::vector2df (0.0f, 1.0f);
+    this->m_vertex [2].TCoords = irr::core::vector2df (1.0f, 1.0f);
 
     this->m_vertex [0].Color = irr::video::SColor (255, 255, 255, 255);
     this->m_vertex [1].Color = irr::video::SColor (255, 255, 255, 255);

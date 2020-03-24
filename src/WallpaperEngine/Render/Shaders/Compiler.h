@@ -133,6 +133,14 @@ namespace WallpaperEngine::Render::Shaders
          */
         std::string extractName (std::string::const_iterator& it);
         /**
+         * Parses the current position as an array indicator
+         *
+         * @param it            The position to start extracting the array from
+         * @param mustExists    Whether the array indicator must exists or not
+         * @return
+         */
+        std::string extractArray(std::string::const_iterator &it, bool mustExists = false);
+        /**
          * Parses the current position as a quoted value, extracting it's value
          * and increasing the iterator at the same time
          *

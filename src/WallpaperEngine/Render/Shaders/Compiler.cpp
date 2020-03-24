@@ -165,6 +165,30 @@ namespace WallpaperEngine::Render::Shaders
         return std::string (begin, cur);
     }
 
+    std::string Compiler::extractArray(std::string::const_iterator &it, bool mustExists)
+    {
+        std::string::const_iterator cur = it;
+        std::string::const_iterator begin = cur;
+
+        if (*cur != '[')
+        {
+            if (mustExists == false)
+                return "";
+
+            this->m_error = true;
+            this->m_errorInfo = "Expected an array but found nothing";
+            return "";
+        }
+
+        cur ++;
+
+        while (cur != this->m_content.end () && *cur != ']') cur ++;
+
+        it = ++cur;
+
+        return std::string (begin, cur);
+    }
+
     bool Compiler::isChar (std::string::const_iterator& it)
     {
         return ((*it) >= 'A' && (*it) <= 'Z') || ((*it) >= 'a' && (*it) <= 'z');
@@ -294,6 +318,8 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
+                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
 
@@ -308,11 +334,11 @@ namespace WallpaperEngine::Render::Shaders
 
                         // parse the parameter information
                         this->parseParameterConfiguration (type, name, configuration); BREAK_IF_ERROR
-                        this->m_compiledContent += "uniform " + type + " " + name + "; // " + configuration;
+                        this->m_compiledContent += "uniform " + type + " " + name + array + "; // " + configuration;
                     }
                     else
                     {
-                        this->m_compiledContent += "uniform " + type + " " + name + ";";
+                        this->m_compiledContent += "uniform " + type + " " + name + array + ";";
                     }
                 }
             }
@@ -326,11 +352,11 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
+                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
 
-                    this->m_compiledContent += "// attribute";
-                    this->m_compiledContent += " " + type + " ";
-                    this->m_compiledContent += name;
+                    this->m_compiledContent += "// attribute " + type + " " + name + array;
                     this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
                 }
                 else
