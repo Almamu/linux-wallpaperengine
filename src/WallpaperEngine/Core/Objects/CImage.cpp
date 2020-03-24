@@ -31,11 +31,11 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     const irr::core::vector3df& angles)
 {
     auto image_it = data.find ("image");
-    auto size_it = jsonFindValueRequired(&data, "size", "Images must have size");
+    auto size_it = jsonFindRequired (&data, "size", "Images must have size");
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> ().c_str ()));
 
-    auto material_it = jsonFindValueRequired(&content, "material", "Image must have a material");
+    auto material_it = jsonFindRequired (&content, "material", "Image must have a material");
 
     return new CImage (
         Images::CMaterial::fromFile ((*material_it).get <std::string> ().c_str ()),

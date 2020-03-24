@@ -14,8 +14,8 @@ CBind::CBind (std::string name, irr::u32 index) :
 
 CBind* CBind::fromJSON (json data)
 {
-    auto name_it = jsonFindValueRequired(&data, "name", "bind must have texture name");
-    auto index_it = jsonFindValueRequired(&data, "index", "bind must have index");
+    auto name_it = jsonFindRequired (&data, "name", "bind must have texture name");
+    auto index_it = jsonFindRequired (&data, "index", "bind must have index");
 
     return new CBind (*name_it, *index_it);
 }

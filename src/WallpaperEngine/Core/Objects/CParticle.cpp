@@ -15,10 +15,10 @@ CParticle* CParticle::fromFile (
 {
     json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
     auto controlpoint_it = data.find ("controlpoint");
-    auto starttime_it = jsonFindValueRequired(&data, "starttime", "Particles must have start time");
-    auto maxcount_it = jsonFindValueRequired(&data, "maxcount", "Particles must have maximum count");
-    auto emitter_it = jsonFindValueRequired(&data, "emitter", "Particles must have emitters");
-    auto initializer_it = jsonFindValueRequired(&data, "initializer", "Particles must have initializers");
+    auto starttime_it = jsonFindRequired (&data, "starttime", "Particles must have start time");
+    auto maxcount_it = jsonFindRequired (&data, "maxcount", "Particles must have maximum count");
+    auto emitter_it = jsonFindRequired (&data, "emitter", "Particles must have emitters");
+    auto initializer_it = jsonFindRequired (&data, "initializer", "Particles must have initializers");
 
     CParticle* particle = new CParticle (
         *starttime_it,

@@ -14,7 +14,7 @@ using namespace WallpaperEngine::Core::Objects::Particles;
 CInitializer* CInitializer::fromJSON (json data)
 {
     auto id_it = data.find ("id");
-    auto name_it = jsonFindValueRequired(&data, "name", "Particle's initializer must have a name");
+    auto name_it = jsonFindRequired (&data, "name", "Particle's initializer must have a name");
     irr::u32 id = ((id_it == data.end ()) ? 0 : (irr::u32) (*id_it));
 
     if (*name_it == "lifetimerandom")

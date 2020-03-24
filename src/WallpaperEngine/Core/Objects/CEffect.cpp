@@ -30,17 +30,17 @@ CEffect::CEffect (
 
 CEffect* CEffect::fromJSON (json data, Core::CObject* object)
 {
-    auto file_it = jsonFindValueRequired(&data, "file", "Object effect must have a file");
+    auto file_it = jsonFindRequired (&data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> ().c_str ()));
 
-    auto name_it = jsonFindValueRequired(&content, "name", "Effect must have a name");
-    auto description_it = jsonFindValueRequired(&content, "description", "Effect must have a description");
-    auto group_it = jsonFindValueRequired(&content, "group", "Effect must have a group");
-    auto preview_it = jsonFindValueRequired(&content, "preview", "Effect must have a preview");
-    auto passes_it = jsonFindValueRequired(&content, "passes", "Effect must have a pass list");
-    auto dependencies_it = jsonFindValueRequired(&content, "dependencies", "");
+    auto name_it = jsonFindRequired (&content, "name", "Effect must have a name");
+    auto description_it = jsonFindRequired (&content, "description", "Effect must have a description");
+    auto group_it = jsonFindRequired (&content, "group", "Effect must have a group");
+    auto preview_it = jsonFindRequired (&content, "preview", "Effect must have a preview");
+    auto passes_it = jsonFindRequired (&content, "passes", "Effect must have a pass list");
+    auto dependencies_it = jsonFindRequired (&content, "dependencies", "");
     auto fbos_it = content.find ("fbos");
 
     CEffect* effect = new CEffect (

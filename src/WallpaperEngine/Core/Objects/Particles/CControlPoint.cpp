@@ -7,7 +7,7 @@ using namespace WallpaperEngine::Core::Objects::Particles;
 CControlPoint* CControlPoint::fromJSON (json data)
 {
     auto flags_it = data.find ("flags");
-    auto id_it = jsonFindValueRequired(&data, "id", "Particle's control point must have id");
+    auto id_it = jsonFindRequired (&data, "id", "Particle's control point must have id");
     auto offset_it = data.find ("offset");
 
     CControlPoint* controlpoint = new CControlPoint (*id_it, 0);

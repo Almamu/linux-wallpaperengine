@@ -21,8 +21,8 @@ const irr::u32& CProjection::getHeight () const
 
 CProjection* CProjection::fromJSON (json data)
 {
-    auto width_it = jsonFindValueRequired(&data, "width", "Projection must have width");
-    auto height_it = jsonFindValueRequired(&data, "height", "Projection must have height");
+    auto width_it = jsonFindRequired (&data, "width", "Projection must have width");
+    auto height_it = jsonFindRequired (&data, "height", "Projection must have height");
 
     return new CProjection (
         *width_it,

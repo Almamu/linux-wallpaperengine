@@ -29,12 +29,12 @@ CObject::CObject (
 
 CObject* CObject::fromJSON (json data)
 {
-    auto id_it = jsonFindValueRequired(&data, "id", "Objects must have id");
+    auto id_it = jsonFindRequired (&data, "id", "Objects must have id");
     auto visible_it = data.find ("visible");
-    auto origin_it = jsonFindValueRequired(&data, "origin", "Objects must have origin point");
-    auto scale_it = jsonFindValueRequired(&data, "scale", "Objects must have scale");
-    auto angles_it = jsonFindValueRequired(&data, "angles", "Objects must have angles");
-    auto name_it = jsonFindValueRequired(&data, "name", "Objects must have name");
+    auto origin_it = jsonFindRequired (&data, "origin", "Objects must have origin point");
+    auto scale_it = jsonFindRequired (&data, "scale", "Objects must have scale");
+    auto angles_it = jsonFindRequired (&data, "angles", "Objects must have angles");
+    auto name_it = jsonFindRequired (&data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
     auto dependencies_it = data.find ("dependencies");
 

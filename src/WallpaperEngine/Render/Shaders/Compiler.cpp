@@ -485,8 +485,8 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseComboConfiguration (const std::string& content)
     {
         json data = json::parse (content);
-        auto combo = jsonFindValueRequired(&data, "combo", "cannot parse combo information");
-        auto defvalue = jsonFindValueRequired(&data, "default", "cannot parse combo information");
+        auto combo = jsonFindRequired (&data, "combo", "cannot parse combo information");
+        auto defvalue = jsonFindRequired (&data, "default", "cannot parse combo information");
 
         // add line feed just in case
         this->m_compiledContent += "\n";

@@ -60,7 +60,7 @@ irr::video::SColor Core::atoSColor (const std::string& str)
     return Core::atoSColor (str.c_str ());
 }
 
-nlohmann::detail::iter_impl<nlohmann::json> jsonFindValueRequired (nlohmann::json *data, const char *key, const char *notFoundMsg)
+nlohmann::detail::iter_impl<nlohmann::json> jsonFindRequired (nlohmann::json *data, const char *key, const char *notFoundMsg)
 {
     auto value = data->find (key);
     if (value == data->end ())
