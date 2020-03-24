@@ -1,5 +1,7 @@
 #include "CBind.h"
 
+#include "WallpaperEngine/Core/Core.h"
+
 #include <utility>
 
 using namespace WallpaperEngine::Core::Objects::Effects;
@@ -12,18 +14,8 @@ CBind::CBind (std::string name, irr::u32 index) :
 
 CBind* CBind::fromJSON (json data)
 {
-    auto name_it = data.find ("name");
-    auto index_it = data.find ("index");
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("bind must have texture name");
-    }
-
-    if (index_it == data.end ())
-    {
-        throw std::runtime_error ("bind must have index");
-    }
+    auto name_it = jsonFindValueRequired(&data, "name", "bind must have texture name");
+    auto index_it = jsonFindValueRequired(&data, "index", "bind must have index");
 
     return new CBind (*name_it, *index_it);
 }

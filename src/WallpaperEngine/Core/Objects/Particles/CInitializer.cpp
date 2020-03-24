@@ -1,5 +1,6 @@
 #include "CInitializer.h"
 
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h"
@@ -13,13 +14,8 @@ using namespace WallpaperEngine::Core::Objects::Particles;
 CInitializer* CInitializer::fromJSON (json data)
 {
     auto id_it = data.find ("id");
-    auto name_it = data.find ("name");
+    auto name_it = jsonFindValueRequired(&data, "name", "Particle's initializer must have a name");
     irr::u32 id = ((id_it == data.end ()) ? 0 : (irr::u32) (*id_it));
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("Particle's initializer must have a name");
-    }
 
     if (*name_it == "lifetimerandom")
     {

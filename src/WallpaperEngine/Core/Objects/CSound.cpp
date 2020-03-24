@@ -3,6 +3,8 @@
 #include "WallpaperEngine/Core/CObject.h"
 #include "CSound.h"
 
+#include "WallpaperEngine/Core/Core.h"
+
 using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
@@ -25,12 +27,7 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         const irr::core::vector3df& scale,
         const irr::core::vector3df& angles)
 {
-    auto sound_it = data.find ("sound");
-
-    if (sound_it == data.end ())
-    {
-        throw std::runtime_error ("Sound information not present");
-    }
+    auto sound_it = jsonFindValueRequired(&data, "sound", "Sound information not present");
 
     if ((*sound_it).is_array () == false)
     {

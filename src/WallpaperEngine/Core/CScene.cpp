@@ -50,127 +50,27 @@ CScene* CScene::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    auto camera_it = content.find ("camera");
-    auto general_it = content.find ("general");
-    auto objects_it = content.find ("objects");
+    auto camera_it = jsonFindValueRequired(&content, "camera", "Scenes must have a defined camera");
+    auto general_it = jsonFindValueRequired(&content, "general", "Scenes must have a general section");
+    auto objects_it = jsonFindValueRequired(&content, "objects", "Scenes must have a list of objects to display");
 
-    if (camera_it == content.end ())
-    {
-        throw std::runtime_error ("Scenes must have a defined camera");
-    }
-
-    if (general_it == content.end ())
-    {
-        throw std::runtime_error ("Scenes must have a general section");
-    }
-
-    if (objects_it == content.end ())
-    {
-        throw std::runtime_error ("Scenes must have a list of objects to display");
-    }
-
-    auto ambientcolor_it = (*general_it).find ("ambientcolor");
-    auto bloom_it = (*general_it).find ("bloom");
-    auto bloomstrength_it = (*general_it).find ("bloomstrength");
-    auto bloomthreshold_it = (*general_it).find ("bloomthreshold");
-    auto camerafade_it = (*general_it).find ("camerafade");
-    auto cameraparallax_it = (*general_it).find ("cameraparallax");
-    auto cameraparallaxamount_it = (*general_it).find ("cameraparallaxamount");
-    auto cameraparallaxdelay_it = (*general_it).find ("cameraparallaxdelay");
-    auto cameraparallaxmouseinfluence_it = (*general_it).find ("cameraparallaxmouseinfluence");
-    auto camerapreview_it = (*general_it).find ("camerapreview");
-    auto camerashake_it = (*general_it).find ("camerashake");
-    auto camerashakeamplitude_it = (*general_it).find ("camerashakeamplitude");
-    auto camerashakeroughness_it = (*general_it).find ("camerashakeroughness");
-    auto camerashakespeed_it = (*general_it).find ("camerashakespeed");
-    auto clearcolor_it = (*general_it).find ("clearcolor");
-    auto orthogonalprojection_it = (*general_it).find ("orthogonalprojection");
-    auto skylightcolor_it = (*general_it).find ("skylightcolor");
-
-    if (ambientcolor_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have ambient color");
-    }
-
-    if (bloom_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have bloom flag");
-    }
-
-    if (bloomstrength_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have bloom strength");
-    }
-
-    if (bloomthreshold_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have bloom threshold");
-    }
-
-    if (camerafade_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera fade");
-    }
-
-    if (cameraparallax_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera parallax");
-    }
-
-    if (cameraparallaxamount_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera parallax amount");
-    }
-
-    if (cameraparallaxdelay_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera parallax delay");
-    }
-
-    if (cameraparallaxmouseinfluence_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera parallax mouse influence");
-    }
-
-    if (camerapreview_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera preview");
-    }
-
-    if (camerashake_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera shake");
-    }
-
-    if (camerashakeamplitude_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera shake amplitude");
-    }
-
-    if (camerashakeroughness_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera shake roughness");
-    }
-
-    if (camerashakespeed_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have camera shake speed");
-    }
-
-    if (clearcolor_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have clear color");
-    }
-
-    if (orthogonalprojection_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have orthogonal projection info");
-    }
-
-    if (skylightcolor_it == (*general_it).end ())
-    {
-        throw std::runtime_error ("General section must have skylight color");
-    }
+    auto ambientcolor_it = jsonFindValueRequired(&(*general_it), "ambientcolor", "General section must have ambient color");
+    auto bloom_it = jsonFindValueRequired(&(*general_it), "bloom", "General section must have bloom flag");
+    auto bloomstrength_it = jsonFindValueRequired(&(*general_it), "bloomstrength", "General section must have bloom strength");
+    auto bloomthreshold_it = jsonFindValueRequired(&(*general_it), "bloomthreshold", "General section must have bloom threshold");
+    auto camerafade_it = jsonFindValueRequired(&(*general_it), "camerafade", "General section must have camera fade");
+    auto cameraparallax_it = jsonFindValueRequired(&(*general_it), "cameraparallax", "General section must have camera parallax");
+    auto cameraparallaxamount_it = jsonFindValueRequired(&(*general_it), "cameraparallaxamount", "General section must have camera parallax amount");
+    auto cameraparallaxdelay_it = jsonFindValueRequired(&(*general_it), "cameraparallaxdelay", "General section must have camera parallax delay");
+    auto cameraparallaxmouseinfluence_it = jsonFindValueRequired(&(*general_it), "cameraparallaxmouseinfluence", "General section must have camera parallax mouse influence");
+    auto camerapreview_it = jsonFindValueRequired(&(*general_it), "camerapreview", "General section must have camera preview");
+    auto camerashake_it = jsonFindValueRequired(&(*general_it), "camerashake", "General section must have camera shake");
+    auto camerashakeamplitude_it = jsonFindValueRequired(&(*general_it), "camerashakeamplitude", "General section must have camera shake amplitude");
+    auto camerashakeroughness_it = jsonFindValueRequired(&(*general_it), "camerashakeroughness", "General section must have camera shake roughness");
+    auto camerashakespeed_it = jsonFindValueRequired(&(*general_it), "camerashakespeed", "General section must have camera shake speed");
+    auto clearcolor_it = jsonFindValueRequired(&(*general_it), "clearcolor", "General section must have clear color");
+    auto orthogonalprojection_it = jsonFindValueRequired(&(*general_it), "orthogonalprojection", "General section must have orthogonal projection info");
+    auto skylightcolor_it = jsonFindValueRequired(&(*general_it), "skylightcolor", "General section must have skylight color");
 
     CScene* scene = new CScene (
             Scenes::CCamera::fromJSON (*camera_it),

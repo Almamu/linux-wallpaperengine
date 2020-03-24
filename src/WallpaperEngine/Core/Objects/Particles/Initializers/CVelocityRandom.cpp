@@ -6,18 +6,8 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CVelocityRandom* CVelocityRandom::fromJSON (json data, irr::u32 id)
 {
-    auto min_it = data.find ("min");
-    auto max_it = data.find ("max");
-
-    if (min_it == data.end ())
-    {
-        throw std::runtime_error ("Velocityrandom initializer must have a minimum value");
-    }
-
-    if (max_it == data.end ())
-    {
-        throw std::runtime_error ("Velocityrandom initializer must have a maximum value");
-    }
+    auto min_it = jsonFindValueRequired(&data, "min", "Velocityrandom initializer must have a minimum value");
+    auto max_it = jsonFindValueRequired(&data, "max", "Velocityrandom initializer must have a maximum value");
 
     return new CVelocityRandom (
             id,

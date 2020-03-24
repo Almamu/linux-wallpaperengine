@@ -27,24 +27,9 @@ const irr::core::vector3df& CCamera::getUp () const
 
 CCamera* CCamera::fromJSON (json data)
 {
-    auto center_it = data.find ("center");
-    auto eye_it = data.find ("eye");
-    auto up_it = data.find ("up");
-
-    if (center_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have a center position");
-    }
-
-    if (eye_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have an eye position");
-    }
-
-    if (up_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have a up position");
-    }
+    auto center_it = jsonFindValueRequired(&data, "center", "Camera must have a center position");
+    auto eye_it = jsonFindValueRequired(&data, "eye", "Camera must have an eye position");
+    auto up_it = jsonFindValueRequired(&data, "up", "Camera must have a up position");
 
     return new CCamera (
         WallpaperEngine::Core::ato3vf (*center_it),

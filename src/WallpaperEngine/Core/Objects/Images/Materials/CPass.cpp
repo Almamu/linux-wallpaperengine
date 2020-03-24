@@ -1,5 +1,7 @@
 #include "CPass.h"
 
+#include "WallpaperEngine/Core/Core.h"
+
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
@@ -14,38 +16,13 @@ CPass::CPass (std::string blending, std::string cullmode, std::string depthtest,
 
 CPass* CPass::fromJSON (json data)
 {
-    auto blending_it = data.find ("blending");
-    auto cullmode_it = data.find ("cullmode");
-    auto depthtest_it = data.find ("depthtest");
-    auto depthwrite_it = data.find ("depthwrite");
-    auto shader_it = data.find ("shader");
+    auto blending_it = jsonFindValueRequired(&data, "blending", "Material pass must have blending specified");
+    auto cullmode_it = jsonFindValueRequired(&data, "cullmode", "Material pass must have cullmode specified");
+    auto depthtest_it = jsonFindValueRequired(&data, "depthtest", "Material pass must have depthtest specified");
+    auto depthwrite_it = jsonFindValueRequired(&data, "depthwrite", "Material pass must have depthwrite specified");
+    auto shader_it = jsonFindValueRequired(&data, "shader", "Material pass must have shader specified");
     auto textures_it = data.find ("textures");
     auto combos_it = data.find ("combos");
-
-    if (blending_it == data.end ())
-    {
-        throw std::runtime_error ("Material pass must have blending specified");
-    }
-
-    if (cullmode_it == data.end ())
-    {
-        throw std::runtime_error ("Material pass must have cullmode specified");
-    }
-
-    if (depthtest_it == data.end ())
-    {
-        throw std::runtime_error ("Material pass must have depthtest specified");
-    }
-
-    if (depthwrite_it == data.end ())
-    {
-        throw std::runtime_error ("Material pass must have depthwrite specified");
-    }
-
-    if (shader_it == data.end ())
-    {
-        throw std::runtime_error ("Material pass must have shader specified");
-    }
 
     if (textures_it != data.end ())
     {
