@@ -19,8 +19,8 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
     auto title = jsonFindRequired (&content, "title", "Project title missing");
-    auto type = jsonFindRequired (&content, "title", "Project type missing");
-    auto file = jsonFindRequired (&content, "title", "Project's main file missing");
+    auto type = jsonFindRequired (&content, "type", "Project type missing");
+    auto file = jsonFindRequired (&content, "file", "Project's main file missing");
     auto general = content.find ("general");
 
     CProject* project = new CProject (
