@@ -3,7 +3,8 @@
 #include <string>
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
+
+#include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Effects
 {

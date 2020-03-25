@@ -5,8 +5,6 @@
 #include "WallpaperEngine/Core/Objects/CSound.h"
 #include "WallpaperEngine/Core/Objects/CParticle.h"
 
-#include "Core.h"
-
 using namespace WallpaperEngine::Core;
 
 CObject::CObject (
@@ -29,41 +27,16 @@ CObject::CObject (
 
 CObject* CObject::fromJSON (json data)
 {
-    auto id_it = data.find ("id");
+    auto id_it = jsonFindRequired (data, "id", "Objects must have id");
     auto visible_it = data.find ("visible");
-    auto origin_it = data.find ("origin");
-    auto scale_it = data.find ("scale");
-    auto angles_it = data.find ("angles");
-    auto name_it = data.find ("name");
+    auto origin_it = jsonFindRequired (data, "origin", "Objects must have origin point");
+    auto scale_it = jsonFindRequired (data, "scale", "Objects must have scale");
+    auto angles_it = jsonFindRequired (data, "angles", "Objects must have angles");
+    auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
     auto dependencies_it = data.find ("dependencies");
 
     bool visible = true;
-
-    if (id_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have id");
-    }
-
-    if (origin_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have origin point");
-    }
-
-    if (scale_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have scale");
-    }
-
-    if (angles_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have angles");
-    }
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have name");
-    }
 
     // visibility is optional
     if (visible_it != data.end ())

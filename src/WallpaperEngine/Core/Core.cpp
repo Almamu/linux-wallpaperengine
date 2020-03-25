@@ -59,3 +59,13 @@ irr::video::SColor Core::atoSColor (const std::string& str)
 {
     return Core::atoSColor (str.c_str ());
 }
+
+nlohmann::detail::iter_impl<nlohmann::json> Core::jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg)
+{
+    auto value = data.find (key);
+    if (value == data.end ())
+    {
+        throw std::runtime_error (notFoundMsg);
+    }
+    return value;
+}

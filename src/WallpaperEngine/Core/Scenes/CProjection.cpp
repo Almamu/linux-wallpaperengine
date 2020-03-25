@@ -1,5 +1,4 @@
 #include "CProjection.h"
-#include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Scenes;
 
@@ -21,18 +20,8 @@ const irr::u32& CProjection::getHeight () const
 
 CProjection* CProjection::fromJSON (json data)
 {
-    auto width_it = data.find ("width");
-    auto height_it = data.find ("height");
-
-    if (width_it == data.end ())
-    {
-        throw std::runtime_error ("Projection must have width");
-    }
-
-    if (height_it == data.end ())
-    {
-        throw std::runtime_error ("Projection must have height");
-    }
+    auto width_it = jsonFindRequired (data, "width", "Projection must have width");
+    auto height_it = jsonFindRequired (data, "height", "Projection must have height");
 
     return new CProjection (
         *width_it,

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
 #include "CProject.h"
 #include "CObject.h"
+
+#include "Core.h"
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 #include "WallpaperEngine/Core/Scenes/CProjection.h"

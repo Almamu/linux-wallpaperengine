@@ -4,18 +4,8 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CSizeRandom* CSizeRandom::fromJSON (json data, irr::u32 id)
 {
-    auto min_it = data.find ("min");
-    auto max_it = data.find ("max");
-
-    if (min_it == data.end ())
-    {
-        throw std::runtime_error ("Sizerandom initializer must have a minimum value");
-    }
-
-    if (max_it == data.end ())
-    {
-        throw std::runtime_error ("Sizerandom initializer must have a maximum value");
-    }
+    auto min_it = jsonFindRequired (data, "min", "Sizerandom initializer must have a minimum value");
+    auto max_it = jsonFindRequired (data, "max", "Sizerandom initializer must have a maximum value");
 
     return new CSizeRandom (id, *min_it, *max_it);
 }

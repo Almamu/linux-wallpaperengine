@@ -16,25 +16,10 @@ CProject* CProject::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    auto title = content.find ("title");
-    auto type = content.find ("type");
-    auto file = content.find ("file");
+    auto title = jsonFindRequired (content, "title", "Project title missing");
+    auto type = jsonFindRequired (content, "type", "Project type missing");
+    auto file = jsonFindRequired (content, "file", "Project's main file missing");
     auto general = content.find ("general");
-
-    if (title == content.end ())
-    {
-        throw std::runtime_error ("Project title missing");
-    }
-
-    if (type == content.end ())
-    {
-        throw std::runtime_error ("Project type missing");
-    }
-
-    if (file == content.end ())
-    {
-        throw std::runtime_error ("Project's main file missing");
-    }
 
     CProject* project = new CProject (
         *title,

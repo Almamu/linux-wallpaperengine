@@ -1,8 +1,8 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
 
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/CObject.h"

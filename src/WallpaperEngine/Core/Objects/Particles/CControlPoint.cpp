@@ -1,19 +1,12 @@
 #include "CControlPoint.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles;
 
 CControlPoint* CControlPoint::fromJSON (json data)
 {
     auto flags_it = data.find ("flags");
-    auto id_it = data.find ("id");
+    auto id_it = jsonFindRequired (data, "id", "Particle's control point must have id");
     auto offset_it = data.find ("offset");
-
-    if (id_it == data.end ())
-    {
-        throw std::runtime_error ("Particle's control point must have id");
-    }
 
     CControlPoint* controlpoint = new CControlPoint (*id_it, 0);
 

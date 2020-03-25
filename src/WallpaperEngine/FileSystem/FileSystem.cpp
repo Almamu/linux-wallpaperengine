@@ -1,6 +1,8 @@
 // filesystem includes
 #include "FileSystem.h"
 
+#include <iostream>
+
 // engine includes
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
@@ -10,6 +12,7 @@ using namespace WallpaperEngine;
 
 std::string FileSystem::loadFullFile (const irr::io::path& file)
 {
+    std::cout << file.c_str() << std::endl;
     irr::io::IReadFile* reader = IrrlichtContext->getDevice ()->getFileSystem ()->createAndOpenFile (file);
 
     if (reader == nullptr)

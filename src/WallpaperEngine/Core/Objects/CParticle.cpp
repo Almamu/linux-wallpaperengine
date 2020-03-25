@@ -14,30 +14,10 @@ CParticle* CParticle::fromFile (
 {
     json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
     auto controlpoint_it = data.find ("controlpoint");
-    auto starttime_it = data.find ("starttime");
-    auto maxcount_it = data.find ("maxcount");
-    auto emitter_it = data.find ("emitter");
-    auto initializer_it = data.find ("initializer");
-
-    if (starttime_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have start time");
-    }
-
-    if (maxcount_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have maximum count");
-    }
-
-    if (emitter_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have emitters");
-    }
-
-    if (initializer_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have initializers");
-    }
+    auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
+    auto maxcount_it = jsonFindRequired (data, "maxcount", "Particles must have maximum count");
+    auto emitter_it = jsonFindRequired (data, "emitter", "Particles must have emitters");
+    auto initializer_it = jsonFindRequired (data, "initializer", "Particles must have initializers");
 
     CParticle* particle = new CParticle (
         *starttime_it,

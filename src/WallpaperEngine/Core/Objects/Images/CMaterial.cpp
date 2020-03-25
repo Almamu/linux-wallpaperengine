@@ -37,12 +37,7 @@ CMaterial* CMaterial::fromJSON (json data, const std::string& target)
 
 CMaterial* CMaterial::fromJSON (json data)
 {
-    auto passes_it = data.find ("passes");
-
-    if (passes_it == data.end ())
-    {
-        throw std::runtime_error ("Material must have at least one pass");
-    }
+    auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
 
     CMaterial* material = new CMaterial ();
 

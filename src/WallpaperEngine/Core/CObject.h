@@ -1,7 +1,8 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
+
+#include "Core.h"
 
 #include "WallpaperEngine/Core/Objects/CEffect.h"
 

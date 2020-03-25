@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 

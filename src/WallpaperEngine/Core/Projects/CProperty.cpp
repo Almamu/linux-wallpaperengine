@@ -5,19 +5,9 @@ using namespace WallpaperEngine::Core::Projects;
 
 CProperty* CProperty::fromJSON (json data, const std::string& name)
 {
-    auto type = data.find ("type");
-    auto value = data.find ("value");
+    auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
+    auto value = jsonFindRequired (data, "value", "Project properties must have the value field");
     auto text = data.find ("text");
-
-    if (value == data.end ())
-    {
-        throw std::runtime_error ("Project properties must have the value field");
-    }
-
-    if (type == data.end ())
-    {
-        throw std::runtime_error ("Project properties must have the type field");
-    }
 
     if (*type == CPropertyColor::Type)
     {

@@ -4,6 +4,8 @@
 
 #include "CProperty.h"
 
+#include "WallpaperEngine/Core/Core.h"
+
 namespace WallpaperEngine::Core::Projects
 {
     using json = nlohmann::json;
