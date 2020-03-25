@@ -3,7 +3,6 @@
 #include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
 
-#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
@@ -38,7 +37,7 @@ CMaterial* CMaterial::fromJSON (json data, const std::string& target)
 
 CMaterial* CMaterial::fromJSON (json data)
 {
-    auto passes_it = jsonFindRequired (&data, "passes", "Material must have at least one pass");
+    auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
 
     CMaterial* material = new CMaterial ();
 

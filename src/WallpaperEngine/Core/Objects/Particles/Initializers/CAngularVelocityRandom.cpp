@@ -1,13 +1,11 @@
 #include "CAngularVelocityRandom.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CAngularVelocityRandom* CAngularVelocityRandom::fromJSON (json data, irr::u32 id)
 {
-    auto min_it = jsonFindRequired (&data, "min", "Angularvelocityrandom initializer must have a minimum value");
-    auto max_it = jsonFindRequired (&data, "max", "Angularvelocityrandom initializer must have a maximum value");
+    auto min_it = jsonFindRequired (data, "min", "Angularvelocityrandom initializer must have a minimum value");
+    auto max_it = jsonFindRequired (data, "max", "Angularvelocityrandom initializer must have a maximum value");
 
     return new CAngularVelocityRandom (
             id,

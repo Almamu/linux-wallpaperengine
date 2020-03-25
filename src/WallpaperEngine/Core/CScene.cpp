@@ -1,7 +1,6 @@
 #include "CScene.h"
 #include "CProject.h"
 
-#include "Core.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
@@ -50,27 +49,27 @@ CScene* CScene::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    auto camera_it = jsonFindRequired (&content, "camera", "Scenes must have a defined camera");
-    auto general_it = jsonFindRequired (&content, "general", "Scenes must have a general section");
-    auto objects_it = jsonFindRequired (&content, "objects", "Scenes must have a list of objects to display");
+    auto camera_it = jsonFindRequired (content, "camera", "Scenes must have a defined camera");
+    auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
+    auto objects_it = jsonFindRequired (content, "objects", "Scenes must have a list of objects to display");
 
-    auto ambientcolor_it = jsonFindRequired (&(*general_it), "ambientcolor", "General section must have ambient color");
-    auto bloom_it = jsonFindRequired (&(*general_it), "bloom", "General section must have bloom flag");
-    auto bloomstrength_it = jsonFindRequired (&(*general_it), "bloomstrength", "General section must have bloom strength");
-    auto bloomthreshold_it = jsonFindRequired (&(*general_it), "bloomthreshold", "General section must have bloom threshold");
-    auto camerafade_it = jsonFindRequired (&(*general_it), "camerafade", "General section must have camera fade");
-    auto cameraparallax_it = jsonFindRequired (&(*general_it), "cameraparallax", "General section must have camera parallax");
-    auto cameraparallaxamount_it = jsonFindRequired (&(*general_it), "cameraparallaxamount", "General section must have camera parallax amount");
-    auto cameraparallaxdelay_it = jsonFindRequired (&(*general_it), "cameraparallaxdelay", "General section must have camera parallax delay");
-    auto cameraparallaxmouseinfluence_it = jsonFindRequired (&(*general_it), "cameraparallaxmouseinfluence", "General section must have camera parallax mouse influence");
-    auto camerapreview_it = jsonFindRequired (&(*general_it), "camerapreview", "General section must have camera preview");
-    auto camerashake_it = jsonFindRequired (&(*general_it), "camerashake", "General section must have camera shake");
-    auto camerashakeamplitude_it = jsonFindRequired (&(*general_it), "camerashakeamplitude", "General section must have camera shake amplitude");
-    auto camerashakeroughness_it = jsonFindRequired (&(*general_it), "camerashakeroughness", "General section must have camera shake roughness");
-    auto camerashakespeed_it = jsonFindRequired (&(*general_it), "camerashakespeed", "General section must have camera shake speed");
-    auto clearcolor_it = jsonFindRequired (&(*general_it), "clearcolor", "General section must have clear color");
-    auto orthogonalprojection_it = jsonFindRequired (&(*general_it), "orthogonalprojection", "General section must have orthogonal projection info");
-    auto skylightcolor_it = jsonFindRequired (&(*general_it), "skylightcolor", "General section must have skylight color");
+    auto ambientcolor_it = jsonFindRequired (*general_it, "ambientcolor", "General section must have ambient color");
+    auto bloom_it = jsonFindRequired (*general_it, "bloom", "General section must have bloom flag");
+    auto bloomstrength_it = jsonFindRequired (*general_it, "bloomstrength", "General section must have bloom strength");
+    auto bloomthreshold_it = jsonFindRequired (*general_it, "bloomthreshold", "General section must have bloom threshold");
+    auto camerafade_it = jsonFindRequired (*general_it, "camerafade", "General section must have camera fade");
+    auto cameraparallax_it = jsonFindRequired (*general_it, "cameraparallax", "General section must have camera parallax");
+    auto cameraparallaxamount_it = jsonFindRequired (*general_it, "cameraparallaxamount", "General section must have camera parallax amount");
+    auto cameraparallaxdelay_it = jsonFindRequired (*general_it, "cameraparallaxdelay", "General section must have camera parallax delay");
+    auto cameraparallaxmouseinfluence_it = jsonFindRequired (*general_it, "cameraparallaxmouseinfluence", "General section must have camera parallax mouse influence");
+    auto camerapreview_it = jsonFindRequired (*general_it, "camerapreview", "General section must have camera preview");
+    auto camerashake_it = jsonFindRequired (*general_it, "camerashake", "General section must have camera shake");
+    auto camerashakeamplitude_it = jsonFindRequired (*general_it, "camerashakeamplitude", "General section must have camera shake amplitude");
+    auto camerashakeroughness_it = jsonFindRequired (*general_it, "camerashakeroughness", "General section must have camera shake roughness");
+    auto camerashakespeed_it = jsonFindRequired (*general_it, "camerashakespeed", "General section must have camera shake speed");
+    auto clearcolor_it = jsonFindRequired (*general_it, "clearcolor", "General section must have clear color");
+    auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
+    auto skylightcolor_it = jsonFindRequired (*general_it, "skylightcolor", "General section must have skylight color");
 
     CScene* scene = new CScene (
             Scenes::CCamera::fromJSON (*camera_it),

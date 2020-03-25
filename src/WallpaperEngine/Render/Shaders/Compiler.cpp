@@ -8,7 +8,6 @@
 
 // shader compiler
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
-#include <WallpaperEngine/Core/Core.h>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
@@ -485,8 +484,8 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseComboConfiguration (const std::string& content)
     {
         json data = json::parse (content);
-        auto combo = jsonFindRequired (&data, "combo", "cannot parse combo information");
-        auto defvalue = jsonFindRequired (&data, "default", "cannot parse combo information");
+        auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
+        auto defvalue = jsonFindRequired (data, "default", "cannot parse combo information");
 
         // add line feed just in case
         this->m_compiledContent += "\n";

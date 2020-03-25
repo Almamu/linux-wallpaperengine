@@ -4,7 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <nlohmann/json.hpp>
+
+#include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 

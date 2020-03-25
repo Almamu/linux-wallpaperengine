@@ -2,7 +2,8 @@
 
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
+
 #include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers

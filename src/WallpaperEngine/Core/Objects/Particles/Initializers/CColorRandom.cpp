@@ -1,13 +1,11 @@
 #include "CColorRandom.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CColorRandom* CColorRandom::fromJSON (json data, irr::u32 id)
 {
-    auto min_it = jsonFindRequired (&data, "min", "Colorrandom initializer must have a minimum value");
-    auto max_it = jsonFindRequired (&data, "max", "Colorrandom initializer must have a maximum value");
+    auto min_it = jsonFindRequired (data, "min", "Colorrandom initializer must have a minimum value");
+    auto max_it = jsonFindRequired (data, "max", "Colorrandom initializer must have a maximum value");
 
     return new CColorRandom (
             id,

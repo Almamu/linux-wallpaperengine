@@ -1,14 +1,12 @@
 #include "CProperty.h"
 #include "CPropertyColor.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Projects;
 
 CProperty* CProperty::fromJSON (json data, const std::string& name)
 {
-    auto type = jsonFindRequired (&data, "type", "Project properties must have the type field");
-    auto value = jsonFindRequired (&data, "value", "Project properties must have the value field");
+    auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
+    auto value = jsonFindRequired (data, "value", "Project properties must have the value field");
     auto text = data.find ("text");
 
     if (*type == CPropertyColor::Type)

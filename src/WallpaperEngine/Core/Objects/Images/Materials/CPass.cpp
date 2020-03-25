@@ -1,7 +1,5 @@
 #include "CPass.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
@@ -16,11 +14,11 @@ CPass::CPass (std::string blending, std::string cullmode, std::string depthtest,
 
 CPass* CPass::fromJSON (json data)
 {
-    auto blending_it = jsonFindRequired (&data, "blending", "Material pass must have blending specified");
-    auto cullmode_it = jsonFindRequired (&data, "cullmode", "Material pass must have cullmode specified");
-    auto depthtest_it = jsonFindRequired (&data, "depthtest", "Material pass must have depthtest specified");
-    auto depthwrite_it = jsonFindRequired (&data, "depthwrite", "Material pass must have depthwrite specified");
-    auto shader_it = jsonFindRequired (&data, "shader", "Material pass must have shader specified");
+    auto blending_it = jsonFindRequired (data, "blending", "Material pass must have blending specified");
+    auto cullmode_it = jsonFindRequired (data, "cullmode", "Material pass must have cullmode specified");
+    auto depthtest_it = jsonFindRequired (data, "depthtest", "Material pass must have depthtest specified");
+    auto depthwrite_it = jsonFindRequired (data, "depthwrite", "Material pass must have depthwrite specified");
+    auto shader_it = jsonFindRequired (data, "shader", "Material pass must have shader specified");
     auto textures_it = data.find ("textures");
     auto combos_it = data.find ("combos");
 

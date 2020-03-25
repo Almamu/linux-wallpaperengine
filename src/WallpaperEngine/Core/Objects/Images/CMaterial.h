@@ -1,10 +1,11 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
 #include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Core/Objects/Effects/CBind.h"
+
+#include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Images
 {

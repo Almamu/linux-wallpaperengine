@@ -1,18 +1,16 @@
 #include "CEmitter.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles;
 
 CEmitter* CEmitter::fromJSON (json data)
 {
-    auto directions_it = jsonFindRequired (&data, "directions", "Particle emitter must have direction specified");
-    auto distancemax_it = jsonFindRequired (&data, "distancemax", "Particle emitter must have maximum distance");
-    auto distancemin_it = jsonFindRequired (&data, "distancemin", "Particle emitter must have minimum distance");
+    auto directions_it = jsonFindRequired (data, "directions", "Particle emitter must have direction specified");
+    auto distancemax_it = jsonFindRequired (data, "distancemax", "Particle emitter must have maximum distance");
+    auto distancemin_it = jsonFindRequired (data, "distancemin", "Particle emitter must have minimum distance");
     auto id_it = data.find ("id");
-    auto name_it = jsonFindRequired (&data, "name", "Particle emitter must have a name");
-    auto origin_it = jsonFindRequired (&data, "origin", "Particle emitter must have an origin");
-    auto rate_it = jsonFindRequired (&data, "rate", "Particle emitter must have a rate");
+    auto name_it = jsonFindRequired (data, "name", "Particle emitter must have a name");
+    auto origin_it = jsonFindRequired (data, "origin", "Particle emitter must have an origin");
+    auto rate_it = jsonFindRequired (data, "rate", "Particle emitter must have a rate");
 
     return new CEmitter (
             WallpaperEngine::Core::ato3vf (*directions_it),

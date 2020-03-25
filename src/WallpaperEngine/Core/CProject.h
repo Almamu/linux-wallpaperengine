@@ -1,9 +1,9 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
 #include "CScene.h"
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 
 namespace WallpaperEngine::Core

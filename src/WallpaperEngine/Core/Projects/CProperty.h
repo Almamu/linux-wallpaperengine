@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Projects
 {

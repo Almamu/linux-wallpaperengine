@@ -1,5 +1,4 @@
 #include "CPropertyColor.h"
-#include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
