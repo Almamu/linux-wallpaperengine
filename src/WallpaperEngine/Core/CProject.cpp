@@ -24,7 +24,7 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     CProject* project = new CProject (
         *title,
         *type,
-        CScene::fromFile ((*file).get <std::string> ().c_str ())
+        CScene::fromFile ((*file).get <std::string> ().c_str (), (*type).get <std::string> ().c_str())
     );
 
     if (general != content.end ())

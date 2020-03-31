@@ -45,7 +45,21 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const irr::io::path& filename)
+CScene* CScene::fromFile (const irr::io::path& filename, const char *type)
+{
+    if (strcmp(type, "scene") == 0)
+    {
+        return loadScene (filename);
+    }
+    else if (strcmp(type, "video") == 0)
+    {
+        return loadVideo (filename);
+    }
+
+    throw std::runtime_error("Unsupported wallpaper type");
+}
+
+CScene* CScene::loadScene (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
@@ -105,6 +119,10 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     return scene;
 }
 
+CScene* CScene::loadVideo (const irr::io::path& filename)
+{
+    return nullptr;
+}
 
 const std::vector<CObject*>& CScene::getObjects () const
 {

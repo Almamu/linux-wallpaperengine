@@ -20,7 +20,9 @@ namespace WallpaperEngine::Core
     class CScene
     {
     public:
-        static CScene* fromFile (const irr::io::path& filename);
+        static CScene* fromFile (const irr::io::path& filename, const char *type);
+        static CScene* loadScene (const irr::io::path& filename);
+        static CScene* loadVideo (const irr::io::path& filename);
 
         CProject* getProject ();
         const std::vector<CObject*>& getObjects () const;
