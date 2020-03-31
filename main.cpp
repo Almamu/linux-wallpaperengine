@@ -276,7 +276,9 @@ int main (int argc, char* argv[])
 
         if (SDL_Init (SDL_INIT_AUDIO) < 0 || mixer_flags != Mix_Init (mixer_flags))
         {
-            wp::irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", irr::ELL_ERROR);
+            // Mix_GetError is an alias for SDL_GetError, so calling it directly will yield the correct result
+            // it doesn't matter if SDL_Init or Mix_Init failed, both report the errors through the same functions
+            wp::irrlicht::device->getLogger ()->log ("Cannot initialize SDL audio system", SDL_GetError(),irr::ELL_ERROR);
             return -1;
         }
 
