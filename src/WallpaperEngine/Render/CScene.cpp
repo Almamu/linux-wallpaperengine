@@ -1,9 +1,11 @@
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
 #include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/CVideo.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
 #include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/Objects/CVideo.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 
 #include "CScene.h"
@@ -39,6 +41,13 @@ CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
         if ((*cur)->is<Core::Objects::CImage>() == true)
         {
             new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
+        }
+        else if ((*cur)->is<Core::Objects::CVideo>() == true)
+        {
+            Core::Objects::CVideo* video = (*cur)->as<Core::Objects::CVideo>();
+            video->initFrames (m_context->getDevice ()->getVideoDriver ()->getScreenSize().Width,
+                            m_context->getDevice ()->getVideoDriver ()->getScreenSize().Height);
+            new Objects::CVideo (this, video);
         }
         else if ((*cur)->is<Core::Objects::CSound>() == true)
         {

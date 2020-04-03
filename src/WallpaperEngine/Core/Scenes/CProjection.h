@@ -11,6 +11,7 @@ namespace WallpaperEngine::Core::Scenes
     class CProjection
     {
     public:
+        CProjection ();
         static CProjection* fromJSON (json data);
 
         const irr::u32& getWidth () const;

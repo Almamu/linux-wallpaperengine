@@ -58,6 +58,8 @@ add_executable(
         src/WallpaperEngine/Render/Objects/CImage.cpp
         src/WallpaperEngine/Render/Objects/CSound.h
         src/WallpaperEngine/Render/Objects/CSound.cpp
+        src/WallpaperEngine/Render/Objects/CVideo.h
+        src/WallpaperEngine/Render/Objects/CVideo.cpp
         src/WallpaperEngine/Render/Objects/CEffect.h
         src/WallpaperEngine/Render/Objects/CEffect.cpp
 
@@ -103,6 +105,8 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CImage.h
         src/WallpaperEngine/Core/Objects/CSound.cpp
         src/WallpaperEngine/Core/Objects/CSound.h
+        src/WallpaperEngine/Core/Objects/CVideo.cpp
+        src/WallpaperEngine/Core/Objects/CVideo.h
         src/WallpaperEngine/Core/Objects/CEffect.cpp
         src/WallpaperEngine/Core/Objects/CEffect.h
         src/WallpaperEngine/Core/Objects/CParticle.cpp

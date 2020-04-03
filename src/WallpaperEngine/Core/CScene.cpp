@@ -1,9 +1,32 @@
 #include "CScene.h"
 #include "CProject.h"
 
+#include "WallpaperEngine/Core/Objects/CVideo.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
+
+CScene::CScene () :
+    m_camera (new Core::Scenes::CCamera()),
+    m_ambientColor (irr::video::SColorf (0)),
+    m_bloom (false),
+    m_bloomStrength (0),
+    m_bloomThreshold (0),
+    m_cameraFade (false),
+    m_cameraParallax (false),
+    m_cameraParallaxAmount (0),
+    m_cameraParallaxDelay (0),
+    m_cameraParallaxMouseInfluence (0),
+    m_cameraPreview (false),
+    m_cameraShake (false),
+    m_cameraShakeAmplitude (0),
+    m_cameraShakeRoughness (0),
+    m_cameraShakeSpeed (0),
+    m_clearColor (irr::video::SColorf (0)),
+    m_orthogonalProjection (new Core::Scenes::CProjection()),
+    m_skylightColor (irr::video::SColorf (0))
+{
+}
 
 CScene::CScene (
         Scenes::CCamera* camera,
@@ -121,7 +144,13 @@ CScene* CScene::loadScene (const irr::io::path& filename)
 
 CScene* CScene::loadVideo (const irr::io::path& filename)
 {
-    return nullptr;
+    CScene* scene = new CScene();
+    
+    scene->insertObject (
+            new Core::Objects::CVideo(filename)
+    );
+    
+    return scene;
 }
 
 const std::vector<CObject*>& CScene::getObjects () const
