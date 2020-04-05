@@ -17,6 +17,8 @@ CVideo::CVideo (Core::CVideo* video, irr::video::IVideoDriver* driver) :
 
 void CVideo::renderWallpaper ()
 {
+    m_driver->beginScene ();
+
     Core::CVideo* video = m_wallpaperData->as <Core::CVideo> ();
     video->getNextFrame ();
     video->writeFrameToImage (m_frameImage);
@@ -25,6 +27,8 @@ void CVideo::renderWallpaper ()
     m_frameTexture = m_driver->addTexture ("frameTexture", m_frameImage);
 
     m_driver->draw2DImage (m_frameTexture, irr::core::vector2di(0));
+
+    m_driver->endScene ();
 }
 
 const std::string CVideo::Type = "video";
