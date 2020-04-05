@@ -2,8 +2,8 @@
 
 #include <irrlicht/irrlicht.h>
 
-#include "WallpaperEngine/Core/Core.h"
-#include "WallpaperEngine/Core/CObject.h"
+#include "Core.h"
+#include "CWallpaper.h"
 
 extern "C"
 {
@@ -13,12 +13,10 @@ extern "C"
     #include <libswscale/swscale.h>
 }
 
-namespace WallpaperEngine::Core::Objects
+namespace WallpaperEngine::Core
 {
-    class CVideo : public CObject
+    class CVideo : public CWallpaper
     {
-        friend class CObject;
-
     public:
         CVideo (
                 const irr::io::path& filename
@@ -29,13 +27,12 @@ namespace WallpaperEngine::Core::Objects
         void getNextFrame ();
         void writeFrameToImage (irr::video::IImage* image);
 
-        int getWidth () const;
-        int getHeight () const;
-
     protected:
-        void restartStream ();
+        friend class CWallpaper;
 
         static const std::string Type;
+
+        void restartStream ();
 
     private:
         AVFormatContext* m_formatCtx = nullptr;
@@ -45,6 +42,5 @@ namespace WallpaperEngine::Core::Objects
         SwsContext* m_swsCtx = nullptr;
 
         int m_videoStream = -1, m_audioStream = -1;
-        int m_width, m_height;
     };
 };

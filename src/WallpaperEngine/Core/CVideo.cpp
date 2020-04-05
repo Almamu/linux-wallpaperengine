@@ -1,10 +1,10 @@
 #include "CVideo.h"
 
-using namespace WallpaperEngine::Core::Objects;
+using namespace WallpaperEngine::Core;
 
 CVideo::CVideo (
         const irr::io::path& filename) :
-        CObject (true, 0, "video", Type, irr::core::vector3df(0), irr::core::vector3df(0), irr::core::vector3df(0))
+        CWallpaper (Type)
 {
     if (avformat_open_input (&m_formatCtx, filename.c_str(), NULL, NULL) < 0)
         throw std::runtime_error ("Failed to open file");
@@ -55,17 +55,14 @@ void CVideo::initFrames (int width, int height)
     if (m_videoFrameRGB == nullptr)
         throw std::runtime_error ("Failed to allocate video frame");
 
-    m_width = width;
-    m_height = height;
-
-    int numBytes = av_image_get_buffer_size (AV_PIX_FMT_RGB24, m_width, m_height, 1);
+    int numBytes = av_image_get_buffer_size (AV_PIX_FMT_RGB24, width, height, 1);
     uint8_t* buffer = (uint8_t*)av_malloc (numBytes * sizeof (uint8_t));
 
-    av_image_fill_arrays (m_videoFrameRGB->data, m_videoFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, m_width, m_height, 1);
+    av_image_fill_arrays (m_videoFrameRGB->data, m_videoFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, width, height, 1);
 
     m_swsCtx = sws_getContext (m_codecCtx->width, m_codecCtx->height,
                     m_codecCtx->pix_fmt,
-                    m_width, m_height,
+                    width, height,
                     AV_PIX_FMT_RGB24,
                     SWS_BILINEAR, NULL, NULL, NULL);
 
@@ -133,16 +130,6 @@ void CVideo::restartStream ()
 {
     av_seek_frame (m_formatCtx, m_videoStream, 0, AVSEEK_FLAG_FRAME);
     avcodec_flush_buffers (m_codecCtx);
-}
-
-int CVideo::getWidth () const
-{
-    return this->m_width;
-}
-
-int CVideo::getHeight () const
-{
-    return this->m_height;
 }
 
 const std::string CVideo::Type = "video";

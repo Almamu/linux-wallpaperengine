@@ -47,8 +47,12 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+        src/WallpaperEngine/Render/CWallpaper.h
+        src/WallpaperEngine/Render/CWallpaper.cpp
         src/WallpaperEngine/Render/CScene.h
         src/WallpaperEngine/Render/CScene.cpp
+        src/WallpaperEngine/Render/CVideo.h
+        src/WallpaperEngine/Render/CVideo.cpp
         src/WallpaperEngine/Render/CCamera.h
         src/WallpaperEngine/Render/CCamera.cpp
         src/WallpaperEngine/Render/CObject.h
@@ -58,8 +62,6 @@ add_executable(
         src/WallpaperEngine/Render/Objects/CImage.cpp
         src/WallpaperEngine/Render/Objects/CSound.h
         src/WallpaperEngine/Render/Objects/CSound.cpp
-        src/WallpaperEngine/Render/Objects/CVideo.h
-        src/WallpaperEngine/Render/Objects/CVideo.cpp
         src/WallpaperEngine/Render/Objects/CEffect.h
         src/WallpaperEngine/Render/Objects/CEffect.cpp
 
@@ -86,8 +88,12 @@ add_executable(
 
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
+        src/WallpaperEngine/Core/CWallpaper.cpp
+        src/WallpaperEngine/Core/CWallpaper.h
         src/WallpaperEngine/Core/CScene.cpp
         src/WallpaperEngine/Core/CScene.h
+        src/WallpaperEngine/Core/CVideo.cpp
+        src/WallpaperEngine/Core/CVideo.h
         src/WallpaperEngine/Core/CObject.cpp
         src/WallpaperEngine/Core/CObject.h
 
@@ -105,8 +111,6 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CImage.h
         src/WallpaperEngine/Core/Objects/CSound.cpp
         src/WallpaperEngine/Core/Objects/CSound.h
-        src/WallpaperEngine/Core/Objects/CVideo.cpp
-        src/WallpaperEngine/Core/Objects/CVideo.h
         src/WallpaperEngine/Core/Objects/CEffect.cpp
         src/WallpaperEngine/Core/Objects/CEffect.h
         src/WallpaperEngine/Core/Objects/CParticle.cpp

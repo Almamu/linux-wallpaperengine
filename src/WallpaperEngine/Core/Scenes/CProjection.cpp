@@ -2,12 +2,6 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection () :
-    m_width (0),
-    m_height (0)
-{
-}
-
 CProjection::CProjection (irr::u32 width, irr::u32 height) :
     m_width (width),
     m_height (height)

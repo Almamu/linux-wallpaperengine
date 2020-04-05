@@ -11,7 +11,6 @@ namespace WallpaperEngine::Core::Scenes
     class CCamera
     {
     public:
-        CCamera ();
         static CCamera* fromJSON (json data);
 
         const irr::core::vector3df& getCenter () const;

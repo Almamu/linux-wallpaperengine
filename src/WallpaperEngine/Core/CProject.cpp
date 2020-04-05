@@ -1,15 +1,17 @@
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
 #include "CProject.h"
+#include "CScene.h"
+#include "CVideo.h"
 
 using namespace WallpaperEngine::Core;
 
-CProject::CProject (std::string title, std::string type, CScene *scene) :
+CProject::CProject (std::string title, std::string type, CWallpaper* wallpaper) :
     m_title (std::move (title)),
     m_type (std::move (type)),
-    m_scene (scene)
+    m_wallpaper (wallpaper)
 {
-    this->m_scene->setProject (this);
+    this->m_wallpaper->setProject (this);
 }
 
 CProject* CProject::fromFile (const irr::io::path& filename)
@@ -20,11 +22,23 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     auto type = jsonFindRequired (content, "type", "Project type missing");
     auto file = jsonFindRequired (content, "file", "Project's main file missing");
     auto general = content.find ("general");
+    CWallpaper* wallpaper;
+
+    if (strcmp ((*type).get <std::string> ().c_str (), "scene") == 0)
+    {
+        wallpaper = CScene::fromFile ((*file).get <std::string> ().c_str ());
+    }
+    else if (strcmp ((*type).get <std::string> ().c_str (), "video") == 0)
+    {
+        wallpaper = new CVideo ((*file).get <std::string> ().c_str ());
+    }
+    else
+        throw std::runtime_error ("Unsupported wallpaper type");
 
     CProject* project = new CProject (
         *title,
         *type,
-        CScene::fromFile ((*file).get <std::string> ().c_str (), (*type).get <std::string> ().c_str())
+        wallpaper
     );
 
     if (general != content.end ())
@@ -48,9 +62,9 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     return project;
 }
 
-const CScene* CProject::getScene () const
+CWallpaper* CProject::getWallpaper () const
 {
-    return this->m_scene;
+    return this->m_wallpaper;
 }
 
 const std::string& CProject::getTitle () const

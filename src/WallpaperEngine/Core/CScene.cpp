@@ -1,32 +1,9 @@
 #include "CScene.h"
 #include "CProject.h"
 
-#include "WallpaperEngine/Core/Objects/CVideo.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
-
-CScene::CScene () :
-    m_camera (new Core::Scenes::CCamera()),
-    m_ambientColor (irr::video::SColorf (0)),
-    m_bloom (false),
-    m_bloomStrength (0),
-    m_bloomThreshold (0),
-    m_cameraFade (false),
-    m_cameraParallax (false),
-    m_cameraParallaxAmount (0),
-    m_cameraParallaxDelay (0),
-    m_cameraParallaxMouseInfluence (0),
-    m_cameraPreview (false),
-    m_cameraShake (false),
-    m_cameraShakeAmplitude (0),
-    m_cameraShakeRoughness (0),
-    m_cameraShakeSpeed (0),
-    m_clearColor (irr::video::SColorf (0)),
-    m_orthogonalProjection (new Core::Scenes::CProjection()),
-    m_skylightColor (irr::video::SColorf (0))
-{
-}
 
 CScene::CScene (
         Scenes::CCamera* camera,
@@ -47,6 +24,7 @@ CScene::CScene (
         irr::video::SColorf clearColor,
         Scenes::CProjection* orthogonalProjection,
         irr::video::SColorf skylightColor) :
+    CWallpaper (Type),
     m_camera (camera),
     m_ambientColor (ambientColor),
     m_bloom (bloom),
@@ -68,21 +46,7 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const irr::io::path& filename, const char *type)
-{
-    if (strcmp(type, "scene") == 0)
-    {
-        return loadScene (filename);
-    }
-    else if (strcmp(type, "video") == 0)
-    {
-        return loadVideo (filename);
-    }
-
-    throw std::runtime_error("Unsupported wallpaper type");
-}
-
-CScene* CScene::loadScene (const irr::io::path& filename)
+CScene* CScene::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
@@ -142,17 +106,6 @@ CScene* CScene::loadScene (const irr::io::path& filename)
     return scene;
 }
 
-CScene* CScene::loadVideo (const irr::io::path& filename)
-{
-    CScene* scene = new CScene();
-    
-    scene->insertObject (
-            new Core::Objects::CVideo(filename)
-    );
-    
-    return scene;
-}
-
 const std::vector<CObject*>& CScene::getObjects () const
 {
     return this->m_objects;
@@ -161,16 +114,6 @@ const std::vector<CObject*>& CScene::getObjects () const
 void CScene::insertObject (CObject* object)
 {
     this->m_objects.push_back (object);
-}
-
-CProject* CScene::getProject ()
-{
-    return this->m_project;
-}
-
-void CScene::setProject (CProject* project)
-{
-    this->m_project = project;
 }
 
 const Scenes::CCamera* CScene::getCamera () const
@@ -262,3 +205,5 @@ const irr::video::SColorf& CScene::getSkylightColor () const
 {
     return this->m_skylightColor;
 }
+
+const std::string CScene::Type = "scene";

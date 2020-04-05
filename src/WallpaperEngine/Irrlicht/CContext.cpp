@@ -188,7 +188,7 @@ void CContext::renderFrame (Render::CScene* scene)
 
 void CContext::drawScene (Render::CScene* scene, bool backBuffer)
 {
-    this->getDevice ()->getVideoDriver ()->beginScene (backBuffer, true, scene->getScene ()->getClearColor ().toSColor());
+    this->getDevice ()->getVideoDriver ()->beginScene (backBuffer, true, scene->getWallpaperData ()->as <Core::CScene> ()->getClearColor ().toSColor());
     this->getDevice ()->getSceneManager ()->drawAll ();
     this->getDevice ()->getVideoDriver ()->endScene ();
 }

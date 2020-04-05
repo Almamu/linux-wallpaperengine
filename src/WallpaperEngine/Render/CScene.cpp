@@ -1,11 +1,9 @@
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
 #include "WallpaperEngine/Core/Objects/CImage.h"
-#include "WallpaperEngine/Core/Objects/CVideo.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
 #include "WallpaperEngine/Render/Objects/CImage.h"
-#include "WallpaperEngine/Render/Objects/CVideo.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 
 #include "CScene.h"
@@ -13,23 +11,22 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
+CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
+    CWallpaper (scene, Type),
     irr::scene::ISceneNode (
         context->getDevice ()->getSceneManager ()->getRootSceneNode (),
         context->getDevice ()->getSceneManager ()
     ),
-    m_project (project),
-    m_scene (project->getScene ()),
     m_context (context)
 {
-    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
+    this->m_camera = new CCamera (this, scene->getCamera ());
     this->m_camera->setOrthogonalProjection (
-            this->m_scene->getOrthogonalProjection ()->getWidth (),
-            this->m_scene->getOrthogonalProjection ()->getHeight ()
+            scene->getOrthogonalProjection ()->getWidth (),
+            scene->getOrthogonalProjection ()->getHeight ()
     );
 
-    auto cur = this->m_scene->getObjects ().begin ();
-    auto end = this->m_scene->getObjects ().end ();
+    auto cur = scene->getObjects ().begin ();
+    auto end = scene->getObjects ().end ();
 
     int highestId = 0;
 
@@ -41,13 +38,6 @@ CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
         if ((*cur)->is<Core::Objects::CImage>() == true)
         {
             new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
-        }
-        else if ((*cur)->is<Core::Objects::CVideo>() == true)
-        {
-            Core::Objects::CVideo* video = (*cur)->as<Core::Objects::CVideo>();
-            video->initFrames (m_context->getDevice ()->getVideoDriver ()->getScreenSize().Width,
-                            m_context->getDevice ()->getVideoDriver ()->getScreenSize().Height);
-            new Objects::CVideo (this, video);
         }
         else if ((*cur)->is<Core::Objects::CSound>() == true)
         {
@@ -69,11 +59,6 @@ Irrlicht::CContext* CScene::getContext ()
     return this->m_context;
 }
 
-const Core::CScene* CScene::getScene () const
-{
-    return this->m_scene;
-}
-
 CCamera* CScene::getCamera () const
 {
     return this->m_camera;
@@ -88,6 +73,11 @@ void CScene::render ()
 {
 }
 
+void CScene::renderWallpaper ()
+{
+    this->m_context->renderFrame (this);
+}
+
 const irr::core::aabbox3d<irr::f32>& CScene::getBoundingBox () const
 {
     return this->m_boundingBox;
@@ -98,3 +88,5 @@ void CScene::OnRegisterSceneNode ()
 
     ISceneNode::OnRegisterSceneNode ();
 }
+
+const std::string CScene::Type = "scene";
