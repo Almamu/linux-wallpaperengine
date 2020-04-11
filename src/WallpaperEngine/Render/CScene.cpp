@@ -1,5 +1,3 @@
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
@@ -12,12 +10,7 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
-    CWallpaper (scene, Type),
-    irr::scene::ISceneNode (
-        context->getDevice ()->getSceneManager ()->getRootSceneNode (),
-        context->getDevice ()->getSceneManager ()
-    ),
-    m_context (context)
+    CWallpaper (scene, Type, context)
 {
     this->m_camera = new CCamera (this, scene->getCamera ());
     this->m_camera->setOrthogonalProjection (
@@ -47,16 +40,6 @@ CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
 
     this->m_nextId = ++highestId;
     this->setAutomaticCulling (irr::scene::EAC_OFF);
-    this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
-}
-
-CScene::~CScene ()
-{
-}
-
-Irrlicht::CContext* CScene::getContext ()
-{
-    return this->m_context;
 }
 
 CCamera* CScene::getCamera () const
@@ -73,20 +56,9 @@ void CScene::render ()
 {
 }
 
-void CScene::renderWallpaper ()
+Core::CScene* CScene::getScene ()
 {
-    this->m_context->renderFrame (this);
-}
-
-const irr::core::aabbox3d<irr::f32>& CScene::getBoundingBox () const
-{
-    return this->m_boundingBox;
-}
-void CScene::OnRegisterSceneNode ()
-{
-    SceneManager->registerNodeForRendering (this);
-
-    ISceneNode::OnRegisterSceneNode ();
+    return this->getWallpaperData ()->as<Core::CScene> ();
 }
 
 const std::string CScene::Type = "scene";

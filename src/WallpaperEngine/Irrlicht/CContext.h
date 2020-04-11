@@ -5,7 +5,7 @@
 
 #include <irrlicht/irrlicht.h>
 
-#include "WallpaperEngine/Render/CScene.h"
+#include "WallpaperEngine/Render/CWallpaper.h"
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
@@ -13,7 +13,7 @@
 
 namespace WallpaperEngine::Render
 {
-    class CScene;
+    class CWallpaper;
 };
 
 namespace WallpaperEngine::Irrlicht
@@ -29,7 +29,7 @@ namespace WallpaperEngine::Irrlicht
         void insertShaderVariable (Render::Shaders::Variables::CShaderVariable* variable);
         const std::vector<Render::Shaders::Variables::CShaderVariable*>& getShaderVariables () const;
 
-        void renderFrame (Render::CScene* scene);
+        void renderFrame (Render::CWallpaper* wallpaper);
 
         irr::IrrlichtDevice* getDevice ();
         irr::io::path resolveMaterials (const std::string& materialName);
@@ -38,7 +38,7 @@ namespace WallpaperEngine::Irrlicht
         irr::io::path resolveIncludeShader (const std::string& includeShader);
     private:
         void initializeViewports (irr::SIrrlichtCreationParameters& irrlichtCreationParameters);
-        void drawScene (Render::CScene* scene, bool backBuffer);
+        void drawWallpaper (Render::CWallpaper* wallpaper, bool backBuffer);
 
         irr::io::path resolveFile (const irr::io::path& file);
 

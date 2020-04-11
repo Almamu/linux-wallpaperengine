@@ -22,17 +22,21 @@ namespace WallpaperEngine::Core
                 const irr::io::path& filename
         );
 
-        void initFrames (int width, int height);
+        void setSize (int width, int height);
+        void restartStream ();
 
-        void getNextFrame ();
-        void writeFrameToImage (irr::video::IImage* image);
+        AVFormatContext* getFormatContext ();
+        AVCodecContext* getCodecContext ();
+        AVFrame* getVideoFrame ();
+        AVFrame* getVideoFrameRGB ();
+        SwsContext* getSwsContext ();
+        int getVideoStreamIndex ();
+        int getAudioStreamIndex ();
 
     protected:
         friend class CWallpaper;
 
         static const std::string Type;
-
-        void restartStream ();
 
     private:
         AVFormatContext* m_formatCtx = nullptr;
@@ -40,6 +44,7 @@ namespace WallpaperEngine::Core
         AVFrame* m_videoFrame = nullptr;
         AVFrame* m_videoFrameRGB = nullptr;
         SwsContext* m_swsCtx = nullptr;
+        uint8_t* buffer = nullptr;
 
         int m_videoStream = -1, m_audioStream = -1;
     };

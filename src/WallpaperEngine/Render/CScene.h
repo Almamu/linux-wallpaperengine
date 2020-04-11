@@ -8,30 +8,21 @@
 
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
-namespace WallpaperEngine::Irrlicht
-{
-    class CContext;
-};
-
 namespace WallpaperEngine::Render
 {
     class CCamera;
 
-    class CScene : public CWallpaper, public irr::scene::ISceneNode
+    class CScene : public CWallpaper
     {
     public:
-        CScene (Core::CScene* scene, Irrlicht::CContext* context);
-        ~CScene () override;
+        CScene (Core::CScene* scene, WallpaperEngine::Irrlicht::CContext* context);
 
-        Irrlicht::CContext* getContext ();
         CCamera* getCamera () const;
         int nextId ();
 
         void render () override;
-        const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
-        void OnRegisterSceneNode () override;
 
-        void renderWallpaper () override;
+        Core::CScene* getScene ();
 
     protected:
         friend class CWallpaper;
@@ -40,8 +31,6 @@ namespace WallpaperEngine::Render
 
     private:
         CCamera* m_camera;
-        Irrlicht::CContext* m_context;
         irr::u32 m_nextId;
-        irr::core::aabbox3d<irr::f32> m_boundingBox;
     };
 }

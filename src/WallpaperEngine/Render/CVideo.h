@@ -6,16 +6,26 @@
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 
+#include "WallpaperEngine/Irrlicht/CContext.h"
+
+extern "C"
+{
+    #include <libavcodec/avcodec.h>
+    #include <libavformat/avformat.h>
+    #include <libavutil/imgutils.h>
+    #include <libswscale/swscale.h>
+}
+
 namespace WallpaperEngine::Render
 {
-    class CWallpaper;
-
     class CVideo : public CWallpaper
     {
     public:
-        CVideo (Core::CVideo* video, irr::video::IVideoDriver* driver);
+        CVideo (Core::CVideo* video, WallpaperEngine::Irrlicht::CContext* context);
 
-        void renderWallpaper () override;
+        void render () override;
+
+        Core::CVideo* getVideo ();
 
     protected:
         friend class CWallpaper;
@@ -23,9 +33,10 @@ namespace WallpaperEngine::Render
         static const std::string Type;
 
     private:
+        void getNextFrame ();
+        void writeFrameToImage ();
+
         irr::video::IImage* m_frameImage;
         irr::video::ITexture* m_frameTexture;
-
-        irr::video::IVideoDriver* m_driver;
     };
 };

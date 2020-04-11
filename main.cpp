@@ -165,21 +165,26 @@ int main (int argc, char* argv[])
     WallpaperEngine::Core::CProject* project = WallpaperEngine::Core::CProject::fromFile (project_path);
     WallpaperEngine::Render::CWallpaper* wallpaper;
 
-    if (strcmp (project->getType ().c_str (), "scene") == 0)
+    if (project->getType () == "scene")
     {
-        wallpaper = new WallpaperEngine::Render::CScene (project->getWallpaper ()->as <WallpaperEngine::Core::CScene> (), IrrlichtContext);
+        WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
+        wallpaper = new WallpaperEngine::Render::CScene (scene, IrrlichtContext);
         IrrlichtContext->getDevice ()->getSceneManager ()->setAmbientLight (
-                    wallpaper->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getAmbientColor ().toSColor ()
+                    scene->getAmbientColor ().toSColor ()
         );
     }
-    else if (strcmp (project->getType ().c_str (), "video") == 0)
+    else if (project->getType () == "video")
     {
         wallpaper = new WallpaperEngine::Render::CVideo (
                     project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> (),
-                    IrrlichtContext->getDevice ()->getVideoDriver ()
+                    IrrlichtContext
         );
     }
-
+    else
+    {
+        throw std::runtime_error ("Unsupported wallpaper type");
+    }
+    
     irr::u32 minimumTime = 1000 / maximumFPS;
     irr::u32 startTime = 0;
     irr::u32 endTime = 0;
@@ -191,7 +196,7 @@ int main (int argc, char* argv[])
 
         startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
 
-        wallpaper->renderWallpaper ();
+        IrrlichtContext->renderFrame (wallpaper);
 
         endTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
 

@@ -162,7 +162,7 @@ void CContext::initializeViewports (irr::SIrrlichtCreationParameters &irrlichtCr
     irrlichtCreationParameters.WindowId = reinterpret_cast<void*> (DefaultRootWindow (display));
 }
 
-void CContext::renderFrame (Render::CScene* scene)
+void CContext::renderFrame (Render::CWallpaper* wallpaper)
 {
     this->m_time = this->getDevice ()->getTimer ()->getTime () / 1000.0f;
     this->m_pointerPosition.X = this->m_eventReceiver->getPosition ().X / (irr::f32) this->getDevice ()->getVideoDriver ()->getScreenSize ().Width;
@@ -170,7 +170,7 @@ void CContext::renderFrame (Render::CScene* scene)
 
     if (this->m_viewports.empty () == true)
     {
-        this->drawScene (scene, true);
+        this->drawWallpaper (wallpaper, true);
     }
     else
     {
@@ -181,14 +181,15 @@ void CContext::renderFrame (Render::CScene* scene)
         {
             // change viewport to render to the correct portion of the display
             this->getDevice ()->getVideoDriver ()->setViewPort (*cur);
-            this->drawScene (scene, false);
+            this->drawWallpaper (wallpaper, false);
         }
     }
 }
 
-void CContext::drawScene (Render::CScene* scene, bool backBuffer)
+void CContext::drawWallpaper (Render::CWallpaper* wallpaper, bool backBuffer)
 {
-    this->getDevice ()->getVideoDriver ()->beginScene (backBuffer, true, scene->getWallpaperData ()->as <Core::CScene> ()->getClearColor ().toSColor());
+    // TODO: Get scene clear color
+    this->getDevice ()->getVideoDriver ()->beginScene (backBuffer, true);
     this->getDevice ()->getSceneManager ()->drawAll ();
     this->getDevice ()->getVideoDriver ()->endScene ();
 }

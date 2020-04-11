@@ -46,17 +46,23 @@ CVideo::CVideo (
 
     if (avcodec_open2 (m_codecCtx, codec, NULL) < 0)
         throw std::runtime_error ("Failed to open codec");
-}
 
-void CVideo::initFrames (int width, int height)
-{
     m_videoFrame = av_frame_alloc ();
     m_videoFrameRGB = av_frame_alloc ();
     if (m_videoFrameRGB == nullptr)
         throw std::runtime_error ("Failed to allocate video frame");
+}
+
+void CVideo::setSize (int width, int height)
+{
+    if (buffer != nullptr)
+        av_free (buffer);
+
+    if (m_swsCtx != nullptr)
+        sws_freeContext (m_swsCtx);
 
     int numBytes = av_image_get_buffer_size (AV_PIX_FMT_RGB24, width, height, 1);
-    uint8_t* buffer = (uint8_t*)av_malloc (numBytes * sizeof (uint8_t));
+    buffer = (uint8_t*)av_malloc (numBytes * sizeof (uint8_t));
 
     av_image_fill_arrays (m_videoFrameRGB->data, m_videoFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, width, height, 1);
 
@@ -65,71 +71,47 @@ void CVideo::initFrames (int width, int height)
                     width, height,
                     AV_PIX_FMT_RGB24,
                     SWS_BILINEAR, NULL, NULL, NULL);
-
-    avcodec_flush_buffers (m_codecCtx);
-}
-
-void CVideo::getNextFrame ()
-{
-    bool eof = false;
-    AVPacket packet;
-    packet.data = nullptr;
-    
-    // Find video streams packet
-    do
-    {
-        if (packet.data != nullptr)
-            av_packet_unref (&packet);
-
-        int readError = av_read_frame (m_formatCtx, &packet);
-        if (readError == AVERROR_EOF)
-        {
-            eof = true;
-            break;
-        }
-        else if (readError < 0)
-        {
-            char err[AV_ERROR_MAX_STRING_SIZE];
-            throw std::runtime_error (av_make_error_string (err, AV_ERROR_MAX_STRING_SIZE, readError));
-        }
-        
-    } while (packet.stream_index != m_videoStream);
-
-    // Send video stream packet to codec
-    if (avcodec_send_packet (m_codecCtx, &packet) < 0)
-        return;
-    
-    // Receive frame from codec
-    if (avcodec_receive_frame (m_codecCtx, m_videoFrame) < 0)
-        return;
-
-    sws_scale (m_swsCtx, (uint8_t const* const*)m_videoFrame->data, m_videoFrame->linesize,
-            0, m_codecCtx->height, m_videoFrameRGB->data, m_videoFrameRGB->linesize);
-
-    av_packet_unref (&packet);
-
-    if (eof)
-        restartStream ();
-}
-
-void CVideo::writeFrameToImage (irr::video::IImage* image)
-{
-    uint8_t* frameData = m_videoFrameRGB->data[0];
-    if (frameData == nullptr)
-        return;
-
-    irr::u32 imgWidth = image->getDimension().Width;
-    irr::u32 imgHeight = image->getDimension().Height;
-    
-    unsigned char* data = (unsigned char*)image->lock ();
-    memcpy (data, frameData, imgWidth * imgHeight * 3);
-    image->unlock ();
 }
 
 void CVideo::restartStream ()
 {
     av_seek_frame (m_formatCtx, m_videoStream, 0, AVSEEK_FLAG_FRAME);
     avcodec_flush_buffers (m_codecCtx);
+}
+
+AVFormatContext* CVideo::getFormatContext ()
+{
+    return this->m_formatCtx;
+}
+
+AVCodecContext* CVideo::getCodecContext ()
+{
+    return this->m_codecCtx;
+}
+
+AVFrame* CVideo::getVideoFrame ()
+{
+    return this->m_videoFrame;
+}
+
+AVFrame* CVideo::getVideoFrameRGB ()
+{
+    return this->m_videoFrameRGB;
+}
+
+SwsContext* CVideo::getSwsContext ()
+{
+    return this->m_swsCtx;
+}
+
+int CVideo::getVideoStreamIndex ()
+{
+    return this->m_videoStream;
+}
+
+int CVideo::getAudioStreamIndex ()
+{
+    return this->m_audioStream;
 }
 
 const std::string CVideo::Type = "video";
