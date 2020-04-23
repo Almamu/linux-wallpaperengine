@@ -22,30 +22,15 @@ namespace WallpaperEngine::Core
                 const irr::io::path& filename
         );
 
-        void setSize (int width, int height);
-        void restartStream ();
-
-        AVFormatContext* getFormatContext ();
-        AVCodecContext* getCodecContext ();
-        AVFrame* getVideoFrame ();
-        AVFrame* getVideoFrameRGB ();
-        SwsContext* getSwsContext ();
-        int getVideoStreamIndex ();
-        int getAudioStreamIndex ();
+        const irr::io::path getFilename ();
 
     protected:
         friend class CWallpaper;
 
+        const irr::io::path m_filename;
+
         static const std::string Type;
 
     private:
-        AVFormatContext* m_formatCtx = nullptr;
-        AVCodecContext* m_codecCtx = nullptr;
-        AVFrame* m_videoFrame = nullptr;
-        AVFrame* m_videoFrameRGB = nullptr;
-        SwsContext* m_swsCtx = nullptr;
-        uint8_t* buffer = nullptr;
-
-        int m_videoStream = -1, m_audioStream = -1;
     };
 };

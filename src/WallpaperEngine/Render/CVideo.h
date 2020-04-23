@@ -33,8 +33,18 @@ namespace WallpaperEngine::Render
         static const std::string Type;
 
     private:
+        void setSize (int width, int height);
+        void restartStream ();
         void getNextFrame ();
         void writeFrameToImage ();
+
+        AVFormatContext* m_formatCtx = nullptr;
+        AVCodecContext* m_codecCtx = nullptr;
+        AVFrame* m_videoFrame = nullptr;
+        AVFrame* m_videoFrameRGB = nullptr;
+        SwsContext* m_swsCtx = nullptr;
+        uint8_t* m_buffer = nullptr;
+        int m_videoStream = -1, m_audioStream = -1;
 
         irr::video::IImage* m_frameImage;
         irr::video::ITexture* m_frameTexture;
