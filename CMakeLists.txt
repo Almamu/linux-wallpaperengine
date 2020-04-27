@@ -15,8 +15,9 @@ find_package(Irrlicht REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
+find_package(FFmpeg REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} src include)
+include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} src include)
 
 add_executable(
         wallengine
@@ -46,8 +47,12 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+        src/WallpaperEngine/Render/CWallpaper.h
+        src/WallpaperEngine/Render/CWallpaper.cpp
         src/WallpaperEngine/Render/CScene.h
         src/WallpaperEngine/Render/CScene.cpp
+        src/WallpaperEngine/Render/CVideo.h
+        src/WallpaperEngine/Render/CVideo.cpp
         src/WallpaperEngine/Render/CCamera.h
         src/WallpaperEngine/Render/CCamera.cpp
         src/WallpaperEngine/Render/CObject.h
@@ -83,8 +88,12 @@ add_executable(
 
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
+        src/WallpaperEngine/Core/CWallpaper.cpp
+        src/WallpaperEngine/Core/CWallpaper.h
         src/WallpaperEngine/Core/CScene.cpp
         src/WallpaperEngine/Core/CScene.h
+        src/WallpaperEngine/Core/CVideo.cpp
+        src/WallpaperEngine/Core/CVideo.h
         src/WallpaperEngine/Core/CObject.cpp
         src/WallpaperEngine/Core/CObject.h
 
@@ -150,4 +159,4 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
-target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})
+target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES})

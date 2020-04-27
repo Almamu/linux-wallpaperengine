@@ -24,6 +24,7 @@ CScene::CScene (
         irr::video::SColorf clearColor,
         Scenes::CProjection* orthogonalProjection,
         irr::video::SColorf skylightColor) :
+    CWallpaper (Type),
     m_camera (camera),
     m_ambientColor (ambientColor),
     m_bloom (bloom),
@@ -105,7 +106,6 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     return scene;
 }
 
-
 const std::vector<CObject*>& CScene::getObjects () const
 {
     return this->m_objects;
@@ -114,16 +114,6 @@ const std::vector<CObject*>& CScene::getObjects () const
 void CScene::insertObject (CObject* object)
 {
     this->m_objects.push_back (object);
-}
-
-CProject* CScene::getProject ()
-{
-    return this->m_project;
-}
-
-void CScene::setProject (CProject* project)
-{
-    this->m_project = project;
 }
 
 const Scenes::CCamera* CScene::getCamera () const
@@ -215,3 +205,5 @@ const irr::video::SColorf& CScene::getSkylightColor () const
 {
     return this->m_skylightColor;
 }
+
+const std::string CScene::Type = "scene";

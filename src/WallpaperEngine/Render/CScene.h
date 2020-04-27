@@ -2,40 +2,35 @@
 
 #include "CCamera.h"
 
-#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/CScene.h"
 
-#include "WallpaperEngine/Irrlicht/CContext.h"
+#include "WallpaperEngine/Render/CWallpaper.h"
 
-namespace WallpaperEngine::Irrlicht
-{
-    class CContext;
-};
+#include "WallpaperEngine/Irrlicht/CContext.h"
 
 namespace WallpaperEngine::Render
 {
     class CCamera;
 
-    class CScene : public irr::scene::ISceneNode
+    class CScene : public CWallpaper
     {
     public:
-        CScene (const Core::CProject* project, Irrlicht::CContext* context);
-        ~CScene () override;
+        CScene (Core::CScene* scene, WallpaperEngine::Irrlicht::CContext* context);
 
-        Irrlicht::CContext* getContext ();
-        const Core::CScene* getScene () const;
         CCamera* getCamera () const;
         int nextId ();
 
         void render () override;
-        const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
-        void OnRegisterSceneNode () override;
+
+        Core::CScene* getScene ();
+
+    protected:
+        friend class CWallpaper;
+
+        static const std::string Type;
+
     private:
-        const Core::CProject* m_project;
-        const Core::CScene* m_scene;
         CCamera* m_camera;
-        Irrlicht::CContext* m_context;
         irr::u32 m_nextId;
-        irr::core::aabbox3d<irr::f32> m_boundingBox;
     };
 }

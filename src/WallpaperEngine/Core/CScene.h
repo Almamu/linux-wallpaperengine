@@ -2,8 +2,8 @@
 
 #include <irrlicht/irrlicht.h>
 
-#include "CProject.h"
 #include "CObject.h"
+#include "CWallpaper.h"
 
 #include "Core.h"
 
@@ -14,15 +14,13 @@ namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
 
-    class CProject;
     class CObject;
 
-    class CScene
+    class CScene : public CWallpaper
     {
     public:
         static CScene* fromFile (const irr::io::path& filename);
 
-        CProject* getProject ();
         const std::vector<CObject*>& getObjects () const;
 
         const irr::video::SColorf& getAmbientColor() const;
@@ -45,9 +43,7 @@ namespace WallpaperEngine::Core
         const Scenes::CCamera* getCamera () const;
 
     protected:
-        friend class CProject;
-
-        void setProject (CProject* project);
+        friend class CWallpaper;
 
         CScene (
                 Scenes::CCamera* camera,
@@ -70,9 +66,10 @@ namespace WallpaperEngine::Core
                 irr::video::SColorf skylightColor
         );
 
+        static const std::string Type;
+
         void insertObject (CObject* object);
     private:
-        CProject* m_project;
         Scenes::CCamera* m_camera;
 
         // data from general section on the json

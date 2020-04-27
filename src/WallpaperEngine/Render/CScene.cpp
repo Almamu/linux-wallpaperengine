@@ -1,5 +1,3 @@
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
@@ -11,23 +9,17 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
-    irr::scene::ISceneNode (
-        context->getDevice ()->getSceneManager ()->getRootSceneNode (),
-        context->getDevice ()->getSceneManager ()
-    ),
-    m_project (project),
-    m_scene (project->getScene ()),
-    m_context (context)
+CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
+    CWallpaper (scene, Type, context)
 {
-    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
+    this->m_camera = new CCamera (this, scene->getCamera ());
     this->m_camera->setOrthogonalProjection (
-            this->m_scene->getOrthogonalProjection ()->getWidth (),
-            this->m_scene->getOrthogonalProjection ()->getHeight ()
+            scene->getOrthogonalProjection ()->getWidth (),
+            scene->getOrthogonalProjection ()->getHeight ()
     );
 
-    auto cur = this->m_scene->getObjects ().begin ();
-    auto end = this->m_scene->getObjects ().end ();
+    auto cur = scene->getObjects ().begin ();
+    auto end = scene->getObjects ().end ();
 
     int highestId = 0;
 
@@ -48,21 +40,6 @@ CScene::CScene (const Core::CProject* project, Irrlicht::CContext* context) :
 
     this->m_nextId = ++highestId;
     this->setAutomaticCulling (irr::scene::EAC_OFF);
-    this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
-}
-
-CScene::~CScene ()
-{
-}
-
-Irrlicht::CContext* CScene::getContext ()
-{
-    return this->m_context;
-}
-
-const Core::CScene* CScene::getScene () const
-{
-    return this->m_scene;
 }
 
 CCamera* CScene::getCamera () const
@@ -79,13 +56,9 @@ void CScene::render ()
 {
 }
 
-const irr::core::aabbox3d<irr::f32>& CScene::getBoundingBox () const
+Core::CScene* CScene::getScene ()
 {
-    return this->m_boundingBox;
+    return this->getWallpaperData ()->as<Core::CScene> ();
 }
-void CScene::OnRegisterSceneNode ()
-{
-    SceneManager->registerNodeForRendering (this);
 
-    ISceneNode::OnRegisterSceneNode ();
-}
+const std::string CScene::Type = "scene";
