@@ -4,9 +4,14 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <nlohmann/json.hpp>
 
-#include <WallpaperEngine/FileSystem/FileSystem.h>
+#include "WallpaperEngine/Core/Core.h"
+
+#include "WallpaperEngine/FileSystem/FileSystem.h"
+
+#include "WallpaperEngine/Irrlicht/CContext.h"
+
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
@@ -18,32 +23,6 @@ namespace WallpaperEngine::Render::Shaders
     class Compiler
     {
     public:
-        /**
-         * Basic struct used to define all the shader variables
-         * the compiler will replace in pre-processing time
-         * to make sure the shaders compile under OpenGL
-         */
-        struct VariableReplacement
-        {
-            const char* original;
-            const char* replacement;
-        };
-
-        struct TypeName
-        {
-            const char* name;
-            int size;
-        };
-
-        struct ShaderParameter
-        {
-            std::string type;
-            std::string variableName;
-            std::string identifierName;
-            void* defaultValue;
-            void* range [2];
-        };
-
         /**
          * Types of shaders
          */
@@ -67,11 +46,13 @@ namespace WallpaperEngine::Render::Shaders
          * the pre-processing and compilation of the shader, adding
          * required definitions if needed
          *
+         * @param context The irrlicht context
          * @param file The file to load
          * @param type The type of shader
+         * @param combos Settings for the shader
          * @param recursive Whether the compiler should add base definitions or not
          */
-        Compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive = false);
+        Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive = false);
         /**
          * Performs the actual pre-compilation/pre-processing over the shader files
          * This step is kinda big, replaces variables names on sVariableReplacement,
@@ -87,12 +68,12 @@ namespace WallpaperEngine::Render::Shaders
          * @param identifier The identifier to search for
          * @return The shader information
          */
-        ShaderParameter* findParameter (std::string identifier);
+        Variables::CShaderVariable* findParameter (const std::string& identifier);
 
         /**
          * @return The list of parameters available for this shader with their default values
          */
-        std::vector <ShaderParameter*>& getParameters ();
+        const std::vector <Variables::CShaderVariable*>& getParameters () const;
 
     private:
         /**
@@ -152,6 +133,14 @@ namespace WallpaperEngine::Render::Shaders
          * @return The variable name
          */
         std::string extractName (std::string::const_iterator& it);
+        /**
+         * Parses the current position as an array indicator
+         *
+         * @param it            The position to start extracting the array from
+         * @param mustExists    Whether the array indicator must exists or not
+         * @return
+         */
+        std::string extractArray(std::string::const_iterator &it, bool mustExists = false);
         /**
          * Parses the current position as a quoted value, extracting it's value
          * and increasing the iterator at the same time
@@ -227,14 +216,18 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The parameters the shader needs
          */
-        std::vector <ShaderParameter*> m_parameters;
+        std::vector <Variables::CShaderVariable*> m_parameters;
         /**
          * The combos the shader should be generated with
          */
-         std::map <std::string, int>* m_combos;
+         const std::map <std::string, int>& m_combos;
          /**
           * Whether this compilation is a recursive one or not
           */
          bool m_recursive;
+         /**
+          * The irrlicht context in use
+          */
+         Irrlicht::CContext* m_context;
     };
 }

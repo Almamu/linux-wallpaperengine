@@ -6,8 +6,8 @@ using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CRotationRandom* CRotationRandom::fromJSON (json data, irr::u32 id)
 {
-    json::const_iterator min_it = data.find ("min");
-    json::const_iterator max_it = data.find ("max");
+    auto min_it = data.find ("min");
+    auto max_it = data.find ("max");
 
     irr::core::vector3df min = irr::core::vector3df ();
     irr::core::vector3df max = irr::core::vector3df ();
@@ -32,12 +32,12 @@ CRotationRandom::CRotationRandom (irr::u32 id, irr::core::vector3df min, irr::co
 {
 }
 
-irr::core::vector3df CRotationRandom::getMinimum ()
+const irr::core::vector3df CRotationRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-irr::core::vector3df CRotationRandom::getMaximum ()
+const irr::core::vector3df CRotationRandom::getMaximum () const
 {
     return this->m_max;
 }

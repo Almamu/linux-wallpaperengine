@@ -2,7 +2,8 @@
 
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
+
 #include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
@@ -10,8 +11,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CAlphaRandom : CInitializer
     {
     public:
-        irr::f64 getMinimum ();
-        irr::f64 getMaximum ();
+        const irr::f64 getMinimum () const;
+        const irr::f64 getMaximum () const;
     protected:
         friend class CInitializer;
 

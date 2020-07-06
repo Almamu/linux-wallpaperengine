@@ -4,6 +4,8 @@
 
 #include "CProperty.h"
 
+#include "WallpaperEngine/Core/Core.h"
+
 namespace WallpaperEngine::Core::Projects
 {
     using json = nlohmann::json;
@@ -13,7 +15,7 @@ namespace WallpaperEngine::Core::Projects
     public:
         static CPropertyColor* fromJSON (json data, const std::string& name);
 
-        irr::video::SColor* getValue ();
+        const irr::video::SColor& getValue () const;
 
         static const std::string Type;
 

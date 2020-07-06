@@ -1,7 +1,8 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
+
+#include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Scenes
 {
@@ -12,8 +13,8 @@ namespace WallpaperEngine::Core::Scenes
     public:
         static CProjection* fromJSON (json data);
 
-        irr::u32 getWidth ();
-        irr::u32 getHeight ();
+        const irr::u32& getWidth () const;
+        const irr::u32& getHeight () const;
     protected:
         CProjection (irr::u32 width, irr::u32 height);
     private:

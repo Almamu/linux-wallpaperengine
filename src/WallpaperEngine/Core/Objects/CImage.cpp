@@ -1,7 +1,6 @@
 #include "CImage.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 
-#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
@@ -30,22 +29,12 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     const irr::core::vector3df& scale,
     const irr::core::vector3df& angles)
 {
-    json::const_iterator image_it = data.find ("image");
-    json::const_iterator size_it = data.find ("size");
-
-    if (size_it == data.end ())
-    {
-        throw std::runtime_error ("Images must have size");
-    }
+    auto image_it = data.find ("image");
+    auto size_it = jsonFindRequired (data, "size", "Images must have size");
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> ().c_str ()));
 
-    json::const_iterator material_it = content.find ("material");
-
-    if (material_it == content.end ())
-    {
-        throw std::runtime_error ("Image must have a material");
-    }
+    auto material_it = jsonFindRequired (content, "material", "Image must have a material");
 
     return new CImage (
         Images::CMaterial::fromFile ((*material_it).get <std::string> ().c_str ()),
@@ -59,9 +48,15 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     );
 }
 
-Images::CMaterial* CImage::getMaterial ()
+const Images::CMaterial* CImage::getMaterial () const
 {
     return this->m_material;
 }
+
+const irr::core::vector2df& CImage::getSize () const
+{
+    return this->m_size;
+}
+
 
 const std::string CImage::Type = "image";

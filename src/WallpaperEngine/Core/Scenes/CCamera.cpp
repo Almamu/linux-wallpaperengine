@@ -1,5 +1,4 @@
 #include "CCamera.h"
-#include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Scenes;
 
@@ -10,45 +9,30 @@ CCamera::CCamera (irr::core::vector3df center, irr::core::vector3df eye, irr::co
 {
 }
 
-irr::core::vector3df* CCamera::getCenter ()
+const irr::core::vector3df& CCamera::getCenter () const
 {
-    return &this->m_center;
+    return this->m_center;
 }
 
-irr::core::vector3df* CCamera::getEye ()
+const irr::core::vector3df& CCamera::getEye () const
 {
-    return &this->m_eye;
+    return this->m_eye;
 }
 
-irr::core::vector3df* CCamera::getUp ()
+const irr::core::vector3df& CCamera::getUp () const
 {
-    return &this->m_up;
+    return this->m_up;
 }
 
 CCamera* CCamera::fromJSON (json data)
 {
-    json::const_iterator center_it = data.find ("center");
-    json::const_iterator eye_it = data.find ("eye");
-    json::const_iterator up_it = data.find ("up");
-
-    if (center_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have a center position");
-    }
-
-    if (eye_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have an eye position");
-    }
-
-    if (up_it == data.end ())
-    {
-        throw std::runtime_error ("Camera must have a up position");
-    }
+    auto center_it = jsonFindRequired (data, "center", "Camera must have a center position");
+    auto eye_it = jsonFindRequired (data, "eye", "Camera must have an eye position");
+    auto up_it = jsonFindRequired (data, "up", "Camera must have a up position");
 
     return new CCamera (
-            WallpaperEngine::Core::ato3vf (*center_it),
-            WallpaperEngine::Core::ato3vf (*eye_it),
-            WallpaperEngine::Core::ato3vf (*up_it)
+        WallpaperEngine::Core::ato3vf (*center_it),
+        WallpaperEngine::Core::ato3vf (*eye_it),
+        WallpaperEngine::Core::ato3vf (*up_it)
     );
 }

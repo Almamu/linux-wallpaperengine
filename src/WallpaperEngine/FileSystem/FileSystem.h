@@ -16,5 +16,5 @@ namespace WallpaperEngine::FileSystem
      * @param file
      * @return
      */
-    std::string loadFullFile (irr::io::path file);
+    std::string loadFullFile (const irr::io::path& file);
 }

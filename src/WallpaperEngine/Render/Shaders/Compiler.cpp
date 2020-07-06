@@ -8,17 +8,29 @@
 
 // shader compiler
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
-#include <WallpaperEngine/Core/Core.h>
+
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
+
+using namespace WallpaperEngine::Core;
 
 namespace WallpaperEngine::Render::Shaders
 {
-    Compiler::Compiler (irr::io::path& file, Type type, std::map<std::string, int>* combos, bool recursive)
+    Compiler::Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive) :
+        m_combos (combos),
+        m_recursive (recursive),
+        m_type (type),
+        m_file (file),
+        m_error (""),
+        m_errorInfo (""),
+        m_context (context)
     {
-        this->m_recursive = recursive;
-        this->m_combos = combos;
-
         // begin with an space so it gets ignored properly on parse
-        if (recursive == false)
+        if (this->m_recursive == false)
         {
             // compatibility layer for OpenGL shaders
             this->m_content =   "#version 120\n"
@@ -40,8 +52,8 @@ namespace WallpaperEngine::Render::Shaders
                                 "#define ddy(x) dFdy(-(x))\n"
                                 "#define GLSL 1\n\n";
 
-            std::map<std::string, int>::const_iterator cur = this->m_combos->begin ();
-            std::map<std::string, int>::const_iterator end = this->m_combos->end ();
+            auto cur = this->m_combos.begin ();
+            auto end = this->m_combos.end ();
 
             for (; cur != end; cur ++)
             {
@@ -54,11 +66,6 @@ namespace WallpaperEngine::Render::Shaders
         }
 
         this->m_content.append (WallpaperEngine::FileSystem::loadFullFile (file));
-
-        // append file content
-        this->m_type = type;
-
-        this->m_file = file;
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -119,8 +126,8 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::extractType (std::string::const_iterator& it)
     {
-        std::vector<std::string>::const_iterator cur = sTypes.begin ();
-        std::vector<std::string>::const_iterator end = sTypes.end ();
+        auto cur = sTypes.begin ();
+        auto end = sTypes.end ();
 
         while (cur != end)
         {
@@ -155,6 +162,30 @@ namespace WallpaperEngine::Render::Shaders
         while (cur != this->m_content.end () && (this->isChar (cur) == true || *cur == '_' || this->isNumeric (cur) == true)) cur ++;
 
         it = cur;
+
+        return std::string (begin, cur);
+    }
+
+    std::string Compiler::extractArray(std::string::const_iterator &it, bool mustExists)
+    {
+        std::string::const_iterator cur = it;
+        std::string::const_iterator begin = cur;
+
+        if (*cur != '[')
+        {
+            if (mustExists == false)
+                return "";
+
+            this->m_error = true;
+            this->m_errorInfo = "Expected an array but found nothing";
+            return "";
+        }
+
+        cur ++;
+
+        while (cur != this->m_content.end () && *cur != ']') cur ++;
+
+        it = ++cur;
 
         return std::string (begin, cur);
     }
@@ -202,7 +233,7 @@ namespace WallpaperEngine::Render::Shaders
     std::string Compiler::lookupShaderFile (std::string filename)
     {
         // get file information
-        irr::io::path shader = ("shaders/" + filename).c_str ();
+        irr::io::path shader = this->m_context->resolveIncludeShader (filename);
 
         if (shader == "")
         {
@@ -213,15 +244,15 @@ namespace WallpaperEngine::Render::Shaders
 
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (shader, this->m_type, this->m_combos, true);
+        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, true);
 
         return loader.precompile ();
     }
 
     std::string Compiler::lookupReplaceSymbol (std::string symbol)
     {
-        std::map<std::string, std::string>::const_iterator cur = sVariableReplacement.begin ();
-        std::map<std::string, std::string>::const_iterator end = sVariableReplacement.end ();
+        auto cur = sVariableReplacement.begin ();
+        auto end = sVariableReplacement.end ();
 
         while (cur != end)
         {
@@ -288,6 +319,8 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
+                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
 
@@ -302,11 +335,11 @@ namespace WallpaperEngine::Render::Shaders
 
                         // parse the parameter information
                         this->parseParameterConfiguration (type, name, configuration); BREAK_IF_ERROR
-                        this->m_compiledContent += "uniform " + type + " " + name + "; // " + configuration;
+                        this->m_compiledContent += "uniform " + type + " " + name + array + "; // " + configuration;
                     }
                     else
                     {
-                        this->m_compiledContent += "uniform " + type + " " + name + ";";
+                        this->m_compiledContent += "uniform " + type + " " + name + array + ";";
                     }
                 }
             }
@@ -320,11 +353,11 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
+                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
 
-                    this->m_compiledContent += "// attribute";
-                    this->m_compiledContent += " " + type + " ";
-                    this->m_compiledContent += name;
+                    this->m_compiledContent += "// attribute " + type + " " + name + array;
                     this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
                 }
                 else
@@ -438,6 +471,12 @@ namespace WallpaperEngine::Render::Shaders
             }
         }
 
+        if (this->m_recursive == false)
+        {
+            std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            std::cout << this->m_compiledContent << std::endl;
+        }
+
         return this->m_compiledContent;
     #undef BREAK_IF_ERROR
     }
@@ -445,23 +484,18 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseComboConfiguration (const std::string& content)
     {
         json data = json::parse (content);
-        json::const_iterator combo = data.find ("combo");
-        json::const_iterator defvalue = data.find ("default");
+        auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
+        auto defvalue = jsonFindRequired (data, "default", "cannot parse combo information");
 
         // add line feed just in case
         this->m_compiledContent += "\n";
 
-        if (combo == data.end () || defvalue == data.end ())
-        {
-            throw std::runtime_error ("cannot parse combo information");
-        }
-
         // check the combos
-        std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
+        std::map<std::string, int>::const_iterator entry = this->m_combos.find ((*combo).get <std::string> ());
 
         // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
         // so only define the ones that are not already defined
-        if (entry == this->m_combos->end ())
+        if (entry == this->m_combos.end ())
         {
             // if no combo is defined just load the default settings
             if ((*defvalue).is_number_float ())
@@ -486,9 +520,9 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content)
     {
         json data = json::parse (content);
-        json::const_iterator material = data.find ("material");
-        json::const_iterator defvalue = data.find ("default");
-        json::const_iterator range = data.find ("range");
+        auto material = data.find ("material");
+        auto defvalue = data.find ("default");
+        auto range = data.find ("range");
 
         // this is not a real parameter
         if (material == data.end () || defvalue == data.end ())
@@ -499,102 +533,60 @@ namespace WallpaperEngine::Render::Shaders
             return;
         }
 
-        ShaderParameter* param = new ShaderParameter;
+        Variables::CShaderVariable* parameter = nullptr;
 
-        param->identifierName = (*material).get <std::string> ();
-        param->variableName = name;
-        param->type = type;
-
-        if (type == "vec4" || type == "vec3")
+        if (type == "vec4")
         {
-            if ((*defvalue).is_string () == false)
-            {
-                irr::core::vector3df* vector = new irr::core::vector3df;
-
-                vector->X = 0.0f;
-                vector->Y = 0.0f;
-                vector->Z = 0.0f;
-
-                param->defaultValue = vector;
-            }
-            else
-            {
-                irr::core::vector3df tmp = WallpaperEngine::Core::ato3vf ((*defvalue).get <std::string> ().c_str ());
-                irr::core::vector3df* vector = new irr::core::vector3df;
-
-                vector->X = tmp.X;
-                vector->Y = tmp.Y;
-                vector->Z = tmp.Z;
-
-                param->defaultValue = vector;
-            }
+            parameter = new Variables::CShaderVariableVector4 (
+                WallpaperEngine::Core::ato3vf (*defvalue)
+            );
+        }
+        else if (type == "vec3")
+        {
+            parameter = new Variables::CShaderVariableVector3 (
+                WallpaperEngine::Core::ato3vf (*defvalue)
+            );
         }
         else if (type == "vec2")
         {
-            if ((*defvalue).is_string () == false)
-            {
-                irr::core::vector2df* vector = new irr::core::vector2df;
-
-                vector->X = 0.0f;
-                vector->Y = 0.0f;
-
-                param->defaultValue = vector;
-            }
-            else
-            {
-                irr::core::vector2df* vector = new irr::core::vector2df;
-                irr::core::vector2df tmp = WallpaperEngine::Core::ato2vf ((*defvalue).get <std::string> ().c_str ());
-
-                vector->X = tmp.X;
-                vector->Y = tmp.Y;
-
-                param->defaultValue = vector;
-            }
+            parameter = new Variables::CShaderVariableVector2 (
+                WallpaperEngine::Core::ato2vf (*defvalue)
+            );
         }
         else if (type == "float")
         {
-            if ((*defvalue).is_number () == false)
-            {
-                irr::f32* val = new irr::f32;
-
-                *val = 0.0f;
-
-                param->defaultValue = val;
-
-            }
-            else
-            {
-                irr::f32* val = new irr::f32;
-
-                *val = (*defvalue).get <irr::f32> ();
-
-                param->defaultValue = val;
-            }
+            parameter = new Variables::CShaderVariableFloat ((*defvalue).get <irr::f32> ());
+        }
+        else if (type == "int")
+        {
+            parameter = new Variables::CShaderVariableInteger ((*defvalue).get <irr::s32> ());
         }
         else if (type == "sampler2D")
         {
             // samplers are not saved, we can ignore them for now
-            delete param;
             return;
         }
         else
         {
             this->m_error = true;
-            this->m_errorInfo = "Unknown parameter type: " + type + " for " + param->identifierName + " (" + param->variableName + ")";
+            this->m_errorInfo = "Unknown parameter type: " + type + " for " + name;
             return;
         }
 
-        this->m_parameters.push_back (param);
+        parameter->setIdentifierName (*material);
+        parameter->setName (name);
+
+        this->m_parameters.push_back (parameter);
     }
 
-    Compiler::ShaderParameter* Compiler::findParameter (std::string identifier)
+    Variables::CShaderVariable* Compiler::findParameter (const std::string& identifier)
     {
-        std::vector<ShaderParameter*>::const_iterator cur = this->m_parameters.begin ();
-        std::vector<ShaderParameter*>::const_iterator end = this->m_parameters.end ();
+        auto cur = this->m_parameters.begin ();
+        auto end = this->m_parameters.end ();
 
         for (; cur != end; cur ++)
         {
-            if ((*cur)->identifierName == identifier)
+            if ((*cur)->getIdentifierName () == identifier)
             {
                 return (*cur);
             }
@@ -603,7 +595,7 @@ namespace WallpaperEngine::Render::Shaders
         return nullptr;
     }
 
-    std::vector <Compiler::ShaderParameter*>& Compiler::getParameters ()
+    const std::vector <Variables::CShaderVariable*>& Compiler::getParameters () const
     {
         return this->m_parameters;
     }

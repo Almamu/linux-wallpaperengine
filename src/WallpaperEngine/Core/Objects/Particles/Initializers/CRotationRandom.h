@@ -10,8 +10,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CRotationRandom : CInitializer
     {
     public:
-        irr::core::vector3df getMinimum ();
-        irr::core::vector3df getMaximum ();
+        const irr::core::vector3df getMinimum () const;
+        const irr::core::vector3df getMaximum () const;
     protected:
         friend class CInitializer;
 

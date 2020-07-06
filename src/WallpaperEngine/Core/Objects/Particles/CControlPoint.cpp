@@ -1,19 +1,12 @@
 #include "CControlPoint.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles;
 
 CControlPoint* CControlPoint::fromJSON (json data)
 {
-    json::const_iterator flags_it = data.find ("flags");
-    json::const_iterator id_it = data.find ("id");
-    json::const_iterator offset_it = data.find ("offset");
-
-    if (id_it == data.end ())
-    {
-        throw std::runtime_error ("Particle's control point must have id");
-    }
+    auto flags_it = data.find ("flags");
+    auto id_it = jsonFindRequired (data, "id", "Particle's control point must have id");
+    auto offset_it = data.find ("offset");
 
     CControlPoint* controlpoint = new CControlPoint (*id_it, 0);
 
@@ -47,12 +40,12 @@ void CControlPoint::setFlags (irr::u32 flags)
     this->m_flags = flags;
 }
 
-irr::core::vector3df* CControlPoint::getOffset ()
+const irr::core::vector3df& CControlPoint::getOffset () const
 {
-    return &this->m_offset;
+    return this->m_offset;
 }
 
-irr::u32 CControlPoint::getFlags ()
+const irr::u32 CControlPoint::getFlags () const
 {
     return this->m_flags;
 }

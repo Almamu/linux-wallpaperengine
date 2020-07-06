@@ -1,48 +1,16 @@
 #include "CEmitter.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles;
 
 CEmitter* CEmitter::fromJSON (json data)
 {
-    json::const_iterator directions_it = data.find ("directions");
-    json::const_iterator distancemax_it = data.find ("distancemax");
-    json::const_iterator distancemin_it = data.find ("distancemin");
-    json::const_iterator id_it = data.find ("id");
-    json::const_iterator name_it = data.find ("name");
-    json::const_iterator origin_it = data.find ("origin");
-    json::const_iterator rate_it = data.find ("rate");
-
-    if (directions_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have direction specified");
-    }
-
-    if (distancemax_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have maximum distance");
-    }
-
-    if (distancemin_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have minimum distance");
-    }
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have a name");
-    }
-
-    if (origin_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have an origin");
-    }
-
-    if (rate_it == data.end ())
-    {
-        throw std::runtime_error ("Particle emitter must have a rate");
-    }
+    auto directions_it = jsonFindRequired (data, "directions", "Particle emitter must have direction specified");
+    auto distancemax_it = jsonFindRequired (data, "distancemax", "Particle emitter must have maximum distance");
+    auto distancemin_it = jsonFindRequired (data, "distancemin", "Particle emitter must have minimum distance");
+    auto id_it = data.find ("id");
+    auto name_it = jsonFindRequired (data, "name", "Particle emitter must have a name");
+    auto origin_it = jsonFindRequired (data, "origin", "Particle emitter must have an origin");
+    auto rate_it = jsonFindRequired (data, "rate", "Particle emitter must have a rate");
 
     return new CEmitter (
             WallpaperEngine::Core::ato3vf (*directions_it),
@@ -79,27 +47,27 @@ const std::string& CEmitter::getName () const
     return this->m_name;
 }
 
-irr::u32 CEmitter::getDistanceMax () const
+const irr::u32 CEmitter::getDistanceMax () const
 {
     return this->m_distancemax;
 }
 
-irr::u32 CEmitter::getDistanceMin () const
+const irr::u32 CEmitter::getDistanceMin () const
 {
     return this->m_distancemin;
 }
 
-irr::core::vector3df* CEmitter::getDirections ()
+const irr::core::vector3df& CEmitter::getDirections () const
 {
-    return &this->m_directions;
+    return this->m_directions;
 }
 
-irr::core::vector3df* CEmitter::getOrigin ()
+const irr::core::vector3df& CEmitter::getOrigin () const
 {
-    return &this->m_origin;
+    return this->m_origin;
 }
 
-irr::f64 CEmitter::getRate () const
+const irr::f64 CEmitter::getRate () const
 {
     return this->m_rate;
 }

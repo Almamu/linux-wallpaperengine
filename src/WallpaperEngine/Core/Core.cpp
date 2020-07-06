@@ -1,7 +1,9 @@
 #include <irrlicht/irrlicht.h>
 #include "Core.h"
 
-irr::core::vector3df WallpaperEngine::Core::ato3vf(const char *str)
+using namespace WallpaperEngine;
+
+irr::core::vector3df Core::ato3vf(const char *str)
 {
     irr::f32 x = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
     irr::f32 y = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
@@ -10,7 +12,7 @@ irr::core::vector3df WallpaperEngine::Core::ato3vf(const char *str)
     return irr::core::vector3df (x, y, z);
 }
 
-irr::core::vector2df WallpaperEngine::Core::ato2vf (const char *str)
+irr::core::vector2df Core::ato2vf (const char *str)
 {
     irr::f32 x = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
     irr::f32 y = irr::core::fast_atof (str, &str);
@@ -18,19 +20,19 @@ irr::core::vector2df WallpaperEngine::Core::ato2vf (const char *str)
     return irr::core::vector2df (x, y);
 }
 
-irr::core::vector3df WallpaperEngine::Core::ato3vf (const std::string& str)
+irr::core::vector3df Core::ato3vf (const std::string& str)
 {
-    return WallpaperEngine::Core::ato3vf (str.c_str ());
+    return Core::ato3vf (str.c_str ());
 }
 
-irr::core::vector2df WallpaperEngine::Core::ato2vf (const std::string& str)
+irr::core::vector2df Core::ato2vf (const std::string& str)
 {
-    return WallpaperEngine::Core::ato2vf (str.c_str ());
+    return Core::ato2vf (str.c_str ());
 }
 
-irr::video::SColorf WallpaperEngine::Core::atoSColorf (const char *str)
+irr::video::SColorf Core::atoSColorf (const char *str)
 {
-    irr::core::vector3df vector = WallpaperEngine::Core::ato3vf (str);
+    irr::core::vector3df vector = Core::ato3vf (str);
 
     return irr::video::SColorf (
             vector.X,
@@ -39,12 +41,12 @@ irr::video::SColorf WallpaperEngine::Core::atoSColorf (const char *str)
     );
 }
 
-irr::video::SColorf WallpaperEngine::Core::atoSColorf (const std::string& str)
+irr::video::SColorf Core::atoSColorf (const std::string& str)
 {
-    return WallpaperEngine::Core::atoSColorf (str.c_str ());
+    return Core::atoSColorf (str.c_str ());
 }
 
-irr::video::SColor WallpaperEngine::Core::atoSColor (const char *str)
+irr::video::SColor Core::atoSColor (const char *str)
 {
     irr::f32 r = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
     irr::f32 g = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
@@ -53,7 +55,17 @@ irr::video::SColor WallpaperEngine::Core::atoSColor (const char *str)
     return irr::video::SColor (255, r, g, b);
 }
 
-irr::video::SColor WallpaperEngine::Core::atoSColor (const std::string& str)
+irr::video::SColor Core::atoSColor (const std::string& str)
 {
-    return WallpaperEngine::Core::atoSColor (str.c_str ());
+    return Core::atoSColor (str.c_str ());
+}
+
+nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg)
+{
+    auto value = data.find (key);
+    if (value == data.end ())
+    {
+        throw std::runtime_error (notFoundMsg);
+    }
+    return value;
 }

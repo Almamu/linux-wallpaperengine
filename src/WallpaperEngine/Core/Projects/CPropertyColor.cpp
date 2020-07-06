@@ -1,12 +1,11 @@
 #include "CPropertyColor.h"
-#include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
 CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
 {
-    json::const_iterator value = data.find ("value");
-    json::const_iterator text = data.find ("type");
+    auto value = data.find ("value");
+    auto text = data.find ("type");
 
     return new CPropertyColor (
         WallpaperEngine::Core::atoSColor (*value),
@@ -15,9 +14,9 @@ CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
     );
 }
 
-irr::video::SColor* CPropertyColor::getValue ()
+const irr::video::SColor& CPropertyColor::getValue () const
 {
-    return &this->m_color;
+    return this->m_color;
 }
 
 CPropertyColor::CPropertyColor (irr::video::SColor color, const std::string& name, const std::string& text) :

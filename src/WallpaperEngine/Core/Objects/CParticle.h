@@ -1,12 +1,12 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
 #include "WallpaperEngine/Core/Objects/Particles/CControlPoint.h"
 #include "WallpaperEngine/Core/Objects/Particles/CEmitter.h"
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/CObject.h"
 
 namespace WallpaperEngine::Core::Objects
@@ -26,9 +26,9 @@ namespace WallpaperEngine::Core::Objects
                 const irr::core::vector3df& scale
         );
 
-        std::vector<Particles::CEmitter*>* getEmitters ();
-        std::vector<Particles::CControlPoint*>* getControlPoints ();
-        std::vector<Particles::CInitializer*>* getInitializers ();
+        const std::vector<Particles::CEmitter*>& getEmitters () const;
+        const std::vector<Particles::CControlPoint*>& getControlPoints () const;
+        const std::vector<Particles::CInitializer*>& getInitializers () const;
 
     protected:
         CParticle (

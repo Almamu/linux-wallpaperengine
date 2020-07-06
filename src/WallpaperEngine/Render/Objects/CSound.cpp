@@ -1,67 +1,87 @@
+#include <SDL.h>
+#include <SDL_rwops.h>
+#include <SDL_mixer.h>
+
 #include "CSound.h"
 
-using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
-    Render::CObject (scene, Type, sound),
+    CObject (scene, Type, sound),
     m_sound (sound)
 {
+    this->setAutomaticCulling (irr::scene::EAC_OFF);
     this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
 
+    this->load ();
     this->play ();
 }
 
-void CSound::play ()
+void CSound::load ()
 {
-    std::vector<std::string>* sounds = this->m_sound->getSounds ();
-    std::vector<std::string>::const_iterator cur = sounds->begin ();
-    std::vector<std::string>::const_iterator end = sounds->end ();
+    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
+    {
+        return;
+    }
+
+    auto cur = this->m_sound->getSounds ().begin ();
+    auto end = this->m_sound->getSounds ().end ();
 
     for (; cur != end; cur ++)
     {
-        SDL_RWops* rwops = nullptr;
+        SDL_RWops* sdlRwops = nullptr;
         Mix_Music* music = nullptr;
-
-        // open the sound file and read it fully
         irr::io::IReadFile* readfile = this->getScene ()->getContext ()->getDevice ()->getFileSystem ()->createAndOpenFile ((*cur).c_str ());
-        long filesize = readfile->getSize ();
-        char* buffer = new char [filesize];
+        int filesize = readfile->getSize ();
+        char* filebuffer = new char [filesize];
 
-        // TODO: IMPLEMENT A MAXIMUM FILESIZE TO PREVENT CRAZY ALLOCATIONS
+        readfile->read (filebuffer, filesize);
 
-        readfile->read (buffer, filesize);
-
-        rwops = SDL_RWFromConstMem (buffer, filesize);
-        music = Mix_LoadMUS_RW (rwops);
-
-        // free the file reader
+        sdlRwops = SDL_RWFromConstMem (filebuffer, filesize);
+        music = Mix_LoadMUS_RW (sdlRwops);
         readfile->drop ();
 
         if (music == nullptr)
         {
-            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log ("Cannot load audio", Mix_GetError (), irr::ELL_ERROR);
+            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log (
+                "cannot load audio", Mix_GetError (), irr::ELL_ERROR
+            );
+
+            continue;
         }
 
-        this->m_bufferReader.push_back (rwops);
-        this->m_mixSdl.push_back (music);
-        this->m_soundBuffer.push_back (buffer);
+        this->m_bufferReader.push_back (sdlRwops);
+        this->m_soundBuffer.push_back (filebuffer);
+        this->m_sdl.push_back (music);
+    }
+}
+void CSound::play ()
+{
+    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
+    {
+        return;
     }
 
-    // after all the sounds are loaded, play them all
-    std::vector<Mix_Music*>::const_iterator mixcur = this->m_mixSdl.begin ();
-    std::vector<Mix_Music*>::const_iterator mixend = this->m_mixSdl.end ();
+    auto mixcur = this->m_sdl.begin ();
+    auto mixend = this->m_sdl.end ();
 
     for (; mixcur != mixend; mixcur ++)
     {
         if (Mix_PlayMusic ((*mixcur), -1) == -1)
         {
-            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log ("Cannot play audio", Mix_GetError (), irr::ELL_ERROR);
+            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log (
+                "cannot play audio", Mix_GetError (), irr::ELL_ERROR
+            );
         }
     }
 }
 
-const irr::core::aabbox3d<irr::f32>& CSound::getBoundingBox () const
+void CSound::render ()
+{
+
+}
+
+const irr::core::aabbox3d<irr::f32>& CSound::getBoundingBox() const
 {
     return this->m_boundingBox;
 }

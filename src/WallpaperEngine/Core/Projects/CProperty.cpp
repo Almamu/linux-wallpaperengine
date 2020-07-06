@@ -2,56 +2,45 @@
 #include "CPropertyColor.h"
 #include "CPropertyBoolean.h"
 
-namespace WallpaperEngine::Core::Projects
+using namespace WallpaperEngine::Core::Projects;
+
+CProperty* CProperty::fromJSON (json data, const std::string& name)
 {
-    CProperty* CProperty::fromJSON (json data, const std::string& name)
+    auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
+    auto value = jsonFindRequired (data, "value", "Project properties must have the value field");
+    auto text = data.find ("text");
+
+    if (*type == CPropertyColor::Type)
     {
-        json::const_iterator type = data.find ("type");
-        json::const_iterator value = data.find ("value");
-        json::const_iterator text = data.find ("text");
-
-        if (value == data.end ())
-        {
-            throw std::runtime_error ("Project properties must have the value field");
-        }
-
-        if (type == data.end ())
-        {
-            throw std::runtime_error ("Project properties must have the type field");
-        }
-
-        if (*type == CPropertyColor::Type)
-        {
-            return CPropertyColor::fromJSON (data, name);
-        }
-
-        if (*type == CPropertyBoolean::Type)
-        {
-            return CPropertyBoolean::fromJSON (data, name);
-        }
-
-        throw std::runtime_error ("Unexpected type for property");
+        return CPropertyColor::fromJSON (data, name);
     }
 
-    CProperty::CProperty (std::string name, std::string type, std::string text) :
-        m_name (std::move(name)),
-        m_type (std::move(type)),
-        m_text (std::move(text))
+    if (*type == CPropertyBoolean::Type)
     {
+        return CPropertyBoolean::fromJSON (data, name);
     }
 
-    std::string& CProperty::getName ()
-    {
-        return this->m_name;
-    }
+    throw std::runtime_error ("Unexpected type for property");
+}
 
-    std::string& CProperty::getType ()
-    {
-        return this->m_type;
-    }
+CProperty::CProperty (std::string name, std::string type, std::string text) :
+    m_name (std::move(name)),
+    m_type (std::move(type)),
+    m_text (std::move(text))
+{
+}
 
-    std::string& CProperty::getText ()
-    {
-        return this->m_text;
-    }
-};
+const std::string& CProperty::getName () const
+{
+    return this->m_name;
+}
+
+const std::string& CProperty::getType () const
+{
+    return this->m_type;
+}
+
+const std::string& CProperty::getText () const
+{
+    return this->m_text;
+}

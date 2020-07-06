@@ -13,14 +13,9 @@ using namespace WallpaperEngine::Core::Objects::Particles;
 
 CInitializer* CInitializer::fromJSON (json data)
 {
-    json::const_iterator id_it = data.find ("id");
-    json::const_iterator name_it = data.find ("name");
+    auto id_it = data.find ("id");
+    auto name_it = jsonFindRequired (data, "name", "Particle's initializer must have a name");
     irr::u32 id = ((id_it == data.end ()) ? 0 : (irr::u32) (*id_it));
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("Particle's initializer must have a name");
-    }
 
     if (*name_it == "lifetimerandom")
     {
@@ -68,12 +63,12 @@ CInitializer::CInitializer (irr::u32 id, std::string name) :
 }
 
 
-std::string& CInitializer::getName ()
+const std::string& CInitializer::getName () const
 {
     return this->m_name;
 }
 
-irr::u32 CInitializer::getId ()
+const irr::u32 CInitializer::getId () const
 {
     return this->m_id;
 }

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <irrlicht/irrlicht.h>
+#include <nlohmann/json.hpp>
 
 namespace WallpaperEngine::Core
 {
@@ -16,4 +17,6 @@ namespace WallpaperEngine::Core
 
     irr::video::SColor atoSColor (const char *str);
     irr::video::SColor atoSColor (const std::string& str);
+
+    nlohmann::json::iterator jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg);
 };

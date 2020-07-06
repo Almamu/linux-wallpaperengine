@@ -1,10 +1,11 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
-#include "CProject.h"
 #include "CObject.h"
+#include "CWallpaper.h"
+
+#include "Core.h"
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 #include "WallpaperEngine/Core/Scenes/CProjection.h"
@@ -13,40 +14,36 @@ namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
 
-    class CProject;
     class CObject;
 
-    class CScene
+    class CScene : public CWallpaper
     {
     public:
         static CScene* fromFile (const irr::io::path& filename);
 
-        CProject* getProject ();
-        std::vector<CObject*>* getObjects ();
+        const std::vector<CObject*>& getObjects () const;
 
-        const irr::video::SColorf &getAmbientColor() const;
-        bool isBloom() const;
-        irr::f64 getBloomStrength() const;
-        irr::f64 getBloomThreshold() const;
-        bool isCameraFade() const;
-        bool isCameraParallax() const;
-        irr::f64 getCameraParallaxAmount() const;
-        irr::f64 getCameraParallaxDelay() const;
-        irr::f64 getCameraParallaxMouseInfluence() const;
-        bool isCameraPreview() const;
-        bool isCameraShake() const;
-        irr::f64 getCameraShakeAmplitude() const;
-        irr::f64 getCameraShakeRoughness() const;
-        irr::f64 getCameraShakeSpeed() const;
-        const irr::video::SColorf &getClearColor() const;
-        Scenes::CProjection *getOrthogonalProjection() const;
-        const irr::video::SColorf &getSkylightColor() const;
-        Scenes::CCamera* getCamera ();
+        const irr::video::SColorf& getAmbientColor() const;
+        const bool isBloom() const;
+        const irr::f64 getBloomStrength() const;
+        const irr::f64 getBloomThreshold() const;
+        const bool isCameraFade() const;
+        const bool isCameraParallax() const;
+        const irr::f64 getCameraParallaxAmount() const;
+        const irr::f64 getCameraParallaxDelay() const;
+        const irr::f64 getCameraParallaxMouseInfluence() const;
+        const bool isCameraPreview() const;
+        const bool isCameraShake() const;
+        const irr::f64 getCameraShakeAmplitude() const;
+        const irr::f64 getCameraShakeRoughness() const;
+        const irr::f64 getCameraShakeSpeed() const;
+        const irr::video::SColorf& getClearColor() const;
+        const Scenes::CProjection* getOrthogonalProjection() const;
+        const irr::video::SColorf& getSkylightColor() const;
+        const Scenes::CCamera* getCamera () const;
 
     protected:
-        friend class CProject;
-
-        void setProject (CProject* project);
+        friend class CWallpaper;
 
         CScene (
                 Scenes::CCamera* camera,
@@ -69,9 +66,10 @@ namespace WallpaperEngine::Core
                 irr::video::SColorf skylightColor
         );
 
+        static const std::string Type;
+
         void insertObject (CObject* object);
     private:
-        CProject* m_project;
         Scenes::CCamera* m_camera;
 
         // data from general section on the json

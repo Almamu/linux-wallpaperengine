@@ -2,7 +2,8 @@
 
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
+
 #include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
@@ -10,8 +11,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CColorRandom : CInitializer
     {
     public:
-        irr::video::SColor* getMinimum ();
-        irr::video::SColor* getMaximum ();
+        const irr::video::SColor& getMinimum () const;
+        const irr::video::SColor& getMaximum () const;
     protected:
         friend class CInitializer;
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <irrlicht/irrlicht.h>
-#include <nlohmann/json.hpp>
 
+#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/CObject.h"
 
 namespace WallpaperEngine::Core::Objects
@@ -25,7 +25,7 @@ namespace WallpaperEngine::Core::Objects
         );
 
         void insertSound (std::string filename);
-        std::vector<std::string>* getSounds ();
+        const std::vector<std::string>& getSounds () const;
 
     protected:
         CSound (

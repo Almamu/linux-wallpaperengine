@@ -1,55 +1,54 @@
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
 #include "CProject.h"
+#include "CScene.h"
+#include "CVideo.h"
 
 using namespace WallpaperEngine::Core;
 
-CProject::CProject (std::string title, std::string type, CScene *scene) :
+CProject::CProject (std::string title, std::string type, CWallpaper* wallpaper) :
     m_title (std::move (title)),
     m_type (std::move (type)),
-    m_scene (scene)
+    m_wallpaper (wallpaper)
 {
-    this->m_scene->setProject (this);
+    this->m_wallpaper->setProject (this);
 }
 
 CProject* CProject::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    json::const_iterator title = content.find ("title");
-    json::const_iterator type = content.find ("type");
-    json::const_iterator file = content.find ("file");
-    json::const_iterator general = content.find ("general");
+    auto title = jsonFindRequired (content, "title", "Project title missing");
+    auto type = jsonFindRequired (content, "type", "Project type missing");
+    auto file = jsonFindRequired (content, "file", "Project's main file missing");
+    auto general = content.find ("general");
+    CWallpaper* wallpaper;
 
-    if (title == content.end ())
+    if (strcmp ((*type).get <std::string> ().c_str (), "scene") == 0)
     {
-        throw std::runtime_error ("Project title missing");
+        wallpaper = CScene::fromFile ((*file).get <std::string> ().c_str ());
     }
-
-    if (type == content.end ())
+    else if (strcmp ((*type).get <std::string> ().c_str (), "video") == 0)
     {
-        throw std::runtime_error ("Project type missing");
+        wallpaper = new CVideo ((*file).get <std::string> ().c_str ());
     }
-
-    if (file == content.end ())
-    {
-        throw std::runtime_error ("Project's main file missing");
-    }
+    else
+        throw std::runtime_error ("Unsupported wallpaper type");
 
     CProject* project = new CProject (
         *title,
         *type,
-        CScene::fromFile ((*file).get <std::string> ().c_str ())
+        wallpaper
     );
 
     if (general != content.end ())
     {
-        json::const_iterator properties = (*general).find ("properties");
+        auto properties = (*general).find ("properties");
 
         if (properties != (*general).end ())
         {
-            json::const_iterator cur = (*properties).begin ();
-            json::const_iterator end = (*properties).end ();
+            auto cur = (*properties).begin ();
+            auto end = (*properties).end ();
 
             for (; cur != end; cur ++)
             {
@@ -63,24 +62,24 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     return project;
 }
 
-CScene* CProject::getScene ()
+CWallpaper* CProject::getWallpaper () const
 {
-    return this->m_scene;
+    return this->m_wallpaper;
 }
 
-std::string CProject::getTitle ()
+const std::string& CProject::getTitle () const
 {
     return this->m_title;
 }
 
-std::string CProject::getType ()
+const std::string& CProject::getType () const
 {
     return this->m_type;
 }
 
-std::vector<Projects::CProperty*>* CProject::getProperties ()
+const std::vector<Projects::CProperty*>& CProject::getProperties () const
 {
-    return &this->m_properties;
+    return this->m_properties;
 }
 
 void CProject::insertProperty (Projects::CProperty* property)

@@ -5,8 +5,6 @@
 #include "WallpaperEngine/Core/Objects/CSound.h"
 #include "WallpaperEngine/Core/Objects/CParticle.h"
 
-#include "Core.h"
-
 using namespace WallpaperEngine::Core;
 
 CObject::CObject (
@@ -29,41 +27,16 @@ CObject::CObject (
 
 CObject* CObject::fromJSON (json data)
 {
-    json::const_iterator id_it = data.find ("id");
-    json::const_iterator visible_it = data.find ("visible");
-    json::const_iterator origin_it = data.find ("origin");
-    json::const_iterator scale_it = data.find ("scale");
-    json::const_iterator size_it = data.find ("size");
-    json::const_iterator angles_it = data.find ("angles");
-    json::const_iterator name_it = data.find ("name");
-    json::const_iterator effects_it = data.find ("effects");
+    auto id_it = jsonFindRequired (data, "id", "Objects must have id");
+    auto visible_it = data.find ("visible");
+    auto origin_it = jsonFindRequired (data, "origin", "Objects must have origin point");
+    auto scale_it = jsonFindRequired (data, "scale", "Objects must have scale");
+    auto angles_it = jsonFindRequired (data, "angles", "Objects must have angles");
+    auto name_it = jsonFindRequired (data, "name", "Objects must have name");
+    auto effects_it = data.find ("effects");
+    auto dependencies_it = data.find ("dependencies");
 
     bool visible = true;
-
-    if (id_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have id");
-    }
-
-    if (origin_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have origin point");
-    }
-
-    if (scale_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have scale");
-    }
-
-    if (angles_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have angles");
-    }
-
-    if (name_it == data.end ())
-    {
-        throw std::runtime_error ("Objects must have name");
-    }
 
     // visibility is optional
     if (visible_it != data.end ())
@@ -80,9 +53,9 @@ CObject* CObject::fromJSON (json data)
         }
     }
 
-    json::const_iterator image_it = data.find ("image");
-    json::const_iterator sound_it = data.find ("sound");
-    json::const_iterator particle_it = data.find ("particle");
+    auto image_it = data.find ("image");
+    auto sound_it = data.find ("sound");
+    auto particle_it = data.find ("particle");
 
     CObject* object = nullptr;
 
@@ -127,8 +100,8 @@ CObject* CObject::fromJSON (json data)
 
     if (effects_it != data.end () && (*effects_it).is_array () == true)
     {
-        json::const_iterator cur = (*effects_it).begin ();
-        json::const_iterator end = (*effects_it).end ();
+        auto cur = (*effects_it).begin ();
+        auto end = (*effects_it).end ();
 
         for (; cur != end; cur ++)
         {
@@ -138,30 +111,56 @@ CObject* CObject::fromJSON (json data)
         }
     }
 
+    if (dependencies_it != data.end () && (*dependencies_it).is_array () == true)
+    {
+        auto cur = (*dependencies_it).begin ();
+        auto end = (*dependencies_it).end ();
+
+        for (; cur != end; cur ++)
+        {
+            object->insertDependency (*cur);
+        }
+    }
+
     return object;
 }
 
-irr::core::vector3df* CObject::getOrigin ()
+const irr::core::vector3df& CObject::getOrigin () const
 {
-    return &this->m_origin;
+    return this->m_origin;
 }
 
-irr::core::vector3df* CObject::getScale ()
+const irr::core::vector3df& CObject::getScale () const
 {
-    return &this->m_scale;
+    return this->m_scale;
 }
 
-irr::core::vector3df* CObject::getAngles ()
+const irr::core::vector3df& CObject::getAngles () const
 {
-    return &this->m_angles;
+    return this->m_angles;
 }
 
-std::vector<Objects::CEffect*>* CObject::getEffects ()
+const std::string& CObject::getName () const
 {
-    return &this->m_effects;
+    return this->m_name;
 }
 
-int CObject::getId ()
+const std::vector<Objects::CEffect*>& CObject::getEffects () const
+{
+    return this->m_effects;
+}
+
+const std::vector<irr::u32>& CObject::getDependencies () const
+{
+    return this->m_dependencies;
+}
+
+bool CObject::isVisible ()
+{
+    return this->m_visible;
+}
+
+const int CObject::getId () const
 {
     return this->m_id;
 }
@@ -169,4 +168,8 @@ int CObject::getId ()
 void CObject::insertEffect (Objects::CEffect* effect)
 {
     this->m_effects.push_back (effect);
+}
+void CObject::insertDependency (irr::u32 dependency)
+{
+    this->m_dependencies.push_back (dependency);
 }

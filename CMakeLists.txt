@@ -15,8 +15,9 @@ find_package(Irrlicht REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
+find_package(FFmpeg REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} src include)
+include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} src include)
 
 add_executable(
         wallengine
@@ -25,11 +26,33 @@ add_executable(
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
 
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
+
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.cpp
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h
+        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.cpp
+
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+        src/WallpaperEngine/Render/CWallpaper.h
+        src/WallpaperEngine/Render/CWallpaper.cpp
         src/WallpaperEngine/Render/CScene.h
         src/WallpaperEngine/Render/CScene.cpp
+        src/WallpaperEngine/Render/CVideo.h
+        src/WallpaperEngine/Render/CVideo.cpp
         src/WallpaperEngine/Render/CCamera.h
         src/WallpaperEngine/Render/CCamera.cpp
         src/WallpaperEngine/Render/CObject.h
@@ -37,12 +60,23 @@ add_executable(
 
         src/WallpaperEngine/Render/Objects/CImage.h
         src/WallpaperEngine/Render/Objects/CImage.cpp
-        src/WallpaperEngine/Render/Objects/CSound.cpp
         src/WallpaperEngine/Render/Objects/CSound.h
+        src/WallpaperEngine/Render/Objects/CSound.cpp
+        src/WallpaperEngine/Render/Objects/CEffect.h
+        src/WallpaperEngine/Render/Objects/CEffect.cpp
+
+        src/WallpaperEngine/Render/Objects/Effects/CFBO.h
+        src/WallpaperEngine/Render/Objects/Effects/CFBO.cpp
+        src/WallpaperEngine/Render/Objects/Effects/CPass.h
+        src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
+        src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
+        src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
 
+        src/WallpaperEngine/Irrlicht/CEventReceiver.h
+        src/WallpaperEngine/Irrlicht/CEventReceiver.cpp
         src/WallpaperEngine/Irrlicht/CContext.h
         src/WallpaperEngine/Irrlicht/CContext.cpp
         src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h
@@ -54,8 +88,12 @@ add_executable(
 
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
+        src/WallpaperEngine/Core/CWallpaper.cpp
+        src/WallpaperEngine/Core/CWallpaper.h
         src/WallpaperEngine/Core/CScene.cpp
         src/WallpaperEngine/Core/CScene.h
+        src/WallpaperEngine/Core/CVideo.cpp
+        src/WallpaperEngine/Core/CVideo.h
         src/WallpaperEngine/Core/CObject.cpp
         src/WallpaperEngine/Core/CObject.h
 
@@ -79,6 +117,20 @@ add_executable(
         src/WallpaperEngine/Core/Objects/CEffect.h
         src/WallpaperEngine/Core/Objects/CParticle.cpp
         src/WallpaperEngine/Core/Objects/CParticle.h
+
+        src/WallpaperEngine/Core/Objects/Effects/CFBO.h
+        src/WallpaperEngine/Core/Objects/Effects/CFBO.cpp
+        src/WallpaperEngine/Core/Objects/Effects/CBind.h
+        src/WallpaperEngine/Core/Objects/Effects/CBind.cpp
+
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
 
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
         src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
@@ -107,7 +159,8 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
         src/WallpaperEngine/Core/Objects/Images/CMaterial.h
 
-        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.cpp
-        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.h)
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
+)
 
-target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})
+target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES})

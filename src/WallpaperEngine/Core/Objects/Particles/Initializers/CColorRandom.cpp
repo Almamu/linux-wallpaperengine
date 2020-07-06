@@ -1,23 +1,11 @@
 #include "CColorRandom.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
 CColorRandom* CColorRandom::fromJSON (json data, irr::u32 id)
 {
-    json::const_iterator min_it = data.find ("min");
-    json::const_iterator max_it = data.find ("max");
-
-    if (min_it == data.end ())
-    {
-        throw std::runtime_error ("Colorrandom initializer must have a minimum value");
-    }
-
-    if (max_it == data.end ())
-    {
-        throw std::runtime_error ("Colorrandom initializer must have a maximum value");
-    }
+    auto min_it = jsonFindRequired (data, "min", "Colorrandom initializer must have a minimum value");
+    auto max_it = jsonFindRequired (data, "max", "Colorrandom initializer must have a maximum value");
 
     return new CColorRandom (
             id,
@@ -34,12 +22,12 @@ CColorRandom::CColorRandom (irr::u32 id, irr::video::SColor min, irr::video::SCo
 {
 }
 
-irr::video::SColor* CColorRandom::getMinimum ()
+const irr::video::SColor& CColorRandom::getMinimum () const
 {
-    return &this->m_min;
+    return this->m_min;
 }
 
-irr::video::SColor* CColorRandom::getMaximum ()
+const irr::video::SColor& CColorRandom::getMaximum () const
 {
-    return &this->m_max;
+    return this->m_max;
 }

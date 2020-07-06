@@ -2,7 +2,8 @@
 
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
-#include <nlohmann/json.hpp>
+#include "WallpaperEngine/Core/Core.h"
+
 #include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
@@ -10,8 +11,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CAngularVelocityRandom : CInitializer
     {
     public:
-        irr::core::vector3df* getMinimum ();
-        irr::core::vector3df* getMaximum ();
+        const irr::core::vector3df& getMinimum () const;
+        const irr::core::vector3df& getMaximum () const;
     protected:
         friend class CInitializer;
 

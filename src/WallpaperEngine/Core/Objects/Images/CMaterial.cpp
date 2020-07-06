@@ -5,49 +5,85 @@
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
+using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
-CMaterial::CMaterial ()
+CMaterial::CMaterial () :
+    m_target ("")
 {
 }
 
-CMaterial* CMaterial::fromFile (irr::io::path filename)
+CMaterial* CMaterial::fromFile (const irr::io::path& filename)
 {
     return fromJSON (
         json::parse (WallpaperEngine::FileSystem::loadFullFile (filename))
     );
 }
+CMaterial* CMaterial::fromFile (const irr::io::path& filename, const std::string& target)
+{
+    return fromJSON (
+        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename)), target
+    );
+}
+
+CMaterial* CMaterial::fromJSON (json data, const std::string& target)
+{
+    CMaterial* material = fromJSON (data);
+
+    material->setTarget (target);
+
+    return material;
+}
 
 CMaterial* CMaterial::fromJSON (json data)
 {
-    json::const_iterator passes_it = data.find ("passes");
-
-    if (passes_it == data.end ())
-    {
-        throw std::runtime_error ("Material must have at least one pass");
-    }
+    auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
 
     CMaterial* material = new CMaterial ();
 
-    json::const_iterator cur = (*passes_it).begin ();
-    json::const_iterator end = (*passes_it).end ();
+    auto cur = (*passes_it).begin ();
+    auto end = (*passes_it).end ();
 
     for (; cur != end; cur ++)
     {
         material->insertPass (
-                Materials::CPassess::fromJSON (*cur)
+            Materials::CPass::fromJSON (*cur)
         );
     }
 
     return material;
 }
 
-void CMaterial::insertPass (Materials::CPassess* mass)
+void CMaterial::insertPass (Materials::CPass* mass)
 {
     this->m_passes.push_back (mass);
 }
 
-std::vector <Materials::CPassess*>* CMaterial::getPasses ()
+void CMaterial::insertTextureBind (Effects::CBind* bind)
 {
-    return &this->m_passes;
+    this->m_textureBindings.push_back (bind);
+}
+
+void CMaterial::setTarget (const std::string& target)
+{
+    this->m_target = target;
+}
+
+const std::vector <Materials::CPass*>& CMaterial::getPasses () const
+{
+    return this->m_passes;
+}
+const std::vector <Effects::CBind*>& CMaterial::getTextureBinds () const
+{
+    return this->m_textureBindings;
+}
+
+const std::string& CMaterial::getTarget () const
+{
+    return this->m_target;
+}
+
+const bool CMaterial::hasTarget () const
+{
+    return this->m_target.empty () == false;
 }

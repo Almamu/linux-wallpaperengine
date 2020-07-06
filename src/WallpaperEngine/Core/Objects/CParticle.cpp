@@ -13,31 +13,11 @@ CParticle* CParticle::fromFile (
     const irr::core::vector3df& scale)
 {
     json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
-    json::const_iterator controlpoint_it = data.find ("controlpoint");
-    json::const_iterator starttime_it = data.find ("starttime");
-    json::const_iterator maxcount_it = data.find ("maxcount");
-    json::const_iterator emitter_it = data.find ("emitter");
-    json::const_iterator initializer_it = data.find ("initializer");
-
-    if (starttime_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have start time");
-    }
-
-    if (maxcount_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have maximum count");
-    }
-
-    if (emitter_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have emitters");
-    }
-
-    if (initializer_it == data.end ())
-    {
-        throw std::runtime_error ("Particles must have initializers");
-    }
+    auto controlpoint_it = data.find ("controlpoint");
+    auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
+    auto maxcount_it = jsonFindRequired (data, "maxcount", "Particles must have maximum count");
+    auto emitter_it = jsonFindRequired (data, "emitter", "Particles must have emitters");
+    auto initializer_it = jsonFindRequired (data, "initializer", "Particles must have initializers");
 
     CParticle* particle = new CParticle (
         *starttime_it,
@@ -50,8 +30,8 @@ CParticle* CParticle::fromFile (
 
     if (controlpoint_it != data.end ())
     {
-        json::const_iterator cur = (*controlpoint_it).begin ();
-        json::const_iterator end = (*controlpoint_it).end ();
+        auto cur = (*controlpoint_it).begin ();
+        auto end = (*controlpoint_it).end ();
 
         for (; cur != end; cur ++)
         {
@@ -61,8 +41,8 @@ CParticle* CParticle::fromFile (
         }
     }
 
-    json::const_iterator cur = (*emitter_it).begin ();
-    json::const_iterator end = (*emitter_it).end ();
+    auto cur = (*emitter_it).begin ();
+    auto end = (*emitter_it).end ();
 
     for (; cur != end; cur ++)
     {
@@ -97,19 +77,19 @@ CParticle::CParticle (
 {
 }
 
-std::vector<Particles::CEmitter*>* CParticle::getEmitters ()
+const std::vector<Particles::CEmitter*>& CParticle::getEmitters () const
 {
-    return &this->m_emitters;
+    return this->m_emitters;
 }
 
-std::vector<Particles::CControlPoint*>* CParticle::getControlPoints ()
+const std::vector<Particles::CControlPoint*>& CParticle::getControlPoints () const
 {
-    return &this->m_controlpoints;
+    return this->m_controlpoints;
 }
 
-std::vector<Particles::CInitializer*>* CParticle::getInitializers ()
+const std::vector<Particles::CInitializer*>& CParticle::getInitializers () const
 {
-    return &this->m_initializers;
+    return this->m_initializers;
 }
 
 void CParticle::insertControlPoint (Particles::CControlPoint* controlpoint)

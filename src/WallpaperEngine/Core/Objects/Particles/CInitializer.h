@@ -1,7 +1,8 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <irrlicht/irrlicht.h>
+
+#include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Particles
 {
@@ -12,8 +13,8 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CInitializer* fromJSON (json data);
 
-        std::string& getName ();
-        irr::u32 getId ();
+        const std::string& getName () const;
+        const irr::u32 getId () const;
     protected:
         CInitializer (irr::u32 id, std::string name);
     private:
