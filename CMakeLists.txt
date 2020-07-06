@@ -37,6 +37,8 @@ add_executable(
 
         src/WallpaperEngine/Render/Objects/CImage.h
         src/WallpaperEngine/Render/Objects/CImage.cpp
+        src/WallpaperEngine/Render/Objects/CSound.cpp
+        src/WallpaperEngine/Render/Objects/CSound.h
 
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
@@ -61,6 +63,8 @@ add_executable(
         src/WallpaperEngine/Core/Projects/CProperty.cpp
         src/WallpaperEngine/Core/Projects/CPropertyColor.h
         src/WallpaperEngine/Core/Projects/CPropertyColor.cpp
+        src/WallpaperEngine/Core/Projects/CPropertyBoolean.h
+        src/WallpaperEngine/Core/Projects/CPropertyBoolean.cpp
 
         src/WallpaperEngine/Core/Scenes/CCamera.cpp
         src/WallpaperEngine/Core/Scenes/CCamera.h
@@ -97,12 +101,13 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
         src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
         src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.cpp
+        src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h
 
         src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
         src/WallpaperEngine/Core/Objects/Images/CMaterial.h
 
         src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.cpp
-        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.h
-)
+        src/WallpaperEngine/Core/Objects/Images/Materials/CPassess.h)
 
 target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES})

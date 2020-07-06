@@ -1,5 +1,9 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/CSound.h"
+#include "WallpaperEngine/Core/Objects/CParticle.h"
+
 #include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/Objects/CSound.h"
 #include "CScene.h"
 
 using namespace WallpaperEngine;
@@ -14,6 +18,12 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
     m_scene (project->getScene ()),
     m_context (context)
 {
+    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
+    this->m_camera->setOrthogonalProjection (
+            this->m_scene->getOrthogonalProjection ()->getWidth (),
+            this->m_scene->getOrthogonalProjection ()->getHeight ()
+    );
+
     std::vector<Core::CObject*>::const_iterator cur = this->m_scene->getObjects ()->begin ();
     std::vector<Core::CObject*>::const_iterator end = this->m_scene->getObjects ()->end ();
 
@@ -28,17 +38,23 @@ CScene::CScene (Core::CProject* project, Irrlicht::CContext* context) :
         {
             new Objects::CImage (this, (*cur)->As <Core::Objects::CImage> ());
         }
+        else if ((*cur)->Is <Core::Objects::CSound> () == true)
+        {
+            new Objects::CSound (this, (*cur)->As <Core::Objects::CSound> ());
+        }
+        else if ((*cur)->Is <Core::Objects::CParticle> () == true)
+        {
+            this->getContext ()->getDevice ()->getLogger ()->log ("Particles disabled, not supported yet", irr::ELL_ERROR);
+        }
+        else
+        {
+            throw std::runtime_error ("unsupported object type found");
+        }
     }
 
     this->m_nextId = ++highestId;
     this->setAutomaticCulling (irr::scene::EAC_OFF);
     this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
-
-    this->m_camera = new CCamera (this, this->m_project->getScene ()->getCamera ());
-    this->m_camera->setOrthogonalProjection (
-        this->m_scene->getOrthogonalProjection ()->getWidth (),
-        this->m_scene->getOrthogonalProjection ()->getHeight ()
-    );
 }
 
 CScene::~CScene ()

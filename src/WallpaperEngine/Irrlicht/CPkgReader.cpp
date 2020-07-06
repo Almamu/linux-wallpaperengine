@@ -104,7 +104,7 @@ namespace WallpaperEngine::Irrlicht
     {
         char* headerVersion = this->readSizedString ();
 
-        if (strcmp ("PKGV0002", headerVersion) != 0 && strcmp ("PKGV0001", headerVersion) != 0)
+        if (strcmp ("PKGV0007", headerVersion) != 0 && strcmp ("PKGV0002", headerVersion) != 0 && strcmp ("PKGV0001", headerVersion) != 0)
         {
             delete [] headerVersion;
 

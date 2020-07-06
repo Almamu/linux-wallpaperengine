@@ -68,7 +68,16 @@ CObject* CObject::fromJSON (json data)
     // visibility is optional
     if (visible_it != data.end ())
     {
-        visible = *visible_it;
+        if (visible_it->is_boolean () == false)
+        {
+            // TODO: SUPPORT CONFIGURATION VALUES ON ATTRIBUTES LIKE VISIBLE
+            // TODO: FOR NOW JUST DEFAULT TO FALSE
+            visible = false;
+        }
+        else
+        {
+            visible = *visible_it;
+        }
     }
 
     json::const_iterator image_it = data.find ("image");

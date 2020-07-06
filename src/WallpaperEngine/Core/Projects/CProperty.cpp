@@ -1,5 +1,6 @@
 #include "CProperty.h"
 #include "CPropertyColor.h"
+#include "CPropertyBoolean.h"
 
 namespace WallpaperEngine::Core::Projects
 {
@@ -22,6 +23,11 @@ namespace WallpaperEngine::Core::Projects
         if (*type == CPropertyColor::Type)
         {
             return CPropertyColor::fromJSON (data, name);
+        }
+
+        if (*type == CPropertyBoolean::Type)
+        {
+            return CPropertyBoolean::fromJSON (data, name);
         }
 
         throw std::runtime_error ("Unexpected type for property");

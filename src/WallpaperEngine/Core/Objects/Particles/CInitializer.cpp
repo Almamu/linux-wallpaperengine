@@ -7,6 +7,7 @@
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h"
+#include "WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h"
 
 using namespace WallpaperEngine::Core::Objects::Particles;
 
@@ -48,6 +49,10 @@ CInitializer* CInitializer::fromJSON (json data)
     else if (*name_it == "angularvelocityrandom")
     {
         return Initializers::CAngularVelocityRandom::fromJSON (data, id);
+    }
+    else if (*name_it == "turbulentvelocityrandom")
+    {
+        return Initializers::CTurbulentVelocityRandom::fromJSON (data, id);
     }
     else
     {
