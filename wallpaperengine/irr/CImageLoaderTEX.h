@@ -26,12 +26,15 @@ public:
 	virtual void loadImageFromARGB8Data (IImage* output, const char* input, u32 width, u32 height, u32 mipmap_width) const;
 
     virtual void loadImageFromDXT1 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
+    virtual void loadImageFromDXT3 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
     virtual void loadImageFromDXT5 (IImage* output, const char* input, u32 destination_width, u32 destination_height, u32 origin_width, u32 origin_height) const;
 
 private:
     void BlockDecompressImageDXT1(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
     void DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
     unsigned long PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) const;
+    void BlockDecompressImageDXT3(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
+    void DecompressBlockDXT3(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
     void BlockDecompressImageDXT5(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const;
     void DecompressBlockDXT5(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const;
 
@@ -40,9 +43,9 @@ private:
         ARGB8888,
         RA88,
         A8,
-        DXT5,
-        DXT3,
-        DXT1
+        DXT1,
+        DXT5 // most of the defaultprojects textures are DXT5 as indicated by their alpha data
+        // DXT3 support seems to be missing from wallpaper engine
     };
 
     // extracted from the free image library

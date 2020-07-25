@@ -68,21 +68,32 @@ namespace wp
         }
 
         // initialize actual material properties
+        irr::f32 xsize = this->m_parent->getSize ().X;
+        irr::f32 ysize = this->m_parent->getSize ().Y;
+        if (xsize == 0. || ysize == 0.)
+        {
+            xsize = 1920.;
+            ysize = 1080.;
+            wp::irrlicht::device->getLogger ()->log ("Initializing xsize and ysize as default values 1920 and 1080", this->m_file.c_str(), irr::ELL_INFORMATION);
+        }
+        irr::f32 xscale = this->m_parent->getScale ().X;
+        irr::f32 yscale = this->m_parent->getScale ().Y;
+
         irr::f32 xright = this->m_parent->getOrigin ().X;
-        irr::f32 xleft = -this->m_parent->getOrigin ().X;
-        irr::f32 ztop = this->m_parent->getOrigin ().Y;
-        irr::f32 zbottom = -this->m_parent->getOrigin ().Y;
+        irr::f32 xleft = this->m_parent->getOrigin ().X - xsize * xscale;
+        irr::f32 ytop = this->m_parent->getOrigin ().Y;
+        irr::f32 ybottom = this->m_parent->getOrigin ().Y - ysize * yscale;
         irr::f32 z = this->m_parent->getScene ()->getCamera ()->getEye ().Z;
 
-        m_vertices [0].Pos = irr::core::vector3df (xleft,   ztop,    z); // top left
-        m_vertices [1].Pos = irr::core::vector3df (xright,  ztop,    z); // top right
-        m_vertices [2].Pos = irr::core::vector3df (xright,  zbottom, z); // bottom right
-        m_vertices [3].Pos = irr::core::vector3df (xleft,   zbottom, z); // bottom left
+        m_vertices [0].Pos = irr::core::vector3df (xleft,   ytop,    z); // top left
+        m_vertices [1].Pos = irr::core::vector3df (xright,  ytop,    z); // top right
+        m_vertices [2].Pos = irr::core::vector3df (xright,  ybottom, z); // bottom right
+        m_vertices [3].Pos = irr::core::vector3df (xleft,   ybottom, z); // bottom left
 
-        m_vertices [0].TCoords = irr::core::vector2df (1.0f, 0.0f);
-        m_vertices [1].TCoords = irr::core::vector2df (0.0f, 0.0f);
-        m_vertices [2].TCoords = irr::core::vector2df (0.0f, 1.0f);
-        m_vertices [3].TCoords = irr::core::vector2df (1.0f, 1.0f);
+        m_vertices [0].TCoords = irr::core::vector2df (0.0f, 0.0f);
+        m_vertices [1].TCoords = irr::core::vector2df (1.0f, 0.0f);
+        m_vertices [2].TCoords = irr::core::vector2df (1.0f, 1.0f);
+        m_vertices [3].TCoords = irr::core::vector2df (0.0f, 1.0f);
 
         m_vertices [0].Color = irr::video::SColor (255, 255, 255, 255);
         m_vertices [1].Color = irr::video::SColor (255, 255, 255, 255);

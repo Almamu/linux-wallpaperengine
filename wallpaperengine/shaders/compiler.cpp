@@ -445,8 +445,8 @@ namespace wp
 
             if (this->m_recursive == false)
             {
-                wp::irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
-                wp::irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
+                //wp::irrlicht::device->getLogger ()->log ("Compiled shader output for", this->m_file.c_str ());
+                //wp::irrlicht::device->getLogger ()->log (this->m_compiledContent.c_str ());
             }
 
             return this->m_compiledContent;

@@ -2,7 +2,8 @@
 #include <irrlicht/irrlicht.h>
 #include <sstream>
 #include <wallpaperengine/video/renderer.h>
-#include <wallpaperengine/video/material.h>
+// wp::video::material is currently not used
+//#include <wallpaperengine/video/material.h>
 #include <wallpaperengine/irr/CPkgReader.h>
 #include <getopt.h>
 #include <SDL_mixer.h>

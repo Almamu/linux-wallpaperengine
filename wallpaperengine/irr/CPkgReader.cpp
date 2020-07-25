@@ -73,7 +73,10 @@ bool CArchiveLoaderPkg::isALoadableFileFormat(irr::io::IReadFile* file) const
 
     file->read (pointer, size - 1);
 
-    if (strcmp (pointer, "PKGV0002") != 0 && strcmp (pointer, "PKGV0001") != 0)
+    if (strcmp (pointer, "PKGV0001") != 0 &&
+        strcmp (pointer, "PKGV0002") != 0 &&
+        strcmp (pointer, "PKGV0007") != 0 &&
+        strcmp (pointer, "PKGV0008") != 0)
     {
         delete [] pointer;
         return false;
@@ -120,8 +123,11 @@ const irr::io::IFileList* CPkgReader::getFileList() const
 void CPkgReader::scanPkgHeader ()
 {
     char* headerVersion = this->readSizedString ();
-
-    if (strcmp ("PKGV0007", headerVersion) != 0 && strcmp ("PKGV0002", headerVersion) != 0 && strcmp ("PKGV0001", headerVersion) != 0)
+    
+    if (strcmp ("PKGV0001", headerVersion) != 0 &&
+        strcmp ("PKGV0002", headerVersion) != 0 &&
+        strcmp ("PKGV0007", headerVersion) != 0 &&
+        strcmp ("PKGV0008", headerVersion) != 0)
     {
         wp::irrlicht::device->getLogger ()->log ("Unexpected package header... Aborting load", this->mFile->getFileName ().c_str (), irr::ELL_ERROR);
 
