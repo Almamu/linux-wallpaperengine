@@ -36,6 +36,7 @@ namespace wp
             this->m_title = name_it.value ();
         }
 
+        std::transform(this->m_type.begin(), this->m_type.end(), this->m_type.begin(), tolower);
         if (this->m_type != "scene")
         {
             throw std::runtime_error ("Only scene wallpapers are supported");

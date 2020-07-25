@@ -276,6 +276,10 @@ namespace irr {
 #if 0
             // dump image to a TGA file (adapted from maluoi's gist)
             u32 bytesPerPixel = image->getBytesPerPixel ();
+            if (bytesPerPixel != 3 && bytesPerPixel != 4)
+                wp::irrlicht::device->getLogger ()->log (("Unexpected bytesPerPixel of " + std::to_string (bytesPerPixel)).c_str (), input->getFileName ().c_str (), irr::ELL_ERROR);
+            char hasNoAlpha = (bytesPerPixel < 4);
+
             std::string fileName = input->getFileName ().c_str ();
             std::replace (fileName.begin (), fileName.end (), '/', '-');
             std::string path = std::string (getenv("HOME")) + "/stuff/wallpaperengine-dumps/";
@@ -285,6 +289,7 @@ namespace irr {
             uint8_t header[18] = { 0,0,2,0,0,0,0,0,0,0,0,0,
                 (uint8_t)(width%256), (uint8_t)(width/256), (uint8_t)(height%256), (uint8_t)(height/256), 32, 32 };
             fwrite (&header, 18, 1, dumpFile);
+
             char *imagedata = (char *) image->lock ();
             for (u32 y = 0; y < image->getDimension ().Height; y ++)
             {
@@ -292,11 +297,10 @@ namespace irr {
                 for (u32 x = 0; x < width; x ++)
                 {
                     static unsigned char color[4];
-                    color[0] = imagedata [baseDestination + (x * bytesPerPixel) + 0]; // b
-                    color[1] = imagedata [baseDestination + (x * bytesPerPixel) + 1]; // g
-                    color[2] = imagedata [baseDestination + (x * bytesPerPixel) + 2]; // r
-                    // this currently screws up JPG dumps
-                    color[3] = imagedata [baseDestination + (x * bytesPerPixel) + 3]; // a
+                    color[0+2*hasNoAlpha]     = imagedata [baseDestination + (x * bytesPerPixel) + 0]; // b
+                    color[1]                  = imagedata [baseDestination + (x * bytesPerPixel) + 1]; // g
+                    color[2-2*hasNoAlpha]     = imagedata [baseDestination + (x * bytesPerPixel) + 2]; // r
+                    color[3] = 255*hasNoAlpha | imagedata [baseDestination + (x * bytesPerPixel) + 3]; // a
                     fwrite (color, 1, 4, dumpFile);
                 }
             }
