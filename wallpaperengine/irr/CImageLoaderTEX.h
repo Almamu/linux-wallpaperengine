@@ -44,8 +44,8 @@ private:
         RA88,
         A8,
         DXT1,
-        DXT5 // most of the defaultprojects textures are DXT5 as indicated by their alpha data
-        // DXT3 support seems to be missing from wallpaper engine
+        DXT5, // most of the defaultprojects textures are DXT5 as indicated by their alpha data
+        DXT3 = -1 // DXT3 support seems to be missing from wallpaper engine
     };
 
     // extracted from the free image library
