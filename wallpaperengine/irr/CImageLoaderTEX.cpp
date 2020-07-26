@@ -76,9 +76,7 @@ namespace irr {
             input->seek (4, true); // ignore bytes
             input->read (buffer, 9);
 
-            if (input->getFileName().find("materials/flowmask.tex") != std::string::npos ||
-                input->getFileName().find("godrays_downsample2_mask") != std::string::npos ||
-                input->getFileName().find("materials/util/white.tex") != std::string::npos)
+            if (input->getFileName().find("materials/util/white.tex") != std::string::npos)
             {
                 // relevant shaders are currently drawing these masks opaque; return a transparent image instead
                 wp::irrlicht::device->getLogger ()->log ("LOAD TEX: Skipping broken mask", input->getFileName ().c_str (), irr::ELL_INFORMATION);
@@ -274,7 +272,7 @@ namespace irr {
             delete [] decompressedBuffer;
 
 #if 0
-            // dump image to a TGA file (adapted from maluoi's gist)
+            // dump image to TGA file (adapted from maluoi's gist)
             u32 bytesPerPixel = image->getBytesPerPixel ();
             if (bytesPerPixel != 3 && bytesPerPixel != 4)
                 wp::irrlicht::device->getLogger ()->log (("Unexpected bytesPerPixel of " + std::to_string (bytesPerPixel)).c_str (), input->getFileName ().c_str (), irr::ELL_ERROR);
@@ -283,7 +281,7 @@ namespace irr {
             std::string fileName = input->getFileName ().c_str ();
             std::replace (fileName.begin (), fileName.end (), '/', '-');
             std::string path = std::string (getenv("HOME")) + "/stuff/wallpaperengine-dumps/";
-            system(("mkdir -p " + path).c_str());
+            system (("mkdir -p " + path).c_str ());
             path += fileName + ".tga";
             FILE *dumpFile = fopen (path.c_str (), "wb");
             uint8_t header[18] = { 0,0,2,0,0,0,0,0,0,0,0,0,

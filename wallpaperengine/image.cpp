@@ -79,10 +79,12 @@ namespace wp
         irr::f32 xscale = this->m_parent->getScale ().X;
         irr::f32 yscale = this->m_parent->getScale ().Y;
 
-        irr::f32 xright = this->m_parent->getOrigin ().X;
-        irr::f32 xleft = this->m_parent->getOrigin ().X - xsize * xscale;
-        irr::f32 ytop = this->m_parent->getOrigin ().Y;
-        irr::f32 ybottom = this->m_parent->getOrigin ().Y - ysize * yscale;
+        float scene_w = this->m_parent->getScene ()->getProjectionWidth ();
+        float scene_h = this->m_parent->getScene ()->getProjectionHeight ();
+        irr::f32 xright  = -scene_w/2. + this->m_parent->getOrigin ().X + xsize*xscale/2.;
+        irr::f32 xleft   = -scene_w/2. + this->m_parent->getOrigin ().X - xsize*xscale/2.;
+        irr::f32 ytop    = -scene_h/2. + this->m_parent->getOrigin ().Y + ysize*yscale/2.;
+        irr::f32 ybottom = -scene_h/2. + this->m_parent->getOrigin ().Y - ysize*yscale/2.;
         irr::f32 z = this->m_parent->getScene ()->getCamera ()->getEye ().Z;
 
         m_vertices [0].Pos = irr::core::vector3df (xleft,   ytop,    z); // top left
