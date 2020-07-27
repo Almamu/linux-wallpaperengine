@@ -76,7 +76,9 @@ namespace irr {
             input->seek (4, true); // ignore bytes
             input->read (buffer, 9);
 
-            if (input->getFileName().find("materials/util/white.tex") != std::string::npos)
+            if (input->getFileName ().find ("materials/flowmask.tex") != std::string::npos ||
+                input->getFileName ().find ("materials/masks/godrays_downsample2_mask") != std::string::npos ||
+                input->getFileName ().find ("materials/util/white.tex") != std::string::npos)
             {
                 // relevant shaders are currently drawing these masks opaque; return a transparent image instead
                 wp::irrlicht::device->getLogger ()->log ("LOAD TEX: Skipping broken mask", input->getFileName ().c_str (), irr::ELL_INFORMATION);
@@ -374,7 +376,7 @@ namespace irr {
 
         unsigned long CImageLoaderTex::PackRGBA (unsigned char r, unsigned char g, unsigned char b, unsigned char a) const
         {
-            return r | (g << 8) | (b << 16) | (a << 24);
+            return r | g << 8 | b << 16 | a << 24;
         }
 
         // void DecompressBlockDXT1(): Decompresses one block of a DXT1 texture and stores the resulting pixels at the appropriate offset in 'image'.
