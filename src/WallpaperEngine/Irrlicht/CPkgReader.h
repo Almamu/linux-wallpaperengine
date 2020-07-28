@@ -50,7 +50,7 @@ namespace WallpaperEngine::Irrlicht
     public:
 
         //! constructor
-        CPkgReader (irr::io::IReadFile *file, bool ignoreCase, bool ignorePaths);
+        CPkgReader (CContext* context, irr::io::IReadFile *file, bool ignoreCase, bool ignorePaths);
 
         //! destructor
         virtual ~CPkgReader ();

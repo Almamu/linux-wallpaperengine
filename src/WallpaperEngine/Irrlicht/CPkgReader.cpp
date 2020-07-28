@@ -7,7 +7,7 @@ namespace WallpaperEngine::Irrlicht
             m_context (context)
     {
 #ifdef _DEBUG
-        setDebugName("CArchiveLoaderWAD");
+        setDebugName("CArchiveLoaderPKG");
 #endif
     }
 
@@ -37,7 +37,7 @@ namespace WallpaperEngine::Irrlicht
         if (file)
         {
             file->seek (0);
-            archive = new CPkgReader (file, ignoreCase, ignorePaths);
+            archive = new CPkgReader (this->m_context, file, ignoreCase, ignorePaths);
         }
 
         return archive;
@@ -58,7 +58,11 @@ namespace WallpaperEngine::Irrlicht
 
         file->read (pointer, size - 1);
 
-        if (strcmp (pointer, "PKGV0002") != 0 && strcmp (pointer, "PKGV0001") != 0)
+
+        if (
+                strcmp ("PKGV0007", pointer) != 0 &&
+                strcmp ("PKGV0002", pointer) != 0 &&
+                strcmp ("PKGV0001", pointer) != 0)
         {
             delete [] pointer;
             return false;
@@ -74,8 +78,10 @@ namespace WallpaperEngine::Irrlicht
         return false;
     }
 
-    CPkgReader::CPkgReader (irr::io::IReadFile* file, bool ignoreCase, bool ignorePaths)
-            : CFileList((file ? file->getFileName() : irr::io::path("")), ignoreCase, ignorePaths), m_file(file)
+    CPkgReader::CPkgReader (CContext* context, irr::io::IReadFile* file, bool ignoreCase, bool ignorePaths)
+            : CFileList((file ? file->getFileName() : irr::io::path("")), ignoreCase, ignorePaths),
+            m_file(file),
+            m_context (context)
     {
         if (this->m_file)
         {
@@ -104,7 +110,10 @@ namespace WallpaperEngine::Irrlicht
     {
         char* headerVersion = this->readSizedString ();
 
-        if (strcmp ("PKGV0007", headerVersion) != 0 && strcmp ("PKGV0002", headerVersion) != 0 && strcmp ("PKGV0001", headerVersion) != 0)
+        if (
+                strcmp ("PKGV0007", headerVersion) != 0 &&
+                strcmp ("PKGV0002", headerVersion) != 0 &&
+                strcmp ("PKGV0001", headerVersion) != 0)
         {
             delete [] headerVersion;
 
