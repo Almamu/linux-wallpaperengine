@@ -19,13 +19,6 @@ namespace wp
         json::const_iterator name_it = this->m_projectFile.find ("title");
         json::const_iterator type_it = this->m_projectFile.find ("type");
 
-        if (file_it != this->m_projectFile.end ())
-        {
-            // load scene file
-            this->m_file = (*file_it).get <std::string> ().c_str ();
-            this->m_scene = new scene (this->m_file);
-        }
-
         if (type_it != this->m_projectFile.end ())
         {
             this->m_type = type_it.value ();
@@ -39,6 +32,13 @@ namespace wp
         if (this->m_type != "scene")
         {
             throw std::runtime_error ("Only scene wallpapers are supported");
+        }
+
+        if (file_it != this->m_projectFile.end ())
+        {
+            // load scene file
+            this->m_file = (*file_it).get <std::string> ().c_str ();
+            this->m_scene = new scene (this->m_file);
         }
     }
 
