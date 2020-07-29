@@ -205,7 +205,25 @@ namespace WallpaperEngine::Irrlicht
         header = this->parseHeader (input);
         mipmap = *header->mipmaps.begin ();
 
-        if (header->freeimageFormat == FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+        // relevant shaders are currently drawing these masks opaque; return a transparent image instead
+        if (
+            input->getFileName ().find ("materials/flowmask.tex") != std::string::npos ||
+            input->getFileName ().find ("godrays_downsample2_mask") != std::string::npos ||
+            input->getFileName ().find ("materials/util/white.tex") != std::string::npos
+        )
+        {
+            this->m_context->getDevice ()->getLogger ()->log (
+                    "LOAD TEX: Skipping broken mask", input->getFileName ().c_str (), irr::ELL_INFORMATION
+            );
+
+            irr::u32 width = header->width;
+            irr::u32 height = header->height;
+
+            image = this->m_context->getDevice ()->getVideoDriver ()->createImage (
+                irr::video::ECF_A8R8G8B8, irr::core::dimension2d <irr::u32> (width, height)
+            );
+        }
+        else if (header->freeimageFormat == FREE_IMAGE_FORMAT::FIF_UNKNOWN)
         {
             image = this->m_context->getDevice ()->getVideoDriver ()->createImage (
                     irr::video::ECF_A8R8G8B8, irr::core::dimension2d<irr::u32> (header->width, header->height)
@@ -337,10 +355,10 @@ namespace WallpaperEngine::Irrlicht
 
             for (irr::u32 x = 0; x < width; x ++)
             {
-                imagedata [baseDestination + (x * bytesPerPixel) + 2] = input [baseOrigin + ((width - x) * 4) + 0]; // r
-                imagedata [baseDestination + (x * bytesPerPixel) + 1] = input [baseOrigin + ((width - x) * 4) + 1]; // g
-                imagedata [baseDestination + (x * bytesPerPixel) + 0] = input [baseOrigin + ((width - x) * 4) + 2]; // b
-                imagedata [baseDestination + (x * bytesPerPixel) + 3] = input [baseOrigin + ((width - x) * 4) + 3]; // alpha
+                imagedata [baseDestination + (x * bytesPerPixel) + 2] = input [baseOrigin + (x * 4) + 0]; // r
+                imagedata [baseDestination + (x * bytesPerPixel) + 1] = input [baseOrigin + (x * 4) + 1]; // g
+                imagedata [baseDestination + (x * bytesPerPixel) + 0] = input [baseOrigin + (x * 4) + 2]; // b
+                imagedata [baseDestination + (x * bytesPerPixel) + 3] = input [baseOrigin + (x * 4) + 3]; // a
             }
         }
 
@@ -362,6 +380,16 @@ namespace WallpaperEngine::Irrlicht
         char* decompressedBuffer = new char [origin_width * origin_height * 4];
 
         this->BlockDecompressImageDXT5 (origin_width, origin_height, (const unsigned char*) input, (unsigned long*) decompressedBuffer);
+        this->loadImageFromARGB8Data (output, decompressedBuffer, destination_width, destination_height, origin_width);
+
+        delete [] decompressedBuffer;
+    }
+
+    void CImageLoaderTex::loadImageFromDXT3 (irr::video::IImage* output, const char* input, irr::u32 destination_width, irr::u32 destination_height, irr::u32 origin_width, irr::u32 origin_height) const
+    {
+        char* decompressedBuffer = new char [origin_width * origin_height * 4];
+
+        this->BlockDecompressImageDXT3 (origin_width, origin_height, (const unsigned char*) input, (unsigned long*) decompressedBuffer);
         this->loadImageFromARGB8Data (output, decompressedBuffer, destination_width, destination_height, origin_width);
 
         delete [] decompressedBuffer;
@@ -401,9 +429,9 @@ namespace WallpaperEngine::Irrlicht
     // unsigned char b:		blue channel.
     // unsigned char a:		alpha channel.
 
-    unsigned long CImageLoaderTex::PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) const
+    unsigned long CImageLoaderTex::PackRGBA (unsigned char r, unsigned char g, unsigned char b, unsigned char a) const
     {
-        return ((r << 24) | (g << 16) | (b << 8) | a);
+        return r | (g << 8) | (b << 16) | (a << 24);
     }
 
     // void DecompressBlockDXT1(): Decompresses one block of a DXT1 texture and stores the resulting pixels at the appropriate offset in 'image'.
@@ -415,7 +443,7 @@ namespace WallpaperEngine::Irrlicht
     // const unsigned char *blockStorage:	pointer to the block to decompress.
     // unsigned long *image:				pointer to image where the decompressed pixel data should be stored.
 
-    void CImageLoaderTex::DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const
+    void CImageLoaderTex::DecompressBlockDXT1 (unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const
     {
         unsigned short color0 = *reinterpret_cast<const unsigned short *>(blockStorage);
         unsigned short color1 = *reinterpret_cast<const unsigned short *>(blockStorage + 2);
@@ -443,23 +471,23 @@ namespace WallpaperEngine::Irrlicht
             for (int i=0; i < 4; i++)
             {
                 unsigned long finalColor = 0;
-                unsigned char positionCode = (code >>  2*(4*j+i)) & 0x03;
+                unsigned char positionCode = (code >> 2*(4*j+i)) & 0x03;
 
                 if (color0 > color1)
                 {
                     switch (positionCode)
                     {
                         case 0:
-                            finalColor = PackRGBA(r0, g0, b0, 255);
+                            finalColor = PackRGBA (r0, g0, b0, 255);
                             break;
                         case 1:
-                            finalColor = PackRGBA(r1, g1, b1, 255);
+                            finalColor = PackRGBA (r1, g1, b1, 255);
                             break;
                         case 2:
-                            finalColor = PackRGBA((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, 255);
+                            finalColor = PackRGBA ((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, 255);
                             break;
                         case 3:
-                            finalColor = PackRGBA((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, 255);
+                            finalColor = PackRGBA ((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, 255);
                             break;
                     }
                 }
@@ -468,22 +496,21 @@ namespace WallpaperEngine::Irrlicht
                     switch (positionCode)
                     {
                         case 0:
-                            finalColor = PackRGBA(r0, g0, b0, 255);
+                            finalColor = PackRGBA (r0, g0, b0, 255);
                             break;
                         case 1:
-                            finalColor = PackRGBA(r1, g1, b1, 255);
+                            finalColor = PackRGBA (r1, g1, b1, 255);
                             break;
                         case 2:
-                            finalColor = PackRGBA((r0+r1)/2, (g0+g1)/2, (b0+b1)/2, 255);
+                            finalColor = PackRGBA ((r0+r1)/2, (g0+g1)/2, (b0+b1)/2, 255);
                             break;
                         case 3:
-                            finalColor = PackRGBA(0, 0, 0, 255);
+                            finalColor = PackRGBA (0, 0, 0, 255);
                             break;
                     }
                 }
 
-                if (x + i < width)
-                    image[(y + j)*width + (x + i)] = finalColor;
+                reinterpret_cast <irr::u32*> (image) [(y + j) * width + x + i] = finalColor;
             }
         }
     }
@@ -504,8 +531,115 @@ namespace WallpaperEngine::Irrlicht
 
         for (unsigned long j = 0; j < blockCountY; j++)
         {
-            for (unsigned long i = 0; i < blockCountX; i++) DecompressBlockDXT1(i*4, j*4, width, blockStorage + i * 8, image);
+            for (unsigned long i = 0; i < blockCountX; i++)
+                DecompressBlockDXT1(i*4, j*4, width, blockStorage + i * 8, image);
+
             blockStorage += blockCountX * 8;
+        }
+    }
+
+    // void DecompressBlockDXT3(): Decompresses one block of a DXT3 texture and stores the resulting pixels at the appropriate offset in 'image'.
+    //
+    // unsigned long x:						x-coordinate of the first pixel in the block.
+    // unsigned long y:						y-coordinate of the first pixel in the block.
+    // unsigned long width: 				width of the texture being decompressed.
+    // unsigned long height:				height of the texture being decompressed.
+    // const unsigned char *blockStorage:	pointer to the block to decompress.
+    // unsigned long *image:				pointer to image where the decompressed pixel data should be stored.
+
+    void CImageLoaderTex::DecompressBlockDXT3(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image) const
+    {
+        unsigned short color0 = *reinterpret_cast <const unsigned short *>(blockStorage + 8);
+        unsigned short color1 = *reinterpret_cast <const unsigned short *>(blockStorage + 10);
+
+        unsigned long temp;
+
+        temp = (color0 >> 11) * 255 + 16;
+        unsigned char r0 = (unsigned char)((temp/32 + temp)/32);
+        temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
+        unsigned char g0 = (unsigned char)((temp/64 + temp)/64);
+        temp = (color0 & 0x001F) * 255 + 16;
+        unsigned char b0 = (unsigned char)((temp/32 + temp)/32);
+
+        temp = (color1 >> 11) * 255 + 16;
+        unsigned char r1 = (unsigned char)((temp/32 + temp)/32);
+        temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
+        unsigned char g1 = (unsigned char)((temp/64 + temp)/64);
+        temp = (color1 & 0x001F) * 255 + 16;
+        unsigned char b1 = (unsigned char)((temp/32 + temp)/32);
+
+        unsigned long code = *reinterpret_cast <const unsigned long *>(blockStorage + 12);
+        unsigned long long alphaCode = *reinterpret_cast <const unsigned long long *>(blockStorage);
+
+        for (int j=0; j < 4; j++)
+        {
+            for (int i=0; i < 4; i++)
+            {
+                unsigned long finalColor = 0;
+                unsigned char positionCode = (code >> 2*(4*j+i)) & 0x03;
+                // per StackOverflow this creates an even distribution of alphas between 0 and 255
+                unsigned char finalAlpha = 17 * (alphaCode >> 4*(4*j+i) & 0x0F);
+
+                if (color0 > color1)
+                {
+                    switch (positionCode)
+                    {
+                        case 0:
+                            finalColor = PackRGBA (r0, g0, b0, finalAlpha);
+                            break;
+                        case 1:
+                            finalColor = PackRGBA (r1, g1, b1, finalAlpha);
+                            break;
+                        case 2:
+                            finalColor = PackRGBA ((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, finalAlpha);
+                            break;
+                        case 3:
+                            finalColor = PackRGBA ((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, finalAlpha);
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (positionCode)
+                    {
+                        case 0:
+                            finalColor = PackRGBA (r0, g0, b0, finalAlpha);
+                            break;
+                        case 1:
+                            finalColor = PackRGBA (r1, g1, b1, finalAlpha);
+                            break;
+                        case 2:
+                            finalColor = PackRGBA ((r0+r1)/2, (g0+g1)/2, (b0+b1)/2, finalAlpha);
+                            break;
+                        case 3:
+                            finalColor = PackRGBA (0, 0, 0, finalAlpha);
+                            break;
+                    }
+                }
+
+                reinterpret_cast <irr::u32*>(image)[(y + j)*width + x + i] = finalColor;
+            }
+        }
+    }
+
+    // void BlockDecompressImageDXT3(): Decompresses all the blocks of a DXT3 compressed texture and stores the resulting pixels in 'image'.
+    //
+    // unsigned long width:					Texture width.
+    // unsigned long height:				Texture height.
+    // const unsigned char *blockStorage:	pointer to compressed DXT3 blocks.
+    // unsigned long *image:				pointer to the image where the decompressed pixels will be stored.
+
+    void CImageLoaderTex::BlockDecompressImageDXT3(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image) const
+    {
+        unsigned long blockCountX = (width + 3) / 4;
+        unsigned long blockCountY = (height + 3) / 4;
+        unsigned long blockWidth = (width < 4) ? width : 4;
+        unsigned long blockHeight = (height < 4) ? height : 4;
+        for (unsigned long j = 0; j < blockCountY; j++)
+        {
+            for (unsigned long i = 0; i < blockCountX; i++)
+                DecompressBlockDXT3 (i*4, j*4, width, blockStorage + i * 16, image);
+            blockStorage += blockCountX * 16;
         }
     }
 
@@ -594,27 +728,47 @@ namespace WallpaperEngine::Irrlicht
                     }
                 }
 
-                unsigned char colorCode = (code >> 2*(4*j+i)) & 0x03;
+                unsigned long finalColor = 0;
+                unsigned char positionCode = (code >> 2 * (4 * j + i)) & 0x03;
 
-                unsigned long finalColor;
-                switch (colorCode)
+                if (color0 > color1)
                 {
-                    case 0:
-                        finalColor = PackRGBA(r0, g0, b0, finalAlpha);
-                        break;
-                    case 1:
-                        finalColor = PackRGBA(r1, g1, b1, finalAlpha);
-                        break;
-                    case 2:
-                        finalColor = PackRGBA((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, finalAlpha);
-                        break;
-                    case 3:
-                        finalColor = PackRGBA((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, finalAlpha);
-                        break;
+                    switch (positionCode)
+                    {
+                        case 0:
+                            finalColor = PackRGBA (r0, g0, b0, finalAlpha);
+                            break;
+                        case 1:
+                            finalColor = PackRGBA (r1, g1, b1, finalAlpha);
+                            break;
+                        case 2:
+                            finalColor = PackRGBA ((2*r0+r1)/3, (2*g0+g1)/3, (2*b0+b1)/3, finalAlpha);
+                            break;
+                        case 3:
+                            finalColor = PackRGBA ((r0+2*r1)/3, (g0+2*g1)/3, (b0+2*b1)/3, finalAlpha);
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (positionCode)
+                    {
+                        case 0:
+                            finalColor = PackRGBA (r0, g0, b0, finalAlpha);
+                            break;
+                        case 1:
+                            finalColor = PackRGBA (r1, g1, b1, finalAlpha);
+                            break;
+                        case 2:
+                            finalColor = PackRGBA ((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, finalAlpha);
+                            break;
+                        case 3:
+                            finalColor = PackRGBA (0, 0, 0, finalAlpha);
+                            break;
+                    }
                 }
 
-                if (x + i < width)
-                    image[(y + j)*width + (x + i)] = finalColor;
+                reinterpret_cast <irr::u32*> (image) [(y + j) * width + x + i] = finalColor;
             }
         }
     }
@@ -635,7 +789,9 @@ namespace WallpaperEngine::Irrlicht
 
         for (unsigned long j = 0; j < blockCountY; j++)
         {
-            for (unsigned long i = 0; i < blockCountX; i++) DecompressBlockDXT5(i*4, j*4, width, blockStorage + i * 16, image);
+            for (unsigned long i = 0; i < blockCountX; i++)
+                DecompressBlockDXT5(i*4, j*4, width, blockStorage + i * 16, image);
+
             blockStorage += blockCountX * 16;
         }
     }

@@ -30,25 +30,45 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     m_passes (0)
 {
     // TODO: INITIALIZE NEEDED EFFECTS AND PROPERLY CALCULATE THESE?
-    irr::f32 xright     = this->m_image->getOrigin ().X;
-    irr::f32 xleft      = -this->m_image->getOrigin ().X;
-    irr::f32 ztop       = this->m_image->getOrigin ().Y;
-    irr::f32 zbottom    = -this->m_image->getOrigin ().Y;
+    irr::f32 xsize = this->m_image->getSize ().X;
+    irr::f32 ysize = this->m_image->getSize ().Y;
+    irr::f32 xscale = this->m_image->getScale ().X;
+    irr::f32 yscale = this->m_image->getScale ().Y;
+
+    if (xsize == 0.0f || ysize == 0.0f)
+    {
+        xsize = 1920.0f;
+        ysize = 1080.0f;
+
+        this->getScene ()->getContext ()->getDevice ()->getLogger ()->log (
+            "Initializing xsise and ysize as default values 1920 and 1080",
+            this->getImage ()->getName ().c_str ()
+        );
+    }
+
+    // take the orthogonal projection into account
+    irr::f32 scene_width = this->getScene ()->getScene ()->getOrthogonalProjection ()->getWidth ();
+    irr::f32 scene_height = this->getScene ()->getScene ()->getOrthogonalProjection ()->getHeight ();
+
+    irr::f32 xright     = -scene_width  / 2.0f + this->m_image->getOrigin ().X + xsize * xscale / 2.0f;
+    irr::f32 xleft      = -scene_width  / 2.0f + this->m_image->getOrigin ().X - xsize * xscale / 2.0f;
+    irr::f32 ytop       = -scene_height / 2.0f + this->m_image->getOrigin ().Y + ysize * yscale / 2.0f;
+    irr::f32 ybottom    = -scene_height / 2.0f + this->m_image->getOrigin ().Y - ysize * yscale / 2.0f;
     irr::f32 z          = this->m_image->getOrigin ().Z;
 
     // top left
-    this->m_vertex [0].Pos = irr::core::vector3df (xleft,  ztop,    z);
+    this->m_vertex [0].Pos = irr::core::vector3df (xleft,  ytop,    z);
     // top right
-    this->m_vertex [1].Pos = irr::core::vector3df (xright, ztop,    z);
+    this->m_vertex [1].Pos = irr::core::vector3df (xright, ytop,    z);
     // bottom right
-    this->m_vertex [2].Pos = irr::core::vector3df (xright, zbottom, z);
+    this->m_vertex [2].Pos = irr::core::vector3df (xright, ybottom, z);
     // bottom left
-    this->m_vertex [3].Pos = irr::core::vector3df (xleft,  zbottom, z);
+    this->m_vertex [3].Pos = irr::core::vector3df (xleft,  ybottom, z);
 
-    this->m_vertex [1].TCoords = irr::core::vector2df (1.0f, 0.0f);
     this->m_vertex [0].TCoords = irr::core::vector2df (0.0f, 0.0f);
-    this->m_vertex [3].TCoords = irr::core::vector2df (0.0f, 1.0f);
+    this->m_vertex [1].TCoords = irr::core::vector2df (1.0f, 0.0f);
     this->m_vertex [2].TCoords = irr::core::vector2df (1.0f, 1.0f);
+    this->m_vertex [3].TCoords = irr::core::vector2df (0.0f, 1.0f);
 
     this->m_vertex [0].Color = irr::video::SColor (255, 255, 255, 255);
     this->m_vertex [1].Color = irr::video::SColor (255, 255, 255, 255);

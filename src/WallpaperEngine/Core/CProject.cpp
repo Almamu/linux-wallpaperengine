@@ -18,26 +18,28 @@ CProject* CProject::fromFile (const irr::io::path& filename)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
 
-    auto title = jsonFindRequired (content, "title", "Project title missing");
-    auto type = jsonFindRequired (content, "type", "Project type missing");
-    auto file = jsonFindRequired (content, "file", "Project's main file missing");
+    std::string title = *jsonFindRequired (content, "title", "Project title missing");
+    std::string type = *jsonFindRequired (content, "type", "Project type missing");
+    std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
     auto general = content.find ("general");
     CWallpaper* wallpaper;
 
-    if (strcmp ((*type).get <std::string> ().c_str (), "scene") == 0)
+    std::transform (type.begin (), type.end (), type.begin (), tolower);
+
+    if (type == "scene")
     {
-        wallpaper = CScene::fromFile ((*file).get <std::string> ().c_str ());
+        wallpaper = CScene::fromFile (file.c_str ());
     }
-    else if (strcmp ((*type).get <std::string> ().c_str (), "video") == 0)
+    else if (type == "video")
     {
-        wallpaper = new CVideo ((*file).get <std::string> ().c_str ());
+        wallpaper = new CVideo (file.c_str ());
     }
     else
         throw std::runtime_error ("Unsupported wallpaper type");
 
     CProject* project = new CProject (
-        *title,
-        *type,
+        title,
+        type,
         wallpaper
     );
 

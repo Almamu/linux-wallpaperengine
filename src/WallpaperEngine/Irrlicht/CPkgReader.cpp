@@ -62,7 +62,8 @@ namespace WallpaperEngine::Irrlicht
         if (
                 strcmp ("PKGV0007", pointer) != 0 &&
                 strcmp ("PKGV0002", pointer) != 0 &&
-                strcmp ("PKGV0001", pointer) != 0)
+                strcmp ("PKGV0001", pointer) != 0 &&
+                strcmp ("PKGV0008", pointer) != 0)
         {
             delete [] pointer;
             return false;
@@ -113,7 +114,8 @@ namespace WallpaperEngine::Irrlicht
         if (
                 strcmp ("PKGV0007", headerVersion) != 0 &&
                 strcmp ("PKGV0002", headerVersion) != 0 &&
-                strcmp ("PKGV0001", headerVersion) != 0)
+                strcmp ("PKGV0001", headerVersion) != 0 &&
+                strcmp ("PKGV0008", headerVersion) != 0)
         {
             delete [] headerVersion;
 
