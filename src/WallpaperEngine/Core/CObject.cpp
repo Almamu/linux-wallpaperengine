@@ -85,13 +85,21 @@ CObject* CObject::fromJSON (json data)
     }
     else if (particle_it != data.end ())
     {
-        object = Objects::CParticle::fromFile (
-                (*particle_it).get <std::string> ().c_str (),
-                *id_it,
-                *name_it,
-                WallpaperEngine::Core::ato3vf (*origin_it),
-                WallpaperEngine::Core::ato3vf (*scale_it)
-        );
+        /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
+        try
+        {
+            object = Objects::CParticle::fromFile (
+                    (*particle_it).get <std::string> ().c_str (),
+                    *id_it,
+                    *name_it,
+                    WallpaperEngine::Core::ato3vf (*origin_it),
+                    WallpaperEngine::Core::ato3vf (*scale_it)
+            );
+        }
+        catch (std::runtime_error ex)
+        {
+            return nullptr;
+        }
     }
     else
     {

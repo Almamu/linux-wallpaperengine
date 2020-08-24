@@ -113,7 +113,9 @@ const std::vector<CObject*>& CScene::getObjects () const
 
 void CScene::insertObject (CObject* object)
 {
-    this->m_objects.push_back (object);
+    /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
+    if (object != nullptr)
+        this->m_objects.push_back (object);
 }
 
 const Scenes::CCamera* CScene::getCamera () const
