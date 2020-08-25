@@ -56,6 +56,7 @@ CObject* CObject::fromJSON (json data)
     auto image_it = data.find ("image");
     auto sound_it = data.find ("sound");
     auto particle_it = data.find ("particle");
+    auto text_it = data.find ("text");
 
     CObject* object = nullptr;
 
@@ -101,9 +102,14 @@ CObject* CObject::fromJSON (json data)
             return nullptr;
         }
     }
+    else if (text_it != data.end ())
+    {
+        /// TODO: XXXHACK -- TO REMOVE WHEN TEXT SUPPORT IS IMPLEMENTED
+        return nullptr;
+    }
     else
     {
-        throw std::runtime_error ("Unkonwn object type detected");
+        throw std::runtime_error (std::string ("Unkonwn object type detected ").append (*name_it));
     }
 
     if (effects_it != data.end () && (*effects_it).is_array () == true)
