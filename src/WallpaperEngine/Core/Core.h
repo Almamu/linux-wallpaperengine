@@ -19,4 +19,5 @@ namespace WallpaperEngine::Core
     irr::video::SColor atoSColor (const std::string& str);
 
     nlohmann::json::iterator jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg);
+    template <typename T> T jsonFindDefault (nlohmann::json& data, const char *key, T defaultValue);
 };

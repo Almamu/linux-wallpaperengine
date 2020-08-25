@@ -71,3 +71,26 @@ nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const cha
 
     return value;
 }
+
+template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char *key, T defaultValue)
+{
+    auto value = data.find (key);
+
+    if (value == data.end ())
+    {
+        return defaultValue;
+    }
+
+    return *value;
+}
+
+template bool Core::jsonFindDefault (nlohmann::json& data, const char *key, bool defaultValue);
+template std::string Core::jsonFindDefault (nlohmann::json& data, const char *key, std::string defaultValue);
+template irr::s16 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s16 defaultValue);
+template irr::u16 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u16 defaultValue);
+template irr::s32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s32 defaultValue);
+template irr::u32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u32 defaultValue);
+template irr::s64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s64 defaultValue);
+template irr::u64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u64 defaultValue);
+template irr::f32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::f32 defaultValue);
+template irr::f64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::f64 defaultValue);
