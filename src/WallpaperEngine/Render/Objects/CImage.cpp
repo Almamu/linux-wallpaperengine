@@ -46,14 +46,16 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         );
     }
 
+    irr::core::vector3df cameraCenter = this->getScene ()->getCamera ()->getCenter ();
+
     // take the orthogonal projection into account
     irr::f32 scene_width = this->getScene ()->getScene ()->getOrthogonalProjection ()->getWidth ();
     irr::f32 scene_height = this->getScene ()->getScene ()->getOrthogonalProjection ()->getHeight ();
 
-    irr::f32 xright     = -scene_width  / 2.0f + this->m_image->getOrigin ().X + xsize * xscale / 2.0f;
-    irr::f32 xleft      = -scene_width  / 2.0f + this->m_image->getOrigin ().X - xsize * xscale / 2.0f;
-    irr::f32 ytop       = -scene_height / 2.0f + this->m_image->getOrigin ().Y + ysize * yscale / 2.0f;
-    irr::f32 ybottom    = -scene_height / 2.0f + this->m_image->getOrigin ().Y - ysize * yscale / 2.0f;
+    irr::f32 xright     = (-scene_width  / 2.0f + this->m_image->getOrigin ().X + xsize * xscale / 2.0f) + cameraCenter.X;
+    irr::f32 xleft      = (-scene_width  / 2.0f + this->m_image->getOrigin ().X - xsize * xscale / 2.0f) + cameraCenter.X;
+    irr::f32 ytop       = (-scene_height / 2.0f + this->m_image->getOrigin ().Y + ysize * yscale / 2.0f) + cameraCenter.Y;
+    irr::f32 ybottom    = (-scene_height / 2.0f + this->m_image->getOrigin ().Y - ysize * yscale / 2.0f) + cameraCenter.Y;
     irr::f32 z          = this->m_image->getOrigin ().Z;
 
     // top left
@@ -65,10 +67,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // bottom left
     this->m_vertex [3].Pos = irr::core::vector3df (xleft,  ybottom, z);
 
-    this->m_vertex [0].TCoords = irr::core::vector2df (0.0f, 0.0f);
-    this->m_vertex [1].TCoords = irr::core::vector2df (1.0f, 0.0f);
-    this->m_vertex [2].TCoords = irr::core::vector2df (1.0f, 1.0f);
-    this->m_vertex [3].TCoords = irr::core::vector2df (0.0f, 1.0f);
+    this->m_vertex [0].TCoords = irr::core::vector2df (1.0f, 0.0f);
+    this->m_vertex [1].TCoords = irr::core::vector2df (0.0f, 0.0f);
+    this->m_vertex [2].TCoords = irr::core::vector2df (0.0f, 1.0f);
+    this->m_vertex [3].TCoords = irr::core::vector2df (1.0f, 1.0f);
 
     this->m_vertex [0].Color = irr::video::SColor (255, 255, 255, 255);
     this->m_vertex [1].Color = irr::video::SColor (255, 255, 255, 255);
@@ -84,7 +86,7 @@ void CImage::render()
 {
     uint16_t indices [] =
     {
-            3, 2, 1, 0
+        3, 2, 1, 0
     };
 
     irr::video::IVideoDriver* driver = SceneManager->getVideoDriver ();
