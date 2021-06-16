@@ -319,7 +319,7 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
-                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
@@ -353,7 +353,7 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     std::string name = this->extractName (it); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
-                    std::string array = this->extractArray (it); BREAK_IF_ERROR
+                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
                     this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
 
