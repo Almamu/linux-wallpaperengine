@@ -2,6 +2,17 @@
 
 namespace WallpaperEngine::Irrlicht
 {
+    bool isPkgHeaderVersionValid(char* version)
+    {
+        return strcmp ("PKGV0007", version) == 0 ||
+               strcmp ("PKGV0002", version) == 0 ||
+               strcmp ("PKGV0001", version) == 0 ||
+               strcmp ("PKGV0008", version) == 0 ||
+               strcmp ("PKGV0009", version) == 0 ||
+               strcmp ("PKGV0004", version) == 0 ||
+               strcmp ("PKGV0005", version) == 0 ||
+               strcmp ("PKGV0006", version) == 0;
+    }
 
     CArchiveLoaderPkg::CArchiveLoaderPkg (CContext* context) :
             m_context (context)
@@ -59,12 +70,7 @@ namespace WallpaperEngine::Irrlicht
         file->read (pointer, size - 1);
 
 
-        if (
-                strcmp ("PKGV0007", pointer) != 0 &&
-                strcmp ("PKGV0002", pointer) != 0 &&
-                strcmp ("PKGV0001", pointer) != 0 &&
-                strcmp ("PKGV0008", pointer) != 0 &&
-                strcmp ("PKGV0009", pointer) != 0)
+        if (isPkgHeaderVersionValid (pointer) == false)
         {
             delete [] pointer;
             return false;
@@ -112,12 +118,7 @@ namespace WallpaperEngine::Irrlicht
     {
         char* headerVersion = this->readSizedString ();
 
-        if (
-                strcmp ("PKGV0007", headerVersion) != 0 &&
-                strcmp ("PKGV0002", headerVersion) != 0 &&
-                strcmp ("PKGV0001", headerVersion) != 0 &&
-                strcmp ("PKGV0008", headerVersion) != 0 &&
-                strcmp ("PKGV0009", headerVersion) != 0)
+        if (isPkgHeaderVersionValid (headerVersion) == false)
         {
             delete [] headerVersion;
 

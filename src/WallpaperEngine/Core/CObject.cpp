@@ -27,6 +27,8 @@ CObject::CObject (
 
 CObject* CObject::fromJSON (json data)
 {
+    std::string json = data.dump ();
+
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
     auto visible_it = data.find ("visible");
     auto origin_it = jsonFindRequired (data, "origin", "Objects must have origin point");
@@ -57,6 +59,7 @@ CObject* CObject::fromJSON (json data)
     auto sound_it = data.find ("sound");
     auto particle_it = data.find ("particle");
     auto text_it = data.find ("text");
+    auto light_it = data.find ("light");
 
     CObject* object = nullptr;
 
@@ -72,7 +75,7 @@ CObject* CObject::fromJSON (json data)
                 WallpaperEngine::Core::ato3vf (*angles_it)
         );
     }
-    else if (sound_it != data.end ())
+    else if (sound_it != data.end () && (*sound_it).is_null () == false)
     {
         object = Objects::CSound::fromJSON (
                 data,
@@ -84,7 +87,7 @@ CObject* CObject::fromJSON (json data)
                 WallpaperEngine::Core::ato3vf (*angles_it)
         );
     }
-    else if (particle_it != data.end ())
+    else if (particle_it != data.end () && (*particle_it).is_null () == false)
     {
         /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
         try
@@ -102,9 +105,14 @@ CObject* CObject::fromJSON (json data)
             return nullptr;
         }
     }
-    else if (text_it != data.end ())
+    else if (text_it != data.end () && (*text_it).is_null () == false)
     {
         /// TODO: XXXHACK -- TO REMOVE WHEN TEXT SUPPORT IS IMPLEMENTED
+        return nullptr;
+    }
+    else if (light_it != data.end () && (*light_it).is_null () == false)
+    {
+        /// TODO: XXXHACK -- TO REMOVE WHEN LIGHT SUPPORT IS IMPLEMENTED
         return nullptr;
     }
     else
