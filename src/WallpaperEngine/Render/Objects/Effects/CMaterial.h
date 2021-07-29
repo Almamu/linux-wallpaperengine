@@ -28,24 +28,28 @@ namespace WallpaperEngine::Render::Objects::Effects
     {
         friend class CPass;
     public:
-        CMaterial (Irrlicht::CContext* context, Render::Objects::CEffect* effect, Core::Objects::Images::CMaterial* material, const irr::video::ITexture* texture);
+        CMaterial (Irrlicht::CContext* context, Render::Objects::CImage* image, const Core::Objects::Images::CMaterial* material, irr::video::ITexture* texture);
 
-        const irr::video::ITexture* getOutputTexture () const;
-        const irr::video::ITexture* getInputTexture () const;
+        irr::video::ITexture* getOutputTexture () const;
+        irr::video::ITexture* getInputTexture () const;
 
         const std::vector<CPass*>& getPasses () const;
         const CImage* getImage () const;
 
+        void render ();
+
     private:
         void generatePasses ();
+        void generateOutputMaterial ();
 
         Irrlicht::CContext* m_context;
 
-        const irr::video::ITexture* m_inputTexture;
+        irr::video::ITexture* m_inputTexture;
         irr::video::ITexture* m_outputTexture;
+        irr::video::SMaterial m_outputMaterial;
 
-        Render::Objects::CEffect* m_effect;
-        Core::Objects::Images::CMaterial* m_material;
+        Render::Objects::CImage* m_image;
+        const Core::Objects::Images::CMaterial* m_material;
 
         std::vector<CPass*> m_passes;
     };

@@ -23,16 +23,19 @@ namespace WallpaperEngine::Render::Objects
     public:
         CEffect (CImage* image, Core::Objects::CEffect* effect, Irrlicht::CContext* context, irr::video::ITexture* input);
 
-        const irr::video::ITexture* getOutputTexture () const;
-        const irr::video::ITexture* getInputTexture () const;
+        irr::video::ITexture *const getOutputTexture () const;
+        irr::video::ITexture* getInputTexture () const;
         const CImage* getImage () const;
 
         const std::vector<Effects::CMaterial*>& getMaterials () const;
 
         Effects::CFBO* findFBO (const std::string& name);
+
+        void render ();
     private:
         void generatePasses ();
         void generateFBOs ();
+        void generateOutputMaterial ();
 
         Irrlicht::CContext* m_context;
         CImage* m_image;
@@ -43,5 +46,6 @@ namespace WallpaperEngine::Render::Objects
 
         irr::video::ITexture* m_inputTexture;
         irr::video::ITexture* m_outputTexture;
+        irr::video::SMaterial m_outputMaterial;
     };
 };

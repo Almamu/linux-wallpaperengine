@@ -14,23 +14,24 @@ namespace WallpaperEngine::Render::Objects::Effects
     class CPass : public irr::video::IShaderConstantSetCallBack
     {
     public:
-        CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, const irr::video::ITexture* texture);
+        CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, irr::video::ITexture* texture);
 
         void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData) override;
 
-        const irr::video::ITexture* getOutputTexture () const;
-        const irr::video::ITexture* getInputTexture () const;
+        irr::video::ITexture *getOutputTexture () const;
+        irr::video::ITexture* getInputTexture () const;
 
         const irr::video::SMaterial& getMaterial () const;
 
     private:
         void setupShaderVariables ();
+        void setupTextures ();
 
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
         Irrlicht::CContext* m_context;
 
-        const irr::video::ITexture* m_inputTexture;
+        irr::video::ITexture* m_inputTexture;
         irr::video::ITexture* m_outputTexture;
 
         irr::video::SMaterial m_irrlichtMaterial;

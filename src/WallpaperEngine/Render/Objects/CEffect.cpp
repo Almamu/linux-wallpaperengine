@@ -25,14 +25,15 @@ CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect, Irrlicht::CCont
 
     this->generateFBOs ();
     this->generatePasses ();
+    this->generateOutputMaterial ();
 }
 
-const irr::video::ITexture* CEffect::getInputTexture () const
+irr::video::ITexture* CEffect::getInputTexture () const
 {
     return this->m_inputTexture;
 }
 
-const irr::video::ITexture* CEffect::getOutputTexture () const
+irr::video::ITexture *const CEffect::getOutputTexture () const
 {
     return this->m_outputTexture;
 }
@@ -67,17 +68,19 @@ void CEffect::generatePasses ()
 {
     auto cur = this->m_effect->getMaterials ().begin ();
     auto end = this->m_effect->getMaterials ().end ();
-    const irr::video::ITexture* inputTexture = this->getInputTexture ();
+    irr::video::ITexture* inputTexture = this->getInputTexture ();
 
     for (; cur != end; cur ++)
     {
-        Effects::CMaterial* material = new Effects::CMaterial (this->m_context, this, *cur, inputTexture);
+        Effects::CMaterial* material = new Effects::CMaterial (this->m_context, this->m_image, *cur, inputTexture);
 
         // next input texture will be the output texture of the material
         inputTexture = material->getOutputTexture ();
 
         this->m_materials.push_back (material);
     }
+
+    this->m_outputMaterial.setTexture (0, inputTexture);
 }
 
 void CEffect::generateFBOs ()
@@ -91,4 +94,41 @@ void CEffect::generateFBOs ()
             new Effects::CFBO (*cur, this->m_image->getImage (), this->m_context)
         );
     }
+}
+
+void CEffect::generateOutputMaterial ()
+{
+    this->m_outputMaterial.MaterialType = irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+    this->m_outputMaterial.setFlag (irr::video::EMF_LIGHTING, false);
+    this->m_outputMaterial.setFlag (irr::video::EMF_BLEND_OPERATION, true);
+    this->m_outputMaterial.Wireframe = false;
+    this->m_outputMaterial.Lighting = false;
+}
+
+void CEffect::render ()
+{
+    uint16_t indices [] =
+    {
+        3, 2, 1, 0
+    };
+
+    irr::video::IVideoDriver* driver = this->getImage ()->getSceneManager ()->getVideoDriver ();
+
+    auto mainCur = this->getMaterials ().begin ();
+    auto mainEnd = this->getMaterials ().end ();
+
+    for (; mainCur != mainEnd; mainCur ++)
+    {
+        (*mainCur)->render ();
+    }
+
+    // set the proper render target
+    driver->setRenderTarget (this->getOutputTexture (), true, true, irr::video::SColor (0, 0, 0, 0));
+    // set the material
+    driver->setMaterial (this->m_outputMaterial);
+    // draw it
+    driver->drawVertexPrimitiveList (
+        this->m_image->getVertex (), 4, indices, 1,
+        irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
+    );
 }

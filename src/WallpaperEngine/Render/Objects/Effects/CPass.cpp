@@ -19,7 +19,7 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 
 using namespace WallpaperEngine::Render::Objects::Effects;
 
-CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, const irr::video::ITexture* texture) :
+CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, irr::video::ITexture* texture) :
     m_material (material),
     m_pass (pass),
     m_context (context),
@@ -40,12 +40,13 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     irr::io::path fragPath = this->m_context->resolveFragmentShader (pass->getShader ());
     // register fragment shader
     this->m_fragShader = new Render::Shaders::Compiler (
-        this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false
+        this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false
     );
     // register vertex shader
     this->m_vertShader = new Render::Shaders::Compiler (
-        this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false
+        this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false
     );
+    this->setupTextures ();
     // initialize material data and compile shader used for this pass
     this->m_irrlichtMaterial.Wireframe = false;
     this->m_irrlichtMaterial.Lighting = false;
@@ -61,12 +62,12 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     this->setupShaderVariables ();
 }
 
-const irr::video::ITexture* CPass::getOutputTexture () const
+irr::video::ITexture *CPass::getOutputTexture () const
 {
     return this->m_outputTexture;
 }
 
-const irr::video::ITexture* CPass::getInputTexture () const
+irr::video::ITexture* CPass::getInputTexture () const
 {
     return this->m_inputTexture;
 }
@@ -259,6 +260,26 @@ void CPass::setupShaderVariables ()
             {
                 vertexVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
             }
+        }
+    }
+}
+
+void CPass::setupTextures ()
+{
+    auto textureCur = this->m_pass->getTextures ().begin ();
+    auto textureEnd = this->m_pass->getTextures ().end ();
+
+    for (int textureNumber = 0; textureCur != textureEnd; textureCur ++, textureNumber ++)
+    {
+        // XXXHACK: TODO: PROPERLY DETECT WHERE THE INPUT TEXTURE SHOULD BE USED IN THE SHADER GRAPH
+        if (textureNumber == 0)
+            this->m_irrlichtMaterial.setTexture (0, this->m_inputTexture);
+        else
+        {
+            irr::io::path texturepath = this->m_context->resolveMaterials (*textureCur);
+            irr::video::ITexture* texture = this->m_context->getDevice ()->getVideoDriver ()->getTexture (texturepath);
+
+            this->m_irrlichtMaterial.setTexture (textureNumber, texture);
         }
     }
 }
