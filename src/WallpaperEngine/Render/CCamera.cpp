@@ -36,10 +36,10 @@ const irr::core::vector3df& CCamera::getUp () const
 void CCamera::setOrthogonalProjection (irr::f32 width, irr::f32 height)
 {
     irr::core::matrix4 identity; identity.makeIdentity ();
-    irr::core::matrix4 orthogonalProjection; orthogonalProjection.buildProjectionMatrixOrthoRH (
-            width, height,
-            this->getCenter ().Z,
-            this->getEye ().Z
+    irr::core::matrix4 orthogonalProjection; orthogonalProjection.buildProjectionMatrixOrthoLH (
+        width, height,
+        this->getCenter ().Z,
+        this->getEye ().Z
     );
 
     this->m_sceneCamera->setProjectionMatrix (orthogonalProjection, true);

@@ -20,10 +20,12 @@ namespace WallpaperEngine::Render::Objects
 {
     class CEffect;
 
-    class CImage : public CObject
+    class CImage : public CObject, public irr::video::IShaderConstantSetCallBack
     {
     public:
         CImage (CScene* scene, Core::Objects::CImage* image);
+
+        void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData) override;
 
         void render () override;
         const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
@@ -47,5 +49,6 @@ namespace WallpaperEngine::Render::Objects
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
         irr::video::SMaterial m_irrlichtMaterial;
+        irr::video::SMaterial m_irrlichtMaterialInvert;
     };
 }

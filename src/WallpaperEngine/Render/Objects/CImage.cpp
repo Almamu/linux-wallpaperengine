@@ -100,21 +100,46 @@ void CImage::render()
     // now render all the effects, they should already be linked to each other
     auto effectCur = this->m_effects.begin ();
     auto effectEnd = this->m_effects.end ();
+    size_t passes = 0;
 
     for (; effectCur != effectEnd; effectCur ++)
     {
+        auto matCur = (*effectCur)->getMaterials ().begin ();
+        auto matEnd = (*effectCur)->getMaterials ().end ();
+
+        for (; matCur != matEnd; matCur ++)
+            passes += (*matCur)->getPasses ().size ();
+
         (*effectCur)->render ();
     }
 
-    // set render target to the screen
-    driver->setRenderTarget (irr::video::ERT_FRAME_BUFFER, false, false);
-    // set the material to use
-    driver->setMaterial (this->m_irrlichtMaterial);
-    // draw it
-    driver->drawVertexPrimitiveList (
-        this->m_vertex, 4, indices, 1,
-        irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
-    );
+    passes ++;
+
+    // depending on the number of passes we might need to flip the texture
+    if (passes % 2 == 0)
+    {
+        // set render target to the screen
+        driver->setRenderTarget (irr::video::ERT_FRAME_BUFFER, false, false);
+        // set the material to use
+        driver->setMaterial (this->m_irrlichtMaterialInvert);
+        // draw it
+        driver->drawVertexPrimitiveList (
+                this->m_vertex, 4, indices, 1,
+            irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
+        );
+    }
+    else
+    {
+        // set render target to the screen
+        driver->setRenderTarget (irr::video::ERT_FRAME_BUFFER, false, false);
+        // set the material to use
+        driver->setMaterial (this->m_irrlichtMaterial);
+        // draw it
+        driver->drawVertexPrimitiveList (
+                this->m_vertex, 4, indices, 1,
+            irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
+        );
+    }
 }
 
 void CImage::generateMaterial (irr::video::ITexture* resultTexture)
@@ -125,6 +150,75 @@ void CImage::generateMaterial (irr::video::ITexture* resultTexture)
     this->m_irrlichtMaterial.setFlag (irr::video::EMF_BLEND_OPERATION, true);
     this->m_irrlichtMaterial.Wireframe = false;
     this->m_irrlichtMaterial.Lighting = false;
+    
+    /// TODO: XXXHACK: This material is used to flip textures upside down based on the amount of passes
+    /// TODO: XXXHACK: This fixes an issue with opengl render that I had no better idea of how to solve
+    /// TODO: XXXHACK: For the love of god, If you have a better fix, please LET ME KNOW!
+    std::string vertex =
+            "#define mul(x, y) (y * x)\n"
+            "uniform mat4 g_ModelViewProjectionMatrix;\n"
+            "// Pass to fragment shader with the same name\n"
+            "varying vec2 v_texcoord;\n"
+            "void main(void)\n"
+            "{\n"
+            "    gl_Position = mul(vec4(gl_Vertex.xyz, 1.0), g_ModelViewProjectionMatrix);\n"
+            "    \n"
+            "    // The origin of the texture coordinates locates at bottom-left \n"
+            "    // corner rather than top-left corner as defined on screen quad.\n"
+            "    // Instead of using texture coordinates passed in by OpenGL, we\n"
+            "    // calculate TexCoords based on vertex position as follows.\n"
+            "    //\n"
+            "    // Vertex[0] (-1, -1) to (0, 0)\n"
+            "    // Vertex[1] (-1,  1) to (0, 1)\n"
+            "    // Vertex[2] ( 1,  1) to (1, 1)\n"
+            "    // Vertex[3] ( 1, -1) to (1, 0)\n"
+            "    // \n"
+            "    // Texture coordinate system in OpenGL operates differently from \n"
+            "    // DirectX 3D. It is not necessary to offset TexCoords to texel \n"
+            "    // center by adding 1.0 / TextureSize / 2.0\n"
+            "    \n"
+            "    v_texcoord = vec2(gl_MultiTexCoord0.x, gl_MultiTexCoord0.y);"
+            "}";
+
+    std::string fragment =
+            "// Texture sampler\n"
+            "uniform sampler2D TextureSampler;\n"
+            "\n"
+            "// TexCoords from vertex shader\n"
+            "varying vec2 v_texcoord;\n"
+            "\n"
+            "void main (void)\n"
+            "{\n"
+            "    gl_FragColor = texture2D(TextureSampler, v_texcoord);\n"
+            "}";
+
+    this->m_irrlichtMaterialInvert.setTexture (0, resultTexture);
+    this->m_irrlichtMaterialInvert.setFlag (irr::video::EMF_LIGHTING, false);
+    this->m_irrlichtMaterialInvert.setFlag (irr::video::EMF_BLEND_OPERATION, true);
+    this->m_irrlichtMaterialInvert.Wireframe = false;
+    this->m_irrlichtMaterialInvert.Lighting = false;
+    this->m_irrlichtMaterialInvert.MaterialType = (irr::video::E_MATERIAL_TYPE)
+    this->getScene ()->getContext ()->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
+        vertex.c_str (), "main", irr::video::EVST_VS_2_0,
+        fragment.c_str (), "main", irr::video::EPST_PS_2_0,
+        this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
+    );
+}
+
+void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
+{
+    irr::s32 g_Texture0 = 0;
+
+    irr::video::IVideoDriver* driver = services->getVideoDriver ();
+
+    irr::core::matrix4 worldViewProj;
+    worldViewProj = driver->getTransform (irr::video::ETS_PROJECTION);
+    worldViewProj *= driver->getTransform (irr::video::ETS_VIEW);
+    worldViewProj *= driver->getTransform (irr::video::ETS_WORLD);
+
+
+    services->setPixelShaderConstant ("TextureSampler", &g_Texture0, 1);
+    services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
 }
 
 const irr::core::aabbox3d<irr::f32>& CImage::getBoundingBox() const
