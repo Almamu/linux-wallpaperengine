@@ -16,6 +16,7 @@
 namespace WallpaperEngine::Render::Shaders
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
     /**
      * A basic shader loader that adds basic function definitions to every loaded shader
@@ -50,18 +51,29 @@ namespace WallpaperEngine::Render::Shaders
          * @param file The file to load
          * @param type The type of shader
          * @param combos Settings for the shader
+         * @param constants Default values for shader variables
          * @param recursive Whether the compiler should add base definitions or not
          */
-        Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, std::map<std::string, int> combos, bool recursive = false);
+        Compiler (
+            Irrlicht::CContext* context,
+            irr::io::path& file,
+            Type type,
+            std::map<std::string, int> combos,
+            const std::map<std::string, CShaderConstant*>& constants,
+            bool recursive = false
+        );
         /**
          * Performs the actual pre-compilation/pre-processing over the shader files
          * This step is kinda big, replaces variables names on sVariableReplacement,
          * ensures #include directives are correctly handled
          * and takes care of attribute comments for the wallpaper engine specifics
-         *
-         * @return The shader contents ready to be used by OpenGL
          */
-        std::string precompile ();
+        void precompile ();
+        /**
+         * @return The compiled shader's text (if available)
+         */
+        std::string& getCompiled ();
+
         /**
          * Searches the list of parameters available for the parameter with the given value
          *
@@ -225,6 +237,10 @@ namespace WallpaperEngine::Render::Shaders
          * The combos the shader should be generated with
          */
          std::map <std::string, int> m_combos;
+         /**
+          * The shader constants with values for variables inside the shader
+          */
+         const std::map<std::string, CShaderConstant*>& m_constants;
          /**
           * Whether this compilation is a recursive one or not
           */

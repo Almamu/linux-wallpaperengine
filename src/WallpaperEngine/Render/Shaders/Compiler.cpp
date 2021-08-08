@@ -9,6 +9,9 @@
 
 // shader compiler
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
+#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h>
+#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>
+#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
@@ -21,14 +24,21 @@ using namespace WallpaperEngine::Core;
 
 namespace WallpaperEngine::Render::Shaders
 {
-    Compiler::Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, std::map<std::string, int> combos, bool recursive) :
-        m_combos (std::move(combos)),
+    Compiler::Compiler (
+            Irrlicht::CContext* context,
+            irr::io::path& file,
+            Type type,
+            std::map<std::string, int> combos,
+            const std::map<std::string, CShaderConstant*>& constants,
+            bool recursive) :
+        m_combos (combos),
         m_recursive (recursive),
         m_type (type),
         m_file (file),
         m_error (""),
         m_errorInfo (""),
-        m_context (context)
+        m_context (context),
+        m_constants (constants)
     {
         this->m_content =WallpaperEngine::FileSystem::loadFullFile (file);
     }
@@ -209,9 +219,11 @@ namespace WallpaperEngine::Render::Shaders
 
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, true);
+        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, this->m_constants, true);
 
-        return loader.precompile ();
+        loader.precompile ();
+
+        return loader.getCompiled ();
     }
 
     std::string Compiler::lookupReplaceSymbol (std::string symbol)
@@ -233,7 +245,12 @@ namespace WallpaperEngine::Render::Shaders
         return symbol;
     }
 
-    std::string Compiler::precompile()
+    std::string& Compiler::getCompiled ()
+    {
+        return this->m_compiledContent;
+    }
+
+    void Compiler::precompile()
     {
     #define BREAK_IF_ERROR if (this->m_error == true) { throw std::runtime_error ("ERROR PRE-COMPILING SHADER" + this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
@@ -475,10 +492,11 @@ namespace WallpaperEngine::Render::Shaders
         if (this->m_recursive == false)
         {
             std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
-            std::cout << this->m_compiledContent << std::endl;
+            std::cout << finalCode << std::endl;
         }
 
-        return finalCode;
+        // store the final final code here
+        this->m_compiledContent = finalCode;
     #undef BREAK_IF_ERROR
     }
 
@@ -526,16 +544,19 @@ namespace WallpaperEngine::Render::Shaders
         auto range = data.find ("range");
 
         // this is not a real parameter
-        if (material == data.end () || defvalue == data.end ())
+        if (material == data.end ())
+            return;
+        auto constant = this->m_constants.find (*material);
+
+        if (constant == this->m_constants.end () && defvalue == data.end ())
         {
             if (type != "sampler2D")
-                throw std::runtime_error ("cannot parse parameter info for " + name);
-
-            return;
+                throw std::runtime_error ("cannot parse parameter data");
         }
 
         Variables::CShaderVariable* parameter = nullptr;
 
+        // TODO: SUPPORT VALUES FOR ALL THESE TYPES
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
@@ -545,7 +566,9 @@ namespace WallpaperEngine::Render::Shaders
         else if (type == "vec3")
         {
             parameter = new Variables::CShaderVariableVector3 (
-                WallpaperEngine::Core::ato3vf (*defvalue)
+                constant == this->m_constants.end ()
+                ? WallpaperEngine::Core::ato3vf (*defvalue)
+                : *(*constant).second->as <CShaderConstantVector3> ()->getValue ()
             );
         }
         else if (type == "vec2")
@@ -556,11 +579,29 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "float")
         {
-            parameter = new Variables::CShaderVariableFloat ((*defvalue).get <irr::f32> ());
+            irr::f32 value = 0;
+
+            if (constant == this->m_constants.end ())
+                value = (*defvalue).get <irr::f32> ();
+            else if ((*constant).second->is <CShaderConstantFloat> () == true)
+                value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
+            else if ((*constant).second->is <CShaderConstantInteger> () == true)
+                value = *(*constant).second->as <CShaderConstantInteger> ()->getValue ();
+
+            parameter = new Variables::CShaderVariableFloat (value);
         }
         else if (type == "int")
         {
-            parameter = new Variables::CShaderVariableInteger ((*defvalue).get <irr::s32> ());
+            irr::s32 value = 0;
+
+            if (constant == this->m_constants.end ())
+                value = (*defvalue).get <irr::s32> ();
+            else if ((*constant).second->is <CShaderConstantFloat> () == true)
+                value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
+            else if ((*constant).second->is <CShaderConstantInteger> () == true)
+                value = *(*constant).second->as <CShaderConstantInteger> ()->getValue ();
+
+            parameter = new Variables::CShaderVariableInteger (value);
         }
         else if (type == "sampler2D")
         {

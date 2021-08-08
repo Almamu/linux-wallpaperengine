@@ -42,12 +42,18 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     irr::io::path fragPath = this->m_context->resolveFragmentShader (pass->getShader ());
     // register fragment shader
     this->m_fragShader = new Render::Shaders::Compiler (
-        this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false
+        this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Pixel,
+        pass->getCombos (), pass->getConstants (), false
     );
+    // compile fragment shader
+    this->m_fragShader->precompile ();
     // register vertex shader, combos come from the fragment as it can sometimes define them
     this->m_vertShader = new Render::Shaders::Compiler (
-        this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Vertex, this->m_fragShader->getCombos (), false
+            this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Vertex,
+            this->m_fragShader->getCombos (), pass->getConstants (), false
     );
+    // compile vertex shader
+    this->m_vertShader->precompile ();
     this->setupTextures ();
     // initialize material data and compile shader used for this pass
     this->m_irrlichtMaterial.Wireframe = false;
@@ -56,8 +62,8 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     this->m_irrlichtMaterial.setFlag (irr::video::EMF_BLEND_OPERATION, true);
     this->m_irrlichtMaterial.MaterialType = (irr::video::E_MATERIAL_TYPE)
         this->m_context->getDevice ()->getVideoDriver ()->getGPUProgrammingServices ()->addHighLevelShaderMaterial (
-            this->m_vertShader->precompile ().c_str (), "main", irr::video::EVST_VS_2_0,
-            this->m_fragShader->precompile ().c_str (), "main", irr::video::EPST_PS_2_0,
+            this->m_vertShader->getCompiled ().c_str (), "main", irr::video::EVST_VS_2_0,
+            this->m_fragShader->getCompiled ().c_str (), "main", irr::video::EPST_PS_2_0,
             this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
         );
 
