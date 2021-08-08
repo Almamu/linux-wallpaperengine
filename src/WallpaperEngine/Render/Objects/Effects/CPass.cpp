@@ -178,24 +178,34 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
     char resolution [22];
     char sampler [12];
     char rotation [20];
+    char translation [23];
 
     irr::f32 textureRotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
 
     for (int index = 0; textureCur != textureEnd; textureCur ++, index ++)
     {
-        irr::s32 textureResolution [4] = {
-            static_cast<irr::s32>((*textureCur)->getSize ().Width),
-            static_cast<irr::s32>((*textureCur)->getSize ().Height),
-            1, 1
+        // TODO: CHECK THESE VALUES, DOCUMENTATION SAYS THAT FIRST TWO ELEMENTS SHOULD BE WIDTH AND HEIGHT
+        // TODO: BUT IN REALITY THEY DO NOT SEEM TO BE THAT, NOT HAVING SUPPORT FOR ATTRIBUTES DOESN'T HELP EITHER
+        irr::f32 textureResolution [4] = {
+            1.0, -1.0, 1.0, 1.0
+        };
+        irr::f32 textureTranslation [2] = {
+            0, 0
         };
 
         sprintf (resolution, "g_Texture%dResolution", index);
         sprintf (sampler, "g_Texture%d", index);
         sprintf (rotation, "g_Texture%dRotation", index);
+        sprintf (translation, "g_Texture%dTranslation", index);
 
         services->setVertexShaderConstant (resolution, textureResolution, 4);
+        services->setPixelShaderConstant (resolution, textureResolution, 4);
+        services->setVertexShaderConstant (sampler, &index, 1);
         services->setPixelShaderConstant (sampler, &index, 1);
         services->setVertexShaderConstant (rotation, textureRotation, 4);
+        services->setPixelShaderConstant (rotation, textureRotation, 4);
+        services->setVertexShaderConstant (translation, textureTranslation, 2);
+        services->setPixelShaderConstant (translation, textureTranslation, 2);
     }
 
     // set variables for time
