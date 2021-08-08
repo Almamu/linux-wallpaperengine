@@ -19,6 +19,7 @@ enum BACKGROUND_RUN_MODE
 };
 
 WallpaperEngine::Irrlicht::CContext* IrrlichtContext = nullptr;
+irr::f32 g_Time;
 
 void print_help (const char* route)
 {
@@ -195,6 +196,7 @@ int main (int argc, char* argv[])
             continue;
 
         startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
+        g_Time = startTime / 1000.0f;
 
         IrrlichtContext->renderFrame (wallpaper);
 

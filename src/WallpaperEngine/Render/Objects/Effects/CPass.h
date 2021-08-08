@@ -38,5 +38,7 @@ namespace WallpaperEngine::Render::Objects::Effects
 
         Render::Shaders::Compiler* m_fragShader;
         Render::Shaders::Compiler* m_vertShader;
+
+        std::vector<irr::video::ITexture*> m_textures;
     };
 }

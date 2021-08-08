@@ -19,6 +19,8 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 
 using namespace WallpaperEngine::Render::Objects::Effects;
 
+extern irr::f32 g_Time;
+
 CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, irr::video::ITexture* texture) :
     m_material (material),
     m_pass (pass),
@@ -79,34 +81,7 @@ const irr::video::SMaterial& CPass::getMaterial () const
 
 void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
 {
-    irr::f32 g_Texture0 = 0;
-    irr::f32 g_Texture1 = 1;
-    irr::f32 g_Texture2 = 2;
-    irr::f32 g_Texture3 = 3;
-    irr::f32 g_Texture4 = 4;
-    irr::f32 g_Texture5 = 5;
-    irr::f32 g_Texture6 = 6;
-    irr::f32 g_Texture7 = 7;
-
     const Core::Objects::CImage* image = this->m_material->getImage ()->getImage ();
-
-    irr::f32 g_Texture0Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture1Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture2Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture3Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture4Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture5Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture6Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-    irr::f32 g_Texture7Rotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-
-    irr::f32 g_Texture0Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture1Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture2Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture3Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture4Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture5Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture6Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
-    irr::f32 g_Texture7Resolution [4] = { image->getSize ().X, image->getSize ().Y, image->getSize ().X, image->getSize ().Y };
 
     irr::video::IVideoDriver* driver = services->getVideoDriver ();
 
@@ -191,32 +166,35 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
 
     services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
 
-    services->setVertexShaderConstant ("g_Texture0Resolution", g_Texture0Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture1Resolution", g_Texture1Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture2Resolution", g_Texture2Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture3Resolution", g_Texture3Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture4Resolution", g_Texture4Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture5Resolution", g_Texture5Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture6Resolution", g_Texture6Resolution, 4);
-    services->setVertexShaderConstant ("g_Texture7Resolution", g_Texture7Resolution, 4);
+    auto textureCur = this->m_textures.begin ();
+    auto textureEnd = this->m_textures.end ();
 
-    services->setVertexShaderConstant ("g_Texture0Rotation", g_Texture0Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture1Rotation", g_Texture1Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture2Rotation", g_Texture2Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture3Rotation", g_Texture3Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture4Rotation", g_Texture4Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture5Rotation", g_Texture5Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture6Rotation", g_Texture6Rotation, 4);
-    services->setVertexShaderConstant ("g_Texture7Rotation", g_Texture7Rotation, 4);
+    char resolution [22];
+    char sampler [12];
+    char rotation [20];
 
-    services->setPixelShaderConstant ("g_Texture0", &g_Texture0, 1);
-    services->setPixelShaderConstant ("g_Texture1", &g_Texture1, 1);
-    services->setPixelShaderConstant ("g_Texture2", &g_Texture2, 1);
-    services->setPixelShaderConstant ("g_Texture3", &g_Texture3, 1);
-    services->setPixelShaderConstant ("g_Texture4", &g_Texture4, 1);
-    services->setPixelShaderConstant ("g_Texture5", &g_Texture5, 1);
-    services->setPixelShaderConstant ("g_Texture6", &g_Texture6, 1);
-    services->setPixelShaderConstant ("g_Texture7", &g_Texture7, 1);
+    irr::f32 textureRotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
+
+    for (int index = 0; textureCur != textureEnd; textureCur ++, index ++)
+    {
+        irr::s32 textureResolution [4] = {
+            static_cast<irr::s32>((*textureCur)->getSize ().Width),
+            static_cast<irr::s32>((*textureCur)->getSize ().Height),
+            1, 1
+        };
+
+        sprintf (resolution, "g_Texture%dResolution", index);
+        sprintf (sampler, "g_Texture%d", index);
+        sprintf (rotation, "g_Texture%dRotation", index);
+
+        services->setVertexShaderConstant (resolution, textureResolution, 4);
+        services->setPixelShaderConstant (sampler, &index, 1);
+        services->setVertexShaderConstant (rotation, textureRotation, 4);
+    }
+
+    // set variables for time
+    services->setVertexShaderConstant ("g_Time", &g_Time, 1);
+    services->setPixelShaderConstant ("g_Time", &g_Time, 1);
 }
 
 void CPass::setupShaderVariables ()
@@ -271,15 +249,16 @@ void CPass::setupTextures ()
 
     for (int textureNumber = 0; textureCur != textureEnd; textureCur ++, textureNumber ++)
     {
+        irr::video::ITexture* texture = this->m_inputTexture;
+
         // XXXHACK: TODO: PROPERLY DETECT WHERE THE INPUT TEXTURE SHOULD BE USED IN THE SHADER GRAPH
-        if (textureNumber == 0)
-            this->m_irrlichtMaterial.setTexture (0, this->m_inputTexture);
-        else
+        if (textureNumber != 0)
         {
             irr::io::path texturepath = this->m_context->resolveMaterials (*textureCur);
-            irr::video::ITexture* texture = this->m_context->getDevice ()->getVideoDriver ()->getTexture (texturepath);
-
-            this->m_irrlichtMaterial.setTexture (textureNumber, texture);
+            texture = this->m_context->getDevice ()->getVideoDriver ()->getTexture (texturepath);
         }
+
+        this->m_irrlichtMaterial.setTexture (textureNumber, texture);
+        this->m_textures.push_back (texture);
     }
 }

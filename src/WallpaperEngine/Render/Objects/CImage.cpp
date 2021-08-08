@@ -3,8 +3,6 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
 
-extern irr::f32 g_Time;
-
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_image (image)
@@ -150,7 +148,7 @@ void CImage::generateMaterial (irr::video::ITexture* resultTexture)
     this->m_irrlichtMaterial.setFlag (irr::video::EMF_BLEND_OPERATION, true);
     this->m_irrlichtMaterial.Wireframe = false;
     this->m_irrlichtMaterial.Lighting = false;
-    
+
     /// TODO: XXXHACK: This material is used to flip textures upside down based on the amount of passes
     /// TODO: XXXHACK: This fixes an issue with opengl render that I had no better idea of how to solve
     /// TODO: XXXHACK: For the love of god, If you have a better fix, please LET ME KNOW!
