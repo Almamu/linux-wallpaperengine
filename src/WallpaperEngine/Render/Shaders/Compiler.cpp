@@ -501,15 +501,15 @@ namespace WallpaperEngine::Render::Shaders
             // if no combo is defined just load the default settings
             if ((*defvalue).is_number_float ())
             {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::f32> ()) + "\n";
+                throw std::runtime_error ("float combos not supported");
             }
             else if ((*defvalue).is_number_integer ())
             {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + std::to_string ((*defvalue).get <irr::s32> ()) + "\n";
+                this->m_combos.insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <irr::s32> ()));
             }
             else if ((*defvalue).is_string ())
             {
-                this->m_compiledContent += "#define " + (*combo).get <std::string> () + " " + (*defvalue).get <std::string> () + "\n";
+                throw std::runtime_error ("string combos not supported");
             }
             else
             {
