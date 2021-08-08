@@ -205,25 +205,7 @@ namespace WallpaperEngine::Irrlicht
         header = this->parseHeader (input);
         mipmap = *header->mipmaps.begin ();
 
-        // relevant shaders are currently drawing these masks opaque; return a transparent image instead
-        if (
-            input->getFileName ().find ("materials/flowmask.tex") != std::string::npos ||
-            input->getFileName ().find ("godrays_downsample2_mask") != std::string::npos ||
-            input->getFileName ().find ("materials/util/white.tex") != std::string::npos
-        )
-        {
-            this->m_context->getDevice ()->getLogger ()->log (
-                    "LOAD TEX: Skipping broken mask", input->getFileName ().c_str (), irr::ELL_INFORMATION
-            );
-
-            irr::u32 width = header->width;
-            irr::u32 height = header->height;
-
-            image = this->m_context->getDevice ()->getVideoDriver ()->createImage (
-                irr::video::ECF_A8R8G8B8, irr::core::dimension2d <irr::u32> (width, height)
-            );
-        }
-        else if (header->freeimageFormat == FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+        if (header->freeimageFormat == FREE_IMAGE_FORMAT::FIF_UNKNOWN)
         {
             image = this->m_context->getDevice ()->getVideoDriver ()->createImage (
                     irr::video::ECF_A8R8G8B8, irr::core::dimension2d<irr::u32> (header->width, header->height)
