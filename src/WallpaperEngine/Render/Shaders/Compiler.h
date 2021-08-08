@@ -52,7 +52,7 @@ namespace WallpaperEngine::Render::Shaders
          * @param combos Settings for the shader
          * @param recursive Whether the compiler should add base definitions or not
          */
-        Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive = false);
+        Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, std::map<std::string, int> combos, bool recursive = false);
         /**
          * Performs the actual pre-compilation/pre-processing over the shader files
          * This step is kinda big, replaces variables names on sVariableReplacement,
@@ -74,6 +74,10 @@ namespace WallpaperEngine::Render::Shaders
          * @return The list of parameters available for this shader with their default values
          */
         const std::vector <Variables::CShaderVariable*>& getParameters () const;
+        /**
+         * @return The list of combos available for this shader after compilation
+         */
+        const std::map <std::string, int>& getCombos () const;
 
     private:
         /**
@@ -220,7 +224,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The combos the shader should be generated with
          */
-         const std::map <std::string, int>& m_combos;
+         std::map <std::string, int> m_combos;
          /**
           * Whether this compilation is a recursive one or not
           */

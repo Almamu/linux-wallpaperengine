@@ -44,9 +44,9 @@ CPass::CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::I
     this->m_fragShader = new Render::Shaders::Compiler (
         this->m_context, fragPath, Render::Shaders::Compiler::Type::Type_Pixel, pass->getCombos (), false
     );
-    // register vertex shader
+    // register vertex shader, combos come from the fragment as it can sometimes define them
     this->m_vertShader = new Render::Shaders::Compiler (
-        this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Vertex, pass->getCombos (), false
+        this->m_context, vertPath, Render::Shaders::Compiler::Type::Type_Vertex, this->m_fragShader->getCombos (), false
     );
     this->setupTextures ();
     // initialize material data and compile shader used for this pass

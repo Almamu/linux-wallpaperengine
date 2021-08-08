@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <utility>
 
 // filesystem
 #include <WallpaperEngine/FileSystem/FileSystem.h>
@@ -20,8 +21,8 @@ using namespace WallpaperEngine::Core;
 
 namespace WallpaperEngine::Render::Shaders
 {
-    Compiler::Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, const std::map<std::string, int>& combos, bool recursive) :
-        m_combos (combos),
+    Compiler::Compiler (Irrlicht::CContext* context, irr::io::path& file, Type type, std::map<std::string, int> combos, bool recursive) :
+        m_combos (std::move(combos)),
         m_recursive (recursive),
         m_type (type),
         m_file (file),
@@ -29,43 +30,7 @@ namespace WallpaperEngine::Render::Shaders
         m_errorInfo (""),
         m_context (context)
     {
-        // begin with an space so it gets ignored properly on parse
-        if (this->m_recursive == false)
-        {
-            // compatibility layer for OpenGL shaders
-            this->m_content =   "#version 120\n"
-                                "#define highp\n"
-                                "#define mediump\n"
-                                "#define lowp\n"
-                                "#define mul(x, y) (y * x)\n"
-                                "#define frac fract\n"
-                                "#define CAST2(x) (vec2(x))\n"
-                                "#define CAST3(x) (vec3(x))\n"
-                                "#define CAST4(x) (vec4(x))\n"
-                                "#define CAST3X3(x) (mat3(x))\n"
-                                "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
-                                "#define texSample2D texture2D\n"
-                                "#define texSample2DLod texture2DLod\n"
-                                "#define texture2DLod texture2D\n"
-                                "#define atan2 atan\n"
-                                "#define ddx dFdx\n"
-                                "#define ddy(x) dFdy(-(x))\n"
-                                "#define GLSL 1\n\n";
-
-            auto cur = this->m_combos.begin ();
-            auto end = this->m_combos.end ();
-
-            for (; cur != end; cur ++)
-            {
-                this->m_content += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
-            }
-        }
-        else
-        {
-            this->m_content = "";
-        }
-
-        this->m_content.append (WallpaperEngine::FileSystem::loadFullFile (file));
+        this->m_content =WallpaperEngine::FileSystem::loadFullFile (file);
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -471,13 +436,49 @@ namespace WallpaperEngine::Render::Shaders
             }
         }
 
+        std::string finalCode;
+
+        if (this->m_recursive == false)
+        {
+            // add the opengl compatibility at the top
+            finalCode =   "#version 120\n"
+                          "#define highp\n"
+                          "#define mediump\n"
+                          "#define lowp\n"
+                          "#define mul(x, y) (y * x)\n"
+                          "#define frac fract\n"
+                          "#define CAST2(x) (vec2(x))\n"
+                          "#define CAST3(x) (vec3(x))\n"
+                          "#define CAST4(x) (vec4(x))\n"
+                          "#define CAST3X3(x) (mat3(x))\n"
+                          "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
+                          "#define texSample2D texture2D\n"
+                          "#define texSample2DLod texture2DLod\n"
+                          "#define texture2DLod texture2D\n"
+                          "#define atan2 atan\n"
+                          "#define ddx dFdx\n"
+                          "#define ddy(x) dFdy(-(x))\n"
+                          "#define GLSL 1\n\n";
+
+            // add combo values
+            auto cur = this->m_combos.begin ();
+            auto end = this->m_combos.end ();
+
+            for (; cur != end; cur ++)
+            {
+                finalCode += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
+            }
+        }
+
+        finalCode += this->m_compiledContent;
+
         if (this->m_recursive == false)
         {
             std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
             std::cout << this->m_compiledContent << std::endl;
         }
 
-        return this->m_compiledContent;
+        return finalCode;
     #undef BREAK_IF_ERROR
     }
 
@@ -563,6 +564,17 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "sampler2D")
         {
+            // samplers can have special requirements, check what sampler we're working with and create definitions
+            // if needed
+            auto combo = data.find ("combo");
+
+            if (combo != data.end ())
+            {
+                // TODO: CHECK WHAT TEXTURE THIS REFERS TO
+                // add the new combo to the list
+                this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
+            }
+
             // samplers are not saved, we can ignore them for now
             return;
         }
@@ -598,6 +610,11 @@ namespace WallpaperEngine::Render::Shaders
     const std::vector <Variables::CShaderVariable*>& Compiler::getParameters () const
     {
         return this->m_parameters;
+    }
+
+    const std::map <std::string, int>& Compiler::getCombos () const
+    {
+        return this->m_combos;
     }
 
     std::map<std::string, std::string>  Compiler::sVariableReplacement =
