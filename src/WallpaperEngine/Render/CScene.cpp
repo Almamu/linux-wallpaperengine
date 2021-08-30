@@ -9,13 +9,14 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
-    CWallpaper (scene, Type, context)
+CScene::CScene (Core::CScene* scene, CContainer* container) :
+    CWallpaper (scene, Type, container)
 {
+    // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
     this->m_camera->setOrthogonalProjection (
-            scene->getOrthogonalProjection ()->getWidth (),
-            scene->getOrthogonalProjection ()->getHeight ()
+        scene->getOrthogonalProjection ()->getWidth (),
+        scene->getOrthogonalProjection ()->getHeight ()
     );
 
     auto cur = scene->getObjects ().begin ();
@@ -28,18 +29,20 @@ CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
         if ((*cur)->getId () > highestId)
             highestId = (*cur)->getId ();
 
+        CObject* object = nullptr;
+
         if ((*cur)->is<Core::Objects::CImage>() == true)
         {
-            new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
+            object = new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
         }
         else if ((*cur)->is<Core::Objects::CSound>() == true)
         {
-            new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
+            object = new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
         }
-    }
 
-    this->m_nextId = ++highestId;
-    this->setAutomaticCulling (irr::scene::EAC_OFF);
+        if (object != nullptr)
+            this->m_objects.emplace_back (object);
+    }
 }
 
 CCamera* CScene::getCamera () const
@@ -54,6 +57,11 @@ int CScene::nextId ()
 
 void CScene::render ()
 {
+    auto cur = this->m_objects.begin ();
+    auto end = this->m_objects.end ();
+
+    for (; cur != end; cur ++)
+        (*cur)->render ();
 }
 
 Core::CScene* CScene::getScene ()

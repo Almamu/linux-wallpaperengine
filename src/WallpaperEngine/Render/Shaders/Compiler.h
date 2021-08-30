@@ -31,12 +31,9 @@ namespace WallpaperEngine::Render::Shaders
         {
             Type_Vertex = 0,
             Type_Pixel = 1,
+            Type_Include = 2
         };
 
-        /**
-         * List of variables to replace when pre-process is performed
-         */
-        static std::map<std::string, std::string> sVariableReplacement;
         /**
          * Types of variables the pre-processor understands
          */
@@ -55,8 +52,8 @@ namespace WallpaperEngine::Render::Shaders
          * @param recursive Whether the compiler should add base definitions or not
          */
         Compiler (
-            Irrlicht::CContext* context,
-            irr::io::path& file,
+            CContainer* container,
+            std::string filename,
             Type type,
             std::map<std::string, int> combos,
             const std::map<std::string, CShaderConstant*>& constants,
@@ -174,14 +171,6 @@ namespace WallpaperEngine::Render::Shaders
          * @return The compiled contents
          */
         std::string lookupShaderFile (std::string filename);
-        /**
-         * Searches for the given symbol in the replace table
-         *
-         * @param symbol The symbol to look for
-         *
-         * @return The symbol it should be replaced with
-         */
-        std::string lookupReplaceSymbol (std::string symbol);
 
         /**
          * @return Whether the character in the current position is a character or not
@@ -208,7 +197,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The shader file this instance is loading
          */
-        irr::io::path m_file;
+        std::string m_file;
         /**
          * The original file content
          */
@@ -246,8 +235,8 @@ namespace WallpaperEngine::Render::Shaders
           */
          bool m_recursive;
          /**
-          * The irrlicht context in use
+          * The container to load files from
           */
-         Irrlicht::CContext* m_context;
+         CContainer* m_container;
     };
 }

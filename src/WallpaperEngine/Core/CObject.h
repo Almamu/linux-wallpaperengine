@@ -5,6 +5,7 @@
 #include "Core.h"
 
 #include "WallpaperEngine/Core/Objects/CEffect.h"
+#include "WallpaperEngine/Assets/CContainer.h"
 
 namespace WallpaperEngine::Core::Objects
 {
@@ -14,11 +15,12 @@ namespace WallpaperEngine::Core::Objects
 namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
 
     class CObject
     {
     public:
-        static CObject* fromJSON (json data);
+        static CObject* fromJSON (json data, CContainer* container);
 
         template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }
@@ -29,9 +31,9 @@ namespace WallpaperEngine::Core
         const std::vector<irr::u32>& getDependencies () const;
         const int getId () const;
 
-        const irr::core::vector3df& getOrigin () const;
-        const irr::core::vector3df& getScale () const;
-        const irr::core::vector3df& getAngles () const;
+        const glm::vec3& getOrigin () const;
+        const glm::vec3& getScale () const;
+        const glm::vec3& getAngles () const;
         const std::string& getName () const;
 
         bool isVisible ();
@@ -41,9 +43,9 @@ namespace WallpaperEngine::Core
             irr::u32 id,
             std::string name,
             std::string type,
-            const irr::core::vector3df& origin,
-            const irr::core::vector3df& scale,
-            const irr::core::vector3df& angles
+            const glm::vec3& origin,
+            const glm::vec3& scale,
+            const glm::vec3& angles
         );
 
         void insertEffect (Objects::CEffect* effect);
@@ -54,9 +56,9 @@ namespace WallpaperEngine::Core
         bool m_visible;
         irr::u32 m_id;
         std::string m_name;
-        irr::core::vector3df m_origin;
-        irr::core::vector3df m_scale;
-        irr::core::vector3df m_angles;
+        glm::vec3 m_origin;
+        glm::vec3 m_scale;
+        glm::vec3 m_angles;
 
         std::vector<Objects::CEffect*> m_effects;
         std::vector<irr::u32> m_dependencies;

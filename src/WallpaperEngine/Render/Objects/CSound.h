@@ -17,7 +17,6 @@ namespace WallpaperEngine::Render::Objects
         CSound (CScene* scene, Core::Objects::CSound* sound);
 
         void render () override;
-        const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
 
     protected:
         static const std::string Type;
@@ -32,6 +31,5 @@ namespace WallpaperEngine::Render::Objects
         std::vector <void*> m_soundBuffer;
 
         Core::Objects::CSound* m_sound;
-        irr::core::aabbox3d<irr::f32> m_boundingBox;
     };
 }

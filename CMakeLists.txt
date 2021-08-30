@@ -6,9 +6,13 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 
+add_compile_definitions(DEBUG=1)
+
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLFW3 3.1 REQUIRED)
+find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(Irrlicht REQUIRED)
@@ -17,11 +21,22 @@ find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFmpeg REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} src include)
+include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${GLEW_INCLUDE_DIR} ${glfw3_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} src include)
 
 add_executable(
         wallengine
         main.cpp
+
+        src/WallpaperEngine/Assets/CContainer.h
+        src/WallpaperEngine/Assets/CContainer.cpp
+        src/WallpaperEngine/Assets/CCombinedContainer.h
+        src/WallpaperEngine/Assets/CCombinedContainer.cpp
+        src/WallpaperEngine/Assets/CDirectory.h
+        src/WallpaperEngine/Assets/CDirectory.cpp
+        src/WallpaperEngine/Assets/CPackage.h
+        src/WallpaperEngine/Assets/CPackage.cpp
+        src/WallpaperEngine/Assets/CTexture.h
+        src/WallpaperEngine/Assets/CTexture.cpp
 
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
@@ -163,4 +178,4 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
-target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES})
+target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLFW3_LIBRARY} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES})

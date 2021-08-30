@@ -21,12 +21,13 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (
-            Irrlicht::CContext* context,
-            irr::io::path& file,
+            CContainer* container,
+            std::string filename,
             Type type,
             std::map<std::string, int> combos,
             const std::map<std::string, CShaderConstant*>& constants,
@@ -34,13 +35,18 @@ namespace WallpaperEngine::Render::Shaders
         m_combos (combos),
         m_recursive (recursive),
         m_type (type),
-        m_file (file),
+        m_file (std::move(filename)),
         m_error (""),
         m_errorInfo (""),
-        m_context (context),
-        m_constants (constants)
+        m_constants (constants),
+        m_container (container)
     {
-        this->m_content =WallpaperEngine::FileSystem::loadFullFile (file);
+        if (type == Type_Vertex)
+            this->m_content = this->m_container->readVertexShader (this->m_file);
+        else if (type == Type_Pixel)
+            this->m_content = this->m_container->readFragmentShader (this->m_file);
+        else if (type == Type_Include)
+            this->m_content = this->m_container->readIncludeShader (this->m_file);
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -207,42 +213,13 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::lookupShaderFile (std::string filename)
     {
-        // get file information
-        irr::io::path shader = this->m_context->resolveIncludeShader (filename);
-
-        if (shader == "")
-        {
-            this->m_error = true;
-            this->m_errorInfo = "Cannot find file " + filename + " to include";
-            return "";
-        }
-
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, this->m_constants, true);
+        Compiler loader (this->m_container, std::move (filename), Type_Include, this->m_combos, this->m_constants, true);
 
         loader.precompile ();
 
         return loader.getCompiled ();
-    }
-
-    std::string Compiler::lookupReplaceSymbol (std::string symbol)
-    {
-        auto cur = sVariableReplacement.begin ();
-        auto end = sVariableReplacement.end ();
-
-        while (cur != end)
-        {
-            if (cur->first == symbol)
-            {
-                return cur->second;
-            }
-
-            cur ++;
-        }
-
-        // if there is no replacement, return the original
-        return symbol;
     }
 
     std::string& Compiler::getCompiled ()
@@ -325,52 +302,59 @@ namespace WallpaperEngine::Render::Shaders
                     }
                 }
             }
-            else if (*it == 'a')
+            /*else if (*it == 'a')
             {
-                // find attribute definitions
                 if (this->peekString ("attribute", it) == true)
                 {
                     this->ignoreSpaces (it);
-                    std::string type = this->extractType (it); BREAK_IF_ERROR
-                    this->ignoreSpaces (it);
-                    std::string name = this->extractName (it); BREAK_IF_ERROR
-                    this->ignoreSpaces (it);
-                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
-                    this->ignoreSpaces (it);
-                    this->expectSemicolon (it); BREAK_IF_ERROR
-
-                    this->m_compiledContent += "// attribute " + type + " " + name + array;
-                    this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
                 }
-                else
-                {
-                    // check for types first
-                    std::string type = this->extractType (it);
-
-                    // types not found, try names
-                    if (this->m_error == false)
-                    {
-                        this->m_compiledContent += type;
-                    }
-                    else
-                    {
-                        this->m_error = false;
-                        std::string name = this->extractName (it);
-
-                        if (this->m_error == false)
-                        {
-                            // check if the name is a translated one or not
-                            this->m_compiledContent += this->lookupReplaceSymbol (name);
-                        }
-                        else
-                        {
-                            this->m_error = false;
-                            this->m_compiledContent += *it;
-                            it ++;
-                        }
-                    }
-                }
-            }
+            }*/
+//            else if (*it == 'a')
+//            {
+//                // find attribute definitions
+//                if (this->peekString ("attribute", it) == true)
+//                {
+//                    this->ignoreSpaces (it);
+//                    std::string type = this->extractType (it); BREAK_IF_ERROR
+//                    this->ignoreSpaces (it);
+//                    std::string name = this->extractName (it); BREAK_IF_ERROR
+//                    this->ignoreSpaces (it);
+//                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
+//                    this->ignoreSpaces (it);
+//                    this->expectSemicolon (it); BREAK_IF_ERROR
+//
+//                    this->m_compiledContent += "// attribute " + type + " " + name + array;
+//                    this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
+//                }
+//                else
+//                {
+//                    // check for types first
+//                    std::string type = this->extractType (it);
+//
+//                    // types not found, try names
+//                    if (this->m_error == false)
+//                    {
+//                        this->m_compiledContent += type;
+//                    }
+//                    else
+//                    {
+//                        this->m_error = false;
+//                        std::string name = this->extractName (it);
+//
+//                        if (this->m_error == false)
+//                        {
+//                            // check if the name is a translated one or not
+//                            this->m_compiledContent += this->lookupReplaceSymbol (name);
+//                        }
+//                        else
+//                        {
+//                            this->m_error = false;
+//                            this->m_compiledContent += *it;
+//                            it ++;
+//                        }
+//                    }
+//                }
+//            }
             else if (*it == '/')
             {
                 if (this->peekString ("//", it) == true)
@@ -441,13 +425,12 @@ namespace WallpaperEngine::Render::Shaders
                     if (this->m_error == false)
                     {
                         // check if the name is a translated one or not
-                        this->m_compiledContent += this->lookupReplaceSymbol (name);
+                        this->m_compiledContent += name;
                     }
                     else
                     {
                         this->m_error = false;
-                        this->m_compiledContent += *it;
-                        it ++;
+                        this->m_compiledContent += *it++;
                     }
                 }
             }
@@ -491,7 +474,10 @@ namespace WallpaperEngine::Render::Shaders
 
         if (this->m_recursive == false)
         {
-            std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            if (this->m_type == Type_Vertex)
+                std::cout << "======================== COMPILED VERTEX SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            else
+                std::cout << "======================== COMPILED FRAGMENT SHADER " << this->m_file.c_str () << " ========================" << std::endl;
             std::cout << finalCode << std::endl;
         }
 
@@ -560,21 +546,21 @@ namespace WallpaperEngine::Render::Shaders
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
-                WallpaperEngine::Core::ato3vf (*defvalue)
+                WallpaperEngine::Core::aToVector3 (*defvalue)
             );
         }
         else if (type == "vec3")
         {
             parameter = new Variables::CShaderVariableVector3 (
                 constant == this->m_constants.end ()
-                ? WallpaperEngine::Core::ato3vf (*defvalue)
+                ? WallpaperEngine::Core::aToVector3 (*defvalue)
                 : *(*constant).second->as <CShaderConstantVector3> ()->getValue ()
             );
         }
         else if (type == "vec2")
         {
             parameter = new Variables::CShaderVariableVector2 (
-                WallpaperEngine::Core::ato2vf (*defvalue)
+                WallpaperEngine::Core::aToVector2 (*defvalue)
             );
         }
         else if (type == "float")
@@ -657,16 +643,6 @@ namespace WallpaperEngine::Render::Shaders
     {
         return this->m_combos;
     }
-
-    std::map<std::string, std::string>  Compiler::sVariableReplacement =
-    {
-        // attribute vec3 a_position
-        {"a_Position", "gl_Vertex.xyz"},
-        // attribute vec2 a_TexCoord
-        {"a_TexCoord", "gl_MultiTexCoord0.xy"},
-        // attribute vec3 a_Normal
-        {"a_Normal", "gl_Normal.xyz"}
-    };
 
     std::vector<std::string> Compiler::sTypes =
     {

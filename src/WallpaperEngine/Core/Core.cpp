@@ -2,6 +2,7 @@
 #include "Core.h"
 
 using namespace WallpaperEngine;
+using namespace WallpaperEngine::Core::Types;
 
 irr::core::vector3df Core::ato3vf(const char *str)
 {
@@ -55,9 +56,50 @@ irr::video::SColor Core::atoSColor (const char *str)
     return irr::video::SColor (255, r, g, b);
 }
 
+glm::vec3 Core::aToVector3 (const char* str)
+{
+    float x = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float y = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float z = strtof (str, const_cast <char**> (&str));
+
+    return {x, y, z};
+}
+
+glm::vec2 Core::aToVector2 (const char* str)
+{
+    float x = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float y = strtof (str, const_cast <char**> (&str));
+
+    return {x, y};
+}
+
+glm::vec3 Core::aToVector3 (const std::string& str)
+{
+    return Core::aToVector3 (str.c_str ());
+}
+
+glm::vec2 Core::aToVector2 (const std::string& str)
+{
+    return Core::aToVector2 (str.c_str ());
+}
+
 irr::video::SColor Core::atoSColor (const std::string& str)
 {
     return Core::atoSColor (str.c_str ());
+}
+
+FloatColor Core::aToColor (const char* str)
+{
+    float r = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
+    float g = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
+    float b = strtof (str, const_cast<char **>(&str));
+
+    return {r, g, b, 1.0f};
+}
+
+FloatColor Core::aToColor (const std::string& str)
+{
+    return aToColor (str.c_str ());
 }
 
 nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg)

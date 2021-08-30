@@ -9,9 +9,9 @@ CSound::CSound (
         bool visible,
         irr::u32 id,
         std::string name,
-        const irr::core::vector3df& origin,
-        const irr::core::vector3df& scale,
-        const irr::core::vector3df& angles) :
+        const glm::vec3& origin,
+        const glm::vec3& scale,
+        const glm::vec3& angles) :
         CObject (visible, id, std::move(name), Type, origin, scale, angles)
 {
 }
@@ -21,9 +21,9 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         bool visible,
         irr::u32 id,
         std::string name,
-        const irr::core::vector3df& origin,
-        const irr::core::vector3df& scale,
-        const irr::core::vector3df& angles)
+        const glm::vec3& origin,
+        const glm::vec3& scale,
+        const glm::vec3& angles)
 {
     auto sound_it = jsonFindRequired (data, "sound", "Sound information not present");
 

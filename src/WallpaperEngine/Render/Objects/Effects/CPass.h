@@ -1,44 +1,57 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "WallpaperEngine/Irrlicht/CContext.h"
 
+#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
+#include "WallpaperEngine/Assets/CTexture.h"
 
 namespace WallpaperEngine::Render::Objects::Effects
 {
+    using namespace WallpaperEngine::Render::Shaders::Variables;
+
     class CMaterial;
 
-    class CPass : public irr::video::IShaderConstantSetCallBack
+    class CPass
     {
     public:
-        CPass (Irrlicht::CContext* context, CMaterial* material, Core::Objects::Images::Materials::CPass* pass, irr::video::ITexture* texture);
+        CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
 
-        void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData) override;
-
-        irr::video::ITexture *getOutputTexture () const;
-        irr::video::ITexture* getInputTexture () const;
-
-        const irr::video::SMaterial& getMaterial () const;
+        void render (GLuint drawTo, GLuint input);
 
     private:
-        void setupShaderVariables ();
+        static GLuint compileShader (Render::Shaders::Compiler* shader, GLuint type);
         void setupTextures ();
+        void setupShaders ();
+        void setupShaderVariables ();
 
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
-        Irrlicht::CContext* m_context;
-
-        irr::video::ITexture* m_inputTexture;
-        irr::video::ITexture* m_outputTexture;
-
-        irr::video::SMaterial m_irrlichtMaterial;
+        std::vector<CTexture*> m_textures;
+        std::map<GLint,CShaderVariable*> m_variables;
+        std::map<GLint,CShaderVariable*> m_attribs;
+        std::map<GLint,int> m_uniforms;
 
         Render::Shaders::Compiler* m_fragShader;
         Render::Shaders::Compiler* m_vertShader;
 
-        std::vector<irr::video::ITexture*> m_textures;
+        GLuint m_programID;
+
+        // shader variables used temporary
+        GLint g_Texture0;
+        GLint g_Texture1;
+        GLint g_Texture2;
+        GLint g_Time;
+        GLint g_Texture0Rotation;
+        GLint g_Texture0Translation;
+        GLint g_ModelViewProjectionMatrix;
+        GLint a_TexCoord;
+        GLint a_Position;
+        GLint g_UserAlpha;
+        GLint g_Brightness;
+        GLint positionAttribute;
     };
 }

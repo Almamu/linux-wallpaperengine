@@ -21,7 +21,7 @@ namespace WallpaperEngine::Render
     class CVideo : public CWallpaper
     {
     public:
-        CVideo (Core::CVideo* video, WallpaperEngine::Irrlicht::CContext* context);
+        CVideo (Core::CVideo* video, CContainer* container);
 
         void render () override;
 

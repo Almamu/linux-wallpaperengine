@@ -7,9 +7,12 @@
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/CObject.h"
 
+#include "WallpaperEngine/Assets/CContainer.h"
+
 namespace WallpaperEngine::Core::Objects
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
 
     class CImage : public CObject
     {
@@ -18,16 +21,18 @@ namespace WallpaperEngine::Core::Objects
     public:
         static CObject* fromJSON (
                 json data,
+                CContainer* container,
                 bool visible,
                 irr::u32 id,
                 std::string name,
-                const irr::core::vector3df& origin,
-                const irr::core::vector3df& scale,
-                const irr::core::vector3df& angles
+                const glm::vec3& origin,
+                const glm::vec3& scale,
+                const glm::vec3& angles
         );
 
         const Images::CMaterial* getMaterial () const;
-        const irr::core::vector2df& getSize () const;
+        const glm::vec2& getSize () const;
+        const std::string& getAlignment () const;
 
     protected:
         CImage (
@@ -35,16 +40,18 @@ namespace WallpaperEngine::Core::Objects
                 bool visible,
                 irr::u32 id,
                 std::string name,
-                const irr::core::vector3df& origin,
-                const irr::core::vector3df& scale,
-                const irr::core::vector3df& angles,
-                const irr::core::vector2df& size
+                const glm::vec3& origin,
+                const glm::vec3& scale,
+                const glm::vec3& angles,
+                const glm::vec2& size,
+                std::string alignment
         );
 
         static const std::string Type;
 
     private:
-        irr::core::vector2df m_size;
+        glm::vec2 m_size;
         Images::CMaterial* m_material;
+        std::string m_alignment;
     };
 };

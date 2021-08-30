@@ -10,12 +10,12 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants
     class CShaderConstantInteger : public CShaderConstant
     {
     public:
-        CShaderConstantInteger (irr::s32 value);
+        CShaderConstantInteger (int32_t value);
 
-        irr::u32* getValue ();
+        int32_t* getValue ();
 
         static const std::string Type;
     protected:
-        irr::u32 m_value;
+        int32_t m_value;
     };
 }

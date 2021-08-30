@@ -19,11 +19,12 @@ namespace WallpaperEngine::Core::Objects
 
     public:
         static CParticle* fromFile (
-                const irr::io::path& filename,
+                const std::string& filename,
+                CContainer* container,
                 irr::u32 id,
                 std::string name,
-                const irr::core::vector3df& origin,
-                const irr::core::vector3df& scale
+                const glm::vec3& origin,
+                const glm::vec3& scale
         );
 
         const std::vector<Particles::CEmitter*>& getEmitters () const;
@@ -36,8 +37,8 @@ namespace WallpaperEngine::Core::Objects
             irr::u32 maxcount,
             irr::u32 id,
             std::string name,
-            const irr::core::vector3df& origin,
-            const irr::core::vector3df& scale
+            const glm::vec3& origin,
+            const glm::vec3& scale
         );
         void insertControlPoint (Particles::CControlPoint* controlpoint);
         void insertEmitter (Particles::CEmitter* emitter);

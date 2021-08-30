@@ -4,23 +4,23 @@
 
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
-CShaderVariableVector2::CShaderVariableVector2 (const irr::core::vector2df& defaultValue) :
+CShaderVariableVector2::CShaderVariableVector2 (const glm::vec2& defaultValue) :
     m_defaultValue (defaultValue),
-    m_value (irr::core::vector2df ()),
+    m_value (glm::vec2 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
 {
 }
 
-CShaderVariableVector2::CShaderVariableVector2 (const irr::core::vector2df& defaultValue, std::string name) :
+CShaderVariableVector2::CShaderVariableVector2 (const glm::vec2& defaultValue, std::string name) :
     m_defaultValue (defaultValue),
-    m_value (irr::core::vector2df ()),
+    m_value (glm::vec2 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
 {
     this->setName (std::move(name));
 }
 
 
-void CShaderVariableVector2::setValue (const irr::core::vector2df& value)
+void CShaderVariableVector2::setValue (const glm::vec2& value)
 {
     this->m_value = value;
 

@@ -7,6 +7,7 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/CObject.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
+#include "WallpaperEngine/Assets/CContainer.h"
 
 namespace WallpaperEngine::Core
 {
@@ -16,6 +17,7 @@ namespace WallpaperEngine::Core
 namespace WallpaperEngine::Core::Objects
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
 
     class CEffect
     {
@@ -28,7 +30,7 @@ namespace WallpaperEngine::Core::Objects
             Core::CObject* object
         );
 
-        static CEffect* fromJSON (json data, Core::CObject* object);
+        static CEffect* fromJSON (json data, Core::CObject* object, CContainer* container);
 
         const std::vector<std::string>& getDependencies () const;
         const std::vector<Images::CMaterial*>& getMaterials () const;
@@ -40,7 +42,7 @@ namespace WallpaperEngine::Core::Objects
         static void combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPass* pass);
         static void fbosFromJSON (json::const_iterator fbos_it, CEffect* effect);
         static void dependencyFromJSON (json::const_iterator dependencies_it, CEffect* effect);
-        static void materialsFromJSON (json::const_iterator passes_it, CEffect* effect);
+        static void materialsFromJSON (json::const_iterator passes_it, CEffect* effect, CContainer* container);
 
         void insertDependency (const std::string& dep);
         void insertMaterial (Images::CMaterial* material);

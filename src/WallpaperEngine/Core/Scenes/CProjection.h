@@ -13,12 +13,12 @@ namespace WallpaperEngine::Core::Scenes
     public:
         static CProjection* fromJSON (json data);
 
-        const irr::u32& getWidth () const;
-        const irr::u32& getHeight () const;
+        const uint32_t& getWidth () const;
+        const uint32_t& getHeight () const;
     protected:
-        CProjection (irr::u32 width, irr::u32 height);
+        CProjection (uint32_t width, uint32_t height);
     private:
-        irr::u32 m_width;
-        irr::u32 m_height;
+        uint32_t m_width;
+        uint32_t m_height;
     };
 };

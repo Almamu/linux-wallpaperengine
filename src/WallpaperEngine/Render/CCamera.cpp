@@ -1,16 +1,20 @@
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "CCamera.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Core::Types;
 
 CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
     m_camera (camera),
-    m_scene (scene)
+    m_scene (scene),
+    m_isOrthogonal (false)
 {
-    this->m_sceneCamera = scene->getContext ()->getDevice ()->getSceneManager ()->addCameraSceneNode (
-        scene, this->getEye (), this->getCenter (), scene->nextId ()
-    );
-    this->m_sceneCamera->setUpVector (this->getUp ());
+    // get the lookat position
+    // TODO: ENSURE THIS IS ONLY USED WHEN NOT DOING AN ORTOGRAPHIC CAMERA AS IT THROWS OFF POINTS
+    this->m_lookat = glm::lookAt (this->getEye (), this->getCenter (), this->getUp ());
 }
 
 CCamera::~CCamera ()
@@ -18,32 +22,42 @@ CCamera::~CCamera ()
     this->m_sceneCamera->remove ();
 }
 
-const irr::core::vector3df& CCamera::getCenter () const
+const glm::vec3& CCamera::getCenter () const
 {
     return this->m_camera->getCenter ();
 }
 
-const irr::core::vector3df& CCamera::getEye () const
+const glm::vec3& CCamera::getEye () const
 {
     return this->m_camera->getEye ();
 }
 
-const irr::core::vector3df& CCamera::getUp () const
+const glm::vec3& CCamera::getUp () const
 {
     return this->m_camera->getUp ();
 }
 
-void CCamera::setOrthogonalProjection (irr::f32 width, irr::f32 height)
+const glm::mat4& CCamera::getProjection () const
 {
-    irr::core::matrix4 identity; identity.makeIdentity ();
-    irr::core::matrix4 orthogonalProjection; orthogonalProjection.buildProjectionMatrixOrthoLH (
-        width, height,
-        this->getCenter ().Z,
-        this->getEye ().Z
-    );
+    return this->m_projection;
+}
 
-    this->m_sceneCamera->setProjectionMatrix (orthogonalProjection, true);
-    this->m_scene->getContext ()->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_PROJECTION, orthogonalProjection);
-    this->m_scene->getContext ()->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_VIEW, identity);
-    this->m_scene->getContext ()->getDevice ()->getVideoDriver ()->setTransform (irr::video::ETS_WORLD, identity);
+const glm::mat4& CCamera::getLookAt () const
+{
+    return this->m_lookat;
+}
+
+const bool CCamera::isOrthogonal () const
+{
+    return this->m_isOrthogonal;
+}
+
+void CCamera::setOrthogonalProjection (float width, float height)
+{
+    // TODO: GET THE ZNEAR AND ZFAR FROM THE BACKGROUND (IF AVAILABLE)
+    // get the orthogonal projection (the float is there to ensure the values are casted to float, so maths do work)
+    this->m_projection = glm::ortho <float> (0, width, 0, height, 0, 1000);
+    this->m_projection = glm::translate (this->m_projection, this->getEye ());
+    // update the orthogonal flag
+    this->m_isOrthogonal = true;
 }

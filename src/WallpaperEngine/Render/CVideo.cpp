@@ -4,8 +4,8 @@ using namespace WallpaperEngine;
 
 using namespace WallpaperEngine::Render;
 
-CVideo::CVideo (Core::CVideo* video, WallpaperEngine::Irrlicht::CContext* context) :
-    CWallpaper (video, Type, context)
+CVideo::CVideo (Core::CVideo* video, CContainer* container) :
+    CWallpaper (video, Type, container)
 {
     if (avformat_open_input (&m_formatCtx, video->getFilename ().c_str (), NULL, NULL) < 0)
         throw std::runtime_error ("Failed to open video file");
@@ -76,6 +76,8 @@ void CVideo::setSize (int width, int height)
 
 void CVideo::render ()
 {
+    // TODO: REWRITE
+    /*
     irr::video::IVideoDriver* driver = m_context->getDevice ()->getVideoDriver ();
     int width = driver->getScreenSize ().Width;
     int height = driver->getScreenSize ().Height;
@@ -91,7 +93,7 @@ void CVideo::render ()
     m_frameTexture = driver->addTexture ("frameTexture", m_frameImage);
     m_frameImage->drop ();
 
-    driver->draw2DImage (m_frameTexture, irr::core::vector2di(0));
+    driver->draw2DImage (m_frameTexture, irr::core::vector2di(0));*/
 }
 
 void CVideo::getNextFrame ()

@@ -1,3 +1,4 @@
+#include <WallpaperEngine/Assets/CContainer.h>
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
 #include "CProject.h"
@@ -5,18 +6,20 @@
 #include "CVideo.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Assets;
 
-CProject::CProject (std::string title, std::string type, CWallpaper* wallpaper) :
+CProject::CProject (std::string title, std::string type, CWallpaper* wallpaper, CContainer* container) :
     m_title (std::move (title)),
     m_type (std::move (type)),
-    m_wallpaper (wallpaper)
+    m_wallpaper (wallpaper),
+    m_container (container)
 {
     this->m_wallpaper->setProject (this);
 }
 
-CProject* CProject::fromFile (const irr::io::path& filename)
+CProject* CProject::fromFile (const std::string& filename, CContainer* container)
 {
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
     std::string title = *jsonFindRequired (content, "title", "Project title missing");
     std::string type = *jsonFindRequired (content, "type", "Project type missing");
@@ -28,7 +31,7 @@ CProject* CProject::fromFile (const irr::io::path& filename)
 
     if (type == "scene")
     {
-        wallpaper = CScene::fromFile (file.c_str ());
+        wallpaper = CScene::fromFile (file, container);
     }
     else if (type == "video")
     {
@@ -40,7 +43,8 @@ CProject* CProject::fromFile (const irr::io::path& filename)
     CProject* project = new CProject (
         title,
         type,
-        wallpaper
+        wallpaper,
+        container
     );
 
     if (general != content.end ())
@@ -82,6 +86,11 @@ const std::string& CProject::getType () const
 const std::vector<Projects::CProperty*>& CProject::getProperties () const
 {
     return this->m_properties;
+}
+
+CContainer* CProject::getContainer ()
+{
+    return this->m_container;
 }
 
 void CProject::insertProperty (Projects::CProperty* property)

@@ -2,10 +2,13 @@
 #include "CProject.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
+#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Types;
 
 CScene::CScene (
+        CContainer* container,
         Scenes::CCamera* camera,
         irr::video::SColorf ambientColor,
         bool bloom,
@@ -21,10 +24,11 @@ CScene::CScene (
         irr::f64 cameraShakeAmplitude,
         irr::f64 cameraShakeRoughness,
         irr::f64 cameraShakeSpeed,
-        irr::video::SColorf clearColor,
+        FloatColor clearColor,
         Scenes::CProjection* orthogonalProjection,
         irr::video::SColorf skylightColor) :
     CWallpaper (Type),
+    m_container (container),
     m_camera (camera),
     m_ambientColor (ambientColor),
     m_bloom (bloom),
@@ -46,10 +50,10 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const irr::io::path& filename)
+CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 {
-    std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename);
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
+    std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename, container);
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
     auto camera_it = jsonFindRequired (content, "camera", "Scenes must have a defined camera");
     auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
@@ -75,6 +79,7 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     auto skylightcolor_it = jsonFindRequired (*general_it, "skylightcolor", "General section must have skylight color");
 
     CScene* scene = new CScene (
+            container,
             Scenes::CCamera::fromJSON (*camera_it),
             WallpaperEngine::Core::atoSColorf (*ambientcolor_it),
             *bloom_it,
@@ -90,7 +95,7 @@ CScene* CScene::fromFile (const irr::io::path& filename)
             camerashakeamplitude,
             camerashakeroughness,
             camerashakespeed,
-            WallpaperEngine::Core::atoSColorf (*clearcolor_it),
+            WallpaperEngine::Core::aToColor (*clearcolor_it),
             Scenes::CProjection::fromJSON (*orthogonalprojection_it),
             WallpaperEngine::Core::atoSColorf (*skylightcolor_it)
     );
@@ -101,7 +106,7 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     for (; cur != end; cur ++)
     {
         scene->insertObject (
-                CObject::fromJSON (*cur)
+                CObject::fromJSON (*cur, container)
         );
     }
 
@@ -118,6 +123,11 @@ void CScene::insertObject (CObject* object)
     /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
     if (object != nullptr)
         this->m_objects.push_back (object);
+}
+
+CContainer* CScene::getContainer ()
+{
+    return this->m_container;
 }
 
 const Scenes::CCamera* CScene::getCamera () const
@@ -195,7 +205,7 @@ const irr::f64 CScene::getCameraShakeSpeed () const
     return this->m_cameraShakeSpeed;
 }
 
-const irr::video::SColorf& CScene::getClearColor () const
+const FloatColor& CScene::getClearColor () const
 {
     return this->m_clearColor;
 }

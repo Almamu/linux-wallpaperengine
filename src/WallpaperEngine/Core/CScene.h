@@ -9,17 +9,19 @@
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 #include "WallpaperEngine/Core/Scenes/CProjection.h"
+#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Core::Types;
 
     class CObject;
 
     class CScene : public CWallpaper
     {
     public:
-        static CScene* fromFile (const irr::io::path& filename);
+        static CScene* fromFile (const std::string& filename, CContainer* container);
 
         const std::vector<CObject*>& getObjects () const;
 
@@ -37,7 +39,7 @@ namespace WallpaperEngine::Core
         const irr::f64 getCameraShakeAmplitude() const;
         const irr::f64 getCameraShakeRoughness() const;
         const irr::f64 getCameraShakeSpeed() const;
-        const irr::video::SColorf& getClearColor() const;
+        const FloatColor& getClearColor() const;
         const Scenes::CProjection* getOrthogonalProjection() const;
         const irr::video::SColorf& getSkylightColor() const;
         const Scenes::CCamera* getCamera () const;
@@ -46,6 +48,7 @@ namespace WallpaperEngine::Core
         friend class CWallpaper;
 
         CScene (
+                CContainer* container,
                 Scenes::CCamera* camera,
                 irr::video::SColorf ambientColor,
                 bool bloom,
@@ -61,7 +64,7 @@ namespace WallpaperEngine::Core
                 irr::f64 cameraShakeAmplitude,
                 irr::f64 cameraShakeRoughness,
                 irr::f64 cameraShakeSpeed,
-                irr::video::SColorf clearColor,
+                FloatColor clearColor,
                 Scenes::CProjection* orthogonalProjection,
                 irr::video::SColorf skylightColor
         );
@@ -69,7 +72,10 @@ namespace WallpaperEngine::Core
         static const std::string Type;
 
         void insertObject (CObject* object);
+
+        CContainer* getContainer ();
     private:
+        CContainer* m_container;
         Scenes::CCamera* m_camera;
 
         // data from general section on the json
@@ -87,7 +93,7 @@ namespace WallpaperEngine::Core
         irr::f64 m_cameraShakeAmplitude;
         irr::f64 m_cameraShakeRoughness;
         irr::f64 m_cameraShakeSpeed;
-        irr::video::SColorf m_clearColor;
+        FloatColor m_clearColor;
         Scenes::CProjection* m_orthogonalProjection;
         irr::video::SColorf m_skylightColor;
 

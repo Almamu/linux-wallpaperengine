@@ -1,25 +1,26 @@
 #include "CCamera.h"
 
 using namespace WallpaperEngine::Core::Scenes;
+using namespace WallpaperEngine::Core::Types;
 
-CCamera::CCamera (irr::core::vector3df center, irr::core::vector3df eye, irr::core::vector3df up) :
+CCamera::CCamera (glm::vec3 center, glm::vec3 eye, glm::vec3 up) :
     m_center (center),
     m_eye (eye),
     m_up (up)
 {
 }
 
-const irr::core::vector3df& CCamera::getCenter () const
+const glm::vec3& CCamera::getCenter () const
 {
     return this->m_center;
 }
 
-const irr::core::vector3df& CCamera::getEye () const
+const glm::vec3& CCamera::getEye () const
 {
     return this->m_eye;
 }
 
-const irr::core::vector3df& CCamera::getUp () const
+const glm::vec3& CCamera::getUp () const
 {
     return this->m_up;
 }
@@ -31,8 +32,8 @@ CCamera* CCamera::fromJSON (json data)
     auto up_it = jsonFindRequired (data, "up", "Camera must have a up position");
 
     return new CCamera (
-        WallpaperEngine::Core::ato3vf (*center_it),
-        WallpaperEngine::Core::ato3vf (*eye_it),
-        WallpaperEngine::Core::ato3vf (*up_it)
+        WallpaperEngine::Core::aToVector3 (*center_it),
+        WallpaperEngine::Core::aToVector3 (*eye_it),
+        WallpaperEngine::Core::aToVector3 (*up_it)
     );
 }

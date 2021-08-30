@@ -5,6 +5,8 @@
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
+using namespace WallpaperEngine::Assets;
+
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
@@ -13,16 +15,16 @@ CMaterial::CMaterial () :
 {
 }
 
-CMaterial* CMaterial::fromFile (const irr::io::path& filename)
+CMaterial* CMaterial::fromFile (const std::string& filename, CContainer* container)
 {
     return fromJSON (
-        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename))
+        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container))
     );
 }
-CMaterial* CMaterial::fromFile (const irr::io::path& filename, const std::string& target)
+CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, CContainer* container)
 {
     return fromJSON (
-        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename)), target
+        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)), target
     );
 }
 
