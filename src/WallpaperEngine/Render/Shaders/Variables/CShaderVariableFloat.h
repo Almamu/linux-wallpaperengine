@@ -2,24 +2,22 @@
 
 #include "CShaderVariable.h"
 
-#include <irrlicht/irrlicht.h>
-
 namespace WallpaperEngine::Render::Shaders::Variables
 {
     class CShaderVariableFloat : public CShaderVariable
     {
     public:
-        explicit CShaderVariableFloat (irr::f32 defaultValue);
-        CShaderVariableFloat (irr::f32 defaultValue, std::string name);
+        explicit CShaderVariableFloat (float defaultValue);
+        CShaderVariableFloat (float defaultValue, std::string name);
 
         const int getSize () const override;
 
-        void setValue (irr::f32 value);
+        void setValue (float value);
 
         static const std::string Type;
 
     private:
-        irr::f32 m_defaultValue;
-        irr::f32 m_value;
+        float m_defaultValue;
+        float m_value;
     };
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"

@@ -1,6 +1,4 @@
 #pragma once
-
-#include <irrlicht/irrlicht.h>
 #include <glm/vec2.hpp>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"

@@ -8,15 +8,16 @@ using namespace WallpaperEngine::Assets;
 
 CTexture::CTexture (void* fileData)
 {
-    TextureHeader* header = this->parseHeader (static_cast <char*> (fileData));
+    // ensure the header is parsed
+    this->parseHeader (static_cast <char*> (fileData));
 
-    if (header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+    if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
         throw std::runtime_error ("Normal images are not supported yet");
 
     GLint formatGL;
 
     // detect the image format and hand it to openGL to be used
-    switch (header->format)
+    switch (this->m_header->format)
     {
         case TextureFormat::DXT5:
             formatGL = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -31,7 +32,7 @@ CTexture::CTexture (void* fileData)
             formatGL = GL_RGBA8;
             break;
         default:
-            delete header;
+            delete this->m_header;
             throw std::runtime_error ("Cannot determine the texture format");
     }
 
@@ -42,10 +43,10 @@ CTexture::CTexture (void* fileData)
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
     // set mipmap levels
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, header->mipmapCount - 1);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
 
     // setup texture wrapping and filtering
-    if (header->flags & TextureFlags::ClampUVs)
+    if (this->m_header->flags & TextureFlags::ClampUVs)
     {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -56,7 +57,7 @@ CTexture::CTexture (void* fileData)
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
-    if (header->flags & TextureFlags::NoInterpolation)
+    if (this->m_header->flags & TextureFlags::NoInterpolation)
     {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -70,8 +71,8 @@ CTexture::CTexture (void* fileData)
     // TODO: USE THIS ONE
     uint32_t blockSize = (formatGL == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
 
-    auto cur = header->mipmaps.begin ();
-    auto end = header->mipmaps.end ();
+    auto cur = this->m_header->mipmaps.begin ();
+    auto end = this->m_header->mipmaps.end ();
 
     for (int32_t level = 0; cur != end; cur ++, level ++)
     {
@@ -97,18 +98,26 @@ CTexture::CTexture (void* fileData)
         }
     }
 
-    delete header;
     // TODO: IMPLEMENT SUPPORT FOR NORMAL IMAGES
 }
 
 CTexture::~CTexture ()
 {
-    // TODO: FREE STUFF HERE
+    if (this->getHeader () == nullptr)
+        return;
+
+    // free the header if it was allocated
+    delete this->getHeader ();
 }
 
 const GLuint CTexture::getTextureID () const
 {
     return this->m_textureID;
+}
+
+const CTexture::TextureHeader* CTexture::getHeader () const
+{
+    return this->m_header;
 }
 
 CTexture::TextureMipmap::TextureMipmap ()
@@ -152,7 +161,7 @@ CTexture::TextureHeader::~TextureHeader ()
         delete *cur;
 }
 
-CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
+void CTexture::parseHeader (char* fileData)
 {
     // check the magic value on the header first
     if (memcmp (fileData, "TEXV0005", 9) != 0)
@@ -165,16 +174,16 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
     // jump through the string again
     fileData += 9;
 
-    TextureHeader* header = new TextureHeader;
+    this->m_header = new TextureHeader;
 
     uint32_t* pointer = reinterpret_cast<uint32_t*> (fileData);
 
-    header->format = static_cast<TextureFormat>(*pointer ++);
-    header->flags = static_cast<TextureFlags> (*pointer ++);
-    header->textureWidth = *pointer ++;
-    header->textureHeight = *pointer ++;
-    header->width = *pointer ++;
-    header->height = *pointer ++;
+    this->m_header->format = static_cast<TextureFormat>(*pointer ++);
+    this->m_header->flags = static_cast<TextureFlags> (*pointer ++);
+    this->m_header->textureWidth = *pointer ++;
+    this->m_header->textureHeight = *pointer ++;
+    this->m_header->width = *pointer ++;
+    this->m_header->height = *pointer ++;
     pointer ++; // ignore some more bytes
 
     // now we're going to parse some more data that is string
@@ -185,18 +194,18 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
 
     if (memcmp (fileData, "TEXB0003", 9) == 0)
     {
-        header->containerVersion = ContainerVersion::TEXB0003;
+        this->m_header->containerVersion = ContainerVersion::TEXB0003;
 
         // get back the pointer and use it
         pointer = reinterpret_cast <uint32_t*> (afterFileData);
         pointer ++;
-        header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
+        this->m_header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
         // set back the pointer
         fileData = reinterpret_cast <char*> (pointer);
     }
     else if(memcmp (fileData, "TEXB0002", 9) == 0)
     {
-        header->containerVersion = ContainerVersion::TEXB0002;
+        this->m_header->containerVersion = ContainerVersion::TEXB0002;
 
         // get back the pointer and use it
         pointer = reinterpret_cast <uint32_t*> (afterFileData);
@@ -206,7 +215,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
     }
     else if (memcmp (fileData, "TEXB0001", 9) == 0)
     {
-        header->containerVersion = ContainerVersion::TEXB0001;
+        this->m_header->containerVersion = ContainerVersion::TEXB0001;
 
         // get back the pointer and use it
         pointer = reinterpret_cast <uint32_t*> (afterFileData);
@@ -216,20 +225,21 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
     }
     else
     {
-        delete header;
+        delete this->m_header;
+        this->m_header = nullptr;
         throw std::runtime_error ("unknown texture format type");
     }
 
-    if (header->format == TextureFormat::R8)
+    if (this->m_header->format == TextureFormat::R8)
     {
-        delete header;
-
+        delete this->m_header;
+        this->m_header = nullptr;
         throw std::runtime_error ("R8 format is not supported yet");
     }
-    else if (header->format == TextureFormat::RG88)
+    else if (this->m_header->format == TextureFormat::RG88)
     {
-        delete header;
-
+        delete this->m_header;
+        this->m_header = nullptr;
         throw std::runtime_error ("RG88 format is not supported yet");
     }
 
@@ -237,14 +247,12 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
     pointer = reinterpret_cast <uint32_t*> (fileData);
 
     // read the number of mipmaps available
-    header->mipmapCount = *pointer ++;
+    this->m_header->mipmapCount = *pointer ++;
 
     fileData = reinterpret_cast <char*> (pointer);
 
-    for (uint32_t i = 0; i < header->mipmapCount; i ++)
-        header->mipmaps.emplace_back (this->parseMipmap (header, &fileData));
-
-    return header;
+    for (uint32_t i = 0; i < this->m_header->mipmapCount; i ++)
+        this->m_header->mipmaps.emplace_back (this->parseMipmap (this->m_header, &fileData));
 }
 
 

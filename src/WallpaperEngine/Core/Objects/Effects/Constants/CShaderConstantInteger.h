@@ -3,7 +3,6 @@
 #include "CShaderConstant.h"
 
 #include <string>
-#include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Effects::Constants
 {

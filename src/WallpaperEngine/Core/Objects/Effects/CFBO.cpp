@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects;
 
-CFBO::CFBO (std::string name, irr::f32 scale, std::string format) :
+CFBO::CFBO (std::string name, float scale, std::string format) :
     m_name (std::move(name)),
     m_scale (scale),
     m_format(std::move(format))
@@ -29,7 +29,7 @@ const std::string& CFBO::getName () const
     return this->m_name;
 }
 
-const irr::f32& CFBO::getScale () const
+const float& CFBO::getScale () const
 {
     return this->m_scale;
 }

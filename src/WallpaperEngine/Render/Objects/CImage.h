@@ -39,13 +39,12 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getVertexBuffer () const;
         const GLuint* getPassVertexBuffer () const;
         const GLuint* getTexCoordBuffer () const;
+        const CTexture* getTexture () const;
 
     protected:
         static const std::string Type;
 
     private:
-        void generateMaterial (irr::video::ITexture* resultTexture);
-
         CTexture* m_texture;
         GLfloat m_vertexList [6 * 3];
         GLfloat m_passesVertexList [6 * 3];
@@ -60,7 +59,5 @@ namespace WallpaperEngine::Render::Objects
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
-        irr::video::SMaterial m_irrlichtMaterial;
-        irr::video::SMaterial m_irrlichtMaterialInvert;
     };
 }

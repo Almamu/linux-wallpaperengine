@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "CWallpaper.h"
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"

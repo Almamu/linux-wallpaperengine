@@ -5,12 +5,12 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 
-CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value) :
+CShaderVariableFloatPointer::CShaderVariableFloatPointer(float* value) :
     CShaderVariable (value, nullptr, Type)
 {
 }
 
-CShaderVariableFloatPointer::CShaderVariableFloatPointer(irr::f32* value, std::string name) :
+CShaderVariableFloatPointer::CShaderVariableFloatPointer(float* value, std::string name) :
     CShaderVariable (value, nullptr, Type)
 {
     this->setName (std::move(name));

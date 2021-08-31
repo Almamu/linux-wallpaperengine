@@ -5,12 +5,12 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 
-CShaderVariableVector2Pointer::CShaderVariableVector2Pointer(irr::core::vector2df* value) :
+CShaderVariableVector2Pointer::CShaderVariableVector2Pointer(glm::vec2* value) :
     CShaderVariable (value, nullptr, Type)
 {
 }
 
-CShaderVariableVector2Pointer::CShaderVariableVector2Pointer(irr::core::vector2df* value, std::string name) :
+CShaderVariableVector2Pointer::CShaderVariableVector2Pointer(glm::vec2* value, std::string name) :
     CShaderVariable (value, nullptr, Type)
 {
     this->setName (std::move(name));

@@ -1,6 +1,5 @@
 #include "CMaterial.h"
 
-#include <irrlicht/irrlicht.h>
 #include <nlohmann/json.hpp>
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"

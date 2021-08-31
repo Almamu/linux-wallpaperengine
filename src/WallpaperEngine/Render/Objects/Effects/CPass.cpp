@@ -287,7 +287,7 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
         {
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
-                (irr::f32*) (*cur)->getValue (),
+                (float*) (*cur)->getValue (),
                 (*cur)->getSize ()
             );
         }
@@ -314,7 +314,7 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
-                (irr::f32*) (*cur)->getValue (),
+                (float*) (*cur)->getValue (),
                 (*cur)->getSize ()
             );
         }
@@ -329,12 +329,12 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
         {
             services->setPixelShaderConstant (
                 (*cur)->getName ().c_str (),
-                (irr::f32*) (*cur)->getValue (),
+                (float*) (*cur)->getValue (),
                 (*cur)->getSize ()
             );
             services->setVertexShaderConstant (
                 (*cur)->getName ().c_str (),
-                (irr::f32*) (*cur)->getValue (),
+                (float*) (*cur)->getValue (),
                 (*cur)->getSize ()
             );
         }
@@ -350,16 +350,16 @@ void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int
     char rotation [20];
     char translation [23];
 
-    irr::f32 textureRotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
+    float textureRotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
 
     for (int index = 0; textureCur != textureEnd; textureCur ++, index ++)
     {
         // TODO: CHECK THESE VALUES, DOCUMENTATION SAYS THAT FIRST TWO ELEMENTS SHOULD BE WIDTH AND HEIGHT
         // TODO: BUT IN REALITY THEY DO NOT SEEM TO BE THAT, NOT HAVING SUPPORT FOR ATTRIBUTES DOESN'T HELP EITHER
-        irr::f32 textureResolution [4] = {
+        float textureResolution [4] = {
             1.0, -1.0, 1.0, 1.0
         };
-        irr::f32 textureTranslation [2] = {
+        float textureTranslation [2] = {
             0, 0
         };
 

@@ -4,14 +4,14 @@
 
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
-CShaderVariableFloat::CShaderVariableFloat(irr::f32 defaultValue) :
+CShaderVariableFloat::CShaderVariableFloat(float defaultValue) :
     m_defaultValue (defaultValue),
     m_value (0),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
 {
 }
 
-CShaderVariableFloat::CShaderVariableFloat(irr::f32 defaultValue, std::string name) :
+CShaderVariableFloat::CShaderVariableFloat(float defaultValue, std::string name) :
     m_defaultValue (defaultValue),
     m_value (0),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
@@ -19,7 +19,7 @@ CShaderVariableFloat::CShaderVariableFloat(irr::f32 defaultValue, std::string na
     this->setName (std::move(name));
 }
 
-void CShaderVariableFloat::setValue (irr::f32 value)
+void CShaderVariableFloat::setValue (float value)
 {
     this->m_value = value;
 

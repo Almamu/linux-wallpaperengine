@@ -1,5 +1,3 @@
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/CObject.h"
 #include "CSound.h"
 
@@ -7,7 +5,7 @@ using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
         bool visible,
-        irr::u32 id,
+        uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale,
@@ -19,7 +17,7 @@ CSound::CSound (
 WallpaperEngine::Core::CObject* CSound::fromJSON (
         json data,
         bool visible,
-        irr::u32 id,
+        uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale,

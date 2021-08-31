@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Particles
@@ -14,11 +12,11 @@ namespace WallpaperEngine::Core::Objects::Particles
         static CInitializer* fromJSON (json data);
 
         const std::string& getName () const;
-        const irr::u32 getId () const;
+        const uint32_t getId () const;
     protected:
-        CInitializer (irr::u32 id, std::string name);
+        CInitializer (uint32_t id, std::string name);
     private:
-        irr::u32 m_id;
+        uint32_t m_id;
         std::string m_name;
     };
 };

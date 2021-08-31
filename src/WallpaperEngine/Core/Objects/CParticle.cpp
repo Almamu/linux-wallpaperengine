@@ -1,14 +1,12 @@
 #include "CParticle.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
-#include <irrlicht/irrlicht.h>
-
 using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (
     const std::string& filename,
     CContainer* container,
-    irr::u32 id,
+    uint32_t id,
     std::string name,
     const glm::vec3& origin,
     const glm::vec3& scale)
@@ -66,9 +64,9 @@ CParticle* CParticle::fromFile (
 }
 
 CParticle::CParticle (
-        irr::u32 starttime,
-        irr::u32 maxcount,
-        irr::u32 id,
+        uint32_t starttime,
+        uint32_t maxcount,
+        uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale):

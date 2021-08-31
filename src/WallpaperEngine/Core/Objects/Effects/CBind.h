@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Effects
@@ -15,13 +13,13 @@ namespace WallpaperEngine::Core::Objects::Effects
     public:
         static CBind* fromJSON (json data);
 
-        CBind (std::string name, irr::u32 index);
+        CBind (std::string name, uint32_t index);
 
         const std::string& getName () const;
-        const irr::u32& getIndex () const;
+        const uint32_t& getIndex () const;
 
     private:
         std::string m_name;
-        irr::u32 m_index;
+        uint32_t m_index;
     };
 }

@@ -98,7 +98,7 @@ void CMaterial::render (GLuint drawTo, GLuint inputTexture)
     for (; mainCur != mainEnd; mainCur ++)
     {
         // set the proper render target
-        driver->setRenderTarget ((*mainCur)->getOutputTexture (), true, true, irr::video::SColor (0, 0, 0, 0));
+        driver->setRenderTarget ((*mainCur)->getOutputTexture (), true, true, IntegerColor (0, 0, 0, 0));
         // set the material
         driver->setMaterial ((*mainCur)->getMaterial ());
         // draw it
@@ -110,7 +110,7 @@ void CMaterial::render (GLuint drawTo, GLuint inputTexture)
 
     // render last pass' output into our output
     // set the proper render target
-    driver->setRenderTarget (this->getOutputTexture (), true, true, irr::video::SColor (0, 0, 0, 0));
+    driver->setRenderTarget (this->getOutputTexture (), true, true, IntegerColor (0, 0, 0, 0));
     // set the material
     driver->setMaterial (this->m_outputMaterial);
     // draw it

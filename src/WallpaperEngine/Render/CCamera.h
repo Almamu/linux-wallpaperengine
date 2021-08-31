@@ -33,7 +33,6 @@ namespace WallpaperEngine::Render
         glm::mat4 m_projection;
         glm::mat4 m_lookat;
         const Core::Scenes::CCamera* m_camera;
-        irr::scene::ICameraSceneNode* m_sceneCamera;
         CScene* m_scene;
     };
 }

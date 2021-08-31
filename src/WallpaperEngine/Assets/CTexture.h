@@ -142,12 +142,14 @@ namespace WallpaperEngine::Assets
         ~CTexture ();
 
         const GLuint getTextureID () const;
+        const TextureHeader* getHeader () const;
 
 
     private:
-        TextureHeader* parseHeader (char* fileData);
+        void parseHeader (char* fileData);
         TextureMipmap* parseMipmap (TextureHeader* header, char** fileData);
 
+        TextureHeader* m_header;
         GLuint m_textureID;
     };
 }

@@ -2,7 +2,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CAlphaRandom* CAlphaRandom::fromJSON (json data, irr::u32 id)
+CAlphaRandom* CAlphaRandom::fromJSON (json data, uint32_t id)
 {
     auto min_it = jsonFindRequired (data, "min", "Alpharandom initializer must have a minimum value");
     auto max_it = jsonFindRequired (data, "max", "Alpharandom initializer must have a maximum value");
@@ -10,19 +10,19 @@ CAlphaRandom* CAlphaRandom::fromJSON (json data, irr::u32 id)
     return new CAlphaRandom (id, *min_it, *max_it);
 }
 
-CAlphaRandom::CAlphaRandom (irr::u32 id, irr::f64 min, irr::f64 max) :
+CAlphaRandom::CAlphaRandom (uint32_t id, double min, double max) :
         CInitializer (id, "alpharandom"),
         m_min (min),
         m_max (max)
 {
 }
 
-const irr::f64 CAlphaRandom::getMinimum () const
+const double CAlphaRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-const irr::f64 CAlphaRandom::getMaximum () const
+const double CAlphaRandom::getMaximum () const
 {
     return this->m_max;
 }

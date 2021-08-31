@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/CObject.h"
 
@@ -17,7 +15,7 @@ namespace WallpaperEngine::Core::Objects
         static CObject* fromJSON (
             json data,
             bool visible,
-            irr::u32 id,
+            uint32_t id,
             std::string name,
             const glm::vec3& origin,
             const glm::vec3& scale,
@@ -30,7 +28,7 @@ namespace WallpaperEngine::Core::Objects
     protected:
         CSound (
             bool visible,
-            irr::u32 id,
+            uint32_t id,
             std::string name,
             const glm::vec3& origin,
             const glm::vec3& scale,

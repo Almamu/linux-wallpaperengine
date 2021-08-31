@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Particles
@@ -14,28 +12,28 @@ namespace WallpaperEngine::Core::Objects::Particles
         static CEmitter* fromJSON (json data);
 
         const std::string& getName () const;
-        const irr::u32 getDistanceMax () const;
-        const irr::u32 getDistanceMin () const;
-        const irr::core::vector3df& getDirections () const;
-        const irr::core::vector3df& getOrigin () const;
-        const irr::f64 getRate () const;
+        const uint32_t getDistanceMax () const;
+        const uint32_t getDistanceMin () const;
+        const glm::vec3& getDirections () const;
+        const glm::vec3& getOrigin () const;
+        const double getRate () const;
     protected:
         CEmitter (
-            const irr::core::vector3df& directions,
-            irr::u32 distancemax,
-            irr::u32 distancemin,
-            irr::u32 id,
+            const glm::vec3& directions,
+            uint32_t distancemax,
+            uint32_t distancemin,
+            uint32_t id,
             std::string name,
-            const irr::core::vector3df& origin,
-            irr::f64 rate
+            const glm::vec3& origin,
+            double rate
         );
     private:
-        irr::core::vector3df m_directions;
-        irr::u32 m_distancemax;
-        irr::u32 m_distancemin;
-        irr::u32 m_id;
+        glm::vec3 m_directions;
+        uint32_t m_distancemax;
+        uint32_t m_distancemin;
+        uint32_t m_id;
         std::string m_name;
-        irr::core::vector3df m_origin;
-        irr::f64 m_rate;
+        glm::vec3 m_origin;
+        double m_rate;
     };
 };

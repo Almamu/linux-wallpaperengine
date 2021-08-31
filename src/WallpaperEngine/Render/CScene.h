@@ -7,8 +7,6 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CObject.h"
 
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
 namespace WallpaperEngine::Render
 {
     class CCamera;
@@ -33,7 +31,7 @@ namespace WallpaperEngine::Render
 
     private:
         CCamera* m_camera;
-        irr::u32 m_nextId;
+        uint32_t m_nextId;
         std::vector<CObject*> m_objects;
     };
 }

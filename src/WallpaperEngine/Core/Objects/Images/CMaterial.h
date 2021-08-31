@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Core/Objects/Effects/CBind.h"
 

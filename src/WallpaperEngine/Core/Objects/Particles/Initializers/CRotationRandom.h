@@ -3,17 +3,16 @@
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
 #include <nlohmann/json.hpp>
-#include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
     class CRotationRandom : CInitializer
     {
     public:
-        const irr::core::vector3df getMinimumVector () const;
-        const irr::core::vector3df getMaximumVector () const;
-        const irr::f64             getMinimumNumber () const;
-        const irr::f64             getMaximumNumber () const;
+        const glm::vec3 getMinimumVector () const;
+        const glm::vec3 getMaximumVector () const;
+        const double             getMinimumNumber () const;
+        const double             getMaximumNumber () const;
 
         const bool isMinimumVector () const;
         const bool isMinimumNumber () const;
@@ -23,22 +22,22 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     protected:
         friend class CInitializer;
 
-        static CRotationRandom* fromJSON (json data, irr::u32 id);
+        static CRotationRandom* fromJSON (json data, uint32_t id);
 
         CRotationRandom (
-            irr::u32 id,
-            irr::core::vector3df minVector,
-            irr::f64 minNumber,
+            uint32_t id,
+            glm::vec3 minVector,
+            double minNumber,
             bool isMinimumVector,
-            irr::core::vector3df maxVector,
-            irr::f64 maxNumber,
+            glm::vec3 maxVector,
+            double maxNumber,
             bool isMaximumVector
         );
     private:
-        irr::core::vector3df m_maxVector;
-        irr::f64             m_maxNumber;
-        irr::core::vector3df m_minVector;
-        irr::f64             m_minNumber;
+        glm::vec3 m_maxVector;
+        double             m_maxNumber;
+        glm::vec3 m_minVector;
+        double             m_minNumber;
 
         bool m_isMinimumVector;
         bool m_isMaximumVector;

@@ -1,21 +1,19 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
 #include <iostream>
 #include <vector>
 #include <map>
 
 #include "WallpaperEngine/Core/Core.h"
-
+#include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
-
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
     using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
     /**

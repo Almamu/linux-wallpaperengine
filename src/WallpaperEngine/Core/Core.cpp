@@ -1,60 +1,7 @@
-#include <irrlicht/irrlicht.h>
 #include "Core.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Types;
-
-irr::core::vector3df Core::ato3vf(const char *str)
-{
-    irr::f32 x = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
-    irr::f32 y = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
-    irr::f32 z = irr::core::fast_atof (str, &str);
-
-    return irr::core::vector3df (x, y, z);
-}
-
-irr::core::vector2df Core::ato2vf (const char *str)
-{
-    irr::f32 x = irr::core::fast_atof (str, &str); while (*str == ' ') str ++;
-    irr::f32 y = irr::core::fast_atof (str, &str);
-
-    return irr::core::vector2df (x, y);
-}
-
-irr::core::vector3df Core::ato3vf (const std::string& str)
-{
-    return Core::ato3vf (str.c_str ());
-}
-
-irr::core::vector2df Core::ato2vf (const std::string& str)
-{
-    return Core::ato2vf (str.c_str ());
-}
-
-irr::video::SColorf Core::atoSColorf (const char *str)
-{
-    irr::core::vector3df vector = Core::ato3vf (str);
-
-    return irr::video::SColorf (
-            vector.X,
-            vector.Y,
-            vector.Z
-    );
-}
-
-irr::video::SColorf Core::atoSColorf (const std::string& str)
-{
-    return Core::atoSColorf (str.c_str ());
-}
-
-irr::video::SColor Core::atoSColor (const char *str)
-{
-    irr::f32 r = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
-    irr::f32 g = irr::core::strtoul10 (str, &str); while (*str == ' ') str ++;
-    irr::f32 b = irr::core::strtoul10 (str, &str);
-
-    return irr::video::SColor (255, r, g, b);
-}
 
 glm::vec3 Core::aToVector3 (const char* str)
 {
@@ -83,12 +30,7 @@ glm::vec2 Core::aToVector2 (const std::string& str)
     return Core::aToVector2 (str.c_str ());
 }
 
-irr::video::SColor Core::atoSColor (const std::string& str)
-{
-    return Core::atoSColor (str.c_str ());
-}
-
-FloatColor Core::aToColor (const char* str)
+FloatColor Core::aToColorf (const char* str)
 {
     float r = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
     float g = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
@@ -97,9 +39,23 @@ FloatColor Core::aToColor (const char* str)
     return {r, g, b, 1.0f};
 }
 
-FloatColor Core::aToColor (const std::string& str)
+FloatColor Core::aToColorf (const std::string& str)
 {
-    return aToColor (str.c_str ());
+    return aToColorf(str.c_str());
+}
+
+IntegerColor Core::aToColori (const char* str)
+{
+    uint8_t r = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
+    uint8_t g = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
+    uint8_t b = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10));
+
+    return {r, g, b, 255};
+}
+
+IntegerColor Core::aToColori (const std::string& str)
+{
+    return aToColori(str.c_str());
 }
 
 nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg)
@@ -128,11 +84,11 @@ template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char 
 
 template bool Core::jsonFindDefault (nlohmann::json& data, const char *key, bool defaultValue);
 template std::string Core::jsonFindDefault (nlohmann::json& data, const char *key, std::string defaultValue);
-template irr::s16 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s16 defaultValue);
-template irr::u16 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u16 defaultValue);
-template irr::s32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s32 defaultValue);
-template irr::u32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u32 defaultValue);
-template irr::s64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::s64 defaultValue);
-template irr::u64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::u64 defaultValue);
-template irr::f32 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::f32 defaultValue);
-template irr::f64 Core::jsonFindDefault (nlohmann::json& data, const char *key, irr::f64 defaultValue);
+template int16_t Core::jsonFindDefault (nlohmann::json& data, const char *key, int16_t defaultValue);
+template uint16_t Core::jsonFindDefault (nlohmann::json& data, const char *key, uint16_t defaultValue);
+template int32_t Core::jsonFindDefault (nlohmann::json& data, const char *key, int32_t defaultValue);
+template uint32_t Core::jsonFindDefault (nlohmann::json& data, const char *key, uint32_t defaultValue);
+template int64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, int64_t defaultValue);
+template uint64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, uint64_t defaultValue);
+template float Core::jsonFindDefault (nlohmann::json& data, const char *key, float defaultValue);
+template double Core::jsonFindDefault (nlohmann::json& data, const char *key, double defaultValue);

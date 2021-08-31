@@ -1,9 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/Effects/CFBO.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"

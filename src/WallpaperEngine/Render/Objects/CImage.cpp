@@ -33,6 +33,16 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         throw std::runtime_error ("Only centered images are supported for now!");
     }
 
+    // load image from the .tex file
+    uint32_t textureSize = 0;
+
+    // get the first texture on the first pass (this one represents the image assigned to this object)
+    void* textureData = this->getScene ()->getContainer ()->readTexture (
+        (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ()), &textureSize
+    );
+    // now generate our opengl texture
+    this->m_texture = new CTexture (textureData);
+
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat data [] = {
         xleft, ytop, 0.0f,
@@ -56,14 +66,30 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     memcpy (this->m_passesVertexList, data1, sizeof (data1));
 
-    // generate correct width and height for the texCoord data
+    float width = 1.0f;
+    float height = 1.0f;
+
+    // calculate the correct texCoord limits for the texture based on the texture screen size and real size
+    if (this->getTexture ()->getHeader ()->textureWidth != this->getTexture ()->getHeader ()->width ||
+        this->getTexture ()->getHeader ()->textureHeight != this->getTexture ()->getHeader ()->height)
+    {
+        uint32_t x = 1;
+        uint32_t y = 1;
+
+        while (x < this->getImage ()->getSize ().x) x <<= 1;
+        while (y < this->getImage ()->getSize ().y) y <<= 1;
+
+        width = this->getImage ()->getSize ().x / x;
+        height = this->getImage ()->getSize ().y / y;
+    }
+
     GLfloat data2 [] = {
         0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f
+        width, 0.0f,
+        0.0f, height,
+        0.0f, height,
+        width, 0.0f,
+        width, height
     };
 
     memcpy (this->m_texCoordList, data2, sizeof (data2));
@@ -81,15 +107,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glGenBuffers (1, &this->m_texCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_texCoordList), this->m_texCoordList, GL_STATIC_DRAW);
-
-    uint32_t textureSize = 0;
-
-    // get the first texture on the first pass (this one represents the image assigned to this object)
-    void* textureData = this->getScene ()->getContainer ()->readTexture (
-        (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ()), &textureSize
-    );
-    // now generate our opengl texture
-    this->m_texture = new CTexture (textureData);
 
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (this, this->m_image->getMaterial ());
@@ -148,10 +165,9 @@ void CImage::render ()
     std::cout << std::flush;
 }
 
+/*
 void CImage::generateMaterial (irr::video::ITexture* resultTexture)
 {
-    // TODO: REWRITE THIS
-    /*
     this->m_irrlichtMaterial.setTexture (0, resultTexture);
     this->m_irrlichtMaterial.MaterialType = irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL;
     this->m_irrlichtMaterial.setFlag (irr::video::EMF_LIGHTING, false);
@@ -210,9 +226,9 @@ void CImage::generateMaterial (irr::video::ITexture* resultTexture)
         vertex.c_str (), "main", irr::video::EVST_VS_2_0,
         fragment.c_str (), "main", irr::video::EPST_PS_2_0,
         this, irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0, irr::video::EGSL_DEFAULT
-    );*/
+    );
 }
-/*
+
 void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
 {
     irr::s32 g_Texture0 = 0;
@@ -229,6 +245,12 @@ void CImage::OnSetConstants (irr::video::IMaterialRendererServices *services, in
     services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
 }
 */
+
+const CTexture* CImage::getTexture () const
+{
+    return this->m_texture;
+}
+
 const Core::Objects::CImage* CImage::getImage () const
 {
     return this->m_image;

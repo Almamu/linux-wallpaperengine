@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "Core.h"
 
 #include "WallpaperEngine/Core/Objects/CEffect.h"
@@ -28,7 +26,7 @@ namespace WallpaperEngine::Core
         template<class T> bool is () { return this->m_type == T::Type; }
 
         const std::vector<Objects::CEffect*>& getEffects () const;
-        const std::vector<irr::u32>& getDependencies () const;
+        const std::vector<uint32_t>& getDependencies () const;
         const int getId () const;
 
         const glm::vec3& getOrigin () const;
@@ -40,7 +38,7 @@ namespace WallpaperEngine::Core
     protected:
         CObject (
             bool visible,
-            irr::u32 id,
+            uint32_t id,
             std::string name,
             std::string type,
             const glm::vec3& origin,
@@ -49,18 +47,18 @@ namespace WallpaperEngine::Core
         );
 
         void insertEffect (Objects::CEffect* effect);
-        void insertDependency (irr::u32 dependency);
+        void insertDependency (uint32_t dependency);
     private:
         std::string m_type;
 
         bool m_visible;
-        irr::u32 m_id;
+        uint32_t m_id;
         std::string m_name;
         glm::vec3 m_origin;
         glm::vec3 m_scale;
         glm::vec3 m_angles;
 
         std::vector<Objects::CEffect*> m_effects;
-        std::vector<irr::u32> m_dependencies;
+        std::vector<uint32_t> m_dependencies;
     };
 };

@@ -5,9 +5,6 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
-#include "WallpaperEngine/Irrlicht/CImageLoaderTEX.h"
-#include "WallpaperEngine/Irrlicht/CPkgReader.h"
-
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h"
 
@@ -165,8 +162,8 @@ void CContext::initializeViewports (irr::SIrrlichtCreationParameters &irrlichtCr
 void CContext::renderFrame (Render::CWallpaper* wallpaper)
 {
     this->m_time = this->getDevice ()->getTimer ()->getTime () / 1000.0f;
-    this->m_pointerPosition.X = this->m_eventReceiver->getPosition ().X / (irr::f32) this->getDevice ()->getVideoDriver ()->getScreenSize ().Width;
-    this->m_pointerPosition.Y = this->m_eventReceiver->getPosition ().Y / (irr::f32) this->getDevice ()->getVideoDriver ()->getScreenSize ().Height;
+    this->m_pointerPosition.X = this->m_eventReceiver->getPosition ().X / (float) this->getDevice ()->getVideoDriver ()->getScreenSize ().Width;
+    this->m_pointerPosition.Y = this->m_eventReceiver->getPosition ().Y / (float) this->getDevice ()->getVideoDriver ()->getScreenSize ().Height;
 
     if (this->m_viewports.empty () == true)
     {

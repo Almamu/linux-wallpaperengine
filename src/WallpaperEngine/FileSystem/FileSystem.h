@@ -18,13 +18,5 @@ namespace WallpaperEngine::FileSystem
      * @param file
      * @return
      */
-    std::string loadFullFile (const irr::io::path& file);
-
-    /**
-     * Loads a full file into an std::string
-     *
-     * @param file
-     * @return
-     */
     std::string loadFullFile (const std::string& file, WallpaperEngine::Assets::CContainer* containers);
 }

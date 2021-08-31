@@ -141,16 +141,19 @@ void CVideo::getNextFrame ()
 
 void CVideo::writeFrameToImage ()
 {
+    /*
+     * TODO: REWRITE THIS
     uint8_t* frameData = m_videoFrameRGB->data[0];
     if (frameData == nullptr)
         return;
 
-    irr::u32 imgWidth = m_frameImage->getDimension().Width;
-    irr::u32 imgHeight = m_frameImage->getDimension().Height;
+    uint32_t imgWidth = m_frameImage->getDimension().Width;
+    uint32_t imgHeight = m_frameImage->getDimension().Height;
     
     unsigned char* data = (unsigned char*)m_frameImage->lock ();
     memcpy (data, frameData, imgWidth * imgHeight * 3);
     m_frameImage->unlock ();
+     */
 }
 
 void CVideo::restartStream ()

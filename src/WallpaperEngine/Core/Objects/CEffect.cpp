@@ -153,7 +153,7 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
 
         if ((*cur).is_number_float () == true)
         {
-            constant = new Effects::Constants::CShaderConstantFloat ((*cur).get <irr::f32> ());
+            constant = new Effects::Constants::CShaderConstantFloat ((*cur).get <float> ());
         }
         else if ((*cur).is_number_integer () == true)
         {

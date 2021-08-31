@@ -1,12 +1,8 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/CVideo.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
-
-#include "WallpaperEngine/Irrlicht/CContext.h"
 
 extern "C"
 {
@@ -45,8 +41,5 @@ namespace WallpaperEngine::Render
         SwsContext* m_swsCtx = nullptr;
         uint8_t* m_buffer = nullptr;
         int m_videoStream = -1, m_audioStream = -1;
-
-        irr::video::IImage* m_frameImage;
-        irr::video::ITexture* m_frameTexture;
     };
 };

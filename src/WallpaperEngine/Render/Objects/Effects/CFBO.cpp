@@ -14,17 +14,12 @@ CFBO::CFBO (Core::Objects::Effects::CFBO* fbo, const Core::Objects::CImage* imag
     context->getDevice ()->getVideoDriver ()->addRenderTargetTexture (size, this->getName ().c_str ());*/
 }
 
-const irr::video::ITexture* CFBO::getTexture () const
-{
-    return this->m_texture;
-}
-
 const std::string& CFBO::getName () const
 {
     return this->m_fbo->getName ();
 }
 
-const irr::f32& CFBO::getScale () const
+const float& CFBO::getScale () const
 {
     return this->m_fbo->getScale ();
 }

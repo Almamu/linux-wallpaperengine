@@ -1,5 +1,4 @@
 #include <iostream>
-#include <irrlicht/irrlicht.h>
 #include <getopt.h>
 #include <unistd.h>
 #include <SDL_mixer.h>
@@ -12,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Irrlicht/CContext.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CScene.h"
 #include "WallpaperEngine/Render/CVideo.h"
@@ -31,7 +29,6 @@ enum BACKGROUND_RUN_MODE
     RUN_MODE_PACKAGE = 3
 };
 
-WallpaperEngine::Irrlicht::CContext* IrrlichtContext = nullptr;
 double g_Time;
 
 using namespace WallpaperEngine::Core::Types;
@@ -218,7 +215,7 @@ int main (int argc, char* argv[])
         {
             // Mix_GetError is an alias for SDL_GetError, so calling it directly will yield the correct result
             // it doesn't matter if SDL_Init or Mix_Init failed, both report the errors through the same functions
-            IrrlichtContext->getDevice ()->getLogger ()->log ("Cannot initialize SDL audio system", SDL_GetError(),irr::ELL_ERROR);
+            fprintf (stderr, "Cannot initialize SDL audio system, SDL_GetError: %s", SDL_GetError ());
             return 2;
         }
 
@@ -336,9 +333,9 @@ int main (int argc, char* argv[])
         throw std::runtime_error ("Unsupported wallpaper type");
     }
     
-    irr::u32 minimumTime = 1000 / maximumFPS;
-    irr::u32 startTime = 0;
-    irr::u32 endTime = 0;
+    uint32_t minimumTime = 1000 / maximumFPS;
+    uint32_t startTime = 0;
+    uint32_t endTime = 0;
 
     while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
     {

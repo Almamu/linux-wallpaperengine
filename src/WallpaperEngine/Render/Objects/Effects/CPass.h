@@ -2,8 +2,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
@@ -11,6 +9,7 @@
 
 namespace WallpaperEngine::Render::Objects::Effects
 {
+    using namespace WallpaperEngine::Assets;
     using namespace WallpaperEngine::Render::Shaders::Variables;
 
     class CMaterial;

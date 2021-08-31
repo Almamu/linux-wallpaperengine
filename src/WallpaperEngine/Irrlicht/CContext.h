@@ -47,7 +47,7 @@ namespace WallpaperEngine::Irrlicht
 
         std::vector<Render::Shaders::Variables::CShaderVariable*> m_globalShaderVariables;
 
-        irr::f32 m_time;
+        float m_time;
         irr::core::vector2df m_pointerPosition;
 
         std::vector<std::string> m_screens;

@@ -1,4 +1,3 @@
-#include <irrlicht/irrlicht.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -565,10 +564,10 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "float")
         {
-            irr::f32 value = 0;
+            float value = 0;
 
             if (constant == this->m_constants.end ())
-                value = (*defvalue).get <irr::f32> ();
+                value = (*defvalue).get <float> ();
             else if ((*constant).second->is <CShaderConstantFloat> () == true)
                 value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
             else if ((*constant).second->is <CShaderConstantInteger> () == true)

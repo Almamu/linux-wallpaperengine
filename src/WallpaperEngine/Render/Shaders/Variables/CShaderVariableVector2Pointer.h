@@ -1,16 +1,15 @@
 #pragma once
 
+#include <glm/vec2.hpp>
 #include "CShaderVariable.h"
-
-#include <irrlicht/irrlicht.h>
 
 namespace WallpaperEngine::Render::Shaders::Variables
 {
     class CShaderVariableVector2Pointer : public CShaderVariable
     {
     public:
-        CShaderVariableVector2Pointer (irr::core::vector2df* value);
-        CShaderVariableVector2Pointer (irr::core::vector2df* value, std::string name);
+        CShaderVariableVector2Pointer (glm::vec2* value);
+        CShaderVariableVector2Pointer (glm::vec2* value, std::string name);
 
         const int getSize () const override;
 

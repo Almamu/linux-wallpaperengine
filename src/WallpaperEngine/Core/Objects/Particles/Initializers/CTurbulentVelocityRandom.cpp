@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, irr::u32 id)
+CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, uint32_t id)
 {
     json::const_iterator phasemax_it = data.find ("phasemax");
     json::const_iterator scale_it = data.find ("scale");
@@ -48,8 +48,8 @@ CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, irr::u3
 }
 
 
-CTurbulentVelocityRandom::CTurbulentVelocityRandom (irr::u32 id,
-                          irr::f64 phasemax, irr::f64 scale, irr::f64 timescale, irr::u32 speedmin, irr::u32 speedmax) :
+CTurbulentVelocityRandom::CTurbulentVelocityRandom (uint32_t id,
+                          double phasemax, double scale, double timescale, uint32_t speedmin, uint32_t speedmax) :
         CInitializer (id, "turbulentvelocityrandom"),
         m_phasemax (phasemax),
         m_scale (scale),
@@ -60,27 +60,27 @@ CTurbulentVelocityRandom::CTurbulentVelocityRandom (irr::u32 id,
 }
 
 
-irr::f64 CTurbulentVelocityRandom::getPhaseMax ()
+double CTurbulentVelocityRandom::getPhaseMax ()
 {
     return this->m_phasemax;
 }
 
-irr::f64 CTurbulentVelocityRandom::getScale ()
+double CTurbulentVelocityRandom::getScale ()
 {
     return this->m_scale;
 }
 
-irr::f64 CTurbulentVelocityRandom::getTimeScale ()
+double CTurbulentVelocityRandom::getTimeScale ()
 {
     return this->m_timescale;
 }
 
-irr::u32 CTurbulentVelocityRandom::getMinimumSpeed ()
+uint32_t CTurbulentVelocityRandom::getMinimumSpeed ()
 {
     return this->m_speedmin;
 }
 
-irr::u32 CTurbulentVelocityRandom::getMaximumSpeed ()
+uint32_t CTurbulentVelocityRandom::getMaximumSpeed ()
 {
     return this->m_speedmax;
 }

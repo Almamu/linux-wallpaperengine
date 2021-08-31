@@ -10,7 +10,7 @@ using namespace WallpaperEngine::Core::Objects;
 CImage::CImage (
         Images::CMaterial* material,
         bool visible,
-        irr::u32 id,
+        uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale,
@@ -28,7 +28,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     json data,
     CContainer* container,
     bool visible,
-    irr::u32 id,
+    uint32_t id,
     std::string name,
     const glm::vec3& origin,
     const glm::vec3& scale,

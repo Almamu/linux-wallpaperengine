@@ -8,18 +8,18 @@ CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
     auto text = data.find ("type");
 
     return new CPropertyColor (
-        WallpaperEngine::Core::atoSColor (*value),
+        WallpaperEngine::Core::aToColori (*value),
         name,
         *text
     );
 }
 
-const irr::video::SColor& CPropertyColor::getValue () const
+const IntegerColor& CPropertyColor::getValue () const
 {
     return this->m_color;
 }
 
-CPropertyColor::CPropertyColor (irr::video::SColor color, const std::string& name, const std::string& text) :
+CPropertyColor::CPropertyColor (IntegerColor color, const std::string& name, const std::string& text) :
     CProperty (name, Type, text),
     m_color (color)
 {

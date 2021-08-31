@@ -19,7 +19,7 @@ CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
 
 CCamera::~CCamera ()
 {
-    this->m_sceneCamera->remove ();
+
 }
 
 const glm::vec3& CCamera::getCenter () const

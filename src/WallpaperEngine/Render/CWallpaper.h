@@ -1,6 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -8,7 +7,6 @@
 #include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/CVideo.h"
 
-#include "WallpaperEngine/Irrlicht/CContext.h"
 #include "WallpaperEngine/Assets/CContainer.h"
 
 using namespace WallpaperEngine::Assets;

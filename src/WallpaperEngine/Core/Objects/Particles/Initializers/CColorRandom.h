@@ -4,23 +4,23 @@
 
 #include "WallpaperEngine/Core/Core.h"
 
-#include <irrlicht/irrlicht.h>
-
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
+    using namespace WallpaperEngine::Core::Types;
+
     class CColorRandom : CInitializer
     {
     public:
-        const irr::video::SColor& getMinimum () const;
-        const irr::video::SColor& getMaximum () const;
+        const IntegerColor& getMinimum () const;
+        const IntegerColor& getMaximum () const;
     protected:
         friend class CInitializer;
 
-        static CColorRandom* fromJSON (json data, irr::u32 id);
+        static CColorRandom* fromJSON (json data, uint32_t id);
 
-        CColorRandom (irr::u32 id, irr::video::SColor min, irr::video::SColor max);
+        CColorRandom (uint32_t id, IntegerColor min, IntegerColor max);
     private:
-        irr::video::SColor m_max;
-        irr::video::SColor m_min;
+        IntegerColor m_max;
+        IntegerColor m_min;
     };
 };

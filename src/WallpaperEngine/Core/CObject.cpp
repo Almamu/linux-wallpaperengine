@@ -12,7 +12,7 @@ using namespace WallpaperEngine::Assets;
 
 CObject::CObject (
         bool visible,
-        irr::u32 id,
+        uint32_t id,
         std::string name,
         std::string type,
         const glm::vec3& origin,
@@ -177,7 +177,7 @@ const std::vector<Objects::CEffect*>& CObject::getEffects () const
     return this->m_effects;
 }
 
-const std::vector<irr::u32>& CObject::getDependencies () const
+const std::vector<uint32_t>& CObject::getDependencies () const
 {
     return this->m_dependencies;
 }
@@ -196,7 +196,7 @@ void CObject::insertEffect (Objects::CEffect* effect)
 {
     this->m_effects.push_back (effect);
 }
-void CObject::insertDependency (irr::u32 dependency)
+void CObject::insertDependency (uint32_t dependency)
 {
     this->m_dependencies.push_back (dependency);
 }

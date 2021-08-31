@@ -10,7 +10,6 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 # 4. Compilation requirements
 - OpenGL 2.1 support
 - CMake
-- Irrlicht
 - LZ4
 - ZLIB
 - SDL
@@ -18,6 +17,8 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - FFmpeg
 - X11
 - Xrandr
+- GLW3
+- GLM
 
 # 5. How to use
 ## 5.1. Pre-requirements

@@ -4,23 +4,21 @@
 
 #include "WallpaperEngine/Core/Core.h"
 
-#include <irrlicht/irrlicht.h>
-
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
     class CSizeRandom : CInitializer
     {
     public:
-        const irr::u32 getMinimum () const;
-        const irr::u32 getMaximum () const;
+        const uint32_t getMinimum () const;
+        const uint32_t getMaximum () const;
     protected:
         friend class CInitializer;
 
-        static CSizeRandom* fromJSON (json data, irr::u32 id);
+        static CSizeRandom* fromJSON (json data, uint32_t id);
 
-        CSizeRandom (irr::u32 id, irr::u32 min, irr::u32 max);
+        CSizeRandom (uint32_t id, uint32_t min, uint32_t max);
     private:
-        irr::u32 m_max;
-        irr::u32 m_min;
+        uint32_t m_max;
+        uint32_t m_min;
     };
 };

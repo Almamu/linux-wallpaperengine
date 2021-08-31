@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 
 #include "WallpaperEngine/Core/Core.h"
@@ -23,7 +21,7 @@ namespace WallpaperEngine::Core::Objects
                 json data,
                 CContainer* container,
                 bool visible,
-                irr::u32 id,
+                uint32_t id,
                 std::string name,
                 const glm::vec3& origin,
                 const glm::vec3& scale,
@@ -38,7 +36,7 @@ namespace WallpaperEngine::Core::Objects
         CImage (
                 Images::CMaterial* material,
                 bool visible,
-                irr::u32 id,
+                uint32_t id,
                 std::string name,
                 const glm::vec3& origin,
                 const glm::vec3& scale,
