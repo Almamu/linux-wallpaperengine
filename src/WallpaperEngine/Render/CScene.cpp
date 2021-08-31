@@ -22,13 +22,8 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
     auto cur = scene->getObjects ().begin ();
     auto end = scene->getObjects ().end ();
 
-    int highestId = 0;
-
     for (; cur != end; cur ++)
     {
-        if ((*cur)->getId () > highestId)
-            highestId = (*cur)->getId ();
-
         CObject* object = nullptr;
 
         if ((*cur)->is<Core::Objects::CImage>() == true)
@@ -48,11 +43,6 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
 CCamera* CScene::getCamera () const
 {
     return this->m_camera;
-}
-
-int CScene::nextId ()
-{
-    return this->m_nextId ++;
 }
 
 void CScene::render ()

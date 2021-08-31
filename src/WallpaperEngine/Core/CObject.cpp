@@ -182,7 +182,7 @@ const std::vector<uint32_t>& CObject::getDependencies () const
     return this->m_dependencies;
 }
 
-bool CObject::isVisible ()
+const bool CObject::isVisible () const
 {
     return this->m_visible;
 }

@@ -18,7 +18,6 @@ namespace WallpaperEngine::Render
         CScene (Core::CScene* scene, CContainer* container);
 
         CCamera* getCamera () const;
-        int nextId ();
 
         void render () override;
 
@@ -31,7 +30,6 @@ namespace WallpaperEngine::Render
 
     private:
         CCamera* m_camera;
-        uint32_t m_nextId;
         std::vector<CObject*> m_objects;
     };
 }

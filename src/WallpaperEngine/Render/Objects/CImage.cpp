@@ -121,6 +121,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
 void CImage::render ()
 {
+    // ensure this image is visible first
+    if (this->getImage ()->isVisible () == false)
+        return;
+
     GLuint drawTo = 0;
     GLuint inputTexture = this->m_texture->getTextureID ();
     // get the orthogonal projection

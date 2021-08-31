@@ -34,7 +34,7 @@ namespace WallpaperEngine::Core
         const glm::vec3& getAngles () const;
         const std::string& getName () const;
 
-        bool isVisible ();
+        const bool isVisible () const;
     protected:
         CObject (
             bool visible,
