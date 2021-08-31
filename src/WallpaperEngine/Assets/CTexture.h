@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include <GL/glew.h>
+#include <glm/vec4.hpp>
 
 namespace WallpaperEngine::Assets
 {
@@ -143,6 +144,7 @@ namespace WallpaperEngine::Assets
 
         const GLuint getTextureID () const;
         const TextureHeader* getHeader () const;
+        const glm::vec4* getResolution () const;
 
 
     private:
@@ -151,5 +153,6 @@ namespace WallpaperEngine::Assets
 
         TextureHeader* m_header;
         GLuint m_textureID;
+        glm::vec4 m_resolution;
     };
 }

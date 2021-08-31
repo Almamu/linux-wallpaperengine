@@ -14,6 +14,13 @@ CTexture::CTexture (void* fileData)
     if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
         throw std::runtime_error ("Normal images are not supported yet");
 
+    // set the texture resolution
+    // TODO: SUPPORT SPRITES
+    this->m_resolution = {
+        this->m_header->width, this->m_header->height,
+        this->m_header->textureWidth, this->m_header->textureHeight
+    };
+
     GLint formatGL;
 
     // detect the image format and hand it to openGL to be used
@@ -118,6 +125,11 @@ const GLuint CTexture::getTextureID () const
 const CTexture::TextureHeader* CTexture::getHeader () const
 {
     return this->m_header;
+}
+
+const glm::vec4* CTexture::getResolution () const
+{
+    return &this->m_resolution;
 }
 
 CTexture::TextureMipmap::TextureMipmap ()

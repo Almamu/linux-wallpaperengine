@@ -30,11 +30,7 @@ Once Wallpaper Engine is downloaded open the installation folder (usually on C:\
 
 ![folder](docs/images/screenshot_folder.png)
 
-All the folders we see must be compressed in a single zip file for the project to load them:
-
-![compression](docs/images/zip.png)
-
-The zip must be named "assets.zip" and placed on the same folder as the directory where the project is going to be run from.
+The assets folder itself can be copied to the same folder where the binary lives.
 
 ## 5.3. Compilation steps
 The project is built on CMake as build engine. First we need to create the directory where the build will be stored and get into it:
@@ -55,7 +51,7 @@ Finally we can compile the project to generate the actual executable
 make
 ```
 
-**REMEMBER: The assets.zip file has to be at the same folder as the executable**
+**REMEMBER: The assets folder has to be at the same folder as the executable**
 
 ## 5.4. Running a background
 Currently both compressed and uncompressed backgrounds are supported.
@@ -72,7 +68,7 @@ Uncompressed backgrounds are just plain folders including all the resources and 
 ./wallengine --dir folder
 ```
 
-#### 5.4.3. Running as a screen's background
+#### 5.4.3. Running as a screen's background (NOT SUPPORTED IN THIS BUILD YET)
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 ```
 ./wallengine --screen-root HDMI-1 --screen-root DVI-D-1

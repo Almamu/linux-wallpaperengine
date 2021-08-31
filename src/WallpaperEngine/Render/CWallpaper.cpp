@@ -61,6 +61,12 @@ void CWallpaper::setupFramebuffers ()
     // give OpenGL an empty image
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
+    // set filtering parameters, otherwise the texture is not rendered
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     // create the depth render buffer for the main framebuffer
     glGenRenderbuffers (1, &this->m_mainDepthBuffer);
     glBindRenderbuffer (GL_RENDERBUFFER, this->m_mainDepthBuffer);
@@ -84,6 +90,12 @@ void CWallpaper::setupFramebuffers ()
     glBindTexture (GL_TEXTURE_2D, this->m_subTexture);
     // give OpenGL an empty image
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    // set filtering parameters, otherwise the texture is not rendered
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // create the depth render buffer for the main framebuffer
     glGenRenderbuffers (1, &this->m_subDepthBuffer);
