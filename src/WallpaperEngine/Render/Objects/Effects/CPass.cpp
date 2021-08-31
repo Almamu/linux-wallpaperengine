@@ -90,66 +90,6 @@ void CPass::render (GLuint drawTo, GLuint input)
         }
     }
 
-    // now bind variables needed
-    {
-        auto cur = this->m_variables.begin ();
-        auto end = this->m_variables.end ();
-
-        for (; cur != end; cur ++)
-        {
-#ifdef DEBUG
-            std::cout << "(" << (*cur).second->getIdentifierName() << ") - " << (*cur).second->getName () << " = ";
-#endif /* DEBUG */
-
-            if ((*cur).second->is <CShaderVariableInteger> () == true)
-            {
-                GLint value = *static_cast <const int32_t*> ((*cur).second->getValue ());
-#ifdef DEBUG
-                std::cout << value << "\n";
-#endif /* DEBUG */
-                glUniform1i ((*cur).first, value);
-            }
-            else if ((*cur).second->is <CShaderVariableFloat> () == true)
-            {
-                GLfloat value = *static_cast <const float*> ((*cur).second->getValue ());
-#ifdef DEBUG
-                std::cout << value << "\n";
-#endif /* DEBUG */
-                glUniform1f ((*cur).first, value);
-            }
-            else if ((*cur).second->is <CShaderVariableVector2> () == true)
-            {
-                glm::vec2 value = *static_cast <const glm::vec2*> ((*cur).second-> as <CShaderVariableVector2> ()->getValue ());
-#ifdef DEBUG
-                std::cout << value.x << " " << value.y << "\n";
-#endif /* DEBUG */
-                glUniform2fv ((*cur).first, 1, glm::value_ptr (value));
-            }
-            else if ((*cur).second->is <CShaderVariableVector3> () == true)
-            {
-                glm::vec3 value = *static_cast <const glm::vec3*> ((*cur).second-> as <CShaderVariableVector3> ()->getValue ());
-#ifdef DEBUG
-                std::cout << value.x << " " << value.y << " " << value.z << "\n";
-#endif /* DEBUG */
-                glUniform3fv ((*cur).first, 1, glm::value_ptr (value));
-            }
-            else if ((*cur).second->is <CShaderVariableVector4> () == true)
-            {
-                glm::vec4 value = *static_cast <const glm::vec4*> ((*cur).second-> as <CShaderVariableVector4> ()->getValue ());
-#ifdef DEBUG
-                std::cout << value.x << " " << value.y << " " << value.z << " " << value.w << "\n";
-#endif /* DEBUG */
-                glUniform4fv ((*cur).first, 1, glm::value_ptr (value));
-            }
-            else
-            {
-#ifdef DEBUG
-                std::cout << "null\n";
-#endif /* DEBUG */
-            }
-        }
-    }
-
     // add uniforms
     {
         auto cur = this->m_uniforms.begin ();
@@ -236,137 +176,6 @@ void CPass::render (GLuint drawTo, GLuint input)
     if (this->a_TexCoord != -1)
         glDisableVertexAttribArray (this->a_TexCoord);
 }
-
-/*
-void CPass::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
-{
-    // TODO: REWRITE
-    const Core::Objects::CImage* image = this->m_material->getImage ()->getImage ();
-
-    irr::video::IVideoDriver* driver = services->getVideoDriver ();
-
-    irr::core::matrix4 worldViewProj;
-    worldViewProj = driver->getTransform (irr::video::ETS_PROJECTION);
-    worldViewProj *= driver->getTransform (irr::video::ETS_VIEW);
-    worldViewProj *= driver->getTransform (irr::video::ETS_WORLD);
-
-    auto cur = this->m_vertShader->getParameters ().begin ();
-    auto end = this->m_vertShader->getParameters ().end ();
-
-    for (; cur != end; cur ++)
-    {
-        if ((*cur)->is <CShaderVariableInteger> () == true)
-        {
-            services->setVertexShaderConstant (
-                (*cur)->getName ().c_str (),
-                (irr::s32*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-        }
-        else if (
-            (*cur)->is <CShaderVariableFloat> () == true ||
-            (*cur)->is <CShaderVariableVector2> () == true ||
-            (*cur)->is <CShaderVariableVector3> () == true ||
-            (*cur)->is <CShaderVariableVector4> () == true)
-        {
-            services->setVertexShaderConstant (
-                (*cur)->getName ().c_str (),
-                (float*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-        }
-    }
-
-    cur = this->m_fragShader->getParameters ().begin ();
-    end = this->m_fragShader->getParameters ().end ();
-
-    for (; cur != end; cur ++)
-    {
-        if ((*cur)->is <CShaderVariableInteger> () == true)
-        {
-            services->setPixelShaderConstant (
-                (*cur)->getName ().c_str (),
-                (irr::s32*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-        }
-        else if (
-            (*cur)->is <CShaderVariableFloat> () == true ||
-            (*cur)->is <CShaderVariableVector2> () == true ||
-            (*cur)->is <CShaderVariableVector3> () == true ||
-            (*cur)->is <CShaderVariableVector4> () == true)
-        {
-            services->setPixelShaderConstant (
-                (*cur)->getName ().c_str (),
-                (float*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-        }
-    }
-
-    cur = this->m_context->getShaderVariables ().begin ();
-    end = this->m_context->getShaderVariables ().end ();
-
-    for (; cur != end; cur ++)
-    {
-        if ((*cur)->is <CShaderVariableFloatPointer> () == true)
-        {
-            services->setPixelShaderConstant (
-                (*cur)->getName ().c_str (),
-                (float*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-            services->setVertexShaderConstant (
-                (*cur)->getName ().c_str (),
-                (float*) (*cur)->getValue (),
-                (*cur)->getSize ()
-            );
-        }
-    }
-
-    services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
-
-    auto textureCur = this->m_textures.begin ();
-    auto textureEnd = this->m_textures.end ();
-
-    char resolution [22];
-    char sampler [12];
-    char rotation [20];
-    char translation [23];
-
-    float textureRotation [4] = { image->getAngles ().X, image->getAngles ().Y, image->getAngles ().Z, image->getAngles ().Z };
-
-    for (int index = 0; textureCur != textureEnd; textureCur ++, index ++)
-    {
-        // TODO: CHECK THESE VALUES, DOCUMENTATION SAYS THAT FIRST TWO ELEMENTS SHOULD BE WIDTH AND HEIGHT
-        // TODO: BUT IN REALITY THEY DO NOT SEEM TO BE THAT, NOT HAVING SUPPORT FOR ATTRIBUTES DOESN'T HELP EITHER
-        float textureResolution [4] = {
-            1.0, -1.0, 1.0, 1.0
-        };
-        float textureTranslation [2] = {
-            0, 0
-        };
-
-        sprintf (resolution, "g_Texture%dResolution", index);
-        sprintf (sampler, "g_Texture%d", index);
-        sprintf (rotation, "g_Texture%dRotation", index);
-        sprintf (translation, "g_Texture%dTranslation", index);
-
-        services->setVertexShaderConstant (resolution, textureResolution, 4);
-        services->setPixelShaderConstant (resolution, textureResolution, 4);
-        services->setVertexShaderConstant (sampler, &index, 1);
-        services->setPixelShaderConstant (sampler, &index, 1);
-        services->setVertexShaderConstant (rotation, textureRotation, 4);
-        services->setPixelShaderConstant (rotation, textureRotation, 4);
-        services->setVertexShaderConstant (translation, textureTranslation, 2);
-        services->setPixelShaderConstant (translation, textureTranslation, 2);
-    }
-
-    // set variables for time
-    services->setVertexShaderConstant ("g_Time", &g_Time, 1);
-    services->setPixelShaderConstant ("g_Time", &g_Time, 1);
-}
-*/
 
 GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
 {
@@ -560,51 +369,31 @@ void CPass::setupShaderVariables ()
         CShaderVariable* vertexVar = this->m_vertShader->findParameter ((*cur).first);
         CShaderVariable* pixelVar = this->m_fragShader->findParameter ((*cur).first);
 
-        if (pixelVar)
+        // variable not found, can be ignored
+        if (vertexVar == nullptr && pixelVar == nullptr)
+            continue;
+
+        // if both can be found, ensure they're the correct type
+        if (vertexVar != nullptr && pixelVar != nullptr)
         {
-            if (pixelVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
-            {
-                pixelVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
-            }
-            else if (pixelVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
-            {
-                pixelVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
-            }
-            else if (pixelVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
-            {
-                pixelVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
-            }
-
-            // get the uniform first
-            GLint uniform = glGetUniformLocation (this->m_programID, pixelVar->getName ().c_str ());
-
-            if (uniform != -1)
-                // register the variable
-                this->m_variables.insert (std::make_pair (uniform, pixelVar));
+            if (vertexVar->getType () != pixelVar->getType ())
+                throw std::runtime_error ("Pixel and vertex shader variable types do not match");
         }
 
-        if (vertexVar)
-        {
-            if (vertexVar->is <CShaderVariableFloat> () && (*cur).second->is <CShaderConstantFloat> ())
-            {
-                vertexVar->as <CShaderVariableFloat> ()->setValue (*(*cur).second->as <CShaderConstantFloat> ()->getValue ());
-            }
-            else if (vertexVar->is <CShaderVariableInteger> () && (*cur).second->is <CShaderConstantInteger> ())
-            {
-                vertexVar->as <CShaderVariableInteger> ()->setValue (*(*cur).second->as <CShaderConstantInteger> ()->getValue ());
-            }
-            else if (vertexVar->is <CShaderVariableVector3> () && (*cur).second->is <CShaderConstantVector3> ())
-            {
-                vertexVar->as <CShaderVariableVector3> ()->setValue (*(*cur).second->as <CShaderConstantVector3> ()->getValue ());
-            }
+        // get one instance of it
+        CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
 
-            // get the uniform first
-            GLint uniform = glGetUniformLocation (this->m_programID, vertexVar->getName ().c_str ());
+        // ensure the shader's and the constant are of the same type
+        if ((*cur).second->getType () != var->getType ())
+            throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");
 
-            if (uniform != -1)
-                // register the variable
-                this->m_variables.insert (std::make_pair (uniform, vertexVar));
-        }
+        // now determine the constant's type and register the correct uniform for it
+        if ((*cur).second->is <CShaderConstantFloat> ())
+            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
+        else if ((*cur).second->is <CShaderConstantInteger> ())
+            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
+        else if ((*cur).second->is <CShaderConstantVector3> ())
+            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
     }
 }
 

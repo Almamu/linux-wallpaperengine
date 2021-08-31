@@ -71,7 +71,6 @@ namespace WallpaperEngine::Render::Objects::Effects
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
         std::vector<CTexture*> m_textures;
-        std::map<GLint,CShaderVariable*> m_variables;
         std::map<GLint,CShaderVariable*> m_attribs;
         std::vector<UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;
