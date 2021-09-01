@@ -39,6 +39,7 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getVertexBuffer () const;
         const GLuint* getPassVertexBuffer () const;
         const GLuint* getTexCoordBuffer () const;
+        const GLuint* getPassTexCoordBuffer () const;
         const CTexture* getTexture () const;
 
     protected:
@@ -49,9 +50,11 @@ namespace WallpaperEngine::Render::Objects
         GLfloat m_vertexList [6 * 3];
         GLfloat m_passesVertexList [6 * 3];
         GLfloat m_texCoordList [6 * 2];
+        GLfloat m_passTexCoordList [6 * 2];
         GLuint m_vertexBuffer;
         GLuint m_passesVertexBuffer;
         GLuint m_texCoordBuffer;
+        GLuint m_passTexCoordBuffer;
         uint16_t m_vertexIndices [6];
 
 

@@ -63,7 +63,7 @@ void CPass::render (GLuint drawTo, GLuint input)
     // update a_TexCoord and a_Position based on what to draw to
     // this should not be required once we do some prediction on rendering things
     // but for now should be enough
-    this->a_TexCoord = *this->m_material->getImage ()->getTexCoordBuffer ();
+    this->a_TexCoord = (input == this->m_material->getImage ()->getTexture ()->getTextureID ()) ? *this->m_material->getImage ()->getTexCoordBuffer () : *this->m_material->getImage ()->getPassTexCoordBuffer ();
     this->a_Position = (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ();
     // use the shader we have registered
     glUseProgram (this->m_programID);
@@ -140,7 +140,7 @@ void CPass::render (GLuint drawTo, GLuint input)
             glVertexAttribPointer ((*cur)->id, (*cur)->elements, (*cur)->type, GL_FALSE, 0, nullptr);
         }
     }
-    
+
     // start actual rendering now
     glBindBuffer (GL_ARRAY_BUFFER, (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
     glDrawArrays (GL_TRIANGLES, 0, 6);

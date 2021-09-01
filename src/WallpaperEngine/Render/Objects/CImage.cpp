@@ -94,6 +94,17 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     memcpy (this->m_texCoordList, data2, sizeof (data2));
 
+    GLfloat data3 [] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f
+    };
+
+    memcpy (this->m_passTexCoordList, data3, sizeof (data3));
+
     // bind vertex list to the openGL buffers
     glGenBuffers (1, &this->m_vertexBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_vertexBuffer);
@@ -107,6 +118,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glGenBuffers (1, &this->m_texCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_texCoordList), this->m_texCoordList, GL_STATIC_DRAW);
+
+    glGenBuffers (1, &this->m_passTexCoordBuffer);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_passTexCoordBuffer);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_passTexCoordList), this->m_passTexCoordList, GL_STATIC_DRAW);
 
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (this, this->m_image->getMaterial ());
@@ -129,8 +144,6 @@ void CImage::render ()
     GLuint inputTexture = this->m_texture->getTextureID ();
     // get the orthogonal projection
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
-
-    std::cout << "Rendering " << this->getImage ()->getName () << "\n";
 
     // pinpong current buffer
     this->getScene ()->pinpongFramebuffer (&drawTo, nullptr);
@@ -283,6 +296,11 @@ const GLuint* CImage::getPassVertexBuffer () const
 const GLuint* CImage::getTexCoordBuffer () const
 {
     return &this->m_texCoordBuffer;
+}
+
+const GLuint* CImage::getPassTexCoordBuffer () const
+{
+    return &this->m_passTexCoordBuffer;
 }
 
 const std::string CImage::Type = "image";
