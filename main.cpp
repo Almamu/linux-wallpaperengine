@@ -29,7 +29,7 @@ enum BACKGROUND_RUN_MODE
     RUN_MODE_PACKAGE = 3
 };
 
-double g_Time;
+float g_Time;
 
 using namespace WallpaperEngine::Core::Types;
 
@@ -246,7 +246,7 @@ int main (int argc, char* argv[])
     while (glfwWindowShouldClose (window) == 0)
     {
         // calculate the current time value
-        g_Time += static_cast <double> (endTime - startTime) / CLOCKS_PER_SEC;
+        g_Time += static_cast <float> (endTime - startTime) / CLOCKS_PER_SEC;
         // get the start time of the frame
         startTime = clock ();
 
@@ -270,7 +270,7 @@ int main (int argc, char* argv[])
 
         // ensure the frame time is correct to not overrun FPS
         if ((endTime - startTime) < minimumTime)
-            usleep (static_cast <unsigned int> ((static_cast <double> (endTime - startTime) / CLOCKS_PER_SEC) * 1000));
+            usleep (static_cast <unsigned int> ((static_cast <double> ((minimumTime - (endTime - startTime))) / CLOCKS_PER_SEC) * 1000));
     }
 
     // terminate gl

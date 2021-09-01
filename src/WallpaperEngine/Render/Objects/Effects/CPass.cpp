@@ -20,7 +20,7 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 
 using namespace WallpaperEngine::Render::Objects::Effects;
 
-extern double g_Time;
+extern float g_Time;
 
 CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass) :
     m_material (material),
