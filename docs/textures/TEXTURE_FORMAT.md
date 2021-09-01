@@ -20,12 +20,16 @@ Wallpaper engine uses a custom texture storage format converted by resourcecompi
 | __Texture information__ | x bytes | Varies depending on the container version |
 
 ## TEXB0003
+| Information | Size | Default value |
+|---|---|---|
 | __Unknown data__ | 4 bytes | To be reversed |
 | __Free image format__ | 4 bytes | The type of file this texture is based off the FREEIMAGE library |
 | __Mip map levels__ | 4 bytes | The number of mipmap levels stored for this texture |
 | __Mipmap entry__ | x bytes | See Mipmap entries |
 
 ## TEXB0002 and TEXB0001
+| Information | Size | Default value |
+|---|---|---|
 | __Unknown data__ | 4 bytes | To be reversed |
 | __Mip map levels__ | 4 bytes | The number of mipmap levels stored for this texture |
 | __Mipmap entry__ | x bytes | See Mipmap entries |
