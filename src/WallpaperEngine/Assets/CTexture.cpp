@@ -203,37 +203,29 @@ void CTexture::parseHeader (char* fileData)
     fileData = reinterpret_cast <char*> (pointer);
     // get the position of what comes after the texture data
     char* afterFileData = fileData + 9;
+    pointer = reinterpret_cast <uint32_t*> (fileData + 9);
 
     if (memcmp (fileData, "TEXB0003", 9) == 0)
     {
         this->m_header->containerVersion = ContainerVersion::TEXB0003;
 
         // get back the pointer and use it
-        pointer = reinterpret_cast <uint32_t*> (afterFileData);
         pointer ++;
         this->m_header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
-        // set back the pointer
-        fileData = reinterpret_cast <char*> (pointer);
     }
     else if(memcmp (fileData, "TEXB0002", 9) == 0)
     {
         this->m_header->containerVersion = ContainerVersion::TEXB0002;
 
-        // get back the pointer and use it
-        pointer = reinterpret_cast <uint32_t*> (afterFileData);
+        // skip 4 bytes
         pointer ++;
-        // set back the pointer
-        fileData = reinterpret_cast <char*> (pointer);
     }
     else if (memcmp (fileData, "TEXB0001", 9) == 0)
     {
         this->m_header->containerVersion = ContainerVersion::TEXB0001;
 
-        // get back the pointer and use it
-        pointer = reinterpret_cast <uint32_t*> (afterFileData);
+        // skip 4 bytes
         pointer ++;
-        // set back the pointer
-        fileData = reinterpret_cast <char*> (pointer);
     }
     else
     {
@@ -254,9 +246,6 @@ void CTexture::parseHeader (char* fileData)
         this->m_header = nullptr;
         throw std::runtime_error ("RG88 format is not supported yet");
     }
-
-    // get back an integer pointer
-    pointer = reinterpret_cast <uint32_t*> (fileData);
 
     // read the number of mipmaps available
     this->m_header->mipmapCount = *pointer ++;
