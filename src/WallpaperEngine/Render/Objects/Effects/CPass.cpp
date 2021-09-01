@@ -50,11 +50,6 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
 
 void CPass::render (GLuint drawTo, GLuint input)
 {
-    if (drawTo == 0)
-        std::cout << "FINAL PASS TO SCREEN --------------------------\n";
-    else
-        std::cout << "NEW PASS --------------------------------------\n";
-
     // clear whatever buffer we're drawing to if we're not drawing to screen
     if (drawTo > 0)
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -65,13 +60,17 @@ void CPass::render (GLuint drawTo, GLuint input)
             this->m_material->getImage ()->getScene ()->getCamera ()->getLookAt () *
             glm::mat4 (1.0f);
 
+    // update a_TexCoord and a_Position based on what to draw to
+    // this should not be required once we do some prediction on rendering things
+    // but for now should be enough
+    this->a_TexCoord = *this->m_material->getImage ()->getTexCoordBuffer ();
+    this->a_Position = (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ();
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
     // bind the input texture
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, input);
-    std::cout << "Binding texture " << 0 << " to " << input << "\n";
 
     // first bind the textures to their sampler place
     {
@@ -81,8 +80,6 @@ void CPass::render (GLuint drawTo, GLuint input)
 
         for (int index = 1; cur != end; cur ++, index ++)
         {
-            std::cout << "Binding texture " << index << " to " << (*cur)->getTextureID () << "\n";
-
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + index);
             // bind the correct texture there
@@ -126,55 +123,36 @@ void CPass::render (GLuint drawTo, GLuint input)
 
     if (this->g_Texture0Rotation != -1)
     {
-#ifdef DEBUG
-        std::cout << "g_Texture0Rotation = {0.0, 0.0}\n";
-#endif /* DEBUG */
         glUniform2f (this->g_Texture0Rotation, 0.0f, 0.0f);
     }
     if (this->g_Texture0Translation != -1)
     {
-#ifdef DEBUG
-        std::cout << "g_Texture0Translation = {0.0, 0.0, 0.0, 0.0}\n";
-#endif /* DEBUG */
         glUniform4f (this->g_Texture0Translation, 0.0f, 0.0f, 0.0f, 0.0f);
     }
-    if (this->a_TexCoord != -1)
     {
-        std::cout << "a_TexCoord present!\n";
-        glEnableVertexAttribArray (this->a_TexCoord);
-        glBindBuffer (GL_ARRAY_BUFFER, *this->m_material->getImage ()->getTexCoordBuffer ());
-        glVertexAttribPointer (
-            this->a_TexCoord,
-            2,
-            GL_FLOAT,
-            GL_FALSE,
-            0,
-            nullptr
-        );
-    }
-    if (this->a_Position != -1)
-    {
-        std::cout << "a_Position present!\n";
-        glEnableVertexAttribArray (this->a_Position);
-        glBindBuffer (GL_ARRAY_BUFFER, (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
-        glVertexAttribPointer (
-            this->a_Position,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            0,
-            nullptr
-        );
-    }
+        auto cur = this->m_attribs.begin ();
+        auto end = this->m_attribs.end ();
 
+        for (; cur != end; cur ++)
+        {
+            glEnableVertexAttribArray ((*cur)->id);
+            glBindBuffer (GL_ARRAY_BUFFER, *(*cur)->value);
+            glVertexAttribPointer ((*cur)->id, (*cur)->elements, (*cur)->type, GL_FALSE, 0, nullptr);
+        }
+    }
+    
     // start actual rendering now
     glBindBuffer (GL_ARRAY_BUFFER, (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
-    if (this->a_Position != -1)
-        glDisableVertexAttribArray (this->a_Position);
-    if (this->a_TexCoord != -1)
-        glDisableVertexAttribArray (this->a_TexCoord);
+    // disable vertex attribs array
+    {
+        auto cur = this->m_attribs.begin ();
+        auto end = this->m_attribs.end ();
+
+        for (; cur != end; cur ++)
+            glDisableVertexAttribArray ((*cur)->id);
+    }
 }
 
 GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
@@ -255,6 +233,8 @@ void CPass::setupShaders ()
 
     // setup uniforms
     this->setupUniforms ();
+    // setup attributes too
+    this->setupAttributes ();
     // get information from the program, like uniforms, etc
     // support three textures for now
     this->g_Texture0Rotation = glGetUniformLocation (this->m_programID, "g_Texture0Rotation");
@@ -263,6 +243,12 @@ void CPass::setupShaders ()
     // bind a_TexCoord and a_Position
     this->a_TexCoord = glGetAttribLocation (this->m_programID, "a_TexCoord");
     this->a_Position = glGetAttribLocation (this->m_programID, "a_Position");
+}
+
+void CPass::setupAttributes ()
+{
+    this->addAttribute ("a_TexCoord", GL_FLOAT, 2, &this->a_TexCoord);
+    this->addAttribute ("a_Position", GL_FLOAT, 3, &this->a_Position);
 }
 
 void CPass::setupUniforms ()
@@ -300,6 +286,18 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Time", &g_Time);
     // add model-view-projection matrix
     this->addUniform ("g_ModelViewProjectionMatrix", &this->m_modelViewProjectionMatrix);
+}
+
+void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value)
+{
+    GLint id = glGetAttribLocation (this->m_programID, name.c_str ());
+
+    if (id == -1)
+        return;
+
+    this->m_attribs.emplace_back (
+        new AttribEntry (id, name, type, elements, value)
+    );
 }
 
 template <typename T>

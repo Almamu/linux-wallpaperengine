@@ -46,11 +46,26 @@ namespace WallpaperEngine::Render::Objects::Effects
             const void* value;
         };
 
+        class AttribEntry
+        {
+        public:
+            AttribEntry (GLint id, std::string name, GLint type, GLint elements, const GLuint* value) :
+                id (id), name (std::move (name)), type (type), elements (elements), value (value) { }
+
+            GLint id;
+            std::string name;
+            GLint type;
+            GLint elements;
+            const GLuint* value;
+        };
+
         static GLuint compileShader (Render::Shaders::Compiler* shader, GLuint type);
         void setupTextures ();
         void setupShaders ();
         void setupShaderVariables ();
         void setupUniforms ();
+        void setupAttributes ();
+        void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
         void addUniform (const std::string& name, int value);
         void addUniform (const std::string& name, double value);
         void addUniform (const std::string& name, float value);
@@ -71,7 +86,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
         std::vector<CTexture*> m_textures;
-        std::map<GLint,CShaderVariable*> m_attribs;
+        std::vector<AttribEntry*> m_attribs;
         std::vector<UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;
 
@@ -83,8 +98,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         // shader variables used temporary
         GLint g_Texture0Rotation;
         GLint g_Texture0Translation;
-        GLint a_TexCoord;
-        GLint a_Position;
-        GLint positionAttribute;
+        GLuint a_TexCoord;
+        GLuint a_Position;
     };
 }
