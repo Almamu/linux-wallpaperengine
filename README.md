@@ -1,5 +1,5 @@
 # 1. Disclaimer
-**This is an educational project**. Our main focus is to learn how Irrlicht Engine works and provide examples of usage of as much aspects of it as possible. We are not responsible for what others do with the source code downloaded from this project.
+**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). Turns out working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
 
 # 2. What is this project all about?
 This projects aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
