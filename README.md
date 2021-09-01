@@ -85,4 +85,8 @@ To reduce the performance hit to your system you can reduce (or increase) the FP
 ###### Example background
 This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
-![example](docs/images/example.gif) 
+![example](docs/images/example.gif)
+
+# 6. Special thanks
+- [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
+- [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS
