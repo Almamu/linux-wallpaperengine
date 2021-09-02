@@ -11,8 +11,40 @@ CTexture::CTexture (void* fileData)
     // ensure the header is parsed
     this->parseHeader (static_cast <char*> (fileData));
 
+    GLint internalFormat;
+
     if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
-        throw std::runtime_error ("Normal images are not supported yet");
+    {
+        internalFormat = GL_RGBA8;
+        // set some extra information too as it's used for image sizing
+        // this ensures that a_TexCoord uses the full image instead of just part of it
+        this->m_header->width = this->m_header->mipmaps [0]->width;
+        this->m_header->height = this->m_header->mipmaps [0]->height;
+        this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
+        this->m_header->textureHeight = this->m_header->mipmaps [0]->height;
+    }
+    else
+    {
+        // detect the image format and hand it to openGL to be used
+        switch (this->m_header->format)
+        {
+            case TextureFormat::DXT5:
+                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                break;
+            case TextureFormat::DXT3:
+                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                break;
+            case TextureFormat::DXT1:
+                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                break;
+            case TextureFormat::ARGB8888:
+                internalFormat = GL_RGBA8;
+                break;
+            default:
+                delete this->m_header;
+                throw std::runtime_error ("Cannot determine the texture format");
+        }
+    }
 
     // set the texture resolution
     // TODO: SUPPORT SPRITES
@@ -20,28 +52,6 @@ CTexture::CTexture (void* fileData)
         this->m_header->width, this->m_header->height,
         this->m_header->textureWidth, this->m_header->textureHeight
     };
-
-    GLint formatGL;
-
-    // detect the image format and hand it to openGL to be used
-    switch (this->m_header->format)
-    {
-        case TextureFormat::DXT5:
-            formatGL = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-            break;
-        case TextureFormat::DXT3:
-            formatGL = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-            break;
-        case TextureFormat::DXT1:
-            formatGL = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-            break;
-        case TextureFormat::ARGB8888:
-            formatGL = GL_RGBA8;
-            break;
-        default:
-            delete this->m_header;
-            throw std::runtime_error ("Cannot determine the texture format");
-    }
 
     // reserve a texture
     glGenTextures (1, &this->m_textureID);
@@ -76,32 +86,64 @@ CTexture::CTexture (void* fileData)
     }
 
     // TODO: USE THIS ONE
-    uint32_t blockSize = (formatGL == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
+    uint32_t blockSize = (internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
 
     auto cur = this->m_header->mipmaps.begin ();
     auto end = this->m_header->mipmaps.end ();
 
     for (int32_t level = 0; cur != end; cur ++, level ++)
     {
-        switch (formatGL)
+        FIBITMAP* bitmap = nullptr;
+        FIBITMAP* converted = nullptr;
+        FIMEMORY* memory = nullptr;
+        void* dataptr = (*cur)->uncompressedData;
+        uint32_t width = (*cur)->width;
+        uint32_t height = (*cur)->height;
+        GLenum textureFormat = GL_RGBA;
+
+        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+        {
+            memory = FreeImage_OpenMemory (reinterpret_cast <BYTE *> ((*cur)->uncompressedData), (*cur)->uncompressedSize);
+
+            // load the image and setup pointers so they can be used
+            bitmap = FreeImage_LoadFromMemory (this->m_header->freeImageFormat, memory);
+            // flip the image vertically
+            FreeImage_FlipVertical (bitmap);
+            // convert to a 32bits bytearray
+            converted = FreeImage_ConvertTo32Bits (bitmap);
+
+            dataptr = FreeImage_GetBits (converted);
+            width = FreeImage_GetWidth (converted);
+            height = FreeImage_GetHeight (converted);
+            textureFormat = GL_BGRA;
+        }
+
+        switch (internalFormat)
         {
             case GL_RGBA8:
-                glTexImage2D (GL_TEXTURE_2D, level, formatGL,
-                    (*cur)->width, (*cur)->height, 0,
-                    GL_RGBA, GL_UNSIGNED_BYTE,
-                    (*cur)->uncompressedData
+                glTexImage2D (GL_TEXTURE_2D, level, internalFormat,
+                    width, height, 0,
+                    textureFormat, GL_UNSIGNED_BYTE,
+                    dataptr
                 );
                 break;
             case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
             case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
             case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
                 glCompressedTexImage2D (
-                    GL_TEXTURE_2D, level, formatGL,
-                    (*cur)->width, (*cur)->height, 0,
-                    (*cur)->uncompressedSize, (*cur)->uncompressedData
+                        GL_TEXTURE_2D, level, internalFormat,
+                        (*cur)->width, (*cur)->height, 0,
+                        (*cur)->uncompressedSize, dataptr
                 );
                 break;
+        }
 
+        // freeimage buffer won't be used anymore, so free memory
+        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+        {
+            FreeImage_Unload (bitmap);
+            FreeImage_Unload (converted);
+            FreeImage_CloseMemory (memory);
         }
     }
 

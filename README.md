@@ -19,6 +19,7 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - Xrandr
 - GLW3
 - GLM
+- FreeImage
 
 # 5. How to use
 ## 5.1. Pre-requirements

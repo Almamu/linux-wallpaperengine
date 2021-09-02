@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <SDL_mixer.h>
 #include <SDL.h>
+#include <FreeImage.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -136,37 +137,13 @@ int main (int argc, char* argv[])
         return 1;
     }
 
+    // initialize freeimage
+    FreeImage_Initialise (TRUE);
+
     // set some window hints (opengl version to be used)
     glfwWindowHint (GLFW_SAMPLES, 4);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
-
-    // create the window!
-    // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
-    // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
-    GLFWwindow* window = glfwCreateWindow (1920, 1080, "WallpaperEngine", NULL, NULL);
-
-    if (window == nullptr)
-    {
-        fprintf (stderr, "Failed to open a GLFW window");
-        glfwTerminate ();
-        return 2;
-    }
-
-    glfwMakeContextCurrent (window);
-
-    int windowWidth = 1920;
-    int windowHeight = 1080;
-
-    // get the real framebuffer size
-    glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
-
-    if (glewInit () != GLEW_OK)
-    {
-        fprintf (stderr, "Failed to initialize GLEW");
-        glfwTerminate ();
-        return 3;
-    }
 
     std::string project_path = path + "project.json";
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
@@ -191,6 +168,34 @@ int main (int argc, char* argv[])
     // parse the project.json file
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
+
+    auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
+    // create the window!
+    // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
+    // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
+    GLFWwindow* window = glfwCreateWindow (projection->getWidth (), projection->getHeight (), "WallpaperEngine", NULL, NULL);
+
+    if (window == nullptr)
+    {
+        fprintf (stderr, "Failed to open a GLFW window");
+        glfwTerminate ();
+        return 2;
+    }
+
+    glfwMakeContextCurrent (window);
+
+    int windowWidth = projection->getWidth ();
+    int windowHeight = projection->getHeight ();
+
+    // get the real framebuffer size
+    glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
+
+    if (glewInit () != GLEW_OK)
+    {
+        fprintf (stderr, "Failed to initialize GLEW");
+        glfwTerminate ();
+        return 3;
+    }
 
     if (project->getType () == "scene")
     {
@@ -248,15 +253,6 @@ int main (int argc, char* argv[])
         // get the start time of the frame
         startTime = clock ();
 
-        // do not use any framebuffer for now
-        glBindFramebuffer (GL_FRAMEBUFFER, 0);
-        // ensure we render over the whole screen
-        glViewport (0, 0, 1920, 1080);
-
-        glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        // clear window
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         // render the scene
         wallpaper->render ();
 
@@ -276,6 +272,8 @@ int main (int argc, char* argv[])
     glfwTerminate ();
     // terminate SDL
     SDL_Quit ();
+    // terminate free image
+    FreeImage_DeInitialise ();
 
     return 0;
 }

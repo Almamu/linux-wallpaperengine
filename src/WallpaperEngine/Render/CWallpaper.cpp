@@ -49,7 +49,17 @@ void CWallpaper::pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture)
 
 void CWallpaper::setupFramebuffers ()
 {
-    // TODO: ENSURE THE WINDOW WIDTH AND HEIGHT IS CORRECT AND UPDATE THEM WHEN THE SCREEN CHANGES
+    int windowWidth = 1920;
+    int windowHeight = 1080;
+
+    if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
+    {
+        auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
+
+        windowWidth = projection->getWidth ();
+        windowHeight = projection->getHeight ();
+    }
+
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
     glGenFramebuffers (1, &this->m_mainFramebuffer);
@@ -59,7 +69,7 @@ void CWallpaper::setupFramebuffers ()
     // bind the new texture to set settings on it
     glBindTexture (GL_TEXTURE_2D, this->m_mainTexture);
     // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // set filtering parameters, otherwise the texture is not rendered
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -70,7 +80,7 @@ void CWallpaper::setupFramebuffers ()
     // create the depth render buffer for the main framebuffer
     glGenRenderbuffers (1, &this->m_mainDepthBuffer);
     glBindRenderbuffer (GL_RENDERBUFFER, this->m_mainDepthBuffer);
-    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1920, 1080);
+    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
     glFramebufferRenderbuffer (GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, this->m_mainDepthBuffer);
     // set the texture as the colour attachmend #0
     glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_mainTexture, 0);
@@ -89,7 +99,7 @@ void CWallpaper::setupFramebuffers ()
     // bind the new texture to set settings on it
     glBindTexture (GL_TEXTURE_2D, this->m_subTexture);
     // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // set filtering parameters, otherwise the texture is not rendered
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -100,7 +110,7 @@ void CWallpaper::setupFramebuffers ()
     // create the depth render buffer for the main framebuffer
     glGenRenderbuffers (1, &this->m_subDepthBuffer);
     glBindRenderbuffer (GL_RENDERBUFFER, this->m_subDepthBuffer);
-    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1920, 1080);
+    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
     glFramebufferRenderbuffer (GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, this->m_subDepthBuffer);
     // set the texture as the colour attachmend #0
     glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_subTexture, 0);
