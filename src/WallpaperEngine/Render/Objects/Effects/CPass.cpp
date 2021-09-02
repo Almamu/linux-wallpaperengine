@@ -58,17 +58,17 @@ void CPass::render (GLuint drawTo, GLuint input)
     if (this->m_pass->getBlendingMode () == "translucent")
     {
         glEnable (GL_BLEND);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     else if (this->m_pass->getBlendingMode () == "additive")
     {
         glEnable (GL_BLEND);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
     }
     else if (this->m_pass->getBlendingMode () == "normal")
     {
         glEnable (GL_BLEND);
-        glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+        glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
     }
     else
     {
@@ -128,25 +128,25 @@ void CPass::render (GLuint drawTo, GLuint input)
             switch ((*cur)->type)
             {
                 case Double:
-                    glUniform1d ((*cur)->id, *static_cast <const double*> ((*cur)->value));
+                    glUniform1d ((*cur)->id, *reinterpret_cast <const double*> ((*cur)->value));
                     break;
                 case Float:
-                    glUniform1f ((*cur)->id, *static_cast <const float*> ((*cur)->value));
+                    glUniform1f ((*cur)->id, *reinterpret_cast <const float*> ((*cur)->value));
                     break;
                 case Integer:
-                    glUniform1i ((*cur)->id, *static_cast <const int*> ((*cur)->value));
+                    glUniform1i ((*cur)->id, *reinterpret_cast <const int*> ((*cur)->value));
                     break;
                 case Vector4:
-                    glUniform4fv ((*cur)->id, 1, glm::value_ptr (*static_cast <const glm::vec4*> ((*cur)->value)));
+                    glUniform4fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> ((*cur)->value)));
                     break;
                 case Vector3:
-                    glUniform3fv ((*cur)->id, 1, glm::value_ptr (*static_cast <const glm::vec3*> ((*cur)->value)));
+                    glUniform3fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> ((*cur)->value)));
                     break;
                 case Vector2:
-                    glUniform2fv ((*cur)->id, 1, glm::value_ptr (*static_cast <const glm::vec2*> ((*cur)->value)));
+                    glUniform2fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> ((*cur)->value)));
                     break;
                 case Matrix4:
-                    glUniformMatrix4fv ((*cur)->id, 1, GL_FALSE, glm::value_ptr (*static_cast <const glm::mat4*> ((*cur)->value)));
+                    glUniformMatrix4fv ((*cur)->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> ((*cur)->value)));
                     break;
             }
         }

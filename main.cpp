@@ -230,8 +230,6 @@ int main (int argc, char* argv[])
     auto sceneInformation = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
     FloatColor clearColor = sceneInformation->getClearColor ();
 
-    glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-
     // enable depth text
     glEnable (GL_DEPTH_TEST);
     glDepthFunc (GL_LESS);
@@ -246,7 +244,7 @@ int main (int argc, char* argv[])
     while (glfwWindowShouldClose (window) == 0)
     {
         // calculate the current time value
-        g_Time += static_cast <float> (endTime - startTime) / CLOCKS_PER_SEC;
+        g_Time = (float) glfwGetTime ();
         // get the start time of the frame
         startTime = clock ();
 
@@ -255,6 +253,7 @@ int main (int argc, char* argv[])
         // ensure we render over the whole screen
         glViewport (0, 0, 1920, 1080);
 
+        glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         // clear window
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -279,79 +278,4 @@ int main (int argc, char* argv[])
     SDL_Quit ();
 
     return 0;
-/*
-    try
-    {
-        IrrlichtContext = new WallpaperEngine::Irrlicht::CContext (screens, isRootWindow);
-        IrrlichtContext->initializeContext ();
-    }
-    catch (std::runtime_error& ex)
-    {
-        std::cerr << ex.what () << std::endl;
-
-        return 1;
-    }
-
-    path = stringPathFixes (path);
-
-    irr::io::path wallpaper_path = IrrlichtContext->getDevice ()->getFileSystem ()->getAbsolutePath (path.c_str ());
-    irr::io::path project_path = wallpaper_path + "project.json";
-
-    if (mode == RUN_MODE_PACKAGE)
-    {
-        irr::io::path scene_path = wallpaper_path + "scene.pkg";
-        // add the package file to the lookup list
-        IrrlichtContext->getDevice ()->getFileSystem ()->addFileArchive (scene_path, true, false);
-    }
-    else if (mode == RUN_MODE_DIRECTORY)
-    {
-        project_path = wallpaper_path + "project.json";
-        // set the working directory to the project folder
-        IrrlichtContext->getDevice ()->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
-    }
-
-    WallpaperEngine::Core::CProject* project = WallpaperEngine::Core::CProject::fromFile (project_path);
-    WallpaperEngine::Render::CWallpaper* wallpaper;
-
-    if (project->getType () == "scene")
-    {
-        WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
-        wallpaper = new WallpaperEngine::Render::CScene (scene, IrrlichtContext);
-        IrrlichtContext->getDevice ()->getSceneManager ()->setAmbientLight (
-                    scene->getAmbientColor ().toSColor ()
-        );
-    }
-    else if (project->getType () == "video")
-    {
-        wallpaper = new WallpaperEngine::Render::CVideo (
-                    project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> (),
-                    IrrlichtContext
-        );
-    }
-    else
-    {
-        throw std::runtime_error ("Unsupported wallpaper type");
-    }
-    
-    uint32_t minimumTime = 1000 / maximumFPS;
-    uint32_t startTime = 0;
-    uint32_t endTime = 0;
-
-    while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
-    {
-        if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
-            continue;
-
-        startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
-        g_Time = startTime / 1000.0f;
-
-        IrrlichtContext->renderFrame (wallpaper);
-
-        endTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
-
-        IrrlichtContext->getDevice ()->sleep (minimumTime - (endTime - startTime), false);
-    }
-
-    SDL_Quit ();
-    return 0;*/
 }

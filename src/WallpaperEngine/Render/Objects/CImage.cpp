@@ -177,9 +177,6 @@ void CImage::render ()
     // now render the last pass (to screen)
     glBindBuffer (GL_ARRAY_BUFFER, *this->m_material->getImage ()->getVertexBuffer ());
     glDrawArrays (GL_TRIANGLES, 0, 6);*/
-
-    // flush stdout
-    std::cout << std::flush;
 }
 
 /*
