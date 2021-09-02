@@ -54,6 +54,37 @@ void CPass::render (GLuint drawTo, GLuint input)
     if (drawTo > 0)
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // set texture blending
+    if (this->m_pass->getBlendingMode () == "translucent")
+    {
+        glEnable (GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    else if (this->m_pass->getBlendingMode () == "additive")
+    {
+        glEnable (GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+    }
+    else if (this->m_pass->getBlendingMode () == "normal")
+    {
+        glEnable (GL_BLEND);
+        glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+    }
+    else
+    {
+        glDisable (GL_BLEND);
+    }
+
+    // set depth testing
+    if (this->m_pass->getDepthTest () == "disabled")
+    {
+        glDisable (GL_DEPTH_TEST);
+    }
+    else
+    {
+        glEnable (GL_DEPTH_TEST);
+    }
+
     // update variables used in the render process (like g_ModelViewProjectionMatrix)
     this->m_modelViewProjectionMatrix =
             this->m_material->getImage ()->getScene ()->getCamera ()->getProjection () *

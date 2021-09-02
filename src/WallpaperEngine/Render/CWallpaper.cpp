@@ -59,7 +59,7 @@ void CWallpaper::setupFramebuffers ()
     // bind the new texture to set settings on it
     glBindTexture (GL_TEXTURE_2D, this->m_mainTexture);
     // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // set filtering parameters, otherwise the texture is not rendered
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -89,7 +89,7 @@ void CWallpaper::setupFramebuffers ()
     // bind the new texture to set settings on it
     glBindTexture (GL_TEXTURE_2D, this->m_subTexture);
     // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // set filtering parameters, otherwise the texture is not rendered
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
