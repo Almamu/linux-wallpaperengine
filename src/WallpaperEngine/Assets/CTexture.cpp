@@ -22,6 +22,7 @@ CTexture::CTexture (void* fileData)
         this->m_header->height = this->m_header->mipmaps [0]->height;
         this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
         this->m_header->textureHeight = this->m_header->mipmaps [0]->height;
+        // TODO: MAYBE IT'S BETTER TO CREATE A TEXTURE OF THE GIVEN SIZE AND COPY OVER WHAT WE READ FROM THE FILE?
     }
     else
     {
@@ -86,7 +87,7 @@ CTexture::CTexture (void* fileData)
     }
 
     // TODO: USE THIS ONE
-    uint32_t blockSize = (internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
+    // uint32_t blockSize = (internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
 
     auto cur = this->m_header->mipmaps.begin ();
     auto end = this->m_header->mipmaps.end ();
@@ -146,8 +147,6 @@ CTexture::CTexture (void* fileData)
             FreeImage_CloseMemory (memory);
         }
     }
-
-    // TODO: IMPLEMENT SUPPORT FOR NORMAL IMAGES
 }
 
 CTexture::~CTexture ()

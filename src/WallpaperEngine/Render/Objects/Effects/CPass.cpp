@@ -51,7 +51,7 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
 void CPass::render (GLuint drawTo, GLuint input)
 {
     // clear whatever buffer we're drawing to if we're not drawing to screen
-    if (drawTo > 0)
+    if (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer())
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // set texture blending
@@ -95,7 +95,7 @@ void CPass::render (GLuint drawTo, GLuint input)
     // this should not be required once we do some prediction on rendering things
     // but for now should be enough
     this->a_TexCoord = (input == this->m_material->getImage ()->getTexture ()->getTextureID ()) ? *this->m_material->getImage ()->getTexCoordBuffer () : *this->m_material->getImage ()->getPassTexCoordBuffer ();
-    this->a_Position = (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ();
+    this->a_Position = (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ();
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
@@ -173,7 +173,7 @@ void CPass::render (GLuint drawTo, GLuint input)
     }
 
     // start actual rendering now
-    glBindBuffer (GL_ARRAY_BUFFER, (drawTo > 0) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
+    glBindBuffer (GL_ARRAY_BUFFER, (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // disable vertex attribs array
@@ -270,10 +270,6 @@ void CPass::setupShaders ()
     // support three textures for now
     this->g_Texture0Rotation = glGetUniformLocation (this->m_programID, "g_Texture0Rotation");
     this->g_Texture0Translation = glGetUniformLocation (this->m_programID, "g_Texture0Translation");
-
-    // bind a_TexCoord and a_Position
-    this->a_TexCoord = glGetAttribLocation (this->m_programID, "a_TexCoord");
-    this->a_Position = glGetAttribLocation (this->m_programID, "a_Position");
 }
 
 void CPass::setupAttributes ()
@@ -413,8 +409,9 @@ void CPass::setupShaderVariables ()
         CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
 
         // ensure the shader's and the constant are of the same type
-        if ((*cur).second->getType () != var->getType ())
-            throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");
+        // TODO: CHECK THIS, THERE'S SOME BACKGROUNDS WHERE THIS HAPPENS :/
+        /*if ((*cur).second->getType () != var->getType ())
+            throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");*/
 
         // now determine the constant's type and register the correct uniform for it
         if ((*cur).second->is <CShaderConstantFloat> ())

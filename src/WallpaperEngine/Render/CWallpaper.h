@@ -32,7 +32,7 @@ namespace WallpaperEngine::Render
         /**
          * Performs a render pass of the wallpaper
          */
-        virtual void render () = 0;
+        virtual void render ();
 
         /**
          * @return The container to resolve files for this wallpaper
@@ -47,7 +47,18 @@ namespace WallpaperEngine::Render
          */
         void pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture);
 
+        /**
+         * @return The scene's framebuffer
+         */
+        GLuint getWallpaperFramebuffer () const;
+        /**
+         * @return The scene's texture
+         */
+        GLuint getWallpaperTexture () const;
+
     protected:
+        void createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GLuint* texture);
+
         CContainer* m_container;
         Core::CWallpaper* m_wallpaperData;
 
@@ -81,9 +92,34 @@ namespace WallpaperEngine::Render
         GLuint m_subTexture;
 
         /**
-         * Setups OpenGL's framebuffers for ping-pong
+         * The framebuffer used for the scene output
+         */
+        GLuint m_sceneFramebuffer;
+        /**
+         * The depthbuffer used for the scene output
+         */
+        GLuint m_sceneDepthBuffer;
+        /**
+         * The texture used for the scene output
+         */
+        GLuint m_sceneTexture;
+        GLuint m_texCoordBuffer;
+        GLuint m_positionBuffer;
+        GLuint m_shader;
+        // shader variables
+        GLint g_Texture0;
+        GLint g_ModelViewProjectionMatrix;
+        GLint a_Position;
+        GLint a_TexCoord;
+
+        /**
+         * Setups OpenGL's framebuffers for ping-pong and scene rendering
          */
         void setupFramebuffers ();
+        /**
+         * Setups OpenGL's shaders for this wallpaper backbuffer
+         */
+        void setupShaders ();
 
     private:
         /**

@@ -231,10 +231,6 @@ int main (int argc, char* argv[])
     // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
     // glfwSetInputMode (window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    // set the scene clear color
-    auto sceneInformation = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
-    FloatColor clearColor = sceneInformation->getClearColor ();
-
     // enable depth text
     glEnable (GL_DEPTH_TEST);
     glDepthFunc (GL_LESS);
@@ -252,10 +248,8 @@ int main (int argc, char* argv[])
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame
         startTime = clock ();
-
         // render the scene
         wallpaper->render ();
-
         // do buffer swapping
         glfwSwapBuffers (window);
         // poll for events (like closing the window)

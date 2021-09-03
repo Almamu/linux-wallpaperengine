@@ -140,10 +140,8 @@ void CImage::render ()
     if (this->getImage ()->isVisible () == false)
         return;
 
-    GLuint drawTo = 0;
+    GLuint drawTo = this->getScene()->getWallpaperFramebuffer();
     GLuint inputTexture = this->m_texture->getTextureID ();
-    // get the orthogonal projection
-    auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
     // pinpong current buffer
     this->getScene ()->pinpongFramebuffer (&drawTo, nullptr);
@@ -166,7 +164,7 @@ void CImage::render ()
         this->getScene ()->pinpongFramebuffer (nullptr, &inputTexture);
 
     // render the main material
-    this->m_material->render (0, inputTexture);
+    this->m_material->render (this->getScene()->getWallpaperFramebuffer(), inputTexture);
 /*
     glBindFramebuffer (GL_FRAMEBUFFER, 0);
     // set the viewport, for now use the scene width/height but we might want to use image's size TODO: INVESTIGATE THAT

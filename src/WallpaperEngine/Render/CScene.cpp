@@ -51,19 +51,23 @@ void CScene::render ()
     auto cur = this->m_objects.begin ();
     auto end = this->m_objects.end ();
 
-    // do not use any framebuffer for now
-    glBindFramebuffer (GL_FRAMEBUFFER, 0);
-    // ensure we render over the whole screen
-    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
-
     // clear screen
     FloatColor clearColor = this->getScene ()->getClearColor ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // use the scene's framebuffer by default
+    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
+    // ensure we render over the whole screen
+    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 
     for (; cur != end; cur ++)
         (*cur)->render ();
+
+    // ensure we render over the whole screen
+    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
+
+    CWallpaper::render ();
 }
 
 Core::CScene* CScene::getScene ()
