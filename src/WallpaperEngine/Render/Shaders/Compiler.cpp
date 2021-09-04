@@ -111,7 +111,7 @@ namespace WallpaperEngine::Render::Shaders
 
         while (cur != end)
         {
-            if (this->peekString (*cur, it) == true)
+            if (this->peekString (*cur + " ", it) == true)
             {
                 return *cur;
             }
@@ -247,7 +247,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if (*it == '#')
             {
-                if (this->peekString ("#include", it) == true)
+                if (this->peekString ("#include ", it) == true)
                 {
                     std::string filename = "";
 
@@ -270,7 +270,7 @@ namespace WallpaperEngine::Render::Shaders
             else if (*it == 'u')
             {
                 // uniforms might have extra information for their values
-                if (this->peekString ("uniform", it) == true)
+                if (this->peekString ("uniform ", it) == true)
                 {
                     this->ignoreSpaces (it);
                     std::string type = this->extractType (it); BREAK_IF_ERROR
@@ -308,52 +308,51 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                 }
             }*/
-//            else if (*it == 'a')
-//            {
-//                // find attribute definitions
-//                if (this->peekString ("attribute", it) == true)
-//                {
-//                    this->ignoreSpaces (it);
-//                    std::string type = this->extractType (it); BREAK_IF_ERROR
-//                    this->ignoreSpaces (it);
-//                    std::string name = this->extractName (it); BREAK_IF_ERROR
-//                    this->ignoreSpaces (it);
-//                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
-//                    this->ignoreSpaces (it);
-//                    this->expectSemicolon (it); BREAK_IF_ERROR
-//
-//                    this->m_compiledContent += "// attribute " + type + " " + name + array;
-//                    this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
-//                }
-//                else
-//                {
-//                    // check for types first
-//                    std::string type = this->extractType (it);
-//
-//                    // types not found, try names
-//                    if (this->m_error == false)
-//                    {
-//                        this->m_compiledContent += type;
-//                    }
-//                    else
-//                    {
-//                        this->m_error = false;
-//                        std::string name = this->extractName (it);
-//
-//                        if (this->m_error == false)
-//                        {
-//                            // check if the name is a translated one or not
-//                            this->m_compiledContent += this->lookupReplaceSymbol (name);
-//                        }
-//                        else
-//                        {
-//                            this->m_error = false;
-//                            this->m_compiledContent += *it;
-//                            it ++;
-//                        }
-//                    }
-//                }
-//            }
+            else if (*it == 'a')
+            {
+                // find attribute definitions
+                if (this->peekString ("attribute ", it) == true)
+                {
+                    this->ignoreSpaces (it);
+                    std::string type = this->extractType (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
+                    std::string name = this->extractName (it); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
+                    std::string array = this->extractArray (it, false); BREAK_IF_ERROR
+                    this->ignoreSpaces (it);
+                    this->expectSemicolon (it); BREAK_IF_ERROR
+
+                    this->m_compiledContent += "attribute " + type + " " + name + array + ";";
+                }
+                else
+                {
+                    // check for types first
+                    std::string type = this->extractType (it);
+
+                    // types not found, try names
+                    if (this->m_error == false)
+                    {
+                        this->m_compiledContent += type;
+                    }
+                    else
+                    {
+                        this->m_error = false;
+                        std::string name = this->extractName (it);
+
+                        if (this->m_error == false)
+                        {
+                            // check if the name is a translated one or not
+                            this->m_compiledContent += name;
+                        }
+                        else
+                        {
+                            this->m_error = false;
+                            this->m_compiledContent += *it;
+                            it ++;
+                        }
+                    }
+                }
+            }
             else if (*it == '/')
             {
                 if (this->peekString ("//", it) == true)
@@ -414,7 +413,7 @@ namespace WallpaperEngine::Render::Shaders
                 // types not found, try names
                 if (this->m_error == false)
                 {
-                    this->m_compiledContent += type;
+                    this->m_compiledContent += type + " ";
                 }
                 else
                 {
@@ -665,6 +664,6 @@ namespace WallpaperEngine::Render::Shaders
 
     std::vector<std::string> Compiler::sTypes =
     {
-        "vec4", "vec3", "vec2", "float", "sampler2D", "mat4"
+        "vec4", "vec3", "vec2", "float", "sampler2D", "mat4x3", "mat4", "uint4"
     };
 }
