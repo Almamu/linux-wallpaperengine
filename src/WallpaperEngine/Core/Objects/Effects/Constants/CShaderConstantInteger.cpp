@@ -14,4 +14,4 @@ int32_t* CShaderConstantInteger::getValue ()
     return &this->m_value;
 }
 
-const std::string CShaderConstantInteger::Type = "integer";
+const std::string CShaderConstantInteger::Type = "int";

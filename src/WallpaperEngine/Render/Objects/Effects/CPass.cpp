@@ -7,8 +7,6 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h"
 
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
@@ -488,16 +486,38 @@ void CPass::setupShaderVariables ()
 
             // ensure the shader's and the constant are of the same type
             // TODO: CHECK THIS, THERE'S SOME BACKGROUNDS WHERE THIS HAPPENS :/
-            /*if ((*cur).second->getType () != var->getType ())
-                throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");*/
+            if ((*cur).second->getType () != var->getType ())
+            {
+                // there's situations where this type mismatch is actually expected
+                // integers and floats are equivalent, this could be detected at load time
+                // but that'd mean to compile the shader in the load, and not on the render stage
+                // so take into account these conversions here
 
-            // now determine the constant's type and register the correct uniform for it
-            if ((*cur).second->is <CShaderConstantFloat> ())
-                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
-            else if ((*cur).second->is <CShaderConstantInteger> ())
-                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
-            else if ((*cur).second->is <CShaderConstantVector3> ())
-                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
+                if ((*cur).second->is <CShaderConstantFloat> () == true && var->is <CShaderVariableInteger> () == true)
+                {
+                    // create an integer value from a float
+                    this->addUniform (var->getName (), static_cast <int> (*(*cur).second->as <CShaderConstantFloat> ()->getValue ()));
+                }
+                else if ((*cur).second->is <CShaderConstantInteger> () == true && var->is <CShaderVariableFloat> () == true)
+                {
+                    // create a float value from an integer
+                    this->addUniform (var->getName (), static_cast <float> (*(*cur).second->as <CShaderConstantInteger> ()->getValue ()));
+                }
+                else
+                {
+                    throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");
+                }
+            }
+            else
+            {
+                // now determine the constant's type and register the correct uniform for it
+                if ((*cur).second->is <CShaderConstantFloat> ())
+                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
+                else if ((*cur).second->is <CShaderConstantInteger> ())
+                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
+                else if ((*cur).second->is <CShaderConstantVector3> ())
+                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
+            }
         }
     }
 
@@ -514,6 +534,8 @@ void CPass::setupShaderVariables ()
                 this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableInteger> ())
                 this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector2> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> ((*cur)->as <CShaderVariableVector2> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableVector3> ())
                 this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableVector4> ())
@@ -534,6 +556,8 @@ void CPass::setupShaderVariables ()
                 this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableInteger> ())
                 this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector2> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> ((*cur)->as <CShaderVariableVector2> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableVector3> ())
                 this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
             else if ((*cur)->is <CShaderVariableVector4> ())

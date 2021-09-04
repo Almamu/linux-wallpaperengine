@@ -66,11 +66,6 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
 
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.cpp
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.cpp
-
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
