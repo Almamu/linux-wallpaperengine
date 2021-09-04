@@ -6,6 +6,7 @@
 
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Assets/CTexture.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
@@ -85,6 +86,10 @@ namespace WallpaperEngine::Render::Shaders
          * @return The list of combos available for this shader after compilation
          */
         const std::map <std::string, int>& getCombos () const;
+        /**
+         * @return The list of textures inferred from the shader's code
+         */
+        const std::map <int, CTexture*>& getTextures () const;
 
     private:
         /**
@@ -236,5 +241,9 @@ namespace WallpaperEngine::Render::Shaders
           * The container to load files from
           */
          CContainer* m_container;
+         /**
+          * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
+          */
+         std::map<int, CTexture*> m_textures;
     };
 }

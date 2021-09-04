@@ -3,6 +3,16 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Types;
 
+glm::vec4 Core::aToVector4 (const char* str)
+{
+    float x = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float y = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float z = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
+    float w = strtof (str, const_cast <char**> (&str));
+
+    return {x, y, z, w};
+}
+
 glm::vec3 Core::aToVector3 (const char* str)
 {
     float x = strtof (str, const_cast <char**> (&str)); while (*str == ' ') str ++;
@@ -18,6 +28,11 @@ glm::vec2 Core::aToVector2 (const char* str)
     float y = strtof (str, const_cast <char**> (&str));
 
     return {x, y};
+}
+
+glm::vec4 Core::aToVector4 (const std::string& str)
+{
+    return Core::aToVector4 (str.c_str ());
 }
 
 glm::vec3 Core::aToVector3 (const std::string& str)

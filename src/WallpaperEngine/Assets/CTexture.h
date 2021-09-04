@@ -39,15 +39,15 @@ namespace WallpaperEngine::Assets
             ~TextureMipmap ();
 
             /** Width of the mipmap */
-            uint32_t width;
+            uint32_t width = 0;
             /** Height of the mipmap */
-            uint32_t height;
+            uint32_t height = 0;
             /** If the mipmap data is compressed */
-            uint32_t compression;
+            uint32_t compression = 0;
             /** Uncompressed size of the mipmap */
-            uint32_t uncompressedSize;
+            uint32_t uncompressedSize = 0;
             /** Compress size of the mipmap */
-            uint32_t compressedSize;
+            uint32_t compressedSize = 0;
             /** Pointer to the compressed data */
             char* compressedData = nullptr;
             /** Pointer to the uncompressed data */

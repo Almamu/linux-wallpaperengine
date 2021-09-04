@@ -63,6 +63,7 @@ CTexture::CTexture (void* fileData)
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
 
+    // TODO: ADD SUPPORT FOR .tex-json FILES AS THEY ALSO HAVE FLAGS LIKE THESE ONES
     // setup texture wrapping and filtering
     if (this->m_header->flags & TextureFlags::ClampUVs)
     {
@@ -229,10 +230,10 @@ void CTexture::parseHeader (char* fileData)
 
     this->m_header = new TextureHeader;
 
-    uint32_t* pointer = reinterpret_cast<uint32_t*> (fileData);
+    uint32_t* pointer = reinterpret_cast <uint32_t*> (fileData);
 
-    this->m_header->format = static_cast<TextureFormat>(*pointer ++);
-    this->m_header->flags = static_cast<TextureFlags> (*pointer ++);
+    this->m_header->format = static_cast <TextureFormat>(*pointer ++);
+    this->m_header->flags = static_cast <TextureFlags> (*pointer ++);
     this->m_header->textureWidth = *pointer ++;
     this->m_header->textureHeight = *pointer ++;
     this->m_header->width = *pointer ++;
@@ -243,7 +244,6 @@ void CTexture::parseHeader (char* fileData)
     // so get the current position back as string
     fileData = reinterpret_cast <char*> (pointer);
     // get the position of what comes after the texture data
-    char* afterFileData = fileData + 9;
     pointer = reinterpret_cast <uint32_t*> (fileData + 9);
 
     if (memcmp (fileData, "TEXB0003", 9) == 0)
@@ -252,7 +252,7 @@ void CTexture::parseHeader (char* fileData)
 
         // get back the pointer and use it
         pointer ++;
-        this->m_header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
+        this->m_header->freeImageFormat = static_cast <FREE_IMAGE_FORMAT> (*pointer++);
     }
     else if(memcmp (fileData, "TEXB0002", 9) == 0)
     {

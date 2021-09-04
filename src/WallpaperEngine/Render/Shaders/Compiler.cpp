@@ -471,7 +471,7 @@ namespace WallpaperEngine::Render::Shaders
 
         finalCode += this->m_compiledContent;
 
-        if (this->m_recursive == false)
+        if (DEBUG && this->m_recursive == false)
         {
             if (this->m_type == Type_Vertex)
                 std::cout << "======================== COMPILED VERTEX SHADER " << this->m_file.c_str () << " ========================" << std::endl;
@@ -545,7 +545,7 @@ namespace WallpaperEngine::Render::Shaders
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
-                WallpaperEngine::Core::aToVector3 (*defvalue)
+                WallpaperEngine::Core::aToVector4 (*defvalue)
             );
         }
         else if (type == "vec3")
@@ -593,12 +593,27 @@ namespace WallpaperEngine::Render::Shaders
             // samplers can have special requirements, check what sampler we're working with and create definitions
             // if needed
             auto combo = data.find ("combo");
+            auto textureName = data.find ("default");
 
             if (combo != data.end ())
             {
                 // TODO: CHECK WHAT TEXTURE THIS REFERS TO
                 // add the new combo to the list
                 this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
+                uint32_t textureSize = 0;
+                // also ensure that the textureName is loaded and we know about it
+                void* textureData = this->m_container->readTexture ((*textureName).get <std::string> (), &textureSize);
+                // now generate our opengl textureName
+                CTexture* texture = new CTexture (textureData);
+
+                // extract the texture number from the name
+                char value = name.at (std::string("g_Texture").length ());
+                // now convert it to integer
+                int index = value - '0';
+
+                this->m_textures.insert (
+                    std::make_pair (index, texture)
+                );
             }
 
             // samplers are not saved, we can ignore them for now
@@ -641,6 +656,11 @@ namespace WallpaperEngine::Render::Shaders
     const std::map <std::string, int>& Compiler::getCombos () const
     {
         return this->m_combos;
+    }
+
+    const std::map <int, CTexture*>& Compiler::getTextures () const
+    {
+        return this->m_textures;
     }
 
     std::vector<std::string> Compiler::sTypes =

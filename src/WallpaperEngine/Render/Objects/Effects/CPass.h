@@ -87,7 +87,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         Core::Objects::Images::Materials::CPass* m_pass;
         std::vector<CTexture*> m_textures;
         std::vector<AttribEntry*> m_attribs;
-        std::vector<UniformEntry*> m_uniforms;
+        std::map<std::string, UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;
 
         Render::Shaders::Compiler* m_fragShader;

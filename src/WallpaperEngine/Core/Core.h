@@ -13,9 +13,11 @@ namespace WallpaperEngine::Core
 {
     using namespace WallpaperEngine::Core::Types;
 
+    glm::vec4 aToVector4 (const char* str);
     glm::vec3 aToVector3 (const char* str);
     glm::vec2 aToVector2 (const char* str);
 
+    glm::vec4 aToVector4 (const std::string& str);
     glm::vec3 aToVector3 (const std::string& str);
     glm::vec2 aToVector2 (const std::string& str);
 

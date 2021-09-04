@@ -102,6 +102,7 @@ void CPass::render (GLuint drawTo, GLuint input)
     // bind the input texture
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, input);
+    int lastTextureIndex = 0;
 
     // first bind the textures to their sampler place
     {
@@ -115,6 +116,42 @@ void CPass::render (GLuint drawTo, GLuint input)
             glActiveTexture (GL_TEXTURE0 + index);
             // bind the correct texture there
             glBindTexture (GL_TEXTURE_2D, (*cur)->getTextureID ());
+            // increase the number of textures counter
+            lastTextureIndex ++;
+        }
+    }
+
+    {
+        // load the extra textures needed (if any) from the shader
+        auto cur = this->m_fragShader->getTextures ().begin ();
+        auto end = this->m_fragShader->getTextures ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if ((*cur).first <= lastTextureIndex)
+                continue;
+
+            // set the active texture index
+            glActiveTexture (GL_TEXTURE0 + (*cur).first);
+            // bind the correct texture here
+            glBindTexture(GL_TEXTURE_2D, (*cur).second->getTextureID ());
+        }
+    }
+
+    {
+        // load the extra textures needed (if any) from the shader
+        auto cur = this->m_vertShader->getTextures ().begin ();
+        auto end = this->m_vertShader->getTextures ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if ((*cur).first <= lastTextureIndex)
+                continue;
+
+            // set the active texture index
+            glActiveTexture (GL_TEXTURE0 + (*cur).first);
+            // bind the correct texture here
+            glBindTexture(GL_TEXTURE_2D, (*cur).second->getTextureID ());
         }
     }
 
@@ -125,28 +162,30 @@ void CPass::render (GLuint drawTo, GLuint input)
 
         for (; cur != end; cur ++)
         {
-            switch ((*cur)->type)
+            UniformEntry* entry = (*cur).second;
+
+            switch (entry->type)
             {
                 case Double:
-                    glUniform1d ((*cur)->id, *reinterpret_cast <const double*> ((*cur)->value));
+                    glUniform1d (entry->id, *reinterpret_cast <const double*> (entry->value));
                     break;
                 case Float:
-                    glUniform1f ((*cur)->id, *reinterpret_cast <const float*> ((*cur)->value));
+                    glUniform1f (entry->id, *reinterpret_cast <const float*> (entry->value));
                     break;
                 case Integer:
-                    glUniform1i ((*cur)->id, *reinterpret_cast <const int*> ((*cur)->value));
+                    glUniform1i (entry->id, *reinterpret_cast <const int*> (entry->value));
                     break;
                 case Vector4:
-                    glUniform4fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> ((*cur)->value)));
+                    glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (entry->value)));
                     break;
                 case Vector3:
-                    glUniform3fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> ((*cur)->value)));
+                    glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (entry->value)));
                     break;
                 case Vector2:
-                    glUniform2fv ((*cur)->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> ((*cur)->value)));
+                    glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (entry->value)));
                     break;
                 case Matrix4:
-                    glUniformMatrix4fv ((*cur)->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> ((*cur)->value)));
+                    glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (entry->value)));
                     break;
             }
         }
@@ -291,6 +330,7 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Texture7", 7);
     // register all the texture sizes required
     this->addUniform ("g_Texture0Resolution", this->m_material->getImage ()->getTexture ()->getResolution ());
+    int lastTextureIndex = 0;
     // register the extra texture resolutions
     {
         auto cur = this->m_textures.begin ();
@@ -303,6 +343,43 @@ void CPass::setupUniforms ()
             namestream << "g_Texture" << index << "Resolution";
 
             this->addUniform (namestream.str (), (*cur)->getResolution ());
+            lastTextureIndex ++;
+        }
+    }
+
+    // registers the extra texture resolutions from the shader
+    {
+        auto cur = this->m_fragShader->getTextures ().begin ();
+        auto end = this->m_fragShader->getTextures ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if ((*cur).first <= lastTextureIndex)
+                continue;
+
+            std::ostringstream namestream;
+
+            namestream << "g_Texture" << (*cur).first << "Resolution";
+
+            this->addUniform (namestream.str (), (*cur).second->getResolution ());
+        }
+    }
+
+    // registers the extra texture resolutions from the shader
+    {
+        auto cur = this->m_vertShader->getTextures ().begin ();
+        auto end = this->m_vertShader->getTextures ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if ((*cur).first <= lastTextureIndex)
+                continue;
+
+            std::ostringstream namestream;
+
+            namestream << "g_Texture" << (*cur).first << "Resolution";
+
+            this->addUniform (namestream.str (), (*cur).second->getResolution ());
         }
     }
 
@@ -340,8 +417,8 @@ void CPass::addUniform (const std::string& name, UniformType type, T value)
     T* newValue = new T (value);
 
     // uniform found, add it to the list
-    this->m_uniforms.emplace_back (
-        new UniformEntry (id, name, type, newValue)
+    this->m_uniforms.insert (
+        std::make_pair (name, new UniformEntry (id, name, type, newValue))
     );
 }
 
@@ -356,8 +433,8 @@ void CPass::addUniform (const std::string& name, UniformType type, T* value)
         return;
 
     // uniform found, add it to the list
-    this->m_uniforms.emplace_back (
-        new UniformEntry (id, name, type, value)
+    this->m_uniforms.insert (
+        std::make_pair (name, new UniformEntry (id, name, type, value))
     );
 }
 
@@ -385,41 +462,83 @@ void CPass::setupTextures ()
 
 void CPass::setupShaderVariables ()
 {
-    // find variables in the shaders and set the value with the constants if possible
-    auto cur = this->m_pass->getConstants ().begin ();
-    auto end = this->m_pass->getConstants ().end ();
-
-    for (; cur != end; cur ++)
     {
-        CShaderVariable* vertexVar = this->m_vertShader->findParameter ((*cur).first);
-        CShaderVariable* pixelVar = this->m_fragShader->findParameter ((*cur).first);
+        // find variables in the shaders and set the value with the constants if possible
+        auto cur = this->m_pass->getConstants ().begin ();
+        auto end = this->m_pass->getConstants ().end ();
 
-        // variable not found, can be ignored
-        if (vertexVar == nullptr && pixelVar == nullptr)
-            continue;
-
-        // if both can be found, ensure they're the correct type
-        if (vertexVar != nullptr && pixelVar != nullptr)
+        for (; cur != end; cur ++)
         {
-            if (vertexVar->getType () != pixelVar->getType ())
-                throw std::runtime_error ("Pixel and vertex shader variable types do not match");
+            CShaderVariable* vertexVar = this->m_vertShader->findParameter ((*cur).first);
+            CShaderVariable* pixelVar = this->m_fragShader->findParameter ((*cur).first);
+
+            // variable not found, can be ignored
+            if (vertexVar == nullptr && pixelVar == nullptr)
+                continue;
+
+            // if both can be found, ensure they're the correct type
+            if (vertexVar != nullptr && pixelVar != nullptr)
+            {
+                if (vertexVar->getType () != pixelVar->getType ())
+                    throw std::runtime_error ("Pixel and vertex shader variable types do not match");
+            }
+
+            // get one instance of it
+            CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
+
+            // ensure the shader's and the constant are of the same type
+            // TODO: CHECK THIS, THERE'S SOME BACKGROUNDS WHERE THIS HAPPENS :/
+            /*if ((*cur).second->getType () != var->getType ())
+                throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");*/
+
+            // now determine the constant's type and register the correct uniform for it
+            if ((*cur).second->is <CShaderConstantFloat> ())
+                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
+            else if ((*cur).second->is <CShaderConstantInteger> ())
+                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
+            else if ((*cur).second->is <CShaderConstantVector3> ())
+                this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
         }
+    }
 
-        // get one instance of it
-        CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
+    {
+        auto cur = this->m_vertShader->getParameters ().begin ();
+        auto end = this->m_vertShader->getParameters ().end ();
 
-        // ensure the shader's and the constant are of the same type
-        // TODO: CHECK THIS, THERE'S SOME BACKGROUNDS WHERE THIS HAPPENS :/
-        /*if ((*cur).second->getType () != var->getType ())
-            throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");*/
+        for (; cur != end; cur ++)
+        {
+            if (this->m_uniforms.find ((*cur)->getName ()) != this->m_uniforms.end ())
+                continue;
 
-        // now determine the constant's type and register the correct uniform for it
-        if ((*cur).second->is <CShaderConstantFloat> ())
-            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
-        else if ((*cur).second->is <CShaderConstantInteger> ())
-            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
-        else if ((*cur).second->is <CShaderConstantVector3> ())
-            this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
+            if ((*cur)->is <CShaderVariableFloat> ())
+                this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableInteger> ())
+                this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector3> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector4> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> ((*cur)->as <CShaderVariableVector4> ()->getValue ())));
+        }
+    }
+
+    {
+        auto cur = this->m_fragShader->getParameters ().begin ();
+        auto end = this->m_fragShader->getParameters ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if (this->m_uniforms.find ((*cur)->getName ()) != this->m_uniforms.end ())
+                continue;
+
+            if ((*cur)->is <CShaderVariableFloat> ())
+                this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableInteger> ())
+                this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector3> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
+            else if ((*cur)->is <CShaderVariableVector4> ())
+                this->addUniform ((*cur)->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> ((*cur)->as <CShaderVariableVector4> ()->getValue ())));
+        }
     }
 }
 

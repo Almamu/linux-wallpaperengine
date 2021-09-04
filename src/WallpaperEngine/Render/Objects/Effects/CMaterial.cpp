@@ -42,24 +42,6 @@ void CMaterial::generatePasses ()
         this->m_passes.emplace_back (new CPass (this, *cur));
 }
 
-// TODO: REWRITE THIS
-/*
-void CMaterial::OnSetConstants (irr::video::IMaterialRendererServices *services, int32_t userData)
-{
-    irr::s32 g_Texture0 = 0;
-
-    irr::video::IVideoDriver* driver = services->getVideoDriver ();
-
-    irr::core::matrix4 worldViewProj;
-    worldViewProj = driver->getTransform (irr::video::ETS_PROJECTION);
-    worldViewProj *= driver->getTransform (irr::video::ETS_VIEW);
-    worldViewProj *= driver->getTransform (irr::video::ETS_WORLD);
-
-
-    services->setPixelShaderConstant ("TextureSampler", &g_Texture0, 1);
-    services->setVertexShaderConstant ("g_ModelViewProjectionMatrix", worldViewProj.pointer(), 16);
-}
-*/
 void CMaterial::render (GLuint drawTo, GLuint inputTexture)
 {
     // get the orthogonal projection
@@ -82,41 +64,4 @@ void CMaterial::render (GLuint drawTo, GLuint inputTexture)
         // render the pass
         (*cur)->render (drawTo, inputTexture);
     }
-
-    // TODO: REWRITE THIS
-    /*
-    uint16_t indices [] =
-    {
-        3, 2, 1, 0
-    };
-
-    irr::video::IVideoDriver* driver = this->getImage ()->getSceneManager ()->getVideoDriver ();
-
-    auto mainCur = this->getPasses ().begin ();
-    auto mainEnd = this->getPasses ().end ();
-
-    for (; mainCur != mainEnd; mainCur ++)
-    {
-        // set the proper render target
-        driver->setRenderTarget ((*mainCur)->getOutputTexture (), true, true, IntegerColor (0, 0, 0, 0));
-        // set the material
-        driver->setMaterial ((*mainCur)->getMaterial ());
-        // draw it
-        driver->drawVertexPrimitiveList (
-            this->m_image->getVertex (), 4, indices, 1,
-            irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
-        );
-    }
-
-    // render last pass' output into our output
-    // set the proper render target
-    driver->setRenderTarget (this->getOutputTexture (), true, true, IntegerColor (0, 0, 0, 0));
-    // set the material
-    driver->setMaterial (this->m_outputMaterial);
-    // draw it
-    driver->drawVertexPrimitiveList (
-        this->m_image->getVertex (), 4, indices, 1,
-        irr::video::EVT_STANDARD, irr::scene::EPT_QUADS, irr::video::EIT_16BIT
-    );
-     */
 }

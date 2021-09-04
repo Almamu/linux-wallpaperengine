@@ -6,7 +6,8 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 
-add_compile_definitions(DEBUG=1)
+# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
+add_compile_definitions(DEBUG=0)
 
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
@@ -21,7 +22,18 @@ find_package(LZ4 REQUIRED)
 find_package(FFmpeg REQUIRED)
 find_package(FreeImage REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${GLEW_INCLUDE_DIR} ${glfw3_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} ${FREEIMAGE_INCLUDE_DIR} src include)
+include_directories(
+    ${X11_INCLUDE_DIR}
+    ${XRANDR_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIR}
+    ${glfw3_INCLUDE_DIR}
+    ${LZ4_INCLUDE_DIR}
+    ${SDL_INCLUDE_DIRS}
+    ${SDL_MIXER_INCLUDE_DIRS}
+    ${FFMPEG_INCLUDE_DIR}
+    ${FREEIMAGE_INCLUDE_DIR}
+    src
+    include)
 
 add_executable(
         wallengine
@@ -170,4 +182,17 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
-target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLFW3_LIBRARY} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES} ${FREEIMAGE_LIBRARIES})
+target_link_libraries(wallengine
+    ${X11_LIBRARIES}
+    ${XRANDR_LIBRARIES}
+    ${X11_Xxf86vm_LIB}
+    ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    ${GLFW3_LIBRARY}
+    ${GLUT_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${LZ4_LIBRARY}
+    ${SDL_LIBRARY}
+    ${SDL_MIXER_LIBRARIES}
+    ${FFMPEG_LIBRARIES}
+    ${FREEIMAGE_LIBRARIES})
