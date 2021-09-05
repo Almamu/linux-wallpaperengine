@@ -8,17 +8,6 @@ CMaterial::CMaterial (const Render::Objects::CImage* image, const Core::Objects:
     m_image (image),
     m_material (material)
 {
-    // TODO: REWRITE THIS
-    /*this->m_outputTexture = this->m_context->getDevice ()->getVideoDriver ()->addRenderTargetTexture (
-        this->m_inputTexture->getSize (),
-        (
-            "_rt_WALLENGINELINUX_OUTPUT_" +
-            std::to_string (this->m_image->getImage ()->getId ()) + "_" +
-            std::to_string (this->m_image->getEffects ().size ()) +
-            "_material_output"
-        ).c_str ()
-    );*/
-
     this->generatePasses ();
 }
 

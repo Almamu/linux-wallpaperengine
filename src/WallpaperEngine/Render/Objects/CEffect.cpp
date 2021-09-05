@@ -6,23 +6,6 @@ CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect) :
     m_image (image),
     m_effect (effect)
 {
-    // TODO: REWRITE THIS
-    /*
-    irr::core::dimension2du size = irr::core::dimension2du (
-        this->m_image->getImage ()->getSize ().X,
-        this->m_image->getImage ()->getSize ().Y
-    );
-
-    this->m_outputTexture = this->m_context->getDevice ()->getVideoDriver ()->addRenderTargetTexture (
-        size,
-        (
-            "_rt_WALLENGINELINUX_OUTPUT_" +
-            std::to_string (image->getImage ()->getId ()) + "_" +
-            std::to_string (this->m_image->getEffects ().size ()) +
-            "_effect_output"
-        ).c_str ()
-    );
-*/
     this->generateFBOs ();
     this->generatePasses ();
 }

@@ -5,7 +5,6 @@ using namespace WallpaperEngine::Assets;
 CDirectory::CDirectory (std::string basepath) :
     m_basepath (std::move (basepath))
 {
-    // TODO: ENSURE THE BASEPATH ENDS WITH A LEADING /
 }
 
 CDirectory::~CDirectory ()

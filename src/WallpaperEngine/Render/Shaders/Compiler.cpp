@@ -596,7 +596,6 @@ namespace WallpaperEngine::Render::Shaders
 
             if (combo != data.end ())
             {
-                // TODO: CHECK WHAT TEXTURE THIS REFERS TO
                 // add the new combo to the list
                 this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
                 // also ensure that the textureName is loaded and we know about it

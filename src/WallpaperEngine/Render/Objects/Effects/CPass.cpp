@@ -495,7 +495,6 @@ void CPass::setupShaderVariables ()
             CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
 
             // ensure the shader's and the constant are of the same type
-            // TODO: CHECK THIS, THERE'S SOME BACKGROUNDS WHERE THIS HAPPENS :/
             if ((*cur).second->getType () != var->getType ())
             {
                 // there's situations where this type mismatch is actually expected
