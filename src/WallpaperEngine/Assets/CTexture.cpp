@@ -50,8 +50,8 @@ CTexture::CTexture (void* fileData)
     // set the texture resolution
     // TODO: SUPPORT SPRITES
     this->m_resolution = {
-        this->m_header->width, this->m_header->height,
-        this->m_header->textureWidth, this->m_header->textureHeight
+        this->m_header->textureWidth, this->m_header->textureHeight,
+        this->m_header->width, this->m_header->height
     };
 
     // reserve a texture
