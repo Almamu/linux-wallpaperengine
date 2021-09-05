@@ -13,14 +13,16 @@ namespace WallpaperEngine::Assets
 {
     class CTexture
     {
-    private:
-        enum ContainerVersion : int
-        {
-            UNKNOWN = -1,
-            TEXB0003 = 3,
-            TEXB0002 = 2,
-            TEXB0001 = 1
-        };
+        struct TextureHeader;
+
+    public:
+        CTexture (void* fileData);
+        ~CTexture ();
+
+        const GLuint getTextureID () const;
+        const TextureHeader* getHeader () const;
+        const glm::vec4* getResolution () const;
+
 
         enum TextureFormat : uint32_t
         {
@@ -30,6 +32,14 @@ namespace WallpaperEngine::Assets
             DXT1 = 7,
             RG88 = 8,
             R8 = 9,
+        };
+    private:
+        enum ContainerVersion : int
+        {
+            UNKNOWN = -1,
+            TEXB0003 = 3,
+            TEXB0002 = 2,
+            TEXB0001 = 1
         };
 
         class TextureMipmap
@@ -96,15 +106,6 @@ namespace WallpaperEngine::Assets
             /** List of mipmaps */
             std::vector <TextureMipmap*> mipmaps;
         };
-    public:
-        CTexture (void* fileData);
-        ~CTexture ();
-
-        const GLuint getTextureID () const;
-        const TextureHeader* getHeader () const;
-        const glm::vec4* getResolution () const;
-
-
     private:
         void parseHeader (char* fileData);
         TextureMipmap* parseMipmap (TextureHeader* header, char** fileData);

@@ -46,17 +46,24 @@ void print_help (const char* route)
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
 }
 
-std::string stringPathFixes(const std::string& s){
-    std::string str(s);
-    if(str.empty())
+std::string stringPathFixes(const std::string& s)
+{
+    if (s.empty () == true)
         return s;
-    if(str[0] == '\'' && str[str.size() - 1] == '\''){
-        str.erase(str.size() - 1, 1);
-        str.erase(0,1);
-    }
-    if(str[str.size() - 1] != '/')
+
+    std::string str (s);
+
+    // remove single-quotes from the arguments
+    if (str [0] == '\'' && str [str.size() - 1] == '\'')
+        str
+            .erase (str.size() - 1, 1)
+            .erase (0, 1);
+
+    // ensure there's a slash at the end of the path
+    if (str [str.size() - 1] != '/')
         str += '/';
-    return std::move(str);
+
+    return std::move (str);
 }
 
 int main (int argc, char* argv[])
@@ -98,13 +105,13 @@ int main (int argc, char* argv[])
             case 'p':
                 if (mode == RUN_MODE_UNKNOWN)
                     mode = RUN_MODE_PACKAGE;
-                path = optarg;
+                path = stringPathFixes (optarg);
                 break;
 
             case 'd':
                 if (mode == RUN_MODE_UNKNOWN)
                     mode = RUN_MODE_DIRECTORY;
-                path = optarg;
+                path = stringPathFixes (optarg);
                 break;
 
             case 's':
@@ -184,6 +191,7 @@ int main (int argc, char* argv[])
 
     glfwMakeContextCurrent (window);
 
+    // TODO: FIGURE THESE OUT BASED ON THE SCREEN
     int windowWidth = 1920;
     int windowHeight = 1080;
 
@@ -201,14 +209,13 @@ int main (int argc, char* argv[])
     {
         WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
         wallpaper = new WallpaperEngine::Render::CScene (scene, containers);
-        // TODO: BUILD THE SCENE
     }
     else if (project->getType () == "video")
     {
-        // special steps, running a video needs a root directory change
+        // special steps, running a video needs a root directory change, files are not loaded from the container classes
+        // as they're streamed from disk
         chdir (path.c_str ());
 
-        // TODO: BUILD THE VIDEO OBJECT
         WallpaperEngine::Core::CVideo* video = project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> ();
         wallpaper = new WallpaperEngine::Render::CVideo (video, containers);
     }

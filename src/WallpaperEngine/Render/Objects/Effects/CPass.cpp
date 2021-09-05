@@ -24,23 +24,6 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
     m_material (material),
     m_pass (pass)
 {
-    this->m_fragShader = new Render::Shaders::Compiler (
-        this->m_material->getImage ()->getContainer (),
-        pass->getShader (),
-        Shaders::Compiler::Type_Pixel,
-        pass->getCombos (),
-        pass->getConstants ()
-    );
-    this->m_fragShader->precompile ();
-    this->m_vertShader = new Render::Shaders::Compiler (
-        this->m_material->getImage ()->getContainer (),
-        pass->getShader (),
-        Shaders::Compiler::Type_Vertex,
-        this->m_fragShader->getCombos (),
-        pass->getConstants ()
-    );
-    this->m_vertShader->precompile ();
-
     this->setupTextures ();
     this->setupShaders ();
     this->setupShaderVariables ();
@@ -261,6 +244,37 @@ GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
 
 void CPass::setupShaders ()
 {
+    // ensure the constants are defined
+    const CTexture* texture0 = this->m_material->getImage ()->getTexture ();
+
+    // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL ELEMENTS?
+    if (texture0->getHeader ()->format == CTexture::TextureFormat::RG88)
+    {
+        this->m_pass->insertCombo ("TEX0FORMAT", 8);
+    }
+    else if (texture0->getHeader ()->format == CTexture::TextureFormat::R8)
+    {
+        this->m_pass->insertCombo ("TEX0FORMAT", 9);
+    }
+
+    // prepare the shaders
+    this->m_fragShader = new Render::Shaders::Compiler (
+        this->m_material->getImage ()->getContainer (),
+        this->m_pass->getShader (),
+        Shaders::Compiler::Type_Pixel,
+        this->m_pass->getCombos (),
+        this->m_pass->getConstants ()
+    );
+    this->m_fragShader->precompile ();
+    this->m_vertShader = new Render::Shaders::Compiler (
+        this->m_material->getImage ()->getContainer (),
+        this->m_pass->getShader (),
+        Shaders::Compiler::Type_Vertex,
+        this->m_fragShader->getCombos (),
+        this->m_pass->getConstants ()
+    );
+    this->m_vertShader->precompile ();
+
     // compile the shaders
     GLuint vertexShaderID = compileShader (this->m_vertShader, GL_VERTEX_SHADER);
     GLuint fragmentShaderID = compileShader (this->m_fragShader, GL_FRAGMENT_SHADER);
@@ -447,8 +461,6 @@ void CPass::setupTextures ()
         if (index == 0)
             continue;
 
-        uint32_t textureSize = 0;
-
         // get the first texture on the first pass (this one represents the image assigned to this object)
         this->m_textures.emplace_back (
             this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
@@ -500,6 +512,13 @@ void CPass::setupShaderVariables ()
                 {
                     // create a float value from an integer
                     this->addUniform (var->getName (), static_cast <float> (*(*cur).second->as <CShaderConstantInteger> ()->getValue ()));
+                }
+                else if ((*cur).second->is <CShaderConstantVector3> () == true && var->is <CShaderVariableVector2> () == true)
+                {
+                    CShaderConstantVector3* val = (*cur).second->as <CShaderConstantVector3> ();
+
+                    // create a new vector2 with the first two values
+                    this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
                 }
                 else
                 {

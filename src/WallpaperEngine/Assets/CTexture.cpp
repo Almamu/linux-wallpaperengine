@@ -41,6 +41,12 @@ CTexture::CTexture (void* fileData)
             case TextureFormat::ARGB8888:
                 internalFormat = GL_RGBA8;
                 break;
+            case TextureFormat::R8:
+                internalFormat = GL_R8;
+                break;
+            case TextureFormat::RG88:
+                internalFormat = GL_RG8;
+                break;
             default:
                 delete this->m_header;
                 throw std::runtime_error ("Cannot determine the texture format");
@@ -118,6 +124,13 @@ CTexture::CTexture (void* fileData)
             width = FreeImage_GetWidth (converted);
             height = FreeImage_GetHeight (converted);
             textureFormat = GL_BGRA;
+        }
+        else
+        {
+            if (this->m_header->format == TextureFormat::RG88)
+                textureFormat = GL_RG;
+            else if (this->m_header->format == TextureFormat::R8)
+                textureFormat = GL_R;
         }
 
         switch (internalFormat)
@@ -273,19 +286,6 @@ void CTexture::parseHeader (char* fileData)
         delete this->m_header;
         this->m_header = nullptr;
         throw std::runtime_error ("unknown texture format type");
-    }
-
-    if (this->m_header->format == TextureFormat::R8)
-    {
-        delete this->m_header;
-        this->m_header = nullptr;
-        throw std::runtime_error ("R8 format is not supported yet");
-    }
-    else if (this->m_header->format == TextureFormat::RG88)
-    {
-        delete this->m_header;
-        this->m_header = nullptr;
-        throw std::runtime_error ("RG88 format is not supported yet");
     }
 
     // read the number of mipmaps available
