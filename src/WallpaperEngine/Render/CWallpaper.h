@@ -99,6 +99,8 @@ namespace WallpaperEngine::Render
          * The depthbuffer used for the scene output
          */
         GLuint m_sceneDepthBuffer;
+
+    private:
         /**
          * The texture used for the scene output
          */
@@ -108,7 +110,6 @@ namespace WallpaperEngine::Render
         GLuint m_shader;
         // shader variables
         GLint g_Texture0;
-        GLint g_ModelViewProjectionMatrix;
         GLint a_Position;
         GLint a_TexCoord;
 
@@ -120,8 +121,6 @@ namespace WallpaperEngine::Render
          * Setups OpenGL's shaders for this wallpaper backbuffer
          */
         void setupShaders ();
-
-    private:
         /**
          * The type of background this wallpaper is (used
          */

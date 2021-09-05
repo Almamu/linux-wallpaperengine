@@ -33,13 +33,26 @@ namespace WallpaperEngine::Render
         void restartStream ();
         void getNextFrame ();
         void writeFrameToImage ();
+        void setupShaders ();
 
         AVFormatContext* m_formatCtx = nullptr;
         AVCodecContext* m_codecCtx = nullptr;
-        AVFrame* m_videoFrame = nullptr;
         AVFrame* m_videoFrameRGB = nullptr;
+        AVFrame* m_videoFrame = nullptr;
         SwsContext* m_swsCtx = nullptr;
         uint8_t* m_buffer = nullptr;
         int m_videoStream = -1, m_audioStream = -1;
+
+        /**
+         * The texture used for the video output
+         */
+        GLuint m_texture;
+        GLuint m_texCoordBuffer;
+        GLuint m_positionBuffer;
+        GLuint m_shader;
+        // shader variables
+        GLint g_Texture0;
+        GLint a_Position;
+        GLint a_TexCoord;
     };
 };

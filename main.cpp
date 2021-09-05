@@ -169,11 +169,11 @@ int main (int argc, char* argv[])
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
 
-    auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
+    // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
     // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
-    GLFWwindow* window = glfwCreateWindow (projection->getWidth (), projection->getHeight (), "WallpaperEngine", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow (1920, 1080, "WallpaperEngine", NULL, NULL);
 
     if (window == nullptr)
     {
@@ -184,8 +184,8 @@ int main (int argc, char* argv[])
 
     glfwMakeContextCurrent (window);
 
-    int windowWidth = projection->getWidth ();
-    int windowHeight = projection->getHeight ();
+    int windowWidth = 1920;
+    int windowHeight = 1080;
 
     // get the real framebuffer size
     glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
@@ -205,7 +205,12 @@ int main (int argc, char* argv[])
     }
     else if (project->getType () == "video")
     {
+        // special steps, running a video needs a root directory change
+        chdir (path.c_str ());
+
         // TODO: BUILD THE VIDEO OBJECT
+        WallpaperEngine::Core::CVideo* video = project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> ();
+        wallpaper = new WallpaperEngine::Render::CVideo (video, containers);
     }
     else
     {
