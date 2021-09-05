@@ -599,12 +599,8 @@ namespace WallpaperEngine::Render::Shaders
                 // TODO: CHECK WHAT TEXTURE THIS REFERS TO
                 // add the new combo to the list
                 this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
-                uint32_t textureSize = 0;
                 // also ensure that the textureName is loaded and we know about it
-                void* textureData = this->m_container->readTexture ((*textureName).get <std::string> (), &textureSize);
-                // now generate our opengl textureName
-                CTexture* texture = new CTexture (textureData);
-
+                CTexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
                 // extract the texture number from the name
                 char value = name.at (std::string("g_Texture").length ());
                 // now convert it to integer

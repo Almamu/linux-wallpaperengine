@@ -5,12 +5,14 @@
 
 using namespace WallpaperEngine::Assets;
 
-void* CContainer::readTexture (std::string filename, uint32_t* length)
+CTexture* CContainer::readTexture (std::string filename)
 {
     // get the texture's filename (usually .tex)
     filename = "materials/" + filename + ".tex";
 
-    return this->readFile (filename, length);
+    void* textureContents = this->readFile (filename, nullptr);
+
+    return new CTexture (textureContents);
 }
 
 std::string CContainer::readVertexShader (const std::string& filename)

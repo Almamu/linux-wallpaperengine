@@ -450,11 +450,9 @@ void CPass::setupTextures ()
         uint32_t textureSize = 0;
 
         // get the first texture on the first pass (this one represents the image assigned to this object)
-        void* textureData = this->m_material->getImage ()->getContainer ()->readTexture (
-            (*cur), &textureSize
+        this->m_textures.emplace_back (
+            this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
         );
-        // load a new texture and push it into the list
-        this->m_textures.emplace_back (new CTexture (textureData));
     }
 }
 

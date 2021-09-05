@@ -5,6 +5,7 @@
 #pragma once
 
 #include <string>
+#include "WallpaperEngine/Assets/CTexture.h"
 
 namespace WallpaperEngine::Assets
 {
@@ -26,17 +27,15 @@ namespace WallpaperEngine::Assets
          * Wrapper for readFile, appends the texture extension at the end of the filename
          *
          * @param filename The texture name (without the .tex)
-         * @param length The file's length after it's been read
          *
          * @return
          */
-        void* readTexture (std::string filename, uint32_t* length);
+        CTexture* readTexture (std::string filename);
 
         /**
          * Wrapper for readFile, appends the .vert extension at the end and opens the given shader file
          *
          * @param filename
-         * @param length
          *
          * @return The shader code as an string to be used
          */
@@ -46,7 +45,6 @@ namespace WallpaperEngine::Assets
          * Wrapper for readFile, appends the .frag extension at the end and opens the given shader file
          *
          * @param filename
-         * @param length
          *
          * @return The shader code as an string to be used
          */
@@ -56,7 +54,6 @@ namespace WallpaperEngine::Assets
          * Wrapper for readFile, appends the .h extension at the end and opens the given shader file
          *
          * @param filename
-         * @param length
          *
          * @return The shader code as an string to be used
          */

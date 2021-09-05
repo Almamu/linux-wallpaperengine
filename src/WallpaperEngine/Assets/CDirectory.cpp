@@ -22,7 +22,9 @@ void* CDirectory::readFile (std::string filename, uint32_t* length)
 
     if (it != this->m_cache.end ())
     {
-        *length = (*it).second.length;
+        if (length != nullptr)
+            *length = (*it).second.length;
+
         return (*it).second.address;
     }
 

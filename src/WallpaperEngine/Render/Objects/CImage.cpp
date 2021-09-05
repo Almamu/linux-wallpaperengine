@@ -37,11 +37,9 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     uint32_t textureSize = 0;
 
     // get the first texture on the first pass (this one represents the image assigned to this object)
-    void* textureData = this->getScene ()->getContainer ()->readTexture (
-        (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ()), &textureSize
+    this->m_texture = this->getScene ()->getContainer ()->readTexture (
+            (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ())
     );
-    // now generate our opengl texture
-    this->m_texture = new CTexture (textureData);
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat data [] = {
