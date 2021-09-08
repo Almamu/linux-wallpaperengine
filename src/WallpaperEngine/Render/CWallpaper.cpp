@@ -203,6 +203,22 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
     float widthRatio = windowWidth / viewport.z;
     float heightRatio = windowHeight / viewport.w;
 
+    if (widthRatio > 1.0f)
+    {
+        float diff = widthRatio - 1.0f;
+
+        widthRatio -= diff;
+        heightRatio -= diff;
+    }
+
+    if (heightRatio > 1.0f)
+    {
+        float diff = heightRatio - 1.0f;
+
+        widthRatio -= diff;
+        heightRatio -= diff;
+    }
+
     if (widthRatio < 1.0f)
     {
         float diff = 1.0f - widthRatio;
@@ -213,11 +229,14 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 
     if (heightRatio < 1.0f)
     {
-        float diff = 1.0f - widthRatio;
+        float diff = 1.0f - heightRatio;
 
         widthRatio += diff;
         heightRatio += diff;
     }
+
+    if (widthRatio < 0.0f) widthRatio = -widthRatio;
+    if (heightRatio < 0.0f) heightRatio = -heightRatio;
 
     GLfloat position [] = {
         widthRatio * -1.0f, heightRatio * 1.0f, 0.0f,
