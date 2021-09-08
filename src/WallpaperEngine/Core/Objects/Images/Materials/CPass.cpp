@@ -105,9 +105,9 @@ const std::map<std::string, CShaderConstant*>& CPass::getConstants () const
     return this->m_constants;
 }
 
-const std::map<std::string, int>& CPass::getCombos () const
+std::map<std::string, int>* CPass::getCombos ()
 {
-    return this->m_combos;
+    return &this->m_combos;
 }
 
 const std::string& CPass::getShader () const

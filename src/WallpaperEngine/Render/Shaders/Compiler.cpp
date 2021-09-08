@@ -28,7 +28,7 @@ namespace WallpaperEngine::Render::Shaders
             CContainer* container,
             std::string filename,
             Type type,
-            std::map<std::string, int> combos,
+            std::map<std::string, int>* combos,
             const std::map<std::string, CShaderConstant*>& constants,
             bool recursive) :
         m_combos (combos),
@@ -228,6 +228,7 @@ namespace WallpaperEngine::Render::Shaders
 
     void Compiler::precompile()
     {
+        // TODO: SEPARATE THIS IN TWO SO THE COMBOS ARE DETECTED FIRST AND WE DO NOT REQUIRE DOUBLE COMPILATION OF THE SHADER'S SOURCE
     #define BREAK_IF_ERROR if (this->m_error == true) { throw std::runtime_error ("ERROR PRE-COMPILING SHADER" + this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
         // also remove any #version definition to prevent errors
@@ -236,6 +237,7 @@ namespace WallpaperEngine::Render::Shaders
         // reset error indicator
         this->m_error = false;
         this->m_errorInfo = "";
+        this->m_compiledContent = "";
 
         // search preprocessor macros and parse them
         while (it != this->m_content.end () && this->m_error == false)
@@ -459,8 +461,8 @@ namespace WallpaperEngine::Render::Shaders
                           "#define GLSL 1\n\n";
 
             // add combo values
-            auto cur = this->m_combos.begin ();
-            auto end = this->m_combos.end ();
+            auto cur = this->m_combos->begin ();
+            auto end = this->m_combos->end ();
 
             for (; cur != end; cur ++)
             {
@@ -494,11 +496,11 @@ namespace WallpaperEngine::Render::Shaders
         this->m_compiledContent += "\n";
 
         // check the combos
-        std::map<std::string, int>::const_iterator entry = this->m_combos.find ((*combo).get <std::string> ());
+        std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
 
         // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
         // so only define the ones that are not already defined
-        if (entry == this->m_combos.end ())
+        if (entry == this->m_combos->end ())
         {
             // if no combo is defined just load the default settings
             if ((*defvalue).is_number_float ())
@@ -507,7 +509,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if ((*defvalue).is_number_integer ())
             {
-                this->m_combos.insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <irr::s32> ()));
+                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
             }
             else if ((*defvalue).is_string ())
             {
@@ -576,10 +578,10 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "int")
         {
-            irr::s32 value = 0;
+            int value = 0;
 
             if (constant == this->m_constants.end ())
-                value = (*defvalue).get <irr::s32> ();
+                value = (*defvalue).get <int> ();
             else if ((*constant).second->is <CShaderConstantFloat> () == true)
                 value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
             else if ((*constant).second->is <CShaderConstantInteger> () == true)
@@ -597,7 +599,7 @@ namespace WallpaperEngine::Render::Shaders
             if (combo != data.end ())
             {
                 // add the new combo to the list
-                this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
+                this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
                 // also ensure that the textureName is loaded and we know about it
                 CTexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
                 // extract the texture number from the name
@@ -647,7 +649,7 @@ namespace WallpaperEngine::Render::Shaders
         return this->m_parameters;
     }
 
-    const std::map <std::string, int>& Compiler::getCombos () const
+    std::map <std::string, int>* Compiler::getCombos () const
     {
         return this->m_combos;
     }

@@ -157,7 +157,7 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         }
         else if ((*cur).is_number_integer () == true)
         {
-            constant = new Effects::Constants::CShaderConstantInteger ((*cur).get <irr::s32> ());
+            constant = new Effects::Constants::CShaderConstantInteger ((*cur).get <int> ());
         }
         else if ((*cur).is_string () == true)
         {

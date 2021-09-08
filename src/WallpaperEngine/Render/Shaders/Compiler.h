@@ -54,7 +54,7 @@ namespace WallpaperEngine::Render::Shaders
             CContainer* container,
             std::string filename,
             Type type,
-            std::map<std::string, int> combos,
+            std::map<std::string, int>* combos,
             const std::map<std::string, CShaderConstant*>& constants,
             bool recursive = false
         );
@@ -85,7 +85,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * @return The list of combos available for this shader after compilation
          */
-        const std::map <std::string, int>& getCombos () const;
+        std::map <std::string, int>* getCombos () const;
         /**
          * @return The list of textures inferred from the shader's code
          */
@@ -228,7 +228,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The combos the shader should be generated with
          */
-         std::map <std::string, int> m_combos;
+         std::map <std::string, int>* m_combos;
          /**
           * The shader constants with values for variables inside the shader
           */

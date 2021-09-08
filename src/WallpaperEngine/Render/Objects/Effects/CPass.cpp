@@ -270,9 +270,11 @@ void CPass::setupShaders ()
         this->m_material->getImage ()->getContainer (),
         this->m_pass->getShader (),
         Shaders::Compiler::Type_Vertex,
-        this->m_fragShader->getCombos (),
+        this->m_pass->getCombos (),
         this->m_pass->getConstants ()
     );
+    this->m_vertShader->precompile ();
+    this->m_fragShader->precompile ();
     this->m_vertShader->precompile ();
 
     // compile the shaders

@@ -22,7 +22,7 @@ namespace WallpaperEngine::Core::Objects::Images::Materials
         const std::vector<std::string>& getTextures () const;
         const std::map<std::string, Effects::Constants::CShaderConstant*>& getConstants () const;
 
-        const std::map<std::string, int>& getCombos () const;
+        std::map<std::string, int>* getCombos ();
         const std::string& getShader () const;
         const std::string& getBlendingMode () const;
         const std::string& getCullingMode () const;
