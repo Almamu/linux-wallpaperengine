@@ -33,7 +33,11 @@ Once Wallpaper Engine is downloaded open the installation folder (usually on C:\
 
 The assets folder itself can be copied to the same folder where the binary lives.
 
-## 5.3. Compilation steps
+## 5.3. Getting the sources
+This project includes some git submodules that need to be cloned with the source code for it to compile properly. The easiest way is to recurse submodules when cloning:
+```git clone --recurse-submodules git@github.com:Almamu/linux-wallpaperengine.git```
+
+## 5.4. Compilation steps
 The project is built on CMake as build engine. First we need to create the directory where the build will be stored and get into it:
 
 ```
@@ -54,22 +58,22 @@ make
 
 **REMEMBER: The assets folder has to be at the same folder as the executable**
 
-## 5.4. Running a background
+## 5.5. Running a background
 Currently both compressed and uncompressed backgrounds are supported.
 
-#### 5.4.1. Running compressed backgrounds
+#### 5.5.1. Running compressed backgrounds
 Compressed backgrounds are actually two separate files. One named "project.json" and another called "scene.pkg". These two files are important as one contains the background's information and the second one contains the needed assets for it. For the program to properly detect them we'll use the ```--pkg``` parameter, which will specify the folder where those two files are stored.
 ```
 ./wallengine --pkg folder
 ```
 
-#### 5.4.2. Running uncompressed backgrounds
+#### 5.5.2. Running uncompressed backgrounds
 Uncompressed backgrounds are just plain folders including all the resources and scene information all jumbled together. At least a project.json and a scene.json must exists for the background to even start loading. For the program to properly detect them we'll use the ```--dir``` parameter, which will specify the folder where the background itself is stored.
 ```
 ./wallengine --dir folder
 ```
 
-#### 5.4.3. Running as a screen's background
+#### 5.5.3. Running as a screen's background
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 ```
 ./wallengine --screen-root HDMI-1 --screen-root DVI-D-1
@@ -77,7 +81,7 @@ Only screens configured with the XRandr extension are supported. To specify the 
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
 
-#### 5.4.4. Limiting FPS
+#### 5.5.4. Limiting FPS
 To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, specially useful for laptops:
 ```
 ./wallengine --fps 30
