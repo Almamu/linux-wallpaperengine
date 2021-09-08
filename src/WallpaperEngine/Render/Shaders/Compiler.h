@@ -1,21 +1,20 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
 #include <iostream>
 #include <vector>
 #include <map>
 
 #include "WallpaperEngine/Core/Core.h"
-
+#include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Assets/CTexture.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
-
-#include "WallpaperEngine/Irrlicht/CContext.h"
-
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 namespace WallpaperEngine::Render::Shaders
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
     using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
     /**
@@ -31,12 +30,9 @@ namespace WallpaperEngine::Render::Shaders
         {
             Type_Vertex = 0,
             Type_Pixel = 1,
+            Type_Include = 2
         };
 
-        /**
-         * List of variables to replace when pre-process is performed
-         */
-        static std::map<std::string, std::string> sVariableReplacement;
         /**
          * Types of variables the pre-processor understands
          */
@@ -55,8 +51,8 @@ namespace WallpaperEngine::Render::Shaders
          * @param recursive Whether the compiler should add base definitions or not
          */
         Compiler (
-            Irrlicht::CContext* context,
-            irr::io::path& file,
+            CContainer* container,
+            std::string filename,
             Type type,
             std::map<std::string, int> combos,
             const std::map<std::string, CShaderConstant*>& constants,
@@ -90,6 +86,10 @@ namespace WallpaperEngine::Render::Shaders
          * @return The list of combos available for this shader after compilation
          */
         const std::map <std::string, int>& getCombos () const;
+        /**
+         * @return The list of textures inferred from the shader's code
+         */
+        const std::map <int, CTexture*>& getTextures () const;
 
     private:
         /**
@@ -174,14 +174,6 @@ namespace WallpaperEngine::Render::Shaders
          * @return The compiled contents
          */
         std::string lookupShaderFile (std::string filename);
-        /**
-         * Searches for the given symbol in the replace table
-         *
-         * @param symbol The symbol to look for
-         *
-         * @return The symbol it should be replaced with
-         */
-        std::string lookupReplaceSymbol (std::string symbol);
 
         /**
          * @return Whether the character in the current position is a character or not
@@ -208,7 +200,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The shader file this instance is loading
          */
-        irr::io::path m_file;
+        std::string m_file;
         /**
          * The original file content
          */
@@ -246,8 +238,12 @@ namespace WallpaperEngine::Render::Shaders
           */
          bool m_recursive;
          /**
-          * The irrlicht context in use
+          * The container to load files from
           */
-         Irrlicht::CContext* m_context;
+         CContainer* m_container;
+         /**
+          * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
+          */
+         std::map<int, CTexture*> m_textures;
     };
 }

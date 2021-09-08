@@ -2,18 +2,18 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection (irr::u32 width, irr::u32 height) :
+CProjection::CProjection (uint32_t width, uint32_t height) :
     m_width (width),
     m_height (height)
 {
 }
 
-const irr::u32& CProjection::getWidth () const
+const uint32_t& CProjection::getWidth () const
 {
     return this->m_width;
 }
 
-const irr::u32& CProjection::getHeight () const
+const uint32_t& CProjection::getHeight () const
 {
     return this->m_height;
 }

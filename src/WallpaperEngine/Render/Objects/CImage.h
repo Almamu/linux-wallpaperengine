@@ -9,7 +9,12 @@
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 
+#include "WallpaperEngine/Assets/CTexture.h"
+
+#include <glm/vec3.hpp>
+
 using namespace WallpaperEngine;
+using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Objects::Effects
 {
@@ -20,35 +25,42 @@ namespace WallpaperEngine::Render::Objects
 {
     class CEffect;
 
-    class CImage : public CObject, public irr::video::IShaderConstantSetCallBack
+    class CImage : public CObject
     {
     public:
         CImage (CScene* scene, Core::Objects::CImage* image);
 
-        void OnSetConstants (irr::video::IMaterialRendererServices* services, int32_t userData) override;
-
         void render () override;
-        const irr::core::aabbox3d<irr::f32>& getBoundingBox() const override;
 
         const Core::Objects::CImage* getImage () const;
         const std::vector<CEffect*>& getEffects () const;
 
-        const irr::video::S3DVertex* getVertex () const;
+        const GLfloat* getVertex () const;
+        const GLuint* getVertexBuffer () const;
+        const GLuint* getPassVertexBuffer () const;
+        const GLuint* getTexCoordBuffer () const;
+        const GLuint* getPassTexCoordBuffer () const;
+        const CTexture* getTexture () const;
 
     protected:
         static const std::string Type;
 
     private:
-        void generateMaterial (irr::video::ITexture* resultTexture);
+        CTexture* m_texture;
+        GLfloat m_vertexList [6 * 3];
+        GLfloat m_passesVertexList [6 * 3];
+        GLfloat m_texCoordList [6 * 2];
+        GLfloat m_passTexCoordList [6 * 2];
+        GLuint m_vertexBuffer;
+        GLuint m_passesVertexBuffer;
+        GLuint m_texCoordBuffer;
+        GLuint m_passTexCoordBuffer;
+        uint16_t m_vertexIndices [6];
 
-        irr::video::S3DVertex m_vertex [4];
 
         Core::Objects::CImage* m_image;
-        irr::core::aabbox3d<irr::f32> m_boundingBox;
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
-        irr::video::SMaterial m_irrlichtMaterial;
-        irr::video::SMaterial m_irrlichtMaterialInvert;
     };
 }

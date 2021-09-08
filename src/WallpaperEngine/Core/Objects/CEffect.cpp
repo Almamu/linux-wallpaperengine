@@ -27,12 +27,12 @@ CEffect::CEffect (
 {
 }
 
-CEffect* CEffect::fromJSON (json data, Core::CObject* object)
+CEffect* CEffect::fromJSON (json data, Core::CObject* object, CContainer* container)
 {
     auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");
 
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> ().c_str ()));
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> (), container));
 
     auto name_it = jsonFindRequired (content, "name", "Effect must have a name");
     auto description_it = jsonFindRequired (content, "description", "Effect must have a description");
@@ -50,7 +50,7 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object)
         object
     );
 
-    CEffect::materialsFromJSON (passes_it, effect);
+    CEffect::materialsFromJSON (passes_it, effect, container);
     CEffect::dependencyFromJSON (dependencies_it, effect);
 
     if (fbos_it != content.end ())
@@ -153,7 +153,7 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
 
         if ((*cur).is_number_float () == true)
         {
-            constant = new Effects::Constants::CShaderConstantFloat ((*cur).get <irr::f32> ());
+            constant = new Effects::Constants::CShaderConstantFloat ((*cur).get <float> ());
         }
         else if ((*cur).is_number_integer () == true)
         {
@@ -161,7 +161,7 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         }
         else if ((*cur).is_string () == true)
         {
-            constant = new Effects::Constants::CShaderConstantVector3 (WallpaperEngine::Core::ato3vf (*cur));
+            constant = new Effects::Constants::CShaderConstantVector3 (WallpaperEngine::Core::aToVector3 (*cur));
         }
         else
         {
@@ -196,7 +196,7 @@ void CEffect::dependencyFromJSON (json::const_iterator dependencies_it, CEffect*
     }
 }
 
-void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect)
+void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect, CContainer* container)
 {
     auto cur = (*passes_it).begin ();
     auto end = (*passes_it).end ();
@@ -216,11 +216,11 @@ void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect
 
         if (target == (*cur).end ())
         {
-            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str ());
+            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> (), container);
         }
         else
         {
-            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> ().c_str (), *target);
+            material = Images::CMaterial::fromFile ((*materialfile).get <std::string> (), *target, container);
         }
 
         if (bind != (*cur).end ())

@@ -9,37 +9,35 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, Irrlicht::CContext* context) :
-    CWallpaper (scene, Type, context)
+CScene::CScene (Core::CScene* scene, CContainer* container) :
+    CWallpaper (scene, Type, container)
 {
+    // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
     this->m_camera->setOrthogonalProjection (
-            scene->getOrthogonalProjection ()->getWidth (),
-            scene->getOrthogonalProjection ()->getHeight ()
+        scene->getOrthogonalProjection ()->getWidth (),
+        scene->getOrthogonalProjection ()->getHeight ()
     );
 
     auto cur = scene->getObjects ().begin ();
     auto end = scene->getObjects ().end ();
 
-    int highestId = 0;
-
     for (; cur != end; cur ++)
     {
-        if ((*cur)->getId () > highestId)
-            highestId = (*cur)->getId ();
+        CObject* object = nullptr;
 
         if ((*cur)->is<Core::Objects::CImage>() == true)
         {
-            new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
+            object = new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
         }
         else if ((*cur)->is<Core::Objects::CSound>() == true)
         {
-            new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
+            object = new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
         }
-    }
 
-    this->m_nextId = ++highestId;
-    this->setAutomaticCulling (irr::scene::EAC_OFF);
+        if (object != nullptr)
+            this->m_objects.emplace_back (object);
+    }
 }
 
 CCamera* CScene::getCamera () const
@@ -47,13 +45,27 @@ CCamera* CScene::getCamera () const
     return this->m_camera;
 }
 
-int CScene::nextId ()
+void CScene::renderFrame ()
 {
-    return this->m_nextId ++;
-}
+    auto projection = this->getScene ()->getOrthogonalProjection ();
+    auto cur = this->m_objects.begin ();
+    auto end = this->m_objects.end ();
 
-void CScene::render ()
-{
+    // clear screen
+    FloatColor clearColor = this->getScene ()->getClearColor ();
+
+    glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+
+    // use the scene's framebuffer by default
+    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
+    // ensure we render over the whole screen
+    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
+
+    for (; cur != end; cur ++)
+        (*cur)->render ();
+
+    // ensure we render over the whole screen
+    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 }
 
 Core::CScene* CScene::getScene ()

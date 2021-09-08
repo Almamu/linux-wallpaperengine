@@ -4,23 +4,21 @@
 
 #include "WallpaperEngine/Core/Core.h"
 
-#include <irrlicht/irrlicht.h>
-
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
     class CAlphaRandom : CInitializer
     {
     public:
-        const irr::f64 getMinimum () const;
-        const irr::f64 getMaximum () const;
+        const double getMinimum () const;
+        const double getMaximum () const;
     protected:
         friend class CInitializer;
 
-        static CAlphaRandom* fromJSON (json data, irr::u32 id);
+        static CAlphaRandom* fromJSON (json data, uint32_t id);
 
-        CAlphaRandom (irr::u32 id, irr::f64 min, irr::f64 max);
+        CAlphaRandom (uint32_t id, double min, double max);
     private:
-        irr::f64 m_max;
-        irr::f64 m_min;
+        double m_max;
+        double m_min;
     };
 };

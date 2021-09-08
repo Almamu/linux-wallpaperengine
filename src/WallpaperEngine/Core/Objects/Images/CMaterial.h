@@ -1,22 +1,22 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Core/Objects/Effects/CBind.h"
 
 #include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Assets/CContainer.h"
 
 namespace WallpaperEngine::Core::Objects::Images
 {
     using json = nlohmann::json;
+    using namespace WallpaperEngine::Assets;
 
     class CMaterial
     {
     public:
-        static CMaterial* fromFile (const irr::io::path& filename);
+        static CMaterial* fromFile (const std::string& filename, CContainer* container);
         static CMaterial* fromJSON (json data);
-        static CMaterial* fromFile (const irr::io::path& filename, const std::string& target);
+        static CMaterial* fromFile (const std::string& filename, const std::string& target, CContainer* container);
         static CMaterial* fromJSON (json data, const std::string& target);
 
         void insertPass (Materials::CPass* mass);

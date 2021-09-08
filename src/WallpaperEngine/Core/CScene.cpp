@@ -2,29 +2,33 @@
 #include "CProject.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
+#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Types;
 
 CScene::CScene (
+        CContainer* container,
         Scenes::CCamera* camera,
-        irr::video::SColorf ambientColor,
+        FloatColor ambientColor,
         bool bloom,
-        irr::f64 bloomStrength,
-        irr::f64 bloomThreshold,
+        double bloomStrength,
+        double bloomThreshold,
         bool cameraFade,
         bool cameraParallax,
-        irr::f64 cameraParallaxAmount,
-        irr::f64 cameraParallaxDelay,
-        irr::f64 cameraParallaxMouseInfluence,
+        double cameraParallaxAmount,
+        double cameraParallaxDelay,
+        double cameraParallaxMouseInfluence,
         bool cameraPreview,
         bool cameraShake,
-        irr::f64 cameraShakeAmplitude,
-        irr::f64 cameraShakeRoughness,
-        irr::f64 cameraShakeSpeed,
-        irr::video::SColorf clearColor,
+        double cameraShakeAmplitude,
+        double cameraShakeRoughness,
+        double cameraShakeSpeed,
+        FloatColor clearColor,
         Scenes::CProjection* orthogonalProjection,
-        irr::video::SColorf skylightColor) :
+        FloatColor skylightColor) :
     CWallpaper (Type),
+    m_container (container),
     m_camera (camera),
     m_ambientColor (ambientColor),
     m_bloom (bloom),
@@ -46,10 +50,10 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const irr::io::path& filename)
+CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 {
-    std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename);
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
+    std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename, container);
+    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
     auto camera_it = jsonFindRequired (content, "camera", "Scenes must have a defined camera");
     auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
@@ -62,21 +66,22 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     auto bloomthreshold_it = jsonFindRequired (*general_it, "bloomthreshold", "General section must have bloom threshold");
     auto camerafade_it = jsonFindRequired (*general_it, "camerafade", "General section must have camera fade");
     auto cameraparallax = jsonFindDefault <bool> (*general_it, "cameraparallax", true);
-    auto cameraparallaxamount = jsonFindDefault <irr::f64> (*general_it, "cameraparallaxamount", 1.0f);
-    auto cameraparallaxdelay = jsonFindDefault <irr::f64> (*general_it, "cameraparallaxdelay", 0.0f);
-    auto cameraparallaxmouseinfluence = jsonFindDefault <irr::f64> (*general_it, "cameraparallaxmouseinfluence", 1.0f);
+    auto cameraparallaxamount = jsonFindDefault <double> (*general_it, "cameraparallaxamount", 1.0f);
+    auto cameraparallaxdelay = jsonFindDefault <double> (*general_it, "cameraparallaxdelay", 0.0f);
+    auto cameraparallaxmouseinfluence = jsonFindDefault <double> (*general_it, "cameraparallaxmouseinfluence", 1.0f);
     auto camerapreview = jsonFindDefault <bool> (*general_it, "camerapreview", false);
     auto camerashake = jsonFindDefault <bool> (*general_it, "camerashake", false);
-    auto camerashakeamplitude = jsonFindDefault <irr::f64> (*general_it, "camerashakeamplitude", 0.0f);
-    auto camerashakeroughness = jsonFindDefault <irr::f64> (*general_it, "camerashakeroughness", 0.0f);
-    auto camerashakespeed = jsonFindDefault <irr::f64> (*general_it, "camerashakespeed", 0.0f);
+    auto camerashakeamplitude = jsonFindDefault <double> (*general_it, "camerashakeamplitude", 0.0f);
+    auto camerashakeroughness = jsonFindDefault <double> (*general_it, "camerashakeroughness", 0.0f);
+    auto camerashakespeed = jsonFindDefault <double> (*general_it, "camerashakespeed", 0.0f);
     auto clearcolor_it = jsonFindRequired (*general_it, "clearcolor", "General section must have clear color");
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
     auto skylightcolor_it = jsonFindRequired (*general_it, "skylightcolor", "General section must have skylight color");
 
     CScene* scene = new CScene (
+            container,
             Scenes::CCamera::fromJSON (*camera_it),
-            WallpaperEngine::Core::atoSColorf (*ambientcolor_it),
+            WallpaperEngine::Core::aToColorf(*ambientcolor_it),
             *bloom_it,
             *bloomstrength_it,
             *bloomthreshold_it,
@@ -90,9 +95,9 @@ CScene* CScene::fromFile (const irr::io::path& filename)
             camerashakeamplitude,
             camerashakeroughness,
             camerashakespeed,
-            WallpaperEngine::Core::atoSColorf (*clearcolor_it),
+            WallpaperEngine::Core::aToColorf(*clearcolor_it),
             Scenes::CProjection::fromJSON (*orthogonalprojection_it),
-            WallpaperEngine::Core::atoSColorf (*skylightcolor_it)
+            WallpaperEngine::Core::aToColorf(*skylightcolor_it)
     );
 
     auto cur = (*objects_it).begin ();
@@ -101,7 +106,7 @@ CScene* CScene::fromFile (const irr::io::path& filename)
     for (; cur != end; cur ++)
     {
         scene->insertObject (
-                CObject::fromJSON (*cur)
+                CObject::fromJSON (*cur, container)
         );
     }
 
@@ -120,12 +125,17 @@ void CScene::insertObject (CObject* object)
         this->m_objects.push_back (object);
 }
 
+CContainer* CScene::getContainer ()
+{
+    return this->m_container;
+}
+
 const Scenes::CCamera* CScene::getCamera () const
 {
     return this->m_camera;
 }
 
-const irr::video::SColorf &CScene::getAmbientColor() const
+const FloatColor &CScene::getAmbientColor() const
 {
     return this->m_ambientColor;
 }
@@ -135,12 +145,12 @@ const bool CScene::isBloom () const
     return this->m_bloom;
 }
 
-const irr::f64 CScene::getBloomStrength () const
+const double CScene::getBloomStrength () const
 {
     return this->m_bloomStrength;
 }
 
-const irr::f64 CScene::getBloomThreshold () const
+const double CScene::getBloomThreshold () const
 {
     return this->m_bloomThreshold;
 }
@@ -155,17 +165,17 @@ const bool CScene::isCameraParallax () const
     return this->m_cameraParallax;
 }
 
-const irr::f64 CScene::getCameraParallaxAmount () const
+const double CScene::getCameraParallaxAmount () const
 {
     return this->m_cameraParallaxAmount;
 }
 
-const irr::f64 CScene::getCameraParallaxDelay () const
+const double CScene::getCameraParallaxDelay () const
 {
     return this->m_cameraParallaxDelay;
 }
 
-const irr::f64 CScene::getCameraParallaxMouseInfluence () const
+const double CScene::getCameraParallaxMouseInfluence () const
 {
     return this->m_cameraParallaxMouseInfluence;
 }
@@ -180,22 +190,22 @@ const bool CScene::isCameraShake () const
     return this->m_cameraShake;
 }
 
-const irr::f64 CScene::getCameraShakeAmplitude () const
+const double CScene::getCameraShakeAmplitude () const
 {
     return this->m_cameraShakeAmplitude;
 }
 
-const irr::f64 CScene::getCameraShakeRoughness () const
+const double CScene::getCameraShakeRoughness () const
 {
     return this->m_cameraShakeRoughness;
 }
 
-const irr::f64 CScene::getCameraShakeSpeed () const
+const double CScene::getCameraShakeSpeed () const
 {
     return this->m_cameraShakeSpeed;
 }
 
-const irr::video::SColorf& CScene::getClearColor () const
+const FloatColor& CScene::getClearColor () const
 {
     return this->m_clearColor;
 }
@@ -205,7 +215,7 @@ const Scenes::CProjection* CScene::getOrthogonalProjection () const
     return this->m_orthogonalProjection;
 }
 
-const irr::video::SColorf& CScene::getSkylightColor () const
+const FloatColor& CScene::getSkylightColor () const
 {
     return this->m_skylightColor;
 }

@@ -1,15 +1,17 @@
 #include "CVideo.h"
 
+#include <utility>
+
 using namespace WallpaperEngine::Core;
 
 CVideo::CVideo (
-        const irr::io::path& filename) :
+        std::string  filename) :
         CWallpaper (Type),
-        m_filename (filename)
+        m_filename (std::move(filename))
 {
 }
 
-const irr::io::path CVideo::getFilename ()
+const std::string& CVideo::getFilename ()
 {
     return this->m_filename;
 }

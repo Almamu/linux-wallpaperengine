@@ -12,7 +12,7 @@ CControlPoint* CControlPoint::fromJSON (json data)
 
     if (offset_it != data.end ())
     {
-        controlpoint->setOffset (WallpaperEngine::Core::ato3vf (*offset_it));
+        controlpoint->setOffset (WallpaperEngine::Core::aToVector3 (*offset_it));
     }
 
     if (flags_it != data.end ())
@@ -23,29 +23,29 @@ CControlPoint* CControlPoint::fromJSON (json data)
     return controlpoint;
 }
 
-CControlPoint::CControlPoint (irr::u32 id, irr::u32 flags) :
+CControlPoint::CControlPoint (uint32_t id, uint32_t flags) :
     m_id (id),
     m_flags (flags),
-    m_offset (irr::core::vector3df ())
+    m_offset (glm::vec3 ())
 {
 }
 
-void CControlPoint::setOffset (const irr::core::vector3df& offset)
+void CControlPoint::setOffset (const glm::vec3& offset)
 {
     this->m_offset = offset;
 }
 
-void CControlPoint::setFlags (irr::u32 flags)
+void CControlPoint::setFlags (uint32_t flags)
 {
     this->m_flags = flags;
 }
 
-const irr::core::vector3df& CControlPoint::getOffset () const
+const glm::vec3& CControlPoint::getOffset () const
 {
     return this->m_offset;
 }
 
-const irr::u32 CControlPoint::getFlags () const
+const uint32_t CControlPoint::getFlags () const
 {
     return this->m_flags;
 }

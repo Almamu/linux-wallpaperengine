@@ -13,6 +13,7 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }
 
         template<class T> bool is () { return this->m_type == T::Type; }
+        const std::string& getType () const;
 
     private:
         std::string m_type;

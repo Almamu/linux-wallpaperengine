@@ -1,6 +1,6 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
+#include <glm/vec3.hpp>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
@@ -9,17 +9,17 @@ namespace WallpaperEngine::Render::Shaders::Variables
     class CShaderVariableVector3 : public CShaderVariable
     {
     public:
-        explicit CShaderVariableVector3 (const irr::core::vector3df& defaultValue);
-        CShaderVariableVector3 (const irr::core::vector3df& defaultValue, std::string name);
+        explicit CShaderVariableVector3 (const glm::vec3& defaultValue);
+        CShaderVariableVector3 (const glm::vec3& defaultValue, std::string name);
 
         const int getSize () const override;
 
-        void setValue (const irr::core::vector3df& value);
+        void setValue (const glm::vec3& value);
 
         static const std::string Type;
 
     private:
-        irr::core::vector3df m_defaultValue;
-        irr::core::vector3df m_value;
+        glm::vec3 m_defaultValue;
+        glm::vec3 m_value;
     };
 }

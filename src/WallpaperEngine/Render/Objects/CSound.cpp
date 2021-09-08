@@ -10,9 +10,6 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
     CObject (scene, Type, sound),
     m_sound (sound)
 {
-    this->setAutomaticCulling (irr::scene::EAC_OFF);
-    this->m_boundingBox = irr::core::aabbox3d<irr::f32>(0, 0, 0, 0, 0, 0);
-
     this->load ();
     this->play ();
 }
@@ -29,26 +26,14 @@ void CSound::load ()
 
     for (; cur != end; cur ++)
     {
-        SDL_RWops* sdlRwops = nullptr;
-        Mix_Music* music = nullptr;
-        irr::io::IReadFile* readfile = this->getScene ()->getContext ()->getDevice ()->getFileSystem ()->createAndOpenFile ((*cur).c_str ());
-        int filesize = readfile->getSize ();
-        char* filebuffer = new char [filesize];
+        uint32_t filesize = 0;
+        void* filebuffer = this->getContainer ()->readFile ((*cur), &filesize);
 
-        readfile->read (filebuffer, filesize);
-
-        sdlRwops = SDL_RWFromConstMem (filebuffer, filesize);
-        music = Mix_LoadMUS_RW (sdlRwops);
-        readfile->drop ();
+        SDL_RWops* sdlRwops = SDL_RWFromConstMem (filebuffer, filesize);
+        Mix_Music* music = Mix_LoadMUS_RW (sdlRwops);
 
         if (music == nullptr)
-        {
-            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log (
-                "cannot load audio", Mix_GetError (), irr::ELL_ERROR
-            );
-
-            continue;
-        }
+            throw std::runtime_error ("cannot load audio");
 
         this->m_bufferReader.push_back (sdlRwops);
         this->m_soundBuffer.push_back (filebuffer);
@@ -68,22 +53,13 @@ void CSound::play ()
     for (; mixcur != mixend; mixcur ++)
     {
         if (Mix_PlayMusic ((*mixcur), -1) == -1)
-        {
-            this->getScene ()->getContext ()->getDevice ()->getLogger ()->log (
-                "cannot play audio", Mix_GetError (), irr::ELL_ERROR
-            );
-        }
+            throw std::runtime_error ("cannot play audio");
     }
 }
 
 void CSound::render ()
 {
 
-}
-
-const irr::core::aabbox3d<irr::f32>& CSound::getBoundingBox() const
-{
-    return this->m_boundingBox;
 }
 
 const std::string CSound::Type = "sound";

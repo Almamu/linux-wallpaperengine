@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Objects::Particles
@@ -13,16 +11,16 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CControlPoint* fromJSON (json data);
 
-        const irr::core::vector3df& getOffset () const;
-        const irr::u32 getFlags () const;
+        const glm::vec3& getOffset () const;
+        const uint32_t getFlags () const;
     protected:
-        CControlPoint (irr::u32 id, irr::u32 flags = 0);
+        CControlPoint (uint32_t id, uint32_t flags = 0);
 
-        void setOffset (const irr::core::vector3df& offset);
-        void setFlags (irr::u32 flags);
+        void setOffset (const glm::vec3& offset);
+        void setFlags (uint32_t flags);
     private:
-        irr::u32 m_id;
-        irr::u32 m_flags;
-        irr::core::vector3df m_offset;
+        uint32_t m_id;
+        uint32_t m_flags;
+        glm::vec3 m_offset;
     };
 };

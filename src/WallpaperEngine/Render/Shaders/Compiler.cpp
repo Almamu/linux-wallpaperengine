@@ -1,4 +1,3 @@
-#include <irrlicht/irrlicht.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -21,12 +20,13 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (
-            Irrlicht::CContext* context,
-            irr::io::path& file,
+            CContainer* container,
+            std::string filename,
             Type type,
             std::map<std::string, int> combos,
             const std::map<std::string, CShaderConstant*>& constants,
@@ -34,13 +34,18 @@ namespace WallpaperEngine::Render::Shaders
         m_combos (combos),
         m_recursive (recursive),
         m_type (type),
-        m_file (file),
+        m_file (std::move(filename)),
         m_error (""),
         m_errorInfo (""),
-        m_context (context),
-        m_constants (constants)
+        m_constants (constants),
+        m_container (container)
     {
-        this->m_content =WallpaperEngine::FileSystem::loadFullFile (file);
+        if (type == Type_Vertex)
+            this->m_content = this->m_container->readVertexShader (this->m_file);
+        else if (type == Type_Pixel)
+            this->m_content = this->m_container->readFragmentShader (this->m_file);
+        else if (type == Type_Include)
+            this->m_content = this->m_container->readIncludeShader (this->m_file);
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -106,7 +111,7 @@ namespace WallpaperEngine::Render::Shaders
 
         while (cur != end)
         {
-            if (this->peekString (*cur, it) == true)
+            if (this->peekString (*cur + " ", it) == true)
             {
                 return *cur;
             }
@@ -207,42 +212,13 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::lookupShaderFile (std::string filename)
     {
-        // get file information
-        irr::io::path shader = this->m_context->resolveIncludeShader (filename);
-
-        if (shader == "")
-        {
-            this->m_error = true;
-            this->m_errorInfo = "Cannot find file " + filename + " to include";
-            return "";
-        }
-
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (this->m_context, shader, this->m_type, this->m_combos, this->m_constants, true);
+        Compiler loader (this->m_container, std::move (filename), Type_Include, this->m_combos, this->m_constants, true);
 
         loader.precompile ();
 
         return loader.getCompiled ();
-    }
-
-    std::string Compiler::lookupReplaceSymbol (std::string symbol)
-    {
-        auto cur = sVariableReplacement.begin ();
-        auto end = sVariableReplacement.end ();
-
-        while (cur != end)
-        {
-            if (cur->first == symbol)
-            {
-                return cur->second;
-            }
-
-            cur ++;
-        }
-
-        // if there is no replacement, return the original
-        return symbol;
     }
 
     std::string& Compiler::getCompiled ()
@@ -271,7 +247,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if (*it == '#')
             {
-                if (this->peekString ("#include", it) == true)
+                if (this->peekString ("#include ", it) == true)
                 {
                     std::string filename = "";
 
@@ -294,7 +270,7 @@ namespace WallpaperEngine::Render::Shaders
             else if (*it == 'u')
             {
                 // uniforms might have extra information for their values
-                if (this->peekString ("uniform", it) == true)
+                if (this->peekString ("uniform ", it) == true)
                 {
                     this->ignoreSpaces (it);
                     std::string type = this->extractType (it); BREAK_IF_ERROR
@@ -325,10 +301,17 @@ namespace WallpaperEngine::Render::Shaders
                     }
                 }
             }
+            /*else if (*it == 'a')
+            {
+                if (this->peekString ("attribute", it) == true)
+                {
+                    this->ignoreSpaces (it);
+                }
+            }*/
             else if (*it == 'a')
             {
                 // find attribute definitions
-                if (this->peekString ("attribute", it) == true)
+                if (this->peekString ("attribute ", it) == true)
                 {
                     this->ignoreSpaces (it);
                     std::string type = this->extractType (it); BREAK_IF_ERROR
@@ -339,8 +322,7 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
                     this->expectSemicolon (it); BREAK_IF_ERROR
 
-                    this->m_compiledContent += "// attribute " + type + " " + name + array;
-                    this->m_compiledContent += "; /* replaced by " + this->lookupReplaceSymbol (name) + " */";
+                    this->m_compiledContent += "attribute " + type + " " + name + array + ";";
                 }
                 else
                 {
@@ -360,7 +342,7 @@ namespace WallpaperEngine::Render::Shaders
                         if (this->m_error == false)
                         {
                             // check if the name is a translated one or not
-                            this->m_compiledContent += this->lookupReplaceSymbol (name);
+                            this->m_compiledContent += name;
                         }
                         else
                         {
@@ -431,7 +413,7 @@ namespace WallpaperEngine::Render::Shaders
                 // types not found, try names
                 if (this->m_error == false)
                 {
-                    this->m_compiledContent += type;
+                    this->m_compiledContent += type + " ";
                 }
                 else
                 {
@@ -441,13 +423,12 @@ namespace WallpaperEngine::Render::Shaders
                     if (this->m_error == false)
                     {
                         // check if the name is a translated one or not
-                        this->m_compiledContent += this->lookupReplaceSymbol (name);
+                        this->m_compiledContent += name;
                     }
                     else
                     {
                         this->m_error = false;
-                        this->m_compiledContent += *it;
-                        it ++;
+                        this->m_compiledContent += *it++;
                     }
                 }
             }
@@ -489,9 +470,12 @@ namespace WallpaperEngine::Render::Shaders
 
         finalCode += this->m_compiledContent;
 
-        if (this->m_recursive == false)
+        if (DEBUG && this->m_recursive == false)
         {
-            std::cout << "======================== COMPILED SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            if (this->m_type == Type_Vertex)
+                std::cout << "======================== COMPILED VERTEX SHADER " << this->m_file.c_str () << " ========================" << std::endl;
+            else
+                std::cout << "======================== COMPILED FRAGMENT SHADER " << this->m_file.c_str () << " ========================" << std::endl;
             std::cout << finalCode << std::endl;
         }
 
@@ -560,29 +544,29 @@ namespace WallpaperEngine::Render::Shaders
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
-                WallpaperEngine::Core::ato3vf (*defvalue)
+                WallpaperEngine::Core::aToVector4 (*defvalue)
             );
         }
         else if (type == "vec3")
         {
             parameter = new Variables::CShaderVariableVector3 (
                 constant == this->m_constants.end ()
-                ? WallpaperEngine::Core::ato3vf (*defvalue)
+                ? WallpaperEngine::Core::aToVector3 (*defvalue)
                 : *(*constant).second->as <CShaderConstantVector3> ()->getValue ()
             );
         }
         else if (type == "vec2")
         {
             parameter = new Variables::CShaderVariableVector2 (
-                WallpaperEngine::Core::ato2vf (*defvalue)
+                WallpaperEngine::Core::aToVector2 (*defvalue)
             );
         }
         else if (type == "float")
         {
-            irr::f32 value = 0;
+            float value = 0;
 
             if (constant == this->m_constants.end ())
-                value = (*defvalue).get <irr::f32> ();
+                value = (*defvalue).get <float> ();
             else if ((*constant).second->is <CShaderConstantFloat> () == true)
                 value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
             else if ((*constant).second->is <CShaderConstantInteger> () == true)
@@ -608,12 +592,22 @@ namespace WallpaperEngine::Render::Shaders
             // samplers can have special requirements, check what sampler we're working with and create definitions
             // if needed
             auto combo = data.find ("combo");
+            auto textureName = data.find ("default");
 
             if (combo != data.end ())
             {
-                // TODO: CHECK WHAT TEXTURE THIS REFERS TO
                 // add the new combo to the list
                 this->m_combos.insert (std::make_pair<std::string, int> (*combo, 1));
+                // also ensure that the textureName is loaded and we know about it
+                CTexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
+                // extract the texture number from the name
+                char value = name.at (std::string("g_Texture").length ());
+                // now convert it to integer
+                int index = value - '0';
+
+                this->m_textures.insert (
+                    std::make_pair (index, texture)
+                );
             }
 
             // samplers are not saved, we can ignore them for now
@@ -658,18 +652,13 @@ namespace WallpaperEngine::Render::Shaders
         return this->m_combos;
     }
 
-    std::map<std::string, std::string>  Compiler::sVariableReplacement =
+    const std::map <int, CTexture*>& Compiler::getTextures () const
     {
-        // attribute vec3 a_position
-        {"a_Position", "gl_Vertex.xyz"},
-        // attribute vec2 a_TexCoord
-        {"a_TexCoord", "gl_MultiTexCoord0.xy"},
-        // attribute vec3 a_Normal
-        {"a_Normal", "gl_Normal.xyz"}
-    };
+        return this->m_textures;
+    }
 
     std::vector<std::string> Compiler::sTypes =
     {
-        "vec4", "vec3", "vec2", "float", "sampler2D", "mat4"
+        "vec4", "vec3", "vec2", "float", "sampler2D", "mat4x3", "mat4", "uint4"
     };
 }

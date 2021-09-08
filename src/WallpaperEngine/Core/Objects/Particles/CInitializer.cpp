@@ -15,7 +15,7 @@ CInitializer* CInitializer::fromJSON (json data)
 {
     auto id_it = data.find ("id");
     auto name_it = jsonFindRequired (data, "name", "Particle's initializer must have a name");
-    irr::u32 id = ((id_it == data.end ()) ? 0 : (irr::u32) (*id_it));
+    uint32_t id = ((id_it == data.end ()) ? 0 : (uint32_t) (*id_it));
 
     if (*name_it == "lifetimerandom")
     {
@@ -56,7 +56,7 @@ CInitializer* CInitializer::fromJSON (json data)
 }
 
 
-CInitializer::CInitializer (irr::u32 id, std::string name) :
+CInitializer::CInitializer (uint32_t id, std::string name) :
     m_id (id),
     m_name (std::move(name))
 {
@@ -68,7 +68,7 @@ const std::string& CInitializer::getName () const
     return this->m_name;
 }
 
-const irr::u32 CInitializer::getId () const
+const uint32_t CInitializer::getId () const
 {
     return this->m_id;
 }

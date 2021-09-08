@@ -2,32 +2,32 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CVelocityRandom* CVelocityRandom::fromJSON (json data, irr::u32 id)
+CVelocityRandom* CVelocityRandom::fromJSON (json data, uint32_t id)
 {
     auto min_it = jsonFindRequired (data, "min", "Velocityrandom initializer must have a minimum value");
     auto max_it = jsonFindRequired (data, "max", "Velocityrandom initializer must have a maximum value");
 
     return new CVelocityRandom (
             id,
-            WallpaperEngine::Core::ato3vf (*min_it),
-            WallpaperEngine::Core::ato3vf (*max_it)
+            WallpaperEngine::Core::aToVector3 (*min_it),
+            WallpaperEngine::Core::aToVector3 (*max_it)
     );
 }
 
 
-CVelocityRandom::CVelocityRandom (irr::u32 id, irr::core::vector3df min, irr::core::vector3df max) :
+CVelocityRandom::CVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max) :
         CInitializer (id, "velocityrandom"),
         m_min (min),
         m_max (max)
 {
 }
 
-const irr::core::vector3df& CVelocityRandom::getMinimum () const
+const glm::vec3& CVelocityRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-const irr::core::vector3df& CVelocityRandom::getMaximum () const
+const glm::vec3& CVelocityRandom::getMaximum () const
 {
     return this->m_max;
 }

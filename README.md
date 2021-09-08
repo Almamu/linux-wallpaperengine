@@ -1,5 +1,5 @@
 # 1. Disclaimer
-**This is an educational project**. Our main focus is to learn how Irrlicht Engine works and provide examples of usage of as much aspects of it as possible. We are not responsible for what others do with the source code downloaded from this project.
+**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). Turns out working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
 
 # 2. What is this project all about?
 This projects aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
@@ -10,7 +10,6 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 # 4. Compilation requirements
 - OpenGL 2.1 support
 - CMake
-- Irrlicht
 - LZ4
 - ZLIB
 - SDL
@@ -18,6 +17,9 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - FFmpeg
 - X11
 - Xrandr
+- GLFW3
+- GLM
+- FreeImage
 
 # 5. How to use
 ## 5.1. Pre-requirements
@@ -29,11 +31,7 @@ Once Wallpaper Engine is downloaded open the installation folder (usually on C:\
 
 ![folder](docs/images/screenshot_folder.png)
 
-All the folders we see must be compressed in a single zip file for the project to load them:
-
-![compression](docs/images/zip.png)
-
-The zip must be named "assets.zip" and placed on the same folder as the directory where the project is going to be run from.
+The assets folder itself can be copied to the same folder where the binary lives.
 
 ## 5.3. Compilation steps
 The project is built on CMake as build engine. First we need to create the directory where the build will be stored and get into it:
@@ -54,7 +52,7 @@ Finally we can compile the project to generate the actual executable
 make
 ```
 
-**REMEMBER: The assets.zip file has to be at the same folder as the executable**
+**REMEMBER: The assets folder has to be at the same folder as the executable**
 
 ## 5.4. Running a background
 Currently both compressed and uncompressed backgrounds are supported.
@@ -88,4 +86,8 @@ To reduce the performance hit to your system you can reduce (or increase) the FP
 ###### Example background
 This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
-![example](docs/images/example.gif) 
+![example](docs/images/example.gif)
+
+# 6. Special thanks
+- [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
+- [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS

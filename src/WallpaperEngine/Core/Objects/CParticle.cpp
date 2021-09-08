@@ -1,18 +1,17 @@
 #include "CParticle.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
-#include <irrlicht/irrlicht.h>
-
 using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (
-    const irr::io::path& filename,
-    irr::u32 id,
+    const std::string& filename,
+    CContainer* container,
+    uint32_t id,
     std::string name,
-    const irr::core::vector3df& origin,
-    const irr::core::vector3df& scale)
+    const glm::vec3& origin,
+    const glm::vec3& scale)
 {
-    json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename));
+    json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
     auto controlpoint_it = data.find ("controlpoint");
     auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
     auto maxcount_it = jsonFindRequired (data, "maxcount", "Particles must have maximum count");
@@ -65,13 +64,13 @@ CParticle* CParticle::fromFile (
 }
 
 CParticle::CParticle (
-        irr::u32 starttime,
-        irr::u32 maxcount,
-        irr::u32 id,
+        uint32_t starttime,
+        uint32_t maxcount,
+        uint32_t id,
         std::string name,
-        const irr::core::vector3df& origin,
-        const irr::core::vector3df& scale):
-        CObject (true, id, std::move(name), Type, origin, scale, irr::core::vector3df ()),
+        const glm::vec3& origin,
+        const glm::vec3& scale):
+        CObject (true, id, std::move(name), Type, origin, scale, glm::vec3 ()),
         m_starttime (starttime),
         m_maxcount (maxcount)
 {

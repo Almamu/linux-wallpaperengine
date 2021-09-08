@@ -3,13 +3,13 @@
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 
-CShaderConstantFloat::CShaderConstantFloat (irr::f32 value) :
+CShaderConstantFloat::CShaderConstantFloat (float value) :
     CShaderConstant (Type),
     m_value (value)
 {
 }
 
-irr::f32* CShaderConstantFloat::getValue ()
+float* CShaderConstantFloat::getValue ()
 {
     return &this->m_value;
 }

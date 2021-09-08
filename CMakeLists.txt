@@ -6,22 +6,50 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 
+# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
+add_compile_definitions(DEBUG=0)
+
+# add glfw3 customized version to the compilation
+add_subdirectory (lib/glfw)
+
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(Irrlicht REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFmpeg REQUIRED)
+find_package(FreeImage REQUIRED)
 
-include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR} ${IRRLICHT_INCLUDE_DIR} ${LZ4_INCLUDE_DIR} ${SDL_INCLUDE_DIRS} ${SDL_MIXER_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIR} src include)
+include_directories(
+    ${X11_INCLUDE_DIR}
+    ${XRANDR_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIR}
+    ${LZ4_INCLUDE_DIR}
+    ${SDL_INCLUDE_DIRS}
+    ${SDL_MIXER_INCLUDE_DIRS}
+    ${FFMPEG_INCLUDE_DIR}
+    ${FREEIMAGE_INCLUDE_DIR}
+    src
+    include)
 
 add_executable(
         wallengine
         main.cpp
+
+        src/WallpaperEngine/Assets/CContainer.h
+        src/WallpaperEngine/Assets/CContainer.cpp
+        src/WallpaperEngine/Assets/CCombinedContainer.h
+        src/WallpaperEngine/Assets/CCombinedContainer.cpp
+        src/WallpaperEngine/Assets/CDirectory.h
+        src/WallpaperEngine/Assets/CDirectory.cpp
+        src/WallpaperEngine/Assets/CPackage.h
+        src/WallpaperEngine/Assets/CPackage.cpp
+        src/WallpaperEngine/Assets/CTexture.h
+        src/WallpaperEngine/Assets/CTexture.cpp
 
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
@@ -39,13 +67,11 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
 
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.h
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloatPointer.cpp
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.h
-        src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2Pointer.cpp
-
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
+
+        src/WallpaperEngine/Render/CContext.h
+        src/WallpaperEngine/Render/CContext.cpp
 
         src/WallpaperEngine/Render/CWallpaper.h
         src/WallpaperEngine/Render/CWallpaper.cpp
@@ -75,16 +101,8 @@ add_executable(
         src/WallpaperEngine/FileSystem/FileSystem.cpp
         src/WallpaperEngine/FileSystem/FileSystem.h
 
-        src/WallpaperEngine/Irrlicht/CEventReceiver.h
-        src/WallpaperEngine/Irrlicht/CEventReceiver.cpp
-        src/WallpaperEngine/Irrlicht/CContext.h
-        src/WallpaperEngine/Irrlicht/CContext.cpp
-        src/WallpaperEngine/Irrlicht/CImageLoaderTEX.h
-        src/WallpaperEngine/Irrlicht/CImageLoaderTEX.cpp
-        src/WallpaperEngine/Irrlicht/CPkgReader.h
-        src/WallpaperEngine/Irrlicht/CPkgReader.cpp
-        src/WallpaperEngine/Irrlicht/CFileList.h
-        src/WallpaperEngine/Irrlicht/CFileList.cpp
+        src/WallpaperEngine/Core/Types/FloatColor.h
+        src/WallpaperEngine/Core/Types/IntegerColor.h
 
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
@@ -163,4 +181,17 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
-target_link_libraries(wallengine ${X11_LIBRARIES} ${XRANDR_LIBRARIES} ${X11_Xxf86vm_LIB} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${IRRLICHT_LIBRARY} ${LZ4_LIBRARY} ${SDL_LIBRARY} ${SDL_MIXER_LIBRARIES} ${FFMPEG_LIBRARIES})
+target_link_libraries(wallengine
+    ${X11_LIBRARIES}
+    ${XRANDR_LIBRARIES}
+    ${X11_Xxf86vm_LIB}
+    ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    ${GLUT_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${LZ4_LIBRARY}
+    ${SDL_LIBRARY}
+    ${SDL_MIXER_LIBRARIES}
+    ${FFMPEG_LIBRARIES}
+    ${FREEIMAGE_LIBRARIES}
+    glfw)

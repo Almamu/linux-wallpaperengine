@@ -3,19 +3,19 @@
 #include "CShaderConstant.h"
 
 #include <string>
-#include <irrlicht/irrlicht.h>
+#include <glm/vec3.hpp>
 
 namespace WallpaperEngine::Core::Objects::Effects::Constants
 {
     class CShaderConstantVector3 : public CShaderConstant
     {
     public:
-        CShaderConstantVector3 (irr::core::vector3df value);
+        CShaderConstantVector3 (glm::vec3 value);
 
-        irr::core::vector3df* getValue ();
+        glm::vec3* getValue ();
 
         static const std::string Type;
     protected:
-        irr::core::vector3df m_value;
+        glm::vec3 m_value;
     };
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "Core.h"
 #include "CWallpaper.h"
 
@@ -19,15 +17,15 @@ namespace WallpaperEngine::Core
     {
     public:
         CVideo (
-                const irr::io::path& filename
+                std::string  filename
         );
 
-        const irr::io::path getFilename ();
+        const std::string& getFilename ();
 
     protected:
         friend class CWallpaper;
 
-        const irr::io::path m_filename;
+        const std::string m_filename;
 
         static const std::string Type;
 

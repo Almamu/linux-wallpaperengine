@@ -35,6 +35,11 @@ const std::string& CShaderVariable::getName () const
     return this->m_name;
 }
 
+const std::string& CShaderVariable::getType () const
+{
+    return this->m_type;
+}
+
 void CShaderVariable::setIdentifierName (std::string identifierName)
 {
     this->m_identifierName = std::move(identifierName);

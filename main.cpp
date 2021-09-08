@@ -1,14 +1,28 @@
 #include <iostream>
-#include <irrlicht/irrlicht.h>
 #include <getopt.h>
+#include <unistd.h>
 #include <SDL_mixer.h>
 #include <SDL.h>
+#include <FreeImage.h>
+
+#include <GL/glew.h>
+#include <GL/glx.h>
+#include "GLFW/glfw3.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Irrlicht/CContext.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
+#include "WallpaperEngine/Render/CContext.h"
 #include "WallpaperEngine/Render/CScene.h"
 #include "WallpaperEngine/Render/CVideo.h"
+
+#include "WallpaperEngine/Assets/CPackage.h"
+#include "WallpaperEngine/Assets/CDirectory.h"
+#include "WallpaperEngine/Assets/CCombinedContainer.h"
+
+#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 enum BACKGROUND_RUN_MODE
 {
@@ -18,8 +32,9 @@ enum BACKGROUND_RUN_MODE
     RUN_MODE_PACKAGE = 3
 };
 
-WallpaperEngine::Irrlicht::CContext* IrrlichtContext = nullptr;
-irr::f32 g_Time;
+float g_Time;
+
+using namespace WallpaperEngine::Core::Types;
 
 void print_help (const char* route)
 {
@@ -33,17 +48,24 @@ void print_help (const char* route)
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
 }
 
-std::string stringPathFixes(const std::string& s){
-    std::string str(s);
-    if(str.empty())
+std::string stringPathFixes(const std::string& s)
+{
+    if (s.empty () == true)
         return s;
-    if(str[0] == '\'' && str[str.size() - 1] == '\''){
-        str.erase(str.size() - 1, 1);
-        str.erase(0,1);
-    }
-    if(str[str.size() - 1] != '/')
+
+    std::string str (s);
+
+    // remove single-quotes from the arguments
+    if (str [0] == '\'' && str [str.size() - 1] == '\'')
+        str
+            .erase (str.size() - 1, 1)
+            .erase (0, 1);
+
+    // ensure there's a slash at the end of the path
+    if (str [str.size() - 1] != '/')
         str += '/';
-    return std::move(str);
+
+    return std::move (str);
 }
 
 int main (int argc, char* argv[])
@@ -85,13 +107,13 @@ int main (int argc, char* argv[])
             case 'p':
                 if (mode == RUN_MODE_UNKNOWN)
                     mode = RUN_MODE_PACKAGE;
-                path = optarg;
+                path = stringPathFixes (optarg);
                 break;
 
             case 'd':
                 if (mode == RUN_MODE_UNKNOWN)
                     mode = RUN_MODE_DIRECTORY;
-                path = optarg;
+                path = stringPathFixes (optarg);
                 break;
 
             case 's':
@@ -117,35 +139,101 @@ int main (int argc, char* argv[])
         return 0;
     }
 
-    try
+    // first of all, initialize the window
+    if (glfwInit () == GLFW_FALSE)
     {
-        IrrlichtContext = new WallpaperEngine::Irrlicht::CContext (screens, isRootWindow);
-        IrrlichtContext->initializeContext ();
-    }
-    catch (std::runtime_error& ex)
-    {
-        std::cerr << ex.what () << std::endl;
-
+        fprintf (stderr, "Failed to initialize GLFW\n");
         return 1;
     }
 
-    path = stringPathFixes (path);
+    // initialize freeimage
+    FreeImage_Initialise (TRUE);
 
-    irr::io::path wallpaper_path = IrrlichtContext->getDevice ()->getFileSystem ()->getAbsolutePath (path.c_str ());
-    irr::io::path project_path = wallpaper_path + "project.json";
+    // set some window hints (opengl version to be used)
+    glfwWindowHint (GLFW_SAMPLES, 4);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
+
+    std::string project_path = path + "project.json";
+    auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
+
+    // add containers to the list
+    containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
+    // the background's path is required to load project.json regardless of the type of background we're using
+    containers->add (new WallpaperEngine::Assets::CDirectory (path));
 
     if (mode == RUN_MODE_PACKAGE)
     {
-        irr::io::path scene_path = wallpaper_path + "scene.pkg";
-        // add the package file to the lookup list
-        IrrlichtContext->getDevice ()->getFileSystem ()->addFileArchive (scene_path, true, false);
+        std::string scene_path = path + "scene.pkg";
+
+        // add the package to the list
+        containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
     }
     else if (mode == RUN_MODE_DIRECTORY)
     {
-        project_path = wallpaper_path + "project.json";
-        // set the working directory to the project folder
-        IrrlichtContext->getDevice ()->getFileSystem ()->changeWorkingDirectoryTo (wallpaper_path);
+        // nothing to do here anymore
     }
+
+    // parse the project.json file
+    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
+    WallpaperEngine::Render::CWallpaper* wallpaper;
+
+    // initialize custom context class
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
+
+    // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
+    // create the window!
+    // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
+    // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
+    GLFWwindow* window = glfwCreateWindow (1920, 1080, "WallpaperEngine", NULL, NULL);
+
+    if (window == nullptr)
+    {
+        fprintf (stderr, "Failed to open a GLFW window");
+        glfwTerminate ();
+        return 2;
+    }
+
+    glfwMakeContextCurrent (window);
+
+    // TODO: FIGURE THESE OUT BASED ON THE SCREEN
+    int windowWidth = 1920;
+    int windowHeight = 1080;
+
+    // get the real framebuffer size
+    glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
+    // set the default viewport
+    context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
+
+    if (glewInit () != GLEW_OK)
+    {
+        fprintf (stderr, "Failed to initialize GLEW");
+        glfwTerminate ();
+        return 3;
+    }
+
+
+    if (project->getType () == "scene")
+    {
+        WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
+        wallpaper = new WallpaperEngine::Render::CScene (scene, containers);
+    }
+    else if (project->getType () == "video")
+    {
+        // special steps, running a video needs a root directory change, files are not loaded from the container classes
+        // as they're streamed from disk
+        chdir (path.c_str ());
+
+        WallpaperEngine::Core::CVideo* video = project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> ();
+        wallpaper = new WallpaperEngine::Render::CVideo (video, containers);
+    }
+    else
+    {
+        throw std::runtime_error ("Unsupported wallpaper type");
+    }
+
+    // ensure the context knows what wallpaper to render
+    context->setWallpaper (wallpaper);
 
     if (shouldEnableAudio == true)
     {
@@ -155,7 +243,7 @@ int main (int argc, char* argv[])
         {
             // Mix_GetError is an alias for SDL_GetError, so calling it directly will yield the correct result
             // it doesn't matter if SDL_Init or Mix_Init failed, both report the errors through the same functions
-            IrrlichtContext->getDevice ()->getLogger ()->log ("Cannot initialize SDL audio system", SDL_GetError(),irr::ELL_ERROR);
+            fprintf (stderr, "Cannot initialize SDL audio system, SDL_GetError: %s", SDL_GetError ());
             return 2;
         }
 
@@ -163,48 +251,50 @@ int main (int argc, char* argv[])
         Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
     }
 
-    WallpaperEngine::Core::CProject* project = WallpaperEngine::Core::CProject::fromFile (project_path);
-    WallpaperEngine::Render::CWallpaper* wallpaper;
+    // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
+    // glfwSetInputMode (window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    if (project->getType () == "scene")
+    // enable depth text
+    glEnable (GL_DEPTH_TEST);
+    glDepthFunc (GL_LESS);
+
+    // cull anything that doesn't look at the camera (might be useful to disable in the future)
+    //glEnable (GL_CULL_FACE);
+
+    clock_t minimumTime = 1000 / maximumFPS;
+    clock_t startTime = 0;
+    clock_t endTime = 0;
+
+    while (glfwWindowShouldClose (window) == 0)
     {
-        WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
-        wallpaper = new WallpaperEngine::Render::CScene (scene, IrrlichtContext);
-        IrrlichtContext->getDevice ()->getSceneManager ()->setAmbientLight (
-                    scene->getAmbientColor ().toSColor ()
-        );
-    }
-    else if (project->getType () == "video")
-    {
-        wallpaper = new WallpaperEngine::Render::CVideo (
-                    project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> (),
-                    IrrlichtContext
-        );
-    }
-    else
-    {
-        throw std::runtime_error ("Unsupported wallpaper type");
-    }
-    
-    irr::u32 minimumTime = 1000 / maximumFPS;
-    irr::u32 startTime = 0;
-    irr::u32 endTime = 0;
+        // get the real framebuffer size
+        glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
+        // set the default viewport
+        context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
+        // calculate the current time value
+        g_Time = (float) glfwGetTime ();
+        // get the start time of the frame
+        startTime = clock ();
+        // render the scene
+        context->render ();
+        // do buffer swapping
+        glfwSwapBuffers (window);
+        // poll for events (like closing the window)
+        glfwPollEvents ();
+        // get the end time of the frame
+        endTime = clock ();
 
-    while (IrrlichtContext && IrrlichtContext->getDevice () && IrrlichtContext->getDevice ()->run ())
-    {
-        if (IrrlichtContext->getDevice ()->getVideoDriver () == nullptr)
-            continue;
-
-        startTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
-        g_Time = startTime / 1000.0f;
-
-        IrrlichtContext->renderFrame (wallpaper);
-
-        endTime = IrrlichtContext->getDevice ()->getTimer ()->getTime ();
-
-        IrrlichtContext->getDevice ()->sleep (minimumTime - (endTime - startTime), false);
+        // ensure the frame time is correct to not overrun FPS
+        if ((endTime - startTime) < minimumTime)
+            usleep (static_cast <unsigned int> ((static_cast <double> ((minimumTime - (endTime - startTime))) / CLOCKS_PER_SEC) * 1000));
     }
 
+    // terminate gl
+    glfwTerminate ();
+    // terminate SDL
     SDL_Quit ();
+    // terminate free image
+    FreeImage_DeInitialise ();
+
     return 0;
 }

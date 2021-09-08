@@ -16,6 +16,7 @@ namespace WallpaperEngine::Render::Shaders::Variables
 
         const std::string& getIdentifierName () const;
         const std::string& getName () const;
+        const std::string& getType () const;
 
         void setIdentifierName (std::string identifierName);
         void setName (std::string name);

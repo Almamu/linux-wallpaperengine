@@ -4,23 +4,21 @@
 
 #include "WallpaperEngine/Core/Core.h"
 
-#include <irrlicht/irrlicht.h>
-
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
     class CVelocityRandom : CInitializer
     {
     public:
-        const irr::core::vector3df& getMinimum () const;
-        const irr::core::vector3df& getMaximum () const;
+        const glm::vec3& getMinimum () const;
+        const glm::vec3& getMaximum () const;
     protected:
         friend class CInitializer;
 
-        static CVelocityRandom* fromJSON (json data, irr::u32 id);
+        static CVelocityRandom* fromJSON (json data, uint32_t id);
 
-        CVelocityRandom (irr::u32 id, irr::core::vector3df min, irr::core::vector3df max);
+        CVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max);
     private:
-        irr::core::vector3df m_max;
-        irr::core::vector3df m_min;
+        glm::vec3 m_max;
+        glm::vec3 m_min;
     };
 };

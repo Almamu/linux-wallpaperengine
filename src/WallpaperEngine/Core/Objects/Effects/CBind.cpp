@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects;
 
-CBind::CBind (std::string name, irr::u32 index) :
+CBind::CBind (std::string name, uint32_t index) :
     m_name (std::move(name)),
     m_index (index)
 {
@@ -23,7 +23,7 @@ const std::string& CBind::getName () const
     return this->m_name;
 }
 
-const irr::u32& CBind::getIndex () const
+const uint32_t& CBind::getIndex () const
 {
     return this->m_index;
 }

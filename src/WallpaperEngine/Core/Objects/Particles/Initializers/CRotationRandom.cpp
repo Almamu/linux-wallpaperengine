@@ -4,21 +4,21 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CRotationRandom* CRotationRandom::fromJSON (json data, irr::u32 id)
+CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id)
 {
     auto min_it = data.find ("minVector");
     auto max_it = data.find ("max");
 
-    irr::core::vector3df minVector = irr::core::vector3df ();
-    irr::core::vector3df maxVector = irr::core::vector3df ();
-    irr::f64 minNumber = 0.0f;
-    irr::f64 maxNumber = 0.0f;
+    glm::vec3 minVector = glm::vec3 ();
+    glm::vec3 maxVector = glm::vec3 ();
+    double minNumber = 0.0f;
+    double maxNumber = 0.0f;
     bool isMinVector = false;
     bool isMaxVector = false;
 
     if (min_it != data.end () && min_it->is_string ())
     {
-        minVector = WallpaperEngine::Core::ato3vf (*min_it);
+        minVector = WallpaperEngine::Core::aToVector3 (*min_it);
         isMinVector = true;
     }
     else if (min_it != data.end () && min_it->is_number ())
@@ -29,7 +29,7 @@ CRotationRandom* CRotationRandom::fromJSON (json data, irr::u32 id)
 
     if (max_it != data.end () && max_it->is_string ())
     {
-        maxVector = WallpaperEngine::Core::ato3vf (*max_it);
+        maxVector = WallpaperEngine::Core::aToVector3 (*max_it);
         isMaxVector = true;
     }
     else if(max_it != data.end () && max_it->is_number ())
@@ -42,12 +42,12 @@ CRotationRandom* CRotationRandom::fromJSON (json data, irr::u32 id)
 }
 
 CRotationRandom::CRotationRandom (
-    irr::u32 id,
-    irr::core::vector3df minVector,
-    irr::f64 minNumber,
+    uint32_t id,
+    glm::vec3 minVector,
+    double minNumber,
     bool isMinimumVector,
-    irr::core::vector3df maxVector,
-    irr::f64 maxNumber,
+    glm::vec3 maxVector,
+    double maxNumber,
     bool isMaximumVector
 ) :
         CInitializer (id, "rotationrandom"),
@@ -60,22 +60,22 @@ CRotationRandom::CRotationRandom (
 {
 }
 
-const irr::core::vector3df CRotationRandom::getMinimumVector () const
+const glm::vec3 CRotationRandom::getMinimumVector () const
 {
     return this->m_minVector;
 }
 
-const irr::core::vector3df CRotationRandom::getMaximumVector () const
+const glm::vec3 CRotationRandom::getMaximumVector () const
 {
     return this->m_maxVector;
 }
 
-const irr::f64 CRotationRandom::getMinimumNumber () const
+const double CRotationRandom::getMinimumNumber () const
 {
     return this->m_minNumber;
 }
 
-const irr::f64 CRotationRandom::getMaximumNumber () const
+const double CRotationRandom::getMaximumNumber () const
 {
     return this->m_maxNumber;
 }

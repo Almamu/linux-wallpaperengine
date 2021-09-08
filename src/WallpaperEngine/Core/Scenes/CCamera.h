@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Scenes
@@ -13,14 +11,14 @@ namespace WallpaperEngine::Core::Scenes
     public:
         static CCamera* fromJSON (json data);
 
-        const irr::core::vector3df& getCenter () const;
-        const irr::core::vector3df& getEye () const;
-        const irr::core::vector3df& getUp () const;
+        const glm::vec3& getCenter () const;
+        const glm::vec3& getEye () const;
+        const glm::vec3& getUp () const;
     protected:
-        CCamera (irr::core::vector3df center, irr::core::vector3df eye, irr::core::vector3df up);
+        CCamera (glm::vec3 center, glm::vec3 eye, glm::vec3 up);
     private:
-        irr::core::vector3df m_center;
-        irr::core::vector3df m_eye;
-        irr::core::vector3df m_up;
+        glm::vec3 m_center;
+        glm::vec3 m_eye;
+        glm::vec3 m_up;
     };
 };

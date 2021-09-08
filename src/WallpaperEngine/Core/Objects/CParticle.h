@@ -1,7 +1,5 @@
 #pragma once
 
-#include <irrlicht/irrlicht.h>
-
 #include "WallpaperEngine/Core/Objects/Particles/CControlPoint.h"
 #include "WallpaperEngine/Core/Objects/Particles/CEmitter.h"
 #include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
@@ -19,11 +17,12 @@ namespace WallpaperEngine::Core::Objects
 
     public:
         static CParticle* fromFile (
-                const irr::io::path& filename,
-                irr::u32 id,
+                const std::string& filename,
+                CContainer* container,
+                uint32_t id,
                 std::string name,
-                const irr::core::vector3df& origin,
-                const irr::core::vector3df& scale
+                const glm::vec3& origin,
+                const glm::vec3& scale
         );
 
         const std::vector<Particles::CEmitter*>& getEmitters () const;
@@ -32,12 +31,12 @@ namespace WallpaperEngine::Core::Objects
 
     protected:
         CParticle (
-            irr::u32 starttime,
-            irr::u32 maxcount,
-            irr::u32 id,
+            uint32_t starttime,
+            uint32_t maxcount,
+            uint32_t id,
             std::string name,
-            const irr::core::vector3df& origin,
-            const irr::core::vector3df& scale
+            const glm::vec3& origin,
+            const glm::vec3& scale
         );
         void insertControlPoint (Particles::CControlPoint* controlpoint);
         void insertEmitter (Particles::CEmitter* emitter);
@@ -45,8 +44,8 @@ namespace WallpaperEngine::Core::Objects
 
         static const std::string Type;
     private:
-        irr::u32 m_starttime;
-        irr::u32 m_maxcount;
+        uint32_t m_starttime;
+        uint32_t m_maxcount;
         std::vector<Particles::CControlPoint*> m_controlpoints;
         std::vector<Particles::CEmitter*> m_emitters;
         std::vector<Particles::CInitializer*> m_initializers;
