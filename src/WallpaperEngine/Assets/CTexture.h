@@ -71,7 +71,7 @@ namespace WallpaperEngine::Assets
         /**
          * Configures how the texture will be handled by the background
          */
-        enum TextureFlags: uint32_t
+        enum TextureFlags : uint32_t
         {
             None = 0,
             NoInterpolation = 1,

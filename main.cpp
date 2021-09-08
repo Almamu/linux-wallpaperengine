@@ -5,8 +5,11 @@
 #include <SDL.h>
 #include <FreeImage.h>
 
+#define GLFW_EXPOSE_NATIVE_X11
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+// #include <GLFW/glfw3native.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
