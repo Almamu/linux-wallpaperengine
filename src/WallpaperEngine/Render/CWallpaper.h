@@ -32,7 +32,7 @@ namespace WallpaperEngine::Render
         /**
          * Performs a render pass of the wallpaper
          */
-        virtual void render ();
+        void render (glm::vec4 viewport, bool newFrame = true);
 
         /**
          * @return The container to resolve files for this wallpaper
@@ -57,6 +57,11 @@ namespace WallpaperEngine::Render
         GLuint getWallpaperTexture () const;
 
     protected:
+        /**
+         * Renders a frame of the wallpaper
+         */
+        virtual void renderFrame () = 0;
+
         void createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GLuint* texture);
 
         CContainer* m_container;

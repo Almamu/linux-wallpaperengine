@@ -9,10 +9,12 @@ set(OpenGL_GL_PREFERENCE "LEGACY")
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(DEBUG=0)
 
+# add glfw3 customized version to the compilation
+add_subdirectory (lib/glfw)
+
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLFW3 3.1 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -26,7 +28,6 @@ include_directories(
     ${X11_INCLUDE_DIR}
     ${XRANDR_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
-    ${glfw3_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
     ${SDL_INCLUDE_DIRS}
     ${SDL_MIXER_INCLUDE_DIRS}
@@ -68,6 +69,9 @@ add_executable(
 
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
+
+        src/WallpaperEngine/Render/CContext.h
+        src/WallpaperEngine/Render/CContext.cpp
 
         src/WallpaperEngine/Render/CWallpaper.h
         src/WallpaperEngine/Render/CWallpaper.cpp
@@ -183,11 +187,11 @@ target_link_libraries(wallengine
     ${X11_Xxf86vm_LIB}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
-    ${GLFW3_LIBRARY}
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${LZ4_LIBRARY}
     ${SDL_LIBRARY}
     ${SDL_MIXER_LIBRARIES}
     ${FFMPEG_LIBRARIES}
-    ${FREEIMAGE_LIBRARIES})
+    ${FREEIMAGE_LIBRARIES}
+    glfw)

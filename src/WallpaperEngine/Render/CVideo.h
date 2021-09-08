@@ -19,11 +19,11 @@ namespace WallpaperEngine::Render
     public:
         CVideo (Core::CVideo* video, CContainer* container);
 
-        void render () override;
-
         Core::CVideo* getVideo ();
 
     protected:
+        void renderFrame () override;
+
         friend class CWallpaper;
 
         static const std::string Type;

@@ -19,11 +19,11 @@ namespace WallpaperEngine::Render
 
         CCamera* getCamera () const;
 
-        void render () override;
-
         Core::CScene* getScene ();
 
     protected:
+        void renderFrame () override;
+
         friend class CWallpaper;
 
         static const std::string Type;

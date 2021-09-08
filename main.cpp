@@ -5,17 +5,16 @@
 #include <SDL.h>
 #include <FreeImage.h>
 
-#define GLFW_EXPOSE_NATIVE_X11
-
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
-// #include <GLFW/glfw3native.h>
+#include <GL/glx.h>
+#include "GLFW/glfw3.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
+#include "WallpaperEngine/Render/CContext.h"
 #include "WallpaperEngine/Render/CScene.h"
 #include "WallpaperEngine/Render/CVideo.h"
 
@@ -179,6 +178,9 @@ int main (int argc, char* argv[])
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
 
+    // initialize custom context class
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
+
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
@@ -227,6 +229,9 @@ int main (int argc, char* argv[])
         throw std::runtime_error ("Unsupported wallpaper type");
     }
 
+    // ensure the context knows what wallpaper to render
+    context->setWallpaper (wallpaper);
+
     if (shouldEnableAudio == true)
     {
         int mixer_flags = MIX_INIT_MP3 | MIX_INIT_FLAC | MIX_INIT_OGG;
@@ -264,7 +269,7 @@ int main (int argc, char* argv[])
         // get the start time of the frame
         startTime = clock ();
         // render the scene
-        wallpaper->render ();
+        context->render ();
         // do buffer swapping
         glfwSwapBuffers (window);
         // poll for events (like closing the window)

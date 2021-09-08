@@ -17,7 +17,7 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - FFmpeg
 - X11
 - Xrandr
-- GLW3
+- GLFW3
 - GLM
 - FreeImage
 
@@ -69,7 +69,7 @@ Uncompressed backgrounds are just plain folders including all the resources and 
 ./wallengine --dir folder
 ```
 
-#### 5.4.3. Running as a screen's background (NOT SUPPORTED IN THIS BUILD YET)
+#### 5.4.3. Running as a screen's background
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 ```
 ./wallengine --screen-root HDMI-1 --screen-root DVI-D-1

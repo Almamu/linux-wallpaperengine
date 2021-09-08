@@ -184,8 +184,48 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::render ()
+void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 {
+    if (newFrame == true)
+        this->renderFrame ();
+
+    int windowWidth = 1920;
+    int windowHeight = 1080;
+
+    if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
+    {
+        auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
+
+        windowWidth = projection->getWidth ();
+        windowHeight = projection->getHeight ();
+    }
+    // TODO: SUPPORT VIDEO
+    float widthRatio = windowWidth / viewport.z;
+    float heightRatio = windowHeight / viewport.w;
+
+    GLfloat position [] = {
+        widthRatio * -1.0f, heightRatio * 1.0f, 0.0f,
+        widthRatio * 1.0, heightRatio * 1.0f, 0.0f,
+        widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
+        widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
+        widthRatio * 1.0f, heightRatio * 1.0f, 0.0f,
+        widthRatio * 1.0f, heightRatio * -1.0f, 0.0f
+    };
+
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
+
+    /*
+        -1.0f, 1.0f, 0.0f,
+        1.0, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f
+     */
+
+    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
+
     // write to default's framebuffer
     glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
 
@@ -244,6 +284,7 @@ void CWallpaper::createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GL
         windowWidth = projection->getWidth ();
         windowHeight = projection->getHeight ();
     }
+    // TODO: SUPPORT VIDEO
 
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer

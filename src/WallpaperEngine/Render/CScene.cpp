@@ -45,7 +45,7 @@ CCamera* CScene::getCamera () const
     return this->m_camera;
 }
 
-void CScene::render ()
+void CScene::renderFrame ()
 {
     auto projection = this->getScene ()->getOrthogonalProjection ();
     auto cur = this->m_objects.begin ();
@@ -66,8 +66,6 @@ void CScene::render ()
 
     // ensure we render over the whole screen
     glViewport (0, 0, projection->getWidth (), projection->getHeight ());
-
-    CWallpaper::render ();
 }
 
 Core::CScene* CScene::getScene ()

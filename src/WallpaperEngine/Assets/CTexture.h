@@ -73,7 +73,7 @@ namespace WallpaperEngine::Assets
          */
         enum TextureFlags : uint32_t
         {
-            None = 0,
+            NoFlags = 0,
             NoInterpolation = 1,
             ClampUVs = 2,
             IsGif = 4,
