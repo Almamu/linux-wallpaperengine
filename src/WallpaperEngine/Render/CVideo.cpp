@@ -63,12 +63,12 @@ CVideo::CVideo (Core::CVideo* video, CContainer* container) :
 
     // inverted positions so the final texture is rendered properly
     GLfloat position [] = {
-        -1.0f, 1.0f, 0.0f,
-        1.0, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0, -1.0f, 0.0f,
         1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f
+        1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f
     };
 
     glGenBuffers (1, &this->m_texCoordBuffer);
@@ -92,6 +92,7 @@ CVideo::CVideo (Core::CVideo* video, CContainer* container) :
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, m_codecCtx->width, m_codecCtx->height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 
     this->setupShaders ();
+    this->setupFramebuffers ();
 }
 
 void CVideo::setSize (int width, int height)
@@ -121,9 +122,11 @@ void CVideo::renderFrame ()
     getNextFrame ();
     writeFrameToImage ();
 
+    glViewport (0, 0, this->getWidth (), this->getHeight ());
+    
     // do the actual rendering
     // write to default's framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
+    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
 
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable (GL_BLEND);
@@ -331,6 +334,16 @@ void CVideo::setupShaders ()
     this->g_Texture0 = glGetUniformLocation (this->m_shader, "g_Texture0");
     this->a_Position = glGetAttribLocation (this->m_shader, "a_Position");
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
+}
+
+int CVideo::getWidth ()
+{
+    return this->m_codecCtx->width;
+}
+
+int CVideo::getHeight ()
+{
+    return this->m_codecCtx->height;
 }
 
 const std::string CVideo::Type = "video";

@@ -92,7 +92,10 @@ void CPass::setTexture (int index, const std::string& texture)
 
 void CPass::insertCombo (const std::string& name, int value)
 {
-    this->m_combos.insert (std::pair <std::string, int> (name, value));
+    std::string uppercase = std::string (name);
+
+    std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
+    this->m_combos.insert (std::pair <std::string, int> (uppercase, value));
 }
 
 const std::vector<std::string>& CPass::getTextures () const

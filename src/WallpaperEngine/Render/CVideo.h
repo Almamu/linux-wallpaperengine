@@ -21,6 +21,9 @@ namespace WallpaperEngine::Render
 
         Core::CVideo* getVideo ();
 
+        int getWidth ();
+        int getHeight ();
+
     protected:
         void renderFrame () override;
 

@@ -38,6 +38,8 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
         if (object != nullptr)
             this->m_objects.emplace_back (object);
     }
+
+    this->setupFramebuffers ();
 }
 
 CCamera* CScene::getCamera () const

@@ -62,6 +62,11 @@ namespace WallpaperEngine::Render
          */
         virtual void renderFrame () = 0;
 
+        /**
+         * Setups OpenGL's framebuffers for ping-pong and scene rendering
+         */
+        void setupFramebuffers ();
+
         void createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GLuint* texture);
 
         CContainer* m_container;
@@ -117,11 +122,6 @@ namespace WallpaperEngine::Render
         GLint g_Texture0;
         GLint a_Position;
         GLint a_TexCoord;
-
-        /**
-         * Setups OpenGL's framebuffers for ping-pong and scene rendering
-         */
-        void setupFramebuffers ();
         /**
          * Setups OpenGL's shaders for this wallpaper backbuffer
          */

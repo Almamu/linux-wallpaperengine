@@ -1,5 +1,6 @@
 #include "CWallpaper.h"
 #include "CScene.h"
+#include "CVideo.h"
 
 #include <utility>
 #include <glm/glm.hpp>
@@ -12,7 +13,6 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CCont
     m_wallpaperData (wallpaperData),
     m_type (std::move(type))
 {
-    this->setupFramebuffers ();
     this->setupShaders ();
 
     GLfloat texCoords [] = {
@@ -199,7 +199,14 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
         windowWidth = projection->getWidth ();
         windowHeight = projection->getHeight ();
     }
-    // TODO: SUPPORT VIDEO
+    else if (this->is <WallpaperEngine::Render::CVideo> ())
+    {
+        auto video = this->as <WallpaperEngine::Render::CVideo> ();
+
+        windowWidth = video->getWidth ();
+        windowHeight = video->getHeight ();
+    }
+
     float widthRatio = windowWidth / viewport.z;
     float heightRatio = windowHeight / viewport.w;
 
@@ -249,15 +256,6 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 
     glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
-
-    /*
-        -1.0f, 1.0f, 0.0f,
-        1.0, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f
-     */
 
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
 
@@ -319,7 +317,13 @@ void CWallpaper::createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GL
         windowWidth = projection->getWidth ();
         windowHeight = projection->getHeight ();
     }
-    // TODO: SUPPORT VIDEO
+    else if (this->is <WallpaperEngine::Render::CVideo> ())
+    {
+        auto video = this->as <WallpaperEngine::Render::CVideo> ();
+
+        windowWidth = video->getWidth ();
+        windowHeight = video->getHeight ();
+    }
 
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
