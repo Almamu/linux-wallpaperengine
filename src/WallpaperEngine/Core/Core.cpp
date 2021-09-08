@@ -89,10 +89,8 @@ template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char 
 {
     auto value = data.find (key);
 
-    if (value == data.end ())
-    {
+    if (value == data.end () || value->type () == nlohmann::detail::value_t::null)
         return defaultValue;
-    }
 
     return *value;
 }

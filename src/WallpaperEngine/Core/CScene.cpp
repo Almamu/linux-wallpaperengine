@@ -61,10 +61,10 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
     auto ambientcolor_it = jsonFindRequired (*general_it, "ambientcolor", "General section must have ambient color");
-    auto bloom_it = jsonFindRequired (*general_it, "bloom", "General section must have bloom flag");
-    auto bloomstrength_it = jsonFindRequired (*general_it, "bloomstrength", "General section must have bloom strength");
-    auto bloomthreshold_it = jsonFindRequired (*general_it, "bloomthreshold", "General section must have bloom threshold");
-    auto camerafade_it = jsonFindRequired (*general_it, "camerafade", "General section must have camera fade");
+    auto bloom = jsonFindDefault <bool> (*general_it, "bloom", false);
+    auto bloomstrength = jsonFindDefault <double> (*general_it, "bloomstrength", 0.0f);
+    auto bloomthreshold = jsonFindDefault <double> (*general_it, "bloomthreshold", 0.0f);
+    auto camerafade = jsonFindDefault <bool> (*general_it, "camerafade", false);
     auto cameraparallax = jsonFindDefault <bool> (*general_it, "cameraparallax", true);
     auto cameraparallaxamount = jsonFindDefault <double> (*general_it, "cameraparallaxamount", 1.0f);
     auto cameraparallaxdelay = jsonFindDefault <double> (*general_it, "cameraparallaxdelay", 0.0f);
@@ -82,10 +82,10 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
             container,
             Scenes::CCamera::fromJSON (*camera_it),
             WallpaperEngine::Core::aToColorf(*ambientcolor_it),
-            *bloom_it,
-            *bloomstrength_it,
-            *bloomthreshold_it,
-            *camerafade_it,
+            bloom,
+            bloomstrength,
+            bloomthreshold,
+            camerafade,
             cameraparallax,
             cameraparallaxamount,
             cameraparallaxdelay,
