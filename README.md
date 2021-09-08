@@ -35,6 +35,7 @@ The assets folder itself can be copied to the same folder where the binary lives
 
 ## 5.3. Getting the sources
 This project includes some git submodules that need to be cloned with the source code for it to compile properly. The easiest way is to recurse submodules when cloning:
+
 ```git clone --recurse-submodules git@github.com:Almamu/linux-wallpaperengine.git```
 
 ## 5.4. Compilation steps
