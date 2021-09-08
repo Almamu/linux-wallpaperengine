@@ -1,0 +1,3 @@
+[submodule "glfw"]
+	path = lib/glfw
+	url = git@github.com:Almamu/glfw.git
