@@ -205,7 +205,7 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 
     GLfloat position [] = {
         widthRatio * -1.0f, heightRatio * 1.0f, 0.0f,
-        widthRatio * 1.0, heightRatio * 1.0f, 0.0f,
+        widthRatio * 1.0f, heightRatio * 1.0f, 0.0f,
         widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
         widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
         widthRatio * 1.0f, heightRatio * 1.0f, 0.0f,

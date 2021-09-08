@@ -13,7 +13,8 @@ CContext::CContext (std::vector <std::string> screens) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
-    m_window (0)
+    m_window (0),
+    m_defaultViewport ({0, 0, 1920, 1080})
 {
     this->initializeViewports ();
 }
@@ -99,10 +100,15 @@ void CContext::render ()
         }
     }
     else
-        this->m_wallpaper->render ({0, 0, 1920, 1080});
+        this->m_wallpaper->render (this->m_defaultViewport);
 }
 
 void CContext::setWallpaper (CWallpaper* wallpaper)
 {
     this->m_wallpaper = wallpaper;
+}
+
+void CContext::setDefaultViewport (glm::vec4 defaultViewport)
+{
+    this->m_defaultViewport = defaultViewport;
 }

@@ -15,11 +15,13 @@ namespace WallpaperEngine::Render
         void initializeViewports ();
         void render ();
         void setWallpaper (CWallpaper* wallpaper);
+        void setDefaultViewport (glm::vec4 defaultViewport);
 
     private:
         Window m_window;
         std::vector <std::string> m_screens;
         std::vector <glm::vec4> m_viewports;
+        glm::vec4 m_defaultViewport;
         CWallpaper* m_wallpaper;
         bool m_isRootWindow;
     };

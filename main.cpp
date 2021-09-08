@@ -202,6 +202,8 @@ int main (int argc, char* argv[])
 
     // get the real framebuffer size
     glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
+    // set the default viewport
+    context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
 
     if (glewInit () != GLEW_OK)
     {
@@ -209,6 +211,7 @@ int main (int argc, char* argv[])
         glfwTerminate ();
         return 3;
     }
+
 
     if (project->getType () == "scene")
     {
@@ -264,6 +267,10 @@ int main (int argc, char* argv[])
 
     while (glfwWindowShouldClose (window) == 0)
     {
+        // get the real framebuffer size
+        glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
+        // set the default viewport
+        context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
         // calculate the current time value
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame
