@@ -108,7 +108,8 @@ void CPackage::validateHeader (FILE* fp)
         strcmp ("PKGV0009", pointer) != 0 &&
         strcmp ("PKGV0004", pointer) != 0 &&
         strcmp ("PKGV0005", pointer) != 0 &&
-        strcmp ("PKGV0006", pointer) != 0)
+        strcmp ("PKGV0006", pointer) != 0 &&
+        strcmp ("PKGV0013", pointer) != 0)
     {
         delete[] pointer;
         throw std::runtime_error ("Unsupported package version");

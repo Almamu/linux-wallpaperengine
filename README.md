@@ -19,6 +19,8 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - Xrandr
 - GLFW3
 - GLM
+- GLEW
+- GLUT
 - FreeImage
 
 # 5. How to use
@@ -93,6 +95,6 @@ This was the first background to even be compatible with the software. And It's 
 
 ![example](docs/images/example.gif)
 
-# 6. Special thanks
+# 7. Special thanks
 - [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
 - [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS
