@@ -13,6 +13,10 @@ GLFW3 doesn't support drawing to a different window just yet, so in order to pro
 - Xinerama
 - Xcursor
 - XInput
+- glX
+- X11 (with libxxf86vm)
+- Xshape
+- Xkbd
 
 ## linux-wallpaperengine
 - OpenGL 2.1 support
