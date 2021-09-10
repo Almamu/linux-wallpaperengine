@@ -8,6 +8,13 @@ This projects aims to reproduce the background functionality of Wallpaper Engine
 Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing It's users to animate their own backgrounds and sharing their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)
 
 # 4. Compilation requirements
+## GLFW3
+GLFW3 doesn't support drawing to a different window just yet, so in order to properly draw to the background, there's a custom version that is built as part of the building process of linux-wallpaperengine. You'll need these dependencies:
+- Xinerama
+- Xcursor
+- XInput
+
+## linux-wallpaperengine
 - OpenGL 2.1 support
 - CMake
 - LZ4
@@ -17,7 +24,7 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - FFmpeg
 - X11 (with libxxf86vm)
 - Xrandr
-- GLFW3
+- GLFW3 (custom version already included in the repository)
 - GLM
 - GLEW
 - GLUT
