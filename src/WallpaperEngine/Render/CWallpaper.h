@@ -11,11 +11,6 @@
 
 using namespace WallpaperEngine::Assets;
 
-namespace WallpaperEngine::Irrlicht
-{
-    class CContext;
-};
-
 namespace WallpaperEngine::Render
 {
     class CWallpaper

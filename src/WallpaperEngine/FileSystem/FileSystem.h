@@ -5,7 +5,6 @@
 
 #include <string>
 #include <vector>
-#include <irrlicht/path.h>
 #include <nlohmann/json.hpp>
 
 #include "WallpaperEngine/Assets/CContainer.h"
