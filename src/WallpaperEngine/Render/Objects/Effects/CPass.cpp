@@ -1,5 +1,6 @@
 #include <sstream>
 #include "CPass.h"
+#include "WallpaperEngine/Render/CFBO.h"
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
@@ -11,7 +12,7 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Render::Shaders::Variables;
@@ -31,6 +32,9 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
 
 void CPass::render (GLuint drawTo, GLuint input)
 {
+    // set the framebuffer we're drawing to
+    glBindFramebuffer (GL_FRAMEBUFFER, drawTo);
+
     // clear whatever buffer we're drawing to if we're not drawing to screen
     if (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer())
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -66,6 +70,8 @@ void CPass::render (GLuint drawTo, GLuint input)
         glEnable (GL_DEPTH_TEST);
     }
 
+    // TODO: SUPPORT TARGET TO DRAW TEXTURE TO
+
     // update variables used in the render process (like g_ModelViewProjectionMatrix)
     this->m_modelViewProjectionMatrix =
             this->m_material->getImage ()->getScene ()->getCamera ()->getProjection () *
@@ -75,12 +81,20 @@ void CPass::render (GLuint drawTo, GLuint input)
     // update a_TexCoord and a_Position based on what to draw to
     // this should not be required once we do some prediction on rendering things
     // but for now should be enough
-    this->a_TexCoord = (input == this->m_material->getImage ()->getTexture ()->getTextureID ()) ? *this->m_material->getImage ()->getTexCoordBuffer () : *this->m_material->getImage ()->getPassTexCoordBuffer ();
-    this->a_Position = (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ();
+    this->a_TexCoord = *this->m_material->getImage ()->getTexCoordBuffer ();
+    this->a_Position = *this->m_material->getImage ()->getVertexBuffer ();
+
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
-    // bind the input texture
+    // bind the input texture (take into account input fbos)
+    auto it = this->m_fbos.find (0);
+
+    if (it != this->m_fbos.end ())
+    {
+        input = (*it).second->getTextureID();
+    }
+
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, input);
     int lastTextureIndex = 0;
@@ -93,10 +107,25 @@ void CPass::render (GLuint drawTo, GLuint input)
 
         for (int index = 1; cur != end; cur ++, index ++)
         {
-            // set the active texture index
-            glActiveTexture (GL_TEXTURE0 + index);
-            // bind the correct texture there
-            glBindTexture (GL_TEXTURE_2D, (*cur)->getTextureID ());
+            if ((*cur) == nullptr)
+            {
+                auto it = this->m_fbos.find (index);
+
+                if (it == this->m_fbos.end ())
+                    continue;
+
+                // set the active texture index
+                glActiveTexture (GL_TEXTURE0 + index);
+                // bind the correct texture there
+                glBindTexture (GL_TEXTURE_2D, (*it).second->getTextureID());
+            }
+            else
+            {
+                // set the active texture index
+                glActiveTexture (GL_TEXTURE0 + index);
+                // bind the correct texture there
+                glBindTexture (GL_TEXTURE_2D, (*cur)->getTextureID ());
+            }
             // increase the number of textures counter
             lastTextureIndex ++;
         }
@@ -174,11 +203,11 @@ void CPass::render (GLuint drawTo, GLuint input)
 
     if (this->g_Texture0Rotation != -1)
     {
-        glUniform2f (this->g_Texture0Rotation, 0.0f, 0.0f);
+        glUniform4f (this->g_Texture0Rotation, 1.0f, 0.0f, 1.0f, 0.0f);
     }
     if (this->g_Texture0Translation != -1)
     {
-        glUniform4f (this->g_Texture0Translation, 0.0f, 0.0f, 0.0f, 0.0f);
+        glUniform2f (this->g_Texture0Translation, 0.0f, 0.0f);
     }
     {
         auto cur = this->m_attribs.begin ();
@@ -245,16 +274,19 @@ GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
 void CPass::setupShaders ()
 {
     // ensure the constants are defined
-    const CTexture* texture0 = this->m_material->getImage ()->getTexture ();
+    const ITexture* texture0 = this->m_material->getImage ()->getTexture ();
 
     // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL ELEMENTS?
-    if (texture0->getHeader ()->format == CTexture::TextureFormat::RG88)
+    if (texture0 != nullptr)
     {
-        this->m_pass->insertCombo ("TEX0FORMAT", 8);
-    }
-    else if (texture0->getHeader ()->format == CTexture::TextureFormat::R8)
-    {
-        this->m_pass->insertCombo ("TEX0FORMAT", 9);
+        if (texture0->getFormat () == ITexture::TextureFormat::RG88)
+        {
+            this->m_pass->insertCombo ("TEX0FORMAT", 8);
+        }
+        else if (texture0->getFormat () == ITexture::TextureFormat::R8)
+        {
+            this->m_pass->insertCombo ("TEX0FORMAT", 9);
+        }
     }
 
     // prepare the shaders
@@ -342,8 +374,14 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Texture5", 5);
     this->addUniform ("g_Texture6", 6);
     this->addUniform ("g_Texture7", 7);
-    // register all the texture sizes required
-    this->addUniform ("g_Texture0Resolution", this->m_material->getImage ()->getTexture ()->getResolution ());
+    // check if the input is an fbo
+    auto it = this->m_fbos.find (0);
+
+    if (it == this->m_fbos.end ())
+        this->addUniform ("g_Texture0Resolution", this->m_material->getImage ()->getTexture ()->getResolution ());
+    else
+        this->addUniform ("g_Texture0Resolution", (*it).second->getResolution ());
+
     int lastTextureIndex = 0;
     // register the extra texture resolutions
     {
@@ -356,7 +394,20 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << index << "Resolution";
 
-            this->addUniform (namestream.str (), (*cur)->getResolution ());
+            if ((*cur) == nullptr)
+            {
+                // fbo used
+                auto it = this->m_fbos.find (index);
+
+                if (it == this->m_fbos.end ())
+                    continue;
+
+                this->addUniform (namestream.str (), (*it).second->getResolution ());
+            }
+            else
+            {
+                this->addUniform (namestream.str (), (*cur)->getResolution ());
+            }
             lastTextureIndex ++;
         }
     }
@@ -459,14 +510,29 @@ void CPass::setupTextures ()
 
     for (int index = 0; cur != end; cur ++, index ++)
     {
-        // ignore first texture as that'll be the input of the last pass/image
+        // ignore first texture as that'll be the input of the last pass/image (unless the image is an FBO)
         if (index == 0)
             continue;
 
-        // get the first texture on the first pass (this one represents the image assigned to this object)
-        this->m_textures.emplace_back (
-            this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
-        );
+        if ((*cur).find ("_rt_") == 0)
+        {
+            const CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
+
+            if (fbo != nullptr)
+            {
+                this->m_fbos.insert (std::make_pair (index, const_cast <CFBO*> (fbo)));
+                this->m_textures.emplace_back (
+                    nullptr
+                );
+            }
+            // _rt_texture
+        }
+        else
+        {
+            this->m_textures.emplace_back (
+                this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
+            );
+        }
     }
 }
 
@@ -487,11 +553,11 @@ void CPass::setupShaderVariables ()
                 continue;
 
             // if both can be found, ensure they're the correct type
-            if (vertexVar != nullptr && pixelVar != nullptr)
+            /*if (vertexVar != nullptr && pixelVar != nullptr)
             {
                 if (vertexVar->getType () != pixelVar->getType ())
                     throw std::runtime_error ("Pixel and vertex shader variable types do not match");
-            }
+            }*/
 
             // get one instance of it
             CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
@@ -514,12 +580,18 @@ void CPass::setupShaderVariables ()
                     // create a float value from an integer
                     this->addUniform (var->getName (), static_cast <float> (*(*cur).second->as <CShaderConstantInteger> ()->getValue ()));
                 }
-                else if ((*cur).second->is <CShaderConstantVector3> () == true && var->is <CShaderVariableVector2> () == true)
+                else if ((*cur).second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector2> () == true)
                 {
-                    CShaderConstantVector3* val = (*cur).second->as <CShaderConstantVector3> ();
+                    CShaderConstantVector4* val = (*cur).second->as <CShaderConstantVector4> ();
 
                     // create a new vector2 with the first two values
                     this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
+                }
+                else if ((*cur).second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector3> () == true)
+                {
+                    CShaderConstantVector4* val = (*cur).second->as <CShaderConstantVector4> ();
+
+                    this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
                 }
                 else
                 {
@@ -533,8 +605,8 @@ void CPass::setupShaderVariables ()
                     this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
                 else if ((*cur).second->is <CShaderConstantInteger> ())
                     this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
-                else if ((*cur).second->is <CShaderConstantVector3> ())
-                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector3> ()->getValue ());
+                else if ((*cur).second->is <CShaderConstantVector4> ())
+                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector4> ()->getValue ());
             }
         }
     }

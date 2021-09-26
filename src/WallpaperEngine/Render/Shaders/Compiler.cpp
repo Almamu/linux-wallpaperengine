@@ -8,7 +8,7 @@
 
 // shader compiler
 #include <WallpaperEngine/Render/Shaders/Compiler.h>
-#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h>
+#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
 
@@ -554,7 +554,7 @@ namespace WallpaperEngine::Render::Shaders
             parameter = new Variables::CShaderVariableVector3 (
                 constant == this->m_constants.end ()
                 ? WallpaperEngine::Core::aToVector3 (*defvalue)
-                : *(*constant).second->as <CShaderConstantVector3> ()->getValue ()
+                : *(*constant).second->as <CShaderConstantVector4> ()->getValue ()
             );
         }
         else if (type == "vec2")
@@ -601,7 +601,7 @@ namespace WallpaperEngine::Render::Shaders
                 // add the new combo to the list
                 this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
                 // also ensure that the textureName is loaded and we know about it
-                CTexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
+                ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
                 // extract the texture number from the name
                 char value = name.at (std::string("g_Texture").length ());
                 // now convert it to integer
@@ -654,7 +654,7 @@ namespace WallpaperEngine::Render::Shaders
         return this->m_combos;
     }
 
-    const std::map <int, CTexture*>& Compiler::getTextures () const
+    const std::map <int, ITexture*>& Compiler::getTextures () const
     {
         return this->m_textures;
     }

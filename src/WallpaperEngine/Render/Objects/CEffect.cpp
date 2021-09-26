@@ -1,6 +1,7 @@
 #include "CEffect.h"
 
 using namespace WallpaperEngine::Render::Objects;
+using namespace WallpaperEngine::Render;
 
 CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect) :
     m_image (image),
@@ -10,7 +11,7 @@ CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect) :
     this->generatePasses ();
 }
 
-const CImage* CEffect::getImage () const
+CImage* CEffect::getImage () const
 {
     return this->m_image;
 }
@@ -20,7 +21,7 @@ const std::vector<Effects::CMaterial*>& CEffect::getMaterials () const
     return this->m_materials;
 }
 
-Effects::CFBO* CEffect::findFBO (const std::string& name)
+const CFBO* CEffect::findFBO (const std::string& name) const
 {
     auto cur = this->m_fbos.begin ();
     auto end = this->m_fbos.end ();
@@ -42,7 +43,7 @@ void CEffect::generatePasses ()
     auto end = this->m_effect->getMaterials ().end ();
 
     for (; cur != end; cur ++)
-        this->m_materials.emplace_back (new Effects::CMaterial (this->getImage (), *cur));
+        this->m_materials.emplace_back (new Effects::CMaterial (this, *cur));
 }
 
 void CEffect::generateFBOs ()
@@ -53,23 +54,15 @@ void CEffect::generateFBOs ()
     for (; cur != end; cur ++)
     {
         this->m_fbos.push_back (
-            new Effects::CFBO (*cur, this->m_image->getImage ())
+            new CFBO (
+                (*cur)->getName (),
+                ITexture::TextureFormat::ARGB8888, // TODO: CHANGE
+                (*cur)->getScale (),
+                this->m_image->getImage ()->getSize ().x,
+                this->m_image->getImage ()->getSize ().y,
+                this->m_image->getImage ()->getSize ().x,
+                this->m_image->getImage ()->getSize ().y
+            )
         );
-    }
-}
-
-void CEffect::render (GLuint drawTo, GLuint inputTexture)
-{
-    auto begin = this->getMaterials ().begin ();
-    auto cur = this->getMaterials ().begin ();
-    auto end = this->getMaterials ().end ();
-
-    for (; cur != end; cur ++)
-    {
-        // pingpong buffer only if not the first pass (as it would be taken care by the CImage)
-        if (cur != begin)
-            this->getImage ()->getScene ()->pinpongFramebuffer (&drawTo, &inputTexture);
-
-        (*cur)->render (drawTo, inputTexture);
     }
 }

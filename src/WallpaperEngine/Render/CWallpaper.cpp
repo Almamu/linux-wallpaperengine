@@ -59,12 +59,12 @@ WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData ()
 
 GLuint CWallpaper::getWallpaperFramebuffer () const
 {
-    return this->m_sceneFramebuffer;
+    return this->m_sceneFBO->getFramebuffer ();
 }
 
 GLuint CWallpaper::getWallpaperTexture () const
 {
-    return this->m_sceneTexture;
+    return this->m_sceneFBO->getTextureID();
 }
 
 void CWallpaper::setupShaders ()
@@ -287,25 +287,21 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 
 void CWallpaper::pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture)
 {
-    // get current main framebuffer and texture so we can swap them
-    GLuint currentMainFramebuffer = this->m_mainFramebuffer;
-    GLuint currentMainTexture = this->m_mainTexture;
-    GLuint currentSubFramebuffer = this->m_subFramebuffer;
-    GLuint currentSubTexture = this->m_subTexture;
+    // temporarily store FBOs used
+    CFBO* currentMainFBO = this->m_mainFBO;
+    CFBO* currentSubFBO = this->m_subFBO;
 
     if (drawTo != nullptr)
-        *drawTo = currentSubFramebuffer;
+        *drawTo = currentSubFBO->getFramebuffer ();
     if (inputTexture != nullptr)
-        *inputTexture = currentMainTexture;
+        *inputTexture = currentMainFBO->getTextureID();
 
-    // swap the textures
-    this->m_mainFramebuffer = currentSubFramebuffer;
-    this->m_mainTexture = currentSubTexture;
-    this->m_subFramebuffer = currentMainFramebuffer;
-    this->m_subTexture = currentMainTexture;
+    // swap the FBOs
+    this->m_mainFBO = currentSubFBO;
+    this->m_subFBO = currentMainFBO;
 }
 
-void CWallpaper::createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GLuint* texture)
+void CWallpaper::setupFramebuffers ()
 {
     int windowWidth = 1920;
     int windowHeight = 1080;
@@ -325,42 +321,33 @@ void CWallpaper::createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GL
         windowHeight = video->getHeight ();
     }
 
-    GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
-    // create the main framebuffer
-    glGenFramebuffers (1, framebuffer);
-    glBindFramebuffer (GL_FRAMEBUFFER, *framebuffer);
-    // create the main texture
-    glGenTextures (1, texture);
-    // bind the new texture to set settings on it
-    glBindTexture (GL_TEXTURE_2D, *texture);
-    // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
-    // set filtering parameters, otherwise the texture is not rendered
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // create the depth render buffer for the main framebuffer
-    glGenRenderbuffers (1, depthbuffer);
-    glBindRenderbuffer (GL_RENDERBUFFER, *depthbuffer);
-    glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-    glFramebufferRenderbuffer (GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *depthbuffer);
-    // set the texture as the colour attachmend #0
-    glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texture, 0);
-    // finally set the list of draw buffers
-    glDrawBuffers (1, drawBuffers);
-
-    // ensure first framebuffer is okay
-    if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        throw std::runtime_error ("Framebuffers are not properly set");
+    this->m_mainFBO = this->createFBO ("_rt_FullFrameBuffera", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    this->m_subFBO = this->createFBO ("_rt_FullFrameBuffera", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    // create framebuffer for the scene
+    this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
 }
 
-void CWallpaper::setupFramebuffers ()
+CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)
 {
-    this->createFramebuffer (&this->m_mainFramebuffer, &this->m_mainDepthBuffer, &this->m_mainTexture);
-    this->createFramebuffer (&this->m_subFramebuffer, &this->m_subDepthBuffer, &this->m_subTexture);
-    // create framebuffer for the scene
-    this->createFramebuffer (&this->m_sceneFramebuffer, &this->m_sceneDepthBuffer, &this->m_sceneTexture);
+    CFBO* fbo = new CFBO (name, format, scale, realWidth, realHeight, textureWidth, textureHeight);
+
+    this->m_fbos.insert (std::make_pair (name, fbo));
+
+    return fbo;
+}
+
+const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const
+{
+    return this->m_fbos;
+}
+
+
+const CFBO* CWallpaper::findFBO (const std::string& name) const
+{
+    auto it = this->m_fbos.find (name);
+
+    if (it == this->m_fbos.end ())
+        throw std::runtime_error ("Cannot find given FBO");
+
+    return it->second;
 }

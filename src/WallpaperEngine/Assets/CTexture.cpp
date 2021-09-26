@@ -177,6 +177,31 @@ const GLuint CTexture::getTextureID () const
     return this->m_textureID;
 }
 
+const uint32_t CTexture::getTextureWidth () const
+{
+    return this->getHeader ()->textureWidth;
+}
+
+const uint32_t CTexture::getTextureHeight () const
+{
+    return this->getHeader ()->textureHeight;
+}
+
+const uint32_t CTexture::getRealWidth () const
+{
+    return this->getHeader ()->width;
+}
+
+const uint32_t CTexture::getRealHeight () const
+{
+    return this->getHeader ()->height;
+}
+
+const ITexture::TextureFormat CTexture::getFormat () const
+{
+    return this->getHeader ()->format;
+}
+
 const CTexture::TextureHeader* CTexture::getHeader () const
 {
     return this->m_header;

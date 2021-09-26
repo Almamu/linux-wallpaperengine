@@ -71,9 +71,7 @@ std::string stringPathFixes(const std::string& s)
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
-    bool isRootWindow = false;
 
-    int mode = RUN_MODE_UNKNOWN;
     int maximumFPS = 30;
     bool shouldEnableAudio = true;
     std::string path;
@@ -100,19 +98,12 @@ int main (int argc, char* argv[])
         switch (c)
         {
             case 'r':
-                isRootWindow = true;
                 screens.emplace_back (optarg);
                 break;
 
             case 'p':
-                if (mode == RUN_MODE_UNKNOWN)
-                    mode = RUN_MODE_PACKAGE;
-                path = stringPathFixes (optarg);
-                break;
-
             case 'd':
-                if (mode == RUN_MODE_UNKNOWN)
-                    mode = RUN_MODE_DIRECTORY;
+                std::cout << "--dir/--pkg is deprecated and not used anymore" << std::endl;
                 path = stringPathFixes (optarg);
                 break;
 
@@ -121,7 +112,7 @@ int main (int argc, char* argv[])
                 break;
 
             case 'h':
-                mode = RUN_MODE_HELP;
+                print_help (argv [0]);
                 break;
 
             case 'f':
@@ -133,7 +124,7 @@ int main (int argc, char* argv[])
         }
     }
 
-    if (mode == RUN_MODE_UNKNOWN || mode == RUN_MODE_HELP)
+    if (path.empty () == true && option_index == 0 || strlen (argv [option_index]) == 0)
     {
         print_help (argv [0]);
         return 0;
@@ -161,17 +152,17 @@ int main (int argc, char* argv[])
     containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
-
-    if (mode == RUN_MODE_PACKAGE)
+    // check if scene.pkg exists and add it to the list
+    try
     {
         std::string scene_path = path + "scene.pkg";
 
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
     }
-    else if (mode == RUN_MODE_DIRECTORY)
+    catch (std::runtime_error ex)
     {
-        // nothing to do here anymore
+        // ignore the exception, this is to be expected of normal backgrounds
     }
 
     // parse the project.json file
@@ -259,7 +250,7 @@ int main (int argc, char* argv[])
     glDepthFunc (GL_LESS);
 
     // cull anything that doesn't look at the camera (might be useful to disable in the future)
-    //glEnable (GL_CULL_FACE);
+    glDisable (GL_CULL_FACE);
 
     clock_t minimumTime = 1000 / maximumFPS;
     clock_t startTime = 0;

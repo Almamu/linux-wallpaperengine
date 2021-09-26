@@ -18,6 +18,8 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
         scene->getOrthogonalProjection ()->getWidth (),
         scene->getOrthogonalProjection ()->getHeight ()
     );
+    // setup framebuffers
+    this->setupFramebuffers ();
 
     auto cur = scene->getObjects ().begin ();
     auto end = scene->getObjects ().end ();
@@ -38,8 +40,6 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
         if (object != nullptr)
             this->m_objects.emplace_back (object);
     }
-
-    this->setupFramebuffers ();
 }
 
 CCamera* CScene::getCamera () const

@@ -6,7 +6,7 @@
 
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Assets/CContainer.h"
-#include "WallpaperEngine/Assets/CTexture.h"
+#include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
@@ -89,7 +89,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * @return The list of textures inferred from the shader's code
          */
-        const std::map <int, CTexture*>& getTextures () const;
+        const std::map <int, ITexture*>& getTextures () const;
 
     private:
         /**
@@ -244,6 +244,6 @@ namespace WallpaperEngine::Render::Shaders
          /**
           * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
           */
-         std::map<int, CTexture*> m_textures;
+         std::map<int, ITexture*> m_textures;
     };
 }

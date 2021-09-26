@@ -24,23 +24,15 @@ namespace WallpaperEngine::Render::Objects::Effects
     {
         friend class CPass;
     public:
-        CMaterial (const Render::Objects::CImage* image, const Core::Objects::Images::CMaterial* material);
+        CMaterial (const Render::Objects::CEffect* effect, const Core::Objects::Images::CMaterial* material);
 
         const std::vector<CPass*>& getPasses () const;
-        const CImage* getImage () const;
-
-        /**
-         * Renders the given material, using inputTexture as first texture of the shader
-         *
-         * @param drawTo
-         * @param inputTexture
-         */
-        void render (GLuint drawTo, GLuint inputTexture);
+        CImage* getImage () const;
 
     private:
         void generatePasses ();
 
-        const Render::Objects::CImage* m_image;
+        const Render::Objects::CEffect* m_effect;
         const Core::Objects::Images::CMaterial* m_material;
 
         std::vector<CPass*> m_passes;

@@ -5,7 +5,7 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
@@ -161,7 +161,8 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         }
         else if ((*cur).is_string () == true)
         {
-            constant = new Effects::Constants::CShaderConstantVector3 (WallpaperEngine::Core::aToVector3 (*cur));
+            // try a vector 4 first, then a vector3 and then a vector 2
+            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (*cur));
         }
         else
         {

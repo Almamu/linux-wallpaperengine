@@ -123,7 +123,7 @@ void CVideo::renderFrame ()
     writeFrameToImage ();
 
     glViewport (0, 0, this->getWidth (), this->getHeight ());
-    
+
     // do the actual rendering
     // write to default's framebuffer
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());

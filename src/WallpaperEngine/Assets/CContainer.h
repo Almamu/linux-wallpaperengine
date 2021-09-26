@@ -1,11 +1,7 @@
-//
-// Created by almamu on 8/8/21.
-//
-
 #pragma once
 
 #include <string>
-#include "WallpaperEngine/Assets/CTexture.h"
+#include "WallpaperEngine/Assets/ITexture.h"
 
 namespace WallpaperEngine::Assets
 {
@@ -30,7 +26,7 @@ namespace WallpaperEngine::Assets
          *
          * @return
          */
-        CTexture* readTexture (std::string filename);
+        ITexture* readTexture (std::string filename);
 
         /**
          * Wrapper for readFile, appends the .vert extension at the end and opens the given shader file

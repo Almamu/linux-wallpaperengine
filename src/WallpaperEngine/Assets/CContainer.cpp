@@ -1,11 +1,12 @@
 #include "CContainer.h"
+#include "CTexture.h"
 
 #include <cstring>
 #include <utility>
 
 using namespace WallpaperEngine::Assets;
 
-CTexture* CContainer::readTexture (std::string filename)
+ITexture* CContainer::readTexture (std::string filename)
 {
     // get the texture's filename (usually .tex)
     filename = "materials/" + filename + ".tex";

@@ -1,3 +1,4 @@
+#include <sstream>
 #include "CImage.h"
 
 using namespace WallpaperEngine;
@@ -5,7 +6,8 @@ using namespace WallpaperEngine::Render::Objects;
 
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
-    m_image (image)
+    m_image (image),
+    m_texture (nullptr)
 {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
@@ -22,24 +24,40 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // depending on the alignment these values might change, for now just support center
     if (this->getImage ()->getAlignment () == "center")
     {
+        glm::vec2 size = this->getImage ()->getSize ();
+        glm::vec3 scale = this->getImage ()->getScale ();
+
         // calculate the real position of the image
-        xleft = this->getImage ()->getOrigin ().x - (this->getImage ()->getSize ().x / 2);
-        xright = this->getImage ()->getOrigin ().x + (this->getImage ()->getSize ().x / 2);
-        ytop = this->getImage ()->getOrigin ().y - (this->getImage ()->getSize ().y / 2);
-        ybottom = this->getImage ()->getOrigin ().y + (this->getImage ()->getSize ().y / 2);
+        xleft = this->getImage ()->getOrigin ().x - (size.x * scale.x / 2);
+        xright = this->getImage ()->getOrigin ().x + (size.x * scale.x / 2);
+        ytop = this->getImage ()->getOrigin ().y - (size.y * scale.y / 2);
+        ybottom = this->getImage ()->getOrigin ().y + (size.y * scale.y / 2);
     }
     else
     {
         throw std::runtime_error ("Only centered images are supported for now!");
     }
 
-    // load image from the .tex file
-    uint32_t textureSize = 0;
+    std::string textureName = (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
 
-    // get the first texture on the first pass (this one represents the image assigned to this object)
-    this->m_texture = this->getScene ()->getContainer ()->readTexture (
-            (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ())
-    );
+    if (textureName.find ("_rt_") == 0)
+    {
+        this->m_texture = this->getScene ()->findFBO (textureName);
+    }
+    else
+    {
+        // get the first texture on the first pass (this one represents the image assigned to this object)
+        this->m_texture = this->getScene ()->getContainer ()->readTexture (textureName);
+    }
+
+    // register both FBOs into the scene
+    std::ostringstream nameA, nameB;
+
+    nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
+    nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
+
+    this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat data [] = {
@@ -68,17 +86,21 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float height = 1.0f;
 
     // calculate the correct texCoord limits for the texture based on the texture screen size and real size
-    if (this->getTexture ()->getHeader ()->textureWidth != this->getTexture ()->getHeader ()->width ||
-        this->getTexture ()->getHeader ()->textureHeight != this->getTexture ()->getHeader ()->height)
+    if (this->getTexture () != nullptr &&
+            (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
+             this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
+        )
     {
         uint32_t x = 1;
         uint32_t y = 1;
+        glm::vec2 size = this->getImage ()->getSize ();
+        glm::vec3 scale = this->getImage ()->getScale ();
 
-        while (x < this->getImage ()->getSize ().x) x <<= 1;
-        while (y < this->getImage ()->getSize ().y) y <<= 1;
+        while (x < size.x) x <<= 1;
+        while (y < size.y) y <<= 1;
 
-        width = this->getImage ()->getSize ().x / x;
-        height = this->getImage ()->getSize ().y / y;
+        width = size.x * scale.x / x;
+        height = size.y * scale.y / y;
     }
 
     GLfloat data2 [] = {
@@ -122,7 +144,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_passTexCoordList), this->m_passTexCoordList, GL_STATIC_DRAW);
 
     // generate the main material used to render the image
-    this->m_material = new Effects::CMaterial (this, this->m_image->getMaterial ());
+    this->m_material = new Effects::CMaterial (
+        new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+        this->m_image->getMaterial ()
+    );
 
     // generate the effects used by this material
     auto cur = this->getImage ()->getEffects ().begin ();
@@ -132,40 +157,72 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_effects.emplace_back (new CEffect (this, *cur));
 }
 
+void CImage::pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture)
+{
+    // temporarily store FBOs used
+    CFBO* currentMainFBO = this->m_mainFBO;
+    CFBO* currentSubFBO = this->m_subFBO;
+
+    if (drawTo != nullptr)
+        *drawTo = currentSubFBO->getFramebuffer ();
+    if (inputTexture != nullptr)
+        *inputTexture = currentMainFBO->getTextureID ();
+
+    // swap the FBOs
+    this->m_mainFBO = currentSubFBO;
+    this->m_subFBO = currentMainFBO;
+}
+
 void CImage::render ()
 {
-    // ensure this image is visible first
-    if (this->getImage ()->isVisible () == false)
-        return;
+    // start drawing to the main framebuffer
+    GLuint drawTo = this->m_mainFBO->getFramebuffer ();
+    GLuint inputTexture = this->getTexture ()->getTextureID ();
 
-    GLuint drawTo = this->getScene()->getWallpaperFramebuffer();
-    GLuint inputTexture = this->m_texture->getTextureID ();
-
-    // pinpong current buffer
-    this->getScene ()->pinpongFramebuffer (&drawTo, nullptr);
     // render all the other materials
     auto cur = this->getEffects ().begin ();
     auto end = this->getEffects ().end ();
-    auto begin = this->getEffects ().begin ();
 
+    inputTexture = this->getTexture ()->getTextureID ();
+
+    // set the correct viewport
+    glViewport (0, 0, this->getTexture ()->getRealWidth (), this->getTexture ()->getRealHeight ());
+
+    // render all the passes first
     for (; cur != end; cur ++)
     {
-        if (cur != begin)
-            // pinpong current buffer
-            this->getScene ()->pinpongFramebuffer (&drawTo, &inputTexture);
+        auto materialCur = (*cur)->getMaterials ().begin ();
+        auto materialEnd = (*cur)->getMaterials ().end ();
 
-        // render now
-        (*cur)->render (drawTo, inputTexture);
+        for (; materialCur != materialEnd; materialCur ++)
+        {
+            auto passCur = (*materialCur)->getPasses ().begin ();
+            auto passEnd = (*materialCur)->getPasses ().end ();
+
+            for (; passCur != passEnd; passCur ++)
+            {
+                (*passCur)->render (drawTo, inputTexture);
+
+                this->pinpongFramebuffer (&drawTo, &inputTexture);
+            }
+        }
     }
 
-    if (this->getEffects ().size () > 0)
-        this->getScene ()->pinpongFramebuffer (nullptr, &inputTexture);
+    if (this->getImage ()->isVisible () == false)
+        return;
 
-    // render the main material
-    this->m_material->render (this->getScene()->getWallpaperFramebuffer(), inputTexture);
+    // this material only has one pass that we know of
+    // so just take that and render it to the screen's framebuffer
+    auto pass = this->m_material->getPasses ().begin ();
+    auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
+
+    // set the viewport properly
+    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
+
+    (*pass)->render (this->getScene ()->getWallpaperFramebuffer (), inputTexture);
 }
 
-const CTexture* CImage::getTexture () const
+const ITexture* CImage::getTexture () const
 {
     return this->m_texture;
 }

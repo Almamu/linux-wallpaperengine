@@ -8,10 +8,11 @@
 #include <glm/vec4.hpp>
 
 #include <FreeImage.h>
+#include "ITexture.h"
 
 namespace WallpaperEngine::Assets
 {
-    class CTexture
+    class CTexture : public ITexture
     {
         struct TextureHeader;
 
@@ -19,21 +20,17 @@ namespace WallpaperEngine::Assets
         CTexture (void* fileData);
         ~CTexture ();
 
-        const GLuint getTextureID () const;
-        const TextureHeader* getHeader () const;
-        const glm::vec4* getResolution () const;
+        const GLuint getTextureID () const override;
+        const uint32_t getTextureWidth () const override;
+        const uint32_t getTextureHeight () const override;
+        const uint32_t getRealWidth () const override;
+        const uint32_t getRealHeight () const override;
+        const TextureFormat getFormat () const override;
+        const glm::vec4* getResolution () const override;
 
-
-        enum TextureFormat : uint32_t
-        {
-            ARGB8888 = 0,
-            DXT5 = 4,
-            DXT3 = 6,
-            DXT1 = 7,
-            RG88 = 8,
-            R8 = 9,
-        };
     private:
+        const TextureHeader* getHeader () const;
+
         enum ContainerVersion : int
         {
             UNKNOWN = -1,

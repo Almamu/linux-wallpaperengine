@@ -47,6 +47,7 @@ add_executable(
         src/WallpaperEngine/Assets/CDirectory.cpp
         src/WallpaperEngine/Assets/CPackage.h
         src/WallpaperEngine/Assets/CPackage.cpp
+        src/WallpaperEngine/Assets/ITexture.h
         src/WallpaperEngine/Assets/CTexture.h
         src/WallpaperEngine/Assets/CTexture.cpp
 
@@ -90,8 +91,8 @@ add_executable(
         src/WallpaperEngine/Render/Objects/CEffect.h
         src/WallpaperEngine/Render/Objects/CEffect.cpp
 
-        src/WallpaperEngine/Render/Objects/Effects/CFBO.h
-        src/WallpaperEngine/Render/Objects/Effects/CFBO.cpp
+        src/WallpaperEngine/Render/CFBO.h
+        src/WallpaperEngine/Render/CFBO.cpp
         src/WallpaperEngine/Render/Objects/Effects/CPass.h
         src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
         src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
@@ -146,6 +147,8 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h
+        src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.cpp
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
         src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
 

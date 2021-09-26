@@ -6,7 +6,8 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
-#include "WallpaperEngine/Assets/CTexture.h"
+#include "WallpaperEngine/Assets/ITexture.h"
+#include "WallpaperEngine/Render/CFBO.h"
 
 namespace WallpaperEngine::Render::Objects::Effects
 {
@@ -85,7 +86,8 @@ namespace WallpaperEngine::Render::Objects::Effects
 
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
-        std::vector<CTexture*> m_textures;
+        std::vector<ITexture*> m_textures;
+        std::map<int, CFBO*> m_fbos;
         std::vector<AttribEntry*> m_attribs;
         std::map<std::string, UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;

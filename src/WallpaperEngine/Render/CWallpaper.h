@@ -8,6 +8,7 @@
 #include "WallpaperEngine/Core/CVideo.h"
 
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "CFBO.h"
 
 using namespace WallpaperEngine::Assets;
 
@@ -50,6 +51,25 @@ namespace WallpaperEngine::Render
          * @return The scene's texture
          */
         GLuint getWallpaperTexture () const;
+        /**
+         * Creates a new FBO for this wallpaper
+         *
+         * @param name The name of the FBO
+         * @return
+         */
+        CFBO* createFBO (const std::string& name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+
+        /**
+         * @return The full FBO list to work with
+         */
+        const std::map<std::string, CFBO*>& getFBOs () const;
+        /**
+         * Searches the FBO list for the given FBO
+         *
+         * @param name
+         * @return
+         */
+        const CFBO* findFBO (const std::string& name) const;
 
     protected:
         /**
@@ -62,54 +82,29 @@ namespace WallpaperEngine::Render
          */
         void setupFramebuffers ();
 
-        void createFramebuffer (GLuint* framebuffer, GLuint* depthbuffer, GLuint* texture);
-
         CContainer* m_container;
         Core::CWallpaper* m_wallpaperData;
 
         Core::CWallpaper* getWallpaperData ();
 
         /**
-         * The main framebuffer
+         * The main FBO used for ping pong
          */
-        GLuint m_mainFramebuffer;
+        CFBO* m_mainFBO;
         /**
-         * The sub framebuffer
+         * The sub FBO used for ping pong
          */
-        GLuint m_subFramebuffer;
+        CFBO* m_subFBO;
 
         /**
-         * The main depth render buffer
+         * The FBO used for scene output
          */
-        GLuint m_mainDepthBuffer;
-        /**
-         * The sub depth render buffer
-         */
-        GLuint m_subDepthBuffer;
-
-        /**
-         * The main texture used on the framebuffer
-         */
-        GLuint m_mainTexture;
-        /**
-         * The sub texture used on the framebuffer
-         */
-        GLuint m_subTexture;
-
-        /**
-         * The framebuffer used for the scene output
-         */
-        GLuint m_sceneFramebuffer;
-        /**
-         * The depthbuffer used for the scene output
-         */
-        GLuint m_sceneDepthBuffer;
+        CFBO* m_sceneFBO;
 
     private:
         /**
          * The texture used for the scene output
          */
-        GLuint m_sceneTexture;
         GLuint m_texCoordBuffer;
         GLuint m_positionBuffer;
         GLuint m_shader;
@@ -125,5 +120,10 @@ namespace WallpaperEngine::Render
          * The type of background this wallpaper is (used
          */
         std::string m_type;
+
+        /**
+         * List of FBOs registered for this wallpaper
+         */
+        std::map<std::string, CFBO*> m_fbos;
     };
 }

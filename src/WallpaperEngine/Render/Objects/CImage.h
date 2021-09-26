@@ -9,7 +9,7 @@
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 
-#include "WallpaperEngine/Assets/CTexture.h"
+#include "WallpaperEngine/Assets/ITexture.h"
 
 #include <glm/vec3.hpp>
 
@@ -40,13 +40,21 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getPassVertexBuffer () const;
         const GLuint* getTexCoordBuffer () const;
         const GLuint* getPassTexCoordBuffer () const;
-        const CTexture* getTexture () const;
+        const ITexture* getTexture () const;
+
+        /**
+         * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
+         *
+         * @param drawTo The framebuffer to use
+         * @param asInput The last texture used as output (if needed)
+         */
+        void pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture);
 
     protected:
         static const std::string Type;
 
     private:
-        CTexture* m_texture;
+        const ITexture* m_texture;
         GLfloat m_vertexList [6 * 3];
         GLfloat m_passesVertexList [6 * 3];
         GLfloat m_texCoordList [6 * 2];
@@ -57,6 +65,8 @@ namespace WallpaperEngine::Render::Objects
         GLuint m_passTexCoordBuffer;
         uint16_t m_vertexIndices [6];
 
+        CFBO* m_mainFBO;
+        CFBO* m_subFBO;
 
         Core::Objects::CImage* m_image;
 
