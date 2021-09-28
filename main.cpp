@@ -148,8 +148,6 @@ int main (int argc, char* argv[])
     std::string project_path = path + "project.json";
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
-    // add containers to the list
-    containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
     // check if scene.pkg exists and add it to the list
@@ -164,6 +162,8 @@ int main (int argc, char* argv[])
     {
         // ignore the exception, this is to be expected of normal backgrounds
     }
+    // add containers to the list
+    containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
 
     // parse the project.json file
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);

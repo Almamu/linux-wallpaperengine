@@ -115,12 +115,12 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     memcpy (this->m_texCoordList, data2, sizeof (data2));
 
     GLfloat data3 [] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
     };
 
     memcpy (this->m_passTexCoordList, data3, sizeof (data3));
@@ -183,7 +183,7 @@ void CImage::simpleRender ()
     auto end = this->m_material->getPasses ().end ();
 
     for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), this->getTexture ());
+        (*cur)->render (this->getScene ()->getFBO (), this->getTexture (), false);
 }
 
 void CImage::complexRender ()
@@ -197,7 +197,7 @@ void CImage::complexRender ()
     auto end = this->m_material->getPasses ().end ();
 
     for (; cur != end; cur ++)
-        (*cur)->render (drawTo, asInput);
+        (*cur)->render (drawTo, asInput, false);
 
     // render all the other materials
     auto effectCur = this->getEffects ().begin ();
@@ -232,7 +232,7 @@ void CImage::complexRender ()
                 if ((*materialCur)->getMaterial ()->hasTarget () == false)
                     this->pinpongFramebuffer (&drawTo, &asInput);
 
-                (*passCur)->render (drawTo, asInput);
+                (*passCur)->render (drawTo, asInput, (*materialCur)->getMaterial ()->hasTarget ());
             }
         }
     }
@@ -251,7 +251,7 @@ void CImage::complexRender ()
     glColorMask (true, true, true, false);
 
     for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), asInput);
+        (*cur)->render (this->getScene ()->getFBO (), asInput, false);
 }
 
 void CImage::render ()

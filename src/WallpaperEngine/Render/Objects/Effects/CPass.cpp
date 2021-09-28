@@ -64,7 +64,7 @@ ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previo
     return fbo;
 }
 
-void CPass::render (CFBO* drawTo, ITexture* input)
+void CPass::render (CFBO* drawTo, ITexture* input, bool hasTarget)
 {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, drawTo->getFramebuffer ());
@@ -132,6 +132,9 @@ void CPass::render (CFBO* drawTo, ITexture* input)
     // but for now should be enough
     this->a_TexCoord = *this->m_material->getImage ()->getTexCoordBuffer ();
     this->a_Position = *this->m_material->getImage ()->getVertexBuffer ();
+
+    if (hasTarget)
+        this->a_Position = *this->m_material->getImage ()->getPassTexCoordBuffer ();
 
     // use the shader we have registered
     glUseProgram (this->m_programID);

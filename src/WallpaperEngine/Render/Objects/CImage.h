@@ -62,7 +62,7 @@ namespace WallpaperEngine::Render::Objects
         GLfloat m_vertexList [6 * 3];
         GLfloat m_passesVertexList [6 * 3];
         GLfloat m_texCoordList [6 * 2];
-        GLfloat m_passTexCoordList [6 * 2];
+        GLfloat m_passTexCoordList [6 * 3];
         GLuint m_vertexBuffer;
         GLuint m_passesVertexBuffer;
         GLuint m_texCoordBuffer;

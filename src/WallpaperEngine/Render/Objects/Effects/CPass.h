@@ -21,7 +21,7 @@ namespace WallpaperEngine::Render::Objects::Effects
     public:
         CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
 
-        void render (CFBO* drawTo, ITexture* input);
+        void render (CFBO* drawTo, ITexture* input, bool hasTarget);
 
     private:
         enum UniformType
