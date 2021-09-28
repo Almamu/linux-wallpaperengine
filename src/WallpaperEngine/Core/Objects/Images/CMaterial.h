@@ -23,7 +23,7 @@ namespace WallpaperEngine::Core::Objects::Images
         void insertTextureBind (Effects::CBind* bind);
 
         const std::vector <Materials::CPass*>& getPasses () const;
-        const std::vector <Effects::CBind*>& getTextureBinds () const;
+        const std::map <int, Effects::CBind*>& getTextureBinds () const;
         const std::string& getTarget () const;
         const bool hasTarget () const;
     protected:
@@ -32,7 +32,7 @@ namespace WallpaperEngine::Core::Objects::Images
         void setTarget (const std::string& target);
     private:
         std::vector <Materials::CPass*> m_passes;
-        std::vector <Effects::CBind*> m_textureBindings;
+        std::map <int, Effects::CBind*> m_textureBindings;
         std::string m_target;
     };
 };

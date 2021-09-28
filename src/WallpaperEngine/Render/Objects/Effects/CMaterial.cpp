@@ -30,3 +30,8 @@ void CMaterial::generatePasses ()
     for (; cur != end; cur ++)
         this->m_passes.emplace_back (new CPass (this, *cur));
 }
+
+const Core::Objects::Images::CMaterial* CMaterial::getMaterial () const
+{
+    return this->m_material;
+}

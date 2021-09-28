@@ -30,14 +30,47 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
     this->setupShaderVariables ();
 }
 
-void CPass::render (GLuint drawTo, GLuint input)
+
+ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previous)
+{
+    if (expected == nullptr)
+    {
+        auto it = this->m_fbos.find (index);
+
+        if (it == this->m_fbos.end ())
+            return nullptr;
+
+        return (*it).second;
+    }
+
+    // first check in the binds and replace it if necessary
+    auto it = this->m_material->getMaterial ()->getTextureBinds ().find (index);
+
+    if (it == this->m_material->getMaterial ()->getTextureBinds ().end ())
+        return expected;
+
+    // a bind named "previous" is just another way of telling it to use whatever texture there was already
+    if ((*it).second->getName () == "previous")
+        if (previous == nullptr)
+            return expected;
+        else
+            return previous;
+    // the bind actually has a name, search the FBO in the effect and return it
+    auto fbo = this->m_material->m_effect->findFBO ((*it).second->getName ());
+
+    if (fbo == nullptr)
+        return nullptr;
+
+    return fbo;
+}
+
+void CPass::render (CFBO* drawTo, ITexture* input)
 {
     // set the framebuffer we're drawing to
-    glBindFramebuffer (GL_FRAMEBUFFER, drawTo);
+    glBindFramebuffer (GL_FRAMEBUFFER, drawTo->getFramebuffer ());
 
-    // clear whatever buffer we're drawing to if we're not drawing to screen
-    if (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer())
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // set proper viewport based on what we're drawing to
+    glViewport (0, 0, drawTo->getRealWidth (), drawTo->getRealHeight ());
 
     // set texture blending
     if (this->m_pass->getBlendingMode () == "translucent")
@@ -70,7 +103,23 @@ void CPass::render (GLuint drawTo, GLuint input)
         glEnable (GL_DEPTH_TEST);
     }
 
-    // TODO: SUPPORT TARGET TO DRAW TEXTURE TO
+    if (this->m_pass->getCullingMode () == "nocull")
+    {
+        glDisable (GL_CULL_FACE);
+    }
+    else
+    {
+        glEnable (GL_CULL_FACE);
+    }
+
+    if (this->m_pass->getDepthWrite () == "disabled")
+    {
+        glDepthMask (false);
+    }
+    else
+    {
+        glDepthMask (true);
+    }
 
     // update variables used in the render process (like g_ModelViewProjectionMatrix)
     this->m_modelViewProjectionMatrix =
@@ -87,16 +136,10 @@ void CPass::render (GLuint drawTo, GLuint input)
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
-    // bind the input texture (take into account input fbos)
-    auto it = this->m_fbos.find (0);
-
-    if (it != this->m_fbos.end ())
-    {
-        input = (*it).second->getTextureID();
-    }
+    ITexture* texture = this->resolveTexture (input, 0, input);
 
     glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, input);
+    glBindTexture (GL_TEXTURE_2D, texture->getTextureID ());
     int lastTextureIndex = 0;
 
     // first bind the textures to their sampler place
@@ -107,25 +150,10 @@ void CPass::render (GLuint drawTo, GLuint input)
 
         for (int index = 1; cur != end; cur ++, index ++)
         {
-            if ((*cur) == nullptr)
-            {
-                auto it = this->m_fbos.find (index);
+            texture = this->resolveTexture ((*cur), index, input);
 
-                if (it == this->m_fbos.end ())
-                    continue;
-
-                // set the active texture index
-                glActiveTexture (GL_TEXTURE0 + index);
-                // bind the correct texture there
-                glBindTexture (GL_TEXTURE_2D, (*it).second->getTextureID());
-            }
-            else
-            {
-                // set the active texture index
-                glActiveTexture (GL_TEXTURE0 + index);
-                // bind the correct texture there
-                glBindTexture (GL_TEXTURE_2D, (*cur)->getTextureID ());
-            }
+            glActiveTexture (GL_TEXTURE0 + index);
+            glBindTexture (GL_TEXTURE_2D, texture->getTextureID ());
             // increase the number of textures counter
             lastTextureIndex ++;
         }
@@ -141,10 +169,11 @@ void CPass::render (GLuint drawTo, GLuint input)
             if ((*cur).first <= lastTextureIndex)
                 continue;
 
+            texture = this->resolveTexture ((*cur).second, (*cur).first);
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, (*cur).second->getTextureID ());
+            glBindTexture(GL_TEXTURE_2D, texture->getTextureID ());
         }
     }
 
@@ -158,10 +187,11 @@ void CPass::render (GLuint drawTo, GLuint input)
             if ((*cur).first <= lastTextureIndex)
                 continue;
 
+            texture = this->resolveTexture ((*cur).second, (*cur).first);
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, (*cur).second->getTextureID ());
+            glBindTexture(GL_TEXTURE_2D, texture->getTextureID ());
         }
     }
 
@@ -222,7 +252,7 @@ void CPass::render (GLuint drawTo, GLuint input)
     }
 
     // start actual rendering now
-    glBindBuffer (GL_ARRAY_BUFFER, (drawTo != this->m_material->getImage()->getScene()->getWallpaperFramebuffer()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
+    glBindBuffer (GL_ARRAY_BUFFER, (drawTo != this->m_material->getImage()->getScene()->getFBO ()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // disable vertex attribs array
@@ -365,6 +395,8 @@ void CPass::setupAttributes ()
 
 void CPass::setupUniforms ()
 {
+    // resolve the main texture
+    ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -374,13 +406,7 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Texture5", 5);
     this->addUniform ("g_Texture6", 6);
     this->addUniform ("g_Texture7", 7);
-    // check if the input is an fbo
-    auto it = this->m_fbos.find (0);
-
-    if (it == this->m_fbos.end ())
-        this->addUniform ("g_Texture0Resolution", this->m_material->getImage ()->getTexture ()->getResolution ());
-    else
-        this->addUniform ("g_Texture0Resolution", (*it).second->getResolution ());
+    this->addUniform ("g_Texture0Resolution", texture->getResolution ());
 
     int lastTextureIndex = 0;
     // register the extra texture resolutions
@@ -394,20 +420,8 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << index << "Resolution";
 
-            if ((*cur) == nullptr)
-            {
-                // fbo used
-                auto it = this->m_fbos.find (index);
-
-                if (it == this->m_fbos.end ())
-                    continue;
-
-                this->addUniform (namestream.str (), (*it).second->getResolution ());
-            }
-            else
-            {
-                this->addUniform (namestream.str (), (*cur)->getResolution ());
-            }
+            texture = this->resolveTexture ((*cur), index);
+            this->addUniform (namestream.str (), texture->getResolution ());
             lastTextureIndex ++;
         }
     }
@@ -426,7 +440,8 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
-            this->addUniform (namestream.str (), (*cur).second->getResolution ());
+            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
 
@@ -444,7 +459,8 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
-            this->addUniform (namestream.str (), (*cur).second->getResolution ());
+            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
 
@@ -516,11 +532,14 @@ void CPass::setupTextures ()
 
         if ((*cur).find ("_rt_") == 0)
         {
-            const CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
+            CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
+
+            if (fbo == nullptr)
+                fbo = this->m_material->getImage ()->getScene ()->findFBO ((*cur));
 
             if (fbo != nullptr)
             {
-                this->m_fbos.insert (std::make_pair (index, const_cast <CFBO*> (fbo)));
+                this->m_fbos.insert (std::make_pair (index, fbo));
                 this->m_textures.emplace_back (
                     nullptr
                 );

@@ -27,9 +27,11 @@ namespace WallpaperEngine::Render::Objects
 
     class CImage : public CObject
     {
+        friend CObject;
     public:
         CImage (CScene* scene, Core::Objects::CImage* image);
 
+        void setup ();
         void render () override;
 
         const Core::Objects::CImage* getImage () const;
@@ -40,7 +42,7 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getPassVertexBuffer () const;
         const GLuint* getTexCoordBuffer () const;
         const GLuint* getPassTexCoordBuffer () const;
-        const ITexture* getTexture () const;
+        ITexture* getTexture () const;
 
         /**
          * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
@@ -48,13 +50,15 @@ namespace WallpaperEngine::Render::Objects
          * @param drawTo The framebuffer to use
          * @param asInput The last texture used as output (if needed)
          */
-        void pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture);
+        void pinpongFramebuffer (CFBO** drawTo, ITexture** asInput);
 
     protected:
         static const std::string Type;
 
+        void simpleRender ();
+        void complexRender ();
     private:
-        const ITexture* m_texture;
+        ITexture* m_texture;
         GLfloat m_vertexList [6 * 3];
         GLfloat m_passesVertexList [6 * 3];
         GLfloat m_texCoordList [6 * 2];
@@ -67,6 +71,8 @@ namespace WallpaperEngine::Render::Objects
 
         CFBO* m_mainFBO;
         CFBO* m_subFBO;
+        CFBO* m_currentMainFBO;
+        CFBO* m_currentSubFBO;
 
         Core::Objects::CImage* m_image;
 

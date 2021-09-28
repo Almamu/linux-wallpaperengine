@@ -40,6 +40,15 @@ CScene::CScene (Core::CScene* scene, CContainer* container) :
         if (object != nullptr)
             this->m_objects.emplace_back (object);
     }
+
+    auto objectsCur = this->m_objects.begin ();
+    auto objectsEnd = this->m_objects.end ();
+
+    for (; objectsCur != objectsEnd; objectsCur ++)
+    {
+        if ((*objectsCur)->is <Objects::CImage> () == true)
+            (*objectsCur)->as <Objects::CImage> ()->setup ();
+    }
 }
 
 CCamera* CScene::getCamera () const
@@ -56,7 +65,7 @@ void CScene::renderFrame ()
     // clear screen
     FloatColor clearColor = this->getScene ()->getClearColor ();
 
-    glClearColor (clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+    glClearColor (clearColor.r, clearColor.g, clearColor.b, 0.0f);
 
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());

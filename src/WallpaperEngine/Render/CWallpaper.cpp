@@ -285,22 +285,6 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
-void CWallpaper::pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture)
-{
-    // temporarily store FBOs used
-    CFBO* currentMainFBO = this->m_mainFBO;
-    CFBO* currentSubFBO = this->m_subFBO;
-
-    if (drawTo != nullptr)
-        *drawTo = currentSubFBO->getFramebuffer ();
-    if (inputTexture != nullptr)
-        *inputTexture = currentMainFBO->getTextureID();
-
-    // swap the FBOs
-    this->m_mainFBO = currentSubFBO;
-    this->m_subFBO = currentMainFBO;
-}
-
 void CWallpaper::setupFramebuffers ()
 {
     int windowWidth = 1920;
@@ -321,8 +305,6 @@ void CWallpaper::setupFramebuffers ()
         windowHeight = video->getHeight ();
     }
 
-    this->m_mainFBO = this->createFBO ("_rt_FullFrameBuffera", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
-    this->m_subFBO = this->createFBO ("_rt_FullFrameBuffera", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
     // create framebuffer for the scene
     this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
 }
@@ -342,7 +324,7 @@ const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const
 }
 
 
-const CFBO* CWallpaper::findFBO (const std::string& name) const
+CFBO* CWallpaper::findFBO (const std::string& name) const
 {
     auto it = this->m_fbos.find (name);
 
@@ -350,4 +332,9 @@ const CFBO* CWallpaper::findFBO (const std::string& name) const
         throw std::runtime_error ("Cannot find given FBO");
 
     return it->second;
+}
+
+CFBO* CWallpaper::getFBO () const
+{
+    return this->m_sceneFBO;
 }

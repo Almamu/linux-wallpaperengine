@@ -133,7 +133,7 @@ CObject* CObject::fromJSON (json data, CContainer* container)
         for (; cur != end; cur ++)
         {
             object->insertEffect (
-                    Objects::CEffect::fromJSON (*cur, object, container)
+                Objects::CEffect::fromJSON (*cur, object, container)
             );
         }
     }

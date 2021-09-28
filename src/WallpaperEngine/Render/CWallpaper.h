@@ -36,14 +36,6 @@ namespace WallpaperEngine::Render
         CContainer* getContainer () const;
 
         /**
-         * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
-         *
-         * @param drawTo The framebuffer to use
-         * @param asInput The last texture used as output (if needed)
-         */
-        void pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture);
-
-        /**
          * @return The scene's framebuffer
          */
         GLuint getWallpaperFramebuffer () const;
@@ -69,7 +61,12 @@ namespace WallpaperEngine::Render
          * @param name
          * @return
          */
-        const CFBO* findFBO (const std::string& name) const;
+        CFBO* findFBO (const std::string& name) const;
+
+        /**
+         * @return The main FBO of this wallpaper
+         */
+        CFBO* getFBO () const;
 
     protected:
         /**
@@ -86,15 +83,6 @@ namespace WallpaperEngine::Render
         Core::CWallpaper* m_wallpaperData;
 
         Core::CWallpaper* getWallpaperData ();
-
-        /**
-         * The main FBO used for ping pong
-         */
-        CFBO* m_mainFBO;
-        /**
-         * The sub FBO used for ping pong
-         */
-        CFBO* m_subFBO;
 
         /**
          * The FBO used for scene output

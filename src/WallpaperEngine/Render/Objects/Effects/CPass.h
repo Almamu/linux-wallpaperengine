@@ -21,7 +21,7 @@ namespace WallpaperEngine::Render::Objects::Effects
     public:
         CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
 
-        void render (GLuint drawTo, GLuint input);
+        void render (CFBO* drawTo, ITexture* input);
 
     private:
         enum UniformType
@@ -83,6 +83,8 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, const glm::mat4* value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T* value);
+
+        ITexture* resolveTexture (ITexture* expected, int index, ITexture* previous = nullptr);
 
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;

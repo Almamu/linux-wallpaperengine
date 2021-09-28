@@ -54,10 +54,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     std::ostringstream nameA, nameB;
 
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
-    nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
+    nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
-    this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat data [] = {
@@ -142,7 +142,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glGenBuffers (1, &this->m_passTexCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_passTexCoordBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_passTexCoordList), this->m_passTexCoordList, GL_STATIC_DRAW);
+}
 
+void CImage::setup ()
+{
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
@@ -157,53 +160,79 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_effects.emplace_back (new CEffect (this, *cur));
 }
 
-void CImage::pinpongFramebuffer (GLuint* drawTo, GLuint* inputTexture)
+void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
 {
     // temporarily store FBOs used
-    CFBO* currentMainFBO = this->m_mainFBO;
-    CFBO* currentSubFBO = this->m_subFBO;
+    CFBO* currentMainFBO = this->m_currentMainFBO;
+    CFBO* currentSubFBO = this->m_currentSubFBO;
 
     if (drawTo != nullptr)
-        *drawTo = currentSubFBO->getFramebuffer ();
-    if (inputTexture != nullptr)
-        *inputTexture = currentMainFBO->getTextureID ();
+        *drawTo = currentSubFBO;
+    if (asInput != nullptr)
+        *asInput = currentMainFBO;
 
     // swap the FBOs
-    this->m_mainFBO = currentSubFBO;
-    this->m_subFBO = currentMainFBO;
+    this->m_currentMainFBO = currentSubFBO;
+    this->m_currentSubFBO = currentMainFBO;
 }
 
-void CImage::render ()
+void CImage::simpleRender ()
+{
+    // a simple material renders directly to the screen
+    auto cur = this->m_material->getPasses ().begin ();
+    auto end = this->m_material->getPasses ().end ();
+
+    for (; cur != end; cur ++)
+        (*cur)->render (this->getScene ()->getFBO (), this->getTexture ());
+}
+
+void CImage::complexRender ()
 {
     // start drawing to the main framebuffer
-    GLuint drawTo = this->m_mainFBO->getFramebuffer ();
-    GLuint inputTexture = this->getTexture ()->getTextureID ();
+    CFBO* drawTo = this->m_mainFBO;
+    ITexture* asInput = this->getTexture ();
+
+    // do the first pass render into the main framebuffer
+    auto cur = this->m_material->getPasses ().begin ();
+    auto end = this->m_material->getPasses ().end ();
+
+    for (; cur != end; cur ++)
+        (*cur)->render (drawTo, asInput);
 
     // render all the other materials
-    auto cur = this->getEffects ().begin ();
-    auto end = this->getEffects ().end ();
+    auto effectCur = this->getEffects ().begin ();
+    auto effectEnd = this->getEffects ().end ();
 
-    inputTexture = this->getTexture ()->getTextureID ();
-
-    // set the correct viewport
-    glViewport (0, 0, this->getTexture ()->getRealWidth (), this->getTexture ()->getRealHeight ());
-
-    // render all the passes first
-    for (; cur != end; cur ++)
+    for (; effectCur != effectEnd; effectCur ++)
     {
-        auto materialCur = (*cur)->getMaterials ().begin ();
-        auto materialEnd = (*cur)->getMaterials ().end ();
+        auto materialCur = (*effectCur)->getMaterials ().begin ();
+        auto materialEnd = (*effectCur)->getMaterials ().end ();
 
         for (; materialCur != materialEnd; materialCur ++)
         {
+            // set viewport and target texture if needed
+            if ((*materialCur)->getMaterial ()->hasTarget () == true)
+            {
+                // setup target texture
+                std::string target = (*materialCur)->getMaterial ()->getTarget ();
+                drawTo = (*effectCur)->findFBO (target);
+
+                // not a local FBO, so try that one now
+                if (drawTo == nullptr)
+                    // this one throws if no fbo was found
+                    drawTo = this->getScene ()->findFBO (target);
+            }
+
             auto passCur = (*materialCur)->getPasses ().begin ();
             auto passEnd = (*materialCur)->getPasses ().end ();
 
             for (; passCur != passEnd; passCur ++)
             {
-                (*passCur)->render (drawTo, inputTexture);
+                // ping-pong only if there's a target
+                if ((*materialCur)->getMaterial ()->hasTarget () == false)
+                    this->pinpongFramebuffer (&drawTo, &asInput);
 
-                this->pinpongFramebuffer (&drawTo, &inputTexture);
+                (*passCur)->render (drawTo, asInput);
             }
         }
     }
@@ -211,18 +240,36 @@ void CImage::render ()
     if (this->getImage ()->isVisible () == false)
         return;
 
-    // this material only has one pass that we know of
-    // so just take that and render it to the screen's framebuffer
-    auto pass = this->m_material->getPasses ().begin ();
-    auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
+    // pinpong the framebuffer so we know exactly what we're drawing to the scene
+    this->pinpongFramebuffer (&drawTo, &asInput);
 
-    // set the viewport properly
-    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
+    // final step, this one might need more changes, should passes render directly to the output instead of an intermediate framebuffer?
+    // do the first pass render into the main framebuffer
+    cur = this->m_material->getPasses ().begin ();
+    end = this->m_material->getPasses ().end ();
 
-    (*pass)->render (this->getScene ()->getWallpaperFramebuffer (), inputTexture);
+    glColorMask (true, true, true, false);
+
+    for (; cur != end; cur ++)
+        (*cur)->render (this->getScene ()->getFBO (), asInput);
 }
 
-const ITexture* CImage::getTexture () const
+void CImage::render ()
+{
+    // first and foremost reset the framebuffer switching
+    this->m_currentMainFBO = this->m_mainFBO;
+    this->m_currentSubFBO = this->m_subFBO;
+
+    glColorMask (true, true, true, true);
+
+    // check if there's more than one pass and do different things based on that
+    if (this->m_effects.empty () == true)
+        this->simpleRender ();
+    else
+        this->complexRender ();
+}
+
+ITexture* CImage::getTexture () const
 {
     return this->m_texture;
 }

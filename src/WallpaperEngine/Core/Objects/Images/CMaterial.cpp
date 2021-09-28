@@ -62,7 +62,7 @@ void CMaterial::insertPass (Materials::CPass* mass)
 
 void CMaterial::insertTextureBind (Effects::CBind* bind)
 {
-    this->m_textureBindings.push_back (bind);
+    this->m_textureBindings.insert (std::make_pair (bind->getIndex (), bind));
 }
 
 void CMaterial::setTarget (const std::string& target)
@@ -74,7 +74,7 @@ const std::vector <Materials::CPass*>& CMaterial::getPasses () const
 {
     return this->m_passes;
 }
-const std::vector <Effects::CBind*>& CMaterial::getTextureBinds () const
+const std::map <int, Effects::CBind*>& CMaterial::getTextureBinds () const
 {
     return this->m_textureBindings;
 }

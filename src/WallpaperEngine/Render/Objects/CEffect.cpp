@@ -21,7 +21,7 @@ const std::vector<Effects::CMaterial*>& CEffect::getMaterials () const
     return this->m_materials;
 }
 
-const CFBO* CEffect::findFBO (const std::string& name) const
+CFBO* CEffect::findFBO (const std::string& name) const
 {
     auto cur = this->m_fbos.begin ();
     auto end = this->m_fbos.end ();
@@ -58,10 +58,10 @@ void CEffect::generateFBOs ()
                 (*cur)->getName (),
                 ITexture::TextureFormat::ARGB8888, // TODO: CHANGE
                 (*cur)->getScale (),
-                this->m_image->getImage ()->getSize ().x,
-                this->m_image->getImage ()->getSize ().y,
-                this->m_image->getImage ()->getSize ().x,
-                this->m_image->getImage ()->getSize ().y
+                this->m_image->getImage ()->getSize ().x / (*cur)->getScale (),
+                this->m_image->getImage ()->getSize ().y / (*cur)->getScale (),
+                this->m_image->getImage ()->getSize ().x / (*cur)->getScale (),
+                this->m_image->getImage ()->getSize ().y / (*cur)->getScale ()
             )
         );
     }
