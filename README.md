@@ -106,6 +106,11 @@ This was the first background to even be compatible with the software. And It's 
 
 ![example](docs/images/example.gif)
 
+###### 1845706469
+In similar fashion to the example background, this one represents the progress of the program. It leverages FBOs (targets), and multiple-effects over objects.
+
+![example2](docs/images/example2.gif)
+
 # 7. Special thanks
 - [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
 - [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS
