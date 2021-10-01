@@ -38,10 +38,11 @@ namespace WallpaperEngine::Render::Objects
         const std::vector<CEffect*>& getEffects () const;
 
         const GLfloat* getVertex () const;
-        const GLuint* getVertexBuffer () const;
-        const GLuint* getPassVertexBuffer () const;
-        const GLuint* getTexCoordBuffer () const;
-        const GLuint* getPassTexCoordBuffer () const;
+        const GLuint* getSceneSpacePosition () const;
+        const GLuint* getCopySpacePosition () const;
+        const GLuint* getPassSpacePosition () const;
+        const GLuint* getTexCoordCopy () const;
+        const GLuint* getTexCoordPass () const;
         ITexture* getTexture () const;
 
         /**
@@ -59,15 +60,14 @@ namespace WallpaperEngine::Render::Objects
         void complexRender ();
     private:
         ITexture* m_texture;
-        GLfloat m_vertexList [6 * 3];
-        GLfloat m_passesVertexList [6 * 3];
-        GLfloat m_texCoordList [6 * 2];
-        GLfloat m_passTexCoordList [6 * 3];
-        GLuint m_vertexBuffer;
-        GLuint m_passesVertexBuffer;
-        GLuint m_texCoordBuffer;
-        GLuint m_passTexCoordBuffer;
-        uint16_t m_vertexIndices [6];
+        GLuint m_sceneSpacePosition;
+        GLuint m_copySpacePosition;
+        GLuint m_passSpacePosition;
+        GLuint m_texcoordCopy;
+        GLuint m_texcoordPass;
+
+        glm::mat4 m_modelViewProjectionScreen;
+        glm::mat4 m_modelViewProjectionPass;
 
         CFBO* m_mainFBO;
         CFBO* m_subFBO;
@@ -78,5 +78,6 @@ namespace WallpaperEngine::Render::Objects
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
+        Effects::CMaterial* m_copyMaterial;
     };
 }

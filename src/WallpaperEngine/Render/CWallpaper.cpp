@@ -246,12 +246,12 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
     if (heightRatio < 0.0f) heightRatio = -heightRatio;
 
     GLfloat position [] = {
-        widthRatio * -1.0f, heightRatio * 1.0f, 0.0f,
-        widthRatio * 1.0f, heightRatio * 1.0f, 0.0f,
-        widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
-        widthRatio * -1.0f, heightRatio * -1.0f, 0.0f,
-        widthRatio * 1.0f, heightRatio * 1.0f, 0.0f,
-        widthRatio * 1.0f, heightRatio * -1.0f, 0.0f
+        -widthRatio, -heightRatio, 0.0f,
+        widthRatio, -heightRatio, 0.0f,
+        -widthRatio, heightRatio, 0.0f,
+        -widthRatio, heightRatio, 0.0f,
+        widthRatio, -heightRatio, 0.0f,
+        widthRatio, heightRatio, 0.0f
     };
 
     glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);

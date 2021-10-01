@@ -15,6 +15,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     auto scene_width = static_cast <float> (projection->getWidth ());
     auto scene_height = static_cast <float> (projection->getHeight ());
 
+    glm::vec3 origin = this->getImage ()->getOrigin ();
+    glm::vec2 size = this->getImage ()->getSize ();
+    glm::vec3 scale = this->getImage ()->getScale ();
+
     float xleft = 0.0f;
     float ytop = 0.0f;
     float xright = 0.0f;
@@ -24,14 +28,11 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // depending on the alignment these values might change, for now just support center
     if (this->getImage ()->getAlignment () == "center")
     {
-        glm::vec2 size = this->getImage ()->getSize ();
-        glm::vec3 scale = this->getImage ()->getScale ();
-
         // calculate the real position of the image
-        xleft = this->getImage ()->getOrigin ().x - (size.x * scale.x / 2);
-        xright = this->getImage ()->getOrigin ().x + (size.x * scale.x / 2);
-        ytop = this->getImage ()->getOrigin ().y - (size.y * scale.y / 2);
-        ybottom = this->getImage ()->getOrigin ().y + (size.y * scale.y / 2);
+        xleft = (-scene_width / 2) + (origin.x - (size.x / 2));
+        xright = (-scene_width / 2) + (origin.x + (size.x / 2));
+        ytop = (-scene_height / 2) + origin.y + (size.y / 2);
+        ybottom = (-scene_height / 2) + (origin.y - (size.y / 2));
     }
     else
     {
@@ -56,11 +57,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
-    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+
+    GLfloat realWidth = this->m_texture->getRealWidth () / 2;
+    GLfloat realHeight = this->m_texture->getRealHeight () / 2;
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
-    GLfloat data [] = {
+    GLfloat sceneSpacePosition [] = {
         xleft, ytop, 0.0f,
         xright, ytop, 0.0f,
         xleft, ybottom, 0.0f,
@@ -69,18 +73,23 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         xright, ybottom, 0.0f
     };
 
-    memcpy (this->m_vertexList, data, sizeof (data));
-
-    GLfloat data1 [] = {
-        0.0f, 0.0f, 0.0f,
-        scene_width, 0.0f, 0.0f,
-        0.0f, scene_height, 0.0f,
-        0.0f, scene_height, 0.0f,
-        scene_width, 0.0f, 0.0f,
-        scene_width, scene_height, 0.0f
+    GLfloat copySpacePosition [] = {
+        -realWidth, -realHeight, 0.0f,
+        realWidth, -realHeight, 0.0f,
+        -realWidth, realHeight, 0.0f,
+        -realWidth, realHeight, 0.0f,
+        realWidth, -realHeight, 0.0f,
+        realWidth, realHeight, 0.0f
     };
 
-    memcpy (this->m_passesVertexList, data1, sizeof (data1));
+    GLfloat passSpacePosition [] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f
+    };
 
     float width = 1.0f;
     float height = 1.0f;
@@ -93,8 +102,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     {
         uint32_t x = 1;
         uint32_t y = 1;
-        glm::vec2 size = this->getImage ()->getSize ();
-        glm::vec3 scale = this->getImage ()->getScale ();
 
         while (x < size.x) x <<= 1;
         while (y < size.y) y <<= 1;
@@ -103,7 +110,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         height = size.y * scale.y / y;
     }
 
-    GLfloat data2 [] = {
+    GLfloat texcoordCopy [] = {
         0.0f, 0.0f,
         width, 0.0f,
         0.0f, height,
@@ -112,40 +119,53 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         width, height
     };
 
-    memcpy (this->m_texCoordList, data2, sizeof (data2));
-
-    GLfloat data3 [] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
+    GLfloat texcoordPass [] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f
     };
 
-    memcpy (this->m_passTexCoordList, data3, sizeof (data3));
-
     // bind vertex list to the openGL buffers
-    glGenBuffers (1, &this->m_vertexBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_vertexBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_vertexList), this->m_vertexList, GL_STATIC_DRAW);
+    glGenBuffers (1, &this->m_sceneSpacePosition);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_sceneSpacePosition);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (sceneSpacePosition), sceneSpacePosition, GL_STATIC_DRAW);
+
+    glGenBuffers (1, &this->m_copySpacePosition);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_copySpacePosition);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (copySpacePosition), copySpacePosition, GL_STATIC_DRAW);
 
     // bind pass' vertex list to the openGL buffers
-    glGenBuffers (1, &this->m_passesVertexBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_passesVertexBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_passesVertexList), this->m_passesVertexList, GL_STATIC_DRAW);
+    glGenBuffers (1, &this->m_passSpacePosition);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_passSpacePosition);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (passSpacePosition), passSpacePosition, GL_STATIC_DRAW);
 
-    glGenBuffers (1, &this->m_texCoordBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_texCoordList), this->m_texCoordList, GL_STATIC_DRAW);
+    glGenBuffers (1, &this->m_texcoordCopy);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordCopy);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordCopy), texcoordCopy, GL_STATIC_DRAW);
 
-    glGenBuffers (1, &this->m_passTexCoordBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_passTexCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (this->m_passTexCoordList), this->m_passTexCoordList, GL_STATIC_DRAW);
+    glGenBuffers (1, &this->m_texcoordPass);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
+
+    this->m_modelViewProjectionScreen =
+            this->getScene ()->getCamera ()->getProjection () *
+            this->getScene ()->getCamera ()->getLookAt () *
+            glm::scale (glm::mat4 (1.0f), scale);
+
+    this->m_modelViewProjectionPass =
+            glm::ortho<float> (-size.x / 2, size.x / 2, -size.y / 2, size.y / 2, 0, 10000);
 }
 
 void CImage::setup ()
 {
+    // generate the main material used to copy the image to the correct texture
+    this->m_copyMaterial = new Effects::CMaterial (
+        new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+        this->m_image->getMaterial ()
+    );
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
@@ -178,12 +198,19 @@ void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
 
 void CImage::simpleRender ()
 {
-    // a simple material renders directly to the screen
-    auto cur = this->m_material->getPasses ().begin ();
-    auto end = this->m_material->getPasses ().end ();
+    // first render to the composite layer
+    auto cur = this->m_copyMaterial->getPasses ().begin ();
+    auto end = this->m_copyMaterial->getPasses ().end ();
 
     for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), this->getTexture (), false);
+        (*cur)->render (this->m_mainFBO, this->getTexture (), *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
+
+    // a simple material renders directly to the screen
+    cur = this->m_material->getPasses ().begin ();
+    end = this->m_material->getPasses ().end ();
+
+    for (; cur != end; cur ++)
+        (*cur)->render (this->getScene ()->getFBO (), this->m_mainFBO, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
 }
 
 void CImage::complexRender ()
@@ -193,11 +220,11 @@ void CImage::complexRender ()
     ITexture* asInput = this->getTexture ();
 
     // do the first pass render into the main framebuffer
-    auto cur = this->m_material->getPasses ().begin ();
-    auto end = this->m_material->getPasses ().end ();
+    auto cur = this->m_copyMaterial->getPasses ().begin ();
+    auto end = this->m_copyMaterial->getPasses ().end ();
 
     for (; cur != end; cur ++)
-        (*cur)->render (drawTo, asInput, false);
+        (*cur)->render (drawTo, asInput, *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
 
     // render all the other materials
     auto effectCur = this->getEffects ().begin ();
@@ -228,11 +255,18 @@ void CImage::complexRender ()
 
             for (; passCur != passEnd; passCur ++)
             {
+                GLuint spacePosition = *this->getPassSpacePosition ();
+                glm::mat4 projection = this->m_modelViewProjectionPass;
+
                 // ping-pong only if there's a target
                 if ((*materialCur)->getMaterial ()->hasTarget () == false)
+                {
                     this->pinpongFramebuffer (&drawTo, &asInput);
+                    spacePosition = *this->getCopySpacePosition ();
+                    projection = this->m_modelViewProjectionScreen;
+                }
 
-                (*passCur)->render (drawTo, asInput, (*materialCur)->getMaterial ()->hasTarget ());
+                (*passCur)->render (drawTo, asInput, spacePosition, *this->getTexCoordPass (), this->m_modelViewProjectionPass);
             }
         }
     }
@@ -251,7 +285,7 @@ void CImage::complexRender ()
     glColorMask (true, true, true, false);
 
     for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), asInput, false);
+        (*cur)->render (this->getScene ()->getFBO (), asInput, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
 }
 
 void CImage::render ()
@@ -284,29 +318,29 @@ const std::vector<CEffect*>& CImage::getEffects () const
     return this->m_effects;
 }
 
-const GLfloat* CImage::getVertex () const
+const GLuint* CImage::getSceneSpacePosition () const
 {
-    return this->m_vertexList;
+    return &this->m_sceneSpacePosition;
 }
 
-const GLuint* CImage::getVertexBuffer () const
+const GLuint* CImage::getCopySpacePosition () const
 {
-    return &this->m_vertexBuffer;
+    return &this->m_copySpacePosition;
 }
 
-const GLuint* CImage::getPassVertexBuffer () const
+const GLuint* CImage::getPassSpacePosition () const
 {
-    return &this->m_passesVertexBuffer;
+    return &this->m_passSpacePosition;
 }
 
-const GLuint* CImage::getTexCoordBuffer () const
+const GLuint* CImage::getTexCoordCopy () const
 {
-    return &this->m_texCoordBuffer;
+    return &this->m_texcoordCopy;
 }
 
-const GLuint* CImage::getPassTexCoordBuffer () const
+const GLuint* CImage::getTexCoordPass () const
 {
-    return &this->m_passTexCoordBuffer;
+    return &this->m_texcoordPass;
 }
 
 const std::string CImage::Type = "image";

@@ -7,6 +7,9 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint3
     m_format (format),
     m_scale (scale)
 {
+    // create an empty texture that'll be free'd so the FBO is transparent
+    uint32_t* pixels = new uint32_t [textureWidth * textureHeight] {0xFFFFFFFF};
+
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
     glGenFramebuffers (1, &this->m_framebuffer);
@@ -16,7 +19,9 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint3
     // bind the new texture to set settings on it
     glBindTexture (GL_TEXTURE_2D, this->m_texture);
     // give OpenGL an empty image
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    delete pixels;
 
     // set filtering parameters, otherwise the texture is not rendered
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

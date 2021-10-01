@@ -64,7 +64,7 @@ ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previo
     return fbo;
 }
 
-void CPass::render (CFBO* drawTo, ITexture* input, bool hasTarget)
+void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection)
 {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, drawTo->getFramebuffer ());
@@ -122,19 +122,13 @@ void CPass::render (CFBO* drawTo, ITexture* input, bool hasTarget)
     }
 
     // update variables used in the render process (like g_ModelViewProjectionMatrix)
-    this->m_modelViewProjectionMatrix =
-            this->m_material->getImage ()->getScene ()->getCamera ()->getProjection () *
-            this->m_material->getImage ()->getScene ()->getCamera ()->getLookAt () *
-            glm::mat4 (1.0f);
+    this->m_modelViewProjectionMatrix = projection;
 
     // update a_TexCoord and a_Position based on what to draw to
     // this should not be required once we do some prediction on rendering things
     // but for now should be enough
-    this->a_TexCoord = *this->m_material->getImage ()->getTexCoordBuffer ();
-    this->a_Position = *this->m_material->getImage ()->getVertexBuffer ();
-
-    if (hasTarget)
-        this->a_Position = *this->m_material->getImage ()->getPassTexCoordBuffer ();
+    this->a_TexCoord = texcoord;
+    this->a_Position = position;
 
     // use the shader we have registered
     glUseProgram (this->m_programID);
@@ -255,7 +249,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, bool hasTarget)
     }
 
     // start actual rendering now
-    glBindBuffer (GL_ARRAY_BUFFER, (drawTo != this->m_material->getImage()->getScene()->getFBO ()) ? *this->m_material->getImage ()->getPassVertexBuffer () : *this->m_material->getImage ()->getVertexBuffer ());
+    glBindBuffer (GL_ARRAY_BUFFER, position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // disable vertex attribs array
