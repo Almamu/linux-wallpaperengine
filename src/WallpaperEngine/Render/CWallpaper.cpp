@@ -262,7 +262,8 @@ void CWallpaper::render (glm::vec4 viewport, bool newFrame)
     // write to default's framebuffer
     glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
 
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (newFrame == true)
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);
     // do not use any shader
