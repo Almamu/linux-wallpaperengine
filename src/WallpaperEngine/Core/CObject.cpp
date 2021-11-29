@@ -34,9 +34,9 @@ CObject* CObject::fromJSON (json data, CContainer* container)
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
     auto visible_it = data.find ("visible");
-    auto origin_it = jsonFindRequired (data, "origin", "Objects must have origin point");
-    auto scale_it = jsonFindRequired (data, "scale", "Objects must have scale");
-    auto angles_it = jsonFindRequired (data, "angles", "Objects must have angles");
+    auto origin_val = jsonFindDefault <std::string> (data, "origin", "0.0 0.0 0.0");
+    auto scale_val = jsonFindDefault <std::string> (data, "scale", "0.0 0.0 0.0");
+    auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
     auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
     auto dependencies_it = data.find ("dependencies");
@@ -74,9 +74,9 @@ CObject* CObject::fromJSON (json data, CContainer* container)
                 visible,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (*origin_it),
-                WallpaperEngine::Core::aToVector3 (*scale_it),
-                WallpaperEngine::Core::aToVector3 (*angles_it)
+                WallpaperEngine::Core::aToVector3 (origin_val),
+                WallpaperEngine::Core::aToVector3 (scale_val),
+                WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
     else if (sound_it != data.end () && (*sound_it).is_null () == false)
@@ -86,9 +86,9 @@ CObject* CObject::fromJSON (json data, CContainer* container)
                 visible,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (*origin_it),
-                WallpaperEngine::Core::aToVector3 (*scale_it),
-                WallpaperEngine::Core::aToVector3 (*angles_it)
+                WallpaperEngine::Core::aToVector3 (origin_val),
+                WallpaperEngine::Core::aToVector3 (scale_val),
+                WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
     else if (particle_it != data.end () && (*particle_it).is_null () == false)
@@ -101,8 +101,8 @@ CObject* CObject::fromJSON (json data, CContainer* container)
                 container,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (*origin_it),
-                WallpaperEngine::Core::aToVector3 (*scale_it)
+                WallpaperEngine::Core::aToVector3 (origin_val),
+                WallpaperEngine::Core::aToVector3 (scale_val)
             );
         }
         catch (std::runtime_error ex)

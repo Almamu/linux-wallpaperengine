@@ -16,7 +16,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     auto scene_height = static_cast <float> (projection->getHeight ());
 
     glm::vec3 origin = this->getImage ()->getOrigin ();
-    glm::vec2 size = this->getImage ()->getSize ();
+    glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ()->getScale ();
 
     float xleft = 0.0f;
@@ -316,6 +316,14 @@ const Core::Objects::CImage* CImage::getImage () const
 const std::vector<CEffect*>& CImage::getEffects () const
 {
     return this->m_effects;
+}
+
+const glm::vec2 CImage::getSize() const
+{
+    if (this->m_texture == nullptr)
+        return this->getImage ()->getSize ();
+
+    return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }
 
 const GLuint* CImage::getSceneSpacePosition () const

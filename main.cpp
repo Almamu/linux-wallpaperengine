@@ -38,8 +38,6 @@ void print_help (const char* route)
         << "Usage:" << route << " [options] background_path" << std::endl
         << "options:" << std::endl
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
-        << "  --dir <folder>\tLoads an uncompressed background from the given <folder> [deprecated]" << std::endl
-        << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder> [deprecated]" << std::endl
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
 }
@@ -120,10 +118,20 @@ int main (int argc, char* argv[])
         }
     }
 
-    if (path.empty () == true && option_index == 0 || strlen (argv [option_index]) == 0)
+    // increment the option index (useful for when no options were found)
+    option_index ++;
+
+    if (path.empty () == true)
     {
-        print_help (argv [0]);
-        return 0;
+        if (option_index < argc && strlen (argv [option_index]) > 0)
+        {
+            path = argv [option_index];
+        }
+        else
+        {
+            print_help (argv [0]);
+            return 0;
+        }
     }
 
     // first of all, initialize the window

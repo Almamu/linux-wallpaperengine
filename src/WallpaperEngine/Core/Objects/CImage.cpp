@@ -35,7 +35,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     const glm::vec3& angles)
 {
     auto image_it = data.find ("image");
-    auto size_it = jsonFindRequired (data, "size", "Images must have size");
+    auto size_val = jsonFindDefault <std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
     auto alignment = jsonFindDefault <std::string> (data, "alignment", "center");
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> (), container));
@@ -50,7 +50,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         origin,
         scale,
         angles,
-        WallpaperEngine::Core::aToVector2 (*size_it),
+        WallpaperEngine::Core::aToVector2 (size_val),
         alignment
     );
 }

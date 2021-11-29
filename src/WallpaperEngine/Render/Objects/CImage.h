@@ -36,6 +36,7 @@ namespace WallpaperEngine::Render::Objects
 
         const Core::Objects::CImage* getImage () const;
         const std::vector<CEffect*>& getEffects () const;
+        const glm::vec2 getSize() const;
 
         const GLfloat* getVertex () const;
         const GLuint* getSceneSpacePosition () const;

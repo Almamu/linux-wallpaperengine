@@ -34,7 +34,7 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint3
     // ensure first framebuffer is okay
     if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         throw std::runtime_error ("Framebuffers are not properly set");
-    
+
     // clear the framebuffer
     glClear (GL_COLOR_BUFFER_BIT);
 
