@@ -97,7 +97,7 @@ int main (int argc, char* argv[])
 
             case 'p':
             case 'd':
-                std::cout << "--dir/--pkg is deprecated and not used anymore" << std::endl;
+                std::cerr << "--dir/--pkg is deprecated and not used anymore" << std::endl;
                 path = stringPathFixes (optarg);
                 break;
 

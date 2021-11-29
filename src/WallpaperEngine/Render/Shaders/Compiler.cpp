@@ -302,6 +302,13 @@ namespace WallpaperEngine::Render::Shaders
                         this->m_compiledContent += "uniform " + type + " " + name + array + ";";
                     }
                 }
+                else
+                {
+                    // continue reading the original shader as this most likely is a variable name or something
+                    // that is not really interesting for the compiler
+                    this->m_compiledContent += *it;
+                    it ++;
+                }
             }
             /*else if (*it == 'a')
             {
@@ -661,6 +668,9 @@ namespace WallpaperEngine::Render::Shaders
 
     std::vector<std::string> Compiler::sTypes =
     {
-        "vec4", "vec3", "vec2", "float", "sampler2D", "mat4x3", "mat4", "uint4"
+        "vec4", "uvec4", "ivec4", "dvec4", "bvec4",
+        "vec3", "uvec3", "ivec3", "dvec3", "bvec3",
+        "vec2", "uvec2", "ivec2", "dvec2", "bvec2",
+        "float", "sampler2D", "mat4x3", "mat4", "mat3", "uint4"
     };
 }
