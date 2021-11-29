@@ -73,29 +73,22 @@ make
 **REMEMBER: The assets folder has to be at the same folder as the executable**
 
 ## 5.5. Running a background
-Currently both compressed and uncompressed backgrounds are supported.
-
-#### 5.5.1. Running compressed backgrounds
-Compressed backgrounds are actually two separate files. One named "project.json" and another called "scene.pkg". These two files are important as one contains the background's information and the second one contains the needed assets for it. For the program to properly detect them we'll use the ```--pkg``` parameter, which will specify the folder where those two files are stored.
+Currently both compressed and uncompressed backgrounds are supported. Loading them is quite simple. Just run linux-wallpaperengine with the path to the folder where the background is stored:
 ```
-./wallengine --pkg folder
+./wallengine /home/almamu/Development/backgrounds/1845706469/
 ```
 
-#### 5.5.2. Running uncompressed backgrounds
-Uncompressed backgrounds are just plain folders including all the resources and scene information all jumbled together. At least a project.json and a scene.json must exists for the background to even start loading. For the program to properly detect them we'll use the ```--dir``` parameter, which will specify the folder where the background itself is stored.
-```
-./wallengine --dir folder
-```
+Where ```/home/almamu/Development/backgrounds/1845706469/``` is the background's path.
 
-#### 5.5.3. Running as a screen's background
+#### 5.5.1. Running as a screen's background
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 ```
-./wallengine --screen-root HDMI-1 --screen-root DVI-D-1
+./wallengine --screen-root HDMI-1 --screen-root DVI-D-1 /home/almamu/Development/backgrounds/1845706469/
 ```
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
 
-#### 5.5.4. Limiting FPS
+#### 5.5.2. Limiting FPS
 To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, specially useful for laptops:
 ```
 ./wallengine --fps 30
