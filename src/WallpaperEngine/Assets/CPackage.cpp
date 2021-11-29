@@ -5,6 +5,7 @@
 #include "CPackage.h"
 
 #include <utility>
+#include <filesystem>
 
 using namespace WallpaperEngine::Assets;
 
@@ -53,7 +54,7 @@ void CPackage::init ()
     FILE* fp = fopen (this->m_path.c_str (), "rb+");
 
     if (fp == nullptr)
-        throw std::runtime_error ("Cannot find package file");
+        throw std::filesystem::filesystem_error ("Cannot find package file", std::error_code());
 
     // first validate header
     this->validateHeader (fp);
@@ -109,7 +110,8 @@ void CPackage::validateHeader (FILE* fp)
         strcmp ("PKGV0004", pointer) != 0 &&
         strcmp ("PKGV0005", pointer) != 0 &&
         strcmp ("PKGV0006", pointer) != 0 &&
-        strcmp ("PKGV0013", pointer) != 0)
+        strcmp ("PKGV0013", pointer) != 0 &&
+        strcmp ("PKGV0014", pointer) != 0)
     {
         delete[] pointer;
         throw std::runtime_error ("Unsupported package version");

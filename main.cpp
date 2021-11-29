@@ -7,10 +7,8 @@
 
 #include <GL/glew.h>
 #include <GL/glx.h>
+#include <filesystem>
 #include "GLFW/glfw3.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
@@ -21,8 +19,6 @@
 #include "WallpaperEngine/Assets/CPackage.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
-
-#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 enum BACKGROUND_RUN_MODE
 {
@@ -39,11 +35,11 @@ using namespace WallpaperEngine::Core::Types;
 void print_help (const char* route)
 {
     std::cout
-        << "Usage:" << route << " [options] " << std::endl
+        << "Usage:" << route << " [options] background_path" << std::endl
         << "options:" << std::endl
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
-        << "  --dir <folder>\tLoads an uncompressed background from the given <folder>" << std::endl
-        << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder>" << std::endl
+        << "  --dir <folder>\tLoads an uncompressed background from the given <folder> [deprecated]" << std::endl
+        << "  --pkg <folder>\tLoads a scene.pkg file from the given <folder> [deprecated]" << std::endl
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
 }
@@ -158,10 +154,17 @@ int main (int argc, char* argv[])
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
     }
+    catch(std::filesystem::filesystem_error ex)
+    {
+        // ignore this error, the package file was not found
+    }
     catch (std::runtime_error ex)
     {
-        // ignore the exception, this is to be expected of normal backgrounds
+        // the package was found but there was an error loading it (wrong header or something)
+        fprintf (stderr, "Failed to load scene.pkg file: %s\n", ex.what());
+        return 4;
     }
+
     // add containers to the list
     containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
 
