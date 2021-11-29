@@ -1,5 +1,6 @@
 #include "CProperty.h"
 #include "CPropertyColor.h"
+#include "CPropertySlider.h"
 #include "CPropertyBoolean.h"
 
 using namespace WallpaperEngine::Core::Projects;
@@ -11,14 +12,13 @@ CProperty* CProperty::fromJSON (json data, const std::string& name)
     auto text = data.find ("text");
 
     if (*type == CPropertyColor::Type)
-    {
         return CPropertyColor::fromJSON (data, name);
-    }
 
     if (*type == CPropertyBoolean::Type)
-    {
         return CPropertyBoolean::fromJSON (data, name);
-    }
+
+    if (*type == CPropertySlider::Type)
+        return CPropertySlider::fromJSON (data, name);
 
     throw std::runtime_error ("Unexpected type for property");
 }

@@ -121,6 +121,8 @@ add_executable(
         src/WallpaperEngine/Core/Projects/CPropertyColor.cpp
         src/WallpaperEngine/Core/Projects/CPropertyBoolean.h
         src/WallpaperEngine/Core/Projects/CPropertyBoolean.cpp
+        src/WallpaperEngine/Core/Projects/CPropertySlider.h
+        src/WallpaperEngine/Core/Projects/CPropertySlider.cpp
 
         src/WallpaperEngine/Core/Scenes/CCamera.cpp
         src/WallpaperEngine/Core/Scenes/CCamera.h

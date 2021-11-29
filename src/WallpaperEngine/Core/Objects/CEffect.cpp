@@ -1,6 +1,7 @@
 #include "CEffect.h"
 
 #include <utility>
+#include <iostream>
 
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
@@ -149,20 +150,36 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
 
     for (; cur != end; cur ++)
     {
+        json::const_iterator val = cur;
+
         Effects::Constants::CShaderConstant* constant = nullptr;
 
-        if ((*cur).is_number_float () == true)
+        // if the constant is an object, that means the constant has some extra information
+        // for the UI, take the value, which is what we need
+
+        if ((*cur).is_object () == true)
         {
-            constant = new Effects::Constants::CShaderConstantFloat ((*cur).get <float> ());
+            val = (*cur).find ("value");
+
+            if (val == (*cur).end ())
+            {
+                std::cerr << "Found object for shader constant without \"value\" member" << std::endl;
+                continue;
+            }
         }
-        else if ((*cur).is_number_integer () == true)
+
+        if ((*val).is_number_float () == true)
         {
-            constant = new Effects::Constants::CShaderConstantInteger ((*cur).get <int> ());
+            constant = new Effects::Constants::CShaderConstantFloat ((*val).get <float> ());
         }
-        else if ((*cur).is_string () == true)
+        else if ((*val).is_number_integer () == true)
+        {
+            constant = new Effects::Constants::CShaderConstantInteger ((*val).get <int> ());
+        }
+        else if ((*val).is_string () == true)
         {
             // try a vector 4 first, then a vector3 and then a vector 2
-            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (*cur));
+            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (*val));
         }
         else
         {
