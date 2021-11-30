@@ -63,12 +63,12 @@ CVideo::CVideo (Core::CVideo* video, CContainer* container) :
 
     // inverted positions so the final texture is rendered properly
     GLfloat position [] = {
-        1.0f, -1.0f, 0.0f,
-        -1.0, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0, 1.0f, 0.0f,
         -1.0f, -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f
+        -1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f
     };
 
     glGenBuffers (1, &this->m_texCoordBuffer);
