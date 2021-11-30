@@ -57,8 +57,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
-    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
 
     GLfloat realWidth = this->m_texture->getRealWidth () / 2;
     GLfloat realHeight = this->m_texture->getRealHeight () / 2;

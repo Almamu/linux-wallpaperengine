@@ -40,7 +40,7 @@ ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previo
         if (it == this->m_fbos.end ())
             return nullptr;
 
-        return (*it).second;
+        expected = (*it).second;
     }
 
     // first check in the binds and replace it if necessary
@@ -417,7 +417,7 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << index << "Resolution";
 
-            texture = this->resolveTexture ((*cur), index);
+            texture = this->resolveTexture ((*cur), index, texture);
             this->addUniform (namestream.str (), texture->getResolution ());
             lastTextureIndex ++;
         }
@@ -437,7 +437,7 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
-            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
             this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
@@ -456,7 +456,7 @@ void CPass::setupUniforms ()
 
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
-            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
             this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
