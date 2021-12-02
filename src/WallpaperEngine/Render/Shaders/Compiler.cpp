@@ -503,7 +503,7 @@ namespace WallpaperEngine::Render::Shaders
     {
         json data = json::parse (content);
         auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
-        auto defvalue = jsonFindRequired (data, "default", "cannot parse combo information");
+        auto defvalue = data.find ("default");
 
         // add line feed just in case
         this->m_compiledContent += "\n";
@@ -516,7 +516,12 @@ namespace WallpaperEngine::Render::Shaders
         if (entry == this->m_combos->end ())
         {
             // if no combo is defined just load the default settings
-            if ((*defvalue).is_number_float ())
+            if (defvalue == data.end ())
+            {
+                // TODO: PROPERLY SUPPORT EMPTY COMBOS
+                this->m_combos->insert (std::make_pair <std::string, int> (*combo, 0));
+            }
+            else if ((*defvalue).is_number_float ())
             {
                 throw std::runtime_error ("float combos not supported");
             }
