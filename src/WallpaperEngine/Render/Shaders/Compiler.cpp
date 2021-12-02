@@ -106,6 +106,12 @@ namespace WallpaperEngine::Render::Shaders
 
     std::string Compiler::extractType (std::string::const_iterator& it)
     {
+        // first of all check for highp/mediump/lowp as these operators have to be ignored
+        this->peekString ("highp", it);
+        this->peekString ("mediump", it);
+        this->peekString ("lowp", it);
+        this->ignoreSpaces (it);
+
         auto cur = sTypes.begin ();
         auto end = sTypes.end ();
 

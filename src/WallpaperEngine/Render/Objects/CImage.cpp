@@ -39,16 +39,29 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         throw std::runtime_error ("Only centered images are supported for now!");
     }
 
-    std::string textureName = (*(*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
+    // detect texture (if any)
+    auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
 
-    if (textureName.find ("_rt_") == 0)
+    if (textures.empty() == false)
     {
-        this->m_texture = this->getScene ()->findFBO (textureName);
+        std::string textureName = *textures.begin ();
+
+        if (textureName.find ("_rt_") == 0)
+        {
+            this->m_texture = this->getScene ()->findFBO (textureName);
+        }
+        else
+        {
+            // get the first texture on the first pass (this one represents the image assigned to this object)
+            this->m_texture = this->getScene ()->getContainer ()->readTexture (textureName);
+        }
     }
     else
     {
-        // get the first texture on the first pass (this one represents the image assigned to this object)
-        this->m_texture = this->getScene ()->getContainer ()->readTexture (textureName);
+        glm::vec2 realSize = size * glm::vec2 (scale);
+
+        // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly handled
+        this->m_texture = new CFBO ("", ITexture::TextureFormat::ARGB8888, 1, realSize.x, realSize.y, realSize.x, realSize.y);
     }
 
     // register both FBOs into the scene
