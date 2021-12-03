@@ -3,8 +3,8 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CVideo::CVideo (Core::CVideo* video, CContainer* container) :
-    CWallpaper (video, Type, container)
+CVideo::CVideo (Core::CVideo* video, CContainer* container, CContext* context) :
+    CWallpaper (video, Type, container, context)
 {
     if (avformat_open_input (&m_formatCtx, video->getFilename ().c_str (), NULL, NULL) < 0)
         throw std::runtime_error ("Failed to open video file");
@@ -115,7 +115,7 @@ void CVideo::setSize (int width, int height)
                     SWS_BILINEAR, NULL, NULL, NULL);
 }
 
-void CVideo::renderFrame ()
+void CVideo::renderFrame (glm::vec4 viewport)
 {
     // do not render using the CWallpaper function, just use this one
     this->setSize (m_codecCtx->width, m_codecCtx->height);

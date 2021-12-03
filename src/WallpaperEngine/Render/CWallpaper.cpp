@@ -8,10 +8,11 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container, CContext* context) :
     m_container (container),
     m_wallpaperData (wallpaperData),
-    m_type (std::move(type))
+    m_type (std::move(type)),
+    m_context (context)
 {
     this->setupShaders ();
 
@@ -187,7 +188,7 @@ void CWallpaper::setupShaders ()
 void CWallpaper::render (glm::vec4 viewport, bool newFrame)
 {
     if (newFrame == true)
-        this->renderFrame ();
+        this->renderFrame (viewport);
 
     int windowWidth = 1920;
     int windowHeight = 1080;
@@ -308,6 +309,11 @@ void CWallpaper::setupFramebuffers ()
 
     // create framebuffer for the scene
     this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+}
+
+CContext* CWallpaper::getContext ()
+{
+    return this->m_context;
 }
 
 CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)

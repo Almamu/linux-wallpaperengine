@@ -180,9 +180,6 @@ int main (int argc, char* argv[])
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
 
-    // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
-
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
@@ -197,6 +194,11 @@ int main (int argc, char* argv[])
     }
 
     glfwMakeContextCurrent (window);
+
+    // initialize inputs
+    CMouseInput* mouseInput = new CMouseInput (window);
+    // initialize custom context class
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, mouseInput);
 
     // TODO: FIGURE THESE OUT BASED ON THE SCREEN
     int windowWidth = 1920;
@@ -218,7 +220,7 @@ int main (int argc, char* argv[])
     if (project->getType () == "scene")
     {
         WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
-        wallpaper = new WallpaperEngine::Render::CScene (scene, containers);
+        wallpaper = new WallpaperEngine::Render::CScene (scene, containers, context);
     }
     else if (project->getType () == "video")
     {
@@ -227,7 +229,7 @@ int main (int argc, char* argv[])
         chdir (path.c_str ());
 
         WallpaperEngine::Core::CVideo* video = project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> ();
-        wallpaper = new WallpaperEngine::Render::CVideo (video, containers);
+        wallpaper = new WallpaperEngine::Render::CVideo (video, containers, context);
     }
     else
     {
@@ -277,6 +279,8 @@ int main (int argc, char* argv[])
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame
         startTime = clock ();
+        // update our inputs first
+        mouseInput->update ();
         // render the scene
         context->render ();
         // do buffer swapping

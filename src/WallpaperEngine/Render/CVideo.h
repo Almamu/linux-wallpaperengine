@@ -17,7 +17,7 @@ namespace WallpaperEngine::Render
     class CVideo : public CWallpaper
     {
     public:
-        CVideo (Core::CVideo* video, CContainer* container);
+        CVideo (Core::CVideo* video, CContainer* container, CContext* context);
 
         Core::CVideo* getVideo ();
 
@@ -25,7 +25,7 @@ namespace WallpaperEngine::Render
         int getHeight ();
 
     protected:
-        void renderFrame () override;
+        void renderFrame (glm::vec4 viewport) override;
 
         friend class CWallpaper;
 

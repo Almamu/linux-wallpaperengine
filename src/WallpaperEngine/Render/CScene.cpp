@@ -9,8 +9,8 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CContainer* container) :
-    CWallpaper (scene, Type, container)
+CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
+    CWallpaper (scene, Type, container, context)
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
@@ -56,11 +56,14 @@ CCamera* CScene::getCamera () const
     return this->m_camera;
 }
 
-void CScene::renderFrame ()
+void CScene::renderFrame (glm::vec4 viewport)
 {
     auto projection = this->getScene ()->getOrthogonalProjection ();
     auto cur = this->m_objects.begin ();
     auto end = this->m_objects.end ();
+
+    // ensure the virtual mouse position is up to date
+    this->updateMouse (viewport);
 
     // clear screen
     FloatColor clearColor = this->getScene ()->getClearColor ();
@@ -79,9 +82,28 @@ void CScene::renderFrame ()
     glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 }
 
+void CScene::updateMouse (glm::vec4 viewport)
+{
+    // projection also affects the mouse position
+    auto projection = this->getScene ()->getOrthogonalProjection ();
+    // update virtual mouse position first
+    CMouseInput* mouse = this->getContext ()->getMouse ();
+    // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
+
+    this->m_mousePosition.x = glm::clamp ((mouse->position.x - viewport.x) / viewport.z, 0.0, 1.0);
+    this->m_mousePosition.y = glm::clamp ((mouse->position.y - viewport.y) / viewport.w, 0.0, 1.0);
+
+    // screen-space positions have to be transposed to what the screen will actually show
+}
+
 Core::CScene* CScene::getScene ()
 {
     return this->getWallpaperData ()->as<Core::CScene> ();
+}
+
+glm::vec2* CScene::getMousePosition ()
+{
+    return &this->m_mousePosition;
 }
 
 const std::string CScene::Type = "scene";

@@ -6,15 +6,16 @@
 #include <GL/glx.h>
 
 #include "CContext.h"
+#include "CVideo.h"
 
 using namespace WallpaperEngine::Render;
 
-CContext::CContext (std::vector <std::string> screens) :
+CContext::CContext (std::vector <std::string> screens, CMouseInput* mouse) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
-    m_window (0),
-    m_defaultViewport ({0, 0, 1920, 1080})
+    m_defaultViewport ({0, 0, 1920, 1080}),
+    m_mouse (mouse)
 {
     this->initializeViewports ();
 }
@@ -76,8 +77,6 @@ void CContext::initializeViewports ()
 
     XRRFreeScreenResources (screenResources);
 
-    // store the window
-    this->m_window = DefaultRootWindow (display);
     // set the
     glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
 }
@@ -96,7 +95,9 @@ void CContext::render ()
         for (; cur != end; cur ++)
         {
             this->m_wallpaper->render (*cur, firstFrame);
-            firstFrame = false;
+            // scenes need to render a new frame for each viewport as they produce different results
+            // but videos should only be rendered once per group of viewports
+            firstFrame = !this->m_wallpaper->is <CVideo> ();
         }
     }
     else
@@ -111,4 +112,9 @@ void CContext::setWallpaper (CWallpaper* wallpaper)
 void CContext::setDefaultViewport (glm::vec4 defaultViewport)
 {
     this->m_defaultViewport = defaultViewport;
+}
+
+CMouseInput* CContext::getMouse () const
+{
+    return this->m_mouse;
 }

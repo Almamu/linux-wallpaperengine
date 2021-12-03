@@ -15,14 +15,17 @@ namespace WallpaperEngine::Render
     class CScene : public CWallpaper
     {
     public:
-        CScene (Core::CScene* scene, CContainer* container);
+        CScene (Core::CScene* scene, CContainer* container, CContext* context);
 
         CCamera* getCamera () const;
 
         Core::CScene* getScene ();
 
+        glm::vec2* getMousePosition ();
+
     protected:
-        void renderFrame () override;
+        void renderFrame (glm::vec4 viewport) override;
+        void updateMouse (glm::vec4 viewport);
 
         friend class CWallpaper;
 
@@ -31,5 +34,6 @@ namespace WallpaperEngine::Render
     private:
         CCamera* m_camera;
         std::vector<CObject*> m_objects;
+        glm::vec2 m_mousePosition;
     };
 }

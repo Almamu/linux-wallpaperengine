@@ -54,6 +54,9 @@ add_executable(
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
 
+        src/WallpaperEngine/Input/CMouseInput.h
+        src/WallpaperEngine/Input/CMouseInput.cpp
+
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
         src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h

@@ -9,11 +9,14 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "CFBO.h"
+#include "CContext.h"
 
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render
 {
+    class CContext;
+
     class CWallpaper
     {
     public:
@@ -22,7 +25,7 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container, CContext* context);
         ~CWallpaper ();
 
         /**
@@ -72,12 +75,17 @@ namespace WallpaperEngine::Render
         /**
          * Renders a frame of the wallpaper
          */
-        virtual void renderFrame () = 0;
+        virtual void renderFrame (glm::vec4 viewport) = 0;
 
         /**
          * Setups OpenGL's framebuffers for ping-pong and scene rendering
          */
         void setupFramebuffers ();
+
+        /**
+         * @return The current context rendering this wallpaper
+         */
+        CContext* getContext ();
 
         CContainer* m_container;
         Core::CWallpaper* m_wallpaperData;
@@ -113,5 +121,9 @@ namespace WallpaperEngine::Render
          * List of FBOs registered for this wallpaper
          */
         std::map<std::string, CFBO*> m_fbos;
+        /**
+         * Context that is using this wallpaper
+         */
+        CContext* m_context;
     };
 }
