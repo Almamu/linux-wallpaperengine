@@ -467,8 +467,8 @@ void CPass::setupUniforms ()
     // register variables like brightness and alpha with some default value
     this->addUniform ("g_Brightness", 1.0f); // TODO: GET FROM THE IMAGE
     this->addUniform ("g_UserAlpha", 1.0f);
-    this->addUniform ("g_Alpha", 1.0f); // TODO: GET FROM THE IMAGE
-    this->addUniform ("g_Color", glm::vec3 {1.0f, 1.0f, 1.0f}); // TODO: GET FROM THE IMAGE
+    this->addUniform ("g_Alpha", this->m_material->getImage ()->getImage ()->getAlpha ());
+    this->addUniform ("g_Color", this->m_material->getImage ()->getImage ()->getColor ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     // add model-view-projection matrix
