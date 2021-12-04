@@ -88,15 +88,17 @@ void CContext::render ()
     if (this->m_viewports.empty () == false)
     {
         bool firstFrame = true;
+        bool renderFrame = true;
         auto cur = this->m_viewports.begin ();
         auto end = this->m_viewports.end ();
 
         for (; cur != end; cur ++)
         {
-            this->m_wallpaper->render (*cur, firstFrame);
+            this->m_wallpaper->render (*cur, renderFrame, firstFrame);
             // scenes need to render a new frame for each viewport as they produce different results
             // but videos should only be rendered once per group of viewports
-            firstFrame = !this->m_wallpaper->is <CVideo> ();
+            firstFrame = false;
+            renderFrame = !this->m_wallpaper->is <CVideo> ();
         }
     }
     else

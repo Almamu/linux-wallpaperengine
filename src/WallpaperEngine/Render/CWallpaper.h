@@ -31,7 +31,7 @@ namespace WallpaperEngine::Render
         /**
          * Performs a render pass of the wallpaper
          */
-        void render (glm::vec4 viewport, bool newFrame = true);
+        void render (glm::vec4 viewport, bool renderFrame = true, bool newFrame = true);
 
         /**
          * @return The container to resolve files for this wallpaper
