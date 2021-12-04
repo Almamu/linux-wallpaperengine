@@ -5,6 +5,14 @@
 #include "GLFW/glfw3native.h"
 #include <X11/Xatom.h>
 
+#ifdef LONG64
+typedef unsigned long XCARD64;
+typedef unsigned int XCARD32;
+#else
+typedef unsigned long long XCARD64;
+typedef unsigned long XCARD32;
+#endif
+
 namespace WallpaperEngine::Core
 {
     class CWindow
