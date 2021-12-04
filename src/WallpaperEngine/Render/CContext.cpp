@@ -78,7 +78,7 @@ void CContext::initializeViewports ()
     XRRFreeScreenResources (screenResources);
 
     // set the
-    glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
+    //glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
 }
 
 void CContext::render ()
