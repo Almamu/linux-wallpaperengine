@@ -10,12 +10,11 @@
 
 using namespace WallpaperEngine::Render;
 
-CContext::CContext (std::vector <std::string> screens, CMouseInput* mouse) :
+CContext::CContext (std::vector <std::string> screens) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
-    m_defaultViewport ({0, 0, 1920, 1080}),
-    m_mouse (mouse)
+    m_defaultViewport ({0, 0, 1920, 1080})
 {
     this->initializeViewports ();
 }
@@ -117,4 +116,9 @@ void CContext::setDefaultViewport (glm::vec4 defaultViewport)
 CMouseInput* CContext::getMouse () const
 {
     return this->m_mouse;
+}
+
+void CContext::setMouse (CMouseInput* mouse)
+{
+    this->m_mouse = mouse;
 }

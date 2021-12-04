@@ -179,6 +179,8 @@ int main (int argc, char* argv[])
     // parse the project.json file
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
+    // initialize custom context class
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
 
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
@@ -193,12 +195,12 @@ int main (int argc, char* argv[])
         return 2;
     }
 
-    glfwMakeContextCurrent (window);
-
     // initialize inputs
     CMouseInput* mouseInput = new CMouseInput (window);
-    // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, mouseInput);
+
+    context->setMouse (mouseInput);
+
+    glfwMakeContextCurrent (window);
 
     // TODO: FIGURE THESE OUT BASED ON THE SCREEN
     int windowWidth = 1920;
