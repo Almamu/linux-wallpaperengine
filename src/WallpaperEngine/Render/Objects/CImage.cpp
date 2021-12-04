@@ -24,15 +24,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float xright = 0.0f;
     float ybottom = 0.0f;
 
-    // TODO: TAKE INTO ACCOUNT SCALE
     // depending on the alignment these values might change, for now just support center
     if (this->getImage ()->getAlignment () == "center")
     {
         // calculate the real position of the image
-        xleft = (-scene_width / 2) + (origin.x - (size.x / 2));
-        xright = (-scene_width / 2) + (origin.x + (size.x / 2));
-        ytop = (-scene_height / 2) + origin.y + (size.y / 2);
-        ybottom = (-scene_height / 2) + (origin.y - (size.y / 2));
+        xleft = (-scene_width / 2) + (origin.x - (size.x * scale.x / 2));
+        xright = (-scene_width / 2) + (origin.x + (size.x * scale.x / 2));
+        ytop = (-scene_height / 2) + origin.y + (size.y * scale.y / 2);
+        ybottom = (-scene_height / 2) + (origin.y - (size.y * scale.y / 2));
     }
     else
     {
@@ -165,8 +164,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     this->m_modelViewProjectionScreen =
             this->getScene ()->getCamera ()->getProjection () *
-            this->getScene ()->getCamera ()->getLookAt () *
-            glm::scale (glm::mat4 (1.0f), scale);
+            this->getScene ()->getCamera ()->getLookAt ();
 
     this->m_modelViewProjectionPass =
             glm::ortho<float> (-size.x / 2, size.x / 2, -size.y / 2, size.y / 2, 0, 10000);
