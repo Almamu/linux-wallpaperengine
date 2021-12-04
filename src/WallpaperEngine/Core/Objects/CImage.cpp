@@ -16,11 +16,15 @@ CImage::CImage (
         const glm::vec3& scale,
         const glm::vec3& angles,
         const glm::vec2& size,
-        std::string alignment) :
+        std::string alignment,
+        const glm::vec3& color,
+        float alpha) :
         CObject (visible, id, std::move(name), Type, origin, scale, angles),
         m_size (size),
         m_material (material),
-        m_alignment (std::move(alignment))
+        m_alignment (std::move(alignment)),
+        m_color (color),
+        m_alpha (alpha)
 {
 }
 
@@ -37,6 +41,8 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     auto image_it = data.find ("image");
     auto size_val = jsonFindDefault <std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
     auto alignment = jsonFindDefault <std::string> (data, "alignment", "center");
+    auto alpha = jsonFindDefault <float> (data, "alpha", 1.0);
+    auto color_val = jsonFindDefault <std::string> (data, "color", "1.0 1.0 1.0");
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> (), container));
 
@@ -51,7 +57,9 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         scale,
         angles,
         WallpaperEngine::Core::aToVector2 (size_val),
-        alignment
+        alignment,
+        WallpaperEngine::Core::aToVector3 (color_val),
+        alpha
     );
 }
 
@@ -70,5 +78,14 @@ const std::string& CImage::getAlignment () const
     return this->m_alignment;
 }
 
+const float CImage::getAlpha () const
+{
+    return this->m_alpha;
+}
+
+const glm::vec3& CImage::getColor () const
+{
+    return this->m_color;
+}
 
 const std::string CImage::Type = "image";
