@@ -10,6 +10,8 @@
 #include <filesystem>
 #include "GLFW/glfw3.h"
 
+#include <X11/Xlib.h>
+
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CContext.h"
@@ -184,8 +186,16 @@ int main(int argc, char *argv[])
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
+
+    Display *x11display = XOpenDisplay(NULL);
+    Screen *x11Screen = DefaultScreenOfDisplay(x11display);
+    int windowWidth = x11Screen->width;
+    int windowHeight = x11Screen->height;
+
+    glfwWindowHint(GLFW_DECORATED, 0);
+
     // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
-    GLFWwindow *window = glfwCreateWindow(1920, 1080, "WallpaperEngine", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(windowWidth, windowHeight, "WallpaperEngine", NULL, NULL);
 
     if (window == nullptr)
     {
@@ -202,10 +212,6 @@ int main(int argc, char *argv[])
     CMouseInput *mouseInput = new CMouseInput(window);
     // initialize custom context class
     WallpaperEngine::Render::CContext *context = new WallpaperEngine::Render::CContext(screens, mouseInput);
-
-    // TODO: FIGURE THESE OUT BASED ON THE SCREEN
-    int windowWidth = 1920;
-    int windowHeight = 1080;
 
     // get the real framebuffer size
     glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
