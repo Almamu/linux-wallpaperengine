@@ -72,6 +72,9 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     // set proper viewport based on what we're drawing to
     glViewport (0, 0, drawTo->getRealWidth (), drawTo->getRealHeight ());
 
+    if (drawTo != this->m_material->getImage ()->getScene ()->getFBO())
+        glClear (GL_COLOR_BUFFER_BIT);
+
     // set texture blending
     if (this->m_pass->getBlendingMode () == "translucent")
     {
@@ -462,10 +465,10 @@ void CPass::setupUniforms ()
     }
 
     // register variables like brightness and alpha with some default value
-    this->addUniform ("g_Brightness", 1.0f);
+    this->addUniform ("g_Brightness", 1.0f); // TODO: GET FROM THE IMAGE
     this->addUniform ("g_UserAlpha", 1.0f);
-    this->addUniform ("g_Alpha", 1.0f);
-    this->addUniform ("g_Color", glm::vec3 {1.0f, 1.0f, 1.0f});
+    this->addUniform ("g_Alpha", 1.0f); // TODO: GET FROM THE IMAGE
+    this->addUniform ("g_Color", glm::vec3 {1.0f, 1.0f, 1.0f}); // TODO: GET FROM THE IMAGE
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     // add model-view-projection matrix
