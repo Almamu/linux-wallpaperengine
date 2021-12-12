@@ -15,13 +15,14 @@ namespace WallpaperEngine::Render
     class CContext
     {
     public:
-        CContext (std::vector <std::string> screens, CMouseInput* mouse);
+        CContext (std::vector <std::string> screens);
 
         void initializeViewports ();
         void render ();
         void setWallpaper (CWallpaper* wallpaper);
         void setDefaultViewport (glm::vec4 defaultViewport);
         CMouseInput* getMouse () const;
+        void setMouse (CMouseInput* mouse);
     private:
         std::vector <std::string> m_screens;
         std::vector <glm::vec4> m_viewports;

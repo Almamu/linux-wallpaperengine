@@ -185,9 +185,9 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::render (glm::vec4 viewport, bool newFrame)
+void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
 {
-    if (newFrame == true)
+    if (renderFrame == true)
         this->renderFrame (viewport);
 
     int windowWidth = 1920;

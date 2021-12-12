@@ -33,6 +33,7 @@ namespace WallpaperEngine::Core::Objects
         const std::string& getAlignment () const;
         const float getAlpha () const;
         const glm::vec3& getColor () const;
+        const float getBrightness () const;
 
     protected:
         CImage (
@@ -46,7 +47,8 @@ namespace WallpaperEngine::Core::Objects
                 const glm::vec2& size,
                 std::string alignment,
                 const glm::vec3& color,
-                float alpha
+                float alpha,
+                float brightness
         );
 
         static const std::string Type;
@@ -56,6 +58,7 @@ namespace WallpaperEngine::Core::Objects
         Images::CMaterial* m_material;
         std::string m_alignment;
         float m_alpha;
+        float m_brightness;
         glm::vec3 m_color;
     };
 };
