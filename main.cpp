@@ -189,10 +189,15 @@ int main(int argc, char *argv[])
 
     Display *x11display = XOpenDisplay(NULL);
     Screen *x11Screen = DefaultScreenOfDisplay(x11display);
-    int windowWidth = x11Screen->width;
-    int windowHeight = x11Screen->height;
+    int windowWidth = 1920;  // x11Screen->width;
+    int windowHeight = 1080; // x11Screen->height;
 
     glfwWindowHint(GLFW_DECORATED, 0);
+    // glfwWindowHint(GLFW_NET_WM_WINDOW_TYPE_DESKTOP, 1);
+    // glfwWindowHint(GLFW_STICKY_WINDOW, 1);
+    // glfwWindowHint(GLFW_BELOW, 1);
+    // glfwWindowHint(GLFW_SKIP_TASKBAR, 1);
+    // glfwWindowHint(GLFW_SKIP_PAGER, 1);
 
     // TODO: FIGURE OUT HOW TO PUT THIS WINDOW IN THE BACKGROUND
     GLFWwindow *window = glfwCreateWindow(windowWidth, windowHeight, "WallpaperEngine", NULL, NULL);
