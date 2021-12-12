@@ -118,6 +118,9 @@ add_executable(
         src/WallpaperEngine/Core/CObject.cpp
         src/WallpaperEngine/Core/CObject.h
 
+        src/WallpaperEngine/Core/CWindow.cpp
+        src/WallpaperEngine/Core/CWindow.h
+
         src/WallpaperEngine/Core/Projects/CProperty.h
         src/WallpaperEngine/Core/Projects/CProperty.cpp
         src/WallpaperEngine/Core/Projects/CPropertyColor.h
