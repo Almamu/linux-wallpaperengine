@@ -63,7 +63,7 @@ jobs:
     #    uses a compiled language
 
     - run: |
-       sudo apt-get install -y libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev
+       sudo apt-get install -y libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev
        mkdir build
        cd build
        cmake ..
