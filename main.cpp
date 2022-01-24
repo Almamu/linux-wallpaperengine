@@ -20,14 +20,6 @@
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 
-enum BACKGROUND_RUN_MODE
-{
-    RUN_MODE_UNKNOWN = 0,
-    RUN_MODE_HELP = 1,
-    RUN_MODE_DIRECTORY = 2,
-    RUN_MODE_PACKAGE = 3
-};
-
 float g_Time;
 
 using namespace WallpaperEngine::Core::Types;
@@ -267,9 +259,9 @@ int main (int argc, char* argv[])
     // cull anything that doesn't look at the camera (might be useful to disable in the future)
     glDisable (GL_CULL_FACE);
 
-    clock_t minimumTime = 1000 / maximumFPS;
-    clock_t startTime = 0;
-    clock_t endTime = 0;
+    double minimumTime = 1.0 / maximumFPS;
+    double startTime = 0.0;
+    double endTime = 0.0;
 
     while (glfwWindowShouldClose (window) == 0)
     {
@@ -280,7 +272,7 @@ int main (int argc, char* argv[])
         // calculate the current time value
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame
-        startTime = clock ();
+        startTime = glfwGetTime ();
         // update our inputs first
         mouseInput->update ();
         // render the scene
@@ -290,11 +282,11 @@ int main (int argc, char* argv[])
         // poll for events (like closing the window)
         glfwPollEvents ();
         // get the end time of the frame
-        endTime = clock ();
+        endTime = glfwGetTime ();
 
         // ensure the frame time is correct to not overrun FPS
         if ((endTime - startTime) < minimumTime)
-            usleep (static_cast <unsigned int> ((static_cast <double> ((minimumTime - (endTime - startTime))) / CLOCKS_PER_SEC) * 1000));
+            usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
     }
 
     // terminate gl
