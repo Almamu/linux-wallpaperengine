@@ -151,10 +151,12 @@ int main (int argc, char* argv[])
 
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
+        std::cout << "Detected scene.pkg file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
     }
     catch(std::filesystem::filesystem_error ex)
     {
         // ignore this error, the package file was not found
+        std::cout << "No scene.pkg file found at " << path << ". Defaulting to normal folder storage" << std::endl;
     }
     catch (std::runtime_error ex)
     {
@@ -207,7 +209,6 @@ int main (int argc, char* argv[])
         glfwTerminate ();
         return 3;
     }
-
 
     if (project->getType () == "scene")
     {

@@ -1,4 +1,5 @@
 #include "CCombinedContainer.h"
+#include "CAssetLoadException.h"
 
 using namespace WallpaperEngine::Assets;
 
@@ -20,12 +21,12 @@ void* CCombinedContainer::readFile (std::string filename, uint32_t* length)
             // an exception will be thrown
             return (*cur)->readFile (filename, length);
         }
-        catch (std::exception& ex)
+        catch (CAssetLoadException& ex)
         {
             // not found in this container, next try
         }
     }
 
     // no container was able to load the file, abort!
-    throw std::runtime_error ("Cannot find the file in any of the containers");
+    throw CAssetLoadException (filename, "Cannot find file in any of the containers");
 }

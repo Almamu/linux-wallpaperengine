@@ -3,6 +3,7 @@
 //
 
 #include "CPackage.h"
+#include "CAssetLoadException.h"
 
 #include <utility>
 #include <filesystem>
@@ -40,7 +41,7 @@ void* CPackage::readFile (std::string filename, uint32_t* length)
     auto it = this->m_contents.find (filename);
 
     if (it == this->m_contents.end ())
-        throw std::runtime_error ("Cannot find file in file list");
+        throw CAssetLoadException(filename, "Cannot find the file in the package");
 
     // set file length if required
     if (length != nullptr)
