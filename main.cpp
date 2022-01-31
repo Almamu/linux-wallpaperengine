@@ -62,8 +62,6 @@ int main (int argc, char* argv[])
     bool shouldEnableAudio = true;
     std::string path;
 
-    int option_index = 0;
-
     static struct option long_options [] = {
         {"screen-root", required_argument, 0, 'r'},
         {"pkg",         required_argument, 0, 'p'},
@@ -76,7 +74,7 @@ int main (int argc, char* argv[])
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "r:p:d:shf:", long_options, &option_index);
+        int c = getopt_long (argc, argv, "r:p:d:shf:", long_options, nullptr);
 
         if (c == -1)
             break;
@@ -111,13 +109,13 @@ int main (int argc, char* argv[])
     }
 
     // increment the option index (useful for when no options were found)
-    option_index ++;
+    // option_index ++;
 
     if (path.empty () == true)
     {
-        if (option_index < argc && strlen (argv [option_index]) > 0)
+        if (optind < argc && strlen (argv [optind]) > 0)
         {
-            path = argv [option_index];
+            path = argv [optind];
         }
         else
         {
