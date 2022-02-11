@@ -4,7 +4,7 @@
 #include <SDL_mixer.h>
 #include <SDL.h>
 #include <FreeImage.h>
-
+#include <sys/stat.h>
 #include <GL/glew.h>
 #include <GL/glx.h>
 #include <filesystem>
@@ -124,6 +124,27 @@ int main (int argc, char* argv[])
         }
     }
 
+    char* finalPath = realpath(path.c_str (), nullptr);
+
+    if (finalPath == nullptr)
+    {
+        if (errno == ENAMETOOLONG)
+            throw std::runtime_error ("Cannot get wallpaper's folder, path is too long");
+        else
+            throw std::runtime_error ("Cannot find the specified folder");
+    }
+
+    // ensure the path points to a folder
+    struct stat pathinfo;
+
+    if (stat (finalPath, &pathinfo) != 0)
+        throw std::runtime_error ("Cannot find the specified wallpaper folder");
+
+    if (!S_ISDIR (pathinfo.st_mode))
+        throw std::runtime_error ("The specified path is not a folder");
+
+    // ensure the path has a trailing slash
+
     // first of all, initialize the window
     if (glfwInit () == GLFW_FALSE)
     {
@@ -139,15 +160,16 @@ int main (int argc, char* argv[])
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
 
-    std::string project_path = path + "project.json";
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
+
+    // make sure the project.json exists and is present
 
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
     // check if scene.pkg exists and add it to the list
     try
     {
-        std::string scene_path = path + "scene.pkg";
+        std::string scene_path = path + "/scene.pkg";
 
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
@@ -294,6 +316,8 @@ int main (int argc, char* argv[])
     SDL_Quit ();
     // terminate free image
     FreeImage_DeInitialise ();
+    // free paths
+    free(finalPath);
 
     return 0;
 }
