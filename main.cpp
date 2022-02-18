@@ -162,14 +162,16 @@ int main (int argc, char* argv[])
 
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
-    // make sure the project.json exists and is present
+    // update the used path with the full one
+    path = finalPath;
+    path += "/";
 
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
     // check if scene.pkg exists and add it to the list
     try
     {
-        std::string scene_path = path + "/scene.pkg";
+        std::string scene_path = path + "scene.pkg";
 
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
