@@ -36,7 +36,7 @@ CVideo::CVideo (Core::CVideo* video, CContainer* container, CContext* context) :
     if (m_videoStream == -1)
         throw std::runtime_error ("Failed to find video stream");
 
-    AVCodec* codec = avcodec_find_decoder (m_formatCtx->streams [m_videoStream]->codecpar->codec_id);
+    const AVCodec* codec = avcodec_find_decoder (m_formatCtx->streams [m_videoStream]->codecpar->codec_id);
     if (codec == nullptr)
         throw std::runtime_error ("Failed to find codec");
 
