@@ -469,6 +469,8 @@ void CPass::setupUniforms ()
     this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
     this->addUniform ("g_Alpha", this->m_material->getImage ()->getImage ()->getAlpha ());
     this->addUniform ("g_Color", this->m_material->getImage ()->getImage ()->getColor ());
+    // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
+    this->addUniform ("g_CompositeColor", this->m_material->getImage ()->getImage ()->getColor ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     // add model-view-projection matrix
