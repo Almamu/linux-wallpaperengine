@@ -89,8 +89,6 @@ void CContext::render ()
     if (this->m_viewports.empty () == false)
     {
         static Display* display = XOpenDisplay (nullptr);
-        bool firstFrame = true;
-        bool renderFrame = true;
         auto cur = this->m_viewports.begin ();
         auto end = this->m_viewports.end ();
 
@@ -103,7 +101,7 @@ void CContext::render ()
         GC gc = XCreateGC(display, pm, 0, NULL);
         XFillRectangle(display, pm, gc, 0, 0, fullWidth, fullHeight);
 
-        char* image_data = this->m_wallpaper->renderImage (*cur, renderFrame, firstFrame);
+        char* image_data = this->m_wallpaper->renderImage ();
         XImage* image = XCreateImage(display, CopyFromParent, 24, ZPixmap, 0, (char *)image_data, windowWidth, windowHeight, 32, 0);
         for (; cur != end; cur ++)
         {

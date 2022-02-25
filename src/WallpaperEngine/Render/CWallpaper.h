@@ -36,8 +36,8 @@ namespace WallpaperEngine::Render
         /**
          * Performs a render pass of the wallpaper and returns the char* of the image
          */
-        char* renderImage (glm::vec4 viewport, bool renderFrame = true, bool newFrame = true);
-        
+        char* renderImage ();
+
         /**
          * @return The container to resolve files for this wallpaper
          */

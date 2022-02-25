@@ -287,13 +287,14 @@ void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
-char* CWallpaper::renderImage (glm::vec4 viewport, bool renderFrame, bool newFrame)
+char* CWallpaper::renderImage ()
 {
-    if (renderFrame == true)
-        this->renderFrame (viewport);
-
     int windowWidth = 1920;
     int windowHeight = 1080;
+    glm::vec4 viewport = {0, 0, windowWidth, windowHeight};
+
+    this->renderFrame (viewport);
+
 
     if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
     {
@@ -380,8 +381,7 @@ char* CWallpaper::renderImage (glm::vec4 viewport, bool renderFrame, bool newFra
 
     glBindFramebuffer (GL_FRAMEBUFFER, screen_fbo->getFramebuffer());
 
-    if (newFrame == true)
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);
     // do not use any shader
