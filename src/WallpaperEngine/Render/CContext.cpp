@@ -1,5 +1,6 @@
 #include <iostream>
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 #include <GL/glew.h>
@@ -76,8 +77,8 @@ void CContext::initializeViewports ()
 
     XRRFreeScreenResources (screenResources);
 
-    // set the
-    glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
+    // Cause of issue for issue #59 origial issue
+    // glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
 }
 
 void CContext::render ()
@@ -87,19 +88,35 @@ void CContext::render ()
 
     if (this->m_viewports.empty () == false)
     {
+        static Display* display = XOpenDisplay (nullptr);
         bool firstFrame = true;
         bool renderFrame = true;
         auto cur = this->m_viewports.begin ();
         auto end = this->m_viewports.end ();
 
+        Window root = DefaultRootWindow(display);
+        int windowWidth = 1920, windowHeight = 1080;
+        int fullWidth = DisplayWidth (display, DefaultScreen (display));
+        int fullHeight = DisplayHeight (display, DefaultScreen (display));
+
+        Pixmap pm = XCreatePixmap(display, root, fullWidth, fullHeight, 24);
+        GC gc = XCreateGC(display, pm, 0, NULL);
+        XFillRectangle(display, pm, gc, 0, 0, fullWidth, fullHeight);
+
+        char* image_data = this->m_wallpaper->renderImage (*cur, renderFrame, firstFrame);
+        XImage* image = XCreateImage(display, CopyFromParent, 24, ZPixmap, 0, (char *)image_data, windowWidth, windowHeight, 32, 0);
         for (; cur != end; cur ++)
         {
-            this->m_wallpaper->render (*cur, renderFrame, firstFrame);
-            // scenes need to render a new frame for each viewport as they produce different results
-            // but videos should only be rendered once per group of viewports
-            firstFrame = false;
-            renderFrame = !this->m_wallpaper->is <CVideo> ();
+            XPutImage(display, pm, gc, image, 0, 0, (*cur).x, (*cur).y, windowWidth, windowHeight);
         }
+
+        XSetWindowBackgroundPixmap(display, root, pm);
+        XClearWindow(display, root);
+        XFlush(display);
+
+        XDestroyImage(image);
+        XFreePixmap(display, pm);
+        XFreeGC(display, gc);
     }
     else
         this->m_wallpaper->render (this->m_defaultViewport);
