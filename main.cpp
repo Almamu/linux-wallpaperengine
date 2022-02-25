@@ -160,6 +160,10 @@ int main (int argc, char* argv[])
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
 
+    // will hide the window if we are drawing to X
+    if (!screens.empty())
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
     // update the used path with the full one
