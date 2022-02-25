@@ -110,6 +110,13 @@ void CContext::render ()
             XPutImage(display, pm, gc, image, 0, 0, (*cur).x, (*cur).y, windowWidth, windowHeight);
         }
 
+        // _XROOTPMAP_ID & ESETROOT_PMAP_ID allow other programs (compositors) to 
+        // edit the background. Without these, other programs will clear the screen.
+        Atom prop_root = XInternAtom(display, "_XROOTPMAP_ID", False);
+        Atom prop_esetroot = XInternAtom(display, "ESETROOT_PMAP_ID", False);
+        XChangeProperty(display, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
+        XChangeProperty(display, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
+
         XSetWindowBackgroundPixmap(display, root, pm);
         XClearWindow(display, root);
         XFlush(display);
