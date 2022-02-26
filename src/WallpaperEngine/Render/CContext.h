@@ -3,6 +3,8 @@
 #include <vector>
 #include <glm/vec4.hpp>
 
+#include <X11/Xlib.h>
+
 #include "WallpaperEngine/Input/CMouseInput.h"
 #include "CWallpaper.h"
 
@@ -30,5 +32,8 @@ namespace WallpaperEngine::Render
         CWallpaper* m_wallpaper;
         CMouseInput* m_mouse;
         bool m_isRootWindow;
+        Display* m_display;
+        Pixmap m_pm;
+        GC m_gc;
     };
 }

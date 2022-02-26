@@ -25,19 +25,19 @@ void CContext::initializeViewports ()
     if (this->m_isRootWindow == false || this->m_screens.empty () == true)
         return;
 
-    Display* display = XOpenDisplay (nullptr);
+    m_display = XOpenDisplay (nullptr);
 
     int xrandr_result, xrandr_error;
 
-    if (!XRRQueryExtension (display, &xrandr_result, &xrandr_error))
+    if (!XRRQueryExtension (m_display, &xrandr_result, &xrandr_error))
     {
         std::cerr << "XRandr is not present, cannot detect specified screens, running in window mode" << std::endl;
         return;
     }
 
-    int fullWidth = DisplayWidth (display, DefaultScreen (display));
-    int fullHeight = DisplayHeight (display, DefaultScreen (display));
-    XRRScreenResources* screenResources = XRRGetScreenResources (display, DefaultRootWindow (display));
+    int fullWidth = DisplayWidth (m_display, DefaultScreen (m_display));
+    int fullHeight = DisplayHeight (m_display, DefaultScreen (m_display));
+    XRRScreenResources* screenResources = XRRGetScreenResources (m_display, DefaultRootWindow (m_display));
 
     // there are some situations where xrandr returns null (like screen not using the extension)
     if (screenResources == nullptr)
@@ -45,7 +45,7 @@ void CContext::initializeViewports ()
 
     for (int i = 0; i < screenResources->noutput; i ++)
     {
-        XRROutputInfo* info = XRRGetOutputInfo (display, screenResources, screenResources->outputs [i]);
+        XRROutputInfo* info = XRRGetOutputInfo (m_display, screenResources, screenResources->outputs [i]);
 
         // there are some situations where xrandr returns null (like screen not using the extension)
         if (info == nullptr)
@@ -58,7 +58,7 @@ void CContext::initializeViewports ()
         {
             if (info->connection == RR_Connected && strcmp (info->name, (*cur).c_str ()) == 0)
             {
-                XRRCrtcInfo* crtc = XRRGetCrtcInfo (display, screenResources, info->crtc);
+                XRRCrtcInfo* crtc = XRRGetCrtcInfo (m_display, screenResources, info->crtc);
 
                 std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
 
@@ -78,7 +78,7 @@ void CContext::initializeViewports ()
     XRRFreeScreenResources (screenResources);
 
     // Cause of issue for issue #59 origial issue
-    // glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
+    // glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (m_display)));
 }
 
 void CContext::render ()
@@ -88,43 +88,40 @@ void CContext::render ()
 
     if (this->m_viewports.empty () == false)
     {
-        static Display* display = XOpenDisplay (nullptr);
         auto cur = this->m_viewports.begin ();
         auto end = this->m_viewports.end ();
 
-        Window root = DefaultRootWindow(display);
+        Window root = DefaultRootWindow(m_display);
         int windowWidth = 1920, windowHeight = 1080;
-        int fullWidth = DisplayWidth (display, DefaultScreen (display));
-        int fullHeight = DisplayHeight (display, DefaultScreen (display));
+        int fullWidth = DisplayWidth (m_display, DefaultScreen (m_display));
+        int fullHeight = DisplayHeight (m_display, DefaultScreen (m_display));
 
-        Pixmap pm = XCreatePixmap(display, root, fullWidth, fullHeight, 24);
-        GC gc = XCreateGC(display, pm, 0, NULL);
-        XFillRectangle(display, pm, gc, 0, 0, fullWidth, fullHeight);
+        m_pm = XCreatePixmap(m_display, root, fullWidth, fullHeight, 24);
+        m_gc = XCreateGC(m_display, m_pm, 0, NULL);
+        XFillRectangle(m_display, m_pm, m_gc, 0, 0, fullWidth, fullHeight);
 
         char* image_data;
         image_data = new char[windowWidth*windowHeight*4];
 
         this->m_wallpaper->render (this->m_defaultViewport, true, image_data);
-        XImage* image = XCreateImage(display, CopyFromParent, 24, ZPixmap, 0, (char *)image_data, windowWidth, windowHeight, 32, 0);
+        XImage* image = XCreateImage(m_display, CopyFromParent, 24, ZPixmap, 0, (char *)image_data, windowWidth, windowHeight, 32, 0);
         for (; cur != end; cur ++)
         {
-            XPutImage(display, pm, gc, image, 0, 0, (*cur).x, (*cur).y, windowWidth, windowHeight);
+            XPutImage(m_display, m_pm, m_gc, image, 0, 0, (*cur).x, (*cur).y, windowWidth, windowHeight);
         }
 
         // _XROOTPMAP_ID & ESETROOT_PMAP_ID allow other programs (compositors) to 
         // edit the background. Without these, other programs will clear the screen.
-        Atom prop_root = XInternAtom(display, "_XROOTPMAP_ID", False);
-        Atom prop_esetroot = XInternAtom(display, "ESETROOT_PMAP_ID", False);
-        XChangeProperty(display, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
-        XChangeProperty(display, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
+        Atom prop_root = XInternAtom(m_display, "_XROOTPMAP_ID", False);
+        Atom prop_esetroot = XInternAtom(m_display, "ESETROOT_PMAP_ID", False);
+        XChangeProperty(m_display, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &m_pm, 1);
+        XChangeProperty(m_display, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &m_pm, 1);
 
-        XSetWindowBackgroundPixmap(display, root, pm);
-        XClearWindow(display, root);
-        XFlush(display);
+        XSetWindowBackgroundPixmap(m_display, root, m_pm);
+        XClearWindow(m_display, root);
+        XFlush(m_display);
 
         XDestroyImage(image);
-        XFreePixmap(display, pm);
-        XFreeGC(display, gc);
     }
     else
         this->m_wallpaper->render (this->m_defaultViewport);
