@@ -185,116 +185,12 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
+void CWallpaper::render (glm::vec4 viewport, bool drawToBackground, char* image_data)
 {
-    if (renderFrame == true)
-        this->renderFrame (viewport);
-
-    int windowWidth = 1920;
-    int windowHeight = 1080;
-
-    if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
-    {
-        auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
-
-        windowWidth = projection->getWidth ();
-        windowHeight = projection->getHeight ();
-    }
-    else if (this->is <WallpaperEngine::Render::CVideo> ())
-    {
-        auto video = this->as <WallpaperEngine::Render::CVideo> ();
-
-        windowWidth = video->getWidth ();
-        windowHeight = video->getHeight ();
-    }
-
-    float widthRatio = windowWidth / viewport.z;
-    float heightRatio = windowHeight / viewport.w;
-
-    if (widthRatio > 1.0f)
-    {
-        float diff = widthRatio - 1.0f;
-
-        widthRatio -= diff;
-        heightRatio -= diff;
-    }
-
-    if (heightRatio > 1.0f)
-    {
-        float diff = heightRatio - 1.0f;
-
-        widthRatio -= diff;
-        heightRatio -= diff;
-    }
-
-    if (widthRatio < 1.0f)
-    {
-        float diff = 1.0f - widthRatio;
-
-        widthRatio += diff;
-        heightRatio += diff;
-    }
-
-    if (heightRatio < 1.0f)
-    {
-        float diff = 1.0f - heightRatio;
-
-        widthRatio += diff;
-        heightRatio += diff;
-    }
-
-    if (widthRatio < 0.0f) widthRatio = -widthRatio;
-    if (heightRatio < 0.0f) heightRatio = -heightRatio;
-
-    GLfloat position [] = {
-        -widthRatio, -heightRatio, 0.0f,
-        widthRatio, -heightRatio, 0.0f,
-        -widthRatio, heightRatio, 0.0f,
-        -widthRatio, heightRatio, 0.0f,
-        widthRatio, -heightRatio, 0.0f,
-        widthRatio, heightRatio, 0.0f
-    };
-
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
-
-    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
-
-    // write to default's framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
-
-    if (newFrame == true)
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable (GL_BLEND);
-    glDisable (GL_DEPTH_TEST);
-    // do not use any shader
-    glUseProgram (this->m_shader);
-    // activate scene texture
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
-    // set uniforms and attribs
-    glEnableVertexAttribArray (this->a_TexCoord);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glEnableVertexAttribArray (this->a_Position);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glUniform1i (this->g_Texture0, 0);
-    // write the framebuffer as is to the screen
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glDrawArrays (GL_TRIANGLES, 0, 6);
-}
-
-char* CWallpaper::renderImage ()
-{
-    int windowWidth = 1920;
-    int windowHeight = 1080;
-    glm::vec4 viewport = {0, 0, windowWidth, windowHeight};
-
     this->renderFrame (viewport);
 
+    int windowWidth = 1920;
+    int windowHeight = 1080;
 
     if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
     {
@@ -361,26 +257,52 @@ char* CWallpaper::renderImage ()
     glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
 
-    // Need to flip the image (FB stores the image upside down)
-    GLfloat texCoords [] = {
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f
-    };
-
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+    // we only want texCoords to be set once
+    static bool setTexCoords = true;
+    if (setTexCoords)
+    {
+        setTexCoords = false;
+        if (drawToBackground)
+        {
+            // Need to flip the image (FB stores the image upside down)
+            GLfloat texCoords [] = {
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                0.0f, 0.0f,
+                0.0f, 0.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f
+            };
+            glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+            glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+        }
+        else 
+        {
+            GLfloat texCoords [] = {
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f
+            };
+            glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+            glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+        }
+    }
 
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
 
-    // A fbo for flipping the image. Without this call the image will be flipped.
-    static CFBO* screen_fbo = this->createFBO ("_sc_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    static CFBO* screen_fbo = new CFBO("_sc_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    
+    if (drawToBackground)
+        // write to screen buffer
+        glBindFramebuffer (GL_FRAMEBUFFER, screen_fbo->getFramebuffer());
+    else
+        // write to default's framebuffer
+        glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
 
-    glBindFramebuffer (GL_FRAMEBUFFER, screen_fbo->getFramebuffer());
-
+    
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);
@@ -403,13 +325,9 @@ char* CWallpaper::renderImage ()
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
-    glBindTexture (GL_TEXTURE_2D, screen_fbo->getTextureID ());
-
     // Get FB data from OpenGL, X11 will free this pointer when it is created into an XImage.
-    char* image;
-    image = (char*)malloc(windowWidth*windowHeight*4);
-    glReadPixels(0, 0, 1920, 1080, GL_BGRA,  GL_UNSIGNED_BYTE, (void*)(image));
-    return image;
+    if (image_data)
+        glReadPixels(0, 0, 1920, 1080, GL_BGRA,  GL_UNSIGNED_BYTE, (void*)(image_data));
 }
 
 void CWallpaper::setupFramebuffers ()

@@ -101,7 +101,10 @@ void CContext::render ()
         GC gc = XCreateGC(display, pm, 0, NULL);
         XFillRectangle(display, pm, gc, 0, 0, fullWidth, fullHeight);
 
-        char* image_data = this->m_wallpaper->renderImage ();
+        char* image_data;
+        image_data = new char[windowWidth*windowHeight*4];
+
+        this->m_wallpaper->render (this->m_defaultViewport, true, image_data);
         XImage* image = XCreateImage(display, CopyFromParent, 24, ZPixmap, 0, (char *)image_data, windowWidth, windowHeight, 32, 0);
         for (; cur != end; cur ++)
         {
