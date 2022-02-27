@@ -37,6 +37,9 @@ void CContext::initializeViewports ()
 
     int fullWidth = DisplayWidth (m_display, DefaultScreen (m_display));
     int fullHeight = DisplayHeight (m_display, DefaultScreen (m_display));
+
+    m_pm = XCreatePixmap(m_display, DefaultRootWindow(m_display), fullWidth, fullHeight, 24);
+    m_gc = XCreateGC(m_display, m_pm, 0, NULL);
     XRRScreenResources* screenResources = XRRGetScreenResources (m_display, DefaultRootWindow (m_display));
 
     // there are some situations where xrandr returns null (like screen not using the extension)
@@ -96,8 +99,6 @@ void CContext::render ()
         int fullWidth = DisplayWidth (m_display, DefaultScreen (m_display));
         int fullHeight = DisplayHeight (m_display, DefaultScreen (m_display));
 
-        m_pm = XCreatePixmap(m_display, root, fullWidth, fullHeight, 24);
-        m_gc = XCreateGC(m_display, m_pm, 0, NULL);
         XFillRectangle(m_display, m_pm, m_gc, 0, 0, fullWidth, fullHeight);
 
         char* image_data;
