@@ -70,7 +70,7 @@ void CContext::initializeViewports ()
                 std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
 
                 glm::ivec4 viewport = {
-                    crtc->x, fullHeight - (crtc->y + crtc->height), crtc->width, crtc->height
+                    crtc->x, crtc->y, crtc->width, crtc->height
                 };
 
                 this->m_viewports.push_back (viewport);
