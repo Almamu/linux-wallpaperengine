@@ -64,7 +64,7 @@ jobs:
 
     - run: |
        sudo apt-get update
-       sudo apt-get install -y libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl1.2-dev libsdl-mixer1.2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev
+       sudo apt-get install -y libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl1.2-dev libsdl-mixer1.2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev
        mkdir build
        cd build
        cmake ..
