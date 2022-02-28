@@ -227,14 +227,18 @@ int main (int argc, char* argv[])
         return 3;
     }
 
+    // parse the project.json file
+    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
+    // go to the right folder so the videos will play
+    if (project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> () == true)
+        chdir (path.c_str ());
+
     // initialize custom context class
     WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window);
     // initialize mouse support
     context->setMouse (new CMouseInput (window));
     // set the default viewport
     context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
-    // parse the project.json file
-    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     // ensure the context knows what wallpaper to render
     context->setWallpaper (
         WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), containers, context)

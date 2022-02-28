@@ -24,8 +24,8 @@ CTexture::CTexture (void* fileData)
     {
         // set the texture resolution
         this->m_resolution = {
-                this->m_header->textureWidth, this->m_header->textureHeight,
-                this->m_header->width, this->m_header->height
+            this->m_header->textureWidth, this->m_header->textureHeight,
+            this->m_header->width, this->m_header->height
         };
     }
 
@@ -212,12 +212,12 @@ const uint32_t CTexture::getTextureHeight () const
 
 const uint32_t CTexture::getRealWidth () const
 {
-    return this->getHeader ()->width;
+    return this->isAnimated () == true ? this->getHeader ()->gifWidth : this->getHeader ()->width;
 }
 
 const uint32_t CTexture::getRealHeight () const
 {
-    return this->getHeader ()->height;
+    return this->isAnimated () == true ? this->getHeader ()->gifHeight : this->getHeader ()->height;
 }
 
 const ITexture::TextureFormat CTexture::getFormat () const
