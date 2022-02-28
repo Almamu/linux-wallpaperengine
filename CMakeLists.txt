@@ -8,9 +8,6 @@ set(OpenGL_GL_PREFERENCE "LEGACY")
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(DEBUG=0)
 
-# add glfw3 customized version to the compilation
-add_subdirectory (lib/glfw)
-
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
 find_package(OpenGL REQUIRED)

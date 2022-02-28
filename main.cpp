@@ -9,7 +9,7 @@
 #include <GL/glx.h>
 #include <filesystem>
 #include <csignal>
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>

@@ -8,16 +8,6 @@ This projects aims to reproduce the background functionality of Wallpaper Engine
 Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing It's users to animate their own backgrounds and sharing their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)
 
 # 4. Compilation requirements
-## GLFW3
-GLFW3 doesn't support drawing to a different window just yet, so in order to properly draw to the background, there's a custom version that is built as part of the building process of linux-wallpaperengine. You'll need these dependencies:
-- Xinerama
-- Xcursor
-- XInput
-- glX
-- X11 (with libxxf86vm)
-- Xshape
-- Xkbd
-
 ## linux-wallpaperengine
 - OpenGL 2.1 support
 - CMake
@@ -28,7 +18,7 @@ GLFW3 doesn't support drawing to a different window just yet, so in order to pro
 - FFmpeg
 - X11 (with libxxf86vm)
 - Xrandr
-- GLFW3 (custom version already included in the repository)
+- GLFW3
 - GLM
 - GLEW
 - GLUT
@@ -47,9 +37,10 @@ Once Wallpaper Engine is downloaded open the installation folder (usually on C:\
 The assets folder itself can be copied to the same folder where the binary lives.
 
 ## 5.3. Getting the sources
-This project includes some git submodules that need to be cloned with the source code for it to compile properly. The easiest way is to recurse submodules when cloning:
+You can download a zipped version of the repository here: https://github.com/Almamu/linux-wallpaperengine/archive/refs/heads/main.zip
 
-```git clone --recurse-submodules git@github.com:Almamu/linux-wallpaperengine.git```
+You can also clone the repository using git like this:
+```git clone git@github.com:Almamu/linux-wallpaperengine.git```
 
 ## 5.4. Compilation steps
 The project is built on CMake as build engine. First we need to create the directory where the build will be stored and get into it:
