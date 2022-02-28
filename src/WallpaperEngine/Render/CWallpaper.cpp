@@ -185,10 +185,9 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
+void CWallpaper::render (glm::vec4 viewport, bool drawToBackground, char* image_data)
 {
-    if (renderFrame == true)
-        this->renderFrame (viewport);
+    this->renderFrame (viewport);
 
     int windowWidth = 1920;
     int windowHeight = 1080;
@@ -258,13 +257,53 @@ void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
     glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
     glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
 
+    // we only want texCoords to be set once
+    static bool setTexCoords = true;
+    if (setTexCoords)
+    {
+        setTexCoords = false;
+        if (drawToBackground)
+        {
+            // Need to flip the image (FB stores the image upside down)
+            GLfloat texCoords [] = {
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                0.0f, 0.0f,
+                0.0f, 0.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f
+            };
+            glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+            glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+        }
+        else 
+        {
+            GLfloat texCoords [] = {
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f
+            };
+            glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+            glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+        }
+    }
+
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
 
-    // write to default's framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
+    static CFBO* screen_fbo = new CFBO("_sc_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    
+    if (drawToBackground)
+        // write to screen buffer
+        glBindFramebuffer (GL_FRAMEBUFFER, screen_fbo->getFramebuffer());
+    else
+        // write to default's framebuffer
+        glBindFramebuffer (GL_FRAMEBUFFER, GL_NONE);
 
-    if (newFrame == true)
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);
     // do not use any shader
@@ -285,6 +324,10 @@ void CWallpaper::render (glm::vec4 viewport, bool renderFrame, bool newFrame)
     // write the framebuffer as is to the screen
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glDrawArrays (GL_TRIANGLES, 0, 6);
+
+    // Get FB data from OpenGL, X11 will free this pointer when it is created into an XImage.
+    if (image_data)
+        glReadPixels(0, 0, 1920, 1080, GL_BGRA,  GL_UNSIGNED_BYTE, (void*)(image_data));
 }
 
 void CWallpaper::setupFramebuffers ()

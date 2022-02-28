@@ -8,7 +8,11 @@
 #include <GL/glew.h>
 #include <GL/glx.h>
 #include <filesystem>
+#include <csignal>
 #include "GLFW/glfw3.h"
+
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
@@ -52,6 +56,26 @@ std::string stringPathFixes(const std::string& s)
         str += '/';
 
     return std::move (str);
+}
+
+void free_display_wallpaper(int sig)
+{
+    Display* display = XOpenDisplay (nullptr);
+    Window root = DefaultRootWindow(display);
+    // create a blank pm to reset compositors values, compositors will render as a blank X window.
+    Pixmap pm = XCreatePixmap(display, root, 1, 1, 1);
+    Atom prop_root = XInternAtom(display, "_XROOTPMAP_ID", False);
+    Atom prop_esetroot = XInternAtom(display, "ESETROOT_PMAP_ID", False);
+    XChangeProperty(display, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
+    XChangeProperty(display, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
+    XFreePixmap(display, pm);
+    // set background to black. Only needed if no compositors are running
+    XSetWindowBackground(display, root, 0);
+    // sync changes before exiting
+    XClearWindow(display, root);
+    XFlush(display);
+    XCloseDisplay(display);
+    exit(sig);
 }
 
 int main (int argc, char* argv[])
@@ -145,6 +169,14 @@ int main (int argc, char* argv[])
 
     // ensure the path has a trailing slash
 
+    // Attach signals for unexpected killing of program by user. We need to reset the 
+    // screen otherwise the background will remain the last frame on sigterm or sigint.
+    if (!screens.empty())
+    {
+        std::signal(SIGINT, free_display_wallpaper);
+        std::signal(SIGTERM, free_display_wallpaper);
+    }
+
     // first of all, initialize the window
     if (glfwInit () == GLFW_FALSE)
     {
@@ -159,6 +191,10 @@ int main (int argc, char* argv[])
     glfwWindowHint (GLFW_SAMPLES, 4);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
+
+    // will hide the window if we are drawing to X
+    if (!screens.empty())
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
