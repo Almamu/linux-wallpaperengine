@@ -69,7 +69,7 @@ GLuint CFBO::getDepthbuffer () const
     return this->m_depthbuffer;
 }
 
-const GLuint CFBO::getTextureID () const
+const GLuint CFBO::getTextureID (int imageIndex) const
 {
     return this->m_texture;
 }
@@ -96,4 +96,9 @@ const uint32_t CFBO::getRealHeight () const
 const glm::vec4* CFBO::getResolution () const
 {
     return &this->m_resolution;
+}
+
+const bool CFBO::isAnimated () const
+{
+    return false;
 }

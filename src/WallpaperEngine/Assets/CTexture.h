@@ -8,6 +8,7 @@
 #include <glm/vec4.hpp>
 
 #include <FreeImage.h>
+#include <map>
 #include "ITexture.h"
 
 namespace WallpaperEngine::Assets
@@ -20,13 +21,14 @@ namespace WallpaperEngine::Assets
         CTexture (void* fileData);
         ~CTexture ();
 
-        const GLuint getTextureID () const override;
+        const GLuint getTextureID (int imageIndex) const override;
         const uint32_t getTextureWidth () const override;
         const uint32_t getTextureHeight () const override;
         const uint32_t getRealWidth () const override;
         const uint32_t getRealHeight () const override;
         const TextureFormat getFormat () const override;
         const glm::vec4* getResolution () const override;
+        const bool isAnimated () const override;
 
     private:
         const TextureHeader* getHeader () const;
@@ -37,6 +39,13 @@ namespace WallpaperEngine::Assets
             TEXB0003 = 3,
             TEXB0002 = 2,
             TEXB0001 = 1
+        };
+
+        enum AnimatedVersion : int
+        {
+            TEXSUNKN = -1,
+            TEXS0002 = 0,
+            TEXS0003 = 1,
         };
 
         class TextureMipmap
@@ -65,6 +74,28 @@ namespace WallpaperEngine::Assets
             void decompressData ();
         };
 
+        class TextureFrame
+        {
+        public:
+            TextureFrame();
+            ~TextureFrame();
+
+            /** The image index of this frame */
+            uint32_t frameNumber;
+            /** The amount of time this frame spends being displayed */
+            float frametime;
+            /** The x position of the frame in the texture */
+            float x;
+            /** The y position of the frame in the texture */
+            float y;
+            /** The width of the frame in the texture */
+            float width;
+            float unk0;
+            float unk1;
+            /** The height of the frame in the texture */
+            float height;
+        };
+
         /**
          * Configures how the texture will be handled by the background
          */
@@ -82,8 +113,12 @@ namespace WallpaperEngine::Assets
             TextureHeader ();
             ~TextureHeader ();
 
+            const bool isAnimated () const;
+
             /** The version of the texture container */
             ContainerVersion containerVersion = ContainerVersion::UNKNOWN;
+            /** The version of the animated data */
+            AnimatedVersion animatedVersion = AnimatedVersion::TEXSUNKN;
             /** Flags with extra texture information */
             TextureFlags flags;
             /** Real width of the texture */
@@ -94,21 +129,30 @@ namespace WallpaperEngine::Assets
             uint32_t textureWidth;
             /** Texture height in memory (power of 2) */
             uint32_t textureHeight;
+            /** Gif width */
+            uint32_t gifWidth;
+            /** Gif height */
+            uint32_t gifHeight;
             /** Texture data format */
             TextureFormat format;
             /** Free Image format */
             FREE_IMAGE_FORMAT freeImageFormat = FREE_IMAGE_FORMAT::FIF_UNKNOWN;
+            /** The amount of images in the texture file */
+            uint32_t imageCount;
             /** Number of mipmap levels on the texture */
             uint32_t mipmapCount;
             /** List of mipmaps */
-            std::vector <TextureMipmap*> mipmaps;
+            std::map <uint32_t, std::vector <TextureMipmap*>> images;
+            /** List of animation frames */
+            std::vector <TextureFrame*> frames;
         };
     private:
-        void parseHeader (char* fileData);
-        TextureMipmap* parseMipmap (TextureHeader* header, char** fileData);
+        static TextureHeader* parseHeader (char* fileData);
+        static TextureFrame* parseAnimation (TextureHeader* header, char** originalFileData);
+        static TextureMipmap* parseMipmap (TextureHeader* header, char** fileData);
 
         TextureHeader* m_header;
-        GLuint m_textureID;
+        GLuint* m_textureID;
         glm::vec4 m_resolution;
     };
 }

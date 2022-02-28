@@ -18,12 +18,13 @@ namespace WallpaperEngine::Assets
             R8 = 9,
         };
 
-        virtual const GLuint getTextureID () const = 0;
+        virtual const GLuint getTextureID (int imageIndex) const = 0;
         virtual const uint32_t getTextureWidth () const = 0;
         virtual const uint32_t getTextureHeight () const = 0;
         virtual const uint32_t getRealWidth () const = 0;
         virtual const uint32_t getRealHeight () const = 0;
         virtual const TextureFormat getFormat () const = 0;
         virtual const glm::vec4* getResolution () const = 0;
+        virtual const bool isAnimated () const = 0;
     };
 };

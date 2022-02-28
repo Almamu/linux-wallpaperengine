@@ -139,7 +139,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     ITexture* texture = this->resolveTexture (input, 0, input);
 
     glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, texture->getTextureID ());
+    glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
     int lastTextureIndex = 0;
 
     // first bind the textures to their sampler place
@@ -153,7 +153,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             texture = this->resolveTexture ((*cur), index, input);
 
             glActiveTexture (GL_TEXTURE0 + index);
-            glBindTexture (GL_TEXTURE_2D, texture->getTextureID ());
+            glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
             // increase the number of textures counter
             lastTextureIndex ++;
         }
@@ -173,7 +173,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, texture->getTextureID ());
+            glBindTexture(GL_TEXTURE_2D, texture->getTextureID (0));
         }
     }
 
@@ -191,7 +191,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, texture->getTextureID ());
+            glBindTexture(GL_TEXTURE_2D, texture->getTextureID (0));
         }
     }
 

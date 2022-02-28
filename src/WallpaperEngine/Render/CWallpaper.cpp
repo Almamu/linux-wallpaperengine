@@ -66,7 +66,7 @@ GLuint CWallpaper::getWallpaperFramebuffer () const
 
 GLuint CWallpaper::getWallpaperTexture () const
 {
-    return this->m_sceneFBO->getTextureID();
+    return this->m_sceneFBO->getTextureID(0);
 }
 
 void CWallpaper::setupShaders ()
