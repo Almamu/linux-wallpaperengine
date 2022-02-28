@@ -1,12 +1,8 @@
-//
-// Created by almamu on 8/8/21.
-//
-
 #include "CPackage.h"
 #include "CAssetLoadException.h"
+#include "CPackageLoadException.h"
 
 #include <utility>
-#include <filesystem>
 
 using namespace WallpaperEngine::Assets;
 
@@ -55,7 +51,7 @@ void CPackage::init ()
     FILE* fp = fopen (this->m_path.c_str (), "rb+");
 
     if (fp == nullptr)
-        throw std::filesystem::filesystem_error ("Cannot find package file", std::error_code());
+        throw CPackageLoadException (this->m_path, std::to_string (errno));
 
     // first validate header
     this->validateHeader (fp);

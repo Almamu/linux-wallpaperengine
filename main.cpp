@@ -6,25 +6,20 @@
 #include <FreeImage.h>
 #include <sys/stat.h>
 #include <GL/glew.h>
-#include <GL/glx.h>
-#include <filesystem>
 #include <csignal>
 #include <GLFW/glfw3.h>
-
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CContext.h"
-#include "WallpaperEngine/Render/CScene.h"
-#include "WallpaperEngine/Render/CVideo.h"
 
 #include "WallpaperEngine/Assets/CPackage.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
+#include "WallpaperEngine/Assets/CPackageLoadException.h"
 
 float g_Time;
+bool g_KeepRunning = true;
 
 using namespace WallpaperEngine::Core::Types;
 
@@ -58,24 +53,9 @@ std::string stringPathFixes(const std::string& s)
     return std::move (str);
 }
 
-void free_display_wallpaper(int sig)
+void signalhandler(int sig)
 {
-    Display* display = XOpenDisplay (nullptr);
-    Window root = DefaultRootWindow(display);
-    // create a blank pm to reset compositors values, compositors will render as a blank X window.
-    Pixmap pm = XCreatePixmap(display, root, 1, 1, 1);
-    Atom prop_root = XInternAtom(display, "_XROOTPMAP_ID", False);
-    Atom prop_esetroot = XInternAtom(display, "ESETROOT_PMAP_ID", False);
-    XChangeProperty(display, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
-    XChangeProperty(display, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &pm, 1);
-    XFreePixmap(display, pm);
-    // set background to black. Only needed if no compositors are running
-    XSetWindowBackground(display, root, 0);
-    // sync changes before exiting
-    XClearWindow(display, root);
-    XFlush(display);
-    XCloseDisplay(display);
-    exit(sig);
+    g_KeepRunning = false;
 }
 
 int main (int argc, char* argv[])
@@ -132,9 +112,6 @@ int main (int argc, char* argv[])
         }
     }
 
-    // increment the option index (useful for when no options were found)
-    // option_index ++;
-
     if (path.empty () == true)
     {
         if (optind < argc && strlen (argv [optind]) > 0)
@@ -169,13 +146,9 @@ int main (int argc, char* argv[])
 
     // ensure the path has a trailing slash
 
-    // Attach signals for unexpected killing of program by user. We need to reset the 
-    // screen otherwise the background will remain the last frame on sigterm or sigint.
-    if (!screens.empty())
-    {
-        std::signal(SIGINT, free_display_wallpaper);
-        std::signal(SIGTERM, free_display_wallpaper);
-    }
+    // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
+    std::signal(SIGINT, signalhandler);
+    std::signal(SIGTERM, signalhandler);
 
     // first of all, initialize the window
     if (glfwInit () == GLFW_FALSE)
@@ -191,10 +164,6 @@ int main (int argc, char* argv[])
     glfwWindowHint (GLFW_SAMPLES, 4);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
-
-    // will hide the window if we are drawing to X
-    if (!screens.empty())
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
@@ -213,7 +182,7 @@ int main (int argc, char* argv[])
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
         std::cout << "Detected scene.pkg file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
     }
-    catch(std::filesystem::filesystem_error ex)
+    catch (CPackageLoadException ex)
     {
         // ignore this error, the package file was not found
         std::cout << "No scene.pkg file found at " << path << ". Defaulting to normal folder storage" << std::endl;
@@ -228,10 +197,6 @@ int main (int argc, char* argv[])
     // add containers to the list
     containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
 
-    // parse the project.json file
-    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
-    WallpaperEngine::Render::CWallpaper* wallpaper;
-
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
@@ -244,9 +209,6 @@ int main (int argc, char* argv[])
         glfwTerminate ();
         return 2;
     }
-
-    // initialize inputs
-    CMouseInput* mouseInput = new CMouseInput (window);
 
     glfwMakeContextCurrent (window);
 
@@ -266,33 +228,17 @@ int main (int argc, char* argv[])
     }
 
     // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window);
     // initialize mouse support
-    context->setMouse (mouseInput);
+    context->setMouse (new CMouseInput (window));
     // set the default viewport
     context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
-
-    if (project->getType () == "scene")
-    {
-        WallpaperEngine::Core::CScene* scene = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ();
-        wallpaper = new WallpaperEngine::Render::CScene (scene, containers, context);
-    }
-    else if (project->getType () == "video")
-    {
-        // special steps, running a video needs a root directory change, files are not loaded from the container classes
-        // as they're streamed from disk
-        chdir (path.c_str ());
-
-        WallpaperEngine::Core::CVideo* video = project->getWallpaper ()->as <WallpaperEngine::Core::CVideo> ();
-        wallpaper = new WallpaperEngine::Render::CVideo (video, containers, context);
-    }
-    else
-    {
-        throw std::runtime_error ("Unsupported wallpaper type");
-    }
-
+    // parse the project.json file
+    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     // ensure the context knows what wallpaper to render
-    context->setWallpaper (wallpaper);
+    context->setWallpaper (
+        WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), containers, context)
+    );
 
     if (shouldEnableAudio == true)
     {
@@ -313,18 +259,9 @@ int main (int argc, char* argv[])
     // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
     // glfwSetInputMode (window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    // enable depth text
-    glEnable (GL_DEPTH_TEST);
-    glDepthFunc (GL_LESS);
+    double startTime, endTime, minimumTime = 1.0 / maximumFPS;
 
-    // cull anything that doesn't look at the camera (might be useful to disable in the future)
-    glDisable (GL_CULL_FACE);
-
-    double minimumTime = 1.0 / maximumFPS;
-    double startTime = 0.0;
-    double endTime = 0.0;
-
-    while (glfwWindowShouldClose (window) == 0)
+    while (glfwWindowShouldClose (window) == 0 && g_KeepRunning == true)
     {
         // get the real framebuffer size
         glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
@@ -334,8 +271,6 @@ int main (int argc, char* argv[])
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame
         startTime = glfwGetTime ();
-        // update our inputs first
-        mouseInput->update ();
         // render the scene
         context->render ();
         // do buffer swapping
@@ -350,6 +285,8 @@ int main (int argc, char* argv[])
             usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
     }
 
+    // free context
+    delete context;
     // terminate gl
     glfwTerminate ();
     // terminate SDL

@@ -356,3 +356,13 @@ CFBO* CWallpaper::getFBO () const
 {
     return this->m_sceneFBO;
 }
+
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CContainer* containers, CContext* context)
+{
+    if (wallpaper->is <Core::CScene> () == true)
+        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), containers, context);
+    else if (wallpaper->is <Core::CVideo> () == true)
+        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), containers, context);
+    else
+        throw std::runtime_error ("Unsupported wallpaper type");
+}

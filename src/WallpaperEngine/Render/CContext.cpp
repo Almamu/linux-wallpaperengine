@@ -11,11 +11,12 @@
 
 using namespace WallpaperEngine::Render;
 
-CContext::CContext (std::vector <std::string> screens) :
+CContext::CContext (std::vector <std::string> screens, GLFWwindow* window) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
-    m_defaultViewport ({0, 0, 1920, 1080})
+    m_defaultViewport ({0, 0, 1920, 1080}),
+    m_window (window)
 {
     this->initializeViewports ();
 }
@@ -24,6 +25,9 @@ void CContext::initializeViewports ()
 {
     if (this->m_isRootWindow == false || this->m_screens.empty () == true)
         return;
+
+    // hide the glfw window if the viewports are to be detected
+    glfwHideWindow (this->m_window);
 
     this->m_display = XOpenDisplay (nullptr);
 
@@ -94,15 +98,27 @@ void CContext::initializeViewports ()
 
     // create the image for X11 to be able to copy it over
     this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, fullWidth, fullHeight, 32, 0);
+}
 
-    // Cause of issue for issue #59 origial issue
-    // glfwWindowHintPointer (GLFW_NATIVE_PARENT_HANDLE, reinterpret_cast <void*> (DefaultRootWindow (display)));
+CContext::~CContext()
+{
+    if (this->m_screens.empty () == false)
+    {
+        // free any used resource
+        XDestroyImage (this->m_image);
+        XFreeGC (this->m_display, this->m_gc);
+        XFreePixmap (this->m_display, this->m_pixmap);
+        XCloseDisplay (this->m_display);
+    }
 }
 
 void CContext::render ()
 {
     if (this->m_wallpaper == nullptr)
         return;
+
+    // ensure mouse information is up to date before drawing any frame
+    this->m_mouse->update ();
 
     if (this->m_viewports.empty () == false)
     {

@@ -75,12 +75,22 @@ namespace WallpaperEngine::Render
          * Updates the texcoord used for drawing to the used framebuffer
          */
         void updateTexCoord (GLfloat* texCoords, GLsizeiptr size) const;
+
         /**
          * Updates the destination framebuffer for this wallpaper
          *
          * @param framebuffer
          */
         void setDestinationFramebuffer (GLuint framebuffer);
+
+        /**
+         * Creates a new instance of CWallpaper based on the information provided by the read backgrounds
+         *
+         * @param wallpaper
+         *
+         * @return
+         */
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CContainer* containers, CContext* context);
 
     protected:
         /**

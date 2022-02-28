@@ -16,7 +16,8 @@ namespace WallpaperEngine::Render
     class CContext
     {
     public:
-        CContext (std::vector <std::string> screens);
+        CContext (std::vector <std::string> screens, GLFWwindow* window);
+        ~CContext ();
 
         void initializeViewports ();
         void render ();
@@ -30,6 +31,7 @@ namespace WallpaperEngine::Render
         Pixmap m_pixmap;
         GC m_gc;
         XImage* m_image;
+        GLFWwindow* m_window;
         char* m_imageData;
         CFBO* m_fbo;
         std::vector <std::string> m_screens;

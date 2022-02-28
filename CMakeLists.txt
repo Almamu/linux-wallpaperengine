@@ -36,6 +36,8 @@ add_executable(
         wallengine
         main.cpp
 
+        src/WallpaperEngine/Assets/CPackageLoadException.cpp
+        src/WallpaperEngine/Assets/CPackageLoadException.h
         src/WallpaperEngine/Assets/CAssetLoadException.cpp
         src/WallpaperEngine/Assets/CAssetLoadException.h
         src/WallpaperEngine/Assets/CContainer.h
