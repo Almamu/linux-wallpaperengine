@@ -31,7 +31,7 @@ namespace WallpaperEngine::Render
         /**
          * Performs a render pass of the wallpaper
          */
-        void render (glm::vec4 viewport, bool drawToBackground = false, char* image_data = nullptr);
+        void render (glm::ivec4 viewport, bool renderFrame = true, bool newFrame = true);
 
         /**
          * @return The container to resolve files for this wallpaper
@@ -71,11 +71,22 @@ namespace WallpaperEngine::Render
          */
         CFBO* getFBO () const;
 
+        /**
+         * Updates the texcoord used for drawing to the used framebuffer
+         */
+        void updateTexCoord (GLfloat* texCoords, GLsizeiptr size) const;
+        /**
+         * Updates the destination framebuffer for this wallpaper
+         *
+         * @param framebuffer
+         */
+        void setDestinationFramebuffer (GLuint framebuffer);
+
     protected:
         /**
          * Renders a frame of the wallpaper
          */
-        virtual void renderFrame (glm::vec4 viewport) = 0;
+        virtual void renderFrame (glm::ivec4 viewport) = 0;
 
         /**
          * Setups OpenGL's framebuffers for ping-pong and scene rendering
@@ -108,6 +119,10 @@ namespace WallpaperEngine::Render
         GLint g_Texture0;
         GLint a_Position;
         GLint a_TexCoord;
+        /**
+         * The framebuffer to draw the background to
+         */
+        GLuint m_destFramebuffer;
         /**
          * Setups OpenGL's shaders for this wallpaper backbuffer
          */

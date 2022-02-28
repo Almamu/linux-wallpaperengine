@@ -56,7 +56,7 @@ CCamera* CScene::getCamera () const
     return this->m_camera;
 }
 
-void CScene::renderFrame (glm::vec4 viewport)
+void CScene::renderFrame (glm::ivec4 viewport)
 {
     auto projection = this->getScene ()->getOrthogonalProjection ();
     auto cur = this->m_objects.begin ();
@@ -82,7 +82,7 @@ void CScene::renderFrame (glm::vec4 viewport)
     glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 }
 
-void CScene::updateMouse (glm::vec4 viewport)
+void CScene::updateMouse (glm::ivec4 viewport)
 {
     // projection also affects the mouse position
     auto projection = this->getScene ()->getOrthogonalProjection ();

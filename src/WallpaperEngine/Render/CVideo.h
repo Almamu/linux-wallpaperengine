@@ -25,7 +25,7 @@ namespace WallpaperEngine::Render
         int getHeight ();
 
     protected:
-        void renderFrame (glm::vec4 viewport) override;
+        void renderFrame (glm::ivec4 viewport) override;
 
         friend class CWallpaper;
 

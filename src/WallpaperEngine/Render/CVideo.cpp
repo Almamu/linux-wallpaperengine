@@ -115,7 +115,7 @@ void CVideo::setSize (int width, int height)
                     SWS_BILINEAR, NULL, NULL, NULL);
 }
 
-void CVideo::renderFrame (glm::vec4 viewport)
+void CVideo::renderFrame (glm::ivec4 viewport)
 {
     // do not render using the CWallpaper function, just use this one
     this->setSize (m_codecCtx->width, m_codecCtx->height);

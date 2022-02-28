@@ -5,6 +5,7 @@
 
 #include "WallpaperEngine/Input/CMouseInput.h"
 #include "CWallpaper.h"
+#include <X11/Xlib.h>
 
 using namespace WallpaperEngine::Input;
 
@@ -23,9 +24,16 @@ namespace WallpaperEngine::Render
         void setDefaultViewport (glm::vec4 defaultViewport);
         CMouseInput* getMouse () const;
         void setMouse (CMouseInput* mouse);
+
     private:
+        Display* m_display;
+        Pixmap m_pixmap;
+        GC m_gc;
+        XImage* m_image;
+        char* m_imageData;
+        CFBO* m_fbo;
         std::vector <std::string> m_screens;
-        std::vector <glm::vec4> m_viewports;
+        std::vector <glm::ivec4> m_viewports;
         glm::vec4 m_defaultViewport;
         CWallpaper* m_wallpaper;
         CMouseInput* m_mouse;

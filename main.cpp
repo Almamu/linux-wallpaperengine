@@ -231,8 +231,6 @@ int main (int argc, char* argv[])
     // parse the project.json file
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     WallpaperEngine::Render::CWallpaper* wallpaper;
-    // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
 
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
@@ -250,8 +248,6 @@ int main (int argc, char* argv[])
     // initialize inputs
     CMouseInput* mouseInput = new CMouseInput (window);
 
-    context->setMouse (mouseInput);
-
     glfwMakeContextCurrent (window);
 
     // TODO: FIGURE THESE OUT BASED ON THE SCREEN
@@ -260,15 +256,21 @@ int main (int argc, char* argv[])
 
     // get the real framebuffer size
     glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
-    // set the default viewport
-    context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
 
+    // initialize glew
     if (glewInit () != GLEW_OK)
     {
         fprintf (stderr, "Failed to initialize GLEW");
         glfwTerminate ();
         return 3;
     }
+
+    // initialize custom context class
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens);
+    // initialize mouse support
+    context->setMouse (mouseInput);
+    // set the default viewport
+    context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
 
     if (project->getType () == "scene")
     {

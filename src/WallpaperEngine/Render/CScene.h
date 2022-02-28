@@ -24,8 +24,8 @@ namespace WallpaperEngine::Render
         glm::vec2* getMousePosition ();
 
     protected:
-        void renderFrame (glm::vec4 viewport) override;
-        void updateMouse (glm::vec4 viewport);
+        void renderFrame (glm::ivec4 viewport) override;
+        void updateMouse (glm::ivec4 viewport);
 
         friend class CWallpaper;
 
