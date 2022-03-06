@@ -138,8 +138,42 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
 
     ITexture* texture = this->resolveTexture (input, 0, input);
 
+    uint32_t currentTexture = 0;
+    glm::vec2 translation = {0.0f, 0.0f};
+    glm::vec4 rotation = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    if (texture->isAnimated () == true)
+    {
+        // calculate current texture and frame
+        double currentRenderTime = fmod (static_cast <double> (g_Time), this->m_material->getImage ()->getAnimationTime ());
+
+        // find the right frame now
+        auto frameCur = texture->getFrames ().begin ();
+        auto frameEnd = texture->getFrames ().end ();
+
+        for (; frameCur != frameEnd; frameCur ++)
+        {
+            currentRenderTime -= (*frameCur)->frametime;
+
+            if (currentRenderTime <= 0.0f)
+            {
+                // frame found, store coordinates and done
+                currentTexture = (*frameCur)->frameNumber;
+
+                translation.x = (*frameCur)->x / texture->getTextureWidth (currentTexture);
+                translation.y = (*frameCur)->y / texture->getTextureHeight (currentTexture);
+
+                rotation.x = (*frameCur)->width1 / static_cast<float> (texture->getTextureWidth (currentTexture));
+                rotation.y = (*frameCur)->width2 / static_cast<float> (texture->getTextureWidth(currentTexture));
+                rotation.z = (*frameCur)->height2 / static_cast<float> (texture->getTextureHeight (currentTexture));
+                rotation.w = (*frameCur)->height1 / static_cast<float> (texture->getTextureHeight (currentTexture));
+                break;
+            }
+        }
+    }
+
     glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
+    glBindTexture (GL_TEXTURE_2D, texture->getTextureID (currentTexture));
     int lastTextureIndex = 0;
 
     // first bind the textures to their sampler place
@@ -233,11 +267,14 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
 
     if (this->g_Texture0Rotation != -1)
     {
-        glUniform4f (this->g_Texture0Rotation, 1.0f, 0.0f, 1.0f, 0.0f);
+        // used in animations when one of the frames is vertical instead of horizontal
+        // rotation with translation = origin and end of the image to display
+        glUniform4f (this->g_Texture0Rotation, rotation.x, rotation.y, rotation.z, rotation.w);
     }
     if (this->g_Texture0Translation != -1)
     {
-        glUniform2f (this->g_Texture0Translation, 0.0f, 0.0f);
+        // this actually picks the origin point of the image from the atlast
+        glUniform2f (this->g_Texture0Translation, translation.x, translation.y);
     }
     {
         auto cur = this->m_attribs.begin ();

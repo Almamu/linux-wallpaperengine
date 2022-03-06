@@ -45,6 +45,7 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getTexCoordCopy () const;
         const GLuint* getTexCoordPass () const;
         ITexture* getTexture () const;
+        const double getAnimationTime () const;
 
         /**
          * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
@@ -80,5 +81,7 @@ namespace WallpaperEngine::Render::Objects
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
         Effects::CMaterial* m_copyMaterial;
+
+        double m_animationTime;
     };
 }

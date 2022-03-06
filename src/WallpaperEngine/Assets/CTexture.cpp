@@ -191,7 +191,7 @@ CTexture::~CTexture ()
     delete this->getHeader ();
 }
 
-const GLuint CTexture::getTextureID (int imageIndex) const
+const GLuint CTexture::getTextureID (uint32_t imageIndex) const
 {
     // ensure we do not go out of bounds
     if (imageIndex > this->m_header->imageCount)
@@ -200,14 +200,20 @@ const GLuint CTexture::getTextureID (int imageIndex) const
     return this->m_textureID [imageIndex];
 }
 
-const uint32_t CTexture::getTextureWidth () const
+const uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const
 {
-    return this->getHeader ()->textureWidth;
+    if (imageIndex > this->m_header->imageCount)
+        return this->getHeader ()->textureWidth;
+
+    return (*this->m_header->images [imageIndex].begin ())->width;
 }
 
-const uint32_t CTexture::getTextureHeight () const
+const uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const
 {
-    return this->getHeader ()->textureHeight;
+    if (imageIndex > this->m_header->imageCount)
+        return this->getHeader ()->textureHeight;
+
+    return (*this->m_header->images [imageIndex].begin ())->height;
 }
 
 const uint32_t CTexture::getRealWidth () const
@@ -233,6 +239,11 @@ const CTexture::TextureHeader* CTexture::getHeader () const
 const glm::vec4* CTexture::getResolution () const
 {
     return &this->m_resolution;
+}
+
+const std::vector<ITexture::TextureFrame*>& CTexture::getFrames () const
+{
+    return this->getHeader ()->frames;
 }
 
 const bool CTexture::isAnimated () const
@@ -408,8 +419,8 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
         {
             TextureFrame* first = *header->frames.begin ();
 
-            header->gifWidth = first->width;
-            header->gifHeight = first->height;
+            header->gifWidth = first->width1;
+            header->gifHeight = first->height1;
         }
     }
 
@@ -433,10 +444,10 @@ CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, char** 
     frame->frametime = *fPointer ++;
     frame->x = *fPointer ++;
     frame->y = *fPointer ++;
-    frame->width = *fPointer ++;
-    frame->unk0 = *fPointer ++;
-    frame->unk1 = *fPointer ++;
-    frame->height = *fPointer ++;
+    frame->width1 = *fPointer ++;
+    frame->width2 = *fPointer ++;
+    frame->height2 = *fPointer ++;
+    frame->height1 = *fPointer ++;
 
     // get back the pointer into fileData so it can be reused later
     *originalFileData = reinterpret_cast <char*> (fPointer);

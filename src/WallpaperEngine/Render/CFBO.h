@@ -18,11 +18,12 @@ namespace WallpaperEngine::Render
         const ITexture::TextureFormat getFormat () const override;
         GLuint getFramebuffer () const;
         GLuint getDepthbuffer () const;
-        const GLuint getTextureID (int imageIndex) const override;
-        const uint32_t getTextureWidth () const override;
-        const uint32_t getTextureHeight () const override;
+        const GLuint getTextureID (uint32_t imageIndex = 0) const override;
+        const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
+        const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
         const uint32_t getRealWidth () const override;
         const uint32_t getRealHeight () const override;
+        const std::vector<TextureFrame*>& getFrames () const override;
         const glm::vec4* getResolution () const override;
         const bool isAnimated () const override;
 

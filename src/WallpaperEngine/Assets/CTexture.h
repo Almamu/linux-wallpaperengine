@@ -21,13 +21,14 @@ namespace WallpaperEngine::Assets
         CTexture (void* fileData);
         ~CTexture ();
 
-        const GLuint getTextureID (int imageIndex) const override;
-        const uint32_t getTextureWidth () const override;
-        const uint32_t getTextureHeight () const override;
+        const GLuint getTextureID (uint32_t imageIndex = 0) const override;
+        const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
+        const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
         const uint32_t getRealWidth () const override;
         const uint32_t getRealHeight () const override;
         const TextureFormat getFormat () const override;
         const glm::vec4* getResolution () const override;
+        const std::vector<TextureFrame*>& getFrames () const override;
         const bool isAnimated () const override;
 
     private:
@@ -72,28 +73,6 @@ namespace WallpaperEngine::Assets
              * Performs actual decompression of the compressed data
              */
             void decompressData ();
-        };
-
-        class TextureFrame
-        {
-        public:
-            TextureFrame();
-            ~TextureFrame();
-
-            /** The image index of this frame */
-            uint32_t frameNumber;
-            /** The amount of time this frame spends being displayed */
-            float frametime;
-            /** The x position of the frame in the texture */
-            float x;
-            /** The y position of the frame in the texture */
-            float y;
-            /** The width of the frame in the texture */
-            float width;
-            float unk0;
-            float unk1;
-            /** The height of the frame in the texture */
-            float height;
         };
 
         /**

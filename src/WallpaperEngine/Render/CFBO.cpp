@@ -69,16 +69,16 @@ GLuint CFBO::getDepthbuffer () const
     return this->m_depthbuffer;
 }
 
-const GLuint CFBO::getTextureID (int imageIndex) const
+const GLuint CFBO::getTextureID (uint32_t imageIndex) const
 {
     return this->m_texture;
 }
 
-const uint32_t CFBO::getTextureWidth () const
+const uint32_t CFBO::getTextureWidth (uint32_t imageIndex) const
 {
     return this->m_resolution.x;
 }
-const uint32_t CFBO::getTextureHeight () const
+const uint32_t CFBO::getTextureHeight (uint32_t imageIndex) const
 {
     return this->m_resolution.y;
 }
@@ -91,6 +91,11 @@ const uint32_t CFBO::getRealWidth () const
 const uint32_t CFBO::getRealHeight () const
 {
     return this->m_resolution.w;
+}
+
+const std::vector<ITexture::TextureFrame*>& CFBO::getFrames () const
+{
+    return std::vector<TextureFrame*> ();
 }
 
 const glm::vec4* CFBO::getResolution () const

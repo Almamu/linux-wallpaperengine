@@ -69,8 +69,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
-    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getRealWidth (), this->m_texture->getRealHeight (), this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
 
     GLfloat realWidth = this->m_texture->getRealWidth () / 2;
     GLfloat realHeight = this->m_texture->getRealHeight () / 2;
@@ -106,8 +106,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float width = 1.0f;
     float height = 1.0f;
 
+    if (this->getTexture ()->isAnimated () == true)
+    {
+        // animated images use different coordinates as they're essentially a texture atlast
+        width = static_cast<float> (this->getTexture ()->getRealWidth ()) / static_cast<float> (this->getTexture ()->getTextureWidth ());
+        height = static_cast<float> (this->getTexture ()->getRealHeight ()) / static_cast<float> (this->getTexture ()->getTextureHeight ());
+    }
     // calculate the correct texCoord limits for the texture based on the texture screen size and real size
-    if (this->getTexture () != nullptr &&
+    else if (this->getTexture () != nullptr &&
             (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
              this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
         )
@@ -122,12 +128,24 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         height = size.y * scale.y / y;
     }
 
+    float x = 0.0f;
+    float y = 0.0f;
+
+    if (this->getTexture ()->isAnimated () == true)
+    {
+        // animations should be copied completely
+        x = 0.0f;
+        y = 0.0f;
+        width = 1.0f;
+        height = 1.0f;
+    }
+
     GLfloat texcoordCopy [] = {
-        0.0f, 0.0f,
-        width, 0.0f,
-        0.0f, height,
-        0.0f, height,
-        width, 0.0f,
+        x, y,
+        width, y,
+        x, height,
+        x, height,
+        width, y,
         width, height
     };
 
@@ -177,18 +195,30 @@ void CImage::setup ()
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
         this->m_image->getMaterial ()
     );
+
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
         this->m_image->getMaterial ()
     );
 
-    // generate the effects used by this material
-    auto cur = this->getImage ()->getEffects ().begin ();
-    auto end = this->getImage ()->getEffects ().end ();
+    {
+        // generate the effects used by this material
+        auto cur = this->getImage ()->getEffects ().begin ();
+        auto end = this->getImage ()->getEffects ().end ();
+
+        for (; cur != end; cur ++)
+            this->m_effects.emplace_back (new CEffect (this, *cur));
+    }
+
+    // calculate full animation time (if any)
+    this->m_animationTime = 0.0f;
+
+    auto cur = this->getTexture ()->getFrames ().begin ();
+    auto end = this->getTexture ()->getFrames ().end ();
 
     for (; cur != end; cur ++)
-        this->m_effects.emplace_back (new CEffect (this, *cur));
+        this->m_animationTime += (*cur)->frametime;
 }
 
 void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
@@ -209,19 +239,29 @@ void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
 
 void CImage::simpleRender ()
 {
-    // first render to the composite layer
-    auto cur = this->m_copyMaterial->getPasses ().begin ();
-    auto end = this->m_copyMaterial->getPasses ().end ();
+    ITexture* input = this->m_mainFBO;
 
-    for (; cur != end; cur ++)
-        (*cur)->render (this->m_mainFBO, this->getTexture (), *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
+    // FIXME: THIS IS A QUICK HACK FOR ANIMATED IMAGES, IF ANY OF THOSE HAVE ANY EFFECT ON THEM THIS WILL LIKELY BREAK
+    if (this->getTexture ()->isAnimated () == true)
+    {
+        input = this->getTexture ();
+    }
+    else
+    {
+        // first render to the composite layer
+        auto cur = this->m_copyMaterial->getPasses ().begin ();
+        auto end = this->m_copyMaterial->getPasses ().end ();
+
+        for (; cur != end; cur ++)
+            (*cur)->render (this->m_mainFBO, this->getTexture (), *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
+    }
 
     // a simple material renders directly to the screen
-    cur = this->m_material->getPasses ().begin ();
-    end = this->m_material->getPasses ().end ();
+    auto cur = this->m_material->getPasses ().begin ();
+    auto end = this->m_material->getPasses ().end ();
 
     for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), this->m_mainFBO, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
+        (*cur)->render (this->getScene ()->getFBO (), input, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
 }
 
 void CImage::complexRender ()
@@ -317,6 +357,11 @@ void CImage::render ()
 ITexture* CImage::getTexture () const
 {
     return this->m_texture;
+}
+
+const double CImage::getAnimationTime () const
+{
+    return this->m_animationTime;
 }
 
 const Core::Objects::CImage* CImage::getImage () const
