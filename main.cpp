@@ -1,5 +1,6 @@
 #include <iostream>
 #include <getopt.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <SDL_mixer.h>
 #include <SDL.h>
@@ -8,6 +9,7 @@
 #include <GL/glew.h>
 #include <csignal>
 #include <GLFW/glfw3.h>
+#include <libgen.h>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
@@ -23,6 +25,12 @@ bool g_KeepRunning = true;
 
 using namespace WallpaperEngine::Core::Types;
 
+const char* default_paths[] = {
+        ".steam/steam/steamapps/common/wallpaper_engine/assets",
+        ".local/share/Steam/steamapps/common/wallpaper_engine/assets",
+        nullptr
+};
+
 void print_help (const char* route)
 {
     std::cout
@@ -30,7 +38,8 @@ void print_help (const char* route)
         << "options:" << std::endl
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
-        << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl;
+        << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
+        << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s)
@@ -58,6 +67,28 @@ void signalhandler(int sig)
     g_KeepRunning = false;
 }
 
+int validatePath(const char* path, std::string& final)
+{
+    char finalPath [PATH_MAX];
+    char* pointer = realpath (path, finalPath);
+
+    if (finalPath == nullptr)
+        return errno;
+
+    // ensure the path points to a folder
+    struct stat pathinfo;
+
+    if (stat (finalPath, &pathinfo) != 0)
+        return errno;
+
+    if (!S_ISDIR (pathinfo.st_mode))
+        return ENOTDIR;
+
+    final = finalPath;
+
+    return 0;
+}
+
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
@@ -65,6 +96,7 @@ int main (int argc, char* argv[])
     int maximumFPS = 30;
     bool shouldEnableAudio = true;
     std::string path;
+    std::string assetsDir;
 
     static struct option long_options [] = {
         {"screen-root", required_argument, 0, 'r'},
@@ -73,12 +105,13 @@ int main (int argc, char* argv[])
         {"silent",      no_argument,       0, 's'},
         {"help",        no_argument,       0, 'h'},
         {"fps",         required_argument, 0, 'f'},
-        {nullptr,              0, 0,   0}
+        {"assets-dir",  required_argument, 0, 'a'},
+        {nullptr,                       0, 0,   0}
     };
 
     while (true)
     {
-        int c = getopt_long (argc, argv, "r:p:d:shf:", long_options, nullptr);
+        int c = getopt_long (argc, argv, "r:p:d:shf:a:", long_options, nullptr);
 
         if (c == -1)
             break;
@@ -107,7 +140,8 @@ int main (int argc, char* argv[])
                 maximumFPS = atoi (optarg);
                 break;
 
-            default:
+            case 'a':
+                assetsDir = optarg;
                 break;
         }
     }
@@ -125,25 +159,14 @@ int main (int argc, char* argv[])
         }
     }
 
-    char* finalPath = realpath(path.c_str (), nullptr);
+    int error = validatePath (path.c_str (), path);
 
-    if (finalPath == nullptr)
-    {
-        if (errno == ENAMETOOLONG)
-            throw std::runtime_error ("Cannot get wallpaper's folder, path is too long");
-        else
-            throw std::runtime_error ("Cannot find the specified folder");
-    }
-
-    // ensure the path points to a folder
-    struct stat pathinfo;
-
-    if (stat (finalPath, &pathinfo) != 0)
-        throw std::runtime_error ("Cannot find the specified wallpaper folder");
-
-    if (!S_ISDIR (pathinfo.st_mode))
-        throw std::runtime_error ("The specified path is not a folder");
-
+    if (error == ENOTDIR)
+        throw std::runtime_error ("The background path is not a folder");
+    else if (error == ENAMETOOLONG)
+        throw std::runtime_error ("Cannot get wallpaper's folder, path is too long");
+    else if (error != 0)
+        throw std::runtime_error ("Cannot find the specified folder");
     // ensure the path has a trailing slash
 
     // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
@@ -168,7 +191,6 @@ int main (int argc, char* argv[])
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
 
     // update the used path with the full one
-    path = finalPath;
     path += "/";
 
     // the background's path is required to load project.json regardless of the type of background we're using
@@ -194,8 +216,79 @@ int main (int argc, char* argv[])
         return 4;
     }
 
+    if (assetsDir == "")
+    {
+        char* home = getenv ("HOME");
+
+        if (home == nullptr)
+            throw std::runtime_error ("$HOME doesn't exist");
+
+        std::string homepath = "";
+
+        error = validatePath (home, homepath);
+
+        if (error == ENOTDIR)
+            throw std::runtime_error ("Invalid user home path");
+        else if (error == ENAMETOOLONG)
+            throw std::runtime_error ("Cannot get user's home folder, path is too long");
+        else if (error != 0)
+            throw std::runtime_error ("Cannot find the home folder for the user");
+
+        for (const char** current = default_paths; *current != nullptr; current ++)
+        {
+            std::string tmppath = homepath + "/" + *current;
+
+            error = validatePath (tmppath.c_str (), tmppath);
+
+            if (error != 0)
+                continue;
+
+            assetsDir = tmppath;
+            std::cout << "Found wallpaper engine's assets at " << assetsDir << std::endl;
+            break;
+        }
+
+        if (assetsDir == "")
+        {
+            int len = strlen (argv [0]) + 1;
+            char* copy = new char[len];
+
+            strncpy (copy, argv [0], len);
+
+            // path still not found, try one last thing on the current binarie's folder
+            std::string exepath = dirname (copy);
+            exepath += "/assets";
+
+            error = validatePath (exepath.c_str (), exepath);
+
+            if (error == 0)
+            {
+                assetsDir = exepath;
+                std::cout << "Found assets folder alongside the binary: " << assetsDir << std::endl;
+            }
+
+            delete copy;
+        }
+    }
+    else
+    {
+        error = validatePath (assetsDir.c_str (), assetsDir);
+
+        if (error == ENOTDIR)
+            throw std::runtime_error ("Invalid assets folder");
+        else if (error == ENAMETOOLONG)
+            throw std::runtime_error ("Cannot get assets folder, path is too long");
+        else if (error != 0)
+            throw std::runtime_error ("Cannot find the specified assets folder");
+
+        std::cout << "Found wallpaper engine's assets at " << assetsDir << " based on --assets-dir parameter" << std::endl;
+    }
+
+    if (assetsDir == "")
+        throw std::runtime_error ("Cannot determine a valid path for the wallpaper engine assets");
+
     // add containers to the list
-    containers->add (new WallpaperEngine::Assets::CDirectory ("./assets/"));
+    containers->add (new WallpaperEngine::Assets::CDirectory (assetsDir + "/"));
 
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
@@ -297,8 +390,6 @@ int main (int argc, char* argv[])
     SDL_Quit ();
     // terminate free image
     FreeImage_DeInitialise ();
-    // free paths
-    free(finalPath);
 
     return 0;
 }
