@@ -328,11 +328,12 @@ GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
         // get information about the error
         glGetShaderInfoLog (shaderID, infoLogLength, nullptr, logBuffer);
         // throw an exception about the issue
-        std::string message = logBuffer;
+        std::stringstream buffer;
+        buffer << logBuffer << std::endl << "Compiled source code:" << std::endl << shader->getCompiled ();
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        throw std::runtime_error (buffer.str());
     }
 
     return shaderID;
