@@ -64,6 +64,12 @@ make
 **REMEMBER: The assets folder has to be at the same folder as the executable**
 
 ## 5.5. Running a background
+### 5.5.1. Getting the theme files
+To get started, you need to "subscribe" to a theme, i.e. using the [example background](https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469) click the +Subscribe button. Steam will automatically download the files for your subscriptions.
+
+You can find the files in the workshop directory located in your configured SteamLibrary directory (if you can't find it, just follow 5.2 and go up a couple directories). The actual files are located in `SteamLibrary/steamapps/workshop/content/431960/[workshop file ID]`. You can use these paths directly or copy over the files to a convenient location.
+
+### 5.5.2. Running in a window (Default)
 Currently both compressed and uncompressed backgrounds are supported. Loading them is quite simple. Just run linux-wallpaperengine with the path to the folder where the background is stored:
 ```
 ./wallengine /home/almamu/Development/backgrounds/1845706469/
@@ -71,7 +77,7 @@ Currently both compressed and uncompressed backgrounds are supported. Loading th
 
 Where ```/home/almamu/Development/backgrounds/1845706469/``` is the background's path.
 
-#### 5.5.1. Running as a screen's background
+### 5.5.3. Running as a screen's background
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 ```
 ./wallengine --screen-root HDMI-1 --screen-root DVI-D-1 /home/almamu/Development/backgrounds/1845706469/
@@ -79,8 +85,8 @@ Only screens configured with the XRandr extension are supported. To specify the 
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
 
-#### 5.5.2. Limiting FPS
-To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, specially useful for laptops:
+### 5.5.4. Limiting FPS
+To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
 ```
 ./wallengine --fps 30
 ```
