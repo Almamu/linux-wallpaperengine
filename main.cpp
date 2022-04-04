@@ -345,12 +345,14 @@ int main (int argc, char* argv[])
         {
             // Mix_GetError is an alias for SDL_GetError, so calling it directly will yield the correct result
             // it doesn't matter if SDL_Init or Mix_Init failed, both report the errors through the same functions
-            fprintf (stderr, "Cannot initialize SDL audio system, SDL_GetError: %s", SDL_GetError ());
-            return 2;
+            std::cerr << "Cannot initialize SDL audio system, SDL_GetError: " << SDL_GetError() << std::endl;
+            std::cerr << "Continuing without audio support" << std::endl;
+            shouldEnableAudio = false;
         }
 
-        // initialize audio engine
-        Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
+        // initialize audio engine if it should be
+        if (shouldEnableAudio)
+            Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
     }
 
     // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
