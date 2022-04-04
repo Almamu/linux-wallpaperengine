@@ -26,11 +26,12 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 
 # 5. How to use
 ## 5.1. Pre-requirements
-In order to properly use this software you'll need to own an actual copy of Window's Wallpaper Engine as it contains some basic assets on which most of the backgrounds are based on. 
-The only way to get those assets is to install the Windows version trough Steam. Luckily you don't really need a Windows OS for that. Using the Linux client should be enough to force the download.
+In order to properly use this software you'll need to own an actual copy of the Windows version of Wallpaper Engine (which you can buy on the [Steam Page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)), as it contains some basic assets on which most of the backgrounds are based on.
+
+The only way to get those assets is to install the Windows version through Steam. Luckily you don't really need a Windows installation for that. Using the Linux Steam client is enough to download the files we need. Note you may need to check "Enable Steam Play for all other titles" in the Steam Play section of Steam's settings if you haven't already. Also note that the software cannot actually be launched through Steam Play (Proton), but the setting is required for Steam to download the software.
 
 ## 5.2. Extracting needed assets
-Once Wallpaper Engine is downloaded open the installation folder (usually on C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
+Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
 
 ![folder](docs/images/screenshot_folder.png)
 
