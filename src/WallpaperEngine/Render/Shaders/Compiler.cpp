@@ -459,6 +459,7 @@ namespace WallpaperEngine::Render::Shaders
                           "#define mediump\n"
                           "#define lowp\n"
                           "#define mul(x, y) (y * x)\n"
+                          "#define max(x, y) max (y, x)\n"
                           "#define frac fract\n"
                           "#define CAST2(x) (vec2(x))\n"
                           "#define CAST3(x) (vec3(x))\n"
