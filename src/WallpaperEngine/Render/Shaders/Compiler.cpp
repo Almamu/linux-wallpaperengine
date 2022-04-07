@@ -316,13 +316,6 @@ namespace WallpaperEngine::Render::Shaders
                     it ++;
                 }
             }
-            /*else if (*it == 'a')
-            {
-                if (this->peekString ("attribute", it) == true)
-                {
-                    this->ignoreSpaces (it);
-                }
-            }*/
             else if (*it == 'a')
             {
                 // find attribute definitions
@@ -387,7 +380,7 @@ namespace WallpaperEngine::Render::Shaders
 
                         this->m_compiledContent += "// [COMBO] " + configuration;
 
-                        this->parseComboConfiguration (configuration); BREAK_IF_ERROR;
+                        this->parseComboConfiguration (configuration, 1); BREAK_IF_ERROR;
                     }
                     else if (this->peekString ("[COMBO_OFF]", it) == true)
                     {
@@ -400,11 +393,12 @@ namespace WallpaperEngine::Render::Shaders
 
                         this->m_compiledContent += "// [COMBO_OFF] " + configuration;
 
-                        this->parseComboConfiguration (configuration); BREAK_IF_ERROR;
+                        this->parseComboConfiguration (configuration, 0); BREAK_IF_ERROR;
                     }
                     else
                     {
-                        this->ignoreUpToNextLineFeed (it);
+                        // the comment can be ignored and put back as is
+                        this->ignoreUpToNextLineFeed(it);
                         this->m_compiledContent.append (begin, it);
                     }
                 }
@@ -500,7 +494,7 @@ namespace WallpaperEngine::Render::Shaders
     #undef BREAK_IF_ERROR
     }
 
-    void Compiler::parseComboConfiguration (const std::string& content)
+    void Compiler::parseComboConfiguration (const std::string& content, int defaultValue)
     {
         json data = json::parse (content);
         auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
@@ -520,7 +514,7 @@ namespace WallpaperEngine::Render::Shaders
             if (defvalue == data.end ())
             {
                 // TODO: PROPERLY SUPPORT EMPTY COMBOS
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, 0));
+                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
             }
             else if ((*defvalue).is_number_float ())
             {
@@ -547,11 +541,13 @@ namespace WallpaperEngine::Render::Shaders
         auto material = data.find ("material");
         auto defvalue = data.find ("default");
         auto range = data.find ("range");
+        auto combo = data.find ("combo");
 
         // this is not a real parameter
-        if (material == data.end ())
-            return;
-        auto constant = this->m_constants.find (*material);
+        auto constant = this->m_constants.end ();
+
+        if (material != data.end ())
+            constant = this->m_constants.find (*material);
 
         if (constant == this->m_constants.end () && defvalue == data.end ())
         {
@@ -565,7 +561,9 @@ namespace WallpaperEngine::Render::Shaders
         if (type == "vec4")
         {
             parameter = new Variables::CShaderVariableVector4 (
-                WallpaperEngine::Core::aToVector4 (*defvalue)
+                constant == this->m_constants.end ()
+                ? WallpaperEngine::Core::aToVector4 (*defvalue)
+                : *(*constant).second->as <CShaderConstantVector4> ()->getValue ()
             );
         }
         else if (type == "vec3")
@@ -619,16 +617,20 @@ namespace WallpaperEngine::Render::Shaders
             {
                 // add the new combo to the list
                 this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
-                // also ensure that the textureName is loaded and we know about it
-                ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
-                // extract the texture number from the name
-                char value = name.at (std::string("g_Texture").length ());
-                // now convert it to integer
-                int index = value - '0';
 
-                this->m_textures.insert (
-                    std::make_pair (index, texture)
-                );
+                if (textureName != data.end ())
+                {
+                    // also ensure that the textureName is loaded and we know about it
+                    ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
+                    // extract the texture number from the name
+                    char value = name.at (std::string("g_Texture").length ());
+                    // now convert it to integer
+                    int index = value - '0';
+
+                    this->m_textures.insert (
+                            std::make_pair (index, texture)
+                    );
+                }
             }
 
             // samplers are not saved, we can ignore them for now
@@ -641,10 +643,13 @@ namespace WallpaperEngine::Render::Shaders
             return;
         }
 
-        parameter->setIdentifierName (*material);
-        parameter->setName (name);
+        if (material != data.end ())
+        {
+            parameter->setIdentifierName (*material);
+            parameter->setName (name);
 
-        this->m_parameters.push_back (parameter);
+            this->m_parameters.push_back (parameter);
+        }
     }
 
     Variables::CShaderVariable* Compiler::findParameter (const std::string& identifier)

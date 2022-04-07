@@ -188,7 +188,7 @@ namespace WallpaperEngine::Render::Shaders
          *
          * @param content The parameter configuration
          */
-        void parseComboConfiguration (const std::string& content);
+        void parseComboConfiguration (const std::string& content, int defaultValue = 0);
         /**
          * Parses a parameter extra metadata created by wallpaper engine
          *

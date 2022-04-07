@@ -148,12 +148,14 @@ CTexture::CTexture (void* fileData)
                 if (this->m_header->format == TextureFormat::RG88)
                     textureFormat = GL_RG;
                 else if (this->m_header->format == TextureFormat::R8)
-                    textureFormat = GL_R;
+                    textureFormat = GL_RED;
             }
 
             switch (internalFormat)
             {
                 case GL_RGBA8:
+                case GL_RG8:
+                case GL_R8:
                     glTexImage2D (GL_TEXTURE_2D, level, internalFormat,
                                   width, height, 0,
                                   textureFormat, GL_UNSIGNED_BYTE,
