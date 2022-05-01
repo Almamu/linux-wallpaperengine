@@ -17,7 +17,7 @@ find_package(ZLIB REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
-find_package(FFmpeg REQUIRED)
+find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
 
 include_directories(
@@ -191,7 +191,7 @@ add_executable(
 
 target_link_libraries(wallengine
     ${X11_LIBRARIES}
-    ${XRANDR_LIBRARIES}
+    ${Xrandr_LIBRARIES}
     ${X11_Xxf86vm_LIB}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
