@@ -15,7 +15,6 @@ find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(SDL REQUIRED)
-find_package(SDL_mixer REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
@@ -54,6 +53,9 @@ add_executable(
 
         src/WallpaperEngine/Core/Core.h
         src/WallpaperEngine/Core/Core.cpp
+
+        src/WallpaperEngine/Audio/CAudioStream.cpp
+        src/WallpaperEngine/Audio/CAudioStream.h
 
         src/WallpaperEngine/Input/CMouseInput.h
         src/WallpaperEngine/Input/CMouseInput.cpp
