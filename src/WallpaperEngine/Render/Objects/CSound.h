@@ -1,11 +1,9 @@
 #pragma once
 
-#include <SDL_rwops.h>
-#include <SDL_mixer.h>
-
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
 #include "WallpaperEngine/Render/CObject.h"
+#include "WallpaperEngine/Audio/CAudioStream.h"
 
 using namespace WallpaperEngine;
 
@@ -22,13 +20,10 @@ namespace WallpaperEngine::Render::Objects
         static const std::string Type;
 
         void load ();
-        void play ();
 
     private:
-        std::vector<std::string> m_filenames;
-        std::vector <Mix_Music*> m_sdl;
-        std::vector <SDL_RWops*> m_bufferReader;
         std::vector <void*> m_soundBuffer;
+        std::vector <Audio::CAudioStream*> m_audioStreams;
 
         Core::Objects::CSound* m_sound;
     };

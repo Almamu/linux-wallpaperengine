@@ -22,6 +22,7 @@
 
 float g_Time;
 bool g_KeepRunning = true;
+int g_AudioVolume = 15;
 
 using namespace WallpaperEngine::Core::Types;
 
@@ -37,6 +38,7 @@ void print_help (const char* route)
         << "Usage:" << route << " [options] background_path" << std::endl
         << "options:" << std::endl
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
+        << "  --volume <amount>\tSets the volume for all the sounds in the background" << std::endl
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
         << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl;
@@ -103,6 +105,7 @@ int main (int argc, char* argv[])
         {"pkg",         required_argument, 0, 'p'},
         {"dir",         required_argument, 0, 'd'},
         {"silent",      no_argument,       0, 's'},
+        {"volume",      required_argument, 0, 'v'},
         {"help",        no_argument,       0, 'h'},
         {"fps",         required_argument, 0, 'f'},
         {"assets-dir",  required_argument, 0, 'a'},
@@ -142,6 +145,10 @@ int main (int argc, char* argv[])
 
             case 'a':
                 assetsDir = optarg;
+                break;
+
+            case 'v':
+                g_AudioVolume = atoi (optarg);
                 break;
         }
     }
@@ -320,6 +327,12 @@ int main (int argc, char* argv[])
         return 3;
     }
 
+    if (shouldEnableAudio == true && SDL_Init (SDL_INIT_AUDIO) < 0)
+    {
+        std::cerr << "Cannot initialize SDL audio system, SDL_GetError: " << SDL_GetError() << std::endl;
+        std::cerr << "Continuing without audio support" << std::endl;
+    }
+
     // parse the project.json file
     auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
     // go to the right folder so the videos will play
@@ -336,24 +349,6 @@ int main (int argc, char* argv[])
     context->setWallpaper (
         WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), containers, context)
     );
-
-    if (shouldEnableAudio == true)
-    {
-        int mixer_flags = MIX_INIT_MP3 | MIX_INIT_FLAC | MIX_INIT_OGG;
-
-        if (SDL_Init (SDL_INIT_AUDIO) < 0 || mixer_flags != Mix_Init (mixer_flags))
-        {
-            // Mix_GetError is an alias for SDL_GetError, so calling it directly will yield the correct result
-            // it doesn't matter if SDL_Init or Mix_Init failed, both report the errors through the same functions
-            std::cerr << "Cannot initialize SDL audio system, SDL_GetError: " << SDL_GetError() << std::endl;
-            std::cerr << "Continuing without audio support" << std::endl;
-            shouldEnableAudio = false;
-        }
-
-        // initialize audio engine if it should be
-        if (shouldEnableAudio)
-            Mix_OpenAudio (22050, AUDIO_S16SYS, 2, 640);
-    }
 
     // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
     // glfwSetInputMode (window, GLFW_STICKY_KEYS, GL_TRUE);
