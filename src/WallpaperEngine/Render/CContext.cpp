@@ -1,4 +1,6 @@
 #include <iostream>
+#include <unistd.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
@@ -10,6 +12,34 @@
 #include "CVideo.h"
 
 using namespace WallpaperEngine::Render;
+
+void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
+{
+    auto context = static_cast <CContext*> (userdata);
+
+#ifdef DEBUG
+    std::cerr << "Critical XServer error detected. Attempting to recover..." << std::endl;
+#endif /* DEBUG */
+
+    // refetch all the resources
+    context->initializeViewports ();
+}
+
+int CustomXErrorHandler (Display* dsp, XErrorEvent* event)
+{
+#ifdef DEBUG
+    std::cerr << "Detected X error" << std::endl;
+#endif /* DEBUG */
+    return 0;
+}
+
+int CustomXIOErrorHandler (Display* dsp)
+{
+#ifdef DEBUG
+    std::cerr << "Detected X IO error" << std::endl;
+#endif /* DEBUG */
+    return 0;
+}
 
 CContext::CContext (std::vector <std::string> screens, GLFWwindow* window) :
     m_wallpaper (nullptr),
@@ -26,10 +56,15 @@ void CContext::initializeViewports ()
     if (this->m_isRootWindow == false || this->m_screens.empty () == true)
         return;
 
-    // hide the glfw window if the viewports are to be detected
-    glfwHideWindow (this->m_window);
+    // clear the viewports we're drawing to
+    this->m_viewports.clear ();
 
     this->m_display = XOpenDisplay (nullptr);
+
+    // set the error handling to try and recover from X disconnections
+    XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
+    XSetErrorHandler (CustomXErrorHandler);
+    XSetIOErrorHandler (CustomXIOErrorHandler);
 
     int xrandr_result, xrandr_error;
 
@@ -38,6 +73,9 @@ void CContext::initializeViewports ()
         std::cerr << "XRandr is not present, cannot detect specified screens, running in window mode" << std::endl;
         return;
     }
+
+    // hide the glfw window if the viewports are to be detected
+    glfwHideWindow (this->m_window);
 
     Window root = DefaultRootWindow (this->m_display);
     int fullWidth = DisplayWidth (this->m_display, DefaultScreen (this->m_display));

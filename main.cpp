@@ -223,14 +223,14 @@ int main (int argc, char* argv[])
         return 4;
     }
 
-    if (assetsDir == "")
+    if (assetsDir.empty () == true)
     {
         char* home = getenv ("HOME");
 
         if (home == nullptr)
             throw std::runtime_error ("$HOME doesn't exist");
 
-        std::string homepath = "";
+        std::string homepath;
 
         error = validatePath (home, homepath);
 
@@ -255,9 +255,9 @@ int main (int argc, char* argv[])
             break;
         }
 
-        if (assetsDir == "")
+        if (assetsDir.empty () == true)
         {
-            int len = strlen (argv [0]) + 1;
+            unsigned long len = strlen (argv [0]) + 1;
             char* copy = new char[len];
 
             strncpy (copy, argv [0], len);
@@ -274,7 +274,7 @@ int main (int argc, char* argv[])
                 std::cout << "Found assets folder alongside the binary: " << assetsDir << std::endl;
             }
 
-            delete copy;
+            delete[] copy;
         }
     }
     else
