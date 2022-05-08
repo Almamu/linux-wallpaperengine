@@ -219,8 +219,8 @@ void CWallpaper::render (glm::ivec4 viewport, bool renderFrame, bool newFrame)
         windowHeight = video->getHeight ();
     }
 
-    float widthRatio = windowWidth / viewport.z;
-    float heightRatio = windowHeight / viewport.w;
+    float widthRatio = windowWidth / (float) viewport.z;
+    float heightRatio = windowHeight / (float) viewport.w;
 
     if (widthRatio > 1.0f)
     {
