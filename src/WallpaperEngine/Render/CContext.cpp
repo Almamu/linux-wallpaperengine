@@ -62,7 +62,9 @@ void CContext::initializeViewports ()
     this->m_display = XOpenDisplay (nullptr);
 
     // set the error handling to try and recover from X disconnections
+#ifdef HAVE_XSETIOERROREXITHANDLER
     XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
+#endif /* HAVE_XSETIOERROREXITHANDLER */
     XSetErrorHandler (CustomXErrorHandler);
     XSetIOErrorHandler (CustomXIOErrorHandler);
 

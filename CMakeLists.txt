@@ -19,6 +19,7 @@ find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
 
+
 include_directories(
     ${X11_INCLUDE_DIR}
     ${XRANDR_INCLUDE_DIR}
@@ -205,3 +206,12 @@ target_link_libraries(wallengine
     ${FFMPEG_LIBRARIES}
     ${FREEIMAGE_LIBRARIES}
     glfw)
+
+set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
+
+# make sure some of the X11 functions we'll use are available
+check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+if(HAVE_XSETIOERROREXITHANDLER)
+    add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
+endif()
