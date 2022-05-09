@@ -13,6 +13,8 @@
 
 using namespace WallpaperEngine::Render;
 
+XErrorHandler originalErrorHandler;
+
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 {
     auto context = static_cast <CContext*> (userdata);
@@ -25,11 +27,15 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
     context->initializeViewports ();
 }
 
-int CustomXErrorHandler (Display* dsp, XErrorEvent* event)
+int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 {
 #ifdef DEBUG
     std::cerr << "Detected X error" << std::endl;
 #endif /* DEBUG */
+
+    // call the original handler so we can keep some information reporting
+    originalErrorHandler (dpy, event);
+
     return 0;
 }
 
@@ -38,6 +44,7 @@ int CustomXIOErrorHandler (Display* dsp)
 #ifdef DEBUG
     std::cerr << "Detected X IO error" << std::endl;
 #endif /* DEBUG */
+
     return 0;
 }
 
@@ -65,7 +72,7 @@ void CContext::initializeViewports ()
 #ifdef HAVE_XSETIOERROREXITHANDLER
     XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
 #endif /* HAVE_XSETIOERROREXITHANDLER */
-    XSetErrorHandler (CustomXErrorHandler);
+    originalErrorHandler = XSetErrorHandler (CustomXErrorHandler);
     XSetIOErrorHandler (CustomXIOErrorHandler);
 
     int xrandr_result, xrandr_error;
