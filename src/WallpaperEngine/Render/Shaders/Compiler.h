@@ -205,6 +205,8 @@ namespace WallpaperEngine::Render::Shaders
          * The original file content
          */
         std::string m_content;
+        /** The content of all the included files */
+        std::string m_includesContent;
         /**
          * The final, compiled content ready to be used by OpenGL
          */

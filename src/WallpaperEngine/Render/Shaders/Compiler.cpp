@@ -244,6 +244,7 @@ namespace WallpaperEngine::Render::Shaders
         this->m_error = false;
         this->m_errorInfo = "";
         this->m_compiledContent = "";
+        this->m_includesContent = "";
 
         // search preprocessor macros and parse them
         while (it != this->m_content.end () && this->m_error == false)
@@ -264,10 +265,11 @@ namespace WallpaperEngine::Render::Shaders
                     // extract value between quotes
                     filename = this->extractQuotedValue (it); BREAK_IF_ERROR
 
+                    // load the content to the includes contents and continue with the next one
                     // try to find the file first
-                    this->m_compiledContent += "// begin of included from file " + filename + "\r\n";
-                    this->m_compiledContent += this->lookupShaderFile (filename);
-                    this->m_compiledContent += "\r\n// end of included from file " + filename + "\r\n";
+                    this->m_includesContent += "// begin of included from file " + filename + "\r\n";
+                    this->m_includesContent += this->lookupShaderFile (filename);
+                    this->m_includesContent += "\r\n// end of included from file " + filename + "\r\n";
                 }
                 else
                 {
@@ -422,7 +424,25 @@ namespace WallpaperEngine::Render::Shaders
                 // types not found, try names
                 if (this->m_error == false)
                 {
-                    this->m_compiledContent += type + " ";
+                    // check for main, and take it into account, this also helps adding the includes
+                    if (type == "void")
+                    {
+                        std::string name = this->extractName (it);
+
+                        if (name == "main")
+                        {
+                            this->m_compiledContent += "\n\n" + this->m_includesContent + "\n\n";
+                            this->m_compiledContent += type + " " + name;
+                        }
+                        else
+                        {
+                            this->m_compiledContent += name;
+                        }
+                    }
+                    else
+                    {
+                        this->m_compiledContent += type + " ";
+                    }
                 }
                 else
                 {
@@ -461,12 +481,12 @@ namespace WallpaperEngine::Render::Shaders
                           "#define CAST3X3(x) (mat3(x))\n"
                           "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
                           "#define texSample2D texture2D\n"
-                          "#define texSample2DLod texture2DLod\n"
-                          "#define texture2DLod texture2D\n"
+                          "#define texSample2DLod texture2D\n"
                           "#define atan2 atan\n"
                           "#define ddx dFdx\n"
                           "#define ddy(x) dFdy(-(x))\n"
-                          "#define GLSL 1\n\n";
+                          "#define GLSL 1\n"
+                          "#define HLSL 1\n";
 
             // add combo values
             auto cur = this->m_combos->begin ();
@@ -688,6 +708,7 @@ namespace WallpaperEngine::Render::Shaders
         "vec4", "uvec4", "ivec4", "dvec4", "bvec4",
         "vec3", "uvec3", "ivec3", "dvec3", "bvec3",
         "vec2", "uvec2", "ivec2", "dvec2", "bvec2",
-        "float", "sampler2D", "mat4x3", "mat4", "mat3", "uint4"
+        "float", "sampler2D", "mat4x3", "mat4", "mat3", "uint4",
+        "void"
     };
 }
