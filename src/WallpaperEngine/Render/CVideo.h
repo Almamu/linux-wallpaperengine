@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Core/CVideo.h"
 
+#include "WallpaperEngine/Audio/CAudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 
 extern "C"
@@ -45,6 +46,8 @@ namespace WallpaperEngine::Render
         SwsContext* m_swsCtx = nullptr;
         uint8_t* m_buffer = nullptr;
         int m_videoStream = -1, m_audioStream = -1;
+
+        Audio::CAudioStream* m_audio = nullptr;
 
         /**
          * The texture used for the video output

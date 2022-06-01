@@ -47,6 +47,23 @@ CVideo::CVideo (Core::CVideo* video, CContainer* container, CContext* context) :
     if (avcodec_open2 (m_codecCtx, codec, NULL) < 0)
         throw std::runtime_error ("Failed to open codec");
 
+    // initialize audio if there's any audio stream
+    if (m_audioStream != -1)
+    {
+        const AVCodec* audioCodec = avcodec_find_decoder (m_formatCtx->streams [m_audioStream]->codecpar->codec_id);
+        if (audioCodec == nullptr)
+            throw std::runtime_error ("Failed to find codec");
+
+        AVCodecContext* audioContext = avcodec_alloc_context3 (audioCodec);
+        if (avcodec_parameters_to_context (audioContext, m_formatCtx->streams [m_audioStream]->codecpar))
+            throw std::runtime_error ("Failed to copy codec parameters");
+
+        if (avcodec_open2 (audioContext, audioCodec, NULL) < 0)
+            throw std::runtime_error ("Failed to open codec");
+
+        this->m_audio = new Audio::CAudioStream (audioContext);
+    }
+
     m_videoFrame = av_frame_alloc ();
     m_videoFrameRGB = av_frame_alloc ();
     if (m_videoFrameRGB == nullptr)
@@ -175,18 +192,26 @@ void CVideo::getNextFrame ()
             throw std::runtime_error (av_make_error_string (err, AV_ERROR_MAX_STRING_SIZE, readError));
         }
         
-    } while (packet.stream_index != m_videoStream);
+    } while (packet.stream_index != m_videoStream /*&& packet.stream_index != m_audioStream*/);
 
-    // Send video stream packet to codec
-    if (avcodec_send_packet (m_codecCtx, &packet) < 0)
-        return;
-    
-    // Receive frame from codec
-    if (avcodec_receive_frame (m_codecCtx, m_videoFrame) < 0)
-        return;
+    if (!eof && packet.stream_index == m_videoStream)
+    {
+        // Send video stream packet to codec
+        if (avcodec_send_packet (m_codecCtx, &packet) < 0)
+            return;
 
-    sws_scale (m_swsCtx, (uint8_t const* const*) m_videoFrame->data, m_videoFrame->linesize,
-               0, m_codecCtx->height, m_videoFrameRGB->data, m_videoFrameRGB->linesize);
+        // Receive frame from codec
+        if (avcodec_receive_frame (m_codecCtx, m_videoFrame) < 0)
+            return;
+
+        sws_scale (m_swsCtx, (uint8_t const* const*) m_videoFrame->data, m_videoFrame->linesize,
+                   0, m_codecCtx->height, m_videoFrameRGB->data, m_videoFrameRGB->linesize);
+
+    }
+    /*else if (packet.stream_index == m_audioStream)
+    {
+        this->m_audio->queuePacket (&packet);
+    }*/
 
     av_packet_unref (&packet);
 
