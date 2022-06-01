@@ -26,16 +26,26 @@ int g_AudioVolume = 15;
 
 using namespace WallpaperEngine::Core::Types;
 
-const char* default_paths[] = {
+const char* assets_default_paths [] = {
         ".steam/steam/steamapps/common/wallpaper_engine/assets",
         ".local/share/Steam/steamapps/common/wallpaper_engine/assets",
         nullptr
 };
 
+const char* backgrounds_default_paths [] = {
+    ".local/share/Steam/steamapps/workshop/content/431960",
+    nullptr
+};
+
 void print_help (const char* route)
 {
     std::cout
-        << "Usage:" << route << " [options] background_path" << std::endl
+        << "Usage: " << route << " [options] background_path/background_id" << std::endl
+        << std::endl
+        << "where background_path/background_id can be:" << std::endl
+        << "\tthe ID of the background (for autodetection on your steam installation)" << std::endl
+        << "\ta full path to the background's folder" << std::endl
+        << std::endl
         << "options:" << std::endl
         << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
         << "  --volume <amount>\tSets the volume for all the sounds in the background" << std::endl
@@ -56,10 +66,6 @@ std::string stringPathFixes(const std::string& s)
         str
             .erase (str.size() - 1, 1)
             .erase (0, 1);
-
-    // ensure there's a slash at the end of the path
-    if (str [str.size() - 1] != '/')
-        str += '/';
 
     return std::move (str);
 }
@@ -89,6 +95,42 @@ int validatePath(const char* path, std::string& final)
     final = finalPath;
 
     return 0;
+}
+
+std::string getHomePath ()
+{
+    char* home = getenv ("HOME");
+
+    if (home == nullptr)
+        throw std::runtime_error ("$HOME doesn't exist");
+
+    std::string homepath;
+
+    int error = validatePath (home, homepath);
+
+    if (error == ENOTDIR)
+        throw std::runtime_error ("Invalid user home path");
+    else if (error == ENAMETOOLONG)
+        throw std::runtime_error ("Cannot get user's home folder, path is too long");
+    else if (error != 0)
+        throw std::runtime_error ("Cannot find the home folder for the user");
+
+    return homepath;
+}
+
+void initGLFW ()
+{
+    // first of all, initialize the window
+    if (glfwInit () == GLFW_FALSE)
+        throw std::runtime_error ("Failed to initialize GLFW");
+
+    // initialize freeimage
+    FreeImage_Initialise (TRUE);
+
+    // set some window hints (opengl version to be used)
+    glfwWindowHint (GLFW_SAMPLES, 4);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
 }
 
 int main (int argc, char* argv[])
@@ -166,6 +208,32 @@ int main (int argc, char* argv[])
         }
     }
 
+    // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
+    std::signal(SIGINT, signalhandler);
+    std::signal(SIGTERM, signalhandler);
+
+    // initialize glfw
+    initGLFW ();
+
+    std::string homepath = getHomePath ();
+    auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
+
+    // check if the background might be an ID and try to find the right path in the steam installation folder
+    if (path.find ('/') == std::string::npos)
+    {
+        for (const char** current = backgrounds_default_paths; *current != nullptr; current ++)
+        {
+            std::string tmppath = homepath + "/" + *current + "/" + path;
+
+            int error = validatePath (tmppath.c_str (), tmppath);
+
+            if (error != 0)
+                continue;
+
+            path = tmppath;
+        }
+    }
+
     int error = validatePath (path.c_str (), path);
 
     if (error == ENOTDIR)
@@ -174,30 +242,8 @@ int main (int argc, char* argv[])
         throw std::runtime_error ("Cannot get wallpaper's folder, path is too long");
     else if (error != 0)
         throw std::runtime_error ("Cannot find the specified folder");
-    // ensure the path has a trailing slash
 
-    // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
-    std::signal(SIGINT, signalhandler);
-    std::signal(SIGTERM, signalhandler);
-
-    // first of all, initialize the window
-    if (glfwInit () == GLFW_FALSE)
-    {
-        fprintf (stderr, "Failed to initialize GLFW\n");
-        return 1;
-    }
-
-    // initialize freeimage
-    FreeImage_Initialise (TRUE);
-
-    // set some window hints (opengl version to be used)
-    glfwWindowHint (GLFW_SAMPLES, 4);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
-
-    auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
-
-    // update the used path with the full one
+    // add a trailing slash to the path so the right file can be found
     path += "/";
 
     // the background's path is required to load project.json regardless of the type of background we're using
@@ -211,12 +257,12 @@ int main (int argc, char* argv[])
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
         std::cout << "Detected scene.pkg file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
     }
-    catch (CPackageLoadException ex)
+    catch (CPackageLoadException& ex)
     {
         // ignore this error, the package file was not found
         std::cout << "No scene.pkg file found at " << path << ". Defaulting to normal folder storage" << std::endl;
     }
-    catch (std::runtime_error ex)
+    catch (std::runtime_error& ex)
     {
         // the package was found but there was an error loading it (wrong header or something)
         fprintf (stderr, "Failed to load scene.pkg file: %s\n", ex.what());
@@ -225,23 +271,7 @@ int main (int argc, char* argv[])
 
     if (assetsDir.empty () == true)
     {
-        char* home = getenv ("HOME");
-
-        if (home == nullptr)
-            throw std::runtime_error ("$HOME doesn't exist");
-
-        std::string homepath;
-
-        error = validatePath (home, homepath);
-
-        if (error == ENOTDIR)
-            throw std::runtime_error ("Invalid user home path");
-        else if (error == ENAMETOOLONG)
-            throw std::runtime_error ("Cannot get user's home folder, path is too long");
-        else if (error != 0)
-            throw std::runtime_error ("Cannot find the home folder for the user");
-
-        for (const char** current = default_paths; *current != nullptr; current ++)
+        for (const char** current = assets_default_paths; *current != nullptr; current ++)
         {
             std::string tmppath = homepath + "/" + *current;
 
@@ -262,7 +292,7 @@ int main (int argc, char* argv[])
 
             strncpy (copy, argv [0], len);
 
-            // path still not found, try one last thing on the current binarie's folder
+            // path still not found, try one last thing on the current binary's folder
             std::string exepath = dirname (copy);
             exepath += "/assets";
 
@@ -291,7 +321,7 @@ int main (int argc, char* argv[])
         std::cout << "Found wallpaper engine's assets at " << assetsDir << " based on --assets-dir parameter" << std::endl;
     }
 
-    if (assetsDir == "")
+    if (assetsDir.empty () == true)
         throw std::runtime_error ("Cannot determine a valid path for the wallpaper engine assets");
 
     // add containers to the list

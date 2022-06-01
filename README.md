@@ -29,8 +29,11 @@ In order to properly use this software you'll need to own an actual copy of the 
 
 The only way to get those assets is to install the Windows version through Steam. Luckily you don't really need a Windows installation for that. Using the Linux Steam client is enough to download the files we need. Note you may need to check "Enable Steam Play for all other titles" in the Steam Play section of Steam's settings if you haven't already. Also note that the software cannot actually be launched through Steam Play (Proton), but the setting is required for Steam to download the software.
 
-## 5.2. Extracting needed assets
-Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
+## 5.2. Extracting the assets
+The automatic way doesn't require of anything extra, as long as Wallpaper Engine is installed in Steam the software should automatically detect where the assets are.
+
+### 5.2.1. Extracting the assets manually
+In the off-case where the software doesn't automatically detect the correct path, the assets can be extracted manually. Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
 
 ![folder](docs/images/screenshot_folder.png)
 
@@ -71,13 +74,28 @@ make
 **REMEMBER: The assets folder has to be in the same folder as the executable**
 
 ## 5.5. Running a background
-### 5.5.1. Getting the theme files
-To get started, you need to "subscribe" to a theme, i.e. using the [example background](https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469) click the +Subscribe button. Steam will automatically download the files for your subscriptions.
+### 5.5.1. Running a background from Steam
+Just like with the assets, the software can automatically detect where the subscribed backgrounds are stored. To get started, search in the workshop for whatever background you want to use and click the "+Subscribe" button. This should download the background in the steam directory.
 
-You can find the files in the workshop directory located in your configured SteamLibrary directory (if you can't find it, just follow 5.2 and go up a couple directories). The actual files are located in `SteamLibrary/steamapps/workshop/content/431960/[workshop file ID]`. You can use these paths directly or copy over the files to a convenient location.
+To actually use the background you'll need to know the workshop's ID. This can be obtained right-clicking anywhere in the background's page -> "Copy Page URL". You can paste this URL anywhere, it will look something like this:
+
+```
+https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469&searchtext=portal+3
+```
+
+Where 1845706469 is the wallpaper's ID. You can use this ID to run wallengine:
+```
+./wallengine 1845706469
+```
+
+### 5.5.2. Running a background in a different folder
+For the situations where the software cannot detect where the backgrounds are stored, you can specify a full path to it, like so:
+```
+./wallengine /home/almamu/Development/backgrounds/1845706469/
+```
 
 ### 5.5.2. Running in a window (Default)
-Currently both compressed and uncompressed backgrounds are supported. Loading them is quite simple. Just run linux-wallpaperengine with the path to the folder where the background is stored:
+By default the app will load the backgrounds in a window so you can preview them:
 ```
 ./wallengine /home/almamu/Development/backgrounds/1845706469/
 ```
