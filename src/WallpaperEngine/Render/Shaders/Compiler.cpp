@@ -265,7 +265,7 @@ namespace WallpaperEngine::Render::Shaders
                     // extract value between quotes
                     filename = this->extractQuotedValue (it); BREAK_IF_ERROR
 
-                    if (this->m_content.find (" main(") == std::string::npos && this->m_content.find (" main (") == std::string::npos)
+                    if (this->m_recursive)
                     {
                         this->m_compiledContent += "// begin of include from file " + filename + "\r\n";
                         this->m_compiledContent += this->lookupShaderFile (filename);
