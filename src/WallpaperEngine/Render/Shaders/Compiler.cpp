@@ -265,11 +265,20 @@ namespace WallpaperEngine::Render::Shaders
                     // extract value between quotes
                     filename = this->extractQuotedValue (it); BREAK_IF_ERROR
 
-                    // load the content to the includes contents and continue with the next one
-                    // try to find the file first
-                    this->m_includesContent += "// begin of included from file " + filename + "\r\n";
-                    this->m_includesContent += this->lookupShaderFile (filename);
-                    this->m_includesContent += "\r\n// end of included from file " + filename + "\r\n";
+                    if (this->m_content.find (" main(") == std::string::npos && this->m_content.find (" main (") == std::string::npos)
+                    {
+                        this->m_compiledContent += "// begin of include from file " + filename + "\r\n";
+                        this->m_compiledContent += this->lookupShaderFile (filename);
+                        this->m_compiledContent += "\r\n// end of included from file " + filename + "\r\n";
+                    }
+                    else
+                    {
+                        // load the content to the includes contents and continue with the next one
+                        // try to find the file first
+                        this->m_includesContent += "// begin of included from file " + filename + "\r\n";
+                        this->m_includesContent += this->lookupShaderFile (filename);
+                        this->m_includesContent += "\r\n// end of included from file " + filename + "\r\n";
+                    }
                 }
                 else
                 {
