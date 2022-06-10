@@ -409,14 +409,21 @@ int main (int argc, char* argv[])
             usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
     }
 
-    // free context
-    delete context;
+    // ensure this is updated as sometimes it might not come from a signal
+    g_KeepRunning = false;
+
+    std::cout << "Stop requested" << std::endl;
+
     // terminate gl
     glfwTerminate ();
-    // terminate SDL
-    SDL_Quit ();
     // terminate free image
     FreeImage_DeInitialise ();
+    // terminate SDL
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    SDL_Quit ();
+
+    // free context
+    delete context;
 
     return 0;
 }

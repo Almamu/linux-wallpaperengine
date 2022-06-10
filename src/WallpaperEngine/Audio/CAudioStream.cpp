@@ -4,6 +4,7 @@
 #include <math.h>
 
 extern int g_AudioVolume;
+extern bool g_KeepRunning;
 
 using namespace WallpaperEngine::Audio;
 
@@ -17,7 +18,7 @@ void audio_callback (void* userdata, uint8_t* stream, int length)
     static unsigned int audio_buf_size = 0;
     static unsigned int audio_buf_index = 0;
 
-    while (length > 0)
+    while (length > 0 && g_KeepRunning)
     {
         if (audio_buf_index >= audio_buf_size)
         {
@@ -61,7 +62,7 @@ int audio_read_thread (void* arg)
     AVPacket* packet = av_packet_alloc ();
     int ret = 0;
 
-    while (ret >= 0)
+    while (ret >= 0 && g_KeepRunning == true)
     {
         ret = av_read_frame (stream->getFormatContext (), packet);
 
@@ -82,6 +83,9 @@ int audio_read_thread (void* arg)
         if (stream->isInitialized () == false)
             break;
     }
+
+    // stop the audio too just in case
+    stream->stop ();
 
     return 0;
 }
@@ -306,7 +310,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
 
     SDL_LockMutex (this->m_queue->mutex);
 
-    while (true)
+    while (g_KeepRunning)
     {
         // enough data available, read it
         if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
@@ -323,7 +327,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
         }
 
         // make the thread wait if nothing was available
-        SDL_CondWait (this->m_queue->cond, this->m_queue->mutex);
+        SDL_CondWaitTimeout (this->m_queue->cond, this->m_queue->mutex, 1000);
     }
 
     SDL_UnlockMutex (this->m_queue->mutex);
@@ -664,7 +668,7 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
         return -1;
     }
 
-    for (;;) {
+    for (; g_KeepRunning;) {
         while (audio_pkt_size > 0) {
             int got_frame = 0;
             int ret = avcodec_receive_frame(this->getContext (), avFrame);
@@ -731,4 +735,6 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
         audio_pkt_data = pkt->data;
         audio_pkt_size = pkt->size;
     }
+
+    return 0;
 }
