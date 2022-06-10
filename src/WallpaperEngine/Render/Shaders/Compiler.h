@@ -247,5 +247,6 @@ namespace WallpaperEngine::Render::Shaders
           * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
           */
          std::map<int, ITexture*> m_textures;
+         bool m_includesProcessed = false;
     };
 }

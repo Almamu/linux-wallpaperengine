@@ -245,6 +245,7 @@ namespace WallpaperEngine::Render::Shaders
         this->m_errorInfo = "";
         this->m_compiledContent = "";
         this->m_includesContent = "";
+        this->m_includesProcessed = false;
 
         // search preprocessor macros and parse them
         while (it != this->m_content.end () && this->m_error == false)
@@ -434,23 +435,23 @@ namespace WallpaperEngine::Render::Shaders
                 if (this->m_error == false)
                 {
                     // check for main, and take it into account, this also helps adding the includes
-                    if (type == "void")
-                    {
-                        std::string name = this->extractName (it);
+                    std::string name = this->extractName (it);
 
-                        if (name == "main")
+                    this->ignoreSpaces (it);
+
+                    if (this->peekString ("(", it) == true)
+                    {
+                        if (this->m_includesProcessed == false)
                         {
                             this->m_compiledContent += "\n\n" + this->m_includesContent + "\n\n";
-                            this->m_compiledContent += type + " " + name;
+                            this->m_includesProcessed = true;
                         }
-                        else
-                        {
-                            this->m_compiledContent += name;
-                        }
+
+                        this->m_compiledContent += type + " " + name + "(";
                     }
                     else
                     {
-                        this->m_compiledContent += type + " ";
+                        this->m_compiledContent += type + " " + name;
                     }
                 }
                 else
