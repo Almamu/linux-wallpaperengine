@@ -133,6 +133,29 @@ void initGLFW ()
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
 }
 
+void addPkg (CCombinedContainer* containers, const std::string& path, std::string pkgfile)
+{
+    try
+    {
+        std::string scene_path = path + pkgfile;
+
+        // add the package to the list
+        containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
+        std::cout << "Detected " << pkgfile << " file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
+    }
+    catch (CPackageLoadException& ex)
+    {
+        // ignore this error, the package file was not found
+        std::cout << "No " << pkgfile <<  " file found at " << path << ". Defaulting to normal folder storage" << std::endl;
+    }
+    catch (std::runtime_error& ex)
+    {
+        // the package was found but there was an error loading it (wrong header or something)
+        fprintf (stderr, "Failed to load scene.pkg file: %s\n", ex.what());
+        throw std::runtime_error ("Cannot load package file");
+    }
+}
+
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
@@ -248,26 +271,9 @@ int main (int argc, char* argv[])
 
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
-    // check if scene.pkg exists and add it to the list
-    try
-    {
-        std::string scene_path = path + "scene.pkg";
-
-        // add the package to the list
-        containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
-        std::cout << "Detected scene.pkg file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
-    }
-    catch (CPackageLoadException& ex)
-    {
-        // ignore this error, the package file was not found
-        std::cout << "No scene.pkg file found at " << path << ". Defaulting to normal folder storage" << std::endl;
-    }
-    catch (std::runtime_error& ex)
-    {
-        // the package was found but there was an error loading it (wrong header or something)
-        fprintf (stderr, "Failed to load scene.pkg file: %s\n", ex.what());
-        return 4;
-    }
+    // try to add the common packages
+    addPkg (containers, path, "scene.pkg");
+    addPkg (containers, path, "gifscene.pkg");
 
     if (assetsDir.empty () == true)
     {
