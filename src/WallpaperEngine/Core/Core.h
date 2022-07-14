@@ -28,5 +28,6 @@ namespace WallpaperEngine::Core
     IntegerColor aToColori (const std::string& str);
 
     nlohmann::json::iterator jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg);
+    nlohmann::json::iterator jsonFindRequired (nlohmann::json::iterator& data, const char *key, const char *notFoundMsg);
     template <typename T> T jsonFindDefault (nlohmann::json& data, const char *key, T defaultValue);
 };

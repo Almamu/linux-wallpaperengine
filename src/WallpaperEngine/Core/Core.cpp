@@ -85,6 +85,18 @@ nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const cha
     return value;
 }
 
+nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json::iterator& data, const char *key, const char *notFoundMsg)
+{
+    auto value = (*data).find (key);
+
+    if (value == (*data).end ())
+    {
+        throw std::runtime_error (notFoundMsg);
+    }
+
+    return value;
+}
+
 template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char *key, T defaultValue)
 {
     auto value = data.find (key);

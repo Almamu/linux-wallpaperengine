@@ -42,6 +42,20 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint3
         textureWidth, textureHeight,
         realWidth, realHeight
     };
+
+    // create the textureframe entries
+    TextureFrame* frame = new TextureFrame;
+
+    frame->frameNumber = 0;
+    frame->frametime = 0;
+    frame->height1 = textureHeight;
+    frame->height2 = realHeight;
+    frame->width1 = textureWidth;
+    frame->width2 = realWidth;
+    frame->x = 0;
+    frame->y = 0;
+
+    this->m_frames.push_back (frame);
 }
 
 const std::string& CFBO::getName () const
@@ -95,7 +109,7 @@ const uint32_t CFBO::getRealHeight () const
 
 const std::vector<ITexture::TextureFrame*>& CFBO::getFrames () const
 {
-    return std::vector<TextureFrame*> ();
+    return this->m_frames;
 }
 
 const glm::vec4* CFBO::getResolution () const

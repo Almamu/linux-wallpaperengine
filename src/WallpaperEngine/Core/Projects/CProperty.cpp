@@ -1,5 +1,7 @@
+#include <sstream>
 #include "CProperty.h"
 #include "CPropertyColor.h"
+#include "CPropertyCombo.h"
 #include "CPropertySlider.h"
 #include "CPropertyBoolean.h"
 
@@ -20,7 +22,13 @@ CProperty* CProperty::fromJSON (json data, const std::string& name)
     if (*type == CPropertySlider::Type)
         return CPropertySlider::fromJSON (data, name);
 
-    throw std::runtime_error ("Unexpected type for property");
+    if (*type == CPropertyCombo::Type)
+        return CPropertyCombo::fromJSON (data, name);
+
+    std::stringstream buffer;
+    buffer << "Unexpected type for property:" << *type << std::endl << data;
+    // throw an exception
+    throw std::runtime_error (buffer.str());
 }
 
 CProperty::CProperty (std::string name, std::string type, std::string text) :

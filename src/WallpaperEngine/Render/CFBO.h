@@ -36,5 +36,7 @@ namespace WallpaperEngine::Render
         float m_scale;
         std::string m_name;
         ITexture::TextureFormat m_format;
+        /** Placeholder for frames, FBOs only have ONE */
+        std::vector<TextureFrame*> m_frames;
     };
 };
