@@ -478,7 +478,7 @@ namespace WallpaperEngine::Render::Shaders
         if (this->m_recursive == false)
         {
             // add the opengl compatibility at the top
-            finalCode =   "#version 130\n"
+            finalCode =   "#version 150\n"
                           "#define highp\n"
                           "#define mediump\n"
                           "#define lowp\n"
@@ -502,6 +502,20 @@ namespace WallpaperEngine::Render::Shaders
                           "#define float2 vec2\n"
                           "#define float3 vec3\n"
                           "#define float4 vec4\n";
+
+            if (this->m_type == Type_Vertex)
+            {
+                finalCode +=
+                    "#define varying out\n"
+                    "#define attribute in\n";
+            }
+            else
+            {
+                finalCode +=
+                    "#define varying in\n"
+                    "#define gl_FragColor glOutColor\n"
+                    "out vec4 glOutColor;\n";
+            }
 
             // add combo values
             auto cur = this->m_combos->begin ();

@@ -36,18 +36,18 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object, CContainer* contai
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*file_it).get <std::string> (), container));
 
     auto name_it = jsonFindRequired (content, "name", "Effect must have a name");
-    auto description_it = jsonFindRequired (content, "description", "Effect must have a description");
+    auto description = jsonFindDefault <std::string> (content, "description", "");
     auto group_it = jsonFindRequired (content, "group", "Effect must have a group");
-    auto preview_it = jsonFindRequired (content, "preview", "Effect must have a preview");
+    auto preview = jsonFindDefault <std::string> (content, "preview", "");
     auto passes_it = jsonFindRequired (content, "passes", "Effect must have a pass list");
     auto dependencies_it = jsonFindRequired (content, "dependencies", "");
     auto fbos_it = content.find ("fbos");
 
     CEffect* effect = new CEffect (
         *name_it,
-        *description_it,
+        description,
         *group_it,
-        *preview_it,
+        preview,
         object
     );
 
