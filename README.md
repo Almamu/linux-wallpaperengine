@@ -23,6 +23,16 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - GLUT
 - FreeImage
 
+## Commands
+`sudo apt update  `
+
+`sudo apt-get update  `
+
+`sudo apt -y install cmake lz4 zlib1g ffmpeg libxxf86vm-dev libglm-dev freeglut3-dev libxrandr-dev libavcodec-dev libavformat-dev libavfilter-dev libsdl1.2-dev libsdl-mixer1.2-dev`  
+
+`sudo apt-get -y install libsdl2-2.0 libsdl-image1.2-dev libsdl1.2-dev libglfw3 libglfw3-dev  `
+
+
 # 5. How to use
 ## 5.1. Pre-requirements
 In order to properly use this software you'll need to own an actual copy of the Windows version of Wallpaper Engine (which you can buy on the [Steam Page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)), as it contains some basic assets on which most of the backgrounds are based on.
