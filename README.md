@@ -85,35 +85,36 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469&searchtext=por
 
 Where 1845706469 is the wallpaper's ID. You can use this ID to run wallengine:
 ```
-./wallengine 1845706469
+./linux-wallpaperengine 1845706469
 ```
 
 ### 5.5.2. Running a background in a different folder
 For the situations where the software cannot detect where the backgrounds are stored, you can specify a full path to it, like so:
 ```
-./wallengine /home/almamu/Development/backgrounds/1845706469/
+./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
 ```
 
 ### 5.5.2. Running in a window (Default)
 By default the app will load the backgrounds in a window so you can preview them:
 ```
-./wallengine /home/almamu/Development/backgrounds/1845706469/
+./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
 ```
 
 Where `/home/almamu/Development/backgrounds/1845706469/` is the background's path.
 
 ### 5.5.3. Running as a screen's background
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
-```
-./wallengine --screen-root HDMI-1 --screen-root DVI-D-1 /home/almamu/Development/backgrounds/1845706469/
-```
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, nautilus, etc)**
+
+```
+./linux-wallpaperengine --screen-root HDMI-1 --screen-root DVI-D-1 /home/almamu/Development/backgrounds/1845706469/
+```
 
 ### 5.5.4. Limiting FPS
 To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
 ```
-./wallengine --fps 30
+./linux-wallpaperengine --fps 30
 ```
 
 ## 6. Example background
