@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(wallengine)
+project(linux-wallpaperengine)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
@@ -33,7 +33,7 @@ include_directories(
     include)
 
 add_executable(
-        wallengine
+        linux-wallpaperengine
         main.cpp
 
         src/WallpaperEngine/Assets/CPackageLoadException.cpp
@@ -194,7 +194,7 @@ add_executable(
         src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 )
 
-target_link_libraries(wallengine
+target_link_libraries(linux-wallpaperengine
     ${X11_LIBRARIES}
     ${Xrandr_LIBRARIES}
     ${X11_Xxf86vm_LIB}
@@ -208,6 +208,8 @@ target_link_libraries(wallengine
     ${FFMPEG_LIBRARIES}
     ${FREEIMAGE_LIBRARIES}
     glfw)
+
+file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
 
 set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
 
