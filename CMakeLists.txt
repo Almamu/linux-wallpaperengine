@@ -16,7 +16,8 @@ find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(SDL REQUIRED)
 find_package(LZ4 REQUIRED)
-find_package(FFMPEG REQUIRED)
+find_path(AVCODEC_INCLUDE_DIR libavcodec/avcodec.h)
+find_library(AVCODEC_LIBRARY avcodec)
 find_package(FreeImage REQUIRED)
 
 
