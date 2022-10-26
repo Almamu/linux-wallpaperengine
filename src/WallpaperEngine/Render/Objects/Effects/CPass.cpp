@@ -37,10 +37,8 @@ ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previo
     {
         auto it = this->m_fbos.find (index);
 
-        if (it == this->m_fbos.end ())
-            return nullptr;
-
-        expected = (*it).second;
+        if (it != this->m_fbos.end ())
+            expected = (*it).second;
     }
 
     // first check in the binds and replace it if necessary
@@ -203,7 +201,11 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             if ((*cur).first <= lastTextureIndex)
                 continue;
 
-            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
+
+            if (texture == nullptr)
+                continue;
+
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
@@ -221,7 +223,11 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             if ((*cur).first <= lastTextureIndex)
                 continue;
 
-            texture = this->resolveTexture ((*cur).second, (*cur).first);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
+
+            if (texture == nullptr)
+                continue;
+
             // set the active texture index
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             // bind the correct texture here
@@ -479,7 +485,8 @@ void CPass::setupUniforms ()
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
             texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
-            this->addUniform (namestream.str (), texture->getResolution ());
+            if (texture != nullptr)
+                this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
 
@@ -498,7 +505,9 @@ void CPass::setupUniforms ()
             namestream << "g_Texture" << (*cur).first << "Resolution";
 
             texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
-            this->addUniform (namestream.str (), texture->getResolution ());
+
+            if (texture != nullptr)
+                this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
 

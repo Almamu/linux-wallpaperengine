@@ -46,8 +46,16 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
 
     for (; objectsCur != objectsEnd; objectsCur ++)
     {
-        if ((*objectsCur)->is <Objects::CImage> () == true)
-            (*objectsCur)->as <Objects::CImage> ()->setup ();
+        try
+        {
+            if ((*objectsCur)->is <Objects::CImage> () == true)
+                (*objectsCur)->as <Objects::CImage> ()->setup ();
+        }
+        catch (std::runtime_error ex)
+        {
+            std::cerr << "Cannot setup image resource: " << std::endl;
+            std::cerr << ex.what () << std::endl;
+        }
     }
 }
 

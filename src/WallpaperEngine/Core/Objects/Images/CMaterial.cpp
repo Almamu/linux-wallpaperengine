@@ -9,38 +9,39 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
-CMaterial::CMaterial () :
-    m_target ("")
+CMaterial::CMaterial (const std::string& name) :
+    m_target (""),
+    m_name (name)
 {
 }
 
 CMaterial* CMaterial::fromFile (const std::string& filename, CContainer* container)
 {
     return fromJSON (
-        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container))
+        filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container))
     );
 }
 CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, CContainer* container)
 {
     return fromJSON (
-        json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)), target
+        filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)), target
     );
 }
 
-CMaterial* CMaterial::fromJSON (json data, const std::string& target)
+CMaterial* CMaterial::fromJSON (const std::string& name, json data, const std::string& target)
 {
-    CMaterial* material = fromJSON (data);
+    CMaterial* material = fromJSON (name, data);
 
     material->setTarget (target);
 
     return material;
 }
 
-CMaterial* CMaterial::fromJSON (json data)
+CMaterial* CMaterial::fromJSON (const std::string& name, json data)
 {
     auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
 
-    CMaterial* material = new CMaterial ();
+    CMaterial* material = new CMaterial (name);
 
     auto cur = (*passes_it).begin ();
     auto end = (*passes_it).end ();
@@ -82,6 +83,11 @@ const std::map <int, Effects::CBind*>& CMaterial::getTextureBinds () const
 const std::string& CMaterial::getTarget () const
 {
     return this->m_target;
+}
+
+const std::string& CMaterial::getName () const
+{
+    return this->m_name;
 }
 
 const bool CMaterial::hasTarget () const

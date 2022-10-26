@@ -392,7 +392,7 @@ namespace WallpaperEngine::Render::Shaders
 
                         this->m_compiledContent += "// [COMBO] " + configuration;
 
-                        this->parseComboConfiguration (configuration, 1); BREAK_IF_ERROR;
+                        this->parseComboConfiguration (configuration, 0); BREAK_IF_ERROR;
                     }
                     else if (this->peekString ("[COMBO_OFF]", it) == true)
                     {
@@ -478,12 +478,13 @@ namespace WallpaperEngine::Render::Shaders
         if (this->m_recursive == false)
         {
             // add the opengl compatibility at the top
-            finalCode =   "#version 150\n"
+            finalCode =   "#version 130\n"
                           "#define highp\n"
                           "#define mediump\n"
                           "#define lowp\n"
                           "#define mul(x, y) ((y) * (x))\n"
                           "#define max(x, y) max (y, x)\n"
+                          "#define fmod(x, y) (x-y*trunc(x/y))\n"
                           "#define lerp mix\n"
                           "#define frac fract\n"
                           "#define CAST2(x) (vec2(x))\n"
@@ -491,31 +492,16 @@ namespace WallpaperEngine::Render::Shaders
                           "#define CAST4(x) (vec4(x))\n"
                           "#define CAST3X3(x) (mat3(x))\n"
                           "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
-                          "#define texSample2D texture2D\n"
+                          "#define texSample2D texture\n"
                           "#define texSample2DLod textureLod\n"
                           "#define atan2 atan\n"
                           "#define ddx dFdx\n"
                           "#define ddy(x) dFdy(-(x))\n"
                           "#define GLSL 1\n"
-                          "#define HLSL 1\n"
                           "#define float1 float\n"
                           "#define float2 vec2\n"
                           "#define float3 vec3\n"
                           "#define float4 vec4\n";
-
-            if (this->m_type == Type_Vertex)
-            {
-                finalCode +=
-                    "#define varying out\n"
-                    "#define attribute in\n";
-            }
-            else
-            {
-                finalCode +=
-                    "#define varying in\n"
-                    "#define gl_FragColor glOutColor\n"
-                    "out vec4 glOutColor;\n";
-            }
 
             // add combo values
             auto cur = this->m_combos->begin ();
@@ -680,6 +666,19 @@ namespace WallpaperEngine::Render::Shaders
                             std::make_pair (index, texture)
                     );
                 }
+            }
+            else
+            {
+                // material name is not resolved on compile time, but passes will do it after
+
+                // extract the texture number from the name
+                char value = name.at (std::string("g_Texture").length ());
+                // now convert it to integer
+                int index = value - '0';
+
+                this->m_textures.insert (
+                    std::make_pair (index, nullptr)
+                );
             }
 
             // samplers are not saved, we can ignore them for now

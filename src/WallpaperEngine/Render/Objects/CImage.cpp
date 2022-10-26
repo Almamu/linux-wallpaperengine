@@ -7,7 +7,8 @@ using namespace WallpaperEngine::Render::Objects;
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_image (image),
-    m_texture (nullptr)
+    m_texture (nullptr),
+    m_initialized (false)
 {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
@@ -219,6 +220,8 @@ void CImage::setup ()
 
     for (; cur != end; cur ++)
         this->m_animationTime += (*cur)->frametime;
+
+    this->m_initialized = true;
 }
 
 void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
@@ -341,6 +344,10 @@ void CImage::complexRender ()
 
 void CImage::render ()
 {
+    // do not try to render something that did not initialize successfully
+    if (this->m_initialized == false)
+        return;
+
     // first and foremost reset the framebuffer switching
     this->m_currentMainFBO = this->m_mainFBO;
     this->m_currentSubFBO = this->m_subFBO;

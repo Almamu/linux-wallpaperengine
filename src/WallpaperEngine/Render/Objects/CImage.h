@@ -83,5 +83,7 @@ namespace WallpaperEngine::Render::Objects
         Effects::CMaterial* m_copyMaterial;
 
         double m_animationTime;
+
+        bool m_initialized;
     };
 }
