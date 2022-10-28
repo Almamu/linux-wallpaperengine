@@ -25,6 +25,7 @@ namespace WallpaperEngine::Render
         void setDefaultViewport (glm::vec4 defaultViewport);
         CMouseInput* getMouse () const;
         void setMouse (CMouseInput* mouse);
+        CWallpaper* getWallpaper () const;
 
     private:
         Display* m_display;

@@ -371,4 +371,9 @@ int CVideo::getHeight ()
     return this->m_codecCtx->height;
 }
 
+int CVideo::getFPS ()
+{
+    return this->m_codecCtx->framerate.num;
+}
+
 const std::string CVideo::Type = "video";

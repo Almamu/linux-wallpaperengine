@@ -37,6 +37,8 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
     {
         wallpaper = new CVideo (file.c_str ());
     }
+    else if (type == "web")
+        throw std::runtime_error ("Web wallpapers not supported yet");
     else
         throw std::runtime_error ("Unsupported wallpaper type");
 

@@ -243,3 +243,8 @@ void CContext::setMouse (CMouseInput* mouse)
 {
     this->m_mouse = mouse;
 }
+
+CWallpaper* CContext::getWallpaper () const
+{
+    return this->m_wallpaper;
+}

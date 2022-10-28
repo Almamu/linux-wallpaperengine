@@ -25,6 +25,8 @@ namespace WallpaperEngine::Render
         int getWidth ();
         int getHeight ();
 
+        int getFPS ();
+
     protected:
         void renderFrame (glm::ivec4 viewport) override;
 
