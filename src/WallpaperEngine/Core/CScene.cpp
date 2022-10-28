@@ -210,7 +210,7 @@ const FloatColor& CScene::getClearColor () const
     return this->m_clearColor;
 }
 
-const Scenes::CProjection* CScene::getOrthogonalProjection () const
+Scenes::CProjection* CScene::getOrthogonalProjection () const
 {
     return this->m_orthogonalProjection;
 }

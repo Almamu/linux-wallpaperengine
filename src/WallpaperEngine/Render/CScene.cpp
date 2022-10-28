@@ -14,10 +14,31 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
+
+    // detect size if the orthogonal project is auto
+    if (scene->getOrthogonalProjection ()->isAuto () == true)
+    {
+        // calculate the size of the projection based on the size of everything
+        auto cur = scene->getObjects ().begin ();
+        auto end = scene->getObjects ().end ();
+
+        for (; cur != end; cur ++)
+        {
+            if ((*cur)->is<Core::Objects::CImage> () == false)
+                continue;
+
+            glm::vec2 size = (*cur)->as <Core::Objects::CImage> ()->getSize ();
+
+            scene->getOrthogonalProjection ()->setWidth (size.x);
+            scene->getOrthogonalProjection ()->setHeight (size.y);
+        }
+    }
+    
     this->m_camera->setOrthogonalProjection (
         scene->getOrthogonalProjection ()->getWidth (),
         scene->getOrthogonalProjection ()->getHeight ()
     );
+
     // setup framebuffers
     this->setupFramebuffers ();
 

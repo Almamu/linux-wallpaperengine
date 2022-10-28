@@ -38,7 +38,7 @@ namespace WallpaperEngine::Core
         const double getCameraShakeRoughness() const;
         const double getCameraShakeSpeed() const;
         const FloatColor& getClearColor() const;
-        const Scenes::CProjection* getOrthogonalProjection() const;
+        Scenes::CProjection* getOrthogonalProjection() const;
         const FloatColor& getSkylightColor() const;
         const Scenes::CCamera* getCamera () const;
 
