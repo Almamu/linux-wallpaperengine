@@ -28,10 +28,14 @@ namespace WallpaperEngine::Render::Shaders
             CContainer* container,
             std::string filename,
             Type type,
-            std::map<std::string, int>* combos,
+            std::map <std::string, int>* combos,
+            std::map <std::string, bool>* foundCombos,
+            const std::vector <std::string>& textures,
             const std::map<std::string, CShaderConstant*>& constants,
             bool recursive) :
         m_combos (combos),
+        m_foundCombos (foundCombos),
+        m_passTextures (textures),
         m_recursive (recursive),
         m_type (type),
         m_file (std::move(filename)),
@@ -220,7 +224,7 @@ namespace WallpaperEngine::Render::Shaders
     {
         // now compile the new shader
         // do not include the default header (as it's already included in the parent)
-        Compiler loader (this->m_container, std::move (filename), Type_Include, this->m_combos, this->m_constants, true);
+        Compiler loader (this->m_container, std::move (filename), Type_Include, this->m_combos, this->m_foundCombos, this->m_passTextures, this->m_constants, true);
 
         loader.precompile ();
 
@@ -479,6 +483,9 @@ namespace WallpaperEngine::Render::Shaders
         {
             // add the opengl compatibility at the top
             finalCode =   "#version 130\n"
+                          "// ======================================================\n"
+                          "// Processed shader " + this->m_file + "\n"
+                          "// ======================================================\n"
                           "#define highp\n"
                           "#define mediump\n"
                           "#define lowp\n"
@@ -503,13 +510,23 @@ namespace WallpaperEngine::Render::Shaders
                           "#define float3 vec3\n"
                           "#define float4 vec4\n";
 
+            finalCode +=  "// ======================================================\n"
+                          "// Shader combo parameter definitions\n"
+                          "// ======================================================\n";
+
             // add combo values
-            auto cur = this->m_combos->begin ();
-            auto end = this->m_combos->end ();
+            auto cur = this->m_foundCombos->begin ();
+            auto end = this->m_foundCombos->end ();
 
             for (; cur != end; cur ++)
             {
-                finalCode += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
+                // find the right value for the combo in the combos map
+                auto combo = this->m_combos->find ((*cur).first);
+
+                if (combo == this->m_combos->end ())
+                    continue;
+
+                finalCode += "#define " + (*cur).first + " " + std::to_string ((*combo).second) + "\n";
             }
         }
 
@@ -540,6 +557,9 @@ namespace WallpaperEngine::Render::Shaders
 
         // check the combos
         std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
+
+        // add the combo to the found list
+        this->m_foundCombos->insert (std::make_pair <std::string, int> (*combo, true));
 
         // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
         // so only define the ones that are not already defined
@@ -650,17 +670,26 @@ namespace WallpaperEngine::Render::Shaders
 
             if (combo != data.end ())
             {
-                // add the new combo to the list
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
+                // extract the texture number from the name
+                char value = name.at (std::string("g_Texture").length ());
+                // now convert it to integer
+                int index = value - '0';
+
+                // if the texture exists, add the combo
+                if (this->m_passTextures.size () > index)
+                {
+                    // add the new combo to the list
+                    this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
+
+                    // textures linked to combos need to be tracked too
+                    if (this->m_foundCombos->find (*combo) == this->m_foundCombos->end ())
+                        this->m_foundCombos->insert (std::make_pair <std::string, bool> (*combo, true));
+                }
 
                 if (textureName != data.end ())
                 {
                     // also ensure that the textureName is loaded and we know about it
                     ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
-                    // extract the texture number from the name
-                    char value = name.at (std::string("g_Texture").length ());
-                    // now convert it to integer
-                    int index = value - '0';
 
                     this->m_textures.insert (
                             std::make_pair (index, texture)

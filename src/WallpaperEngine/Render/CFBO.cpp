@@ -2,10 +2,18 @@
 
 using namespace WallpaperEngine::Render;
 
-CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight) :
+CFBO::CFBO (
+    std::string name,
+    ITexture::TextureFormat format,
+    ITexture::TextureFlags flags,
+    float scale,
+    uint32_t realWidth, uint32_t realHeight,
+    uint32_t textureWidth, uint32_t textureHeight
+) :
     m_name (std::move (name)),
     m_format (format),
-    m_scale (scale)
+    m_scale (scale),
+    m_flags (flags)
 {
     // create an empty texture that'll be free'd so the FBO is transparent
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
@@ -18,13 +26,30 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, float scale, uint3
     glBindTexture (GL_TEXTURE_2D, this->m_texture);
     // give OpenGL an empty image
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
     // set filtering parameters, otherwise the texture is not rendered
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    if (flags & TextureFlags::ClampUVs)
+    {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+    else
+    {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+
+    if (flags & TextureFlags::NoInterpolation)
+    {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+    else
+    {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+
     glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // set the texture as the colour attachmend #0
     glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_texture, 0);
@@ -71,6 +96,11 @@ const float& CFBO::getScale () const
 const ITexture::TextureFormat CFBO::getFormat () const
 {
     return this->m_format;
+}
+
+const ITexture::TextureFlags CFBO::getFlags () const
+{
+    return this->m_flags;
 }
 
 GLuint CFBO::getFramebuffer () const

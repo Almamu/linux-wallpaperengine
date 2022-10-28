@@ -27,6 +27,7 @@ namespace WallpaperEngine::Assets
         const uint32_t getRealWidth () const override;
         const uint32_t getRealHeight () const override;
         const TextureFormat getFormat () const override;
+        const TextureFlags getFlags () const override;
         const glm::vec4* getResolution () const override;
         const std::vector<TextureFrame*>& getFrames () const override;
         const bool isAnimated () const override;
@@ -73,17 +74,6 @@ namespace WallpaperEngine::Assets
              * Performs actual decompression of the compressed data
              */
             void decompressData ();
-        };
-
-        /**
-         * Configures how the texture will be handled by the background
-         */
-        enum TextureFlags : uint32_t
-        {
-            NoFlags = 0,
-            NoInterpolation = 1,
-            ClampUVs = 2,
-            IsGif = 4,
         };
 
         class TextureHeader

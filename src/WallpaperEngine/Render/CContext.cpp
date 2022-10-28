@@ -136,7 +136,14 @@ void CContext::initializeViewports ()
     XRRFreeScreenResources (screenResources);
 
     // create the fbo that will handle the screen
-    this->m_fbo = new CFBO("_sc_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, fullWidth, fullHeight, fullWidth, fullHeight);
+    this->m_fbo = new CFBO(
+        "_sc_FullFrameBuffer",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        fullWidth, fullHeight,
+        fullWidth, fullHeight
+    );
 
     // set the window background so the pixmap is drawn
     XSetWindowBackgroundPixmap(this->m_display, root, this->m_pixmap);

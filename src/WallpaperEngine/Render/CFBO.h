@@ -11,11 +11,12 @@ namespace WallpaperEngine::Render
     class CFBO : public ITexture
     {
     public:
-        CFBO (std::string name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+        CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
         const std::string& getName () const;
         const float& getScale () const;
         const ITexture::TextureFormat getFormat () const override;
+        const ITexture::TextureFlags getFlags () const override;
         GLuint getFramebuffer () const;
         GLuint getDepthbuffer () const;
         const GLuint getTextureID (uint32_t imageIndex = 0) const override;
@@ -36,6 +37,7 @@ namespace WallpaperEngine::Render
         float m_scale;
         std::string m_name;
         ITexture::TextureFormat m_format;
+        ITexture::TextureFlags m_flags;
         /** Placeholder for frames, FBOs only have ONE */
         std::vector<TextureFrame*> m_frames;
     };

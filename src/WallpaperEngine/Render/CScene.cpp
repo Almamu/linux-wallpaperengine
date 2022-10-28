@@ -33,7 +33,7 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
             scene->getOrthogonalProjection ()->setHeight (size.y);
         }
     }
-    
+
     this->m_camera->setOrthogonalProjection (
         scene->getOrthogonalProjection ()->getWidth (),
         scene->getOrthogonalProjection ()->getHeight ()

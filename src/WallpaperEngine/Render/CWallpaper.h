@@ -52,7 +52,7 @@ namespace WallpaperEngine::Render
          * @param name The name of the FBO
          * @return
          */
-        CFBO* createFBO (const std::string& name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+        CFBO* createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
         /**
          * @return The full FBO list to work with

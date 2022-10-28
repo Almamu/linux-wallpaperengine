@@ -132,6 +132,22 @@ CObject* CObject::fromJSON (json data, CContainer* container)
 
         for (; cur != end; cur ++)
         {
+            // check if the effect is visible or not
+            auto effectVisible_it = (*cur).find ("visible");
+
+            if (effectVisible_it != (*cur).end ())
+            {
+                if ((*effectVisible_it).is_boolean () && (*effectVisible_it) == false)
+                    continue;
+                if ((*effectVisible_it).is_object () == true)
+                {
+                    auto effectVisibleValue_it = (*effectVisible_it).find ("value");
+
+                    if (effectVisibleValue_it != (*effectVisible_it).end () && (*effectVisibleValue_it) == false)
+                        continue;
+                }
+            }
+
             object->insertEffect (
                 Objects::CEffect::fromJSON (*cur, object, container)
             );

@@ -55,6 +55,8 @@ namespace WallpaperEngine::Render::Shaders
             std::string filename,
             Type type,
             std::map<std::string, int>* combos,
+            std::map<std::string, bool>* foundCombos,
+            const std::vector <std::string>& textures,
             const std::map<std::string, CShaderConstant*>& constants,
             bool recursive = false
         );
@@ -231,6 +233,16 @@ namespace WallpaperEngine::Render::Shaders
          * The combos the shader should be generated with
          */
          std::map <std::string, int>* m_combos;
+
+         /**
+          * The combos the shader code has defined (shared between fragment and vertex)
+          */
+         std::map <std::string, bool>* m_foundCombos;
+
+         /**
+          * The list of textures the pass knows about
+          */
+         const std::vector <std::string> m_passTextures;
          /**
           * The shader constants with values for variables inside the shader
           */

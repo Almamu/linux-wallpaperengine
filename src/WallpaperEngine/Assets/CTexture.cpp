@@ -249,6 +249,11 @@ const ITexture::TextureFormat CTexture::getFormat () const
     return this->getHeader ()->format;
 }
 
+const ITexture::TextureFlags CTexture::getFlags () const
+{
+    return this->getHeader ()->flags;
+}
+
 const CTexture::TextureHeader* CTexture::getHeader () const
 {
     return this->m_header;

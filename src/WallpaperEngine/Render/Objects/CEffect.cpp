@@ -57,6 +57,7 @@ void CEffect::generateFBOs ()
             new CFBO (
                 (*cur)->getName (),
                 ITexture::TextureFormat::ARGB8888, // TODO: CHANGE
+                this->m_image->getTexture ()->getFlags (), // TODO: CHANGE
                 (*cur)->getScale (),
                 this->m_image->getSize ().x / (*cur)->getScale (),
                 this->m_image->getSize ().y / (*cur)->getScale (),

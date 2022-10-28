@@ -61,7 +61,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         glm::vec2 realSize = size * glm::vec2 (scale);
 
         // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly handled
-        this->m_texture = new CFBO ("", ITexture::TextureFormat::ARGB8888, 1, realSize.x, realSize.y, realSize.x, realSize.y);
+        this->m_texture = new CFBO (
+            "",
+            ITexture::TextureFormat::ARGB8888,
+            ITexture::TextureFlags::NoFlags,
+            1,
+            realSize.x, realSize.y,
+            realSize.x, realSize.y
+        );
     }
 
     // register both FBOs into the scene
@@ -70,8 +77,22 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
-    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, 1, this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (), this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ());
+    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (
+        nameA.str (),
+        ITexture::TextureFormat::ARGB8888,
+        this->m_texture->getFlags (),
+        1,
+        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (),
+        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ()
+    );
+    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (
+        nameB.str (),
+        ITexture::TextureFormat::ARGB8888,
+        this->m_texture->getFlags (),
+        1,
+        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (),
+        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ()
+    );
 
     GLfloat realWidth = this->m_texture->getRealWidth () / 2;
     GLfloat realHeight = this->m_texture->getRealHeight () / 2;
@@ -109,7 +130,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     if (this->getTexture ()->isAnimated () == true)
     {
-        // animated images use different coordinates as they're essentially a texture atlast
+        // animated images use different coordinates as they're essentially a texture atlas
         width = static_cast<float> (this->getTexture ()->getRealWidth ()) / static_cast<float> (this->getTexture ()->getTextureWidth ());
         height = static_cast<float> (this->getTexture ()->getRealHeight ()) / static_cast<float> (this->getTexture ()->getTextureHeight ());
     }

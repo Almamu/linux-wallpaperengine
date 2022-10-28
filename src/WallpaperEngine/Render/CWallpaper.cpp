@@ -319,7 +319,14 @@ void CWallpaper::setupFramebuffers ()
     }
 
     // create framebuffer for the scene
-    this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, 1.0, windowWidth, windowHeight, windowWidth, windowHeight);
+    this->m_sceneFBO = this->createFBO (
+        "_rt_FullFrameBuffer",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        windowWidth, windowHeight,
+        windowWidth, windowHeight
+    );
 }
 
 CContext* CWallpaper::getContext ()
@@ -327,9 +334,9 @@ CContext* CWallpaper::getContext ()
     return this->m_context;
 }
 
-CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)
+CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)
 {
-    CFBO* fbo = new CFBO (name, format, scale, realWidth, realHeight, textureWidth, textureHeight);
+    CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
     this->m_fbos.insert (std::make_pair (name, fbo));
 

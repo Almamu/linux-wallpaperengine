@@ -90,6 +90,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         Core::Objects::Images::Materials::CPass* m_pass;
         std::vector<ITexture*> m_textures;
         std::map<int, CFBO*> m_fbos;
+        std::map <std::string, bool> m_foundCombos;
         std::vector<AttribEntry*> m_attribs;
         std::map<std::string, UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;

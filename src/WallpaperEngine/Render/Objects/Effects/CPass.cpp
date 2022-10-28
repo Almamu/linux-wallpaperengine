@@ -369,6 +369,8 @@ void CPass::setupShaders ()
         this->m_pass->getShader (),
         Shaders::Compiler::Type_Pixel,
         this->m_pass->getCombos (),
+        &m_foundCombos,
+        this->m_pass->getTextures (),
         this->m_pass->getConstants ()
     );
     this->m_fragShader->precompile ();
@@ -377,6 +379,8 @@ void CPass::setupShaders ()
         this->m_pass->getShader (),
         Shaders::Compiler::Type_Vertex,
         this->m_pass->getCombos (),
+        &m_foundCombos,
+        this->m_pass->getTextures (),
         this->m_pass->getConstants ()
     );
     this->m_vertShader->precompile ();
