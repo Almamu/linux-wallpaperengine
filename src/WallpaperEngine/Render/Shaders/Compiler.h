@@ -235,6 +235,11 @@ namespace WallpaperEngine::Render::Shaders
          std::map <std::string, int>* m_combos;
 
          /**
+          * Combos that come from the pass' chain that should be added
+          */
+         std::map <std::string, int> m_baseCombos;
+
+         /**
           * The combos the shader code has defined (shared between fragment and vertex)
           */
          std::map <std::string, bool>* m_foundCombos;

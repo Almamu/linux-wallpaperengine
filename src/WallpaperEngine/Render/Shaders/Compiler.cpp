@@ -43,7 +43,8 @@ namespace WallpaperEngine::Render::Shaders
         m_error (""),
         m_errorInfo (""),
         m_constants (constants),
-        m_container (container)
+        m_container (container),
+        m_baseCombos ()
     {
         if (type == Type_Vertex)
             this->m_content = this->m_container->readVertexShader (this->m_file);
@@ -51,6 +52,13 @@ namespace WallpaperEngine::Render::Shaders
             this->m_content = this->m_container->readFragmentShader (this->m_file);
         else if (type == Type_Include)
             this->m_content = this->m_container->readIncludeShader (this->m_file);
+
+        // clone the combos into the baseCombos to keep track of values that must be embedded no matter what
+        auto cur = this->m_combos->begin ();
+        auto end = this->m_combos->end ();
+
+        for (; cur != end; cur ++)
+            this->m_baseCombos.insert (std::make_pair ((*cur).first, (*cur).second));
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -515,19 +523,36 @@ namespace WallpaperEngine::Render::Shaders
                           "// Shader combo parameter definitions\n"
                           "// ======================================================\n";
 
-            // add combo values
-            auto cur = this->m_foundCombos->begin ();
-            auto end = this->m_foundCombos->end ();
-
-            for (; cur != end; cur ++)
             {
-                // find the right value for the combo in the combos map
-                auto combo = this->m_combos->find ((*cur).first);
+                // add combo values
+                auto cur = this->m_foundCombos->begin ();
+                auto end = this->m_foundCombos->end ();
 
-                if (combo == this->m_combos->end ())
-                    continue;
+                for (; cur != end; cur++)
+                {
+                    // find the right value for the combo in the combos map
+                    auto combo = this->m_combos->find ((*cur).first);
 
-                finalCode += "#define " + (*cur).first + " " + std::to_string ((*combo).second) + "\n";
+                    if (combo == this->m_combos->end ())
+                        continue;
+
+                    finalCode += "#define " + (*cur).first + " " + std::to_string ((*combo).second) + "\n";
+                }
+            }
+            // add base combos that come from the pass change that MUST be added
+            {
+                auto cur = this->m_baseCombos.begin ();
+                auto end = this->m_baseCombos.end ();
+
+                for (; cur != end; cur ++)
+                {
+                    auto alreadyFound = this->m_foundCombos->find ((*cur).first);
+
+                    if (alreadyFound != this->m_foundCombos->end ())
+                        continue;
+
+                    finalCode += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
+                }
             }
         }
 
