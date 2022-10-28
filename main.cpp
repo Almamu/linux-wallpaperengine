@@ -386,6 +386,10 @@ int main (int argc, char* argv[])
         WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), containers, context)
     );
 
+    // update maximum FPS if it's a video
+    if (context->getWallpaper ()->is <WallpaperEngine::Render::CVideo> () == true)
+        maximumFPS = context->getWallpaper ()->as <WallpaperEngine::Render::CVideo> ()->getFPS ();
+
     // TODO: FIGURE OUT THE REQUIRED INPUT MODE, AS SOME WALLPAPERS USE THINGS LIKE MOUSE POSITION
     // glfwSetInputMode (window, GLFW_STICKY_KEYS, GL_TRUE);
 

@@ -22,9 +22,13 @@ CTexture::CTexture (void* fileData)
     }
     else
     {
+        // TODO: DETERMINE IF TEXTURES CAN HAVE 0 IMAGES
+        // get first image size
+        std::vector<TextureMipmap*>::const_iterator element = this->m_header->images.find (0)->second.begin ();
+
         // set the texture resolution
         this->m_resolution = {
-            this->m_header->textureWidth, this->m_header->textureHeight,
+            (*element)->width, (*element)->height,
             this->m_header->width, this->m_header->height
         };
     }
