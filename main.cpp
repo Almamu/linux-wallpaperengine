@@ -14,6 +14,7 @@
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CContext.h"
+#include "WallpaperEngine/Render/CVideo.h"
 
 #include "WallpaperEngine/Assets/CPackage.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
