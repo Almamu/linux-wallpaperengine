@@ -95,6 +95,11 @@ namespace WallpaperEngine::Render::Objects::Effects
         std::map<std::string, UniformEntry*> m_uniforms;
         glm::mat4 m_modelViewProjectionMatrix;
 
+        /**
+         * Contains the final map of textures to be used
+         */
+        std::map <int, ITexture*> m_finalTextures;
+
         Render::Shaders::Compiler* m_fragShader;
         Render::Shaders::Compiler* m_vertShader;
 

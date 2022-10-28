@@ -24,10 +24,10 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
 
         for (; cur != end; cur ++)
         {
-            if ((*cur)->is<Core::Objects::CImage> () == false)
+            if ((*cur).second->is<Core::Objects::CImage> () == false)
                 continue;
 
-            glm::vec2 size = (*cur)->as <Core::Objects::CImage> ()->getSize ();
+            glm::vec2 size = (*cur).second->as <Core::Objects::CImage> ()->getSize ();
 
             scene->getOrthogonalProjection ()->setWidth (size.x);
             scene->getOrthogonalProjection ()->setHeight (size.y);
@@ -42,42 +42,84 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
     // setup framebuffers
     this->setupFramebuffers ();
 
-    auto cur = scene->getObjects ().begin ();
-    auto end = scene->getObjects ().end ();
+    // create all objects based off their dependencies
+    {
+
+        auto cur = scene->getObjects ().begin ();
+        auto end = scene->getObjects ().end ();
+
+        for (; cur != end; cur++)
+            this->createObject ((*cur).second);
+    }
+
+    // now setup the render order
+    auto cur = scene->getObjectsByRenderOrder ().begin ();
+    auto end = scene->getObjectsByRenderOrder ().end ();
 
     for (; cur != end; cur ++)
     {
-        CObject* object = nullptr;
+        auto obj = this->m_objects.find ((*cur)->getId ());
 
-        if ((*cur)->is<Core::Objects::CImage>() == true)
-        {
-            object = new Objects::CImage (this, (*cur)->as<Core::Objects::CImage>());
-        }
-        else if ((*cur)->is<Core::Objects::CSound>() == true)
-        {
-            object = new Objects::CSound (this, (*cur)->as<Core::Objects::CSound>());
-        }
+        // ignores not created objects like particle systems
+        if (obj == this->m_objects.end ())
+            continue;
 
-        if (object != nullptr)
-            this->m_objects.emplace_back (object);
+        this->m_objectsByRenderOrder.emplace_back ((*obj).second);
     }
 
-    auto objectsCur = this->m_objects.begin ();
-    auto objectsEnd = this->m_objects.end ();
+}
 
-    for (; objectsCur != objectsEnd; objectsCur ++)
+Render::CObject* CScene::createObject (Core::CObject* object)
+{
+    Render::CObject* renderObject = nullptr;
+
+    // ensure the item is not loaded already
+    auto current = this->m_objects.find (object->getId ());
+
+    if (current != this->m_objects.end ())
+        return (*current).second;
+
+    // check dependencies too!
+    auto depCur = object->getDependencies ().begin ();
+    auto depEnd = object->getDependencies ().end ();
+
+    for (; depCur != depEnd; depCur ++)
     {
+        // self-dependency is a possibility...
+        if ((*depCur) == object->getId ())
+            continue;
+
+        auto dep = this->getScene ()->getObjects ().find (*depCur);
+
+        if (dep != this->getScene ()->getObjects ().end ())
+            this->createObject ((*dep).second);
+    }
+
+    if (object->is<Core::Objects::CImage>() == true)
+    {
+        Objects::CImage* image = new Objects::CImage (this, object->as<Core::Objects::CImage>());
+
         try
         {
-            if ((*objectsCur)->is <Objects::CImage> () == true)
-                (*objectsCur)->as <Objects::CImage> ()->setup ();
+            image->setup ();
         }
         catch (std::runtime_error ex)
         {
             std::cerr << "Cannot setup image resource: " << std::endl;
             std::cerr << ex.what () << std::endl;
         }
+
+        renderObject = image;
     }
+    else if (object->is<Core::Objects::CSound>() == true)
+    {
+        renderObject = new Objects::CSound (this, object->as<Core::Objects::CSound>());
+    }
+
+    if (renderObject != nullptr)
+        this->m_objects.insert (std::make_pair (renderObject->getId (), renderObject));
+
+    return renderObject;
 }
 
 CCamera* CScene::getCamera () const
@@ -88,8 +130,8 @@ CCamera* CScene::getCamera () const
 void CScene::renderFrame (glm::ivec4 viewport)
 {
     auto projection = this->getScene ()->getOrthogonalProjection ();
-    auto cur = this->m_objects.begin ();
-    auto end = this->m_objects.end ();
+    auto cur = this->m_objectsByRenderOrder.begin ();
+    auto end = this->m_objectsByRenderOrder.end ();
 
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);

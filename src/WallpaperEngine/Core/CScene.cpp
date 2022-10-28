@@ -113,16 +113,23 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     return scene;
 }
 
-const std::vector<CObject*>& CScene::getObjects () const
+const std::map<uint32_t, CObject*>& CScene::getObjects () const
 {
     return this->m_objects;
+}
+const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const
+{
+    return this->m_objectsByRenderOrder;
 }
 
 void CScene::insertObject (CObject* object)
 {
     /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
     if (object != nullptr)
-        this->m_objects.push_back (object);
+    {
+        this->m_objects.insert (std::make_pair (object->getId (), object));
+        this->m_objectsByRenderOrder.emplace_back (object);
+    }
 }
 
 CContainer* CScene::getContainer ()

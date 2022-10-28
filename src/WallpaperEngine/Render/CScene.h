@@ -32,8 +32,11 @@ namespace WallpaperEngine::Render
         static const std::string Type;
 
     private:
+        Render::CObject* createObject (Core::CObject* object);
+
         CCamera* m_camera;
-        std::vector<CObject*> m_objects;
+        std::map<int, CObject*> m_objects;
+        std::vector<CObject*> m_objectsByRenderOrder;
         glm::vec2 m_mousePosition;
     };
 }

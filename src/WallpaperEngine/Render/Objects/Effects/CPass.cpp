@@ -170,68 +170,22 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
         }
     }
 
+    // first texture is a bit special as we have to take what comes from the chain first
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, texture->getTextureID (currentTexture));
-    int lastTextureIndex = 0;
 
-    // first bind the textures to their sampler place
+    // continue on the map from the second texture
+    if (this->m_finalTextures.empty () == false)
     {
-        // set texture slots for the shader
-        auto cur = this->m_textures.begin ();
-        auto end = this->m_textures.end ();
+        auto cur = this->m_finalTextures.begin ();
+        auto end = this->m_finalTextures.end ();
 
-        for (int index = 1; cur != end; cur ++, index ++)
+        for (; cur != end; cur ++)
         {
-            texture = this->resolveTexture ((*cur), index, input);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
 
-            glActiveTexture (GL_TEXTURE0 + index);
+            glActiveTexture (GL_TEXTURE0 + (*cur).first);
             glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
-            // increase the number of textures counter
-            lastTextureIndex ++;
-        }
-    }
-
-    {
-        // load the extra textures needed (if any) from the shader
-        auto cur = this->m_fragShader->getTextures ().begin ();
-        auto end = this->m_fragShader->getTextures ().end ();
-
-        for (; cur != end; cur ++)
-        {
-            if ((*cur).first <= lastTextureIndex)
-                continue;
-
-            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
-
-            if (texture == nullptr)
-                continue;
-
-            // set the active texture index
-            glActiveTexture (GL_TEXTURE0 + (*cur).first);
-            // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, texture->getTextureID (0));
-        }
-    }
-
-    {
-        // load the extra textures needed (if any) from the shader
-        auto cur = this->m_vertShader->getTextures ().begin ();
-        auto end = this->m_vertShader->getTextures ().end ();
-
-        for (; cur != end; cur ++)
-        {
-            if ((*cur).first <= lastTextureIndex)
-                continue;
-
-            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
-
-            if (texture == nullptr)
-                continue;
-
-            // set the active texture index
-            glActiveTexture (GL_TEXTURE0 + (*cur).first);
-            // bind the correct texture here
-            glBindTexture(GL_TEXTURE_2D, texture->getTextureID (0));
         }
     }
 
@@ -456,62 +410,69 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Texture7", 7);
     this->addUniform ("g_Texture0Resolution", texture->getResolution ());
 
-    int lastTextureIndex = 0;
-    // register the extra texture resolutions
+    // do the real, final texture setup for the whole process
     {
         auto cur = this->m_textures.begin ();
         auto end = this->m_textures.end ();
+        auto fragCur = this->m_fragShader->getTextures ().begin ();
+        auto fragEnd = this->m_fragShader->getTextures ().end ();
+        auto vertCur = this->m_vertShader->getTextures ().begin ();
+        auto vertEnd = this->m_vertShader->getTextures ().end ();
+        auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
+        auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
 
-        for (int index = 1; cur != end; cur ++, index ++)
+        int index = 1;
+
+        // technically m_textures should have the right amount of textures
+        // but better be safe than sorry
+        while (bindCur != bindEnd || cur != end || fragCur != fragEnd || vertCur != vertEnd)
+        {
+            if (bindCur != bindEnd)
+            {
+                this->m_finalTextures.insert (std::make_pair ((*bindCur).first, nullptr));
+            }
+
+            if (cur != end)
+            {
+                if ((*cur) != nullptr)
+                    this->m_finalTextures.insert (std::make_pair (index, *cur));
+
+                index ++;
+            }
+
+            if (fragCur != fragEnd && (*fragCur).second != nullptr)
+            {
+                this->m_finalTextures.insert (std::make_pair ((*fragCur).first, (*fragCur).second));
+            }
+
+            if (vertCur != vertEnd && (*vertCur).second != nullptr)
+            {
+                this->m_finalTextures.insert (std::make_pair ((*vertCur).first, (*vertCur).second));
+            }
+
+            if (bindCur != bindEnd)
+                bindCur ++;
+            if (cur != end)
+                cur ++;
+            if (fragCur != fragEnd)
+                fragCur ++;
+            if (vertCur != vertEnd)
+                vertCur ++;
+        }
+    }
+
+    {
+        auto cur = this->m_finalTextures.begin ();
+        auto end = this->m_finalTextures.end ();
+
+        for (; cur != end; cur ++)
         {
             std::ostringstream namestream;
 
-            namestream << "g_Texture" << index << "Resolution";
+            namestream << "g_Texture" << (*cur).first << "Resolution";
 
-            texture = this->resolveTexture ((*cur), index, texture);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
             this->addUniform (namestream.str (), texture->getResolution ());
-            lastTextureIndex ++;
-        }
-    }
-
-    // registers the extra texture resolutions from the shader
-    {
-        auto cur = this->m_fragShader->getTextures ().begin ();
-        auto end = this->m_fragShader->getTextures ().end ();
-
-        for (; cur != end; cur ++)
-        {
-            if ((*cur).first <= lastTextureIndex)
-                continue;
-
-            std::ostringstream namestream;
-
-            namestream << "g_Texture" << (*cur).first << "Resolution";
-
-            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
-            if (texture != nullptr)
-                this->addUniform (namestream.str (), texture->getResolution ());
-        }
-    }
-
-    // registers the extra texture resolutions from the shader
-    {
-        auto cur = this->m_vertShader->getTextures ().begin ();
-        auto end = this->m_vertShader->getTextures ().end ();
-
-        for (; cur != end; cur ++)
-        {
-            if ((*cur).first <= lastTextureIndex)
-                continue;
-
-            std::ostringstream namestream;
-
-            namestream << "g_Texture" << (*cur).first << "Resolution";
-
-            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
-
-            if (texture != nullptr)
-                this->addUniform (namestream.str (), texture->getResolution ());
         }
     }
 
@@ -599,16 +560,23 @@ void CPass::setupTextures ()
             {
                 this->m_fbos.insert (std::make_pair (index, fbo));
                 this->m_textures.emplace_back (
-                    nullptr
+                    fbo
                 );
             }
             // _rt_texture
         }
         else
         {
-            this->m_textures.emplace_back (
-                this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
-            );
+            if ((*cur) == "")
+            {
+                this->m_textures.emplace_back (nullptr);
+            }
+            else
+            {
+                this->m_textures.emplace_back (
+                    this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
+                );
+            }
         }
     }
 }

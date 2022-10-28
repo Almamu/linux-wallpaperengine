@@ -25,3 +25,8 @@ CContainer* CObject::getContainer () const
 {
     return this->getScene ()->getContainer ();
 }
+
+const int CObject::getId () const
+{
+    return this->m_object->getId ();
+}

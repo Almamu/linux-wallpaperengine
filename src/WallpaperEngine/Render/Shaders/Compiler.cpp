@@ -12,6 +12,7 @@
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
 
+#include "WallpaperEngine/Assets/CAssetLoadException.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
@@ -667,13 +668,13 @@ namespace WallpaperEngine::Render::Shaders
             // if needed
             auto combo = data.find ("combo");
             auto textureName = data.find ("default");
+            // extract the texture number from the name
+            char value = name.at (std::string("g_Texture").length ());
+            // now convert it to integer
+            int index = value - '0';
 
             if (combo != data.end ())
             {
-                // extract the texture number from the name
-                char value = name.at (std::string("g_Texture").length ());
-                // now convert it to integer
-                int index = value - '0';
 
                 // if the texture exists, add the combo
                 if (this->m_passTextures.size () > index)
@@ -698,16 +699,34 @@ namespace WallpaperEngine::Render::Shaders
             }
             else
             {
-                // material name is not resolved on compile time, but passes will do it after
+                // check for texture name too
+                if (textureName != data.end ())
+                {
+                    try
+                    {
+                        // also ensure that the textureName is loaded and we know about it
+                        ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
 
-                // extract the texture number from the name
-                char value = name.at (std::string("g_Texture").length ());
-                // now convert it to integer
-                int index = value - '0';
+                        this->m_textures.insert (
+                            std::make_pair (index, texture)
+                        );
+                    }
+                    catch (CAssetLoadException& ex)
+                    {
+                        // cannot resolve texture
+                        // TODO: TAKE CARE OF FBOS
+                        this->m_textures.insert (
+                            std::make_pair (index, nullptr)
+                        );
+                    }
+                }
+                else
+                {
+                    this->m_textures.insert (
+                        std::make_pair (index, nullptr)
+                    );
+                }
 
-                this->m_textures.insert (
-                    std::make_pair (index, nullptr)
-                );
             }
 
             // samplers are not saved, we can ignore them for now

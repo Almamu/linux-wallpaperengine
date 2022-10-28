@@ -212,6 +212,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
 void CImage::setup ()
 {
+    // do not double-init stuff, that's bad!
+    if (this->m_initialized)
+        return;
+
     // generate the main material used to copy the image to the correct texture
     this->m_copyMaterial = new Effects::CMaterial (
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),

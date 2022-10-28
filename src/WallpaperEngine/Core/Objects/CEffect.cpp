@@ -91,14 +91,16 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object, CContainer* contai
 
                         if ((*texturesCur).is_null () == true)
                         {
-                            if (object->is <CImage> () == false)
+                            if (textureNumber == 0)
                             {
-                                throw std::runtime_error ("unexpected null texture for non-image object");
+                                CImage* image = object->as <CImage> ();
+
+                                texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
                             }
-
-                            CImage* image = object->as <CImage> ();
-
-                            texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
+                            else
+                            {
+                                texture = "";
+                            }
                         }
                         else
                         {

@@ -21,7 +21,8 @@ namespace WallpaperEngine::Core
     public:
         static CScene* fromFile (const std::string& filename, CContainer* container);
 
-        const std::vector<CObject*>& getObjects () const;
+        const std::map<uint32_t, CObject*>& getObjects () const;
+        const std::vector<CObject*>& getObjectsByRenderOrder () const;
 
         const FloatColor& getAmbientColor() const;
         const bool isBloom() const;
@@ -95,6 +96,7 @@ namespace WallpaperEngine::Core
         Scenes::CProjection* m_orthogonalProjection;
         FloatColor m_skylightColor;
 
-        std::vector<CObject*> m_objects;
+        std::map<uint32_t, CObject*> m_objects;
+        std::vector<CObject*> m_objectsByRenderOrder;
     };
 };
