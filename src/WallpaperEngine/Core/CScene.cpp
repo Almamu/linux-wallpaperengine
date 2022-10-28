@@ -60,7 +60,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto objects_it = jsonFindRequired (content, "objects", "Scenes must have a list of objects to display");
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
-    auto ambientcolor_it = jsonFindRequired (*general_it, "ambientcolor", "General section must have ambient color");
+    auto ambientcolor = jsonFindDefault <std::string> (*general_it, "ambientcolor", "0 0 0");
     auto bloom = jsonFindDefault <bool> (*general_it, "bloom", false);
     auto bloomstrength = jsonFindDefault <double> (*general_it, "bloomstrength", 0.0f);
     auto bloomthreshold = jsonFindDefault <double> (*general_it, "bloomthreshold", 0.0f);
@@ -76,12 +76,12 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto camerashakespeed = jsonFindDefault <double> (*general_it, "camerashakespeed", 0.0f);
     auto clearcolor_it = jsonFindRequired (*general_it, "clearcolor", "General section must have clear color");
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
-    auto skylightcolor_it = jsonFindRequired (*general_it, "skylightcolor", "General section must have skylight color");
+    auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
 
     CScene* scene = new CScene (
             container,
             Scenes::CCamera::fromJSON (*camera_it),
-            WallpaperEngine::Core::aToColorf(*ambientcolor_it),
+            WallpaperEngine::Core::aToColorf(ambientcolor),
             bloom,
             bloomstrength,
             bloomthreshold,
@@ -97,7 +97,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
             camerashakespeed,
             WallpaperEngine::Core::aToColorf(*clearcolor_it),
             Scenes::CProjection::fromJSON (*orthogonalprojection_it),
-            WallpaperEngine::Core::aToColorf(*skylightcolor_it)
+            WallpaperEngine::Core::aToColorf(skylightcolor)
     );
 
     auto cur = (*objects_it).begin ();

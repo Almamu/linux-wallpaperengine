@@ -115,6 +115,7 @@ void CPackage::validateHeader (FILE* fp)
         strcmp ("PKGV0014", pointer) != 0 &&
         strcmp ("PKGV0015", pointer) != 0 &&
         strcmp ("PKGV0016", pointer) != 0 &&
+        strcmp ("PKGV0017", pointer) != 0 &&
         strcmp ("PKGV0018", pointer) != 0)
     {
         std::stringstream msg;

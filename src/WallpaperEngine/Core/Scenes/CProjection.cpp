@@ -20,11 +20,17 @@ const uint32_t& CProjection::getHeight () const
 
 CProjection* CProjection::fromJSON (json data)
 {
+    auto auto_it = jsonFindDefault <bool> (data, "auto", false);
+
     auto width_it = jsonFindRequired (data, "width", "Projection must have width");
     auto height_it = jsonFindRequired (data, "height", "Projection must have height");
 
-    return new CProjection (
-        *width_it,
-        *height_it
-    );
+    // TODO: PROPERLY SUPPORT AUTO-DETECTING SIZE
+    if (auto_it == true)
+        return new CProjection (1920, 1080);
+    else
+        return new CProjection (
+            *width_it,
+            *height_it
+        );
 }

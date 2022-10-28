@@ -14,7 +14,8 @@ CPass::CPass (std::string blending, std::string cullmode, std::string depthtest,
 
 CPass* CPass::fromJSON (json data)
 {
-    auto blending_it = jsonFindRequired (data, "blending", "Material pass must have blending specified");
+    // TODO: FIGURE OUT DEFAULT BLENDING MODE
+    auto blending = jsonFindDefault <std::string> (data, "blending", "normal");
     auto cullmode_it = jsonFindRequired (data, "cullmode", "Material pass must have cullmode specified");
     auto depthtest_it = jsonFindRequired (data, "depthtest", "Material pass must have depthtest specified");
     auto depthwrite_it = jsonFindRequired (data, "depthwrite", "Material pass must have depthwrite specified");
@@ -32,7 +33,7 @@ CPass* CPass::fromJSON (json data)
     }
 
     CPass* pass = new CPass (
-        *blending_it,
+        blending,
         *cullmode_it,
         *depthtest_it,
         *depthwrite_it,
