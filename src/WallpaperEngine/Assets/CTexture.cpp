@@ -22,15 +22,27 @@ CTexture::CTexture (void* fileData)
     }
     else
     {
-        // TODO: DETERMINE IF TEXTURES CAN HAVE 0 IMAGES
-        // get first image size
-        std::vector<TextureMipmap*>::const_iterator element = this->m_header->images.find (0)->second.begin ();
+        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
+        {
+            // wpengine-texture format always has one mipmap
+            // get first image size
+            std::vector<TextureMipmap*>::const_iterator element = this->m_header->images.find (0)->second.begin ();
 
-        // set the texture resolution
-        this->m_resolution = {
-            (*element)->width, (*element)->height,
-            this->m_header->width, this->m_header->height
-        };
+            // set the texture resolution
+            this->m_resolution = {
+                (*element)->width, (*element)->height,
+                this->m_header->width, this->m_header->height
+            };
+        }
+        else
+        {
+            // set the texture resolution
+            this->m_resolution = {
+                this->m_header->textureWidth, this->m_header->textureHeight,
+                this->m_header->width, this->m_header->height
+            };
+        }
+
     }
 
     if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
