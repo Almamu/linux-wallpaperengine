@@ -269,6 +269,11 @@ void CImage::simpleRender ()
 {
     ITexture* input = this->m_mainFBO;
 
+    // clear the main framebuffer
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
+    // attach the main texture
+    glClear (GL_COLOR_BUFFER_BIT);
+
     // FIXME: THIS IS A QUICK HACK FOR ANIMATED IMAGES, IF ANY OF THOSE HAVE ANY EFFECT ON THEM THIS WILL LIKELY BREAK
     if (this->getTexture ()->isAnimated () == true)
     {
