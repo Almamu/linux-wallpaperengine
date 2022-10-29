@@ -70,9 +70,6 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     // set proper viewport based on what we're drawing to
     glViewport (0, 0, drawTo->getRealWidth (), drawTo->getRealHeight ());
 
-    if (drawTo != this->m_material->getImage ()->getScene ()->getFBO())
-        glClear (GL_COLOR_BUFFER_BIT);
-
     // set texture blending
     if (this->m_pass->getBlendingMode () == "translucent")
     {

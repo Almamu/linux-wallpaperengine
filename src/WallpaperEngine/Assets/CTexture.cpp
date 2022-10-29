@@ -97,11 +97,11 @@ CTexture::CTexture (void* fileData)
     {
         // bind the texture to assign information to it
         glBindTexture (GL_TEXTURE_2D, this->m_textureID [index]);
+
         // set mipmap levels
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
 
-        // TODO: ADD SUPPORT FOR .tex-json FILES AS THEY ALSO HAVE FLAGS LIKE THESE ONES
         // setup texture wrapping and filtering
         if (this->m_header->flags & TextureFlags::ClampUVs)
         {
@@ -127,9 +127,6 @@ CTexture::CTexture (void* fileData)
 
         glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
 
-        // TODO: USE THIS ONE
-        // uint32_t blockSize = (internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
-
         auto cur = (*imgCur).second.begin ();
         auto end = (*imgCur).second.end ();
 
@@ -141,6 +138,7 @@ CTexture::CTexture (void* fileData)
             void* dataptr = (*cur)->uncompressedData;
             uint32_t width = (*cur)->width;
             uint32_t height = (*cur)->height;
+            uint32_t bufferSize = (*cur)->uncompressedSize;
             GLenum textureFormat = GL_RGBA;
 
             if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
@@ -157,6 +155,7 @@ CTexture::CTexture (void* fileData)
                 dataptr = FreeImage_GetBits (converted);
                 width = FreeImage_GetWidth (converted);
                 height = FreeImage_GetHeight (converted);
+                bufferSize = FreeImage_GetMemorySize (converted);
                 textureFormat = GL_BGRA;
             }
             else
@@ -172,21 +171,24 @@ CTexture::CTexture (void* fileData)
                 case GL_RGBA8:
                 case GL_RG8:
                 case GL_R8:
-                    glTexImage2D (GL_TEXTURE_2D, level, internalFormat,
-                                  width, height, 0,
-                                  textureFormat, GL_UNSIGNED_BYTE,
-                                  dataptr
+                    glTexImage2D (
+                        GL_TEXTURE_2D, level, internalFormat,
+                        width, height, 0,
+                        textureFormat, GL_UNSIGNED_BYTE,
+                        dataptr
                     );
                     break;
                 case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
                 case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
                 case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
                     glCompressedTexImage2D (
-                            GL_TEXTURE_2D, level, internalFormat,
-                            (*cur)->width, (*cur)->height, 0,
-                            (*cur)->uncompressedSize, dataptr
+                        GL_TEXTURE_2D, level, internalFormat,
+                        width, height, 0,
+                        bufferSize, dataptr
                     );
                     break;
+                default:
+                    throw std::runtime_error ("Cannot load texture, unknown format");
             }
 
             // freeimage buffer won't be used anymore, so free memory

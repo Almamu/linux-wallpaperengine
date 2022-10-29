@@ -298,6 +298,11 @@ void CImage::complexRender ()
     CFBO* drawTo = this->m_mainFBO;
     ITexture* asInput = this->getTexture ();
 
+    // clear the main framebuffer
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
+    // attach the main texture
+    glClear (GL_COLOR_BUFFER_BIT);
+
     // do the first pass render into the main framebuffer
     auto cur = this->m_copyMaterial->getPasses ().begin ();
     auto end = this->m_copyMaterial->getPasses ().end ();
