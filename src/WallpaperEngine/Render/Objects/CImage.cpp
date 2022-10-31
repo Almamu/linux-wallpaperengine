@@ -269,11 +269,6 @@ void CImage::simpleRender ()
 {
     ITexture* input = this->m_mainFBO;
 
-    // clear the main framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
-    // attach the main texture
-    glClear (GL_COLOR_BUFFER_BIT);
-
     // FIXME: THIS IS A QUICK HACK FOR ANIMATED IMAGES, IF ANY OF THOSE HAVE ANY EFFECT ON THEM THIS WILL LIKELY BREAK
     if (this->getTexture ()->isAnimated () == true)
     {
@@ -302,11 +297,6 @@ void CImage::complexRender ()
     // start drawing to the main framebuffer
     CFBO* drawTo = this->m_mainFBO;
     ITexture* asInput = this->getTexture ();
-
-    // clear the main framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
-    // attach the main texture
-    glClear (GL_COLOR_BUFFER_BIT);
 
     // do the first pass render into the main framebuffer
     auto cur = this->m_copyMaterial->getPasses ().begin ();
@@ -388,6 +378,11 @@ void CImage::render ()
     this->m_currentSubFBO = this->m_subFBO;
 
     glColorMask (true, true, true, true);
+
+    // clear the main framebuffer
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
+    // attach the main texture
+    glClear (GL_COLOR_BUFFER_BIT);
 
     // check if there's more than one pass and do different things based on that
     if (this->m_effects.empty () == true)
