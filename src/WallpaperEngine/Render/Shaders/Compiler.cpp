@@ -517,7 +517,7 @@ namespace WallpaperEngine::Render::Shaders
                           "#define float1 float\n"
                           "#define float2 vec2\n"
                           "#define float3 vec3\n"
-                          "#define float4 vec4\n";
+                          "#define float4 vec4\n\n";
 
             finalCode +=  "// ======================================================\n"
                           "// Shader combo parameter definitions\n"
@@ -689,11 +689,6 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "sampler2D")
         {
-            if (this->m_file.find ("effects/blur_combine") != std::string::npos)
-            {
-                int i = 0;
-            }
-
             // samplers can have special requirements, check what sampler we're working with and create definitions
             // if needed
             auto combo = data.find ("combo");

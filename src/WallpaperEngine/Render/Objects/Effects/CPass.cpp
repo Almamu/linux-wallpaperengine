@@ -276,6 +276,11 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     }
 }
 
+const CMaterial* CPass::getMaterial () const
+{
+    return this->m_material;
+}
+
 GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
 {
     // reserve shaders in OpenGL

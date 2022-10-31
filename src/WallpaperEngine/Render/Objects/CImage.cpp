@@ -231,6 +231,40 @@ void CImage::setup ()
             this->m_effects.emplace_back (new CEffect (this, *cur));
     }
 
+    // prepare the passes list
+    if (this->getEffects ().empty () == false)
+    {
+        auto effectCur = this->getEffects ().begin ();
+        auto effectEnd = this->getEffects ().end ();
+
+        for (; effectCur != effectEnd; effectCur ++)
+        {
+            auto materialCur = (*effectCur)->getMaterials ().begin ();
+            auto materialEnd = (*effectCur)->getMaterials ().end ();
+
+            for (; materialCur != materialEnd; materialCur ++)
+            {
+                auto passCur = (*materialCur)->getPasses ().begin ();
+                auto passEnd = (*materialCur)->getPasses ().end ();
+
+                for (; passCur != passEnd; passCur ++)
+                {
+                    this->m_passes.push_back (*passCur);
+                }
+            }
+        }
+    }
+
+    // add the final passes too
+    if (this->m_material->getPasses ().empty () == false)
+    {
+        auto passCur = this->m_material->getPasses ().begin ();
+        auto passEnd = this->m_material->getPasses ().end ();
+
+        for (; passCur != passEnd; passCur ++)
+            this->m_passes.push_back (*passCur);
+    }
+
     // calculate full animation time (if any)
     this->m_animationTime = 0.0f;
 
@@ -275,67 +309,6 @@ void CImage::simpleRender ()
 
 void CImage::complexRender ()
 {
-    // start drawing to the main framebuffer
-    CFBO* drawTo = this->m_currentMainFBO;
-    ITexture* asInput = this->getTexture ();
-
-    // render all the other materials
-    auto effectCur = this->getEffects ().begin ();
-    auto effectEnd = this->getEffects ().end ();
-
-    for (; effectCur != effectEnd; effectCur ++)
-    {
-        auto materialCur = (*effectCur)->getMaterials ().begin ();
-        auto materialEnd = (*effectCur)->getMaterials ().end ();
-
-        for (; materialCur != materialEnd; materialCur ++)
-        {
-            CFBO* prevDrawTo = drawTo;
-            GLuint spacePosition = *this->getCopySpacePosition ();
-
-            // set viewport and target texture if needed
-            if ((*materialCur)->getMaterial ()->hasTarget () == true)
-            {
-                // setup target texture
-                std::string target = (*materialCur)->getMaterial ()->getTarget ();
-                drawTo = (*effectCur)->findFBO (target);
-                spacePosition = *this->getPassSpacePosition ();
-
-                // not a local fbo, try to find a scene fbo with the same name
-                if (drawTo == nullptr)
-                    // this one throws if no fbo was found
-                    drawTo = this->getScene ()->findFBO (target);
-            }
-
-            auto passCur = (*materialCur)->getPasses ().begin ();
-            auto passEnd = (*materialCur)->getPasses ().end ();
-
-            for (; passCur != passEnd; passCur ++)
-            {
-                (*passCur)->render (drawTo, asInput, spacePosition, *this->getTexCoordPass (), this->m_modelViewProjectionPass);
-
-                if ((*materialCur)->getMaterial ()->hasTarget () == false)
-                    this->pinpongFramebuffer (&drawTo, &asInput);
-            }
-
-            if ((*materialCur)->getMaterial ()->hasTarget () == true)
-                drawTo = prevDrawTo;
-        }
-    }
-
-    // the render has to happen anyway unless it's visible as it might be used by other images
-    if (this->getImage ()->isVisible () == false)
-        return;
-
-    // final step, this one might need more changes, should passes render directly to the output instead of an intermediate framebuffer?
-    // do the first pass render into the main framebuffer
-    auto cur = this->m_material->getPasses ().begin ();
-    auto end = this->m_material->getPasses ().end ();
-
-    glColorMask (true, true, true, false);
-
-    for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), asInput, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
 }
 
 void CImage::render ()
@@ -350,11 +323,57 @@ void CImage::render ()
 
     glColorMask (true, true, true, true);
 
-    // check if there's more than one pass and do different things based on that
-    if (this->m_effects.empty () == true)
-        this->simpleRender ();
-    else
-        this->complexRender ();
+    // start drawing to the main framebuffer
+    CFBO* drawTo = this->m_currentMainFBO;
+    ITexture* asInput = this->getTexture ();
+    GLuint texcoord = *this->getTexCoordCopy ();
+
+    auto cur = this->m_passes.begin ();
+    auto end = this->m_passes.end ();
+
+    for (; cur != end; cur ++)
+    {
+        Effects::CPass* pass = *cur;
+        CFBO* prevDrawTo = drawTo;
+        GLuint spacePosition = *this->getCopySpacePosition ();
+        glm::mat4 projection = this->m_modelViewProjectionPass;
+
+        // set viewport and target texture if needed
+        if (pass->getMaterial ()->getMaterial ()->hasTarget () == true)
+        {
+            // setup target texture
+            std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
+            drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
+            spacePosition = *this->getPassSpacePosition ();
+
+            // not a local fbo, try to find a scene fbo with the same name
+            if (drawTo == nullptr)
+                // this one throws if no fbo was found
+                drawTo = this->getScene ()->findFBO (target);
+        }
+
+        // determine if it's the last element in the list as this is a screen-copy-like process
+        else if (std::next (cur) == end)
+        {
+            // do not draw to screen if the image is not visible
+            if (this->getImage ()->isVisible () == false)
+                return;
+
+            spacePosition = *this->getSceneSpacePosition ();
+            drawTo = this->getScene ()->getFBO ();
+            projection = this->m_modelViewProjectionScreen;
+
+            glColorMask (true, true, true, false);
+        }
+
+        pass->render (drawTo, asInput, spacePosition, texcoord, projection);
+
+        texcoord = *this->getTexCoordPass ();
+        drawTo = prevDrawTo;
+
+        if (pass->getMaterial ()->getMaterial ()->hasTarget () == false)
+            this->pinpongFramebuffer (&drawTo, &asInput);
+    }
 }
 
 ITexture* CImage::getTexture () const

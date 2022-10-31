@@ -3,6 +3,7 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
 
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
+#include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Objects/CEffect.h"
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/CScene.h"
@@ -19,6 +20,7 @@ using namespace WallpaperEngine::Assets;
 namespace WallpaperEngine::Render::Objects::Effects
 {
     class CMaterial;
+    class CPass;
 }
 
 namespace WallpaperEngine::Render::Objects
@@ -80,6 +82,7 @@ namespace WallpaperEngine::Render::Objects
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
+        std::vector <Effects::CPass*> m_passes;
 
         double m_animationTime;
 

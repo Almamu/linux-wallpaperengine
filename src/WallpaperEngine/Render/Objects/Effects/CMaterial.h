@@ -29,6 +29,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         const std::vector<CPass*>& getPasses () const;
         CImage* getImage () const;
         const Core::Objects::Images::CMaterial* getMaterial () const;
+        const CEffect* getEffect () const;
 
     private:
         void generatePasses ();

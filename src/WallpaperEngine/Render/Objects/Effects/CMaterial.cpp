@@ -35,3 +35,8 @@ const Core::Objects::Images::CMaterial* CMaterial::getMaterial () const
 {
     return this->m_material;
 }
+
+const CEffect* CMaterial::getEffect () const
+{
+    return this->m_effect;
+}
