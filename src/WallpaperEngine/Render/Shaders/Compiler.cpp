@@ -689,6 +689,11 @@ namespace WallpaperEngine::Render::Shaders
         }
         else if (type == "sampler2D")
         {
+            if (this->m_file.find ("effects/blur_combine") != std::string::npos)
+            {
+                int i = 0;
+            }
+
             // samplers can have special requirements, check what sampler we're working with and create definitions
             // if needed
             auto combo = data.find ("combo");
@@ -700,9 +705,8 @@ namespace WallpaperEngine::Render::Shaders
 
             if (combo != data.end ())
             {
-
-                // if the texture exists, add the combo
-                if (this->m_passTextures.size () > index)
+                // if the texture exists (and is not null), add to the combo
+                if (this->m_passTextures.size () > index && (this->m_passTextures.at (index) != "" || textureName != data.end ()))
                 {
                     // add the new combo to the list
                     this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));

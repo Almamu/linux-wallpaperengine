@@ -80,7 +80,6 @@ namespace WallpaperEngine::Render::Objects
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
-        Effects::CMaterial* m_copyMaterial;
 
         double m_animationTime;
 

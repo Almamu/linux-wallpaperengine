@@ -249,13 +249,30 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     glBindBuffer (GL_ARRAY_BUFFER, position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
-    // disable vertex attribs array
+    // disable vertex attribs array and textures
     {
         auto cur = this->m_attribs.begin ();
         auto end = this->m_attribs.end ();
 
         for (; cur != end; cur ++)
             glDisableVertexAttribArray ((*cur)->id);
+    }
+
+    // unbind all the used textures
+    glActiveTexture (GL_TEXTURE0);
+    glBindTexture (GL_TEXTURE_2D, 0);
+
+    // continue on the map from the second texture
+    if (this->m_finalTextures.empty () == false)
+    {
+        auto cur = this->m_finalTextures.begin ();
+        auto end = this->m_finalTextures.end ();
+
+        for (; cur != end; cur ++)
+        {
+            glActiveTexture (GL_TEXTURE0 + (*cur).first);
+            glBindTexture (GL_TEXTURE_2D, 0);
+        }
     }
 }
 

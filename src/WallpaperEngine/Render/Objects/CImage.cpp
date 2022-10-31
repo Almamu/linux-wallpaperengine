@@ -216,12 +216,6 @@ void CImage::setup ()
     if (this->m_initialized)
         return;
 
-    // generate the main material used to copy the image to the correct texture
-    this->m_copyMaterial = new Effects::CMaterial (
-        new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
-        this->m_image->getMaterial ()
-    );
-
     // generate the main material used to render the image
     this->m_material = new Effects::CMaterial (
         new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
@@ -267,26 +261,13 @@ void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
 
 void CImage::simpleRender ()
 {
-    ITexture* input = this->m_mainFBO;
-
-    // FIXME: THIS IS A QUICK HACK FOR ANIMATED IMAGES, IF ANY OF THOSE HAVE ANY EFFECT ON THEM THIS WILL LIKELY BREAK
-    if (this->getTexture ()->isAnimated () == true)
-    {
-        input = this->getTexture ();
-    }
-    else
-    {
-        // first render to the composite layer
-        auto cur = this->m_copyMaterial->getPasses ().begin ();
-        auto end = this->m_copyMaterial->getPasses ().end ();
-
-        for (; cur != end; cur ++)
-            (*cur)->render (this->m_mainFBO, this->getTexture (), *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
-    }
+    ITexture* input = this->getTexture ();
 
     // a simple material renders directly to the screen
     auto cur = this->m_material->getPasses ().begin ();
     auto end = this->m_material->getPasses ().end ();
+
+    glColorMask (true, true, true, false);
 
     for (; cur != end; cur ++)
         (*cur)->render (this->getScene ()->getFBO (), input, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
@@ -295,15 +276,8 @@ void CImage::simpleRender ()
 void CImage::complexRender ()
 {
     // start drawing to the main framebuffer
-    CFBO* drawTo = this->m_mainFBO;
+    CFBO* drawTo = this->m_currentMainFBO;
     ITexture* asInput = this->getTexture ();
-
-    // do the first pass render into the main framebuffer
-    auto cur = this->m_copyMaterial->getPasses ().begin ();
-    auto end = this->m_copyMaterial->getPasses ().end ();
-
-    for (; cur != end; cur ++)
-        (*cur)->render (drawTo, asInput, *this->getCopySpacePosition (), *this->getTexCoordCopy (), this->m_modelViewProjectionPass);
 
     // render all the other materials
     auto effectCur = this->getEffects ().begin ();
@@ -316,14 +290,18 @@ void CImage::complexRender ()
 
         for (; materialCur != materialEnd; materialCur ++)
         {
+            CFBO* prevDrawTo = drawTo;
+            GLuint spacePosition = *this->getCopySpacePosition ();
+
             // set viewport and target texture if needed
             if ((*materialCur)->getMaterial ()->hasTarget () == true)
             {
                 // setup target texture
                 std::string target = (*materialCur)->getMaterial ()->getTarget ();
                 drawTo = (*effectCur)->findFBO (target);
+                spacePosition = *this->getPassSpacePosition ();
 
-                // not a local FBO, so try that one now
+                // not a local fbo, try to find a scene fbo with the same name
                 if (drawTo == nullptr)
                     // this one throws if no fbo was found
                     drawTo = this->getScene ()->findFBO (target);
@@ -334,32 +312,25 @@ void CImage::complexRender ()
 
             for (; passCur != passEnd; passCur ++)
             {
-                GLuint spacePosition = *this->getPassSpacePosition ();
-                glm::mat4 projection = this->m_modelViewProjectionPass;
-
-                // ping-pong only if there's a target
-                if ((*materialCur)->getMaterial ()->hasTarget () == false)
-                {
-                    this->pinpongFramebuffer (&drawTo, &asInput);
-                    spacePosition = *this->getCopySpacePosition ();
-                    projection = this->m_modelViewProjectionScreen;
-                }
-
                 (*passCur)->render (drawTo, asInput, spacePosition, *this->getTexCoordPass (), this->m_modelViewProjectionPass);
+
+                if ((*materialCur)->getMaterial ()->hasTarget () == false)
+                    this->pinpongFramebuffer (&drawTo, &asInput);
             }
+
+            if ((*materialCur)->getMaterial ()->hasTarget () == true)
+                drawTo = prevDrawTo;
         }
     }
 
+    // the render has to happen anyway unless it's visible as it might be used by other images
     if (this->getImage ()->isVisible () == false)
         return;
 
-    // pinpong the framebuffer so we know exactly what we're drawing to the scene
-    this->pinpongFramebuffer (&drawTo, &asInput);
-
     // final step, this one might need more changes, should passes render directly to the output instead of an intermediate framebuffer?
     // do the first pass render into the main framebuffer
-    cur = this->m_material->getPasses ().begin ();
-    end = this->m_material->getPasses ().end ();
+    auto cur = this->m_material->getPasses ().begin ();
+    auto end = this->m_material->getPasses ().end ();
 
     glColorMask (true, true, true, false);
 
@@ -373,16 +344,11 @@ void CImage::render ()
     if (this->m_initialized == false)
         return;
 
-    // first and foremost reset the framebuffer switching
-    this->m_currentMainFBO = this->m_mainFBO;
-    this->m_currentSubFBO = this->m_subFBO;
+    // reset the framebuffers so the drawing always happens on the same order
+    this->m_currentMainFBO = this->m_subFBO;
+    this->m_currentSubFBO = this->m_mainFBO;
 
     glColorMask (true, true, true, true);
-
-    // clear the main framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, this->m_mainFBO->getFramebuffer ());
-    // attach the main texture
-    glClear (GL_COLOR_BUFFER_BIT);
 
     // check if there's more than one pass and do different things based on that
     if (this->m_effects.empty () == true)
