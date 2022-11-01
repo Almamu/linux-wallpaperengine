@@ -42,7 +42,6 @@ CTexture::CTexture (void* fileData)
                 this->m_header->width, this->m_header->height
             };
         }
-
     }
 
     if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
@@ -163,7 +162,11 @@ CTexture::CTexture (void* fileData)
                 if (this->m_header->format == TextureFormat::RG88)
                     textureFormat = GL_RG;
                 else if (this->m_header->format == TextureFormat::R8)
+                {
+                    // red textures are 1-byte-per-pixel, so it's alignment has to be set manually
+                    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
                     textureFormat = GL_RED;
+                }
             }
 
             switch (internalFormat)
