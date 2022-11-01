@@ -222,6 +222,7 @@ void CImage::setup ()
         this->m_image->getMaterial ()
     );
 
+    if (this->getImage ()->getEffects ().empty () == false)
     {
         // generate the effects used by this material
         auto cur = this->getImage ()->getEffects ().begin ();
@@ -248,9 +249,7 @@ void CImage::setup ()
                 auto passEnd = (*materialCur)->getPasses ().end ();
 
                 for (; passCur != passEnd; passCur ++)
-                {
                     this->m_passes.push_back (*passCur);
-                }
             }
         }
     }
@@ -258,11 +257,11 @@ void CImage::setup ()
     // add the final passes too
     if (this->m_material->getPasses ().empty () == false)
     {
-        auto passCur = this->m_material->getPasses ().begin ();
-        auto passEnd = this->m_material->getPasses ().end ();
+        auto cur = this->m_material->getPasses ().begin ();
+        auto end = this->m_material->getPasses ().end ();
 
-        for (; passCur != passEnd; passCur ++)
-            this->m_passes.push_back (*passCur);
+        for (; cur != end; cur ++)
+            this->m_passes.push_back (*cur);
     }
 
     // calculate full animation time (if any)
