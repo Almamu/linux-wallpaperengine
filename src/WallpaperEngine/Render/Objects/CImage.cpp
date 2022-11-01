@@ -82,16 +82,16 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         ITexture::TextureFormat::ARGB8888,
         this->m_texture->getFlags (),
         1,
-        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (),
-        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ()
+        this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
+        this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
     );
     this->m_currentSubFBO = this->m_subFBO = scene->createFBO (
         nameB.str (),
         ITexture::TextureFormat::ARGB8888,
         this->m_texture->getFlags (),
         1,
-        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight (),
-        this->m_texture->getTextureWidth (), this->m_texture->getTextureHeight ()
+        this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
+        this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
     );
 
     GLfloat realWidth = this->m_texture->getRealWidth () / 2;
