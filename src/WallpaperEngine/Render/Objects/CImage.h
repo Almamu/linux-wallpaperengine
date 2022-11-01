@@ -59,9 +59,6 @@ namespace WallpaperEngine::Render::Objects
 
     protected:
         static const std::string Type;
-
-        void simpleRender ();
-        void complexRender ();
     private:
         ITexture* m_texture;
         GLuint m_sceneSpacePosition;

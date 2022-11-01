@@ -293,24 +293,6 @@ void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
     this->m_currentSubFBO = currentMainFBO;
 }
 
-void CImage::simpleRender ()
-{
-    ITexture* input = this->getTexture ();
-
-    // a simple material renders directly to the screen
-    auto cur = this->m_material->getPasses ().begin ();
-    auto end = this->m_material->getPasses ().end ();
-
-    glColorMask (true, true, true, false);
-
-    for (; cur != end; cur ++)
-        (*cur)->render (this->getScene ()->getFBO (), input, *this->getSceneSpacePosition (), *this->getTexCoordPass (), this->m_modelViewProjectionScreen);
-}
-
-void CImage::complexRender ()
-{
-}
-
 void CImage::render ()
 {
     // do not try to render something that did not initialize successfully
