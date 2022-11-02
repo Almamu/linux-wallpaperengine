@@ -242,6 +242,14 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
             glEnableVertexAttribArray ((*cur)->id);
             glBindBuffer (GL_ARRAY_BUFFER, *(*cur)->value);
             glVertexAttribPointer ((*cur)->id, (*cur)->elements, (*cur)->type, GL_FALSE, 0, nullptr);
+
+            if (DEBUG)
+                glObjectLabel (GL_BUFFER, *(*cur)->value, -1, (
+                        "Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
+                        " Pass " + this->m_pass->getShader() +
+                        " " + (*cur)->name
+                    ).c_str ()
+                );
         }
     }
 
@@ -389,6 +397,13 @@ void CPass::setupShaders ()
         delete[] logBuffer;
         // throw an exception
         throw std::runtime_error (message);
+    }
+
+    if (DEBUG)
+    {
+        glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
+        glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
+        glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
     }
 
     // after being liked shaders can be dettached and deleted

@@ -13,7 +13,12 @@ ITexture* CContainer::readTexture (std::string filename)
 
     void* textureContents = this->readFile (filename, nullptr);
 
-    return new CTexture (textureContents);
+    ITexture* result = new CTexture (textureContents);
+
+    if (DEBUG)
+        glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, filename.c_str ());
+
+    return result;
 }
 
 std::string CContainer::readVertexShader (const std::string& filename)

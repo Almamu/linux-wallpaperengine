@@ -132,6 +132,9 @@ void initGLFW ()
     glfwWindowHint (GLFW_SAMPLES, 4);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 1);
+
+    if (DEBUG)
+        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 }
 
 void addPkg (CCombinedContainer* containers, const std::string& path, std::string pkgfile)
