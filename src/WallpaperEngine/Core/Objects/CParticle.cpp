@@ -5,7 +5,7 @@ using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (
     const std::string& filename,
-    CContainer* container,
+    const CContainer* container,
     uint32_t id,
     std::string name,
     const glm::vec3& origin,

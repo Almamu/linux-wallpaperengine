@@ -28,7 +28,7 @@ CObject::CObject (
 {
 }
 
-CObject* CObject::fromJSON (json data, CContainer* container)
+CObject* CObject::fromJSON (json data, const CContainer* container)
 {
     std::string json = data.dump ();
 

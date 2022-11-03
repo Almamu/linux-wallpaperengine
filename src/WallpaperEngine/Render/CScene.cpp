@@ -72,6 +72,106 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
 
         this->m_objectsByRenderOrder.emplace_back ((*obj).second);
     }
+
+    uint32_t sceneWidth = scene->getOrthogonalProjection ()->getWidth ();
+    uint32_t sceneHeight = scene->getOrthogonalProjection ()->getHeight ();
+
+    // create extra framebuffers for the bloom effect
+    this->_rt_4FrameBuffer = this->createFBO (
+        "_rt_4FrameBuffer",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        sceneWidth / 4, sceneHeight / 4,
+        sceneWidth / 4, sceneHeight / 4
+    );
+    this->_rt_8FrameBuffer = this->createFBO (
+        "_rt_8FrameBuffer",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        sceneWidth / 8, sceneHeight / 8,
+        sceneWidth / 8, sceneHeight / 8
+    );
+    this->_rt_Bloom = this->createFBO (
+        "_rt_Bloom",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        sceneWidth / 8, sceneHeight / 8,
+        sceneWidth / 8, sceneHeight / 8
+    );
+
+    this->_rt_FullFrameBuffer_b = this->createFBO (
+        "_rt_FullFrameBuffer_b",
+        ITexture::TextureFormat::ARGB8888,
+        ITexture::TextureFlags::NoInterpolation,
+        1.0,
+        sceneWidth, sceneHeight,
+        sceneWidth, sceneHeight
+    );
+
+    //
+    // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
+    // this custom image loads some effect files from the virtual container to achieve the same bloom effect
+    // this approach requires of two extra draw calls due to the way the effect works in official WPE
+    // (it renders directly to the screen, whereas here we never do that from a scene)
+    //
+
+    std::string imagejson =
+        "{"
+        "\t\"image\": \"models/wpenginelinux.json\","
+        "\t\"name\": \"bloomimagewpenginelinux\","
+        "\t\"visible\": true,"
+        "\t\"scale\": \"1.0 1.0 1.0\","
+        "\t\"angles\": \"0.0 0.0 0.0\","
+        "\t\"origin\": \"" + std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) + " 0.0\","
+        "\t\"id\": " + std::to_string (0xFFFFFFFF) + ","
+        "\t\"effects\":"
+        "\t["
+        "\t\t{"
+        "\t\t\t\"file\": \"effects/wpenginelinux/bloomeffect.json\","
+        "\t\t\t\"id\": 15242000,"
+        "\t\t\t\"name\": \"\","
+        "\t\t\t\"passes\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"constantshadervalues\":"
+        "\t\t\t\t\t{"
+        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
+        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
+        "\t\t\t\t\t}"
+        "\t\t\t\t},"
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"constantshadervalues\":"
+        "\t\t\t\t\t{"
+        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
+        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
+        "\t\t\t\t\t}"
+        "\t\t\t\t},"
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"constantshadervalues\":"
+        "\t\t\t\t\t{"
+        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
+        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
+        "\t\t\t\t\t}"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t}"
+        "\t],"
+        "\t\"size\": \"" + std::to_string (sceneWidth) + " " + std::to_string (sceneHeight) + "\""
+        "}";
+    auto json = nlohmann::json::parse (imagejson);
+
+    // create image for bloom passes
+    auto bloomPass = this->createObject (
+        WallpaperEngine::Core::CObject::fromJSON (
+            json, this->getContainer ()
+        )
+    );
+
+    if (this->getScene ()->isBloom () == true)
+        this->m_objectsByRenderOrder.emplace_back (bloomPass);
 }
 
 Render::CObject* CScene::createObject (Core::CObject* object)

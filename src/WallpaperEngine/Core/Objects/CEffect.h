@@ -28,7 +28,7 @@ namespace WallpaperEngine::Core::Objects
             Core::CObject* object
         );
 
-        static CEffect* fromJSON (json data, Core::CObject* object, CContainer* container);
+        static CEffect* fromJSON (json data, Core::CObject* object, const CContainer* container);
 
         const std::vector<std::string>& getDependencies () const;
         const std::vector<Images::CMaterial*>& getMaterials () const;
@@ -40,7 +40,7 @@ namespace WallpaperEngine::Core::Objects
         static void combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPass* pass);
         static void fbosFromJSON (json::const_iterator fbos_it, CEffect* effect);
         static void dependencyFromJSON (json::const_iterator dependencies_it, CEffect* effect);
-        static void materialsFromJSON (json::const_iterator passes_it, CEffect* effect, CContainer* container);
+        static void materialsFromJSON (json::const_iterator passes_it, CEffect* effect, const CContainer* container);
 
         void insertDependency (const std::string& dep);
         void insertMaterial (Images::CMaterial* material);

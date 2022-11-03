@@ -18,6 +18,7 @@
 
 #include "WallpaperEngine/Assets/CPackage.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
+#include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 #include "WallpaperEngine/Assets/CPackageLoadException.h"
 
@@ -160,6 +161,116 @@ void addPkg (CCombinedContainer* containers, const std::string& path, std::strin
     }
 }
 
+CVirtualContainer* buildVirtualContainer ()
+{
+    CVirtualContainer* container = new WallpaperEngine::Assets::CVirtualContainer ();
+
+    //
+    // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
+    // these virtual files are loaded by an image in the scene that takes current _rt_FullFrameBuffer and
+    // applies the bloom effect to render it out to the screen
+    //
+
+    // add the effect file for screen bloom
+    container->add (
+        "effects/wpenginelinux/bloomeffect.json",
+        "{"
+        "\t\"name\":\"camerabloom_wpengine_linux\","
+        "\t\"group\":\"wpengine_linux_camera\","
+        "\t\"dependencies\":[],"
+        "\t\"passes\":"
+        "\t["
+        "\t\t{"
+        "\t\t\t\"material\": \"materials/util/downsample_quarter_bloom.json\","
+        "\t\t\t\"target\": \"_rt_4FrameBuffer\","
+        "\t\t\t\"bind\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_FullFrameBuffer\","
+        "\t\t\t\t\t\"index\": 0"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t},"
+        "\t\t{"
+        "\t\t\t\"material\": \"materials/util/downsample_eighth_blur_v.json\","
+        "\t\t\t\"target\": \"_rt_8FrameBuffer\","
+        "\t\t\t\"bind\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_4FrameBuffer\","
+        "\t\t\t\t\t\"index\": 0"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t},"
+        "\t\t{"
+        "\t\t\t\"material\": \"materials/util/blur_h_bloom.json\","
+        "\t\t\t\"target\": \"_rt_Bloom\","
+        "\t\t\t\"bind\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_8FrameBuffer\","
+        "\t\t\t\t\t\"index\": 0"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t},"
+        "\t\t{"
+        "\t\t\t\"material\": \"materials/util/combine.json\","
+        "\t\t\t\"target\": \"_rt_imageLayerComposite_-1_b\","
+        "\t\t\t\"bind\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_FullFrameBuffer\","
+        "\t\t\t\t\t\"index\": 0"
+        "\t\t\t\t},"
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_Bloom\","
+        "\t\t\t\t\t\"index\": 1"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t},"
+        "\t\t{"
+        "\t\t\t\"material\": \"materials/wpenginelinux.json\","
+        "\t\t\t\"bind\":"
+        "\t\t\t["
+        "\t\t\t\t{"
+        "\t\t\t\t\t\"name\": \"_rt_imageLayerComposite_-1_b\","
+        "\t\t\t\t\t\"index\": 0"
+        "\t\t\t\t}"
+        "\t\t\t]"
+        "\t\t}"
+        "\t]"
+        "}"
+    );
+
+    // add some model for the image element even if it's going to waste rendering cycles
+    container->add (
+        "models/wpenginelinux.json",
+        "{"
+        "\t\"material\":\"materials/wpenginelinux.json\""
+        "}"
+    );
+
+    // models require materials, so add that too
+    container->add (
+        "materials/wpenginelinux.json",
+        "{"
+        "\t\"passes\":"
+        "\t\t["
+        "\t\t\t{"
+        "\t\t\t\t\"blending\": \"normal\","
+        "\t\t\t\t\"cullmode\": \"nocull\","
+        "\t\t\t\t\"depthtest\": \"disabled\","
+        "\t\t\t\t\"depthwrite\": \"disabled\","
+        "\t\t\t\t\"shader\": \"genericimage2\","
+        "\t\t\t\t\"textures\": [\"_rt_FullFrameBuffer\"]"
+        "\t\t\t}"
+        "\t\t]"
+        "}"
+    );
+
+    return container;
+}
+
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
@@ -275,6 +386,8 @@ int main (int argc, char* argv[])
 
     // the background's path is required to load project.json regardless of the type of background we're using
     containers->add (new WallpaperEngine::Assets::CDirectory (path));
+    // add the virtual container for mocked up files
+    containers->add (buildVirtualContainer ());
     // try to add the common packages
     addPkg (containers, path, "scene.pkg");
     addPkg (containers, path, "gifscene.pkg");

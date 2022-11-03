@@ -42,6 +42,8 @@ add_executable(
         src/WallpaperEngine/Assets/CAssetLoadException.h
         src/WallpaperEngine/Assets/CContainer.h
         src/WallpaperEngine/Assets/CContainer.cpp
+        src/WallpaperEngine/Assets/CVirtualContainer.h
+        src/WallpaperEngine/Assets/CVirtualContainer.cpp
         src/WallpaperEngine/Assets/CCombinedContainer.h
         src/WallpaperEngine/Assets/CCombinedContainer.cpp
         src/WallpaperEngine/Assets/CDirectory.h

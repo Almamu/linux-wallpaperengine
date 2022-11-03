@@ -40,5 +40,9 @@ namespace WallpaperEngine::Render
         std::vector<CObject*> m_objectsByRenderOrder;
         glm::vec2 m_mousePosition;
         glm::vec2 m_parallaxDisplacement;
+        CFBO* _rt_4FrameBuffer;
+        CFBO* _rt_8FrameBuffer;
+        CFBO* _rt_Bloom;
+        CFBO* _rt_FullFrameBuffer_b; // this one doesn't exist on the official wallpaper engine, but our approach requires it
     };
 }

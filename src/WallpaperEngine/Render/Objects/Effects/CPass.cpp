@@ -56,8 +56,9 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
     // the bind actually has a name, search the FBO in the effect and return it
     auto fbo = this->m_material->m_effect->findFBO ((*it).second->getName ());
 
+    // try scene FBOs, these are our last resort, i guess the exception is better than a nullpo
     if (fbo == nullptr)
-        return nullptr;
+        return this->m_material->getImage ()->getScene ()->findFBO ((*it).second->getName ());
 
     return fbo;
 }
@@ -556,6 +557,8 @@ void CPass::setupUniforms ()
         }
     }
 
+    auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
+
     // register variables like brightness and alpha with some default value
     this->addUniform ("g_Brightness", this->m_material->getImage ()->getImage ()->getBrightness ());
     this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
@@ -570,6 +573,8 @@ void CPass::setupUniforms ()
     this->addUniform ("g_PointerPosition", this->m_material->getImage ()->getScene ()->getMousePosition ());
     this->addUniform ("g_EffectTextureProjectionMatrix", glm::mat4(1.0));
     this->addUniform ("g_EffectTextureProjectionMatrixInverse", glm::mat4(1.0));
+    this->addUniform ("g_TexelSize", glm::vec2 (1.0 / projection->getWidth (), 1.0 / projection->getHeight ()));
+    this->addUniform ("g_TexelSize", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
 }
 
 void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value)

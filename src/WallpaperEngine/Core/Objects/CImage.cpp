@@ -37,7 +37,7 @@ CImage::CImage (
 
 WallpaperEngine::Core::CObject* CImage::fromJSON (
     json data,
-    CContainer* container,
+    const CContainer* container,
     bool visible,
     uint32_t id,
     std::string name,
