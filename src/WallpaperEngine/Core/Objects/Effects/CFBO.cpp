@@ -2,6 +2,7 @@
 
 #include <utility>
 
+using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Objects::Effects;
 
 CFBO::CFBO (std::string name, float scale, std::string format) :
@@ -13,14 +14,14 @@ CFBO::CFBO (std::string name, float scale, std::string format) :
 
 CFBO* CFBO::fromJSON (json data)
 {
-    auto name_it = data.find ("name");
-    auto scale_it = data.find ("scale");
-    auto format_it = data.find ("format");
+    auto name_it = jsonFindRequired (data, "name", "Name for an FBO is required");
+    auto scale = jsonFindDefault <float> (data, "scale", 1.0);
+    auto format = jsonFindDefault <std::string> (data, "format", "");
 
     return new CFBO (
         *name_it,
-        *scale_it,
-        *format_it
+        scale,
+        format
     );
 }
 

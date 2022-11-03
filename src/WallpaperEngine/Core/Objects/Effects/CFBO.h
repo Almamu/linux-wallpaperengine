@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "WallpaperEngine/Core/Core.h"
 #include <nlohmann/json.hpp>
 
 namespace WallpaperEngine::Core::Objects::Effects
