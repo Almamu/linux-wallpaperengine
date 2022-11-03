@@ -92,14 +92,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     GLfloat realWidth = this->m_texture->getRealWidth () / 2.0f;
     GLfloat realHeight = this->m_texture->getRealHeight () / 2.0f;
 
-    // TODO: XXXHACK: QUICK HACK TO MAKE BLOOM LAYER BEHAVE IN A SPECIAL WAY, PREVENTS VERTICAL FLIP
-    if (this->getId () == 0xFFFFFFFF)
-    {
-        float tmpy = this->m_pos.y;
-        this->m_pos.y = this->m_pos.w;
-        this->m_pos.w = tmpy;
-    }
-
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
         this->m_pos.x, this->m_pos.y, 0.0f,

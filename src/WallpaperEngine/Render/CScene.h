@@ -36,6 +36,7 @@ namespace WallpaperEngine::Render
         Render::CObject* createObject (Core::CObject* object);
 
         CCamera* m_camera;
+        CObject* m_bloomObject;
         std::map<int, CObject*> m_objects;
         std::vector<CObject*> m_objectsByRenderOrder;
         glm::vec2 m_mousePosition;
@@ -43,6 +44,7 @@ namespace WallpaperEngine::Render
         CFBO* _rt_4FrameBuffer;
         CFBO* _rt_8FrameBuffer;
         CFBO* _rt_Bloom;
-        CFBO* _rt_FullFrameBuffer_b; // this one doesn't exist on the official wallpaper engine, but our approach requires it
+        CFBO* _rt_imageCompositeLayer_bloom; // this one doesn't exist on the official wallpaper engine, but our approach requires it
+        CFBO* _rt_FullFrameBuffer;
     };
 }

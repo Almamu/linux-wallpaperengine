@@ -102,15 +102,6 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
         sceneWidth / 8, sceneHeight / 8
     );
 
-    this->_rt_FullFrameBuffer_b = this->createFBO (
-        "_rt_FullFrameBuffer_b",
-        ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
-        1.0,
-        sceneWidth, sceneHeight,
-        sceneWidth, sceneHeight
-    );
-
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
     // this custom image loads some effect files from the virtual container to achieve the same bloom effect
@@ -164,14 +155,15 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
     auto json = nlohmann::json::parse (imagejson);
 
     // create image for bloom passes
-    auto bloomPass = this->createObject (
-        WallpaperEngine::Core::CObject::fromJSON (
-            json, this->getContainer ()
-        )
-    );
-
     if (this->getScene ()->isBloom () == true)
-        this->m_objectsByRenderOrder.emplace_back (bloomPass);
+        this->m_bloomObject = this->createObject (
+            WallpaperEngine::Core::CObject::fromJSON (
+                json, this->getContainer ()
+            )
+        );
+
+    this->_rt_imageCompositeLayer_bloom = this->findFBO ("_rt_imageLayerComposite_-1_b");
+    this->_rt_FullFrameBuffer = this->m_sceneFBO;
 }
 
 Render::CObject* CScene::createObject (Core::CObject* object)
@@ -252,6 +244,8 @@ void CScene::renderFrame (glm::ivec4 viewport)
         this->m_parallaxDisplacement.y = glm::mix (this->m_parallaxDisplacement.y, (this->m_mousePosition.y * amount) * influence, delay);
     }
 
+    this->m_sceneFBO = this->_rt_FullFrameBuffer;
+
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
     // ensure we render over the whole screen
@@ -261,6 +255,12 @@ void CScene::renderFrame (glm::ivec4 viewport)
 
     for (; cur != end; cur ++)
         (*cur)->render ();
+
+    if (this->getScene ()->isBloom () == true)
+    {
+        this->m_sceneFBO = this->_rt_imageCompositeLayer_bloom;
+        this->m_bloomObject->render ();
+    }
 }
 
 void CScene::updateMouse (glm::ivec4 viewport)
