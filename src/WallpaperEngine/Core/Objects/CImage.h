@@ -34,6 +34,7 @@ namespace WallpaperEngine::Core::Objects
         const float getAlpha () const;
         const glm::vec3& getColor () const;
         const float getBrightness () const;
+        const uint32_t getColorBlendMode () const;
 
     protected:
         CImage (
@@ -48,7 +49,8 @@ namespace WallpaperEngine::Core::Objects
                 std::string alignment,
                 const glm::vec3& color,
                 float alpha,
-                float brightness
+                float brightness,
+                uint32_t colorBlendMode
         );
 
         static const std::string Type;
@@ -60,5 +62,6 @@ namespace WallpaperEngine::Core::Objects
         float m_alpha;
         float m_brightness;
         glm::vec3 m_color;
+        uint32_t m_colorBlendMode;
     };
 };

@@ -79,6 +79,7 @@ namespace WallpaperEngine::Render::Objects
 
         std::vector<CEffect*> m_effects;
         Effects::CMaterial* m_material;
+        Effects::CMaterial* m_colorBlendMaterial;
         std::vector <Effects::CPass*> m_passes;
 
         double m_animationTime;

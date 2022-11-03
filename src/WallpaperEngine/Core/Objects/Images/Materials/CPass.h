@@ -28,6 +28,7 @@ namespace WallpaperEngine::Core::Objects::Images::Materials
         const std::string& getCullingMode () const;
         const std::string& getDepthTest () const;
         const std::string& getDepthWrite () const;
+        void setBlendingMode (std::string mode);
 
         void insertCombo (const std::string& name, int value);
         void insertConstant (const std::string& name, Effects::Constants::CShaderConstant* constant);

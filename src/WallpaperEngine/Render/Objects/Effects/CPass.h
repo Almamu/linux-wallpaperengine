@@ -24,6 +24,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection);
 
         const CMaterial* getMaterial () const;
+        Core::Objects::Images::Materials::CPass* getPass ();
 
     private:
         enum UniformType

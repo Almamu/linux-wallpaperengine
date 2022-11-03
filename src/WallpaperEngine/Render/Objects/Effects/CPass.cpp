@@ -289,6 +289,11 @@ const CMaterial* CPass::getMaterial () const
     return this->m_material;
 }
 
+Core::Objects::Images::Materials::CPass* CPass::getPass ()
+{
+    return this->m_pass;
+}
+
 GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
 {
     // reserve shaders in OpenGL
@@ -464,6 +469,7 @@ void CPass::setupUniforms ()
             if (bindCur != bindEnd)
             {
                 this->m_finalTextures.insert (std::make_pair ((*bindCur).first, nullptr));
+                bindCur ++;
             }
 
             if (cur != end)
@@ -472,26 +478,66 @@ void CPass::setupUniforms ()
                     this->m_finalTextures.insert (std::make_pair (index, *cur));
 
                 index ++;
-            }
-
-            if (fragCur != fragEnd && (*fragCur).second != nullptr)
-            {
-                this->m_finalTextures.insert (std::make_pair ((*fragCur).first, (*fragCur).second));
-            }
-
-            if (vertCur != vertEnd && (*vertCur).second != nullptr)
-            {
-                this->m_finalTextures.insert (std::make_pair ((*vertCur).first, (*vertCur).second));
-            }
-
-            if (bindCur != bindEnd)
-                bindCur ++;
-            if (cur != end)
                 cur ++;
+            }
+
             if (fragCur != fragEnd)
+            {
+                std::string textureName = (*fragCur).second;
+
+                try
+                {
+                    // resolve the texture first
+                    ITexture* textureRef = nullptr;
+
+                    if (textureName.find ("_rt_") == 0)
+                    {
+                        textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+
+                        if (textureRef == nullptr)
+                            textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+                    }
+                    else
+                        textureRef = this->getMaterial ()->getImage ()->getContainer ()->readTexture (textureName);
+
+                    this->m_finalTextures.insert (std::make_pair ((*fragCur).first, textureRef));
+                }
+                catch (std::runtime_error& ex)
+                {
+                    std::cerr << "Cannot resolve texture " << textureName << " for fragment shader: " << ex.what () << std::endl;
+                }
+
                 fragCur ++;
+            }
+
             if (vertCur != vertEnd)
+            {
+                std::string textureName = (*vertCur).second;
+
+                try
+                {
+                    // resolve the texture first
+                    ITexture* textureRef = nullptr;
+
+                    if (textureName.find ("_rt_") == 0)
+                    {
+                        textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+
+                        if (textureRef == nullptr)
+                            textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+                    }
+                    else
+                        textureRef = this->getMaterial ()->getImage ()->getContainer ()->readTexture (textureName);
+
+                    this->m_finalTextures.insert (std::make_pair ((*vertCur).first, textureRef));
+                }
+                catch (std::runtime_error& ex)
+                {
+                    std::cerr << "Cannot resolve texture " << textureName << " for vertex shader: " << ex.what () << std::endl;
+                }
+
                 vertCur ++;
+            }
         }
     }
 

@@ -94,8 +94,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
     );
 
-    GLfloat realWidth = this->m_texture->getRealWidth () / 2;
-    GLfloat realHeight = this->m_texture->getRealHeight () / 2;
+    GLfloat realWidth = this->m_texture->getRealWidth () / 2.0f;
+    GLfloat realHeight = this->m_texture->getRealHeight () / 2.0f;
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
@@ -216,12 +216,24 @@ void CImage::setup ()
     if (this->m_initialized)
         return;
 
-    // generate the main material used to render the image
-    this->m_material = new Effects::CMaterial (
-        new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
-        this->m_image->getMaterial ()
-    );
+    // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
 
+    {
+        // generate the main material used to render the image
+        this->m_material = new Effects::CMaterial (
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+            this->m_image->getMaterial ()
+        );
+
+        // add blendmode to the combos
+        auto cur = this->m_material->getPasses ().begin ();
+        auto end = this->m_material->getPasses ().end ();
+
+        for (; cur != end; cur ++)
+            this->m_passes.push_back (*cur);
+    }
+
+    // prepare the passes list
     if (this->getImage ()->getEffects ().empty () == false)
     {
         // generate the effects used by this material
@@ -229,19 +241,10 @@ void CImage::setup ()
         auto end = this->getImage ()->getEffects ().end ();
 
         for (; cur != end; cur ++)
-            this->m_effects.emplace_back (new CEffect (this, *cur));
-    }
-
-    // prepare the passes list
-    if (this->getEffects ().empty () == false)
-    {
-        auto effectCur = this->getEffects ().begin ();
-        auto effectEnd = this->getEffects ().end ();
-
-        for (; effectCur != effectEnd; effectCur ++)
         {
-            auto materialCur = (*effectCur)->getMaterials ().begin ();
-            auto materialEnd = (*effectCur)->getMaterials ().end ();
+            auto effect = new CEffect (this, *cur);
+            auto materialCur = effect->getMaterials ().begin ();
+            auto materialEnd = effect->getMaterials ().end ();
 
             for (; materialCur != materialEnd; materialCur ++)
             {
@@ -251,27 +254,52 @@ void CImage::setup ()
                 for (; passCur != passEnd; passCur ++)
                     this->m_passes.push_back (*passCur);
             }
+
+            this->m_effects.push_back (effect);
         }
     }
 
-    // add the final passes too
-    if (this->m_material->getPasses ().empty () == false)
+    if (this->m_image->getColorBlendMode () > 0)
     {
-        auto cur = this->m_material->getPasses ().begin ();
-        auto end = this->m_material->getPasses ().end ();
+        auto material = Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer ());
+
+        // effectpasshthrough only has one pass
+        (*material->getPasses ().begin ())->insertCombo ("BLENDMODE", this->m_image->getColorBlendMode ());
+
+        // generate the main material used to render the image
+        this->m_colorBlendMaterial = new Effects::CMaterial(
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+            material
+        );
+
+        // add blendmode to the combos
+        auto cur = this->m_colorBlendMaterial->getPasses ().begin ();
+        auto end = this->m_colorBlendMaterial->getPasses ().end ();
 
         for (; cur != end; cur ++)
             this->m_passes.push_back (*cur);
     }
 
-    // calculate full animation time (if any)
-    this->m_animationTime = 0.0f;
+    // if there's more than one pass the blendmode has to be moved from the beginning to the end
+    if (this->m_passes.size () > 1)
+    {
+        auto first = this->m_passes.begin ();
+        auto last = this->m_passes.rbegin ();
 
-    auto cur = this->getTexture ()->getFrames ().begin ();
-    auto end = this->getTexture ()->getFrames ().end ();
+        (*last)->getPass ()->setBlendingMode ((*first)->getPass ()->getBlendingMode ());
+        (*first)->getPass ()->setBlendingMode ("normal");
+    }
 
-    for (; cur != end; cur ++)
-        this->m_animationTime += (*cur)->frametime;
+    {
+        // calculate full animation time (if any)
+        this->m_animationTime = 0.0f;
+
+        auto cur = this->getTexture ()->getFrames ().begin ();
+        auto end = this->getTexture ()->getFrames ().end ();
+
+        for (; cur != end; cur++)
+            this->m_animationTime += (*cur)->frametime;
+    }
 
     this->m_initialized = true;
 }
@@ -299,8 +327,8 @@ void CImage::render ()
         return;
 
     // reset the framebuffers so the drawing always happens on the same order
-    this->m_currentMainFBO = this->m_subFBO;
-    this->m_currentSubFBO = this->m_mainFBO;
+    this->m_currentMainFBO = this->m_mainFBO;
+    this->m_currentSubFBO = this->m_subFBO;
 
     glColorMask (true, true, true, true);
 
@@ -334,12 +362,8 @@ void CImage::render ()
         }
 
         // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end)
+        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
         {
-            // do not draw to screen if the image is not visible
-            if (this->getImage ()->isVisible () == false)
-                return;
-
             spacePosition = *this->getSceneSpacePosition ();
             drawTo = this->getScene ()->getFBO ();
             projection = this->m_modelViewProjectionScreen;

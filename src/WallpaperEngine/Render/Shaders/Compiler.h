@@ -91,7 +91,7 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * @return The list of textures inferred from the shader's code
          */
-        const std::map <int, ITexture*>& getTextures () const;
+        const std::map <int, std::string>& getTextures () const;
 
     private:
         /**
@@ -263,7 +263,7 @@ namespace WallpaperEngine::Render::Shaders
          /**
           * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
           */
-         std::map<int, ITexture*> m_textures;
+         std::map<int, std::string> m_textures;
          bool m_includesProcessed = false;
     };
 }

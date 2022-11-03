@@ -139,6 +139,11 @@ const std::string& CPass::getDepthWrite ()const
     return this->m_depthwrite;
 }
 
+void CPass::setBlendingMode (std::string mode)
+{
+    this->m_blending = mode;
+}
+
 void CPass::insertConstant (const std::string& name, CShaderConstant* constant)
 {
     this->m_constants.insert (std::pair <std::string, CShaderConstant*> (name, constant));

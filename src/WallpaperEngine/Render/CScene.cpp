@@ -39,6 +39,11 @@ CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
         scene->getOrthogonalProjection ()->getHeight ()
     );
 
+    // set clear color
+    FloatColor clearColor = this->getScene ()->getClearColor ();
+
+    glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
+
     // setup framebuffers
     this->setupFramebuffers ();
 
@@ -136,21 +141,15 @@ void CScene::renderFrame (glm::ivec4 viewport)
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
-    // clear screen
-    FloatColor clearColor = this->getScene ()->getClearColor ();
-
-    glClearColor (clearColor.r, clearColor.g, clearColor.b, 0.0f);
-
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
     // ensure we render over the whole screen
     glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     for (; cur != end; cur ++)
         (*cur)->render ();
-
-    // ensure we render over the whole screen
-    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
 }
 
 void CScene::updateMouse (glm::ivec4 viewport)

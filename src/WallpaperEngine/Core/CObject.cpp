@@ -68,6 +68,10 @@ CObject* CObject::fromJSON (json data, CContainer* container)
 
     if (image_it != data.end () && (*image_it).is_null () == false)
     {
+        // composelayer should be ignored for now, or artifacts will appear
+        if (*image_it == "models/util/composelayer.json")
+            return nullptr;
+
         object = Objects::CImage::fromJSON (
                 data,
                 container,

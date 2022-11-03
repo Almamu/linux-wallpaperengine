@@ -19,14 +19,16 @@ CImage::CImage (
         std::string alignment,
         const glm::vec3& color,
         float alpha,
-        float brightness) :
+        float brightness,
+        uint32_t colorBlendMode) :
         CObject (visible, id, std::move(name), Type, origin, scale, angles),
         m_size (size),
         m_material (material),
         m_alignment (std::move(alignment)),
         m_color (color),
         m_alpha (alpha),
-        m_brightness (brightness)
+        m_brightness (brightness),
+        m_colorBlendMode (colorBlendMode)
 {
 }
 
@@ -46,6 +48,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     auto alpha = jsonFindDefault <float> (data, "alpha", 1.0);
     auto color_val = jsonFindDefault <std::string> (data, "color", "1.0 1.0 1.0");
     auto brightness_val = jsonFindDefault <float> (data, "brightness", 1.0);
+    auto colorBlendMode_val = jsonFindDefault <uint32_t> (data, "colorBlendMode", 0);
 
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> (), container));
 
@@ -63,7 +66,8 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         alignment,
         WallpaperEngine::Core::aToVector3 (color_val),
         alpha,
-        brightness_val
+        brightness_val,
+        colorBlendMode_val
     );
 }
 
@@ -95,6 +99,11 @@ const glm::vec3& CImage::getColor () const
 const float CImage::getBrightness () const
 {
     return this->m_brightness;
+}
+
+const uint32_t CImage::getColorBlendMode () const
+{
+    return this->m_colorBlendMode;
 }
 
 const std::string CImage::Type = "image";

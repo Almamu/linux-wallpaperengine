@@ -711,47 +711,10 @@ namespace WallpaperEngine::Render::Shaders
                         this->m_foundCombos->insert (std::make_pair <std::string, bool> (*combo, true));
                 }
 
-                if (textureName != data.end ())
-                {
-                    // also ensure that the textureName is loaded and we know about it
-                    ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
-
-                    this->m_textures.insert (
-                            std::make_pair (index, texture)
-                    );
-                }
             }
-            else
-            {
-                // check for texture name too
-                if (textureName != data.end ())
-                {
-                    try
-                    {
-                        // also ensure that the textureName is loaded and we know about it
-                        ITexture* texture = this->m_container->readTexture ((*textureName).get <std::string> ());
 
-                        this->m_textures.insert (
-                            std::make_pair (index, texture)
-                        );
-                    }
-                    catch (CAssetLoadException& ex)
-                    {
-                        // cannot resolve texture
-                        // TODO: TAKE CARE OF FBOS
-                        this->m_textures.insert (
-                            std::make_pair (index, nullptr)
-                        );
-                    }
-                }
-                else
-                {
-                    this->m_textures.insert (
-                        std::make_pair (index, nullptr)
-                    );
-                }
-
-            }
+            if (textureName != data.end ())
+                this->m_textures.insert (std::make_pair (index, *textureName));
 
             // samplers are not saved, we can ignore them for now
             return;
@@ -798,7 +761,7 @@ namespace WallpaperEngine::Render::Shaders
         return this->m_combos;
     }
 
-    const std::map <int, ITexture*>& Compiler::getTextures () const
+    const std::map <int, std::string>& Compiler::getTextures () const
     {
         return this->m_textures;
     }
