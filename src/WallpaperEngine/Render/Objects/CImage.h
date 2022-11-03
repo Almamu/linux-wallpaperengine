@@ -59,6 +59,8 @@ namespace WallpaperEngine::Render::Objects
 
     protected:
         static const std::string Type;
+
+        void updateScreenSpacePosition ();
     private:
         const ITexture* m_texture;
         GLuint m_sceneSpacePosition;
@@ -81,6 +83,8 @@ namespace WallpaperEngine::Render::Objects
         Effects::CMaterial* m_material;
         Effects::CMaterial* m_colorBlendMaterial;
         std::vector <Effects::CPass*> m_passes;
+
+        glm::vec4 m_pos;
 
         double m_animationTime;
 

@@ -20,19 +20,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ()->getScale ();
 
-    float xleft = 0.0f;
-    float ytop = 0.0f;
-    float xright = 0.0f;
-    float ybottom = 0.0f;
-
     // depending on the alignment these values might change, for now just support center
     if (this->getImage ()->getAlignment () == "center")
     {
         // calculate the real position of the image
-        xleft = (-scene_width / 2) + (origin.x - (size.x * scale.x / 2));
-        xright = (-scene_width / 2) + (origin.x + (size.x * scale.x / 2));
-        ytop = (-scene_height / 2) + origin.y + (size.y * scale.y / 2);
-        ybottom = (-scene_height / 2) + (origin.y - (size.y * scale.y / 2));
+        this->m_pos.x = (-scene_width / 2) + (origin.x - (size.x * scale.x / 2));
+        this->m_pos.z = (-scene_width / 2) + (origin.x + (size.x * scale.x / 2));
+        this->m_pos.y = (-scene_height / 2) + origin.y + (size.y * scale.y / 2);
+        this->m_pos.w = (-scene_height / 2) + (origin.y - (size.y * scale.y / 2));
     }
     else
     {
@@ -99,12 +94,12 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
-        xleft, ytop, 0.0f,
-        xright, ytop, 0.0f,
-        xleft, ybottom, 0.0f,
-        xleft, ybottom, 0.0f,
-        xright, ytop, 0.0f,
-        xright, ybottom, 0.0f
+        this->m_pos.x, this->m_pos.y, 0.0f,
+        this->m_pos.z, this->m_pos.y, 0.0f,
+        this->m_pos.x, this->m_pos.w, 0.0f,
+        this->m_pos.x, this->m_pos.w, 0.0f,
+        this->m_pos.z, this->m_pos.y, 0.0f,
+        this->m_pos.z, this->m_pos.w, 0.0f
     };
 
     GLfloat copySpacePosition [] = {
@@ -364,6 +359,11 @@ void CImage::render ()
         // determine if it's the last element in the list as this is a screen-copy-like process
         else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
         {
+            if (this->getScene ()->getScene ()->isCameraParallax () == true)
+            {
+                this->updateScreenSpacePosition ();
+            }
+
             spacePosition = *this->getSceneSpacePosition ();
             drawTo = this->getScene ()->getFBO ();
             projection = this->m_modelViewProjectionScreen;
@@ -379,6 +379,26 @@ void CImage::render ()
         if (pass->getMaterial ()->getMaterial ()->hasTarget () == false)
             this->pinpongFramebuffer (&drawTo, &asInput);
     }
+}
+
+void CImage::updateScreenSpacePosition ()
+{
+    double parallaxAmount = this->getScene ()->getScene ()->getCameraParallaxAmount ();
+    glm::vec2 depth = this->getImage ()->getParallaxDepth ();
+    glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();
+
+    // no need to update if the depth is 0
+    if (depth.x == 0.0 && depth.y == 0.0)
+        return;
+
+    float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
+    float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+    this->m_modelViewProjectionScreen =
+        glm::translate (
+            this->getScene ()->getCamera ()->getProjection () *
+            this->getScene ()->getCamera ()->getLookAt (),
+            {x, y, 0.0f}
+        );
 }
 
 const ITexture* CImage::getTexture () const

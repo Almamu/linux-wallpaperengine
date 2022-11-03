@@ -34,6 +34,8 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
         }
     }
 
+    this->m_parallaxDisplacement = {0, 0};
+
     this->m_camera->setOrthogonalProjection (
         scene->getOrthogonalProjection ()->getWidth (),
         scene->getOrthogonalProjection ()->getHeight ()
@@ -49,7 +51,6 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
 
     // create all objects based off their dependencies
     {
-
         auto cur = scene->getObjects ().begin ();
         auto end = scene->getObjects ().end ();
 
@@ -71,7 +72,6 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
 
         this->m_objectsByRenderOrder.emplace_back ((*obj).second);
     }
-
 }
 
 Render::CObject* CScene::createObject (Core::CObject* object)
@@ -141,6 +141,17 @@ void CScene::renderFrame (glm::ivec4 viewport)
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
+    // update the parallax position if required
+    if (this->getScene ()->isCameraParallax () == true)
+    {
+        float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
+        float amount = this->getScene ()->getCameraParallaxAmount ();
+        float delay = this->getScene ()->getCameraParallaxDelay ();
+
+        this->m_parallaxDisplacement.x = glm::mix (this->m_parallaxDisplacement.x, (this->m_mousePosition.x * amount) * influence, delay);
+        this->m_parallaxDisplacement.y = glm::mix (this->m_parallaxDisplacement.y, (this->m_mousePosition.y * amount) * influence, delay);
+    }
+
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
     // ensure we render over the whole screen
@@ -154,8 +165,6 @@ void CScene::renderFrame (glm::ivec4 viewport)
 
 void CScene::updateMouse (glm::ivec4 viewport)
 {
-    // projection also affects the mouse position
-    auto projection = this->getScene ()->getOrthogonalProjection ();
     // update virtual mouse position first
     CMouseInput* mouse = this->getContext ()->getMouse ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
@@ -174,6 +183,12 @@ Core::CScene* CScene::getScene ()
 glm::vec2* CScene::getMousePosition ()
 {
     return &this->m_mousePosition;
+}
+
+
+glm::vec2* CScene::getParallaxDisplacement ()
+{
+    return &this->m_parallaxDisplacement;
 }
 
 const std::string CScene::Type = "scene";

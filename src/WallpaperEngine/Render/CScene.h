@@ -22,6 +22,7 @@ namespace WallpaperEngine::Render
         Core::CScene* getScene ();
 
         glm::vec2* getMousePosition ();
+        glm::vec2* getParallaxDisplacement ();
 
     protected:
         void renderFrame (glm::ivec4 viewport) override;
@@ -38,5 +39,6 @@ namespace WallpaperEngine::Render
         std::map<int, CObject*> m_objects;
         std::vector<CObject*> m_objectsByRenderOrder;
         glm::vec2 m_mousePosition;
+        glm::vec2 m_parallaxDisplacement;
     };
 }

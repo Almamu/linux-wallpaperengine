@@ -18,14 +18,14 @@ namespace WallpaperEngine::Core::Objects
 
     public:
         static CObject* fromJSON (
-                json data,
-                CContainer* container,
-                bool visible,
-                uint32_t id,
-                std::string name,
-                const glm::vec3& origin,
-                const glm::vec3& scale,
-                const glm::vec3& angles
+            json data,
+            CContainer* container,
+            bool visible,
+            uint32_t id,
+            std::string name,
+            const glm::vec3& origin,
+            const glm::vec3& scale,
+            const glm::vec3& angles
         );
 
         const Images::CMaterial* getMaterial () const;
@@ -35,28 +35,31 @@ namespace WallpaperEngine::Core::Objects
         const glm::vec3& getColor () const;
         const float getBrightness () const;
         const uint32_t getColorBlendMode () const;
+        const glm::vec2& getParallaxDepth () const;
 
     protected:
         CImage (
-                Images::CMaterial* material,
-                bool visible,
-                uint32_t id,
-                std::string name,
-                const glm::vec3& origin,
-                const glm::vec3& scale,
-                const glm::vec3& angles,
-                const glm::vec2& size,
-                std::string alignment,
-                const glm::vec3& color,
-                float alpha,
-                float brightness,
-                uint32_t colorBlendMode
+            Images::CMaterial* material,
+            bool visible,
+            uint32_t id,
+            std::string name,
+            const glm::vec3& origin,
+            const glm::vec3& scale,
+            const glm::vec3& angles,
+            const glm::vec2& size,
+            std::string alignment,
+            const glm::vec3& color,
+            float alpha,
+            float brightness,
+            uint32_t colorBlendMode,
+            const glm::vec2& parallaxDepth
         );
 
         static const std::string Type;
 
     private:
         glm::vec2 m_size;
+        const glm::vec2 m_parallaxDepth;
         Images::CMaterial* m_material;
         std::string m_alignment;
         float m_alpha;
