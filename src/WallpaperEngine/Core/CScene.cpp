@@ -62,8 +62,8 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
     auto ambientcolor = jsonFindDefault <std::string> (*general_it, "ambientcolor", "0 0 0");
     auto bloom = jsonFindDefault <bool> (*general_it, "bloom", false);
-    auto bloomstrength = (*general_it).find ("bloomstrength");
-    auto bloomthreshold = (*general_it).find ("bloomthreshold");
+    auto bloomstrength = jsonFindUserConfig <float> (*general_it, "bloomstrength", 0.0);
+    auto bloomthreshold = jsonFindUserConfig <float> (*general_it, "bloomthreshold", 0.0);
     auto camerafade = jsonFindDefault <bool> (*general_it, "camerafade", false);
     auto cameraparallax = jsonFindDefault <bool> (*general_it, "cameraparallax", true);
     auto cameraparallaxamount = jsonFindDefault <double> (*general_it, "cameraparallaxamount", 1.0f);
@@ -77,48 +77,14 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto clearcolor_it = jsonFindRequired (*general_it, "clearcolor", "General section must have clear color");
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
     auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
-    double bloomstrength_val = 0.0f;
-    double bloomthreshold_val = 0.0f;
-
-    if (bloomstrength != (*general_it).end ())
-    {
-        if ((*bloomstrength).is_object ())
-        {
-            auto value = (*bloomstrength).find ("value");
-
-            if (value != (*bloomstrength).end ())
-            {
-                bloomstrength = value;
-            }
-        }
-
-        if ((*bloomstrength).is_number ())
-            bloomstrength_val = (*bloomstrength);
-    }
-
-    if (bloomthreshold != (*general_it).end ())
-    {
-        if ((*bloomthreshold).is_object ())
-        {
-            auto value = (*bloomthreshold).find ("value");
-
-            if (value != (*bloomthreshold).end ())
-            {
-                bloomthreshold = value;
-            }
-        }
-
-        if ((*bloomthreshold).is_number ())
-            bloomthreshold_val = (*bloomthreshold);
-    }
 
     CScene* scene = new CScene (
             container,
             Scenes::CCamera::fromJSON (*camera_it),
             WallpaperEngine::Core::aToColorf(ambientcolor),
             bloom,
-            bloomstrength_val,
-            bloomthreshold_val,
+            bloomstrength,
+            bloomthreshold,
             camerafade,
             cameraparallax,
             cameraparallaxamount,

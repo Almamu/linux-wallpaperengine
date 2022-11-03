@@ -33,30 +33,13 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible_it = data.find ("visible");
+    auto visible = jsonFindUserConfig (data, "visible", false);
     auto origin_val = jsonFindDefault <std::string> (data, "origin", "0.0 0.0 0.0");
     auto scale_val = jsonFindDefault <std::string> (data, "scale", "0.0 0.0 0.0");
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
     auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
     auto dependencies_it = data.find ("dependencies");
-
-    bool visible = true;
-
-    // visibility is optional
-    if (visible_it != data.end ())
-    {
-        if (visible_it->is_boolean () == false)
-        {
-            // TODO: SUPPORT CONFIGURATION VALUES ON ATTRIBUTES LIKE VISIBLE
-            // TODO: FOR NOW JUST DEFAULT TO FALSE
-            visible = false;
-        }
-        else
-        {
-            visible = *visible_it;
-        }
-    }
 
     auto image_it = data.find ("image");
     auto sound_it = data.find ("sound");
@@ -137,20 +120,10 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
         for (; cur != end; cur ++)
         {
             // check if the effect is visible or not
-            auto effectVisible_it = (*cur).find ("visible");
+            auto effectVisible = jsonFindUserConfig (*cur, "visible", true);
 
-            if (effectVisible_it != (*cur).end ())
-            {
-                if ((*effectVisible_it).is_boolean () && (*effectVisible_it) == false)
-                    continue;
-                if ((*effectVisible_it).is_object () == true)
-                {
-                    auto effectVisibleValue_it = (*effectVisible_it).find ("value");
-
-                    if (effectVisibleValue_it != (*effectVisible_it).end () && (*effectVisibleValue_it) == false)
-                        continue;
-                }
-            }
+            if (effectVisible == false)
+                continue;
 
             object->insertEffect (
                 Objects::CEffect::fromJSON (*cur, object, container)

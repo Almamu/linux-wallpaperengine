@@ -136,3 +136,34 @@ template int64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, i
 template uint64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, uint64_t defaultValue);
 template float Core::jsonFindDefault (nlohmann::json& data, const char *key, float defaultValue);
 template double Core::jsonFindDefault (nlohmann::json& data, const char *key, double defaultValue);
+
+template <typename T> T Core::jsonFindUserConfig (nlohmann::json& data, const char *key, T defaultValue)
+{
+    auto value = data.find (key);
+
+    if (value == data.end () || value->type () == nlohmann::detail::value_t::null)
+        return defaultValue;
+
+    if (value->is_object () == true)
+    {
+        auto internal = value->find ("value");
+
+        if (internal == value->end ())
+            return defaultValue;
+
+        value = internal;
+    }
+
+    return *value;
+}
+
+template bool Core::jsonFindUserConfig (nlohmann::json& data, const char *key, bool defaultValue);
+template std::string Core::jsonFindUserConfig (nlohmann::json& data, const char *key, std::string defaultValue);
+template int16_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int16_t defaultValue);
+template uint16_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint16_t defaultValue);
+template int32_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int32_t defaultValue);
+template uint32_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint32_t defaultValue);
+template int64_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int64_t defaultValue);
+template uint64_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint64_t defaultValue);
+template float Core::jsonFindUserConfig (nlohmann::json& data, const char *key, float defaultValue);
+template double Core::jsonFindUserConfig (nlohmann::json& data, const char *key, double defaultValue);
