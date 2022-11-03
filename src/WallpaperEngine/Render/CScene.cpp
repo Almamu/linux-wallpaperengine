@@ -156,13 +156,16 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
 
     // create image for bloom passes
     if (this->getScene ()->isBloom () == true)
+    {
         this->m_bloomObject = this->createObject (
             WallpaperEngine::Core::CObject::fromJSON (
                 json, this->getContainer ()
             )
         );
 
-    this->_rt_imageCompositeLayer_bloom = this->findFBO ("_rt_imageLayerComposite_-1_b");
+        this->_rt_imageCompositeLayer_bloom = this->findFBO ("_rt_imageLayerComposite_-1_b");
+    }
+
     this->_rt_FullFrameBuffer = this->m_sceneFBO;
 }
 
