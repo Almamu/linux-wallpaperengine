@@ -3,8 +3,8 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CVideo::CVideo (Core::CVideo* video, CContainer* container, CContext* context) :
-    CWallpaper (video, Type, container, context)
+CVideo::CVideo (Core::CVideo* video, CContext* context) :
+    CWallpaper (video, Type, context)
 {
     if (avformat_open_input (&m_formatCtx, video->getFilename ().c_str (), NULL, NULL) < 0)
         throw std::runtime_error ("Failed to open video file");

@@ -134,7 +134,7 @@ CAudioStream::CAudioStream (const std::string& filename)
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (void* buffer, int length)
+CAudioStream::CAudioStream (const void* buffer, int length)
 {
     // do not do anything if sdl audio was not initialized
     if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
@@ -363,7 +363,7 @@ bool CAudioStream::isRepeat ()
     return this->m_repeat;
 }
 
-void* CAudioStream::getBuffer ()
+const void* CAudioStream::getBuffer ()
 {
     return this->m_buffer;
 }

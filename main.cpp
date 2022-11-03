@@ -380,14 +380,14 @@ int main (int argc, char* argv[])
         chdir (path.c_str ());
 
     // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window);
+    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window, containers);
     // initialize mouse support
     context->setMouse (new CMouseInput (window));
     // set the default viewport
     context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
     // ensure the context knows what wallpaper to render
     context->setWallpaper (
-        WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), containers, context)
+        WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), context)
     );
 
     // update maximum FPS if it's a video

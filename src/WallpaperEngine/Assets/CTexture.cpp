@@ -6,10 +6,10 @@
 
 using namespace WallpaperEngine::Assets;
 
-CTexture::CTexture (void* fileData)
+CTexture::CTexture (const void* fileData)
 {
     // ensure the header is parsed
-    this->m_header = this->parseHeader (static_cast <char*> (fileData));
+    this->m_header = this->parseHeader (static_cast <const char*> (fileData));
 
     GLint internalFormat;
 
@@ -334,7 +334,7 @@ CTexture::TextureHeader::~TextureHeader ()
     }
 }
 
-CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
+CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
 {
     // check the magic value on the header first
     if (memcmp (fileData, "TEXV0005", 9) != 0)
@@ -349,7 +349,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
 
     TextureHeader* header = new TextureHeader;
 
-    uint32_t* pointer = reinterpret_cast <uint32_t*> (fileData);
+    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     header->format = static_cast <TextureFormat>(*pointer ++);
     header->flags = static_cast <TextureFlags> (*pointer ++);
@@ -361,9 +361,9 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
 
     // now we're going to parse some more data that is string
     // so get the current position back as string
-    fileData = reinterpret_cast <char*> (pointer);
+    fileData = reinterpret_cast <const char*> (pointer);
     // get the position of what comes after the texture data
-    pointer = reinterpret_cast <uint32_t*> (fileData + 9);
+    pointer = reinterpret_cast <const uint32_t*> (fileData + 9);
 
     if (memcmp (fileData, "TEXB0003", 9) == 0)
     {
@@ -393,7 +393,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
         header->mipmapCount = *pointer ++;
         std::vector <TextureMipmap*> mipmaps;
 
-        fileData = reinterpret_cast <char*> (pointer);
+        fileData = reinterpret_cast <const char*> (pointer);
 
         for (uint32_t i = 0; i < header->mipmapCount; i ++)
             mipmaps.emplace_back (parseMipmap (header, &fileData));
@@ -401,7 +401,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
         // add the pixmaps back
         header->images.insert (std::pair <uint32_t, std::vector <TextureMipmap*>> (image, mipmaps));
 
-        pointer = reinterpret_cast <uint32_t*> (fileData);
+        pointer = reinterpret_cast <const uint32_t*> (fileData);
     }
 
     // gifs have extra information after the mipmaps
@@ -421,7 +421,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
         }
 
         // get an integer pointer back to read the frame count
-        pointer = reinterpret_cast <uint32_t*> (fileData + 9);
+        pointer = reinterpret_cast <const uint32_t*> (fileData + 9);
         uint32_t framecount = *pointer++;
 
         if (header->animatedVersion == AnimatedVersion::TEXS0003)
@@ -432,7 +432,7 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
         }
 
         // get back the pointer into filedata
-        fileData = reinterpret_cast <char*> (pointer);
+        fileData = reinterpret_cast <const char*> (pointer);
 
         while (framecount > 0)
         {
@@ -455,11 +455,11 @@ CTexture::TextureHeader* CTexture::parseHeader (char* fileData)
     return header;
 }
 
-CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, char** originalFileData)
+CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, const char** originalFileData)
 {
-    char* fileData = *originalFileData;
+    const char* fileData = *originalFileData;
     // get back the pointer into integer
-    uint32_t* pointer = reinterpret_cast <uint32_t*> (fileData);
+    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     // start reading frame information
     TextureFrame* frame = new TextureFrame();
@@ -467,7 +467,7 @@ CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, char** 
     frame->frameNumber = *pointer++;
 
     // reinterpret the pointer into float
-    float* fPointer = reinterpret_cast <float*> (pointer);
+    const float* fPointer = reinterpret_cast <const float*> (pointer);
 
     frame->frametime = *fPointer ++;
     frame->x = *fPointer ++;
@@ -478,20 +478,20 @@ CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, char** 
     frame->height1 = *fPointer ++;
 
     // get back the pointer into fileData so it can be reused later
-    *originalFileData = reinterpret_cast <char*> (fPointer);
+    *originalFileData = reinterpret_cast <const char*> (fPointer);
 
     return frame;
 }
 
-CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, char** originalFileData)
+CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const char** originalFileData)
 {
     TextureMipmap* mipmap = new TextureMipmap ();
 
     // get the current position
-    char* fileData = *originalFileData;
+    const char* fileData = *originalFileData;
 
     // get an integer pointer
-    uint32_t* pointer = reinterpret_cast <uint32_t*> (fileData);
+    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     mipmap->width = *pointer++;
     mipmap->height = *pointer++;
@@ -506,7 +506,7 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, char** or
     mipmap->compressedSize = *pointer++;
 
     // get back a normal char pointer
-    fileData = reinterpret_cast <char*> (pointer);
+    fileData = reinterpret_cast <const char*> (pointer);
 
     if (mipmap->compression == 0)
     {

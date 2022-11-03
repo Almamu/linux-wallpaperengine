@@ -33,7 +33,7 @@ CPackage::~CPackage()
 }
 
 
-void* CPackage::readFile (std::string filename, uint32_t* length)
+const void* CPackage::readFile (std::string filename, uint32_t* length) const
 {
     auto it = this->m_contents.find (filename);
 

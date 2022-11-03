@@ -22,7 +22,7 @@ namespace WallpaperEngine::Assets
         CPackage (const std::string& path);
         ~CPackage ();
 
-        void* readFile (std::string filename, uint32_t* length) override;
+        const void* readFile (std::string filename, uint32_t* length) const override;
 
     protected:
         /**

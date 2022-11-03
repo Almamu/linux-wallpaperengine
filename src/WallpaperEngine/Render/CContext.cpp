@@ -48,12 +48,14 @@ int CustomXIOErrorHandler (Display* dsp)
     return 0;
 }
 
-CContext::CContext (std::vector <std::string> screens, GLFWwindow* window) :
+CContext::CContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
     m_defaultViewport ({0, 0, 1920, 1080}),
-    m_window (window)
+    m_window (window),
+    m_container (container),
+    m_textureCache (new CTextureCache (this))
 {
     this->initializeViewports ();
 }
@@ -254,4 +256,14 @@ void CContext::setMouse (CMouseInput* mouse)
 CWallpaper* CContext::getWallpaper () const
 {
     return this->m_wallpaper;
+}
+
+const CContainer* CContext::getContainer () const
+{
+    return this->m_container;
+}
+
+const ITexture* CContext::resolveTexture (const std::string& name)
+{
+    return this->m_textureCache->resolve (name);
 }

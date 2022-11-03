@@ -26,7 +26,7 @@ namespace WallpaperEngine
         {
         public:
             CAudioStream (const std::string& filename);
-            CAudioStream (void* buffer, int length);
+            CAudioStream (const void* buffer, int length);
             CAudioStream (AVCodecContext* context);
 
             void queuePacket (AVPacket* pkt);
@@ -47,7 +47,7 @@ namespace WallpaperEngine
             void setRepeat (bool newRepeat = true);
             bool isRepeat ();
             void stop ();
-            void* getBuffer ();
+            const void* getBuffer ();
             int getLength ();
             int getPosition ();
             void setPosition (int current);
@@ -65,7 +65,7 @@ namespace WallpaperEngine
             AVCodecContext* m_context = nullptr;
             AVFormatContext* m_formatContext = nullptr;
             int m_audioStream = -1;
-            void* m_buffer;
+            const void* m_buffer;
             int m_length;
             int m_position = 0;
 

@@ -46,7 +46,7 @@ namespace WallpaperEngine::Render::Objects
         const GLuint* getPassSpacePosition () const;
         const GLuint* getTexCoordCopy () const;
         const GLuint* getTexCoordPass () const;
-        ITexture* getTexture () const;
+        const ITexture* getTexture () const;
         const double getAnimationTime () const;
 
         /**
@@ -55,12 +55,12 @@ namespace WallpaperEngine::Render::Objects
          * @param drawTo The framebuffer to use
          * @param asInput The last texture used as output (if needed)
          */
-        void pinpongFramebuffer (CFBO** drawTo, ITexture** asInput);
+        void pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput);
 
     protected:
         static const std::string Type;
     private:
-        ITexture* m_texture;
+        const ITexture* m_texture;
         GLuint m_sceneSpacePosition;
         GLuint m_copySpacePosition;
         GLuint m_passSpacePosition;

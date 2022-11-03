@@ -23,7 +23,7 @@ CDirectory::~CDirectory ()
 
 }
 
-void* CDirectory::readFile (std::string filename, uint32_t* length)
+const void* CDirectory::readFile (std::string filename, uint32_t* length) const
 {
     std::string final = this->m_basepath + filename;
 
@@ -56,12 +56,6 @@ void* CDirectory::readFile (std::string filename, uint32_t* length)
         delete[] contents;
         throw CAssetLoadException (filename, "Unexpected error when reading the file");
     }
-
-    // store it in the cache too
-    this->m_cache.insert (std::make_pair <std::string, CFileEntry> (
-        std::move (final),
-        CFileEntry (contents, size)
-    ));
 
     if (length != nullptr)
         *length = size;

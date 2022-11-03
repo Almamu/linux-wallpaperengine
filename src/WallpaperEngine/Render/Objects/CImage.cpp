@@ -53,7 +53,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         else
         {
             // get the first texture on the first pass (this one represents the image assigned to this object)
-            this->m_texture = this->getScene ()->getContainer ()->readTexture (textureName);
+            this->m_texture = this->getScene ()->getContext ()->resolveTexture (textureName);
         }
     }
     else
@@ -304,7 +304,7 @@ void CImage::setup ()
     this->m_initialized = true;
 }
 
-void CImage::pinpongFramebuffer (CFBO** drawTo, ITexture** asInput)
+void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
 {
     // temporarily store FBOs used
     CFBO* currentMainFBO = this->m_currentMainFBO;
@@ -333,8 +333,8 @@ void CImage::render ()
     glColorMask (true, true, true, true);
 
     // start drawing to the main framebuffer
-    CFBO* drawTo = this->m_currentMainFBO;
-    ITexture* asInput = this->getTexture ();
+    const CFBO* drawTo = this->m_currentMainFBO;
+    const ITexture* asInput = this->getTexture ();
     GLuint texcoord = *this->getTexCoordCopy ();
 
     auto cur = this->m_passes.begin ();
@@ -343,7 +343,7 @@ void CImage::render ()
     for (; cur != end; cur ++)
     {
         Effects::CPass* pass = *cur;
-        CFBO* prevDrawTo = drawTo;
+        const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = *this->getCopySpacePosition ();
         glm::mat4 projection = this->m_modelViewProjectionPass;
 
@@ -381,7 +381,7 @@ void CImage::render ()
     }
 }
 
-ITexture* CImage::getTexture () const
+const ITexture* CImage::getTexture () const
 {
     return this->m_texture;
 }

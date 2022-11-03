@@ -21,7 +21,7 @@ namespace WallpaperEngine::Render
         virtual void render () = 0;
 
         CScene* getScene () const;
-        CContainer* getContainer () const;
+        const CContainer* getContainer () const;
         const int getId () const;
 
     protected:

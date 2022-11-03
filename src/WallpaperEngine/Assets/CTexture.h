@@ -18,7 +18,7 @@ namespace WallpaperEngine::Assets
         struct TextureHeader;
 
     public:
-        CTexture (void* fileData);
+        CTexture (const void* fileData);
         ~CTexture ();
 
         const GLuint getTextureID (uint32_t imageIndex = 0) const override;
@@ -116,9 +116,9 @@ namespace WallpaperEngine::Assets
             std::vector <TextureFrame*> frames;
         };
     private:
-        static TextureHeader* parseHeader (char* fileData);
-        static TextureFrame* parseAnimation (TextureHeader* header, char** originalFileData);
-        static TextureMipmap* parseMipmap (TextureHeader* header, char** fileData);
+        static TextureHeader* parseHeader (const char* fileData);
+        static TextureFrame* parseAnimation (TextureHeader* header, const char** originalFileData);
+        static TextureMipmap* parseMipmap (TextureHeader* header, const char** fileData);
 
         TextureHeader* m_header;
         GLuint* m_textureID;

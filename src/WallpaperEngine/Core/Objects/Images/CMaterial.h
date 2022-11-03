@@ -14,9 +14,9 @@ namespace WallpaperEngine::Core::Objects::Images
     class CMaterial
     {
     public:
-        static CMaterial* fromFile (const std::string& filename, CContainer* container);
+        static CMaterial* fromFile (const std::string& filename, const CContainer* container);
         static CMaterial* fromJSON (const std::string& name, json data);
-        static CMaterial* fromFile (const std::string& filename, const std::string& target, CContainer* container);
+        static CMaterial* fromFile (const std::string& filename, const std::string& target, const CContainer* container);
         static CMaterial* fromJSON (const std::string& name, json data, const std::string& target);
 
         void insertPass (Materials::CPass* mass);

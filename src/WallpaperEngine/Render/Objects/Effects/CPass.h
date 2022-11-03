@@ -21,7 +21,7 @@ namespace WallpaperEngine::Render::Objects::Effects
     public:
         CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
 
-        void render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection);
+        void render (const CFBO* drawTo, const ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection);
 
         const CMaterial* getMaterial () const;
         Core::Objects::Images::Materials::CPass* getPass ();
@@ -87,12 +87,12 @@ namespace WallpaperEngine::Render::Objects::Effects
         template <typename T> void addUniform (const std::string& name, UniformType type, T value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T* value);
 
-        ITexture* resolveTexture (ITexture* expected, int index, ITexture* previous = nullptr);
+        const ITexture* resolveTexture (const ITexture* expected, int index, const ITexture* previous = nullptr);
 
         CMaterial* m_material;
         Core::Objects::Images::Materials::CPass* m_pass;
-        std::vector<ITexture*> m_textures;
-        std::map<int, CFBO*> m_fbos;
+        std::vector<const ITexture*> m_textures;
+        std::map<int, const CFBO*> m_fbos;
         std::map <std::string, bool> m_foundCombos;
         std::vector<AttribEntry*> m_attribs;
         std::map<std::string, UniformEntry*> m_uniforms;
@@ -101,7 +101,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         /**
          * Contains the final map of textures to be used
          */
-        std::map <int, ITexture*> m_finalTextures;
+        std::map <int, const ITexture*> m_finalTextures;
 
         Render::Shaders::Compiler* m_fragShader;
         Render::Shaders::Compiler* m_vertShader;

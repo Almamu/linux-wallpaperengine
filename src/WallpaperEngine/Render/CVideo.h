@@ -18,7 +18,7 @@ namespace WallpaperEngine::Render
     class CVideo : public CWallpaper
     {
     public:
-        CVideo (Core::CVideo* video, CContainer* container, CContext* context);
+        CVideo (Core::CVideo* video, CContext* context);
 
         Core::CVideo* getVideo ();
 

@@ -4,6 +4,7 @@
 #include <glm/vec4.hpp>
 
 #include "WallpaperEngine/Input/CMouseInput.h"
+#include "CTextureCache.h"
 #include "CWallpaper.h"
 #include <X11/Xlib.h>
 
@@ -12,11 +13,12 @@ using namespace WallpaperEngine::Input;
 namespace WallpaperEngine::Render
 {
     class CWallpaper;
+    class CTextureCache;
 
     class CContext
     {
     public:
-        CContext (std::vector <std::string> screens, GLFWwindow* window);
+        CContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container);
         ~CContext ();
 
         void initializeViewports ();
@@ -26,6 +28,8 @@ namespace WallpaperEngine::Render
         CMouseInput* getMouse () const;
         void setMouse (CMouseInput* mouse);
         CWallpaper* getWallpaper () const;
+        const CContainer* getContainer () const;
+        const ITexture* resolveTexture (const std::string& name);
 
     private:
         Display* m_display;
@@ -41,5 +45,7 @@ namespace WallpaperEngine::Render
         CWallpaper* m_wallpaper;
         CMouseInput* m_mouse;
         bool m_isRootWindow;
+        CContainer* m_container;
+        CTextureCache* m_textureCache;
     };
 }

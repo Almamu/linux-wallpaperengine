@@ -17,5 +17,5 @@ namespace WallpaperEngine::FileSystem
      * @param file
      * @return
      */
-    std::string loadFullFile (const std::string& file, WallpaperEngine::Assets::CContainer* containers);
+    std::string loadFullFile (const std::string& file, const WallpaperEngine::Assets::CContainer* containers);
 }

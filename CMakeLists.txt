@@ -79,6 +79,8 @@ add_executable(
 
         src/WallpaperEngine/Render/CContext.h
         src/WallpaperEngine/Render/CContext.cpp
+        src/WallpaperEngine/Render/CTextureCache.h
+        src/WallpaperEngine/Render/CTextureCache.cpp
 
         src/WallpaperEngine/Render/CWallpaper.h
         src/WallpaperEngine/Render/CWallpaper.cpp

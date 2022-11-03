@@ -15,7 +15,7 @@ namespace WallpaperEngine::Render
     class CScene : public CWallpaper
     {
     public:
-        CScene (Core::CScene* scene, CContainer* container, CContext* context);
+        CScene (Core::CScene* scene, CContext* context);
 
         CCamera* getCamera () const;
 

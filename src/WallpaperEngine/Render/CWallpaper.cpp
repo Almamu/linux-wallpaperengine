@@ -8,8 +8,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container, CContext* context) :
-    m_container (container),
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContext* context) :
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
     m_context (context),
@@ -49,9 +48,9 @@ CWallpaper::~CWallpaper ()
 {
 }
 
-CContainer* CWallpaper::getContainer () const
+const CContainer* CWallpaper::getContainer () const
 {
-    return this->m_container;
+    return this->m_context->getContainer ();
 }
 
 WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData ()
@@ -364,12 +363,12 @@ CFBO* CWallpaper::getFBO () const
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CContainer* containers, CContext* context)
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CContext* context)
 {
     if (wallpaper->is <Core::CScene> () == true)
-        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), containers, context);
+        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context);
     else if (wallpaper->is <Core::CVideo> () == true)
-        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), containers, context);
+        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context);
     else
         throw std::runtime_error ("Unsupported wallpaper type");
 }

@@ -25,7 +25,7 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContainer* container, CContext* context);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContext* context);
         ~CWallpaper ();
 
         /**
@@ -36,7 +36,12 @@ namespace WallpaperEngine::Render
         /**
          * @return The container to resolve files for this wallpaper
          */
-        CContainer* getContainer () const;
+        const CContainer* getContainer () const;
+
+        /**
+         * @return The current context rendering this wallpaper
+         */
+        CContext* getContext ();
 
         /**
          * @return The scene's framebuffer
@@ -90,7 +95,7 @@ namespace WallpaperEngine::Render
          *
          * @return
          */
-        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CContainer* containers, CContext* context);
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CContext* context);
 
     protected:
         /**
@@ -103,12 +108,6 @@ namespace WallpaperEngine::Render
          */
         void setupFramebuffers ();
 
-        /**
-         * @return The current context rendering this wallpaper
-         */
-        CContext* getContext ();
-
-        CContainer* m_container;
         Core::CWallpaper* m_wallpaperData;
 
         Core::CWallpaper* getWallpaperData ();

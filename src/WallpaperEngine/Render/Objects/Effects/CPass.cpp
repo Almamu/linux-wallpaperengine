@@ -31,7 +31,7 @@ CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass
 }
 
 
-ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previous)
+const ITexture* CPass::resolveTexture (const ITexture* expected, int index, const ITexture* previous)
 {
     if (expected == nullptr)
     {
@@ -62,7 +62,7 @@ ITexture* CPass::resolveTexture (ITexture* expected, int index, ITexture* previo
     return fbo;
 }
 
-void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection)
+void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection)
 {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, drawTo->getFramebuffer ());
@@ -131,7 +131,7 @@ void CPass::render (CFBO* drawTo, ITexture* input, GLuint position, GLuint texco
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
-    ITexture* texture = this->resolveTexture (input, 0, input);
+    const ITexture* texture = this->resolveTexture (input, 0, input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -437,7 +437,7 @@ void CPass::setupAttributes ()
 void CPass::setupUniforms ()
 {
     // resolve the main texture
-    ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
+    const ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -488,7 +488,7 @@ void CPass::setupUniforms ()
                 try
                 {
                     // resolve the texture first
-                    ITexture* textureRef = nullptr;
+                    const ITexture* textureRef = nullptr;
 
                     if (textureName.find ("_rt_") == 0)
                     {
@@ -498,7 +498,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getContainer ()->readTexture (textureName);
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ()->resolveTexture (textureName);
 
                     this->m_finalTextures.insert (std::make_pair ((*fragCur).first, textureRef));
                 }
@@ -517,7 +517,7 @@ void CPass::setupUniforms ()
                 try
                 {
                     // resolve the texture first
-                    ITexture* textureRef = nullptr;
+                    const ITexture* textureRef = nullptr;
 
                     if (textureName.find ("_rt_") == 0)
                     {
@@ -527,7 +527,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getContainer ()->readTexture (textureName);
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ()->resolveTexture (textureName);
 
                     this->m_finalTextures.insert (std::make_pair ((*vertCur).first, textureRef));
                 }
@@ -631,7 +631,7 @@ void CPass::setupTextures ()
 
         if ((*cur).find ("_rt_") == 0)
         {
-            CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
+            const CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
 
             if (fbo == nullptr)
                 fbo = this->m_material->getImage ()->getScene ()->findFBO ((*cur));
@@ -654,7 +654,7 @@ void CPass::setupTextures ()
             else
             {
                 this->m_textures.emplace_back (
-                    this->m_material->getImage ()->getContainer ()->readTexture ((*cur))
+                    this->m_material->getImage ()->getScene ()->getContext ()->resolveTexture ((*cur))
                 );
             }
         }

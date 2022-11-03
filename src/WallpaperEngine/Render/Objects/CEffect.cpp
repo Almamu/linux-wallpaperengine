@@ -21,7 +21,7 @@ const std::vector<Effects::CMaterial*>& CEffect::getMaterials () const
     return this->m_materials;
 }
 
-CFBO* CEffect::findFBO (const std::string& name) const
+const CFBO* CEffect::findFBO (const std::string& name) const
 {
     auto cur = this->m_fbos.begin ();
     auto end = this->m_fbos.end ();

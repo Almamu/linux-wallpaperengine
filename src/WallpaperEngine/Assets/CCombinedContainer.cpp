@@ -8,7 +8,7 @@ void CCombinedContainer::add (CContainer* container)
     this->m_containers.emplace_back (container);
 }
 
-void* CCombinedContainer::readFile (std::string filename, uint32_t* length)
+const void* CCombinedContainer::readFile (std::string filename, uint32_t* length) const
 {
     auto cur = this->m_containers.begin ();
     auto end = this->m_containers.end ();

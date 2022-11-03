@@ -6,12 +6,12 @@
 
 using namespace WallpaperEngine::Assets;
 
-ITexture* CContainer::readTexture (std::string filename)
+const ITexture* CContainer::readTexture (std::string filename) const
 {
     // get the texture's filename (usually .tex)
     filename = "materials/" + filename + ".tex";
 
-    void* textureContents = this->readFile (filename, nullptr);
+    const void* textureContents = this->readFile (filename, nullptr);
 
     ITexture* result = new CTexture (textureContents);
 
@@ -21,27 +21,27 @@ ITexture* CContainer::readTexture (std::string filename)
     return result;
 }
 
-std::string CContainer::readVertexShader (const std::string& filename)
+std::string CContainer::readVertexShader (const std::string& filename) const
 {
     return this->readFileAsString ("shaders/" + filename + ".vert");
 }
 
-std::string CContainer::readFragmentShader (const std::string& filename)
+std::string CContainer::readFragmentShader (const std::string& filename) const
 {
     return this->readFileAsString ("shaders/" + filename + ".frag");
 }
 
-std::string CContainer::readIncludeShader (const std::string& filename)
+std::string CContainer::readIncludeShader (const std::string& filename) const
 {
     return this->readFileAsString ("shaders/" + filename);
 }
 
-std::string CContainer::readFileAsString (std::string filename)
+std::string CContainer::readFileAsString (std::string filename) const
 {
     uint32_t length = 0;
 
     // read file contents and allocate a buffer for a string
-    void* contents = this->readFile (std::move (filename), &length);
+    const void* contents = this->readFile (std::move (filename), &length);
     char* buffer = new char [length + 1];
 
     // ensure there's a 0 at the end

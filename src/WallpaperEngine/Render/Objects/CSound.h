@@ -22,7 +22,7 @@ namespace WallpaperEngine::Render::Objects
         void load ();
 
     private:
-        std::vector <void*> m_soundBuffer;
+        std::vector <const void*> m_soundBuffer;
         std::vector <Audio::CAudioStream*> m_audioStreams;
 
         Core::Objects::CSound* m_sound;

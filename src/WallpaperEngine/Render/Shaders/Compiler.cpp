@@ -26,7 +26,7 @@ using namespace WallpaperEngine::Assets;
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (
-            CContainer* container,
+            const CContainer* container,
             std::string filename,
             Type type,
             std::map <std::string, int>* combos,

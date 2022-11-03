@@ -19,7 +19,7 @@ void CSound::load ()
     for (; cur != end; cur ++)
     {
         uint32_t filesize = 0;
-        void* filebuffer = this->getContainer ()->readFile ((*cur), &filesize);
+        const void* filebuffer = this->getContainer ()->readFile ((*cur), &filesize);
 
         this->m_audioStreams.push_back (new Audio::CAudioStream (filebuffer, filesize));
         this->m_soundBuffer.push_back (filebuffer);

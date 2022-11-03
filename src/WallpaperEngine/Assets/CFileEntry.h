@@ -9,11 +9,11 @@ namespace WallpaperEngine::Assets
     class CFileEntry
     {
     public:
-        CFileEntry (void* address, uint32_t length) :
+        CFileEntry (const void* address, uint32_t length) :
             address (address),
             length (length) { }
 
-        void* address;
+        const void* address;
         uint32_t length;
     };
 }

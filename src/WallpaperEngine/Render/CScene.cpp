@@ -9,8 +9,8 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CContainer* container, CContext* context) :
-    CWallpaper (scene, Type, container, context)
+CScene::CScene (Core::CScene* scene, CContext* context) :
+    CWallpaper (scene, Type, context)
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());

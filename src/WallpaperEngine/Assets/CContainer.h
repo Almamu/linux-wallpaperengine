@@ -17,7 +17,7 @@ namespace WallpaperEngine::Assets
          *
          * @return
          */
-        virtual void* readFile (std::string filename, uint32_t* length = nullptr) = 0;
+        const virtual void* readFile (std::string filename, uint32_t* length = nullptr) const = 0;
 
         /**
          * Wrapper for readFile, appends the texture extension at the end of the filename
@@ -26,7 +26,7 @@ namespace WallpaperEngine::Assets
          *
          * @return
          */
-        ITexture* readTexture (std::string filename);
+        const ITexture* readTexture (std::string filename) const;
 
         /**
          * Wrapper for readFile, appends the .vert extension at the end and opens the given shader file
@@ -35,7 +35,7 @@ namespace WallpaperEngine::Assets
          *
          * @return The shader code as an string to be used
          */
-        std::string readVertexShader (const std::string& filename);
+        std::string readVertexShader (const std::string& filename) const;
 
         /**
          * Wrapper for readFile, appends the .frag extension at the end and opens the given shader file
@@ -44,7 +44,7 @@ namespace WallpaperEngine::Assets
          *
          * @return The shader code as an string to be used
          */
-        std::string readFragmentShader (const std::string& filename);
+        std::string readFragmentShader (const std::string& filename) const;
 
         /**
          * Wrapper for readFile, appends the .h extension at the end and opens the given shader file
@@ -53,7 +53,7 @@ namespace WallpaperEngine::Assets
          *
          * @return The shader code as an string to be used
          */
-        std::string readIncludeShader (const std::string& filename);
+        std::string readIncludeShader (const std::string& filename) const;
 
     private:
         /**
@@ -63,6 +63,6 @@ namespace WallpaperEngine::Assets
          *
          * @return The file's contents as string
          */
-        std::string readFileAsString (std::string filename);
+        std::string readFileAsString (std::string filename) const;
     };
 }
