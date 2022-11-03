@@ -462,10 +462,11 @@ int main (int argc, char* argv[])
     // get the real framebuffer size
     glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
 
+    GLenum glewInitResult = glewInit ();
     // initialize glew
-    if (glewInit () != GLEW_OK)
+    if (glewInitResult != GLEW_OK)
     {
-        fprintf (stderr, "Failed to initialize GLEW");
+        fprintf (stderr, "Failed to initialize GLEW: %s", glewGetErrorString (glewInitResult));
         glfwTerminate ();
         return 3;
     }
