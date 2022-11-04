@@ -20,18 +20,34 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ()->getScale ();
 
-    // depending on the alignment these values might change, for now just support center
-    if (this->getImage ()->getAlignment () == "center")
+    glm::vec2 scaledSize = size * glm::vec2 (scale);
+
+    // calculate the center and shift from there
+    this->m_pos.x = (-scene_width / 2) + (origin.x - (scaledSize.x / 2));
+    this->m_pos.z = (-scene_width / 2) + (origin.x + (scaledSize.x / 2));
+    this->m_pos.y = (-scene_height / 2) + origin.y + (scaledSize.y / 2);
+    this->m_pos.w = (-scene_height / 2) + (origin.y - (scaledSize.y / 2));
+
+    if (this->getImage ()->getAlignment ().find ("top") != std::string::npos)
     {
-        // calculate the real position of the image
-        this->m_pos.x = (-scene_width / 2) + (origin.x - (size.x * scale.x / 2));
-        this->m_pos.z = (-scene_width / 2) + (origin.x + (size.x * scale.x / 2));
-        this->m_pos.y = (-scene_height / 2) + origin.y + (size.y * scale.y / 2);
-        this->m_pos.w = (-scene_height / 2) + (origin.y - (size.y * scale.y / 2));
+        this->m_pos.y -= scaledSize.y / 2;
+        this->m_pos.w -= scaledSize.y / 2;
     }
-    else
+    else if (this->getImage ()->getAlignment ().find ("bottom") != std::string::npos)
     {
-        throw std::runtime_error ("Only centered images are supported for now!");
+        this->m_pos.y += scaledSize.y / 2;
+        this->m_pos.w += scaledSize.y / 2;
+    }
+
+    if (this->getImage ()->getAlignment ().find ("left") != std::string::npos)
+    {
+        this->m_pos.x += scaledSize.x / 2;
+        this->m_pos.z += scaledSize.x / 2;
+    }
+    else if (this->getImage ()->getAlignment ().find ("right") != std::string::npos)
+    {
+        this->m_pos.x -= scaledSize.x / 2;
+        this->m_pos.z -= scaledSize.x / 2;
     }
 
     // detect texture (if any)
@@ -141,8 +157,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         while (x < size.x) x <<= 1;
         while (y < size.y) y <<= 1;
 
-        width = size.x * scale.x / x;
-        height = size.y * scale.y / y;
+        width = scaledSize.x / x;
+        height = scaledSize.y / y;
     }
 
     float x = 0.0f;
