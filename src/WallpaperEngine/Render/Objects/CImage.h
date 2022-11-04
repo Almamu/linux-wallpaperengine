@@ -40,12 +40,11 @@ namespace WallpaperEngine::Render::Objects
         const std::vector<CEffect*>& getEffects () const;
         const glm::vec2 getSize() const;
 
-        const GLfloat* getVertex () const;
-        const GLuint* getSceneSpacePosition () const;
-        const GLuint* getCopySpacePosition () const;
-        const GLuint* getPassSpacePosition () const;
-        const GLuint* getTexCoordCopy () const;
-        const GLuint* getTexCoordPass () const;
+        const GLuint getSceneSpacePosition () const;
+        const GLuint getCopySpacePosition () const;
+        const GLuint getPassSpacePosition () const;
+        const GLuint getTexCoordCopy () const;
+        const GLuint getTexCoordPass () const;
         const ITexture* getTexture () const;
         const double getAnimationTime () const;
 
@@ -59,6 +58,8 @@ namespace WallpaperEngine::Render::Objects
 
     protected:
         static const std::string Type;
+
+        void setupPasses ();
 
         void updateScreenSpacePosition ();
     private:

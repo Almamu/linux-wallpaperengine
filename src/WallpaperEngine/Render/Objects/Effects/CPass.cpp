@@ -63,13 +63,13 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
     return fbo;
 }
 
-void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, GLuint texcoord, glm::mat4 projection)
+void CPass::render ()
 {
     // set the framebuffer we're drawing to
-    glBindFramebuffer (GL_FRAMEBUFFER, drawTo->getFramebuffer ());
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_drawTo->getFramebuffer ());
 
     // set proper viewport based on what we're drawing to
-    glViewport (0, 0, drawTo->getRealWidth (), drawTo->getRealHeight ());
+    glViewport (0, 0, this->m_drawTo->getRealWidth (), this->m_drawTo->getRealHeight ());
 
     // set texture blending
     if (this->m_pass->getBlendingMode () == "translucent")
@@ -120,19 +120,11 @@ void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, 
         glDepthMask (true);
     }
 
-    // update variables used in the render process (like g_ModelViewProjectionMatrix)
-    this->m_modelViewProjectionMatrix = projection;
-
-    // update a_TexCoord and a_Position based on what to draw to
-    // this should not be required once we do some prediction on rendering things
-    // but for now should be enough
-    this->a_TexCoord = texcoord;
-    this->a_Position = position;
-
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
-    const ITexture* texture = this->resolveTexture (input, 0, input);
+    // maybe we can do this when setting the texture?
+    const ITexture* texture = this->resolveTexture (this->m_input, 0, this->m_input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -180,7 +172,7 @@ void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, 
 
         for (; cur != end; cur ++)
         {
-            texture = this->resolveTexture ((*cur).second, (*cur).first, input);
+            texture = this->resolveTexture ((*cur).second, (*cur).first, this->m_input);
 
             glActiveTexture (GL_TEXTURE0 + (*cur).first);
             glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
@@ -222,6 +214,41 @@ void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, 
             }
         }
     }
+    // add reference uniforms
+    {
+        auto cur = this->m_referenceUniforms.begin ();
+        auto end = this->m_referenceUniforms.end ();
+
+        for (; cur != end; cur ++)
+        {
+            ReferenceUniformEntry* entry = (*cur).second;
+
+            switch (entry->type)
+            {
+                case Double:
+                    glUniform1d (entry->id, *reinterpret_cast <const double*> (*entry->value));
+                    break;
+                case Float:
+                    glUniform1f (entry->id, *reinterpret_cast <const float*> (*entry->value));
+                    break;
+                case Integer:
+                    glUniform1i (entry->id, *reinterpret_cast <const int*> (*entry->value));
+                    break;
+                case Vector4:
+                    glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (*entry->value)));
+                    break;
+                case Vector3:
+                    glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (*entry->value)));
+                    break;
+                case Vector2:
+                    glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (*entry->value)));
+                    break;
+                case Matrix4:
+                    glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (*entry->value)));
+                    break;
+            }
+        }
+    }
 
     if (this->g_Texture0Rotation != -1)
     {
@@ -255,7 +282,7 @@ void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, 
     }
 
     // start actual rendering now
-    glBindBuffer (GL_ARRAY_BUFFER, position);
+    glBindBuffer (GL_ARRAY_BUFFER, this->a_Position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // disable vertex attribs array and textures
@@ -288,6 +315,36 @@ void CPass::render (const CFBO* drawTo, const ITexture* input, GLuint position, 
 const CMaterial* CPass::getMaterial () const
 {
     return this->m_material;
+}
+
+void CPass::setDestination (const CFBO* drawTo)
+{
+    this->m_drawTo = drawTo;
+}
+
+void CPass::setInput (const ITexture* input)
+{
+    this->m_input = input;
+}
+
+void CPass::setModelViewProjectionMatrix (const glm::mat4* projection)
+{
+    this->m_modelViewProjectionMatrix = projection;
+}
+
+void CPass::setModelMatrix (glm::mat4 model)
+{
+    this->m_modelMatrix = model;
+}
+
+void CPass::setTexCoord (GLuint texcoord)
+{
+    this->a_TexCoord = texcoord;
+}
+
+void CPass::setPosition (GLuint position)
+{
+    this->a_Position = position;
 }
 
 Core::Objects::Images::Materials::CPass* CPass::getPass ()
@@ -623,6 +680,23 @@ void CPass::addUniform (const std::string& name, UniformType type, T* value)
     );
 }
 
+template <typename T>
+void CPass::addUniform (const std::string& name, UniformType type, T** value)
+{
+    // this version is used to reference to system variables so things like g_Time works fine
+    GLint id = glGetUniformLocation (this->m_programID, name.c_str ());
+
+    // parameter not found, can be ignored
+    if (id == -1)
+        return;
+
+    // uniform found, add it to the list
+    this->m_referenceUniforms.insert (
+        std::make_pair (name, new ReferenceUniformEntry (id, name, type, reinterpret_cast <const void**> (value)))
+    );
+}
+
+
 void CPass::setupTextures ()
 {
     auto cur = this->m_pass->getTextures ().begin ();
@@ -798,12 +872,22 @@ void CPass::addUniform (const std::string& name, const int* value)
     this->addUniform (name, UniformType::Integer, value);
 }
 
+void CPass::addUniform (const std::string& name, const int** value)
+{
+    this->addUniform (name, UniformType::Integer, value);
+}
+
 void CPass::addUniform (const std::string& name, double value)
 {
     this->addUniform (name, UniformType::Double, value);
 }
 
 void CPass::addUniform (const std::string& name, const double* value)
+{
+    this->addUniform (name, UniformType::Double, value);
+}
+
+void CPass::addUniform (const std::string& name, const double** value)
 {
     this->addUniform (name, UniformType::Double, value);
 }
@@ -818,6 +902,12 @@ void CPass::addUniform (const std::string& name, const float* value)
     this->addUniform (name, UniformType::Float, value);
 }
 
+void CPass::addUniform (const std::string& name, const float** value)
+{
+    this->addUniform (name, UniformType::Float, value);
+}
+
+
 void CPass::addUniform (const std::string& name, glm::vec2 value)
 {
     this->addUniform (name, UniformType::Vector2, value);
@@ -827,6 +917,12 @@ void CPass::addUniform (const std::string& name, const glm::vec2* value)
 {
     this->addUniform (name, UniformType::Vector2, value);
 }
+
+void CPass::addUniform (const std::string& name, const glm::vec2** value)
+{
+    this->addUniform (name, UniformType::Vector2, value);
+}
+
 
 void CPass::addUniform (const std::string& name, glm::vec3 value)
 {
@@ -838,6 +934,12 @@ void CPass::addUniform (const std::string& name, const glm::vec3* value)
     this->addUniform (name, UniformType::Vector3, value);
 }
 
+void CPass::addUniform (const std::string& name, const glm::vec3** value)
+{
+    this->addUniform (name, UniformType::Vector3, value);
+}
+
+
 void CPass::addUniform (const std::string& name, glm::vec4 value)
 {
     this->addUniform (name, UniformType::Vector4, value);
@@ -848,12 +950,22 @@ void CPass::addUniform (const std::string& name, const glm::vec4* value)
     this->addUniform (name, UniformType::Vector4, value);
 }
 
+void CPass::addUniform (const std::string& name, const glm::vec4** value)
+{
+    this->addUniform (name, UniformType::Vector4, value);
+}
+
 void CPass::addUniform (const std::string& name, glm::mat4 value)
 {
     this->addUniform (name, UniformType::Matrix4, value);
 }
 
 void CPass::addUniform (const std::string& name, const glm::mat4* value)
+{
+    this->addUniform (name, UniformType::Matrix4, value);
+}
+
+void CPass::addUniform (const std::string& name, const glm::mat4** value)
 {
     this->addUniform (name, UniformType::Matrix4, value);
 }

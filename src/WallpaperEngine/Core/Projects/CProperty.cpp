@@ -1,34 +1,33 @@
-#include <sstream>
+#include <iostream>
 #include "CProperty.h"
 #include "CPropertyColor.h"
 #include "CPropertyCombo.h"
 #include "CPropertySlider.h"
 #include "CPropertyBoolean.h"
+#include "CPropertyText.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
 CProperty* CProperty::fromJSON (json data, const std::string& name)
 {
     auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
-    auto value = jsonFindRequired (data, "value", "Project properties must have the value field");
-    auto text = data.find ("text");
 
     if (*type == CPropertyColor::Type)
         return CPropertyColor::fromJSON (data, name);
-
     if (*type == CPropertyBoolean::Type)
         return CPropertyBoolean::fromJSON (data, name);
-
     if (*type == CPropertySlider::Type)
         return CPropertySlider::fromJSON (data, name);
-
     if (*type == CPropertyCombo::Type)
         return CPropertyCombo::fromJSON (data, name);
+    if (*type == CPropertyText::Type)
+        return CPropertyText::fromJSON (data, name);
 
-    std::stringstream buffer;
-    buffer << "Unexpected type for property:" << *type << std::endl << data;
-    // throw an exception
-    throw std::runtime_error (buffer.str());
+
+    // show the error and ignore this property
+    std::cout << "Unexpected type for property:" << *type << std::endl << data << std::endl;
+
+    return nullptr;
 }
 
 CProperty::CProperty (std::string name, std::string type, std::string text) :

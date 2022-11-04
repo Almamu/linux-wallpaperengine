@@ -312,7 +312,61 @@ void CImage::setup ()
             this->m_animationTime += (*cur)->frametime;
     }
 
+    this->setupPasses ();
     this->m_initialized = true;
+}
+
+void CImage::setupPasses ()
+{
+    // do a pass on everything and setup proper inputs and values
+    const CFBO* drawTo = this->m_currentMainFBO;
+    const ITexture* asInput = this->getTexture ();
+    GLuint texcoord = this->getTexCoordCopy ();
+
+    auto cur = this->m_passes.begin ();
+    auto end = this->m_passes.end ();
+
+    for (; cur != end; cur ++)
+    {
+        Effects::CPass* pass = *cur;
+        const CFBO* prevDrawTo = drawTo;
+        GLuint spacePosition = this->getCopySpacePosition ();
+        glm::mat4* projection = &this->m_modelViewProjectionPass;
+
+        // set viewport and target texture if needed
+        if (pass->getMaterial ()->getMaterial ()->hasTarget () == true)
+        {
+            // setup target texture
+            std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
+            drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
+            spacePosition = this->getPassSpacePosition ();
+
+            // not a local fbo, try to find a scene fbo with the same name
+            if (drawTo == nullptr)
+                // this one throws if no fbo was found
+                drawTo = this->getScene ()->findFBO (target);
+        }
+
+        // determine if it's the last element in the list as this is a screen-copy-like process
+        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
+        {
+            spacePosition = this->getSceneSpacePosition ();
+            drawTo = this->getScene ()->getFBO ();
+            projection = &this->m_modelViewProjectionScreen;
+        }
+
+        pass->setDestination (drawTo);
+        pass->setInput (asInput);
+        pass->setPosition (spacePosition);
+        pass->setTexCoord (texcoord);
+        pass->setModelViewProjectionMatrix (projection);
+
+        texcoord = this->getTexCoordPass ();
+        drawTo = prevDrawTo;
+
+        if (pass->getMaterial ()->getMaterial ()->hasTarget () == false)
+            this->pinpongFramebuffer (&drawTo, &asInput);
+    }
 }
 
 void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
@@ -337,63 +391,21 @@ void CImage::render ()
     if (this->m_initialized == false)
         return;
 
-    // reset the framebuffers so the drawing always happens on the same order
-    this->m_currentMainFBO = this->m_mainFBO;
-    this->m_currentSubFBO = this->m_subFBO;
-
     glColorMask (true, true, true, true);
 
-    // start drawing to the main framebuffer
-    const CFBO* drawTo = this->m_currentMainFBO;
-    const ITexture* asInput = this->getTexture ();
-    GLuint texcoord = *this->getTexCoordCopy ();
+    // update the position if required
+    if (this->getScene ()->getScene ()->isCameraParallax () == true)
+        this->updateScreenSpacePosition ();
 
     auto cur = this->m_passes.begin ();
     auto end = this->m_passes.end ();
 
     for (; cur != end; cur ++)
     {
-        Effects::CPass* pass = *cur;
-        const CFBO* prevDrawTo = drawTo;
-        GLuint spacePosition = *this->getCopySpacePosition ();
-        glm::mat4 projection = this->m_modelViewProjectionPass;
-
-        // set viewport and target texture if needed
-        if (pass->getMaterial ()->getMaterial ()->hasTarget () == true)
-        {
-            // setup target texture
-            std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
-            drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
-            spacePosition = *this->getPassSpacePosition ();
-
-            // not a local fbo, try to find a scene fbo with the same name
-            if (drawTo == nullptr)
-                // this one throws if no fbo was found
-                drawTo = this->getScene ()->findFBO (target);
-        }
-
-        // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
-        {
-            if (this->getScene ()->getScene ()->isCameraParallax () == true)
-            {
-                this->updateScreenSpacePosition ();
-            }
-
-            spacePosition = *this->getSceneSpacePosition ();
-            drawTo = this->getScene ()->getFBO ();
-            projection = this->m_modelViewProjectionScreen;
-
+        if (std::next (cur) == end)
             glColorMask (true, true, true, false);
-        }
 
-        pass->render (drawTo, asInput, spacePosition, texcoord, projection);
-
-        texcoord = *this->getTexCoordPass ();
-        drawTo = prevDrawTo;
-
-        if (pass->getMaterial ()->getMaterial ()->hasTarget () == false)
-            this->pinpongFramebuffer (&drawTo, &asInput);
+        (*cur)->render ();
     }
 }
 
@@ -445,29 +457,29 @@ const glm::vec2 CImage::getSize() const
     return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }
 
-const GLuint* CImage::getSceneSpacePosition () const
+const GLuint CImage::getSceneSpacePosition () const
 {
-    return &this->m_sceneSpacePosition;
+    return this->m_sceneSpacePosition;
 }
 
-const GLuint* CImage::getCopySpacePosition () const
+const GLuint CImage::getCopySpacePosition () const
 {
-    return &this->m_copySpacePosition;
+    return this->m_copySpacePosition;
 }
 
-const GLuint* CImage::getPassSpacePosition () const
+const GLuint CImage::getPassSpacePosition () const
 {
-    return &this->m_passSpacePosition;
+    return this->m_passSpacePosition;
 }
 
-const GLuint* CImage::getTexCoordCopy () const
+const GLuint CImage::getTexCoordCopy () const
 {
-    return &this->m_texcoordCopy;
+    return this->m_texcoordCopy;
 }
 
-const GLuint* CImage::getTexCoordPass () const
+const GLuint CImage::getTexCoordPass () const
 {
-    return &this->m_texcoordPass;
+    return this->m_texcoordPass;
 }
 
 const std::string CImage::Type = "image";

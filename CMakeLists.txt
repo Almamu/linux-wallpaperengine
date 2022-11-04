@@ -136,6 +136,8 @@ add_executable(
         src/WallpaperEngine/Core/Projects/CPropertySlider.cpp
         src/WallpaperEngine/Core/Projects/CPropertyCombo.h
         src/WallpaperEngine/Core/Projects/CPropertyCombo.cpp
+        src/WallpaperEngine/Core/Projects/CPropertyText.h
+        src/WallpaperEngine/Core/Projects/CPropertyText.cpp
 
         src/WallpaperEngine/Core/Scenes/CCamera.cpp
         src/WallpaperEngine/Core/Scenes/CCamera.h

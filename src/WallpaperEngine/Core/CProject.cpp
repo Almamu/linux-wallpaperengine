@@ -60,9 +60,10 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
 
             for (; cur != end; cur ++)
             {
-                project->insertProperty (
-                        Projects::CProperty::fromJSON (*cur, cur.key ())
-                );
+                Projects::CProperty* property = Projects::CProperty::fromJSON (*cur, cur.key ());
+
+                if (property != nullptr)
+                    project->insertProperty (property);
             }
         }
     }
