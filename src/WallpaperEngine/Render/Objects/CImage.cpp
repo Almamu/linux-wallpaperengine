@@ -110,12 +110,12 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
+        this->m_pos.x, this->m_pos.w, 0.0f,
+        this->m_pos.z, this->m_pos.w, 0.0f,
         this->m_pos.x, this->m_pos.y, 0.0f,
-        this->m_pos.z, this->m_pos.y, 0.0f,
-        this->m_pos.x, this->m_pos.w, 0.0f,
-        this->m_pos.x, this->m_pos.w, 0.0f,
-        this->m_pos.z, this->m_pos.y, 0.0f,
-        this->m_pos.z, this->m_pos.w, 0.0f
+        this->m_pos.x, this->m_pos.y, 0.0f,
+        this->m_pos.z, this->m_pos.w, 0.0f,
+        this->m_pos.z, this->m_pos.y, 0.0f
     };
 
     GLfloat copySpacePosition [] = {

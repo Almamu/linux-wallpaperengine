@@ -163,10 +163,8 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
             )
         );
 
-        this->_rt_imageCompositeLayer_bloom = this->findFBO ("_rt_imageLayerComposite_-1_b");
+        this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
     }
-
-    this->_rt_FullFrameBuffer = this->m_sceneFBO;
 }
 
 Render::CObject* CScene::createObject (Core::CObject* object)
@@ -247,8 +245,6 @@ void CScene::renderFrame (glm::ivec4 viewport)
         this->m_parallaxDisplacement.y = glm::mix (this->m_parallaxDisplacement.y, (this->m_mousePosition.y * amount) * influence, delay);
     }
 
-    this->m_sceneFBO = this->_rt_FullFrameBuffer;
-
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
     // ensure we render over the whole screen
@@ -258,12 +254,6 @@ void CScene::renderFrame (glm::ivec4 viewport)
 
     for (; cur != end; cur ++)
         (*cur)->render ();
-
-    if (this->getScene ()->isBloom () == true)
-    {
-        this->m_sceneFBO = this->_rt_imageCompositeLayer_bloom;
-        this->m_bloomObject->render ();
-    }
 }
 
 void CScene::updateMouse (glm::ivec4 viewport)

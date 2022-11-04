@@ -257,12 +257,12 @@ void CWallpaper::render (glm::ivec4 viewport, bool renderFrame, bool newFrame)
     if (heightRatio < 0.0f) heightRatio = -heightRatio;
 
     GLfloat position [] = {
+        -widthRatio, heightRatio, 0.0f,
+        widthRatio, heightRatio, 0.0f,
         -widthRatio, -heightRatio, 0.0f,
-        widthRatio, -heightRatio, 0.0f,
-        -widthRatio, heightRatio, 0.0f,
-        -widthRatio, heightRatio, 0.0f,
-        widthRatio, -heightRatio, 0.0f,
-        widthRatio, heightRatio, 0.0f
+        -widthRatio, -heightRatio, 0.0f,
+        widthRatio, heightRatio, 0.0f,
+        widthRatio, -heightRatio, 0.0f
     };
 
     glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);

@@ -44,7 +44,5 @@ namespace WallpaperEngine::Render
         CFBO* _rt_4FrameBuffer;
         CFBO* _rt_8FrameBuffer;
         CFBO* _rt_Bloom;
-        CFBO* _rt_imageCompositeLayer_bloom; // this one doesn't exist on the official wallpaper engine, but our approach requires it
-        CFBO* _rt_FullFrameBuffer;
     };
 }
