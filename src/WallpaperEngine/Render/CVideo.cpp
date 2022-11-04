@@ -70,12 +70,12 @@ CVideo::CVideo (Core::CVideo* video, CContext* context) :
         throw std::runtime_error ("Failed to allocate video frame");
 
     GLfloat texCoords [] = {
+        0.0f, 1.0f,
+        1.0f, 1.0f,
         0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        1.0f, 0.0f
     };
 
     // inverted positions so the final texture is rendered properly
