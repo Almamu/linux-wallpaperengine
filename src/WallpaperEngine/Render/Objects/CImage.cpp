@@ -19,14 +19,13 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glm::vec3 origin = this->getImage ()->getOrigin ();
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ()->getScale ();
-
     glm::vec2 scaledSize = size * glm::vec2 (scale);
 
     // calculate the center and shift from there
-    this->m_pos.x = (-scene_width / 2) + (origin.x - (scaledSize.x / 2));
-    this->m_pos.z = (-scene_width / 2) + (origin.x + (scaledSize.x / 2));
-    this->m_pos.y = (-scene_height / 2) + origin.y + (scaledSize.y / 2);
-    this->m_pos.w = (-scene_height / 2) + (origin.y - (scaledSize.y / 2));
+    this->m_pos.x = origin.x - (scaledSize.x / 2);
+    this->m_pos.w = origin.y + (scaledSize.y / 2);
+    this->m_pos.z = origin.x + (scaledSize.x / 2);
+    this->m_pos.y = origin.y - (scaledSize.y / 2);
 
     if (this->getImage ()->getAlignment ().find ("top") != std::string::npos)
     {
@@ -49,6 +48,12 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_pos.x -= scaledSize.x / 2;
         this->m_pos.z -= scaledSize.x / 2;
     }
+
+    // wallpaper engine
+    this->m_pos.x -= scene_width / 2;
+    this->m_pos.y = scene_height / 2 - this->m_pos.y;
+    this->m_pos.z -= scene_width / 2;
+    this->m_pos.w = scene_height / 2 - this->m_pos.w;
 
     // detect texture (if any)
     auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
@@ -105,35 +110,35 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
     );
 
-    GLfloat realWidth = this->m_texture->getRealWidth () / 2.0f;
-    GLfloat realHeight = this->m_texture->getRealHeight () / 2.0f;
+    GLfloat realWidth = this->m_texture->getRealWidth ();
+    GLfloat realHeight = this->m_texture->getRealHeight ();
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
+        this->m_pos.x, this->m_pos.y, 0.0f,
         this->m_pos.x, this->m_pos.w, 0.0f,
-        this->m_pos.z, this->m_pos.w, 0.0f,
-        this->m_pos.x, this->m_pos.y, 0.0f,
-        this->m_pos.x, this->m_pos.y, 0.0f,
-        this->m_pos.z, this->m_pos.w, 0.0f,
-        this->m_pos.z, this->m_pos.y, 0.0f
+        this->m_pos.z, this->m_pos.y, 0.0f,
+        this->m_pos.z, this->m_pos.y, 0.0f,
+        this->m_pos.x, this->m_pos.w, 0.0f,
+        this->m_pos.z, this->m_pos.w, 0.0f
     };
 
     GLfloat copySpacePosition [] = {
-        -realWidth, -realHeight, 0.0f,
-        realWidth, -realHeight, 0.0f,
-        -realWidth, realHeight, 0.0f,
-        -realWidth, realHeight, 0.0f,
-        realWidth, -realHeight, 0.0f,
-        realWidth, realHeight, 0.0f
+        0.0, realHeight, 0.0f,
+        0.0, 0.0, 0.0f,
+        realWidth, realHeight, 0.0f,
+        realWidth, realHeight, 0.0f,
+        0.0, 0.0, 0.0f,
+        realWidth, 0.0, 0.0f
     };
 
     GLfloat passSpacePosition [] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f
+        -1.0, 1.0, 0.0f,
+        -1.0, -1.0, 0.0f,
+        1.0, 1.0, 0.0f,
+        1.0, 1.0, 0.0f,
+        -1.0, -1.0, 0.0f,
+        1.0, -1.0, 0.0f
     };
 
     float width = 1.0f;
@@ -174,21 +179,21 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     }
 
     GLfloat texcoordCopy [] = {
+        x, height,
         x, y,
-        width, y,
-        x, height,
-        x, height,
-        width, y,
-        width, height
+        width, height,
+        width, height,
+        x, y,
+        width, y
     };
 
     GLfloat texcoordPass [] = {
+        0.0f, 1.0f,
         0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f
+        1.0f, 1.0f,
+        1.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f
     };
 
     // bind vertex list to the openGL buffers
@@ -217,8 +222,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
             this->getScene ()->getCamera ()->getProjection () *
             this->getScene ()->getCamera ()->getLookAt ();
 
-    this->m_modelViewProjectionPass =
-            glm::ortho<float> (-size.x / 2, size.x / 2, -size.y / 2, size.y / 2, 0, 10000);
+    this->m_modelViewProjectionPass = glm::ortho <float> (0.0, size.x, 0.0, size.y);
 }
 
 void CImage::setup ()

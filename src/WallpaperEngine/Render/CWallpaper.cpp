@@ -14,6 +14,10 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CCont
     m_context (context),
     m_destFramebuffer (GL_NONE)
 {
+    // generate the VAO to stop opengl from complaining
+    glGenVertexArrays (1, &this->m_vaoBuffer);
+    glBindVertexArray (this->m_vaoBuffer);
+
     this->setupShaders ();
 
     GLfloat texCoords [] = {

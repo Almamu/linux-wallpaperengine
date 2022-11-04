@@ -128,6 +128,7 @@ namespace WallpaperEngine::Render
         GLint g_Texture0;
         GLint a_Position;
         GLint a_TexCoord;
+        GLuint m_vaoBuffer;
         /**
          * The framebuffer to draw the background to
          */
