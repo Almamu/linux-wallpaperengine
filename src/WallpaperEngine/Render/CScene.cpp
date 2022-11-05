@@ -247,8 +247,8 @@ void CScene::renderFrame (glm::ivec4 viewport)
 
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
-    // ensure we render over the whole screen
-    glViewport (0, 0, projection->getWidth (), projection->getHeight ());
+    // ensure we render over the whole framebuffer
+    glViewport (0, 0, this->m_sceneFBO->getRealWidth (), this->m_sceneFBO->getRealHeight ());
 
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
