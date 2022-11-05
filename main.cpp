@@ -29,9 +29,9 @@ int g_AudioVolume = 15;
 using namespace WallpaperEngine::Core::Types;
 
 const char* assets_default_paths [] = {
-        ".steam/steam/steamapps/common/wallpaper_engine/assets",
-        ".local/share/Steam/steamapps/common/wallpaper_engine/assets",
-        nullptr
+    ".steam/steam/steamapps/common/wallpaper_engine/assets",
+    ".local/share/Steam/steamapps/common/wallpaper_engine/assets",
+    nullptr
 };
 
 const char* backgrounds_default_paths [] = {
@@ -53,7 +53,8 @@ void print_help (const char* route)
         << "  --volume <amount>\tSets the volume for all the sounds in the background" << std::endl
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
-        << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl;
+        << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl
+        << "  --screenshot\t\tTakes a screenshot of the background" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s)
@@ -262,14 +263,65 @@ CVirtualContainer* buildVirtualContainer ()
     return container;
 }
 
+void takeScreenshot (WallpaperEngine::Render::CWallpaper* wp, const std::string& filename, FREE_IMAGE_FORMAT format)
+{
+    GLint width, height;
+
+    // bind texture and get the size
+    glBindFramebuffer (GL_FRAMEBUFFER, wp->getWallpaperFramebuffer ());
+    glBindTexture (GL_TEXTURE_2D, wp->getWallpaperTexture ());
+    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+
+    // make room for storing the pixel data
+    uint8_t* buffer = new uint8_t [width * height * sizeof (uint8_t) * 3];
+    uint8_t* pixel = buffer;
+
+    // read the image into the buffer
+    glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+
+    // build the output file with FreeImage
+    FIBITMAP* bitmap = FreeImage_Allocate (width, height, 24);
+    RGBQUAD color;
+
+    // now get access to the pixels
+    for (int y = height; y > 0; y --)
+    {
+        for (int x = 0; x < width; x ++)
+        {
+            color.rgbRed = *pixel ++;
+            color.rgbGreen = *pixel ++;
+            color.rgbBlue = *pixel ++;
+
+            // set the pixel in the destination
+            FreeImage_SetPixelColor (bitmap, x, y, &color);
+        }
+    }
+
+    // finally save the file
+    FreeImage_Save (format, bitmap, filename.c_str (), 0);
+
+    // free all the used memory
+    delete[] buffer;
+
+    FreeImage_Unload (bitmap);
+
+    // unbind the textures
+    glBindTexture (GL_TEXTURE_2D, GL_NONE);
+}
+
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
 
     int maximumFPS = 30;
     bool shouldEnableAudio = true;
+    bool shouldTakeScreenshot = false;
+    FREE_IMAGE_FORMAT screenshotFormat = FIF_UNKNOWN;
     std::string path;
     std::string assetsDir;
+    std::string screenshotPath;
+
 
     static struct option long_options [] = {
         {"screen-root", required_argument, 0, 'r'},
@@ -280,6 +332,7 @@ int main (int argc, char* argv[])
         {"help",        no_argument,       0, 'h'},
         {"fps",         required_argument, 0, 'f'},
         {"assets-dir",  required_argument, 0, 'a'},
+        {"screenshot",  required_argument, 0, 'c'},
         {nullptr,                       0, 0,   0}
     };
 
@@ -321,6 +374,11 @@ int main (int argc, char* argv[])
             case 'v':
                 g_AudioVolume = atoi (optarg);
                 break;
+
+            case 'c':
+                shouldTakeScreenshot = true;
+                screenshotPath = stringPathFixes (optarg);
+                break;
         }
     }
 
@@ -335,6 +393,22 @@ int main (int argc, char* argv[])
             print_help (argv [0]);
             return 0;
         }
+    }
+
+    // validate screenshot file just to make sure
+    if (shouldTakeScreenshot == true)
+    {
+        // ensure the file is one of the supported formats
+        std::string extension = screenshotPath.substr (screenshotPath.find_last_of (".") + 1);
+
+        if (extension == "bmp")
+            screenshotFormat = FIF_BMP;
+        else if (extension == "png")
+            screenshotFormat = FIF_PNG;
+        else if (extension == "jpg" || extension == "jpeg")
+            screenshotFormat = FIF_JPEG;
+        else
+            throw std::runtime_error ("Unsupported screenshot format...");
     }
 
     // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
@@ -504,6 +578,8 @@ int main (int argc, char* argv[])
 
     double startTime, endTime, minimumTime = 1.0 / maximumFPS;
 
+    uint32_t frameCounter = 0;
+
     while (glfwWindowShouldClose (window) == 0 && g_KeepRunning == true)
     {
         // get the real framebuffer size
@@ -526,6 +602,15 @@ int main (int argc, char* argv[])
         // ensure the frame time is correct to not overrun FPS
         if ((endTime - startTime) < minimumTime)
             usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
+
+        frameCounter ++;
+
+        if (frameCounter == 5 && shouldTakeScreenshot == true)
+        {
+            takeScreenshot (context->getWallpaper (), screenshotPath, screenshotFormat);
+            // disable screenshot just in case the counter overflows
+            shouldTakeScreenshot = false;
+        }
     }
 
     // ensure this is updated as sometimes it might not come from a signal

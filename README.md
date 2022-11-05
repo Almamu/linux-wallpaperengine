@@ -131,6 +131,21 @@ To reduce the performance hit to your system you can reduce (or increase) the FP
 ./linux-wallpaperengine --fps 30
 ```
 
+## 5.6. Audio
+### 5.6.1. Disable audio
+It's possible to disable the audio of the background with the silent argument
+```
+./linux-wallpaperengine --silent
+```
+
+## 5.7. Taking a screenshot
+It is possible to take a screenshot of the screen's content at the moment a background is loaded up and rendered. Useful for usage with tools like pywal to further customize your environment:
+```
+./linux-wallpaperengine --screenshot /path/to/screenshot/name.png
+```
+
+PNG, BMP and JPEG are supported.
+
 ## 6. Example background
 This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
