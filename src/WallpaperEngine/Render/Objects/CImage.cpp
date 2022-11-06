@@ -401,6 +401,21 @@ void CImage::render ()
     if (this->getScene ()->getScene ()->isCameraParallax () == true)
         this->updateScreenSpacePosition ();
 
+    if (DEBUG)
+    {
+        std::string str = "Rendering ";
+
+        if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
+            str += "bloom";
+        else
+        {
+            str += this->getImage ()->getName () +
+                   " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
+        }
+
+        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+    }
+
     auto cur = this->m_passes.begin ();
     auto end = this->m_passes.end ();
 
@@ -411,6 +426,9 @@ void CImage::render ()
 
         (*cur)->render ();
     }
+
+    if (DEBUG)
+        glPopDebugGroup ();
 }
 
 void CImage::updateScreenSpacePosition ()

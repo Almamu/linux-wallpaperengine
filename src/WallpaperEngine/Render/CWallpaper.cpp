@@ -199,78 +199,96 @@ void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
     this->m_destFramebuffer = framebuffer;
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool renderFrame, bool newFrame)
+void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool newFrame)
 {
     if (renderFrame == true)
         this->renderFrame (viewport);
 
-    int windowWidth = 1920;
-    int windowHeight = 1080;
+    int projectionWidth = 1920;
+    int projectionHeight = 1080;
 
     if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
     {
         auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
 
-        windowWidth = projection->getWidth ();
-        windowHeight = projection->getHeight ();
+        projectionWidth = projection->getWidth ();
+        projectionHeight = projection->getHeight ();
     }
     else if (this->is <WallpaperEngine::Render::CVideo> ())
     {
         auto video = this->as <WallpaperEngine::Render::CVideo> ();
 
-        windowWidth = video->getWidth ();
-        windowHeight = video->getHeight ();
+        projectionWidth = video->getWidth ();
+        projectionHeight = video->getHeight ();
     }
 
-    float widthRatio = windowWidth / (float) viewport.z;
-    float heightRatio = windowHeight / (float) viewport.w;
+    float ustart = 0.0f;
+    float uend = 0.0f;
+    float vstart = 0.0f;
+    float vend = 0.0f;
 
-    if (widthRatio > 1.0f)
+    if (
+        (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
+        (viewport.z > viewport.w && projectionHeight > projectionWidth)
+        )
     {
-        float diff = widthRatio - 1.0f;
+        if (vflip)
+        {
+            vstart = 0.0f;
+            vend = 1.0f;
+        }
+        else
+        {
+            vstart = 1.0f;
+            vend = 0.0f;
+        }
 
-        widthRatio -= diff;
-        heightRatio -= diff;
+        int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
+        float newCenter = newWidth / 2.0f;
+        float viewportCenter = viewport.z / 2.0;
+
+        float left = newCenter - viewportCenter;
+        float right = newCenter + viewportCenter;
+
+        ustart = left / newWidth;
+        uend = right / newWidth;
     }
 
-    if (heightRatio > 1.0f)
+    if (
+        (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
+        (viewport.w > viewport.z && projectionHeight > projectionWidth)
+        )
     {
-        float diff = heightRatio - 1.0f;
+        ustart = 0.0f;
+        uend = 1.0f;
 
-        widthRatio -= diff;
-        heightRatio -= diff;
+        int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
+        float newCenter = newHeight / 2.0f;
+        float viewportCenter = viewport.w / 2.0;
+
+        float down = newCenter - viewportCenter;
+        float up = newCenter + viewportCenter;
+
+        if (vflip)
+        {
+            vstart = down / newHeight;
+            vend = up / newHeight;
+        }
+        else
+        {
+            vstart = up / newHeight;
+            vend = down / newHeight;
+        }
     }
 
-    if (widthRatio < 1.0f)
-    {
-        float diff = 1.0f - widthRatio;
-
-        widthRatio += diff;
-        heightRatio += diff;
-    }
-
-    if (heightRatio < 1.0f)
-    {
-        float diff = 1.0f - heightRatio;
-
-        widthRatio += diff;
-        heightRatio += diff;
-    }
-
-    if (widthRatio < 0.0f) widthRatio = -widthRatio;
-    if (heightRatio < 0.0f) heightRatio = -heightRatio;
-
-    GLfloat position [] = {
-        -widthRatio, heightRatio, 0.0f,
-        widthRatio, heightRatio, 0.0f,
-        -widthRatio, -heightRatio, 0.0f,
-        -widthRatio, -heightRatio, 0.0f,
-        widthRatio, heightRatio, 0.0f,
-        widthRatio, -heightRatio, 0.0f
+    GLfloat texCoords [] = {
+        ustart, vstart,
+        uend, vstart,
+        ustart, vend,
+        ustart, vend,
+        uend, vstart,
+        uend, vend,
     };
-
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
 
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
 
@@ -289,6 +307,7 @@ void CWallpaper::render (glm::ivec4 viewport, bool renderFrame, bool newFrame)
     // set uniforms and attribs
     glEnableVertexAttribArray (this->a_TexCoord);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
     glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray (this->a_Position);
@@ -303,22 +322,22 @@ void CWallpaper::render (glm::ivec4 viewport, bool renderFrame, bool newFrame)
 
 void CWallpaper::setupFramebuffers ()
 {
-    int windowWidth = 1920;
-    int windowHeight = 1080;
+    int projectionWidth = 1920;
+    int projectionHeight = 1080;
 
     if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
     {
         auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
 
-        windowWidth = projection->getWidth ();
-        windowHeight = projection->getHeight ();
+        projectionWidth = projection->getWidth ();
+        projectionHeight = projection->getHeight ();
     }
     else if (this->is <WallpaperEngine::Render::CVideo> ())
     {
         auto video = this->as <WallpaperEngine::Render::CVideo> ();
 
-        windowWidth = video->getWidth ();
-        windowHeight = video->getHeight ();
+        projectionWidth = video->getWidth ();
+        projectionHeight = video->getHeight ();
     }
 
     // create framebuffer for the scene
@@ -327,8 +346,8 @@ void CWallpaper::setupFramebuffers ()
         ITexture::TextureFormat::ARGB8888,
         ITexture::TextureFlags::NoInterpolation,
         1.0,
-        windowWidth, windowHeight,
-        windowWidth, windowHeight
+        projectionWidth, projectionHeight,
+        projectionWidth, projectionHeight
     );
 }
 

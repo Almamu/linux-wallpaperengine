@@ -126,7 +126,7 @@ void CContext::initializeViewports ()
                     crtc->x, crtc->y, crtc->width, crtc->height
                 };
 
-                this->m_viewports.push_back (viewport);
+                this->m_viewports.push_back ({viewport, *cur});
 
                 XRRFreeCrtcInfo (crtc);
             }
@@ -141,7 +141,7 @@ void CContext::initializeViewports ()
     this->m_fbo = new CFBO(
         "_sc_FullFrameBuffer",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
+        ITexture::TextureFlags::NoFlags,
         1.0,
         fullWidth, fullHeight,
         fullWidth, fullHeight
@@ -188,12 +188,22 @@ void CContext::render ()
 
         for (; cur != end; cur ++)
         {
+            if (DEBUG)
+            {
+                std::string str = "Rendering to screen " + (*cur).name;
+
+                glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+            }
+
             // render the background
-            this->m_wallpaper->render (*cur, renderFrame, firstFrame);
+            this->m_wallpaper->render ((*cur).viewport, false, renderFrame, firstFrame);
             // scenes need to render a new frame for each viewport as they produce different results
             // but videos should only be rendered once per group of viewports
             firstFrame = false;
             renderFrame = !this->m_wallpaper->is <CVideo> ();
+
+            if (DEBUG)
+                glPopDebugGroup ();
         }
 
         // read the full texture into the image
@@ -214,7 +224,7 @@ void CContext::render ()
         XFlush(this->m_display);
     }
     else
-        this->m_wallpaper->render (this->m_defaultViewport);
+        this->m_wallpaper->render (this->m_defaultViewport, true);
 }
 
 void CContext::setWallpaper (CWallpaper* wallpaper)
@@ -225,12 +235,12 @@ void CContext::setWallpaper (CWallpaper* wallpaper)
     if (this->m_screens.empty () == false)
     {
         GLfloat texCoords [] = {
-                0.0f, 1.0f,
-                1.0f, 1.0f,
-                0.0f, 0.0f,
-                0.0f, 0.0f,
-                1.0f, 1.0f,
-                1.0f, 0.0f
+            0.0f, 1.0f,
+            1.0f, 1.0f,
+            0.0f, 0.0f,
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            1.0f, 0.0f
         };
 
         this->m_wallpaper->updateTexCoord (texCoords, sizeof (texCoords));

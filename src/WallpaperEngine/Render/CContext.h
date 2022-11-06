@@ -32,6 +32,12 @@ namespace WallpaperEngine::Render
         const ITexture* resolveTexture (const std::string& name);
 
     private:
+        struct viewport
+        {
+            glm::ivec4 viewport;
+            std::string name;
+        };
+
         Display* m_display;
         Pixmap m_pixmap;
         GC m_gc;
@@ -40,7 +46,7 @@ namespace WallpaperEngine::Render
         char* m_imageData;
         CFBO* m_fbo;
         std::vector <std::string> m_screens;
-        std::vector <glm::ivec4> m_viewports;
+        std::vector <viewport> m_viewports;
         glm::vec4 m_defaultViewport;
         CWallpaper* m_wallpaper;
         CMouseInput* m_mouse;
