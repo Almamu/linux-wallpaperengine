@@ -222,7 +222,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
             this->getScene ()->getCamera ()->getProjection () *
             this->getScene ()->getCamera ()->getLookAt ();
 
-    this->m_modelViewProjectionPass = glm::ortho <float> (0.0, size.x, 0.0, size.y);
+    this->m_modelViewProjectionPass = glm::mat4(1.0f);
+    this->m_modelViewProjectionCopy = glm::ortho <float> (0.0, size.x, 0.0, size.y);
 }
 
 void CImage::setup ()
@@ -329,13 +330,15 @@ void CImage::setupPasses ()
 
     auto cur = this->m_passes.begin ();
     auto end = this->m_passes.end ();
+    bool first = true;
 
     for (; cur != end; cur ++)
     {
         Effects::CPass* pass = *cur;
         const CFBO* prevDrawTo = drawTo;
-        GLuint spacePosition = this->getCopySpacePosition ();
-        glm::mat4* projection = &this->m_modelViewProjectionPass;
+        GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
+        glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
+        first = false;
 
         // set viewport and target texture if needed
         if (pass->getMaterial ()->getMaterial ()->hasTarget () == true)

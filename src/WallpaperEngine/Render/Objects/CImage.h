@@ -72,6 +72,7 @@ namespace WallpaperEngine::Render::Objects
 
         glm::mat4 m_modelViewProjectionScreen;
         glm::mat4 m_modelViewProjectionPass;
+        glm::mat4 m_modelViewProjectionCopy;
 
         CFBO* m_mainFBO;
         CFBO* m_subFBO;
