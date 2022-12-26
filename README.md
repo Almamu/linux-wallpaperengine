@@ -5,7 +5,7 @@
 This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
 
 # 3. What is Wallpaper Engine?
-Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing it's users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
+Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing its users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
 
 # 4. Compilation requirements
 ## linux-wallpaperengine
@@ -147,7 +147,7 @@ It is possible to take a screenshot of the screen's content at the moment a back
 PNG, BMP and JPEG are supported.
 
 ## 6. Example background
-This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
+This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
 ![example](docs/images/example.gif)
 
