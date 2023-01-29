@@ -36,6 +36,7 @@ const char* assets_default_paths [] = {
 
 const char* backgrounds_default_paths [] = {
     ".local/share/Steam/steamapps/workshop/content/431960",
+    ".steam/steam/steamapps/workshop/content/431960",
     nullptr
 };
 

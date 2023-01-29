@@ -1,11 +1,11 @@
 # 1. Disclaimer
-**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). Turns out working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
+**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). As it turns out, working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
 
 # 2. What is this project all about?
-This projects aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
+This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
 
 # 3. What is Wallpaper Engine?
-Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing It's users to animate their own backgrounds and sharing their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
+Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing its users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
 
 # 4. Compilation requirements
 ## linux-wallpaperengine
@@ -44,7 +44,7 @@ In order to properly use this software you'll need to own an actual copy of the 
 The only way to get those assets is to install the Windows version through Steam. Luckily you don't really need a Windows installation for that. Using the Linux Steam client is enough to download the files we need. Note you may need to check "Enable Steam Play for all other titles" in the Steam Play section of Steam's settings if you haven't already. Also note that the software cannot actually be launched through Steam Play (Proton), but the setting is required for Steam to download the software.
 
 ## 5.2. Extracting the assets
-The automatic way doesn't require of anything extra, as long as Wallpaper Engine is installed in Steam the software should automatically detect where the assets are.
+The automatic way doesn't require anything extra, as long as Wallpaper Engine is installed in Steam the software should automatically detect where the assets are.
 
 ### 5.2.1. Extracting the assets manually
 In the off-case where the software doesn't automatically detect the correct path, the assets can be extracted manually. Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
@@ -67,7 +67,7 @@ https://github.com/Almamu/linux-wallpaperengine.git
 ```
 
 ## 5.4. Compilation steps
-The project is built on CMake as build engine. First we need to create the directory where the build will be stored and get into it:
+The project is built on CMake as the build engine. First we need to create the directory where the build will be stored and get into it:
 
 ```
 mkdir build
@@ -78,9 +78,9 @@ Once the folder is created and we're in it, CMake has to generate the actual Mak
 ```
 cmake ..
 ```
-Take a closer look at the CMake output, if you miss any library CMake will report the missing libraries so you can install them either trough your package manager or manually in your system.
+Take a closer look at the CMake output, if you miss any library, CMake will report the missing libraries so you can install them either trough your package manager or manually in your system.
 
-Finally we can compile the project to generate the actual executable 
+Finally we can compile the project to generate the actual executable. 
 ```
 make
 ```
@@ -97,7 +97,7 @@ To actually use the background you'll need to know the workshop's ID. This can b
 https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469&searchtext=portal+3
 ```
 
-Where 1845706469 is the wallpaper's ID. You can use this ID to run wallengine:
+Where 1845706469 is the wallpaper's ID. You can use this ID to run wallpaperengine:
 ```
 ./linux-wallpaperengine 1845706469
 ```
@@ -139,7 +139,7 @@ It's possible to disable the audio of the background with the silent argument
 ```
 
 ## 5.7. Taking a screenshot
-It is possible to take a screenshot of the screen's content at the moment a background is loaded up and rendered. Useful for usage with tools like pywal to further customize your environment:
+It is possible to take a screenshot of the screen's content at the moment a background is loaded up and rendered. Useful for tools like pywal to further customize your environment:
 ```
 ./linux-wallpaperengine --screenshot /path/to/screenshot/name.png
 ```
@@ -147,7 +147,7 @@ It is possible to take a screenshot of the screen's content at the moment a back
 PNG, BMP and JPEG are supported.
 
 ## 6. Example background
-This was the first background to even be compatible with the software. And It's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
+This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
 ![example](docs/images/example.gif)
 
