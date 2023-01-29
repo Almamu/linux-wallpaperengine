@@ -37,11 +37,19 @@ namespace WallpaperEngine::Assets
         enum TextureFormat : uint32_t
         {
             ARGB8888 = 0,
+            RGB888 = 1,
+            RGB565 = 2,
             DXT5 = 4,
             DXT3 = 6,
             DXT1 = 7,
             RG88 = 8,
             R8 = 9,
+            RG1616f = 10,
+            R16f = 11,
+            BC7 = 12,
+            RGBa1010102 = 13,
+            RGBA16161616f = 14,
+            RGB161616f = 15,
         };
 
         /**

@@ -346,7 +346,7 @@ void CImage::setupPasses ()
             // setup target texture
             std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
             drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
-            spacePosition = this->getPassSpacePosition ();
+            // spacePosition = this->getPassSpacePosition ();
 
             // not a local fbo, try to find a scene fbo with the same name
             if (drawTo == nullptr)

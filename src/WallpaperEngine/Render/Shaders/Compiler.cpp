@@ -491,7 +491,7 @@ namespace WallpaperEngine::Render::Shaders
         if (this->m_recursive == false)
         {
             // add the opengl compatibility at the top
-            finalCode =   "#version 130\n"
+            finalCode =   "#version 150\n"
                           "// ======================================================\n"
                           "// Processed shader " + this->m_file + "\n"
                           "// ======================================================\n"
@@ -500,7 +500,7 @@ namespace WallpaperEngine::Render::Shaders
                           "#define lowp\n"
                           "#define mul(x, y) ((y) * (x))\n"
                           "#define max(x, y) max (y, x)\n"
-                          "#define fmod(x, y) (x-y*trunc(x/y))\n"
+                          "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
                           "#define lerp mix\n"
                           "#define frac fract\n"
                           "#define CAST2(x) (vec2(x))\n"
@@ -558,7 +558,7 @@ namespace WallpaperEngine::Render::Shaders
 
         finalCode += this->m_compiledContent;
 
-        if (DEBUG && this->m_recursive == false)
+        if (DEBUG && this->m_recursive == false && !ERRORONLY)
         {
             if (this->m_type == Type_Vertex)
                 std::cout << "======================== COMPILED VERTEX SHADER " << this->m_file.c_str () << " ========================" << std::endl;

@@ -6,7 +6,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
-add_compile_definitions(DEBUG=0)
+add_compile_definitions(DEBUG=1)
+add_compile_definitions(ERRORONLY=0)
 
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
