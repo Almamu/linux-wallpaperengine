@@ -2,14 +2,17 @@
 
 #include <utility>
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
+using namespace WallpaperEngine::Core::UserSettings;
 
 CImage::CImage (
+    CScene* scene,
     Images::CMaterial* material,
-    bool visible,
+    CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
     const glm::vec3& origin,
@@ -23,7 +26,7 @@ CImage::CImage (
     uint32_t colorBlendMode,
     const glm::vec2& parallaxDepth
 ) :
-    CObject (visible, id, std::move(name), Type, origin, scale, angles),
+    CObject (scene, visible, id, std::move(name), Type, origin, scale, angles),
     m_size (size),
     m_material (material),
     m_alignment (std::move(alignment)),
@@ -36,9 +39,10 @@ CImage::CImage (
 }
 
 WallpaperEngine::Core::CObject* CImage::fromJSON (
+    CScene* scene,
     json data,
     const CContainer* container,
-    bool visible,
+    CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
     const glm::vec3& origin,
@@ -59,6 +63,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     auto material_it = jsonFindRequired (content, "material", "Image must have a material");
 
     return new CImage (
+        scene,
         Images::CMaterial::fromFile ((*material_it).get <std::string> (), container),
         visible,
         id,

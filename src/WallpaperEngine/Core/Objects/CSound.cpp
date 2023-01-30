@@ -4,19 +4,21 @@
 using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
-        bool visible,
+        CScene* scene,
+        CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale,
         const glm::vec3& angles) :
-        CObject (visible, id, std::move(name), Type, origin, scale, angles)
+        CObject (scene, visible, id, std::move(name), Type, origin, scale, angles)
 {
 }
 
 WallpaperEngine::Core::CObject* CSound::fromJSON (
+        CScene* scene,
         json data,
-        bool visible,
+        CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
         const glm::vec3& origin,
@@ -31,6 +33,7 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
     }
 
     CSound* sound = new CSound (
+        scene,
         visible,
         id,
         name,

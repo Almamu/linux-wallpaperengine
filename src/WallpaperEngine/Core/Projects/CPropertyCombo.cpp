@@ -1,4 +1,6 @@
 #include "CPropertyCombo.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Projects;
@@ -11,7 +13,8 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
 
     CPropertyCombo* combo = new CPropertyCombo (
         name,
-        *text
+        *text,
+        *value
     );
 
     if (options->is_array () == false)
@@ -38,12 +41,16 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
     return combo;
 }
 
-CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text) :
-    CProperty (name, Type, text)
+CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text, std::string  defaultValue) :
+    CProperty (name, Type, text),
+    m_defaultValue (std::move(defaultValue))
 {
 }
 
-
+const std::string& CPropertyCombo::getValue () const
+{
+    return this->m_defaultValue;
+}
 
 void CPropertyCombo::addValue (std::string label, std::string value)
 {

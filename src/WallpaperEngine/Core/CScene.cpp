@@ -106,7 +106,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     for (; cur != end; cur ++)
     {
         scene->insertObject (
-                CObject::fromJSON (*cur, container)
+                CObject::fromJSON (*cur, scene, container)
         );
     }
 

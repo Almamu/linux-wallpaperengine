@@ -4,8 +4,10 @@
 using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (
+    CScene* scene,
     const std::string& filename,
     const CContainer* container,
+    CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
     const glm::vec3& origin,
@@ -19,8 +21,10 @@ CParticle* CParticle::fromFile (
     auto initializer_it = jsonFindRequired (data, "initializer", "Particles must have initializers");
 
     CParticle* particle = new CParticle (
+        scene,
         *starttime_it,
         *maxcount_it,
+        visible,
         id,
         name,
         origin,
@@ -64,13 +68,15 @@ CParticle* CParticle::fromFile (
 }
 
 CParticle::CParticle (
+        CScene* scene,
         uint32_t starttime,
         uint32_t maxcount,
+        CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
         const glm::vec3& origin,
         const glm::vec3& scale):
-        CObject (true, id, std::move(name), Type, origin, scale, glm::vec3 ()),
+        CObject (scene, visible, id, std::move(name), Type, origin, scale, glm::vec3 ()),
         m_starttime (starttime),
         m_maxcount (maxcount)
 {

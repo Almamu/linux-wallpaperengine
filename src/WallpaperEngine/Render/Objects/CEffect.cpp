@@ -67,3 +67,8 @@ void CEffect::generateFBOs ()
         );
     }
 }
+
+bool CEffect::isVisible () const
+{
+    return this->m_effect->isVisible ();
+}

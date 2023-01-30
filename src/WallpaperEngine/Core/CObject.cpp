@@ -1,23 +1,29 @@
 #include "CObject.h"
 
 #include <utility>
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 #include "WallpaperEngine/Core/Objects/CParticle.h"
+#include "WallpaperEngine/Core/CScene.h"
+#include "WallpaperEngine/Core/CProject.h"
 
 #include "WallpaperEngine/Assets/CContainer.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Core::UserSettings;
 
 CObject::CObject (
-        bool visible,
+        CScene* scene,
+        CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
         std::string type,
         const glm::vec3& origin,
         const glm::vec3& scale,
         const glm::vec3& angles) :
+    m_scene (scene),
     m_visible (visible),
     m_id (id),
     m_name (std::move(name)),
@@ -28,12 +34,19 @@ CObject::CObject (
 {
 }
 
-CObject* CObject::fromJSON (json data, const CContainer* container)
+CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* container)
 {
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible = jsonFindUserConfig (data, "visible", false);
+    auto visible_it = data.find ("visible");
+    CUserSettingBoolean* visible;
+
+    if (visible_it == data.end ())
+        visible = CUserSettingBoolean::fromScalar (true);
+    else
+        visible = CUserSettingBoolean::fromJSON (*visible_it);
+
     auto origin_val = jsonFindDefault <std::string> (data, "origin", "0.0 0.0 0.0");
     auto scale_val = jsonFindDefault <std::string> (data, "scale", "0.0 0.0 0.0");
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
@@ -51,11 +64,8 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
 
     if (image_it != data.end () && (*image_it).is_null () == false)
     {
-        // composelayer should be ignored for now, or artifacts will appear
-        if (*image_it == "models/util/composelayer.json")
-            return nullptr;
-
         object = Objects::CImage::fromJSON (
+                scene,
                 data,
                 container,
                 visible,
@@ -69,6 +79,7 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
     else if (sound_it != data.end () && (*sound_it).is_null () == false)
     {
         object = Objects::CSound::fromJSON (
+                scene,
                 data,
                 visible,
                 *id_it,
@@ -84,8 +95,10 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
         try
         {
             object = Objects::CParticle::fromFile (
+                scene,
                 (*particle_it).get <std::string> (),
                 container,
+                visible,
                 *id_it,
                 *name_it,
                 WallpaperEngine::Core::aToVector3 (origin_val),
@@ -119,14 +132,16 @@ CObject* CObject::fromJSON (json data, const CContainer* container)
 
         for (; cur != end; cur ++)
         {
-            // check if the effect is visible or not
-            auto effectVisible = jsonFindUserConfig (*cur, "visible", true);
+            auto effectVisible_it = data.find ("visible");
+            CUserSettingBoolean* effectVisible;
 
-            if (effectVisible == false)
-                continue;
+            if (effectVisible_it == data.end ())
+                effectVisible = CUserSettingBoolean::fromScalar (true);
+            else
+                effectVisible = CUserSettingBoolean::fromJSON (*effectVisible_it);
 
             object->insertEffect (
-                Objects::CEffect::fromJSON (*cur, object, container)
+                Objects::CEffect::fromJSON (*cur, effectVisible, object, container)
             );
         }
     }
@@ -177,7 +192,13 @@ const std::vector<uint32_t>& CObject::getDependencies () const
 
 const bool CObject::isVisible () const
 {
-    return this->m_visible;
+    // TODO: cache this
+    return this->m_visible->processValue (this->getScene ()->getProject ()->getProperties ());
+}
+
+CScene* CObject::getScene () const
+{
+    return this->m_scene;
 }
 
 const int CObject::getId () const

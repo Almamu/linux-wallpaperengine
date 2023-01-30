@@ -237,7 +237,7 @@ void CImage::setup ()
     {
         // generate the main material used to render the image
         this->m_material = new Effects::CMaterial (
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image, Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
             this->m_image->getMaterial ()
         );
 
@@ -284,7 +284,7 @@ void CImage::setup ()
 
         // generate the main material used to render the image
         this->m_colorBlendMaterial = new Effects::CMaterial(
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image)),
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image, Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
             material
         );
 
@@ -335,6 +335,11 @@ void CImage::setupPasses ()
     for (; cur != end; cur ++)
     {
         Effects::CPass* pass = *cur;
+
+        // do not do anything if the passes' effect is not visible
+        if (pass->getMaterial ()->getEffect ()->isVisible () == false)
+            continue;
+
         const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
         glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
@@ -353,13 +358,30 @@ void CImage::setupPasses ()
                 // this one throws if no fbo was found
                 drawTo = this->getScene ()->findFBO (target);
         }
-
         // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
+        else
         {
-            spacePosition = this->getSceneSpacePosition ();
-            drawTo = this->getScene ()->getFBO ();
-            projection = &this->m_modelViewProjectionScreen;
+            bool isLastPass = std::next (cur) == end && this->getImage ()->isVisible () == true;
+            auto lastIt = std::next (cur);
+
+            // determine if this is the real last pass
+            for (; lastIt != end && isLastPass == false; lastIt ++)
+            {
+                Effects::CPass* lastPass = *lastIt;
+
+                if (lastPass->getMaterial ()->getEffect ()->isVisible () == true)
+                {
+                    isLastPass = false;
+                    break;
+                }
+            }
+
+            if (isLastPass == true)
+            {
+                spacePosition = this->getSceneSpacePosition ();
+                drawTo = this->getScene ()->getFBO ();
+                projection = &this->m_modelViewProjectionScreen;
+            }
         }
 
         pass->setDestination (drawTo);
@@ -424,7 +446,25 @@ void CImage::render ()
 
     for (; cur != end; cur ++)
     {
-        if (std::next (cur) == end)
+        if ((*cur)->getMaterial ()->getEffect ()->isVisible () == false)
+            continue;
+
+        bool isLastPass = std::next (cur) == end && this->getImage ()->isVisible () == true;
+        auto lastIt = std::next (cur);
+
+        // determine if this is the real last pass
+        for (; lastIt != end && isLastPass == false; lastIt ++)
+        {
+            Effects::CPass* lastPass = *lastIt;
+
+            if (lastPass->getMaterial ()->getEffect ()->isVisible () == true)
+            {
+                isLastPass = false;
+                break;
+            }
+        }
+
+        if (isLastPass == true)
             glColorMask (true, true, true, false);
 
         (*cur)->render ();

@@ -3,32 +3,39 @@
 #include <utility>
 #include <iostream>
 
+#include "WallpaperEngine/Core/CScene.h"
+#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
 
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Objects;
+using namespace WallpaperEngine::Core::UserSettings;
 
 CEffect::CEffect (
         std::string name,
         std::string description,
         std::string group,
         std::string preview,
-        Core::CObject* object):
+        Core::CObject* object,
+        CUserSettingBoolean* visible):
     m_name (std::move(name)),
     m_description (std::move(description)),
     m_group (std::move(group)),
     m_preview (std::move(preview)),
-    m_object (object)
+    m_object (object),
+    m_visible (visible)
 {
 }
 
-CEffect* CEffect::fromJSON (json data, Core::CObject* object, const CContainer* container)
+CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObject* object, const CContainer* container)
 {
     auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");
@@ -48,7 +55,8 @@ CEffect* CEffect::fromJSON (json data, Core::CObject* object, const CContainer* 
         description,
         *group_it,
         preview,
-        object
+        object,
+        visible
     );
 
     CEffect::materialsFromJSON (passes_it, effect, container);
@@ -273,6 +281,11 @@ const std::vector<Images::CMaterial*>& CEffect::getMaterials () const
 const std::vector<Effects::CFBO*>& CEffect::getFbos () const
 {
     return this->m_fbos;
+}
+
+bool CEffect::isVisible () const
+{
+    return this->m_visible->processValue (this->m_object->getScene ()->getProject ()->getProperties ());
 }
 
 Effects::CFBO* CEffect::findFBO (const std::string& name)

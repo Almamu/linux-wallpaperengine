@@ -18,13 +18,16 @@ namespace WallpaperEngine::Core::Projects
     public:
         static CPropertyCombo* fromJSON (json data, const std::string& name);
 
+        const std::string& getValue () const;
+
         static const std::string Type;
 
     private:
-        CPropertyCombo (const std::string& name, const std::string& text);
+        CPropertyCombo (const std::string& name, const std::string& text, std::string  defaultValue);
 
         void addValue (std::string label, std::string value);
 
         std::vector <CPropertyComboValue*> m_values;
+        std::string m_defaultValue;
     };
 };

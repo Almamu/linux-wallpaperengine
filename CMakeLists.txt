@@ -116,6 +116,11 @@ add_executable(
         src/WallpaperEngine/Core/Types/FloatColor.h
         src/WallpaperEngine/Core/Types/IntegerColor.h
 
+        src/WallpaperEngine/Core/UserSettings/CUserSettingValue.cpp
+        src/WallpaperEngine/Core/UserSettings/CUserSettingValue.h
+        src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.cpp
+        src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h
+
         src/WallpaperEngine/Core/CProject.cpp
         src/WallpaperEngine/Core/CProject.h
         src/WallpaperEngine/Core/CWallpaper.cpp

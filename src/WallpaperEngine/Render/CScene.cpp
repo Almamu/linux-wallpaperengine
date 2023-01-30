@@ -159,7 +159,7 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
     {
         this->m_bloomObject = this->createObject (
             WallpaperEngine::Core::CObject::fromJSON (
-                json, this->getContainer ()
+                json, this->getScene (), this->getContainer ()
             )
         );
 

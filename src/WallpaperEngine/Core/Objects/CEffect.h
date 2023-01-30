@@ -12,10 +12,16 @@ namespace WallpaperEngine::Core
     class CObject;
 };
 
+namespace WallpaperEngine::Core::UserSettings
+{
+    class CUserSettingBoolean;
+}
+
 namespace WallpaperEngine::Core::Objects
 {
     using json = nlohmann::json;
     using namespace WallpaperEngine::Assets;
+    using namespace WallpaperEngine::Core::UserSettings;
 
     class CEffect
     {
@@ -25,14 +31,16 @@ namespace WallpaperEngine::Core::Objects
             std::string description,
             std::string group,
             std::string preview,
-            Core::CObject* object
+            Core::CObject* object,
+            CUserSettingBoolean* visible
         );
 
-        static CEffect* fromJSON (json data, Core::CObject* object, const CContainer* container);
+        static CEffect* fromJSON (json data, CUserSettingBoolean* visible, Core::CObject* object, const CContainer* container);
 
         const std::vector<std::string>& getDependencies () const;
         const std::vector<Images::CMaterial*>& getMaterials () const;
         const std::vector<Effects::CFBO*>& getFbos () const;
+        bool isVisible () const;
 
         Effects::CFBO* findFBO (const std::string& name);
     protected:
@@ -52,6 +60,7 @@ namespace WallpaperEngine::Core::Objects
         std::string m_group;
         std::string m_preview;
         Core::CObject* m_object;
+        CUserSettingBoolean* m_visible;
 
         std::vector<std::string> m_dependencies;
         std::vector<Images::CMaterial*> m_materials;

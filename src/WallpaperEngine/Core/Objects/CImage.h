@@ -7,20 +7,28 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+
+namespace WallpaperEngine::Core
+{
+    class CScene;
+}
+
 namespace WallpaperEngine::Core::Objects
 {
     using json = nlohmann::json;
     using namespace WallpaperEngine::Assets;
+    using namespace WallpaperEngine::Core::UserSettings;
 
     class CImage : public CObject
     {
         friend class CObject;
-
     public:
         static CObject* fromJSON (
+            CScene* scene,
             json data,
             const CContainer* container,
-            bool visible,
+            CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
             const glm::vec3& origin,
@@ -39,8 +47,9 @@ namespace WallpaperEngine::Core::Objects
 
     protected:
         CImage (
+            CScene* scene,
             Images::CMaterial* material,
-            bool visible,
+            CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
             const glm::vec3& origin,

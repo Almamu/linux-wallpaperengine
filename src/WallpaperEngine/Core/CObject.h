@@ -4,21 +4,34 @@
 
 #include "WallpaperEngine/Core/Objects/CEffect.h"
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+
+namespace WallpaperEngine::Core
+{
+    class CScene;
+}
 
 namespace WallpaperEngine::Core::Objects
 {
     class CEffect;
 }
 
+namespace WallpaperEngine::Core::UserSettings
+{
+    class CUserSettingBoolean;
+}
+
 namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
     using namespace WallpaperEngine::Assets;
+    using namespace WallpaperEngine::Core::UserSettings;
 
     class CObject
     {
+        friend class CScene;
     public:
-        static CObject* fromJSON (json data, const CContainer* container);
+        static CObject* fromJSON (json data, CScene* scene, const CContainer* container);
 
         template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }
@@ -35,9 +48,11 @@ namespace WallpaperEngine::Core
         const std::string& getName () const;
 
         const bool isVisible () const;
+        CScene* getScene () const;
     protected:
         CObject (
-            bool visible,
+            CScene* scene,
+            CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
             std::string type,
@@ -51,7 +66,7 @@ namespace WallpaperEngine::Core
     private:
         std::string m_type;
 
-        bool m_visible;
+        CUserSettingBoolean* m_visible;
         uint32_t m_id;
         std::string m_name;
         glm::vec3 m_origin;
@@ -60,5 +75,7 @@ namespace WallpaperEngine::Core
 
         std::vector<Objects::CEffect*> m_effects;
         std::vector<uint32_t> m_dependencies;
+
+        CScene* m_scene;
     };
 };
