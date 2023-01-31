@@ -11,6 +11,7 @@ namespace WallpaperEngine::Core::Projects
     public:
         static CPropertyText* fromJSON (json data, const std::string& name);
         std::string dump () const override;
+        void update (const std::string& value) override;
 
         static const std::string Type;
 

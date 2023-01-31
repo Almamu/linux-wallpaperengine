@@ -16,6 +16,7 @@ namespace WallpaperEngine::Core::Projects
 
         const FloatColor& getValue () const;
         std::string dump () const override;
+        void update (const std::string& value) override;
 
         static const std::string Type;
 

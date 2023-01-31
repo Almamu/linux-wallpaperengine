@@ -25,6 +25,11 @@ std::string CPropertyText::dump () const
     return ss.str();
 }
 
+void CPropertyText::update (const std::string& value)
+{
+    this->m_text = value;
+}
+
 CPropertyText::CPropertyText (const std::string& name, const std::string& text) :
     CProperty (name, Type, text)
 {

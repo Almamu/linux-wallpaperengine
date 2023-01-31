@@ -50,13 +50,14 @@ void print_help (const char* route)
         << "\ta full path to the background's folder" << std::endl
         << std::endl
         << "options:" << std::endl
-        << "  --silent\t\tMutes all the sound the wallpaper might produce" << std::endl
-        << "  --volume <amount>\tSets the volume for all the sounds in the background" << std::endl
-        << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
-        << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
-        << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl
-        << "  --screenshot\t\tTakes a screenshot of the background" << std::endl
-        << "  --list-properties\tList all the available properties and their possible values" << std::endl;
+        << "\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce" << std::endl
+        << "\t--volume <amount>\t\t\tSets the volume for all the sounds in the background" << std::endl
+        << "\t--screen-root <screen name>\tDisplay as screen's background" << std::endl
+        << "\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
+        << "\t--assets-dir <path>\t\t\tFolder where the assets are stored" << std::endl
+        << "\t--screenshot\t\t\t\tTakes a screenshot of the background" << std::endl
+        << "\t--list-properties\t\t\tList all the available properties and their possible values" << std::endl
+        << "\t--set-property <name=value>\tOverrides the default value of the given property" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s)
@@ -315,6 +316,7 @@ void takeScreenshot (WallpaperEngine::Render::CWallpaper* wp, const std::string&
 int main (int argc, char* argv[])
 {
     std::vector <std::string> screens;
+    std::map <std::string, std::string> propertyOverrides;
 
     int maximumFPS = 30;
     bool shouldEnableAudio = true;
@@ -336,6 +338,7 @@ int main (int argc, char* argv[])
         {"assets-dir",      required_argument, 0, 'a'},
         {"screenshot",      required_argument, 0, 'c'},
         {"list-properties", no_argument,       0, 'l'},
+        {"set-property",    required_argument, 0, 'o'},
         {nullptr,                           0, 0,   0}
     };
 
@@ -348,6 +351,22 @@ int main (int argc, char* argv[])
 
         switch (c)
         {
+            case 'o':
+                {
+                    std::string value = optarg;
+                    std::string::size_type equals = value.find ('=');
+
+                    // properties without value are treated as booleans for now
+                    if (equals == std::string::npos)
+                        propertyOverrides.insert_or_assign (value, "1");
+                    else
+                        propertyOverrides.insert_or_assign (
+                            value.substr (0, equals),
+                            value.substr (equals + 1)
+                        );
+                }
+                break;
+
             case 'l':
                 shouldListPropertiesAndStop = true;
                 break;
@@ -522,15 +541,21 @@ int main (int argc, char* argv[])
         chdir (path.c_str ());
 
     // show properties if required
-    if (shouldListPropertiesAndStop)
+    for (auto cur : project->getProperties ())
     {
-        for (auto cur : project->getProperties ())
-        {
-            std::cout << cur->dump () << std::endl;
-        }
+        // update the value of the property
+        auto override = propertyOverrides.find (cur->getName ());
 
-        return 0;
+        if (override != propertyOverrides.end ())
+            cur->update (override->second);
+
+        if (shouldListPropertiesAndStop)
+            std::cout << cur->dump () << std::endl;
     }
+
+    // halt if the list-properties option was specified
+    if (shouldListPropertiesAndStop)
+        return 0;
 
     // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
     std::signal(SIGINT, signalhandler);

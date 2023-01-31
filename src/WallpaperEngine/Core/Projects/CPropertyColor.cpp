@@ -4,28 +4,30 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
+FloatColor ParseColor (const std::string& value)
 {
-    std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
-    std::string text = jsonFindDefault <std::string> (data, "text", "");
-    FloatColor color (0, 0, 0, 0);
-
     if (value.find ('.') == std::string::npos && value != "0 0 0" && value != "1 1 1")
     {
         IntegerColor intcolor = WallpaperEngine::Core::aToColori (value);
 
-        color.r = intcolor.r / 255.0;
-        color.g = intcolor.g / 255.0;
-        color.b = intcolor.b / 255.0;
-        color.a = intcolor.a / 255.0;
-    }
-    else
-    {
-        color = WallpaperEngine::Core::aToColorf (value);
+        return {
+            intcolor.r / 255.0,
+            intcolor.g / 255.0,
+            intcolor.b / 255.0,
+            intcolor.a / 255.0
+        };
     }
 
+    return WallpaperEngine::Core::aToColorf (value);
+}
+
+CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
+{
+    std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
+    std::string text = jsonFindDefault <std::string> (data, "text", "");
+
     return new CPropertyColor (
-        color,
+        ParseColor (value),
         name,
         text
     );
@@ -35,6 +37,12 @@ const FloatColor& CPropertyColor::getValue () const
 {
     return this->m_color;
 }
+
+void CPropertyColor::update (const std::string& value)
+{
+    this->m_color = ParseColor (value);
+}
+
 
 std::string CPropertyColor::dump () const
 {

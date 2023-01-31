@@ -56,6 +56,16 @@ std::string CPropertySlider::dump () const
     return ss.str();
 }
 
+void CPropertySlider::update (const std::string& value)
+{
+    double newValue = atof (value.c_str ());
+
+    if (newValue < this->m_min || newValue > this->m_max)
+        throw std::runtime_error ("Slider value is out of range");
+
+    this->m_value = newValue;
+}
+
 CPropertySlider::CPropertySlider (double value, const std::string& name, const std::string& text, double min, double max, double step) :
     CProperty (name, Type, text),
     m_value (value), m_min (min), m_max (max), m_step (step)

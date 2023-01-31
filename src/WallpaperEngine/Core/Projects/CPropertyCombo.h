@@ -20,6 +20,7 @@ namespace WallpaperEngine::Core::Projects
 
         const std::string& getValue () const;
         std::string dump () const override;
+        void update (const std::string& value) override;
 
         static const std::string Type;
 

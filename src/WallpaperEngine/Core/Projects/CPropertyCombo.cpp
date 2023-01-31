@@ -72,6 +72,26 @@ std::string CPropertyCombo::dump () const
     return ss.str();
 }
 
+void CPropertyCombo::update (const std::string& value)
+{
+    bool found = false;
+
+    // ensure the value is present somewhere in the value list
+    for (auto cur : this->m_values)
+    {
+        if (cur->value != value)
+            continue;
+
+        found = true;
+    }
+
+    if (found == false)
+        throw std::runtime_error ("Assigning invalid value to property");
+
+    this->m_defaultValue = value;
+}
+
+
 void CPropertyCombo::addValue (std::string label, std::string value)
 {
     CPropertyComboValue* prop = new CPropertyComboValue;

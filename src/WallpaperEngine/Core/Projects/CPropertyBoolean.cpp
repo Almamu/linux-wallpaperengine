@@ -22,6 +22,11 @@ bool CPropertyBoolean::getValue ()
     return this->m_value;
 }
 
+void CPropertyBoolean::update (const std::string& value)
+{
+    this->m_value = value == "1" || value == "true";
+}
+
 std::string CPropertyBoolean::dump () const
 {
     std::stringstream ss;

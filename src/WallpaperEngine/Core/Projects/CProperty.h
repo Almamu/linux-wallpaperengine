@@ -19,6 +19,7 @@ namespace WallpaperEngine::Core::Projects
         template<class T> bool is () { return this->m_type == T::Type; }
 
         virtual std::string dump () const = 0;
+        virtual void update (const std::string& value) = 0;
 
         const std::string& getName () const;
         const std::string& getType () const;
