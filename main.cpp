@@ -547,7 +547,11 @@ int main (int argc, char* argv[])
         auto override = propertyOverrides.find (cur->getName ());
 
         if (override != propertyOverrides.end ())
+        {
+            std::cout << "Applying override value for " << cur->getName () << std::endl;
+
             cur->update (override->second);
+        }
 
         if (shouldListPropertiesAndStop)
             std::cout << cur->dump () << std::endl;

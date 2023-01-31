@@ -156,6 +156,70 @@ It is possible to take a screenshot of the screen's content at the moment a back
 
 PNG, BMP and JPEG are supported.
 
+## 5.8. Properties
+Some backgrounds have a list of properties that the user can customize. These properties modify how parts of the background behave or look like. Support for these is present.
+First, list all the available properties in a background, you can do that with the --list-properties switch:
+```
+./linux-wallpaperengine --list-properties 2370927443
+```
+
+The output includes all the relevant information for each of the different properties:
+```
+barcount - slider
+	Description: Bar Count
+	Value: 64
+	Minimum value: 16
+	Maximum value: 64
+	Step: 1
+
+bloom - boolean
+	Description: Bloom
+	Value: 0
+frequency - combolist
+	Description: Frequency
+	Value: 2
+		Posible values:
+		16 -> 1
+		32 -> 2
+		64 -> 3
+
+owl - boolean
+	Description: Owl
+	Value: 0
+rain - boolean
+	Description: Rain
+	Value: 1
+schemecolor - color
+	Description: ui_browse_properties_scheme_color
+	R: 0.14902 G: 0.23137 B: 0.4 A: 1
+visualizer - boolean
+	Description: <hr>Add Visualizer<hr>
+	Value: 1
+visualizercolor - color
+	Description: Bar Color
+	R: 0.12549 G: 0.215686 B: 0.352941 A: 1
+visualizeropacity - slider
+	Description: Bar Opacity
+	Value: 1
+	Minimum value: 0
+	Maximum value: 1
+	Step: 0.1
+
+visualizerwidth - slider
+	Description: Bar Spacing
+	Value: 0.25
+	Minimum value: 0
+	Maximum value: 0.5
+	Step: 0.01
+```
+
+Any of these values can be modified with the --set-property switch. Say you want to enable the bloom in this background, you would do so like this:
+```
+./linux-wallpaperengine --set-property bloom=1 2370927443
+```
+
+If you keep --list-properties in the commandline you can see how the values change to confirm that it applied properly.
+
 ## 6. Example background
 This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
 
