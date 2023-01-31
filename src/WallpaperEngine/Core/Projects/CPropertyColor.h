@@ -14,13 +14,14 @@ namespace WallpaperEngine::Core::Projects
     public:
         static CPropertyColor* fromJSON (json data, const std::string& name);
 
-        const IntegerColor& getValue () const;
+        const FloatColor& getValue () const;
+        std::string dump () const override;
 
         static const std::string Type;
 
     private:
-        CPropertyColor (IntegerColor color, const std::string& name, const std::string& text);
+        CPropertyColor (FloatColor color, const std::string& name, const std::string& text);
 
-        IntegerColor m_color;
+        FloatColor m_color;
     };
 };

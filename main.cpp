@@ -55,7 +55,8 @@ void print_help (const char* route)
         << "  --screen-root <screen name>\tDisplay as screen's background" << std::endl
         << "  --fps <maximum-fps>\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
         << "  --assets-dir <path>\tFolder where the assets are stored" << std::endl
-        << "  --screenshot\t\tTakes a screenshot of the background" << std::endl;
+        << "  --screenshot\t\tTakes a screenshot of the background" << std::endl
+        << "  --list-properties\tList all the available properties and their possible values" << std::endl;
 }
 
 std::string stringPathFixes(const std::string& s)
@@ -318,23 +319,24 @@ int main (int argc, char* argv[])
     int maximumFPS = 30;
     bool shouldEnableAudio = true;
     bool shouldTakeScreenshot = false;
+    bool shouldListPropertiesAndStop = false;
     FREE_IMAGE_FORMAT screenshotFormat = FIF_UNKNOWN;
     std::string path;
     std::string assetsDir;
     std::string screenshotPath;
 
-
     static struct option long_options [] = {
-        {"screen-root", required_argument, 0, 'r'},
-        {"pkg",         required_argument, 0, 'p'},
-        {"dir",         required_argument, 0, 'd'},
-        {"silent",      no_argument,       0, 's'},
-        {"volume",      required_argument, 0, 'v'},
-        {"help",        no_argument,       0, 'h'},
-        {"fps",         required_argument, 0, 'f'},
-        {"assets-dir",  required_argument, 0, 'a'},
-        {"screenshot",  required_argument, 0, 'c'},
-        {nullptr,                       0, 0,   0}
+        {"screen-root",     required_argument, 0, 'r'},
+        {"pkg",             required_argument, 0, 'p'},
+        {"dir",             required_argument, 0, 'd'},
+        {"silent",          no_argument,       0, 's'},
+        {"volume",          required_argument, 0, 'v'},
+        {"help",            no_argument,       0, 'h'},
+        {"fps",             required_argument, 0, 'f'},
+        {"assets-dir",      required_argument, 0, 'a'},
+        {"screenshot",      required_argument, 0, 'c'},
+        {"list-properties", no_argument,       0, 'l'},
+        {nullptr,                           0, 0,   0}
     };
 
     while (true)
@@ -346,6 +348,10 @@ int main (int argc, char* argv[])
 
         switch (c)
         {
+            case 'l':
+                shouldListPropertiesAndStop = true;
+                break;
+
             case 'r':
                 screens.emplace_back (optarg);
                 break;
@@ -411,13 +417,6 @@ int main (int argc, char* argv[])
         else
             throw std::runtime_error ("Unsupported screenshot format...");
     }
-
-    // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
-    std::signal(SIGINT, signalhandler);
-    std::signal(SIGTERM, signalhandler);
-
-    // initialize glfw
-    initGLFW ();
 
     std::string homepath = getHomePath ();
     auto containers = new WallpaperEngine::Assets::CCombinedContainer ();
@@ -516,6 +515,30 @@ int main (int argc, char* argv[])
     // add containers to the list
     containers->add (new WallpaperEngine::Assets::CDirectory (assetsDir + "/"));
 
+    // parse the project.json file
+    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
+    // go to the right folder so the videos will play
+    if (project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> () == true)
+        chdir (path.c_str ());
+
+    // show properties if required
+    if (shouldListPropertiesAndStop)
+    {
+        for (auto cur : project->getProperties ())
+        {
+            std::cout << cur->dump () << std::endl;
+        }
+
+        return 0;
+    }
+
+    // attach signals so if a stop is requested the X11 resources are freed and the program shutsdown gracefully
+    std::signal(SIGINT, signalhandler);
+    std::signal(SIGTERM, signalhandler);
+
+    // initialize glfw
+    initGLFW ();
+
     // auto projection = project->getWallpaper ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
     // create the window!
     // TODO: DO WE NEED TO PASS MONITOR HERE OR ANYTHING?
@@ -552,12 +575,6 @@ int main (int argc, char* argv[])
         std::cerr << "Cannot initialize SDL audio system, SDL_GetError: " << SDL_GetError() << std::endl;
         std::cerr << "Continuing without audio support" << std::endl;
     }
-
-    // parse the project.json file
-    auto project = WallpaperEngine::Core::CProject::fromFile ("project.json", containers);
-    // go to the right folder so the videos will play
-    if (project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> () == true)
-        chdir (path.c_str ());
 
     // initialize custom context class
     WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window, containers);

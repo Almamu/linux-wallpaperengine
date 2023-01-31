@@ -18,7 +18,7 @@ namespace WallpaperEngine::Core
 
         CWallpaper (std::string type);
 
-        CProject* getProject ();
+        CProject* getProject () const;
 
     protected:
         friend class CProject;

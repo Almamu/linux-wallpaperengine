@@ -5,24 +5,24 @@ namespace WallpaperEngine::Core::Types
     class FloatColor
     {
     public:
-        FloatColor (float r, float g, float b, float a) :
+        FloatColor (double r, double g, double b, double a) :
             r(r), g(g), b(b), a(a) { }
 
         /**
          * The red color
          */
-        float r;
+        double r;
         /**
          * The green color
          */
-        float g;
+        double g;
         /**
          * The blue color
          */
-        float b;
+        double b;
         /**
          * The alpha
          */
-        float a;
+        double a;
     };
 }

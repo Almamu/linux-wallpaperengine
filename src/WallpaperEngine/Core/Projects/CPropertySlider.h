@@ -18,6 +18,7 @@ namespace WallpaperEngine::Core::Projects
         const double& getMinValue () const;
         const double& getMaxValue () const;
         const double& getStep () const;
+        std::string dump () const override;
 
         static const std::string Type;
 

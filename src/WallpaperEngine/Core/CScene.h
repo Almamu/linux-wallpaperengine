@@ -50,7 +50,7 @@ namespace WallpaperEngine::Core
                 CContainer* container,
                 Scenes::CCamera* camera,
                 FloatColor ambientColor,
-                bool bloom,
+                CUserSettingBoolean* bloom,
                 double bloomStrength,
                 double bloomThreshold,
                 bool cameraFade,
@@ -79,7 +79,7 @@ namespace WallpaperEngine::Core
 
         // data from general section on the json
         FloatColor m_ambientColor;
-        bool m_bloom;
+        CUserSettingBoolean* m_bloom;
         double m_bloomStrength;
         double m_bloomThreshold;
         bool m_cameraFade;

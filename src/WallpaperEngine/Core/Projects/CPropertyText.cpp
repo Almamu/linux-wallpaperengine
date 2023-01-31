@@ -1,3 +1,4 @@
+#include <sstream>
 #include "CPropertyText.h"
 #include "WallpaperEngine/Core/Core.h"
 
@@ -11,6 +12,17 @@ CPropertyText* CPropertyText::fromJSON (json data, const std::string& name)
         name,
         *text
     );
+}
+
+std::string CPropertyText::dump () const
+{
+    std::stringstream ss;
+
+    ss
+        << this->m_name << " - text" << std::endl
+        << "\t" << "Value: " << this->m_text;
+
+    return ss.str();
 }
 
 CPropertyText::CPropertyText (const std::string& name, const std::string& text) :

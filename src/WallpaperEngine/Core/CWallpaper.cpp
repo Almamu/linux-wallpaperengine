@@ -7,7 +7,7 @@ CWallpaper::CWallpaper (std::string type) :
 {
 }
 
-CProject* CWallpaper::getProject ()
+CProject* CWallpaper::getProject () const
 {
     return this->m_project;
 }

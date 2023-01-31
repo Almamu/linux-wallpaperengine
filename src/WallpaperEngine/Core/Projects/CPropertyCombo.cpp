@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "CPropertyCombo.h"
 
 #include <utility>
@@ -8,12 +10,12 @@ using namespace WallpaperEngine::Core::Projects;
 CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
 {
     auto value = data.find ("value");
-    auto text = data.find ("type");
+    std::string text = jsonFindDefault <std::string> (data, "text", "");
     auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
 
     CPropertyCombo* combo = new CPropertyCombo (
         name,
-        *text,
+        text,
         *value
     );
 
@@ -50,6 +52,24 @@ CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text
 const std::string& CPropertyCombo::getValue () const
 {
     return this->m_defaultValue;
+}
+
+std::string CPropertyCombo::dump () const
+{
+    std::stringstream ss;
+
+    ss
+        << this->m_name << " - combolist" << std::endl
+        << "\t" << "Description: " << this->m_text << std::endl
+        << "\t" << "Value: " << this->m_defaultValue << std::endl
+        << "\t\t" << "Posible values:" << std::endl;
+
+    for (auto cur : this->m_values)
+    {
+        ss << "\t\t" << cur->label << " -> " << cur->value << std::endl;
+    }
+
+    return ss.str();
 }
 
 void CPropertyCombo::addValue (std::string label, std::string value)

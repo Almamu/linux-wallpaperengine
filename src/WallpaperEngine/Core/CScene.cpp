@@ -3,6 +3,7 @@
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Core/Types/FloatColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Types;
@@ -11,7 +12,7 @@ CScene::CScene (
         CContainer* container,
         Scenes::CCamera* camera,
         FloatColor ambientColor,
-        bool bloom,
+        CUserSettingBoolean* bloom,
         double bloomStrength,
         double bloomThreshold,
         bool cameraFade,
@@ -61,7 +62,14 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
     auto ambientcolor = jsonFindDefault <std::string> (*general_it, "ambientcolor", "0 0 0");
-    auto bloom = jsonFindDefault <bool> (*general_it, "bloom", false);
+    auto bloom_it = (*general_it).find ("bloom");
+    CUserSettingBoolean* bloom;
+
+    if (bloom_it == (*general_it).end ())
+        bloom = CUserSettingBoolean::fromScalar (false);
+    else
+        bloom = CUserSettingBoolean::fromJSON (*bloom_it);
+
     auto bloomstrength = jsonFindUserConfig <float> (*general_it, "bloomstrength", 0.0);
     auto bloomthreshold = jsonFindUserConfig <float> (*general_it, "bloomthreshold", 0.0);
     auto camerafade = jsonFindDefault <bool> (*general_it, "camerafade", false);
@@ -149,7 +157,7 @@ const FloatColor &CScene::getAmbientColor() const
 
 const bool CScene::isBloom () const
 {
-    return this->m_bloom;
+    return this->m_bloom->processValue (this->getProject ()->getProperties ());
 }
 
 const double CScene::getBloomStrength () const

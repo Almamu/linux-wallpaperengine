@@ -19,6 +19,7 @@ namespace WallpaperEngine::Core::Projects
         static CPropertyCombo* fromJSON (json data, const std::string& name);
 
         const std::string& getValue () const;
+        std::string dump () const override;
 
         static const std::string Type;
 

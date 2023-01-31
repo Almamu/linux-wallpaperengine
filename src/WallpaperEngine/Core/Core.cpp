@@ -105,10 +105,15 @@ template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char 
         return defaultValue;
 
     // type checks
-    if ((std::is_same <T, float>::value || std::is_same <T, double>::value) && value->type () != nlohmann::detail::value_t::number_float)
+    if ((std::is_same <T, float>::value || std::is_same <T, double>::value))
     {
-        fprintf(stderr, "%s is not of type double, returning default value\n", key);
-        return defaultValue;
+        if (value->type () != nlohmann::detail::value_t::number_float &&
+            value->type () != nlohmann::detail::value_t::number_integer &&
+            value->type () != nlohmann::detail::value_t::number_unsigned)
+        {
+            fprintf(stderr, "%s is not of type double or integer, returning default value\n", key);
+            return defaultValue;
+        }
     }
     else if (std::is_same <T, std::string>::value && value->type () != nlohmann::detail::value_t::string)
     {
