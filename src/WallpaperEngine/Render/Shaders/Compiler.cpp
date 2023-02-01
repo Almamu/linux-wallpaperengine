@@ -365,6 +365,7 @@ namespace WallpaperEngine::Render::Shaders
                     // types not found, try names
                     if (this->m_error == false)
                     {
+                        this->ignoreSpaces (it);
                         this->m_compiledContent += type;
                     }
                     else
@@ -444,9 +445,10 @@ namespace WallpaperEngine::Render::Shaders
                 // check for types first
                 std::string type = this->extractType (it);
 
-                // types not found, try names
+                // type found
                 if (this->m_error == false)
                 {
+                    this->ignoreSpaces (it);
                     // check for main, and take it into account, this also helps adding the includes
                     std::string name = this->extractName (it);
 
