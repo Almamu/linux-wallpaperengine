@@ -20,8 +20,8 @@ namespace WallpaperEngine::Core::Objects
             CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
-            const glm::vec3& origin,
-            const glm::vec3& scale,
+            CUserSettingVector3* origin,
+            CUserSettingVector3* scale,
             const glm::vec3& angles
         );
 
@@ -34,8 +34,8 @@ namespace WallpaperEngine::Core::Objects
             CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
-            const glm::vec3& origin,
-            const glm::vec3& scale,
+            CUserSettingVector3* origin,
+            CUserSettingVector3* scale,
             const glm::vec3& angles
         );
 

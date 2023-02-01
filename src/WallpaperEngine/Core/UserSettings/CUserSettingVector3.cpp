@@ -1,14 +1,15 @@
-#include "CUserSettingColor.h"
+#include "CUserSettingVector3.h"
 #include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyColor.h"
+#include "WallpaperEngine/Core/Projects/CPropertySlider.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingColor::CUserSettingColor (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source, std::string expectedValue) :
+CUserSettingVector3::CUserSettingVector3 (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source, std::string expectedValue) :
     CUserSettingValue (Type),
     m_hasCondition (hasCondition),
     m_hasSource(hasSource),
@@ -18,7 +19,7 @@ CUserSettingColor::CUserSettingColor (bool hasCondition, bool hasSource, glm::ve
 {
 }
 
-CUserSettingColor* CUserSettingColor::fromJSON (nlohmann::json& data)
+CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data)
 {
     bool hasCondition = false;
     bool hasSource = false;
@@ -58,20 +59,20 @@ CUserSettingColor* CUserSettingColor::fromJSON (nlohmann::json& data)
         defaultValue = WallpaperEngine::Core::aToColorf (data.get <std::string> ().c_str ());
     }
 
-    return new CUserSettingColor (hasCondition, hasSource, defaultValue, source, expectedValue);
+    return new CUserSettingVector3 (hasCondition, hasSource, defaultValue, source, expectedValue);
 }
 
-CUserSettingColor* CUserSettingColor::fromScalar (glm::vec3 value)
+CUserSettingVector3* CUserSettingVector3::fromScalar (glm::vec3 value)
 {
-    return new CUserSettingColor (false, false, value, "", "");
+    return new CUserSettingVector3 (false, false, value, "", "");
 }
 
-glm::vec3 CUserSettingColor::getDefaultValue ()
+glm::vec3 CUserSettingVector3::getDefaultValue ()
 {
     return this->m_default;
 }
 
-glm::vec3 CUserSettingColor::processValue (const std::vector<Projects::CProperty*>& properties)
+glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProperty*>& properties)
 {
     if (this->m_hasSource == false && this->m_hasCondition == false)
         return this->getDefaultValue ();
@@ -85,6 +86,12 @@ glm::vec3 CUserSettingColor::processValue (const std::vector<Projects::CProperty
         {
             if (cur->is <CPropertyColor> ())
                 return cur->as <CPropertyColor> ()->getValue ();
+            if (cur->is <CPropertySlider> ())
+                return {
+                    cur->as <CPropertySlider> ()->getValue (),
+                    cur->as <CPropertySlider> ()->getValue (),
+                    cur->as <CPropertySlider> ()->getValue ()
+                };
 
             throw std::runtime_error ("Property without condition must match type (color)");
         }
@@ -95,4 +102,4 @@ glm::vec3 CUserSettingColor::processValue (const std::vector<Projects::CProperty
     return this->m_default;
 }
 
-std::string CUserSettingColor::Type = "color";
+std::string CUserSettingVector3::Type = "color";

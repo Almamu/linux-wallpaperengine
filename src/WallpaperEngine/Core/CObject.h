@@ -2,11 +2,11 @@
 
 #include "Core.h"
 
-#include "WallpaperEngine/Core/Objects/CEffect.h"
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Core/Objects/CEffect.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
 namespace WallpaperEngine::Core
 {
@@ -44,8 +44,8 @@ namespace WallpaperEngine::Core
         const std::vector<uint32_t>& getDependencies () const;
         const int getId () const;
 
-        const glm::vec3& getOrigin () const;
-        const glm::vec3& getScale () const;
+        glm::vec3 getOrigin () const;
+        glm::vec3 getScale () const;
         const glm::vec3& getAngles () const;
         const std::string& getName () const;
 
@@ -58,8 +58,8 @@ namespace WallpaperEngine::Core
             uint32_t id,
             std::string name,
             std::string type,
-            const glm::vec3& origin,
-            const glm::vec3& scale,
+            CUserSettingVector3* origin,
+            CUserSettingVector3* scale,
             const glm::vec3& angles
         );
 
@@ -71,8 +71,8 @@ namespace WallpaperEngine::Core
         CUserSettingBoolean* m_visible;
         uint32_t m_id;
         std::string m_name;
-        glm::vec3 m_origin;
-        glm::vec3 m_scale;
+        CUserSettingVector3* m_origin;
+        CUserSettingVector3* m_scale;
         glm::vec3 m_angles;
 
         std::vector<Objects::CEffect*> m_effects;

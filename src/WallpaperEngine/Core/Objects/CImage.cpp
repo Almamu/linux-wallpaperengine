@@ -1,11 +1,11 @@
 #include "CImage.h"
 
-#include <utility>
 #include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
+#include <utility>
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
@@ -18,12 +18,12 @@ CImage::CImage (
     CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
-    const glm::vec3& origin,
-    const glm::vec3& scale,
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale,
     const glm::vec3& angles,
     const glm::vec2& size,
     std::string alignment,
-    CUserSettingColor* color,
+                CUserSettingVector3* color,
     CUserSettingFloat* alpha,
     float brightness,
     uint32_t colorBlendMode,
@@ -48,15 +48,15 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
-    const glm::vec3& origin,
-    const glm::vec3& scale,
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale,
     const glm::vec3& angles)
 {
     auto image_it = data.find ("image");
     auto size_val = jsonFindDefault <std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
     auto alignment = jsonFindDefault <std::string> (data, "alignment", "center");
     auto alpha = jsonFindUserConfig <CUserSettingFloat, double> (data, "alpha", 1.0);
-    auto color = jsonFindUserConfig <CUserSettingColor, glm::vec3> (data, "color", {1, 1, 1});
+    auto color = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "color", {1, 1, 1});
     auto brightness_val = jsonFindDefault <float> (data, "brightness", 1.0);
     auto colorBlendMode_val = jsonFindDefault <uint32_t> (data, "colorBlendMode", 0);
     auto parallaxDepth_val = jsonFindDefault <std::string> (data, "parallaxDepth", "0 0");

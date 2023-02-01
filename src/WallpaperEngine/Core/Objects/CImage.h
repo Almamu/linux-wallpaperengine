@@ -8,8 +8,8 @@
 #include "WallpaperEngine/Assets/CContainer.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
 namespace WallpaperEngine::Core
 {
@@ -33,8 +33,8 @@ namespace WallpaperEngine::Core::Objects
             CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
-            const glm::vec3& origin,
-            const glm::vec3& scale,
+            CUserSettingVector3* origin,
+            CUserSettingVector3* scale,
             const glm::vec3& angles
         );
 
@@ -54,12 +54,12 @@ namespace WallpaperEngine::Core::Objects
             CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,
-            const glm::vec3& origin,
-            const glm::vec3& scale,
+            CUserSettingVector3* origin,
+            CUserSettingVector3* scale,
             const glm::vec3& angles,
             const glm::vec2& size,
             std::string alignment,
-            CUserSettingColor* color,
+                CUserSettingVector3* color,
             CUserSettingFloat* alpha,
             float brightness,
             uint32_t colorBlendMode,
@@ -75,7 +75,7 @@ namespace WallpaperEngine::Core::Objects
         std::string m_alignment;
         CUserSettingFloat* m_alpha;
         float m_brightness;
-        CUserSettingColor* m_color;
+        CUserSettingVector3* m_color;
         uint32_t m_colorBlendMode;
     };
 };

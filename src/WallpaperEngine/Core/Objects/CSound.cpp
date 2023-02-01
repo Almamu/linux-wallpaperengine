@@ -8,8 +8,8 @@ CSound::CSound (
         CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
-        const glm::vec3& origin,
-        const glm::vec3& scale,
+        CUserSettingVector3* origin,
+        CUserSettingVector3* scale,
         const glm::vec3& angles) :
         CObject (scene, visible, id, std::move(name), Type, origin, scale, angles)
 {
@@ -21,8 +21,8 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
-        const glm::vec3& origin,
-        const glm::vec3& scale,
+        CUserSettingVector3* origin,
+        CUserSettingVector3* scale,
         const glm::vec3& angles)
 {
     auto sound_it = jsonFindRequired (data, "sound", "Sound information not present");

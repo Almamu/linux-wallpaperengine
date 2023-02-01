@@ -1,8 +1,8 @@
 #include "Core.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::UserSettings;
@@ -157,5 +157,5 @@ template <typename T, typename S> T* Core::jsonFindUserConfig (nlohmann::json& d
 }
 
 template CUserSettingBoolean* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, bool defaultValue);
-template CUserSettingColor* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, glm::vec3 defaultValue);
+template CUserSettingVector3* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, glm::vec3 defaultValue);
 template CUserSettingFloat* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, double defaultValue);

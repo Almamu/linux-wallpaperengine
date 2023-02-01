@@ -10,8 +10,8 @@ CParticle* CParticle::fromFile (
     CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
-    const glm::vec3& origin,
-    const glm::vec3& scale)
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale)
 {
     json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
     auto controlpoint_it = data.find ("controlpoint");
@@ -74,8 +74,8 @@ CParticle::CParticle (
         CUserSettingBoolean* visible,
         uint32_t id,
         std::string name,
-        const glm::vec3& origin,
-        const glm::vec3& scale):
+        CUserSettingVector3* origin,
+        CUserSettingVector3* scale):
         CObject (scene, visible, id, std::move(name), Type, origin, scale, glm::vec3 ()),
         m_starttime (starttime),
         m_maxcount (maxcount)

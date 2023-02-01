@@ -20,8 +20,8 @@ CObject::CObject (
         uint32_t id,
         std::string name,
         std::string type,
-        const glm::vec3& origin,
-        const glm::vec3& scale,
+        CUserSettingVector3* origin,
+        CUserSettingVector3* scale,
         const glm::vec3& angles) :
     m_scene (scene),
     m_visible (visible),
@@ -40,8 +40,8 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
     auto visible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
-    auto origin_val = jsonFindDefault <std::string> (data, "origin", "0.0 0.0 0.0");
-    auto scale_val = jsonFindDefault <std::string> (data, "scale", "0.0 0.0 0.0");
+    auto origin = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "origin", {0, 0, 0});
+    auto scale = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "scale", {0, 0, 0});
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
     auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
@@ -64,8 +64,8 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
                 visible,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (origin_val),
-                WallpaperEngine::Core::aToVector3 (scale_val),
+                origin,
+                scale,
                 WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
@@ -77,8 +77,8 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
                 visible,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (origin_val),
-                WallpaperEngine::Core::aToVector3 (scale_val),
+                origin,
+                scale,
                 WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
@@ -94,8 +94,8 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
                 visible,
                 *id_it,
                 *name_it,
-                WallpaperEngine::Core::aToVector3 (origin_val),
-                WallpaperEngine::Core::aToVector3 (scale_val)
+                origin,
+                scale
             );
         }
         catch (std::runtime_error ex)
@@ -153,14 +153,14 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
     return object;
 }
 
-const glm::vec3& CObject::getOrigin () const
+glm::vec3 CObject::getOrigin () const
 {
-    return this->m_origin;
+    return this->m_origin->processValue (this->getScene ()->getProject ()->getProperties ());
 }
 
-const glm::vec3& CObject::getScale () const
+glm::vec3 CObject::getScale () const
 {
-    return this->m_scale;
+    return this->m_scale->processValue (this->getScene ()->getProject ()->getProperties ());
 }
 
 const glm::vec3& CObject::getAngles () const

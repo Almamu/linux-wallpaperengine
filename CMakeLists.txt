@@ -117,8 +117,8 @@ add_executable(
         src/WallpaperEngine/Core/UserSettings/CUserSettingValue.h
         src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.cpp
         src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h
-        src/WallpaperEngine/Core/UserSettings/CUserSettingColor.cpp
-        src/WallpaperEngine/Core/UserSettings/CUserSettingColor.h
+        src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.cpp
+        src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.h
         src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.cpp
         src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.h
 

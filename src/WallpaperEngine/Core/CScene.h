@@ -61,7 +61,7 @@ namespace WallpaperEngine::Core
                 double cameraShakeAmplitude,
                 double cameraShakeRoughness,
                 double cameraShakeSpeed,
-                CUserSettingColor* clearColor,
+                CUserSettingVector3* clearColor,
                 Scenes::CProjection* orthogonalProjection,
                 glm::vec3 skylightColor
         );
@@ -90,7 +90,7 @@ namespace WallpaperEngine::Core
         double m_cameraShakeAmplitude;
         double m_cameraShakeRoughness;
         double m_cameraShakeSpeed;
-        CUserSettingColor* m_clearColor;
+        CUserSettingVector3* m_clearColor;
         Scenes::CProjection* m_orthogonalProjection;
         glm::vec3 m_skylightColor;
 

@@ -50,7 +50,7 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data)
         }
         else
         {
-            fprintf (stderr, "Boolean property doesn't have user member, this could mean an scripted value");
+            fprintf (stderr, "Boolean property doesn't have user member, this could mean an scripted value\n");
         }
     }
     else

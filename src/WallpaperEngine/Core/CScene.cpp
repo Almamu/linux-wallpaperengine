@@ -1,10 +1,10 @@
 #include "CScene.h"
 #include "CProject.h"
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
+#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
 
@@ -25,7 +25,7 @@ CScene::CScene (
         double cameraShakeAmplitude,
         double cameraShakeRoughness,
         double cameraShakeSpeed,
-        CUserSettingColor* clearColor,
+                CUserSettingVector3* clearColor,
         Scenes::CProjection* orthogonalProjection,
         glm::vec3 skylightColor) :
     CWallpaper (Type),
@@ -75,7 +75,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto camerashakeamplitude = jsonFindDefault <double> (*general_it, "camerashakeamplitude", 0.0f);
     auto camerashakeroughness = jsonFindDefault <double> (*general_it, "camerashakeroughness", 0.0f);
     auto camerashakespeed = jsonFindDefault <double> (*general_it, "camerashakespeed", 0.0f);
-    auto clearcolor = jsonFindUserConfig <CUserSettingColor, glm::vec3> (*general_it, "clearcolor", {1, 1, 1});
+    auto clearcolor = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (*general_it, "clearcolor", {1, 1, 1});
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
     auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
 
