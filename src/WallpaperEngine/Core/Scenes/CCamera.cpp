@@ -1,7 +1,6 @@
 #include "CCamera.h"
 
 using namespace WallpaperEngine::Core::Scenes;
-using namespace WallpaperEngine::Core::Types;
 
 CCamera::CCamera (glm::vec3 center, glm::vec3 eye, glm::vec3 up) :
     m_center (center),

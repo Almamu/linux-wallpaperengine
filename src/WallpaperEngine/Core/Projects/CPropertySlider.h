@@ -7,7 +7,6 @@
 namespace WallpaperEngine::Core::Projects
 {
     using json = nlohmann::json;
-    using namespace WallpaperEngine::Core::Types;
 
     class CPropertySlider : public CProperty
     {

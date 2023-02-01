@@ -5,7 +5,6 @@
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
-using namespace WallpaperEngine::Core::Types;
 
 CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
     m_camera (camera),

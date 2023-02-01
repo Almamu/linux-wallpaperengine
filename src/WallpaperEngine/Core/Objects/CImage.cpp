@@ -1,8 +1,11 @@
 #include "CImage.h"
 
 #include <utility>
+#include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
@@ -20,8 +23,8 @@ CImage::CImage (
     const glm::vec3& angles,
     const glm::vec2& size,
     std::string alignment,
-    const glm::vec3& color,
-    float alpha,
+    CUserSettingColor* color,
+    CUserSettingFloat* alpha,
     float brightness,
     uint32_t colorBlendMode,
     const glm::vec2& parallaxDepth
@@ -52,8 +55,22 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     auto image_it = data.find ("image");
     auto size_val = jsonFindDefault <std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
     auto alignment = jsonFindDefault <std::string> (data, "alignment", "center");
-    auto alpha = jsonFindDefault <float> (data, "alpha", 1.0);
-    auto color_val = jsonFindDefault <std::string> (data, "color", "1.0 1.0 1.0");
+    auto alpha_it = data.find ("alpha");
+    CUserSettingFloat* alpha;
+
+    if (alpha_it == data.end ())
+        alpha = CUserSettingFloat::fromScalar (1.0);
+    else
+        alpha = CUserSettingFloat::fromJSON (*alpha_it);
+
+    auto color_it = data.find ("color");
+    CUserSettingColor* color;
+
+    if (color_it == data.end ())
+        color = CUserSettingColor::fromScalar ({1, 1, 1});
+    else
+        color = CUserSettingColor::fromJSON (*color_it);
+
     auto brightness_val = jsonFindDefault <float> (data, "brightness", 1.0);
     auto colorBlendMode_val = jsonFindDefault <uint32_t> (data, "colorBlendMode", 0);
     auto parallaxDepth_val = jsonFindDefault <std::string> (data, "parallaxDepth", "0 0");
@@ -73,7 +90,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         angles,
         WallpaperEngine::Core::aToVector2 (size_val),
         alignment,
-        WallpaperEngine::Core::aToVector3 (color_val),
+        color,
         alpha,
         brightness_val,
         colorBlendMode_val,
@@ -98,12 +115,12 @@ const std::string& CImage::getAlignment () const
 
 const float CImage::getAlpha () const
 {
-    return this->m_alpha;
+    return this->m_alpha->processValue (this->getScene ()->getProject ()->getProperties ());
 }
 
-const glm::vec3& CImage::getColor () const
+glm::vec3 CImage::getColor () const
 {
-    return this->m_color;
+    return this->m_color->processValue (this->getScene ()->getProject ()->getProperties ());
 }
 
 const float CImage::getBrightness () const

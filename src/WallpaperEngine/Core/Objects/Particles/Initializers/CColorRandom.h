@@ -6,21 +6,19 @@
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
-    using namespace WallpaperEngine::Core::Types;
-
     class CColorRandom : CInitializer
     {
     public:
-        const IntegerColor& getMinimum () const;
-        const IntegerColor& getMaximum () const;
+        const glm::ivec3& getMinimum () const;
+        const glm::ivec3& getMaximum () const;
     protected:
         friend class CInitializer;
 
         static CColorRandom* fromJSON (json data, uint32_t id);
 
-        CColorRandom (uint32_t id, IntegerColor min, IntegerColor max);
+        CColorRandom (uint32_t id, glm::ivec3 min, glm::ivec3 max);
     private:
-        IntegerColor m_max;
-        IntegerColor m_min;
+        glm::ivec3 m_max;
+        glm::ivec3 m_min;
     };
 };

@@ -26,8 +26,6 @@ float g_Time;
 bool g_KeepRunning = true;
 int g_AudioVolume = 15;
 
-using namespace WallpaperEngine::Core::Types;
-
 const char* assets_default_paths [] = {
     ".steam/steam/steamapps/common/wallpaper_engine/assets",
     ".local/share/Steam/steamapps/common/wallpaper_engine/assets",

@@ -1,7 +1,6 @@
 #include "Core.h"
 
 using namespace WallpaperEngine;
-using namespace WallpaperEngine::Core::Types;
 
 glm::vec4 Core::aToVector4 (const char* str)
 {
@@ -45,32 +44,32 @@ glm::vec2 Core::aToVector2 (const std::string& str)
     return Core::aToVector2 (str.c_str ());
 }
 
-FloatColor Core::aToColorf (const char* str)
+glm::vec3 Core::aToColorf (const char* str)
 {
     float r = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
     float g = strtof (str, const_cast<char **>(&str)); while (*str == ' ') str ++;
     float b = strtof (str, const_cast<char **>(&str));
 
-    return {r, g, b, 1.0f};
+    return {r, g, b};
 }
 
-FloatColor Core::aToColorf (const std::string& str)
+glm::vec3 Core::aToColorf (const std::string& str)
 {
-    return aToColorf(str.c_str());
+    return aToColorf (str.c_str ());
 }
 
-IntegerColor Core::aToColori (const char* str)
+glm::ivec3 Core::aToColori (const char* str)
 {
     uint8_t r = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
     uint8_t g = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
     uint8_t b = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10));
 
-    return {r, g, b, 255};
+    return {r, g, b};
 }
 
-IntegerColor Core::aToColori (const std::string& str)
+glm::ivec3 Core::aToColori (const std::string& str)
 {
-    return aToColori(str.c_str());
+    return aToColori (str.c_str ());
 }
 
 nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg)

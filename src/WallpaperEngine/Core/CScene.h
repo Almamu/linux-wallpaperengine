@@ -7,12 +7,10 @@
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 #include "WallpaperEngine/Core/Scenes/CProjection.h"
-#include "WallpaperEngine/Core/Types/FloatColor.h"
 
 namespace WallpaperEngine::Core
 {
     using json = nlohmann::json;
-    using namespace WallpaperEngine::Core::Types;
 
     class CObject;
 
@@ -24,7 +22,7 @@ namespace WallpaperEngine::Core
         const std::map<uint32_t, CObject*>& getObjects () const;
         const std::vector<CObject*>& getObjectsByRenderOrder () const;
 
-        const FloatColor& getAmbientColor() const;
+        const glm::vec3& getAmbientColor() const;
         const bool isBloom() const;
         const double getBloomStrength() const;
         const double getBloomThreshold() const;
@@ -38,9 +36,9 @@ namespace WallpaperEngine::Core
         const double getCameraShakeAmplitude() const;
         const double getCameraShakeRoughness() const;
         const double getCameraShakeSpeed() const;
-        const FloatColor& getClearColor() const;
+        const glm::vec3& getClearColor() const;
         Scenes::CProjection* getOrthogonalProjection() const;
-        const FloatColor& getSkylightColor() const;
+        const glm::vec3& getSkylightColor() const;
         const Scenes::CCamera* getCamera () const;
 
     protected:
@@ -49,7 +47,7 @@ namespace WallpaperEngine::Core
         CScene (
                 CContainer* container,
                 Scenes::CCamera* camera,
-                FloatColor ambientColor,
+                glm::vec3 ambientColor,
                 CUserSettingBoolean* bloom,
                 double bloomStrength,
                 double bloomThreshold,
@@ -63,9 +61,9 @@ namespace WallpaperEngine::Core
                 double cameraShakeAmplitude,
                 double cameraShakeRoughness,
                 double cameraShakeSpeed,
-                FloatColor clearColor,
+                glm::vec3 clearColor,
                 Scenes::CProjection* orthogonalProjection,
-                FloatColor skylightColor
+                glm::vec3 skylightColor
         );
 
         static const std::string Type;
@@ -78,7 +76,7 @@ namespace WallpaperEngine::Core
         Scenes::CCamera* m_camera;
 
         // data from general section on the json
-        FloatColor m_ambientColor;
+        glm::vec3 m_ambientColor;
         CUserSettingBoolean* m_bloom;
         double m_bloomStrength;
         double m_bloomThreshold;
@@ -92,9 +90,9 @@ namespace WallpaperEngine::Core
         double m_cameraShakeAmplitude;
         double m_cameraShakeRoughness;
         double m_cameraShakeSpeed;
-        FloatColor m_clearColor;
+        glm::vec3 m_clearColor;
         Scenes::CProjection* m_orthogonalProjection;
-        FloatColor m_skylightColor;
+        glm::vec3 m_skylightColor;
 
         std::map<uint32_t, CObject*> m_objects;
         std::vector<CObject*> m_objectsByRenderOrder;

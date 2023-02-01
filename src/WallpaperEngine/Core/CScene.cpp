@@ -2,16 +2,14 @@
 #include "CProject.h"
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
-#include "WallpaperEngine/Core/Types/FloatColor.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 
 using namespace WallpaperEngine::Core;
-using namespace WallpaperEngine::Core::Types;
 
 CScene::CScene (
         CContainer* container,
         Scenes::CCamera* camera,
-        FloatColor ambientColor,
+        glm::vec3 ambientColor,
         CUserSettingBoolean* bloom,
         double bloomStrength,
         double bloomThreshold,
@@ -25,9 +23,9 @@ CScene::CScene (
         double cameraShakeAmplitude,
         double cameraShakeRoughness,
         double cameraShakeSpeed,
-        FloatColor clearColor,
+        glm::vec3 clearColor,
         Scenes::CProjection* orthogonalProjection,
-        FloatColor skylightColor) :
+        glm::vec3 skylightColor) :
     CWallpaper (Type),
     m_container (container),
     m_camera (camera),
@@ -150,7 +148,7 @@ const Scenes::CCamera* CScene::getCamera () const
     return this->m_camera;
 }
 
-const FloatColor &CScene::getAmbientColor() const
+const glm::vec3 &CScene::getAmbientColor() const
 {
     return this->m_ambientColor;
 }
@@ -220,7 +218,7 @@ const double CScene::getCameraShakeSpeed () const
     return this->m_cameraShakeSpeed;
 }
 
-const FloatColor& CScene::getClearColor () const
+const glm::vec3& CScene::getClearColor () const
 {
     return this->m_clearColor;
 }
@@ -230,7 +228,7 @@ Scenes::CProjection* CScene::getOrthogonalProjection () const
     return this->m_orthogonalProjection;
 }
 
-const FloatColor& CScene::getSkylightColor () const
+const glm::vec3& CScene::getSkylightColor () const
 {
     return this->m_skylightColor;
 }

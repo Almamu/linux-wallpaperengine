@@ -42,7 +42,7 @@ CScene::CScene (Core::CScene* scene, CContext* context) :
     );
 
     // set clear color
-    FloatColor clearColor = this->getScene ()->getClearColor ();
+    glm::vec3 clearColor = this->getScene ()->getClearColor ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
 

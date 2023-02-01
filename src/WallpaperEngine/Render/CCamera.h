@@ -7,8 +7,6 @@
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 
-using namespace WallpaperEngine::Core::Types;
-
 namespace WallpaperEngine::Render
 {
     class CScene;

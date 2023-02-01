@@ -8,6 +8,8 @@
 #include "WallpaperEngine/Assets/CContainer.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 
 namespace WallpaperEngine::Core
 {
@@ -40,7 +42,7 @@ namespace WallpaperEngine::Core::Objects
         const glm::vec2& getSize () const;
         const std::string& getAlignment () const;
         const float getAlpha () const;
-        const glm::vec3& getColor () const;
+        glm::vec3 getColor () const;
         const float getBrightness () const;
         const uint32_t getColorBlendMode () const;
         const glm::vec2& getParallaxDepth () const;
@@ -57,8 +59,8 @@ namespace WallpaperEngine::Core::Objects
             const glm::vec3& angles,
             const glm::vec2& size,
             std::string alignment,
-            const glm::vec3& color,
-            float alpha,
+            CUserSettingColor* color,
+            CUserSettingFloat* alpha,
             float brightness,
             uint32_t colorBlendMode,
             const glm::vec2& parallaxDepth
@@ -71,9 +73,9 @@ namespace WallpaperEngine::Core::Objects
         const glm::vec2 m_parallaxDepth;
         Images::CMaterial* m_material;
         std::string m_alignment;
-        float m_alpha;
+        CUserSettingFloat* m_alpha;
         float m_brightness;
-        glm::vec3 m_color;
+        CUserSettingColor* m_color;
         uint32_t m_colorBlendMode;
     };
 };

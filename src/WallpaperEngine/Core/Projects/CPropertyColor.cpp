@@ -4,17 +4,22 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-FloatColor ParseColor (const std::string& value)
+glm::vec3 ParseColor (std::string value)
 {
+    if (value.find (',') != std::string::npos)
+    {
+        // replace commas with dots so it can be parsed
+        std::replace (value.begin (), value.end (), ',', ' ');
+    }
+
     if (value.find ('.') == std::string::npos && value != "0 0 0" && value != "1 1 1")
     {
-        IntegerColor intcolor = WallpaperEngine::Core::aToColori (value);
+        glm::ivec3 intcolor = WallpaperEngine::Core::aToColori (value);
 
         return {
             intcolor.r / 255.0,
             intcolor.g / 255.0,
-            intcolor.b / 255.0,
-            intcolor.a / 255.0
+            intcolor.b / 255.0
         };
     }
 
@@ -33,16 +38,15 @@ CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
     );
 }
 
-const FloatColor& CPropertyColor::getValue () const
+const glm::vec3& CPropertyColor::getValue () const
 {
     return this->m_color;
 }
 
 void CPropertyColor::update (const std::string& value)
 {
-    this->m_color = ParseColor (value);
+    this->m_color = ParseColor (std::string (value));
 }
-
 
 std::string CPropertyColor::dump () const
 {
@@ -54,13 +58,12 @@ std::string CPropertyColor::dump () const
         << "\t"
         << "R: " << this->m_color.r
         << " G: " << this->m_color.g
-        << " B: " << this->m_color.b
-        << " A: " << this->m_color.a;
+        << " B: " << this->m_color.b;
 
     return ss.str();
 }
 
-CPropertyColor::CPropertyColor (FloatColor color, const std::string& name, const std::string& text) :
+CPropertyColor::CPropertyColor (glm::vec3 color, const std::string& name, const std::string& text) :
     CProperty (name, Type, text),
     m_color (color)
 {
