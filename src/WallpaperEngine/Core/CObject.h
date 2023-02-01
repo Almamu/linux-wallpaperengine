@@ -5,6 +5,8 @@
 #include "WallpaperEngine/Core/Objects/CEffect.h"
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
 
 namespace WallpaperEngine::Core
 {

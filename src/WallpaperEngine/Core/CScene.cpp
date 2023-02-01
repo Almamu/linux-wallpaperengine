@@ -3,6 +3,8 @@
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
 
 using namespace WallpaperEngine::Core;
 
@@ -11,8 +13,8 @@ CScene::CScene (
         Scenes::CCamera* camera,
         glm::vec3 ambientColor,
         CUserSettingBoolean* bloom,
-        double bloomStrength,
-        double bloomThreshold,
+        CUserSettingFloat* bloomStrength,
+        CUserSettingFloat* bloomThreshold,
         bool cameraFade,
         bool cameraParallax,
         double cameraParallaxAmount,
@@ -23,7 +25,7 @@ CScene::CScene (
         double cameraShakeAmplitude,
         double cameraShakeRoughness,
         double cameraShakeSpeed,
-        glm::vec3 clearColor,
+        CUserSettingColor* clearColor,
         Scenes::CProjection* orthogonalProjection,
         glm::vec3 skylightColor) :
     CWallpaper (Type),
@@ -60,16 +62,9 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
     auto ambientcolor = jsonFindDefault <std::string> (*general_it, "ambientcolor", "0 0 0");
-    auto bloom_it = (*general_it).find ("bloom");
-    CUserSettingBoolean* bloom;
-
-    if (bloom_it == (*general_it).end ())
-        bloom = CUserSettingBoolean::fromScalar (false);
-    else
-        bloom = CUserSettingBoolean::fromJSON (*bloom_it);
-
-    auto bloomstrength = jsonFindUserConfig <float> (*general_it, "bloomstrength", 0.0);
-    auto bloomthreshold = jsonFindUserConfig <float> (*general_it, "bloomthreshold", 0.0);
+    auto bloom = jsonFindUserConfig <CUserSettingBoolean, bool> (*general_it, "bloom", false);
+    auto bloomstrength = jsonFindUserConfig <CUserSettingFloat, double> (*general_it, "bloomstrength", 0.0);
+    auto bloomthreshold = jsonFindUserConfig <CUserSettingFloat, double> (*general_it, "bloomthreshold", 0.0);
     auto camerafade = jsonFindDefault <bool> (*general_it, "camerafade", false);
     auto cameraparallax = jsonFindDefault <bool> (*general_it, "cameraparallax", true);
     auto cameraparallaxamount = jsonFindDefault <double> (*general_it, "cameraparallaxamount", 1.0f);
@@ -80,7 +75,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto camerashakeamplitude = jsonFindDefault <double> (*general_it, "camerashakeamplitude", 0.0f);
     auto camerashakeroughness = jsonFindDefault <double> (*general_it, "camerashakeroughness", 0.0f);
     auto camerashakespeed = jsonFindDefault <double> (*general_it, "camerashakespeed", 0.0f);
-    auto clearcolor = jsonFindUserConfig <std::string> (*general_it, "clearcolor", "1 1 1");
+    auto clearcolor = jsonFindUserConfig <CUserSettingColor, glm::vec3> (*general_it, "clearcolor", {1, 1, 1});
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
     auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
 
@@ -101,7 +96,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
             camerashakeamplitude,
             camerashakeroughness,
             camerashakespeed,
-            WallpaperEngine::Core::aToColorf(clearcolor),
+            clearcolor,
             Scenes::CProjection::fromJSON (*orthogonalprojection_it),
             WallpaperEngine::Core::aToColorf(skylightcolor)
     );
@@ -158,14 +153,14 @@ const bool CScene::isBloom () const
     return this->m_bloom->processValue (this->getProject ()->getProperties ());
 }
 
-const double CScene::getBloomStrength () const
+double CScene::getBloomStrength () const
 {
-    return this->m_bloomStrength;
+    return this->m_bloomStrength->processValue (this->getProject ()->getProperties ());
 }
 
-const double CScene::getBloomThreshold () const
+double CScene::getBloomThreshold () const
 {
-    return this->m_bloomThreshold;
+    return this->m_bloomThreshold->processValue (this->getProject ()->getProperties ());
 }
 
 const bool CScene::isCameraFade () const
@@ -218,9 +213,9 @@ const double CScene::getCameraShakeSpeed () const
     return this->m_cameraShakeSpeed;
 }
 
-const glm::vec3& CScene::getClearColor () const
+glm::vec3 CScene::getClearColor () const
 {
-    return this->m_clearColor;
+    return this->m_clearColor->processValue (this->getProject ()->getProperties ());
 }
 
 Scenes::CProjection* CScene::getOrthogonalProjection () const

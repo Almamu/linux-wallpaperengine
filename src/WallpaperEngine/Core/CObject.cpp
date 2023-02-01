@@ -39,14 +39,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible_it = data.find ("visible");
-    CUserSettingBoolean* visible;
-
-    if (visible_it == data.end ())
-        visible = CUserSettingBoolean::fromScalar (true);
-    else
-        visible = CUserSettingBoolean::fromJSON (*visible_it);
-
+    auto visible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
     auto origin_val = jsonFindDefault <std::string> (data, "origin", "0.0 0.0 0.0");
     auto scale_val = jsonFindDefault <std::string> (data, "scale", "0.0 0.0 0.0");
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");

@@ -25,5 +25,5 @@ namespace WallpaperEngine::Core
     nlohmann::json::iterator jsonFindRequired (nlohmann::json& data, const char *key, const char *notFoundMsg);
     nlohmann::json::iterator jsonFindRequired (nlohmann::json::iterator& data, const char *key, const char *notFoundMsg);
     template <typename T> T jsonFindDefault (nlohmann::json& data, const char *key, T defaultValue);
-    template <typename T> T jsonFindUserConfig (nlohmann::json& data, const char *key, T defaultValue);
+    template <typename T, typename S> T* jsonFindUserConfig (nlohmann::json& data, const char *key, S defaultValue);
 };

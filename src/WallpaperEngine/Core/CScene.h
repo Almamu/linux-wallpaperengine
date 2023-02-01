@@ -24,8 +24,8 @@ namespace WallpaperEngine::Core
 
         const glm::vec3& getAmbientColor() const;
         const bool isBloom() const;
-        const double getBloomStrength() const;
-        const double getBloomThreshold() const;
+        double getBloomStrength() const;
+        double getBloomThreshold() const;
         const bool isCameraFade() const;
         const bool isCameraParallax() const;
         const double getCameraParallaxAmount() const;
@@ -36,7 +36,7 @@ namespace WallpaperEngine::Core
         const double getCameraShakeAmplitude() const;
         const double getCameraShakeRoughness() const;
         const double getCameraShakeSpeed() const;
-        const glm::vec3& getClearColor() const;
+        glm::vec3 getClearColor() const;
         Scenes::CProjection* getOrthogonalProjection() const;
         const glm::vec3& getSkylightColor() const;
         const Scenes::CCamera* getCamera () const;
@@ -49,8 +49,8 @@ namespace WallpaperEngine::Core
                 Scenes::CCamera* camera,
                 glm::vec3 ambientColor,
                 CUserSettingBoolean* bloom,
-                double bloomStrength,
-                double bloomThreshold,
+                CUserSettingFloat* bloomStrength,
+                CUserSettingFloat* bloomThreshold,
                 bool cameraFade,
                 bool cameraParallax,
                 double cameraParallaxAmount,
@@ -61,7 +61,7 @@ namespace WallpaperEngine::Core
                 double cameraShakeAmplitude,
                 double cameraShakeRoughness,
                 double cameraShakeSpeed,
-                glm::vec3 clearColor,
+                CUserSettingColor* clearColor,
                 Scenes::CProjection* orthogonalProjection,
                 glm::vec3 skylightColor
         );
@@ -78,8 +78,8 @@ namespace WallpaperEngine::Core
         // data from general section on the json
         glm::vec3 m_ambientColor;
         CUserSettingBoolean* m_bloom;
-        double m_bloomStrength;
-        double m_bloomThreshold;
+        CUserSettingFloat* m_bloomStrength;
+        CUserSettingFloat* m_bloomThreshold;
         bool m_cameraFade;
         bool m_cameraParallax;
         double m_cameraParallaxAmount;
@@ -90,7 +90,7 @@ namespace WallpaperEngine::Core
         double m_cameraShakeAmplitude;
         double m_cameraShakeRoughness;
         double m_cameraShakeSpeed;
-        glm::vec3 m_clearColor;
+        CUserSettingColor* m_clearColor;
         Scenes::CProjection* m_orthogonalProjection;
         glm::vec3 m_skylightColor;
 

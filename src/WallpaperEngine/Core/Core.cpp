@@ -1,6 +1,11 @@
 #include "Core.h"
 
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingColor.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
+
 using namespace WallpaperEngine;
+using namespace WallpaperEngine::Core::UserSettings;
 
 glm::vec4 Core::aToVector4 (const char* str)
 {
@@ -141,33 +146,16 @@ template uint64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, 
 template float Core::jsonFindDefault (nlohmann::json& data, const char *key, float defaultValue);
 template double Core::jsonFindDefault (nlohmann::json& data, const char *key, double defaultValue);
 
-template <typename T> T Core::jsonFindUserConfig (nlohmann::json& data, const char *key, T defaultValue)
+template <typename T, typename S> T* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, S defaultValue)
 {
-    auto value = data.find (key);
+    auto it = data.find (key);
 
-    if (value == data.end () || value->type () == nlohmann::detail::value_t::null)
-        return defaultValue;
+    if (it == data.end () || it->type () == nlohmann::detail::value_t::null)
+        return T::fromScalar (defaultValue);
 
-    if (value->is_object () == true)
-    {
-        auto internal = value->find ("value");
-
-        if (internal == value->end ())
-            return defaultValue;
-
-        value = internal;
-    }
-
-    return *value;
+    return T::fromJSON (*it);
 }
 
-template bool Core::jsonFindUserConfig (nlohmann::json& data, const char *key, bool defaultValue);
-template std::string Core::jsonFindUserConfig (nlohmann::json& data, const char *key, std::string defaultValue);
-template int16_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int16_t defaultValue);
-template uint16_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint16_t defaultValue);
-template int32_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int32_t defaultValue);
-template uint32_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint32_t defaultValue);
-template int64_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, int64_t defaultValue);
-template uint64_t Core::jsonFindUserConfig (nlohmann::json& data, const char *key, uint64_t defaultValue);
-template float Core::jsonFindUserConfig (nlohmann::json& data, const char *key, float defaultValue);
-template double Core::jsonFindUserConfig (nlohmann::json& data, const char *key, double defaultValue);
+template CUserSettingBoolean* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, bool defaultValue);
+template CUserSettingColor* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, glm::vec3 defaultValue);
+template CUserSettingFloat* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, double defaultValue);
