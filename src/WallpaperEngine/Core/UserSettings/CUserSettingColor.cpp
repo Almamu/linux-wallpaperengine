@@ -26,8 +26,6 @@ CUserSettingColor* CUserSettingColor::fromJSON (nlohmann::json& data)
     std::string source;
     std::string expectedValue;
 
-    std::string json = data.dump ();
-
     if (data.is_object () == true)
     {
         hasSource = true;
