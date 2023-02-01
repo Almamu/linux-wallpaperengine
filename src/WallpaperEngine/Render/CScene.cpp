@@ -6,6 +6,9 @@
 
 #include "CScene.h"
 
+extern float g_Time;
+extern float g_TimeLast;
+
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
@@ -239,10 +242,9 @@ void CScene::renderFrame (glm::ivec4 viewport)
     {
         float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
         float amount = this->getScene ()->getCameraParallaxAmount ();
-        float delay = this->getScene ()->getCameraParallaxDelay ();
+        float delay = glm::min ((float) this->getScene ()->getCameraParallaxDelay (), g_Time - g_TimeLast);
 
-        this->m_parallaxDisplacement.x = glm::mix (this->m_parallaxDisplacement.x, (this->m_mousePosition.x * amount) * influence, delay);
-        this->m_parallaxDisplacement.y = glm::mix (this->m_parallaxDisplacement.y, (this->m_mousePosition.y * amount) * influence, delay);
+        this->m_parallaxDisplacement = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
     }
 
     // use the scene's framebuffer by default
@@ -262,6 +264,10 @@ void CScene::updateMouse (glm::ivec4 viewport)
     CMouseInput* mouse = this->getContext ()->getMouse ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
 
+    // rollover the position to the last
+    this->m_mousePositionLast = this->m_mousePosition;
+
+    // calculate the current position of the mouse
     this->m_mousePosition.x = glm::clamp ((mouse->position.x - viewport.x) / viewport.z, 0.0, 1.0);
     this->m_mousePosition.y = glm::clamp ((mouse->position.y - viewport.y) / viewport.w, 0.0, 1.0);
 
@@ -278,6 +284,10 @@ glm::vec2* CScene::getMousePosition ()
     return &this->m_mousePosition;
 }
 
+glm::vec2* CScene::getMousePositionLast ()
+{
+    return &this->m_mousePositionLast;
+}
 
 glm::vec2* CScene::getParallaxDisplacement ()
 {

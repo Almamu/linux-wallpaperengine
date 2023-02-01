@@ -23,6 +23,7 @@
 #include "WallpaperEngine/Assets/CPackageLoadException.h"
 
 float g_Time;
+float g_TimeLast;
 bool g_KeepRunning = true;
 int g_AudioVolume = 15;
 
@@ -84,7 +85,7 @@ int validatePath(const char* path, std::string& final)
     char finalPath [PATH_MAX];
     char* pointer = realpath (path, finalPath);
 
-    if (finalPath == nullptr)
+    if (pointer == nullptr)
         return errno;
 
     // ensure the path points to a folder
@@ -631,6 +632,8 @@ int main (int argc, char* argv[])
         glfwGetFramebufferSize (window, &windowWidth, &windowHeight);
         // set the default viewport
         context->setDefaultViewport ({0, 0, windowWidth, windowHeight});
+        // keep track of the previous frame's time
+        g_TimeLast = g_Time;
         // calculate the current time value
         g_Time = (float) glfwGetTime ();
         // get the start time of the frame

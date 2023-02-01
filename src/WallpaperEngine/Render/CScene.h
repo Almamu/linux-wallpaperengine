@@ -22,6 +22,7 @@ namespace WallpaperEngine::Render
         Core::CScene* getScene ();
 
         glm::vec2* getMousePosition ();
+        glm::vec2* getMousePositionLast ();
         glm::vec2* getParallaxDisplacement ();
 
     protected:
@@ -40,6 +41,7 @@ namespace WallpaperEngine::Render
         std::map<int, CObject*> m_objects;
         std::vector<CObject*> m_objectsByRenderOrder;
         glm::vec2 m_mousePosition;
+        glm::vec2 m_mousePositionLast;
         glm::vec2 m_parallaxDisplacement;
         CFBO* _rt_4FrameBuffer;
         CFBO* _rt_8FrameBuffer;

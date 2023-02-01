@@ -628,10 +628,11 @@ void CPass::setupUniforms ()
     // add model-view-projection matrix
     this->addUniform ("g_ModelViewProjectionMatrix", &this->m_modelViewProjectionMatrix);
     this->addUniform ("g_PointerPosition", this->m_material->getImage ()->getScene ()->getMousePosition ());
+    this->addUniform ("g_PointerPositionLast", this->m_material->getImage ()->getScene ()->getMousePositionLast ());
     this->addUniform ("g_EffectTextureProjectionMatrix", glm::mat4(1.0));
     this->addUniform ("g_EffectTextureProjectionMatrixInverse", glm::mat4(1.0));
     this->addUniform ("g_TexelSize", glm::vec2 (1.0 / projection->getWidth (), 1.0 / projection->getHeight ()));
-    this->addUniform ("g_TexelSize", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
+    this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
 }
 
 void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value)
