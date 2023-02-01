@@ -335,11 +335,6 @@ void CImage::setupPasses ()
     for (; cur != end; cur ++)
     {
         Effects::CPass* pass = *cur;
-
-        // do not do anything if the passes' effect is not visible
-        if (pass->getMaterial ()->getEffect ()->isVisible () == false)
-            continue;
-
         const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
         glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
@@ -359,29 +354,11 @@ void CImage::setupPasses ()
                 drawTo = this->getScene ()->findFBO (target);
         }
         // determine if it's the last element in the list as this is a screen-copy-like process
-        else
+        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
         {
-            bool isLastPass = std::next (cur) == end && this->getImage ()->isVisible () == true;
-            auto lastIt = std::next (cur);
-
-            // determine if this is the real last pass
-            for (; lastIt != end && isLastPass == false; lastIt ++)
-            {
-                Effects::CPass* lastPass = *lastIt;
-
-                if (lastPass->getMaterial ()->getEffect ()->isVisible () == true)
-                {
-                    isLastPass = false;
-                    break;
-                }
-            }
-
-            if (isLastPass == true)
-            {
-                spacePosition = this->getSceneSpacePosition ();
-                drawTo = this->getScene ()->getFBO ();
-                projection = &this->m_modelViewProjectionScreen;
-            }
+            spacePosition = this->getSceneSpacePosition ();
+            drawTo = this->getScene ()->getFBO ();
+            projection = &this->m_modelViewProjectionScreen;
         }
 
         pass->setDestination (drawTo);
@@ -446,25 +423,7 @@ void CImage::render ()
 
     for (; cur != end; cur ++)
     {
-        if ((*cur)->getMaterial ()->getEffect ()->isVisible () == false)
-            continue;
-
-        bool isLastPass = std::next (cur) == end && this->getImage ()->isVisible () == true;
-        auto lastIt = std::next (cur);
-
-        // determine if this is the real last pass
-        for (; lastIt != end && isLastPass == false; lastIt ++)
-        {
-            Effects::CPass* lastPass = *lastIt;
-
-            if (lastPass->getMaterial ()->getEffect ()->isVisible () == true)
-            {
-                isLastPass = false;
-                break;
-            }
-        }
-
-        if (isLastPass == true)
+        if (std::next (cur) == end)
             glColorMask (true, true, true, false);
 
         (*cur)->render ();

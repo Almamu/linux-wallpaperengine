@@ -125,14 +125,8 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
 
         for (; cur != end; cur ++)
         {
-            auto effectVisible_it = data.find ("visible");
-            CUserSettingBoolean* effectVisible;
-
-            if (effectVisible_it == data.end ())
-                effectVisible = CUserSettingBoolean::fromScalar (true);
-            else
-                effectVisible = CUserSettingBoolean::fromJSON (*effectVisible_it);
-
+            auto effectVisible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
+            
             object->insertEffect (
                 Objects::CEffect::fromJSON (*cur, effectVisible, object, container)
             );
