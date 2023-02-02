@@ -1,3 +1,4 @@
+#include "common.h"
 #include <sstream>
 
 #include "CPropertyCombo.h"
@@ -20,7 +21,7 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
     );
 
     if (options->is_array () == false)
-        throw std::runtime_error ("Property combo options should be an array");
+        sLog.exception ("Property combo options should be an array");
 
     auto cur = (*options).begin ();
     auto end = (*options).end ();
@@ -86,7 +87,7 @@ void CPropertyCombo::update (const std::string& value)
     }
 
     if (found == false)
-        throw std::runtime_error ("Assigning invalid value to property");
+        sLog.exception ("Assigning invalid value to property ", this->m_name);
 
     this->m_defaultValue = value;
 }

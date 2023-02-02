@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CPackage.h"
 #include "CAssetLoadException.h"
 #include "CPackageLoadException.h"
@@ -67,7 +68,7 @@ char* CPackage::readSizedString (FILE* fp)
     unsigned int length = 0;
 
     if (fread (&length, sizeof (unsigned int), 1, fp) != 1)
-        throw std::runtime_error ("Cannot read enough bytes from file");
+        sLog.exception ("Cannot read sized string length on file ", this->m_path);
 
     // account for 0 termination of the string
     length ++;
@@ -80,7 +81,7 @@ char* CPackage::readSizedString (FILE* fp)
 
     // read data from file
     if (fread (pointer, sizeof (char), length, fp) != length)
-        throw std::runtime_error ("Cannot read package version from file");
+        sLog.exception ("Not enough bytes to read string of length ", length, " on file ", this->m_path);
 
     return pointer;
 }
@@ -90,7 +91,7 @@ uint32_t CPackage::readInteger (FILE* fp)
     uint32_t output;
 
     if (fread (&output, sizeof (uint32_t), 1, fp) != 1)
-        throw std::runtime_error ("Cannot read integer value from file");
+        sLog.exception ("Not enough bytes to read an integer from file ", this->m_path);
 
     return output;
 }
@@ -159,7 +160,7 @@ void CPackage::loadFiles (FILE* fp)
 
         // with all the data we can jump to the offset and read the content
         if (fseek (fp, offset, SEEK_SET) != 0)
-            throw std::runtime_error ("Cannot find file in package");
+            sLog.exception ("Cannot find file ", (*cur).filename, " from package ", this->m_path);
 
         // allocate memory for the file's contents and read it from the file
         char* fileContents = new char [(*cur).length];
@@ -168,7 +169,7 @@ void CPackage::loadFiles (FILE* fp)
         {
             delete[] fileContents;
 
-            throw std::runtime_error ("Cannot read file contents from package");
+            sLog.exception ("Cannot read file ", (*cur).filename, " contents from package ", this->m_path);
         }
 
         // add the file to the map

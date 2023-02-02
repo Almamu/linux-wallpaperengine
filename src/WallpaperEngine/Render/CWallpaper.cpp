@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CWallpaper.h"
 #include "CScene.h"
 #include "CVideo.h"
@@ -8,7 +9,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContext* context) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context) :
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
     m_context (context),
@@ -109,7 +110,7 @@ void CWallpaper::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // reserve shaders in OpenGL
@@ -145,7 +146,7 @@ void CWallpaper::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // create the final program
@@ -173,7 +174,7 @@ void CWallpaper::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // after being liked shaders can be dettached and deleted
@@ -351,7 +352,7 @@ void CWallpaper::setupFramebuffers ()
     );
 }
 
-CContext* CWallpaper::getContext ()
+CRenderContext* CWallpaper::getContext ()
 {
     return this->m_context;
 }
@@ -376,7 +377,7 @@ CFBO* CWallpaper::findFBO (const std::string& name) const
     auto it = this->m_fbos.find (name);
 
     if (it == this->m_fbos.end ())
-        throw std::runtime_error ("Cannot find given FBO");
+        sLog.exception ("Cannot find FBO ", name);
 
     return it->second;
 }
@@ -386,12 +387,12 @@ CFBO* CWallpaper::getFBO () const
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CContext* context)
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context)
 {
     if (wallpaper->is <Core::CScene> () == true)
         return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context);
     else if (wallpaper->is <Core::CVideo> () == true)
         return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context);
     else
-        throw std::runtime_error ("Unsupported wallpaper type");
+        sLog.exception ("Unsupported wallpaper type");
 }

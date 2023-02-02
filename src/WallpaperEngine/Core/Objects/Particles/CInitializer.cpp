@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CInitializer.h"
 
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h"
@@ -51,7 +52,7 @@ CInitializer* CInitializer::fromJSON (json data)
     }
     else
     {
-        throw std::runtime_error ("Particle's got an unknown initializer");
+        sLog.exception ("Found unknown initializer for particles: ", *name_it);
     }
 }
 

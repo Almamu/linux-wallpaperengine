@@ -7,15 +7,15 @@
 #include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/CVideo.h"
 
-#include "WallpaperEngine/Assets/CContainer.h"
 #include "CFBO.h"
-#include "CContext.h"
+#include "CRenderContext.h"
+#include "WallpaperEngine/Assets/CContainer.h"
 
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render
 {
-    class CContext;
+    class CRenderContext;
 
     class CWallpaper
     {
@@ -25,7 +25,7 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CContext* context);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context);
         ~CWallpaper ();
 
         /**
@@ -41,7 +41,7 @@ namespace WallpaperEngine::Render
         /**
          * @return The current context rendering this wallpaper
          */
-        CContext* getContext ();
+        CRenderContext* getContext ();
 
         /**
          * @return The scene's framebuffer
@@ -95,7 +95,7 @@ namespace WallpaperEngine::Render
          *
          * @return
          */
-        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CContext* context);
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context);
 
     protected:
         /**
@@ -149,6 +149,6 @@ namespace WallpaperEngine::Render
         /**
          * Context that is using this wallpaper
          */
-        CContext* m_context;
+        CRenderContext* m_context;
     };
 }

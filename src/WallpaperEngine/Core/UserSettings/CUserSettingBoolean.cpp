@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/Core.h"
 
@@ -50,13 +51,13 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data)
         }
         else
         {
-            fprintf (stderr, "Boolean property doesn't have user member, this could mean an scripted value\n");
+            sLog.error ("Boolean property doesn't have user member, this could mean an scripted value");
         }
     }
     else
     {
         if (data.is_boolean () == false)
-            throw std::runtime_error ("Expected boolean value on user settings");
+            sLog.error ("Expected boolean value on user setting");
 
         defaultValue = data.get<bool> ();
     }
@@ -89,14 +90,14 @@ bool CUserSettingBoolean::processValue (const std::vector<Projects::CProperty*>&
             if (cur->is <CPropertyBoolean> ())
                 return cur->as <CPropertyBoolean> ()->getValue ();
 
-            throw std::runtime_error ("Property without condition must match type (boolean)");
+            sLog.exception ("Property without condition must match type boolean");
         }
 
         // TODO: properly validate this as the combos might be more than just strings?
         if (cur->is <CPropertyCombo> ())
             return cur->as <CPropertyCombo> ()->getValue () == this->m_expectedValue;
 
-        throw std::runtime_error ("Boolean property with condition doesn't match against combo value");
+        sLog.exception ("Boolean property with condition doesn't match against combo value");
     }
 
     return this->m_default;

@@ -1,3 +1,4 @@
+#include "common.h"
 #include <sstream>
 #include "CPass.h"
 #include "WallpaperEngine/Render/CFBO.h"
@@ -383,7 +384,7 @@ GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type)
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (buffer.str());
+        sLog.exception (buffer.str ());
     }
 
     return shaderID;
@@ -459,7 +460,7 @@ void CPass::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     if (DEBUG)
@@ -562,7 +563,7 @@ void CPass::setupUniforms ()
                 }
                 catch (std::runtime_error& ex)
                 {
-                    std::cerr << "Cannot resolve texture " << textureName << " for fragment shader: " << ex.what () << std::endl;
+                    sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
                 }
 
                 fragCur ++;
@@ -591,7 +592,7 @@ void CPass::setupUniforms ()
                 }
                 catch (std::runtime_error& ex)
                 {
-                    std::cerr << "Cannot resolve texture " << textureName << " for vertex shader: " << ex.what () << std::endl;
+                    sLog.error ("Cannot resolve texture ", textureName, " for vertex shader ", ex.what ());
                 }
 
                 vertCur ++;
@@ -800,7 +801,14 @@ void CPass::setupShaderVariables ()
                 }
                 else
                 {
-                    throw std::runtime_error ("Constant and pixel/vertex variable are not of the same type");
+                    sLog.exception (
+                        "Constant ",
+                        (*cur).first,
+                        " type does not match pixel/vertex shader variable and cannot be converted (",
+                        (*cur).second->getType (),
+                        " to ",
+                        var->getType ()
+                    );
                 }
             }
             else

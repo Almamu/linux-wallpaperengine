@@ -1,3 +1,4 @@
+#include "common.h"
 #include <iostream>
 #include <unistd.h>
 
@@ -8,7 +9,7 @@
 #include <GL/glew.h>
 #include <GL/glx.h>
 
-#include "CContext.h"
+#include "CRenderContext.h"
 #include "CVideo.h"
 
 using namespace WallpaperEngine::Render;
@@ -17,10 +18,10 @@ XErrorHandler originalErrorHandler;
 
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 {
-    auto context = static_cast <CContext*> (userdata);
+    auto context = static_cast <CRenderContext*> (userdata);
 
 #ifdef DEBUG
-    std::cerr << "Critical XServer error detected. Attempting to recover..." << std::endl;
+    sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
 #endif /* DEBUG */
 
     // refetch all the resources
@@ -30,7 +31,7 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 {
 #ifdef DEBUG
-    std::cerr << "Detected X error" << std::endl;
+    sLog.debugerror ("Detected X error");
 #endif /* DEBUG */
 
     // call the original handler so we can keep some information reporting
@@ -42,13 +43,13 @@ int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 int CustomXIOErrorHandler (Display* dsp)
 {
 #ifdef DEBUG
-    std::cerr << "Detected X IO error" << std::endl;
+    sLog.debugerror ("Detected X error");
 #endif /* DEBUG */
 
     return 0;
 }
 
-CContext::CContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container) :
+CRenderContext::CRenderContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_isRootWindow (m_screens.empty () == false),
@@ -60,7 +61,7 @@ CContext::CContext (std::vector <std::string> screens, GLFWwindow* window, CCont
     this->initializeViewports ();
 }
 
-void CContext::initializeViewports ()
+void CRenderContext::initializeViewports ()
 {
     if (this->m_isRootWindow == false || this->m_screens.empty () == true)
         return;
@@ -81,7 +82,7 @@ void CContext::initializeViewports ()
 
     if (!XRRQueryExtension (this->m_display, &xrandr_result, &xrandr_error))
     {
-        std::cerr << "XRandr is not present, cannot detect specified screens, running in window mode" << std::endl;
+        sLog.error ("XRandr is not present, cannot detect specified screens, running in window mode");
         return;
     }
 
@@ -120,7 +121,7 @@ void CContext::initializeViewports ()
             {
                 XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
 
-                std::cout << "Found requested screen: " << info->name << " -> " << crtc->x << "x" << crtc->y << ":" << crtc->width << "x" << crtc->height << std::endl;
+                sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
 
                 glm::ivec4 viewport = {
                     crtc->x, crtc->y, crtc->width, crtc->height
@@ -156,7 +157,7 @@ void CContext::initializeViewports ()
     this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, fullWidth, fullHeight, 32, 0);
 }
 
-CContext::~CContext()
+CRenderContext::~CRenderContext ()
 {
     if (this->m_screens.empty () == false)
     {
@@ -168,7 +169,7 @@ CContext::~CContext()
     }
 }
 
-void CContext::render ()
+void CRenderContext::render ()
 {
     if (this->m_wallpaper == nullptr)
         return;
@@ -227,7 +228,7 @@ void CContext::render ()
         this->m_wallpaper->render (this->m_defaultViewport, true);
 }
 
-void CContext::setWallpaper (CWallpaper* wallpaper)
+void CRenderContext::setWallpaper (CWallpaper* wallpaper)
 {
     this->m_wallpaper = wallpaper;
 
@@ -248,32 +249,32 @@ void CContext::setWallpaper (CWallpaper* wallpaper)
     }
 }
 
-void CContext::setDefaultViewport (glm::vec4 defaultViewport)
+void CRenderContext::setDefaultViewport (glm::vec4 defaultViewport)
 {
     this->m_defaultViewport = defaultViewport;
 }
 
-CMouseInput* CContext::getMouse () const
+CMouseInput* CRenderContext::getMouse () const
 {
     return this->m_mouse;
 }
 
-void CContext::setMouse (CMouseInput* mouse)
+void CRenderContext::setMouse (CMouseInput* mouse)
 {
     this->m_mouse = mouse;
 }
 
-CWallpaper* CContext::getWallpaper () const
+CWallpaper* CRenderContext::getWallpaper () const
 {
     return this->m_wallpaper;
 }
 
-const CContainer* CContext::getContainer () const
+const CContainer* CRenderContext::getContainer () const
 {
     return this->m_container;
 }
 
-const ITexture* CContext::resolveTexture (const std::string& name)
+const ITexture* CRenderContext::resolveTexture (const std::string& name)
 {
     return this->m_textureCache->resolve (name);
 }

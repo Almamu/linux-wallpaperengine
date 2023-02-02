@@ -4,18 +4,18 @@
 #include <string>
 
 #include "WallpaperEngine/Assets/ITexture.h"
-#include "WallpaperEngine/Render/CContext.h"
+#include "WallpaperEngine/Render/CRenderContext.h"
 
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render
 {
-    class CContext;
+    class CRenderContext;
 
     class CTextureCache
     {
     public:
-        CTextureCache (CContext* context);
+        CTextureCache (CRenderContext* context);
         ~CTextureCache ();
 
         /**
@@ -36,7 +36,7 @@ namespace WallpaperEngine::Render
         void store (std::string name, const ITexture* texture);
 
     private:
-        CContext* m_context;
+        CRenderContext* m_context;
         std::map<std::string, const ITexture*> m_textureCache;
     };
 }

@@ -1,8 +1,9 @@
 <p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/pulse"><img src="https://img.shields.io/tokei/lines/github/Almamu/linux-wallpaperengine" /></a>
+    <a href="https://github.com/Almamu/linux-wallpaperengine/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/Almamu/linux-wallpaperengine/cmake.yml?branch=main" /></a>
+    <a href="https://github.com/Almamu/linux-wallpaperengine/pulse"><img src="https://img.shields.io/tokei/lines/github/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://www.codefactor.io/repository/github/almamu/linux-wallpaperengine"><img src="https://img.shields.io/codefactor/grade/github/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/commit-activity"><img src="https://img.shields.io/github/commit-activity/w/Almamu/linux-wallpaperengine" /></a>
+	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/commit-activity"><img src="https://img.shields.io/github/commit-activity/m/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/contributors"><img src="https://img.shields.io/github/contributors/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/issues"><img src="https://img.shields.io/github/issues-raw/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22"><img src="https://img.shields.io/github/issues/Almamu/linux-wallpaperengine/help%20wanted?color=green" alt="help wanted"></a>

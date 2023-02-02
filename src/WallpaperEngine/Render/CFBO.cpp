@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CFBO.h"
 
 using namespace WallpaperEngine::Render;
@@ -62,7 +63,7 @@ CFBO::CFBO (
 
     // ensure first framebuffer is okay
     if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        throw std::runtime_error ("Framebuffers are not properly set");
+        sLog.exception ("Framebuffers are not properly set");
 
     // clear the framebuffer
     glClear (GL_COLOR_BUFFER_BIT);

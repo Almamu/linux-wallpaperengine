@@ -1,3 +1,4 @@
+#include "common.h"
 #include <iostream>
 #include "CProperty.h"
 #include "CPropertyColor.h"
@@ -25,7 +26,8 @@ CProperty* CProperty::fromJSON (json data, const std::string& name)
 
 
     // show the error and ignore this property
-    std::cout << "Unexpected type for property:" << *type << std::endl << data << std::endl;
+    sLog.error ("Unexpected type for property: ", *type);
+    sLog.error (data);
 
     return nullptr;
 }

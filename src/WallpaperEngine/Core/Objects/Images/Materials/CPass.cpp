@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CPass.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
@@ -27,9 +28,7 @@ CPass* CPass::fromJSON (json data)
     {
         // TODO: FETCH THIS FROM CImage TO MAKE IT COMPATIBLE WITH OLDER WALLPAPERS
         if ((*textures_it).is_array () == false)
-        {
-            throw std::runtime_error ("Textures for material must be a list");
-        }
+            sLog.exception ("Material's textures must be a list");
     }
 
     CPass* pass = new CPass (
@@ -73,7 +72,7 @@ CPass* CPass::fromJSON (json data)
             }
             else
             {
-                throw std::runtime_error ("unexpected non-integer combo");
+                sLog.exception ("unexpected non-integer combo on pass");
             }
         }
     }

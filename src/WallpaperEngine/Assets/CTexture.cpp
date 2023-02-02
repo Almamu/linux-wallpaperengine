@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CTexture.h"
 
 #include <string>
@@ -80,7 +81,7 @@ CTexture::CTexture (const void* fileData)
                 break;
             default:
                 delete this->m_header;
-                throw std::runtime_error ("Cannot determine the texture format");
+                sLog.exception ("Cannot determine texture format");
         }
     }
 
@@ -191,7 +192,7 @@ CTexture::CTexture (const void* fileData)
                     );
                     break;
                 default:
-                    throw std::runtime_error ("Cannot load texture, unknown format");
+                    sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
             }
 
             // freeimage buffer won't be used anymore, so free memory
@@ -303,7 +304,7 @@ void CTexture::TextureMipmap::decompressData ()
         );
 
         if (!result)
-            throw std::runtime_error ("Cannot decompress texture data");
+            sLog.exception ("Cannot decompress texture data, LZ4_decompress_safe returned an error");
     }
 }
 
@@ -338,12 +339,12 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
 {
     // check the magic value on the header first
     if (memcmp (fileData, "TEXV0005", 9) != 0)
-        throw std::runtime_error ("unexpected texture container type");
+        sLog.exception ("unexpected texture container type: ", std::string_view (fileData, 9));
     // jump to the next value
     fileData += 9;
     // check the sub-magic value on the header
     if (memcmp (fileData, "TEXI0001", 9) != 0)
-        throw std::runtime_error ("unexpected texture sub-container type");
+        sLog.exception ("unexpected texture sub-container type: ", std::string_view (fileData, 9));
     // jump through the string again
     fileData += 9;
 
@@ -384,7 +385,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
     else
     {
         delete header;
-        throw std::runtime_error ("unknown texture format type");
+        sLog.exception ("unknown texture format type: ", std::string_view (fileData, 9));
     }
 
     for (uint32_t image = 0; image < header->imageCount; image ++)
@@ -417,7 +418,8 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
         }
         else
         {
-            throw std::runtime_error ("found animation information of unknown type");
+            delete header;
+            sLog.exception ("found animation information of unknown type: ", std::string_view (fileData, 9));
         }
 
         // get an integer pointer back to read the frame count

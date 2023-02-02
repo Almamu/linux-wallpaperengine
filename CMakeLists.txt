@@ -37,6 +37,9 @@ add_executable(
         linux-wallpaperengine
         main.cpp
 
+        src/WallpaperEngine/Logging/CLog.cpp
+        src/WallpaperEngine/Logging/CLog.h
+
         src/WallpaperEngine/Assets/CPackageLoadException.cpp
         src/WallpaperEngine/Assets/CPackageLoadException.h
         src/WallpaperEngine/Assets/CAssetLoadException.cpp
@@ -80,8 +83,8 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
-        src/WallpaperEngine/Render/CContext.h
-        src/WallpaperEngine/Render/CContext.cpp
+        src/WallpaperEngine/Render/CRenderContext.h
+        src/WallpaperEngine/Render/CRenderContext.cpp
         src/WallpaperEngine/Render/CTextureCache.h
         src/WallpaperEngine/Render/CTextureCache.cpp
 

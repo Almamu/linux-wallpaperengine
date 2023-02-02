@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CAudioStream.h"
 #include <cassert>
 #include <iostream>
@@ -144,7 +145,7 @@ CAudioStream::CAudioStream (const void* buffer, int length)
     this->m_formatContext = avformat_alloc_context ();
 
     if (this->m_formatContext == nullptr)
-        throw std::runtime_error ("Cannot allocate format context");
+        sLog.exception ("Cannot allocate ffmpeg format context");
 
     this->m_buffer = buffer;
     this->m_length = length;
@@ -162,7 +163,7 @@ CAudioStream::CAudioStream (const void* buffer, int length)
     );
 
     if (this->m_formatContext->pb == nullptr)
-        throw std::runtime_error ("Cannot create avio context");
+        sLog.exception ("Cannot create avio context");
 
     // continue the normal load procedure
     this->loadCustomContent ();
@@ -185,9 +186,9 @@ void CAudioStream::loadCustomContent (const char* filename)
     AVCodecContext* avCodecContext = nullptr;
 
     if (avformat_open_input (&this->m_formatContext, filename, nullptr, nullptr) != 0)
-        throw std::runtime_error ("Cannot open audio file");
+        sLog.exception ("Cannot open audio file: ", filename);
     if (avformat_find_stream_info (this->m_formatContext, nullptr) < 0)
-        throw std::runtime_error ("Cannot determine file format");
+        sLog.exception ("Cannot determine file format: ", filename);
 
     // find the audio stream
     for (int i = 0; i< this->m_formatContext->nb_streams; i ++)
@@ -197,19 +198,19 @@ void CAudioStream::loadCustomContent (const char* filename)
     }
 
     if (this->m_audioStream == -1)
-        throw std::runtime_error ("Cannot find audio stream in file");
+        sLog.exception ("Cannot find an audio stream in file ", filename);
 
     // get the decoder for it and alloc the required context
     aCodec = avcodec_find_decoder (this->m_formatContext->streams [this->m_audioStream]->codecpar->codec_id);
 
     if (aCodec == nullptr)
-        throw std::runtime_error ("Cannot initialize audio decoder");
+        sLog.exception ("Cannot initialize audio decoder for file: ", filename);
 
     // alocate context
     avCodecContext = avcodec_alloc_context3 (aCodec);
 
     if (avcodec_parameters_to_context (avCodecContext, this->m_formatContext->streams [this->m_audioStream]->codecpar) != 0)
-        throw std::runtime_error ("Cannot initialize audio decoder parameters");
+        sLog.exception ("Cannot initialize audio decoder parameters");
 
     // finally open
     avcodec_open2 (avCodecContext, aCodec, nullptr);
@@ -246,8 +247,9 @@ void CAudioStream::initialize ()
     requestedSpec.callback = audio_callback;
     requestedSpec.userdata = this;
 
-    if (SDL_OpenAudio (&requestedSpec, &finalSpec) < 0) {
-        std::cerr << "SDL_OpenAudio: " << SDL_GetError () << std::endl;
+    if (SDL_OpenAudio (&requestedSpec, &finalSpec) < 0)
+    {
+        sLog.error ("SDL_OpenAudio: ", SDL_GetError ());
         return;
     }
 

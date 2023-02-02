@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CTurbulentVelocityRandom.h"
 
 #include "WallpaperEngine/Core/Core.h"
@@ -13,37 +14,23 @@ CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, uint32_
     json::const_iterator timescale_it = data.find ("timescale");
 
     if (phasemax_it == data.end ())
-    {
-        throw std::runtime_error ("TurbulentVelocityRandom initializer must have a phasemax value");
-    }
-
+        sLog.exception ("TurbulentVelocityRandom initializer must have a phasemax value");
     if (scale_it == data.end ())
-    {
-        throw std::runtime_error ("TurbulentVelocityRandom initializer must have a scale value");
-    }
-
+        sLog.exception ("TurbulentVelocityRandom initializer must have a scale value");
     if (speedmax_it == data.end ())
-    {
-        throw std::runtime_error ("TurbulentVelocityRandom initializer must have a maximum speed value");
-    }
-
+        sLog.exception ("TurbulentVelocityRandom initializer must have a maximum speed value");
     if (speedmin_it == data.end ())
-    {
-        throw std::runtime_error ("TurbulentVelocityRandom initializer must have a minimum speed value");
-    }
-
+        sLog.exception ("TurbulentVelocityRandom initializer must have a minimum speed value");
     if (timescale_it == data.end ())
-    {
-        throw std::runtime_error ("TurbulentVelocityRandom initializer must have a timescale value");
-    }
+        sLog.exception ("TurbulentVelocityRandom initializer must have a timescale value");
 
     return new CTurbulentVelocityRandom (
-            id,
-            *phasemax_it,
-            *scale_it,
-            *timescale_it,
-            *speedmin_it,
-            *speedmax_it
+        id,
+        *phasemax_it,
+        *scale_it,
+        *timescale_it,
+        *speedmin_it,
+        *speedmax_it
     );
 }
 

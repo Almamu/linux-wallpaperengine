@@ -1,3 +1,4 @@
+#include "common.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -248,7 +249,7 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::precompile()
     {
         // TODO: SEPARATE THIS IN TWO SO THE COMBOS ARE DETECTED FIRST AND WE DO NOT REQUIRE DOUBLE COMPILATION OF THE SHADER'S SOURCE
-    #define BREAK_IF_ERROR if (this->m_error == true) { throw std::runtime_error ("ERROR PRE-COMPILING SHADER" + this->m_errorInfo); }
+    #define BREAK_IF_ERROR if (this->m_error == true) { sLog.exception ("ERROR PRE-COMPILING SHADER.", this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
         // also remove any #version definition to prevent errors
         std::string::const_iterator it = this->m_content.begin ();
@@ -560,13 +561,10 @@ namespace WallpaperEngine::Render::Shaders
 
         finalCode += this->m_compiledContent;
 
-        if (DEBUG && this->m_recursive == false && !ERRORONLY)
+        if (this->m_recursive == false)
         {
-            if (this->m_type == Type_Vertex)
-                std::cout << "======================== COMPILED VERTEX SHADER " << this->m_file.c_str () << " ========================" << std::endl;
-            else
-                std::cout << "======================== COMPILED FRAGMENT SHADER " << this->m_file.c_str () << " ========================" << std::endl;
-            std::cout << finalCode << std::endl;
+            sLog.debug("======================== COMPILED ", (this->m_type == Type_Vertex ? "VERTEX" : "FRAGMENT"), " SHADER ", this->m_file, " ========================");
+            sLog.debug(finalCode);
         }
 
         // store the final final code here
@@ -601,7 +599,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if ((*defvalue).is_number_float ())
             {
-                throw std::runtime_error ("float combos not supported");
+                sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
             }
             else if ((*defvalue).is_number_integer ())
             {
@@ -609,11 +607,11 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if ((*defvalue).is_string ())
             {
-                throw std::runtime_error ("string combos not supported");
+                sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
             }
             else
             {
-                throw std::runtime_error ("cannot parse combo information, unknown type");
+                sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
             }
         }
     }
@@ -635,7 +633,7 @@ namespace WallpaperEngine::Render::Shaders
         if (constant == this->m_constants.end () && defvalue == data.end ())
         {
             if (type != "sampler2D")
-                throw std::runtime_error ("cannot parse parameter data");
+                sLog.exception ("Cannot parse parameter data for ", name, " in shader ", this->m_file);
         }
 
         Variables::CShaderVariable* parameter = nullptr;

@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CObject.h"
 
 #include <utility>
@@ -115,7 +116,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
     }
     else
     {
-        throw std::runtime_error (std::string ("Unkonwn object type detected ").append (*name_it));
+        sLog.exception ("Unknown object type detected: ", *name_it);
     }
 
     if (effects_it != data.end () && (*effects_it).is_array () == true)

@@ -1,3 +1,4 @@
+#include "common.h"
 #include <sstream>
 #include "CPropertySlider.h"
 
@@ -61,7 +62,7 @@ void CPropertySlider::update (const std::string& value)
     double newValue = atof (value.c_str ());
 
     if (newValue < this->m_min || newValue > this->m_max)
-        throw std::runtime_error ("Slider value is out of range");
+        sLog.exception ("Slider value (", newValue, ") is out of range (", this->m_min, ",", this->m_max, ")");
 
     this->m_value = newValue;
 }

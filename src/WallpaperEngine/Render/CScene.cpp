@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
@@ -12,7 +14,7 @@ extern float g_TimeLast;
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CContext* context) :
+CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     CWallpaper (scene, Type, context)
 {
     // setup the scene camera
@@ -206,8 +208,8 @@ Render::CObject* CScene::createObject (Core::CObject* object)
         }
         catch (std::runtime_error ex)
         {
-            std::cerr << "Cannot setup image resource: " << std::endl;
-            std::cerr << ex.what () << std::endl;
+            // this error message is already printed, so just show extra info about it
+            sLog.error ("Cannot setup image ", image->getImage ()->getName ());
         }
 
         renderObject = image;

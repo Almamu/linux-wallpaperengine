@@ -2,7 +2,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CTextureCache::CTextureCache (CContext* context) :
+CTextureCache::CTextureCache (CRenderContext* context) :
     m_context (context)
 {
 }

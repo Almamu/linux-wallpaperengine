@@ -1,16 +1,17 @@
+#include "common.h"
 #include "CVideo.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CVideo::CVideo (Core::CVideo* video, CContext* context) :
+CVideo::CVideo (Core::CVideo* video, CRenderContext* context) :
     CWallpaper (video, Type, context)
 {
     if (avformat_open_input (&m_formatCtx, video->getFilename ().c_str (), NULL, NULL) < 0)
-        throw std::runtime_error ("Failed to open video file");
+        sLog.exception ("Failed to open video file ", video->getFilename ());
 
     if (avformat_find_stream_info (m_formatCtx, NULL) < 0)
-        throw std::runtime_error ("Failed to get stream info");
+        sLog.exception ("Failed to get stream info for video file ", video->getFilename ());
 
     // Find first video stream
     for (int i = 0; i < m_formatCtx->nb_streams; i++)
@@ -34,32 +35,32 @@ CVideo::CVideo (Core::CVideo* video, CContext* context) :
 
     // Only video stream is required
     if (m_videoStream == -1)
-        throw std::runtime_error ("Failed to find video stream");
+        sLog.exception ("Failed to find video stream for file ", video->getFilename ());
 
     const AVCodec* codec = avcodec_find_decoder (m_formatCtx->streams [m_videoStream]->codecpar->codec_id);
     if (codec == nullptr)
-        throw std::runtime_error ("Failed to find codec");
+        sLog.exception ("Failed to find codec for video ", video->getFilename ());
 
     m_codecCtx = avcodec_alloc_context3 (codec);
     if (avcodec_parameters_to_context (m_codecCtx, m_formatCtx->streams [m_videoStream]->codecpar))
-        throw std::runtime_error ("Failed to copy codec parameters");
+        sLog.exception ("Failed to copy codec parameters when playing video ", video->getFilename ());
 
     if (avcodec_open2 (m_codecCtx, codec, NULL) < 0)
-        throw std::runtime_error ("Failed to open codec");
+        sLog.exception ("Failed to open coded for playback of video ", video->getFilename ());
 
     // initialize audio if there's any audio stream
     if (m_audioStream != -1)
     {
         const AVCodec* audioCodec = avcodec_find_decoder (m_formatCtx->streams [m_audioStream]->codecpar->codec_id);
         if (audioCodec == nullptr)
-            throw std::runtime_error ("Failed to find codec");
+            sLog.exception ("Failed to find coded for audio in video ", video->getFilename ());
 
         AVCodecContext* audioContext = avcodec_alloc_context3 (audioCodec);
         if (avcodec_parameters_to_context (audioContext, m_formatCtx->streams [m_audioStream]->codecpar))
-            throw std::runtime_error ("Failed to copy codec parameters");
+            sLog.exception ("Failed to setup audio context for video ", video->getFilename ());
 
         if (avcodec_open2 (audioContext, audioCodec, NULL) < 0)
-            throw std::runtime_error ("Failed to open codec");
+            sLog.exception ("Failed to open audio coded for video ", video->getFilename ());
 
         this->m_audio = new Audio::CAudioStream (audioContext);
     }
@@ -67,7 +68,7 @@ CVideo::CVideo (Core::CVideo* video, CContext* context) :
     m_videoFrame = av_frame_alloc ();
     m_videoFrameRGB = av_frame_alloc ();
     if (m_videoFrameRGB == nullptr)
-        throw std::runtime_error ("Failed to allocate video frame");
+        sLog.exception ("Cannot allocate video frame");
 
     GLfloat texCoords [] = {
         0.0f, 1.0f,
@@ -189,7 +190,7 @@ void CVideo::getNextFrame ()
         else if (readError < 0)
         {
             char err[AV_ERROR_MAX_STRING_SIZE];
-            throw std::runtime_error (av_make_error_string (err, AV_ERROR_MAX_STRING_SIZE, readError));
+            sLog.exception (av_make_error_string (err, AV_ERROR_MAX_STRING_SIZE, readError));
         }
         
     } while (packet.stream_index != m_videoStream /*&& packet.stream_index != m_audioStream*/);
@@ -281,7 +282,7 @@ void CVideo::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // reserve shaders in OpenGL
@@ -317,7 +318,7 @@ void CVideo::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // create the final program
@@ -345,7 +346,7 @@ void CVideo::setupShaders ()
         // free the buffer
         delete[] logBuffer;
         // throw an exception
-        throw std::runtime_error (message);
+        sLog.exception (message);
     }
 
     // after being liked shaders can be dettached and deleted

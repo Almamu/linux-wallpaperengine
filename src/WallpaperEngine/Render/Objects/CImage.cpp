@@ -334,6 +334,7 @@ void CImage::setupPasses ()
 
     for (; cur != end; cur ++)
     {
+        // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         Effects::CPass* pass = *cur;
         const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
@@ -356,6 +357,7 @@ void CImage::setupPasses ()
         // determine if it's the last element in the list as this is a screen-copy-like process
         else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
         {
+            // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
             spacePosition = this->getSceneSpacePosition ();
             drawTo = this->getScene ()->getFBO ();
             projection = &this->m_modelViewProjectionScreen;
@@ -423,6 +425,7 @@ void CImage::render ()
 
     for (; cur != end; cur ++)
     {
+        // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         if (std::next (cur) == end)
             glColorMask (true, true, true, false);
 

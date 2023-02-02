@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CUserSettingVector3.h"
 #include "WallpaperEngine/Core/Core.h"
 
@@ -48,13 +49,13 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data)
         }
         else
         {
-            fprintf (stderr, "Float color property doesn't have user member, this could mean an scripted value\n");
+            sLog.error ("Vector property doesn't have user member, this could mean an scripted value");
         }
     }
     else
     {
         if (data.is_string () == false)
-            throw std::runtime_error ("Expected float color value on user settings");
+            sLog.exception ("Expected vector value on user settings");
 
         defaultValue = WallpaperEngine::Core::aToColorf (data.get <std::string> ().c_str ());
     }
@@ -93,10 +94,10 @@ glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProper
                     cur->as <CPropertySlider> ()->getValue ()
                 };
 
-            throw std::runtime_error ("Property without condition must match type (color)");
+            sLog.exception ("Property without condition must match type (vector3)");
         }
 
-        throw std::runtime_error ("Color property with condition doesn't match against combo value");
+        sLog.exception ("Vector property with condition doesn't match against combo value");
     }
 
     return this->m_default;

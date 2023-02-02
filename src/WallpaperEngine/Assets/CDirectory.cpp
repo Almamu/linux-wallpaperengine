@@ -1,3 +1,4 @@
+#include "common.h"
 #include <sys/stat.h>
 
 #include "CDirectory.h"
@@ -12,10 +13,10 @@ CDirectory::CDirectory (std::string basepath) :
     struct stat buffer;
 
     if (stat (this->m_basepath.c_str (), &buffer) != 0)
-        throw std::runtime_error ("Cannot find " + this->m_basepath + ". This folder is required for wallpaper engine to work");
+        sLog.exception ("Cannot find ", this->m_basepath, ". This folder is required for wallpaper engine to work");
 
     if (!S_ISDIR(buffer.st_mode))
-        throw std::runtime_error ("Cannot find " + this->m_basepath + ". There's an assets file in it's place");
+        sLog.exception ("Cannot find ", this->m_basepath, ". There's an assets file in it's place");
 }
 
 CDirectory::~CDirectory ()

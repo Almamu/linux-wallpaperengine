@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include "Core.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
@@ -82,9 +84,7 @@ nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json& data, const cha
     auto value = data.find (key);
 
     if (value == data.end ())
-    {
-        throw std::runtime_error (notFoundMsg);
-    }
+        sLog.exception ("Cannot find required key (", key, ") in json: ", notFoundMsg);
 
     return value;
 }
@@ -94,9 +94,7 @@ nlohmann::json::iterator Core::jsonFindRequired (nlohmann::json::iterator& data,
     auto value = (*data).find (key);
 
     if (value == (*data).end ())
-    {
-        throw std::runtime_error (notFoundMsg);
-    }
+        sLog.exception ("Cannot find required key (", key, ") in json: ", notFoundMsg);
 
     return value;
 }
@@ -115,18 +113,18 @@ template <typename T> T Core::jsonFindDefault (nlohmann::json& data, const char 
             value->type () != nlohmann::detail::value_t::number_integer &&
             value->type () != nlohmann::detail::value_t::number_unsigned)
         {
-            fprintf(stderr, "%s is not of type double or integer, returning default value\n", key);
+            sLog.error (key, " is not of type double or integer, returning default value");
             return defaultValue;
         }
     }
     else if (std::is_same <T, std::string>::value && value->type () != nlohmann::detail::value_t::string)
     {
-        fprintf (stderr, "%s is not of type string, returning default value\n", key);
+        sLog.error (key, " is not of type string, returning default value");
         return defaultValue;
     }
     else if (std::is_same <T, bool>::value && value->type () != nlohmann::detail::value_t::boolean)
     {
-        fprintf (stderr, "%s is not of type boolean, returning default value\n", key);
+        sLog.error (key, " is not of type boolean, returning default value");
         return defaultValue;
     }
 

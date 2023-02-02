@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CUserSettingFloat.h"
 #include "WallpaperEngine/Core/Core.h"
 
@@ -47,13 +48,13 @@ CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data)
         }
         else
         {
-            fprintf (stderr, "Boolean property doesn't have user member, this could mean an scripted value\n");
+            sLog.error ("Float property doesn't have user member, this could mean an scripted value");
         }
     }
     else
     {
         if (data.is_number () == false)
-            throw std::runtime_error ("Expected numeric value on user settings");
+            sLog.exception ("Expected numeric value on user settings");
 
         defaultValue = data.get<double> ();
     }
@@ -86,10 +87,10 @@ double CUserSettingFloat::processValue (const std::vector<Projects::CProperty*>&
             if (cur->is <CPropertySlider> ())
                 return cur->as <CPropertySlider> ()->getValue ();
 
-            throw std::runtime_error ("Property without condition must match type (slider)");
+            sLog.exception ("Property without condition must match type (slider)");
         }
 
-        throw std::runtime_error ("Boolean property with condition doesn't match against combo value");
+        sLog.exception ("Float property with condition doesn't match against combo value");
     }
 
     return this->m_default;

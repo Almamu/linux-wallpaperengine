@@ -1,3 +1,4 @@
+#include "common.h"
 #include "WallpaperEngine/Core/CObject.h"
 #include "CSound.h"
 
@@ -25,12 +26,11 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         CUserSettingVector3* scale,
         const glm::vec3& angles)
 {
+    // TODO: PARSE AUDIO VOLUME
     auto sound_it = jsonFindRequired (data, "sound", "Sound information not present");
 
     if ((*sound_it).is_array () == false)
-    {
-        throw std::runtime_error ("Expected sound list");
-    }
+        sLog.exception ("Expected sound list on element ", name);
 
     CSound* sound = new CSound (
         scene,

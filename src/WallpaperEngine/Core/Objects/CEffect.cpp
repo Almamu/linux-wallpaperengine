@@ -1,3 +1,4 @@
+#include "common.h"
 #include "CEffect.h"
 
 #include <utility>
@@ -167,13 +168,14 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         // if the constant is an object, that means the constant has some extra information
         // for the UI, take the value, which is what we need
 
+        // TODO: SUPPORT USER SETTINGS HERE
         if ((*cur).is_object () == true)
         {
             val = (*cur).find ("value");
 
             if (val == (*cur).end ())
             {
-                std::cerr << "Found object for shader constant without \"value\" member" << std::endl;
+                sLog.error ("Found object for shader constant without \"value\" member");
                 continue;
             }
         }
@@ -193,7 +195,7 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         }
         else
         {
-            throw std::runtime_error ("unknown shader constant type");
+            sLog.exception ("unknown shader constant type ", *val);
         }
 
         pass->insertConstant (cur.key (), constant);
@@ -236,9 +238,7 @@ void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect
         auto bind = (*cur).find ("bind");
 
         if (materialfile == (*cur).end ())
-        {
-            throw std::runtime_error ("Effect pass must have a material file");
-        }
+            sLog.exception ("Found an effect ", effect->m_name, " without material");
 
         Images::CMaterial* material = nullptr;
 
@@ -301,7 +301,7 @@ Effects::CFBO* CEffect::findFBO (const std::string& name)
         }
     }
 
-    throw std::runtime_error ("cannot find fbo named " + name);
+    sLog.exception ("cannot find fbo ", name);
 }
 
 void CEffect::insertDependency (const std::string& dep)

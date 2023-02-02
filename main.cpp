@@ -12,15 +12,17 @@
 #include <libgen.h>
 
 #include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Render/CWallpaper.h"
-#include "WallpaperEngine/Render/CContext.h"
+#include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/CVideo.h"
+#include "WallpaperEngine/Render/CWallpaper.h"
 
 #include "WallpaperEngine/Assets/CPackage.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 #include "WallpaperEngine/Assets/CPackageLoadException.h"
+
+#include "common.h"
 
 float g_Time;
 float g_TimeLast;
@@ -41,22 +43,21 @@ const char* backgrounds_default_paths [] = {
 
 void print_help (const char* route)
 {
-    std::cout
-        << "Usage: " << route << " [options] background_path/background_id" << std::endl
-        << std::endl
-        << "where background_path/background_id can be:" << std::endl
-        << "\tthe ID of the background (for autodetection on your steam installation)" << std::endl
-        << "\ta full path to the background's folder" << std::endl
-        << std::endl
-        << "options:" << std::endl
-        << "\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce" << std::endl
-        << "\t--volume <amount>\t\t\tSets the volume for all the sounds in the background" << std::endl
-        << "\t--screen-root <screen name>\tDisplay as screen's background" << std::endl
-        << "\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low" << std::endl
-        << "\t--assets-dir <path>\t\t\tFolder where the assets are stored" << std::endl
-        << "\t--screenshot\t\t\t\tTakes a screenshot of the background" << std::endl
-        << "\t--list-properties\t\t\tList all the available properties and their possible values" << std::endl
-        << "\t--set-property <name=value>\tOverrides the default value of the given property" << std::endl;
+    sLog.out ("Usage: ", route, " [options] background_path/background_id");
+    sLog.out ("");
+    sLog.out ("where background_path/background_id can be:");
+    sLog.out ("\tthe ID of the background (for autodetection on your steam installation)");
+    sLog.out ("\ta full path to the background's folder");
+    sLog.out ("");
+    sLog.out ("options:");
+    sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
+    sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
+    sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
+    sLog.out ("\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low");
+    sLog.out ("\t--assets-dir <path>\t\t\tFolder where the assets are stored");
+    sLog.out ("\t--screenshot\t\t\t\tTakes a screenshot of the background");
+    sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
+    sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
 }
 
 std::string stringPathFixes(const std::string& s)
@@ -80,7 +81,7 @@ void signalhandler(int sig)
     g_KeepRunning = false;
 }
 
-int validatePath(const char* path, std::string& final)
+int handleValidatePath (const char* path, std::string& final)
 {
     char finalPath [PATH_MAX];
     char* pointer = realpath (path, finalPath);
@@ -102,23 +103,36 @@ int validatePath(const char* path, std::string& final)
     return 0;
 }
 
+void validatePath(const char* path, std::string& final)
+{
+    int error = handleValidatePath (path, final);
+
+    switch (error)
+    {
+        case ENOTDIR:
+            sLog.exception ("Invalid directory, ", path, " is not a folder");
+            break;
+        case ENAMETOOLONG:
+            sLog.exception ("Path ", path, " too long");
+            break;
+        case 0:
+            return;
+        default:
+            sLog.exception ("Cannot find the specified folder");
+            break;
+    }
+}
+
 std::string getHomePath ()
 {
     char* home = getenv ("HOME");
 
     if (home == nullptr)
-        throw std::runtime_error ("$HOME doesn't exist");
+        sLog.exception ("Cannot find home directory for the current user");
 
     std::string homepath;
 
-    int error = validatePath (home, homepath);
-
-    if (error == ENOTDIR)
-        throw std::runtime_error ("Invalid user home path");
-    else if (error == ENAMETOOLONG)
-        throw std::runtime_error ("Cannot get user's home folder, path is too long");
-    else if (error != 0)
-        throw std::runtime_error ("Cannot find the home folder for the user");
+    validatePath (home, homepath);
 
     return homepath;
 }
@@ -127,7 +141,7 @@ void initGLFW ()
 {
     // first of all, initialize the window
     if (glfwInit () == GLFW_FALSE)
-        throw std::runtime_error ("Failed to initialize GLFW");
+        sLog.exception ("Failed to initialize GLFW");
 
     // initialize freeimage
     FreeImage_Initialise (TRUE);
@@ -150,18 +164,17 @@ void addPkg (CCombinedContainer* containers, const std::string& path, std::strin
 
         // add the package to the list
         containers->add (new WallpaperEngine::Assets::CPackage (scene_path));
-        std::cout << "Detected " << pkgfile << " file at " << scene_path << ". Adding to list of searchable paths" << std::endl;
+        sLog.out ("Detected ", pkgfile, " file at ", scene_path, ". Adding to list of searchable paths");
     }
     catch (CPackageLoadException& ex)
     {
         // ignore this error, the package file was not found
-        std::cout << "No " << pkgfile <<  " file found at " << path << ". Defaulting to normal folder storage" << std::endl;
+        sLog.out ("No ", pkgfile, " file found at ", path, ". Defaulting to normal folder storage");
     }
     catch (std::runtime_error& ex)
     {
         // the package was found but there was an error loading it (wrong header or something)
-        fprintf (stderr, "Failed to load scene.pkg file: %s\n", ex.what());
-        throw std::runtime_error ("Cannot load package file");
+        sLog.exception ("Failed to load scene.pkg file: ", ex.what());
     }
 }
 
@@ -312,8 +325,16 @@ void takeScreenshot (WallpaperEngine::Render::CWallpaper* wp, const std::string&
     glBindTexture (GL_TEXTURE_2D, GL_NONE);
 }
 
+void initLogging ()
+{
+    sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
+    sLog.addError (new std::ostream (std::cerr.rdbuf ()));
+}
+
 int main (int argc, char* argv[])
 {
+    initLogging ();
+
     std::vector <std::string> screens;
     std::map <std::string, std::string> propertyOverrides;
 
@@ -376,7 +397,7 @@ int main (int argc, char* argv[])
 
             case 'p':
             case 'd':
-                std::cerr << "--dir/--pkg is deprecated and not used anymore" << std::endl;
+                sLog.error ("--dir/--pkg is deprecated and not used anymore");
                 path = stringPathFixes (optarg);
                 break;
 
@@ -433,7 +454,7 @@ int main (int argc, char* argv[])
         else if (extension == "jpg" || extension == "jpeg")
             screenshotFormat = FIF_JPEG;
         else
-            throw std::runtime_error ("Unsupported screenshot format...");
+            sLog.exception ("Unsupported screenshot format ", extension);
     }
 
     std::string homepath = getHomePath ();
@@ -446,7 +467,7 @@ int main (int argc, char* argv[])
         {
             std::string tmppath = homepath + "/" + *current + "/" + path;
 
-            int error = validatePath (tmppath.c_str (), tmppath);
+            int error = handleValidatePath (tmppath.c_str (), tmppath);
 
             if (error != 0)
                 continue;
@@ -455,14 +476,7 @@ int main (int argc, char* argv[])
         }
     }
 
-    int error = validatePath (path.c_str (), path);
-
-    if (error == ENOTDIR)
-        throw std::runtime_error ("The background path is not a folder");
-    else if (error == ENAMETOOLONG)
-        throw std::runtime_error ("Cannot get wallpaper's folder, path is too long");
-    else if (error != 0)
-        throw std::runtime_error ("Cannot find the specified folder");
+    validatePath (path.c_str (), path);
 
     // add a trailing slash to the path so the right file can be found
     path += "/";
@@ -481,13 +495,13 @@ int main (int argc, char* argv[])
         {
             std::string tmppath = homepath + "/" + *current;
 
-            error = validatePath (tmppath.c_str (), tmppath);
+            int error = handleValidatePath (tmppath.c_str (), tmppath);
 
             if (error != 0)
                 continue;
 
             assetsDir = tmppath;
-            std::cout << "Found wallpaper engine's assets at " << assetsDir << std::endl;
+            sLog.out ("Found wallpaper engine's assets at ", assetsDir);
             break;
         }
 
@@ -502,12 +516,12 @@ int main (int argc, char* argv[])
             std::string exepath = dirname (copy);
             exepath += "/assets";
 
-            error = validatePath (exepath.c_str (), exepath);
+            int error = handleValidatePath (exepath.c_str (), exepath);
 
             if (error == 0)
             {
                 assetsDir = exepath;
-                std::cout << "Found assets folder alongside the binary: " << assetsDir << std::endl;
+                sLog.out ("Found assets folder alongside the binary: ", assetsDir);
             }
 
             delete[] copy;
@@ -515,20 +529,12 @@ int main (int argc, char* argv[])
     }
     else
     {
-        error = validatePath (assetsDir.c_str (), assetsDir);
-
-        if (error == ENOTDIR)
-            throw std::runtime_error ("Invalid assets folder");
-        else if (error == ENAMETOOLONG)
-            throw std::runtime_error ("Cannot get assets folder, path is too long");
-        else if (error != 0)
-            throw std::runtime_error ("Cannot find the specified assets folder");
-
-        std::cout << "Found wallpaper engine's assets at " << assetsDir << " based on --assets-dir parameter" << std::endl;
+        validatePath (assetsDir.c_str (), assetsDir);
+        sLog.out ("Found wallpaper engine's assets at ", assetsDir, " based on --assets-dir parameter");
     }
 
     if (assetsDir.empty () == true)
-        throw std::runtime_error ("Cannot determine a valid path for the wallpaper engine assets");
+        sLog.exception ("Cannot determine a valid path for the wallpaper engine assets");
 
     // add containers to the list
     containers->add (new WallpaperEngine::Assets::CDirectory (assetsDir + "/"));
@@ -547,13 +553,13 @@ int main (int argc, char* argv[])
 
         if (override != propertyOverrides.end ())
         {
-            std::cout << "Applying override value for " << cur->getName () << std::endl;
+            sLog.out ("Applying override value for ", cur->getName ());
 
             cur->update (override->second);
         }
 
         if (shouldListPropertiesAndStop)
-            std::cout << cur->dump () << std::endl;
+            sLog.out (cur->dump ());
     }
 
     // halt if the list-properties option was specified
@@ -575,7 +581,7 @@ int main (int argc, char* argv[])
 
     if (window == nullptr)
     {
-        fprintf (stderr, "Failed to open a GLFW window");
+        sLog.error ("GLFW", "Failed to open a GLFW window");
         glfwTerminate ();
         return 2;
     }
@@ -593,19 +599,19 @@ int main (int argc, char* argv[])
     // initialize glew
     if (glewInitResult != GLEW_OK)
     {
-        fprintf (stderr, "Failed to initialize GLEW: %s", glewGetErrorString (glewInitResult));
+        sLog.error ("GLEW", "Failed to initialize GLEW: ", glewGetErrorString (glewInitResult));
         glfwTerminate ();
         return 3;
     }
 
     if (shouldEnableAudio == true && SDL_Init (SDL_INIT_AUDIO) < 0)
     {
-        std::cerr << "Cannot initialize SDL audio system, SDL_GetError: " << SDL_GetError() << std::endl;
-        std::cerr << "Continuing without audio support" << std::endl;
+        sLog.error ("SDL", "Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError());
+        sLog.error ("SDL", "Continuing without audio support");
     }
 
     // initialize custom context class
-    WallpaperEngine::Render::CContext* context = new WallpaperEngine::Render::CContext (screens, window, containers);
+    WallpaperEngine::Render::CRenderContext* context = new WallpaperEngine::Render::CRenderContext (screens, window, containers);
     // initialize mouse support
     context->setMouse (new CMouseInput (window));
     // set the default viewport
@@ -664,7 +670,7 @@ int main (int argc, char* argv[])
     // ensure this is updated as sometimes it might not come from a signal
     g_KeepRunning = false;
 
-    std::cout << "Stop requested" << std::endl;
+    sLog.out ("Stop requested");
 
     // terminate gl
     glfwTerminate ();

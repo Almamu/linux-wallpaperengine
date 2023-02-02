@@ -15,11 +15,11 @@ namespace WallpaperEngine::Render
     class CWallpaper;
     class CTextureCache;
 
-    class CContext
+    class CRenderContext
     {
     public:
-        CContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container);
-        ~CContext ();
+        CRenderContext (std::vector <std::string> screens, GLFWwindow* window, CContainer* container);
+        ~CRenderContext ();
 
         void initializeViewports ();
         void render ();
