@@ -24,15 +24,12 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     if (scene->getOrthogonalProjection ()->isAuto () == true)
     {
         // calculate the size of the projection based on the size of everything
-        auto cur = scene->getObjects ().begin ();
-        auto end = scene->getObjects ().end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : scene->getObjects ())
         {
-            if ((*cur).second->is<Core::Objects::CImage> () == false)
+            if (cur.second->is<Core::Objects::CImage> () == false)
                 continue;
 
-            glm::vec2 size = (*cur).second->as <Core::Objects::CImage> ()->getSize ();
+            glm::vec2 size = cur.second->as <Core::Objects::CImage> ()->getSize ();
 
             scene->getOrthogonalProjection ()->setWidth (size.x);
             scene->getOrthogonalProjection ()->setHeight (size.y);
@@ -55,21 +52,13 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     this->setupFramebuffers ();
 
     // create all objects based off their dependencies
+    for (const auto& cur : scene->getObjects ())
+        this->createObject (cur.second);
+
+    // copy over objects by render order
+    for (const auto& cur : scene->getObjectsByRenderOrder ())
     {
-        auto cur = scene->getObjects ().begin ();
-        auto end = scene->getObjects ().end ();
-
-        for (; cur != end; cur++)
-            this->createObject ((*cur).second);
-    }
-
-    // now setup the render order
-    auto cur = scene->getObjectsByRenderOrder ().begin ();
-    auto end = scene->getObjectsByRenderOrder ().end ();
-
-    for (; cur != end; cur ++)
-    {
-        auto obj = this->m_objects.find ((*cur)->getId ());
+        auto obj = this->m_objects.find (cur->getId ());
 
         // ignores not created objects like particle systems
         if (obj == this->m_objects.end ())
@@ -183,16 +172,13 @@ Render::CObject* CScene::createObject (Core::CObject* object)
         return (*current).second;
 
     // check dependencies too!
-    auto depCur = object->getDependencies ().begin ();
-    auto depEnd = object->getDependencies ().end ();
-
-    for (; depCur != depEnd; depCur ++)
+    for (const auto& cur : object->getDependencies ())
     {
         // self-dependency is a possibility...
-        if ((*depCur) == object->getId ())
+        if (cur == object->getId ())
             continue;
 
-        auto dep = this->getScene ()->getObjects ().find (*depCur);
+        auto dep = this->getScene ()->getObjects ().find (cur);
 
         if (dep != this->getScene ()->getObjects ().end ())
             this->createObject ((*dep).second);
@@ -232,10 +218,6 @@ CCamera* CScene::getCamera () const
 
 void CScene::renderFrame (glm::ivec4 viewport)
 {
-    auto projection = this->getScene ()->getOrthogonalProjection ();
-    auto cur = this->m_objectsByRenderOrder.begin ();
-    auto end = this->m_objectsByRenderOrder.end ();
-
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
@@ -256,8 +238,8 @@ void CScene::renderFrame (glm::ivec4 viewport)
 
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (; cur != end; cur ++)
-        (*cur)->render ();
+    for (const auto& cur : this->m_objectsByRenderOrder)
+        cur->render ();
 }
 
 void CScene::updateMouse (glm::ivec4 viewport)

@@ -21,8 +21,8 @@ public:
     uint32_t length;
 };
 
-CPackage::CPackage (const std::string& path) :
-    m_path (path),
+CPackage::CPackage (std::filesystem::path  path) :
+    m_path (std::move(path)),
     m_contents ()
 {
     this->init ();
@@ -150,32 +150,25 @@ void CPackage::loadFiles (FILE* fp)
     // get current baseOffset, this is where the files start
     long baseOffset = ftell (fp);
 
-    // read file contents now
-    auto cur = list.begin ();
-    auto end = list.end ();
-
-    for (; cur != end; cur ++)
+    for (const auto& cur : list)
     {
-        long offset = (*cur).offset + baseOffset;
+        long offset = cur.offset + baseOffset;
 
         // with all the data we can jump to the offset and read the content
         if (fseek (fp, offset, SEEK_SET) != 0)
-            sLog.exception ("Cannot find file ", (*cur).filename, " from package ", this->m_path);
+            sLog.exception ("Cannot find file ", cur.filename, " from package ", this->m_path);
 
         // allocate memory for the file's contents and read it from the file
-        char* fileContents = new char [(*cur).length];
+        char* fileContents = new char [cur.length];
 
-        if (fread (fileContents, (*cur).length, 1, fp) != 1)
+        if (fread (fileContents, cur.length, 1, fp) != 1)
         {
             delete[] fileContents;
 
-            sLog.exception ("Cannot read file ", (*cur).filename, " contents from package ", this->m_path);
+            sLog.exception ("Cannot read file ", cur.filename, " contents from package ", this->m_path);
         }
 
         // add the file to the map
-        this->m_contents.insert (std::make_pair <std::string, CFileEntry> (
-            std::move((*cur).filename),
-            CFileEntry (fileContents, (*cur).length))
-        );
+        this->m_contents.insert_or_assign (cur.filename, CFileEntry (fileContents, cur.length));
     }
 }

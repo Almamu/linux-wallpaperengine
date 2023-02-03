@@ -55,11 +55,8 @@ namespace WallpaperEngine::Render::Shaders
             this->m_content = this->m_container->readIncludeShader (this->m_file);
 
         // clone the combos into the baseCombos to keep track of values that must be embedded no matter what
-        auto cur = this->m_combos->begin ();
-        auto end = this->m_combos->end ();
-
-        for (; cur != end; cur ++)
-            this->m_baseCombos.insert (std::make_pair ((*cur).first, (*cur).second));
+        for (const auto& cur : *this->m_combos)
+            this->m_baseCombos.insert (std::make_pair (cur.first, cur.second));
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -526,36 +523,26 @@ namespace WallpaperEngine::Render::Shaders
                           "// Shader combo parameter definitions\n"
                           "// ======================================================\n";
 
+            // add combo values
+            for (const auto& cur : *this->m_foundCombos)
             {
-                // add combo values
-                auto cur = this->m_foundCombos->begin ();
-                auto end = this->m_foundCombos->end ();
+                // find the right value for the combo in the combos map
+                auto combo = this->m_combos->find (cur.first);
 
-                for (; cur != end; cur++)
-                {
-                    // find the right value for the combo in the combos map
-                    auto combo = this->m_combos->find ((*cur).first);
+                if (combo == this->m_combos->end ())
+                    continue;
 
-                    if (combo == this->m_combos->end ())
-                        continue;
-
-                    finalCode += "#define " + (*cur).first + " " + std::to_string ((*combo).second) + "\n";
-                }
+                finalCode += "#define " + cur.first + " " + std::to_string ((*combo).second) + "\n";
             }
             // add base combos that come from the pass change that MUST be added
+            for (const auto& cur : this->m_baseCombos)
             {
-                auto cur = this->m_baseCombos.begin ();
-                auto end = this->m_baseCombos.end ();
+                auto alreadyFound = this->m_foundCombos->find (cur.first);
 
-                for (; cur != end; cur ++)
-                {
-                    auto alreadyFound = this->m_foundCombos->find ((*cur).first);
+                if (alreadyFound != this->m_foundCombos->end ())
+                    continue;
 
-                    if (alreadyFound != this->m_foundCombos->end ())
-                        continue;
-
-                    finalCode += "#define " + (*cur).first + " " + std::to_string ((*cur).second) + "\n";
-                }
+                finalCode += "#define " + cur.first + " " + std::to_string (cur.second) + "\n";
             }
         }
 
@@ -737,16 +724,9 @@ namespace WallpaperEngine::Render::Shaders
 
     Variables::CShaderVariable* Compiler::findParameter (const std::string& identifier)
     {
-        auto cur = this->m_parameters.begin ();
-        auto end = this->m_parameters.end ();
-
-        for (; cur != end; cur ++)
-        {
-            if ((*cur)->getIdentifierName () == identifier)
-            {
-                return (*cur);
-            }
-        }
+        for (const auto& cur : this->m_parameters)
+            if (cur->getIdentifierName () == identifier)
+                return cur;
 
         return nullptr;
     }

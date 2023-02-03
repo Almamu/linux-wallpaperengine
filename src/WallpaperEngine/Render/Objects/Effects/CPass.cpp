@@ -136,26 +136,22 @@ void CPass::render ()
         // calculate current texture and frame
         double currentRenderTime = fmod (static_cast <double> (g_Time), this->m_material->getImage ()->getAnimationTime ());
 
-        // find the right frame now
-        auto frameCur = texture->getFrames ().begin ();
-        auto frameEnd = texture->getFrames ().end ();
-
-        for (; frameCur != frameEnd; frameCur ++)
+        for (const auto& frameCur : texture->getFrames ())
         {
-            currentRenderTime -= (*frameCur)->frametime;
+            currentRenderTime -= frameCur->frametime;
 
             if (currentRenderTime <= 0.0f)
             {
                 // frame found, store coordinates and done
-                currentTexture = (*frameCur)->frameNumber;
+                currentTexture = frameCur->frameNumber;
 
-                translation.x = (*frameCur)->x / texture->getTextureWidth (currentTexture);
-                translation.y = (*frameCur)->y / texture->getTextureHeight (currentTexture);
+                translation.x = frameCur->x / texture->getTextureWidth (currentTexture);
+                translation.y = frameCur->y / texture->getTextureHeight (currentTexture);
 
-                rotation.x = (*frameCur)->width1 / static_cast<float> (texture->getTextureWidth (currentTexture));
-                rotation.y = (*frameCur)->width2 / static_cast<float> (texture->getTextureWidth(currentTexture));
-                rotation.z = (*frameCur)->height2 / static_cast<float> (texture->getTextureHeight (currentTexture));
-                rotation.w = (*frameCur)->height1 / static_cast<float> (texture->getTextureHeight (currentTexture));
+                rotation.x = frameCur->width1 / static_cast<float> (texture->getTextureWidth (currentTexture));
+                rotation.y = frameCur->width2 / static_cast<float> (texture->getTextureWidth(currentTexture));
+                rotation.z = frameCur->height2 / static_cast<float> (texture->getTextureHeight (currentTexture));
+                rotation.w = frameCur->height1 / static_cast<float> (texture->getTextureHeight (currentTexture));
                 break;
             }
         }
@@ -168,118 +164,97 @@ void CPass::render ()
     // continue on the map from the second texture
     if (this->m_finalTextures.empty () == false)
     {
-        auto cur = this->m_finalTextures.begin ();
-        auto end = this->m_finalTextures.end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : this->m_finalTextures)
         {
-            texture = this->resolveTexture ((*cur).second, (*cur).first, this->m_input);
+            texture = this->resolveTexture (cur.second, cur.first, this->m_input);
 
-            glActiveTexture (GL_TEXTURE0 + (*cur).first);
+            glActiveTexture (GL_TEXTURE0 + cur.first);
             glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
         }
     }
 
     // add uniforms
+    for (const auto& cur : this->m_uniforms)
     {
-        auto cur = this->m_uniforms.begin ();
-        auto end = this->m_uniforms.end ();
+        UniformEntry* entry = cur.second;
 
-        for (; cur != end; cur ++)
+        switch (entry->type)
         {
-            UniformEntry* entry = (*cur).second;
-
-            switch (entry->type)
-            {
-                case Double:
-                    glUniform1d (entry->id, *reinterpret_cast <const double*> (entry->value));
-                    break;
-                case Float:
-                    glUniform1f (entry->id, *reinterpret_cast <const float*> (entry->value));
-                    break;
-                case Integer:
-                    glUniform1i (entry->id, *reinterpret_cast <const int*> (entry->value));
-                    break;
-                case Vector4:
-                    glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (entry->value)));
-                    break;
-                case Vector3:
-                    glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (entry->value)));
-                    break;
-                case Vector2:
-                    glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (entry->value)));
-                    break;
-                case Matrix4:
-                    glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (entry->value)));
-                    break;
-            }
+            case Double:
+                glUniform1d (entry->id, *reinterpret_cast <const double*> (entry->value));
+                break;
+            case Float:
+                glUniform1f (entry->id, *reinterpret_cast <const float*> (entry->value));
+                break;
+            case Integer:
+                glUniform1i (entry->id, *reinterpret_cast <const int*> (entry->value));
+                break;
+            case Vector4:
+                glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (entry->value)));
+                break;
+            case Vector3:
+                glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (entry->value)));
+                break;
+            case Vector2:
+                glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (entry->value)));
+                break;
+            case Matrix4:
+                glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (entry->value)));
+                break;
         }
     }
     // add reference uniforms
+    for (const auto& cur : this->m_referenceUniforms)
     {
-        auto cur = this->m_referenceUniforms.begin ();
-        auto end = this->m_referenceUniforms.end ();
+        ReferenceUniformEntry* entry = cur.second;
 
-        for (; cur != end; cur ++)
+        switch (entry->type)
         {
-            ReferenceUniformEntry* entry = (*cur).second;
-
-            switch (entry->type)
-            {
-                case Double:
-                    glUniform1d (entry->id, *reinterpret_cast <const double*> (*entry->value));
-                    break;
-                case Float:
-                    glUniform1f (entry->id, *reinterpret_cast <const float*> (*entry->value));
-                    break;
-                case Integer:
-                    glUniform1i (entry->id, *reinterpret_cast <const int*> (*entry->value));
-                    break;
-                case Vector4:
-                    glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (*entry->value)));
-                    break;
-                case Vector3:
-                    glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (*entry->value)));
-                    break;
-                case Vector2:
-                    glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (*entry->value)));
-                    break;
-                case Matrix4:
-                    glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (*entry->value)));
-                    break;
-            }
+            case Double:
+                glUniform1d (entry->id, *reinterpret_cast <const double*> (*entry->value));
+                break;
+            case Float:
+                glUniform1f (entry->id, *reinterpret_cast <const float*> (*entry->value));
+                break;
+            case Integer:
+                glUniform1i (entry->id, *reinterpret_cast <const int*> (*entry->value));
+                break;
+            case Vector4:
+                glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (*entry->value)));
+                break;
+            case Vector3:
+                glUniform3fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec3*> (*entry->value)));
+                break;
+            case Vector2:
+                glUniform2fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec2*> (*entry->value)));
+                break;
+            case Matrix4:
+                glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (*entry->value)));
+                break;
         }
     }
 
+    // used in animations when one of the frames is vertical instead of horizontal
+    // rotation with translation = origin and end of the image to display
     if (this->g_Texture0Rotation != -1)
-    {
-        // used in animations when one of the frames is vertical instead of horizontal
-        // rotation with translation = origin and end of the image to display
         glUniform4f (this->g_Texture0Rotation, rotation.x, rotation.y, rotation.z, rotation.w);
-    }
+    // this actually picks the origin point of the image from the atlast
     if (this->g_Texture0Translation != -1)
-    {
-        // this actually picks the origin point of the image from the atlast
         glUniform2f (this->g_Texture0Translation, translation.x, translation.y);
-    }
+
+    for (const auto& cur : this->m_attribs)
     {
-        auto cur = this->m_attribs.begin ();
-        auto end = this->m_attribs.end ();
+        glEnableVertexAttribArray (cur->id);
+        glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
+        glVertexAttribPointer (cur->id, cur->elements, cur->type, GL_FALSE, 0, nullptr);
 
-        for (; cur != end; cur ++)
-        {
-            glEnableVertexAttribArray ((*cur)->id);
-            glBindBuffer (GL_ARRAY_BUFFER, *(*cur)->value);
-            glVertexAttribPointer ((*cur)->id, (*cur)->elements, (*cur)->type, GL_FALSE, 0, nullptr);
-
-            if (DEBUG)
-                glObjectLabel (GL_BUFFER, *(*cur)->value, -1, (
-                        "Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
-                        " Pass " + this->m_pass->getShader() +
-                        " " + (*cur)->name
-                    ).c_str ()
-                );
-        }
+        if (DEBUG)
+            glObjectLabel (GL_BUFFER, *cur->value, -1, (
+                    "Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
+                    " Pass " + this->m_pass->getShader() +
+                    " " + cur->name
+                ).c_str ()
+            );
     }
 
     // start actual rendering now
@@ -287,13 +262,8 @@ void CPass::render ()
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // disable vertex attribs array and textures
-    {
-        auto cur = this->m_attribs.begin ();
-        auto end = this->m_attribs.end ();
-
-        for (; cur != end; cur ++)
-            glDisableVertexAttribArray ((*cur)->id);
-    }
+    for (const auto& cur : this->m_attribs)
+        glDisableVertexAttribArray (cur->id);
 
     // unbind all the used textures
     glActiveTexture (GL_TEXTURE0);
@@ -302,12 +272,9 @@ void CPass::render ()
     // continue on the map from the second texture
     if (this->m_finalTextures.empty () == false)
     {
-        auto cur = this->m_finalTextures.begin ();
-        auto end = this->m_finalTextures.end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : this->m_finalTextures)
         {
-            glActiveTexture (GL_TEXTURE0 + (*cur).first);
+            glActiveTexture (GL_TEXTURE0 + cur.first);
             glBindTexture (GL_TEXTURE_2D, 0);
         }
     }
@@ -600,19 +567,14 @@ void CPass::setupUniforms ()
         }
     }
 
+    for (const auto& cur : this->m_finalTextures)
     {
-        auto cur = this->m_finalTextures.begin ();
-        auto end = this->m_finalTextures.end ();
+        std::ostringstream namestream;
 
-        for (; cur != end; cur ++)
-        {
-            std::ostringstream namestream;
+        namestream << "g_Texture" << cur.first << "Resolution";
 
-            namestream << "g_Texture" << (*cur).first << "Resolution";
-
-            texture = this->resolveTexture ((*cur).second, (*cur).first, texture);
-            this->addUniform (namestream.str (), texture->getResolution ());
-        }
+        texture = this->resolveTexture (cur.second, cur.first, texture);
+        this->addUniform (namestream.str (), texture->getResolution ());
     }
 
     auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
@@ -744,128 +706,113 @@ void CPass::setupTextures ()
 
 void CPass::setupShaderVariables ()
 {
+    // find variables in the shaders and set the value with the constants if possible
+    for (const auto& cur : this->m_pass->getConstants ())
     {
-        // find variables in the shaders and set the value with the constants if possible
-        auto cur = this->m_pass->getConstants ().begin ();
-        auto end = this->m_pass->getConstants ().end ();
+        CShaderVariable* vertexVar = this->m_vertShader->findParameter (cur.first);
+        CShaderVariable* pixelVar = this->m_fragShader->findParameter (cur.first);
 
-        for (; cur != end; cur ++)
+        // variable not found, can be ignored
+        if (vertexVar == nullptr && pixelVar == nullptr)
+            continue;
+
+        // if both can be found, ensure they're the correct type
+        /*if (vertexVar != nullptr && pixelVar != nullptr)
         {
-            CShaderVariable* vertexVar = this->m_vertShader->findParameter ((*cur).first);
-            CShaderVariable* pixelVar = this->m_fragShader->findParameter ((*cur).first);
+            if (vertexVar->getType () != pixelVar->getType ())
+                throw std::runtime_error ("Pixel and vertex shader variable types do not match");
+        }*/
 
-            // variable not found, can be ignored
-            if (vertexVar == nullptr && pixelVar == nullptr)
-                continue;
+        // get one instance of it
+        CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
 
-            // if both can be found, ensure they're the correct type
-            /*if (vertexVar != nullptr && pixelVar != nullptr)
+        // ensure the shader's and the constant are of the same type
+        if (cur.second->getType () != var->getType ())
+        {
+            // there's situations where this type mismatch is actually expected
+            // integers and floats are equivalent, this could be detected at load time
+            // but that'd mean to compile the shader in the load, and not on the render stage
+            // so take into account these conversions here
+
+            if (cur.second->is <CShaderConstantFloat> () == true && var->is <CShaderVariableInteger> () == true)
             {
-                if (vertexVar->getType () != pixelVar->getType ())
-                    throw std::runtime_error ("Pixel and vertex shader variable types do not match");
-            }*/
-
-            // get one instance of it
-            CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
-
-            // ensure the shader's and the constant are of the same type
-            if ((*cur).second->getType () != var->getType ())
+                // create an integer value from a float
+                this->addUniform (var->getName (), static_cast <int> (*cur.second->as <CShaderConstantFloat> ()->getValue ()));
+            }
+            else if (cur.second->is <CShaderConstantInteger> () == true && var->is <CShaderVariableFloat> () == true)
             {
-                // there's situations where this type mismatch is actually expected
-                // integers and floats are equivalent, this could be detected at load time
-                // but that'd mean to compile the shader in the load, and not on the render stage
-                // so take into account these conversions here
+                // create a float value from an integer
+                this->addUniform (var->getName (), static_cast <float> (*cur.second->as <CShaderConstantInteger> ()->getValue ()));
+            }
+            else if (cur.second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector2> () == true)
+            {
+                CShaderConstantVector4* val = cur.second->as <CShaderConstantVector4> ();
 
-                if ((*cur).second->is <CShaderConstantFloat> () == true && var->is <CShaderVariableInteger> () == true)
-                {
-                    // create an integer value from a float
-                    this->addUniform (var->getName (), static_cast <int> (*(*cur).second->as <CShaderConstantFloat> ()->getValue ()));
-                }
-                else if ((*cur).second->is <CShaderConstantInteger> () == true && var->is <CShaderVariableFloat> () == true)
-                {
-                    // create a float value from an integer
-                    this->addUniform (var->getName (), static_cast <float> (*(*cur).second->as <CShaderConstantInteger> ()->getValue ()));
-                }
-                else if ((*cur).second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector2> () == true)
-                {
-                    CShaderConstantVector4* val = (*cur).second->as <CShaderConstantVector4> ();
+                // create a new vector2 with the first two values
+                this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
+            }
+            else if (cur.second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector3> () == true)
+            {
+                CShaderConstantVector4* val = cur.second->as <CShaderConstantVector4> ();
 
-                    // create a new vector2 with the first two values
-                    this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
-                }
-                else if ((*cur).second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector3> () == true)
-                {
-                    CShaderConstantVector4* val = (*cur).second->as <CShaderConstantVector4> ();
-
-                    this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
-                }
-                else
-                {
-                    sLog.exception (
-                        "Constant ",
-                        (*cur).first,
-                        " type does not match pixel/vertex shader variable and cannot be converted (",
-                        (*cur).second->getType (),
-                        " to ",
-                        var->getType ()
-                    );
-                }
+                this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
             }
             else
             {
-                // now determine the constant's type and register the correct uniform for it
-                if ((*cur).second->is <CShaderConstantFloat> ())
-                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantFloat> ()->getValue ());
-                else if ((*cur).second->is <CShaderConstantInteger> ())
-                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantInteger> ()->getValue ());
-                else if ((*cur).second->is <CShaderConstantVector4> ())
-                    this->addUniform (var->getName (), (*cur).second->as <CShaderConstantVector4> ()->getValue ());
+                sLog.exception (
+                    "Constant ",
+                    cur.first,
+                    " type does not match pixel/vertex shader variable and cannot be converted (",
+                    cur.second->getType (),
+                    " to ",
+                    var->getType ()
+                );
             }
         }
-    }
-
-    {
-        auto cur = this->m_vertShader->getParameters ().begin ();
-        auto end = this->m_vertShader->getParameters ().end ();
-
-        for (; cur != end; cur ++)
+        else
         {
-            if (this->m_uniforms.find ((*cur)->getName ()) != this->m_uniforms.end ())
-                continue;
-
-            if ((*cur)->is <CShaderVariableFloat> ())
-                this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableInteger> ())
-                this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector2> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> ((*cur)->as <CShaderVariableVector2> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector3> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector4> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> ((*cur)->as <CShaderVariableVector4> ()->getValue ())));
+            // now determine the constant's type and register the correct uniform for it
+            if (cur.second->is <CShaderConstantFloat> ())
+                this->addUniform (var->getName (), cur.second->as <CShaderConstantFloat> ()->getValue ());
+            else if (cur.second->is <CShaderConstantInteger> ())
+                this->addUniform (var->getName (), cur.second->as <CShaderConstantInteger> ()->getValue ());
+            else if (cur.second->is <CShaderConstantVector4> ())
+                this->addUniform (var->getName (), cur.second->as <CShaderConstantVector4> ()->getValue ());
         }
     }
 
+    for (const auto& cur : this->m_vertShader->getParameters ())
     {
-        auto cur = this->m_fragShader->getParameters ().begin ();
-        auto end = this->m_fragShader->getParameters ().end ();
+        if (this->m_uniforms.find (cur->getName ()) != this->m_uniforms.end ())
+            continue;
 
-        for (; cur != end; cur ++)
-        {
-            if (this->m_uniforms.find ((*cur)->getName ()) != this->m_uniforms.end ())
-                continue;
+        if (cur->is <CShaderVariableFloat> ())
+            this->addUniform (cur->getName (), const_cast <float*> (reinterpret_cast <const float*> (cur->as <CShaderVariableFloat> ()->getValue ())));
+        else if (cur->is <CShaderVariableInteger> ())
+            this->addUniform (cur->getName (), const_cast <int*> (reinterpret_cast <const int*> (cur->as <CShaderVariableInteger> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector2> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> (cur->as <CShaderVariableVector2> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector3> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> (cur->as <CShaderVariableVector3> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector4> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> (cur->as <CShaderVariableVector4> ()->getValue ())));
+    }
 
-            if ((*cur)->is <CShaderVariableFloat> ())
-                this->addUniform ((*cur)->getName (), const_cast <float*> (reinterpret_cast <const float*> ((*cur)->as <CShaderVariableFloat> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableInteger> ())
-                this->addUniform ((*cur)->getName (), const_cast <int*> (reinterpret_cast <const int*> ((*cur)->as <CShaderVariableInteger> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector2> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> ((*cur)->as <CShaderVariableVector2> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector3> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> ((*cur)->as <CShaderVariableVector3> ()->getValue ())));
-            else if ((*cur)->is <CShaderVariableVector4> ())
-                this->addUniform ((*cur)->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> ((*cur)->as <CShaderVariableVector4> ()->getValue ())));
-        }
+    for (const auto& cur : this->m_fragShader->getParameters ())
+    {
+        if (this->m_uniforms.find (cur->getName ()) != this->m_uniforms.end ())
+            continue;
+
+        if (cur->is <CShaderVariableFloat> ())
+            this->addUniform (cur->getName (), const_cast <float*> (reinterpret_cast <const float*> (cur->as <CShaderVariableFloat> ()->getValue ())));
+        else if (cur->is <CShaderVariableInteger> ())
+            this->addUniform (cur->getName (), const_cast <int*> (reinterpret_cast <const int*> (cur->as <CShaderVariableInteger> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector2> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> (cur->as <CShaderVariableVector2> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector3> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> (cur->as <CShaderVariableVector3> ()->getValue ())));
+        else if (cur->is <CShaderVariableVector4> ())
+            this->addUniform (cur->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> (cur->as <CShaderVariableVector4> ()->getValue ())));
     }
 }
 

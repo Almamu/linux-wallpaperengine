@@ -37,6 +37,9 @@ add_executable(
         linux-wallpaperengine
         main.cpp
 
+        src/Steam/FileSystem/FileSystem.h
+        src/Steam/FileSystem/FileSystem.cpp
+
         src/WallpaperEngine/Logging/CLog.cpp
         src/WallpaperEngine/Logging/CLog.h
 
@@ -83,6 +86,10 @@ add_executable(
         src/WallpaperEngine/Render/Shaders/Compiler.h
         src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+        src/WallpaperEngine/Render/Drivers/COpenGLDriver.h
+        src/WallpaperEngine/Render/Drivers/COpenGLDriver.cpp
+        src/WallpaperEngine/Render/Drivers/CVideoDriver.h
+        src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
         src/WallpaperEngine/Render/CRenderContext.h
         src/WallpaperEngine/Render/CRenderContext.cpp
         src/WallpaperEngine/Render/CTextureCache.h

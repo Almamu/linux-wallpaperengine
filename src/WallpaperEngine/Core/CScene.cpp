@@ -101,15 +101,8 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
             WallpaperEngine::Core::aToColorf(skylightcolor)
     );
 
-    auto cur = (*objects_it).begin ();
-    auto end = (*objects_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        scene->insertObject (
-                CObject::fromJSON (*cur, scene, container)
-        );
-    }
+    for (const auto& cur : *objects_it)
+        scene->insertObject (CObject::fromJSON (cur, scene, container));
 
     return scene;
 }

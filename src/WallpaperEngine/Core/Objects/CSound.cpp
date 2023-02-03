@@ -42,13 +42,8 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         angles
     );
 
-    auto cur = (*sound_it).begin ();
-    auto end = (*sound_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        sound->insertSound (*cur);
-    }
+    for (const auto& cur : (*sound_it))
+        sound->insertSound (cur);
 
     return sound;
 }

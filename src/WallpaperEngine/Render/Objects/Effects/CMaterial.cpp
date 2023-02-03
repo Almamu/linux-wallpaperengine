@@ -23,12 +23,9 @@ CImage* CMaterial::getImage () const
 
 void CMaterial::generatePasses ()
 {
-    auto cur = this->m_material->getPasses ().begin ();
-    auto end = this->m_material->getPasses ().end ();
-
     // these are simple now, just create the entries and done
-    for (; cur != end; cur ++)
-        this->m_passes.emplace_back (new CPass (this, *cur));
+    for (const auto& cur : this->m_material->getPasses ())
+        this->m_passes.emplace_back (new CPass (this, cur));
 }
 
 const Core::Objects::Images::CMaterial* CMaterial::getMaterial () const

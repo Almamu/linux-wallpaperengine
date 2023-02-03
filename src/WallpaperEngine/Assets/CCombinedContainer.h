@@ -14,9 +14,6 @@ namespace WallpaperEngine::Assets
     class CCombinedContainer : public CContainer
     {
     public:
-        CCombinedContainer () {}
-        ~CCombinedContainer () {}
-
         /**
          * Adds a container to the list
          *

@@ -1,7 +1,3 @@
-//
-// Created by almamu on 8/8/21.
-//
-
 #pragma once
 
 #include <string>
@@ -10,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 #include <cstring>
+#include <filesystem>
 
 #include "CContainer.h"
 #include "CFileEntry.h"
@@ -19,7 +16,7 @@ namespace WallpaperEngine::Assets
     class CPackage : public CContainer
     {
     public:
-        CPackage (const std::string& path);
+        CPackage (std::filesystem::path  path);
         ~CPackage ();
 
         const void* readFile (std::string filename, uint32_t* length) const override;
@@ -62,7 +59,7 @@ namespace WallpaperEngine::Assets
         uint32_t readInteger (FILE* fp);
 
     private:
-        std::string m_path;
+        std::filesystem::path m_path;
         std::map <std::string, CFileEntry> m_contents;
     };
 }

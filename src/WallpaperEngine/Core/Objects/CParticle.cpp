@@ -33,36 +33,14 @@ CParticle* CParticle::fromFile (
 
     if (controlpoint_it != data.end ())
     {
-        auto cur = (*controlpoint_it).begin ();
-        auto end = (*controlpoint_it).end ();
-
-        for (; cur != end; cur ++)
-        {
-            particle->insertControlPoint (
-                    Particles::CControlPoint::fromJSON (*cur)
-            );
-        }
+        for (const auto& cur : (*controlpoint_it))
+            particle->insertControlPoint (Particles::CControlPoint::fromJSON (cur));
     }
 
-    auto cur = (*emitter_it).begin ();
-    auto end = (*emitter_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        particle->insertEmitter (
-                Particles::CEmitter::fromJSON (*cur)
-        );
-    }
-
-    cur = (*initializer_it).begin ();
-    end = (*initializer_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        particle->insertInitializer (
-                Particles::CInitializer::fromJSON (*cur)
-        );
-    }
+    for (const auto& cur : (*emitter_it))
+        particle->insertEmitter (Particles::CEmitter::fromJSON (cur));
+    for (const auto&cur : (*initializer_it))
+        particle->insertInitializer (Particles::CInitializer::fromJSON (cur));
 
     return particle;
 }

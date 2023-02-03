@@ -41,39 +41,29 @@ CPass* CPass::fromJSON (json data)
 
     if (textures_it != data.end ())
     {
-        auto cur = (*textures_it).begin ();
-        auto end = (*textures_it).end ();
-
-        for (;cur != end; cur ++)
+        for (const auto& cur : (*textures_it))
         {
-            if ((*cur).is_null () == true)
+            if (cur.is_null () == true)
             {
                 pass->insertTexture ("");
             }
             else
             {
-                pass->insertTexture (*cur);
+                pass->insertTexture (cur);
             }
         }
     }
 
     if (combos_it != data.end ())
     {
-        auto cur = (*combos_it).begin ();
-        auto end = (*combos_it).end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : (*combos_it).items ())
         {
             std::string name = cur.key ();
 
-            if ((*cur).is_number_integer () == true)
-            {
-                pass->insertCombo (name, *cur);
-            }
+            if (cur.value ().is_number_integer () == true)
+                pass->insertCombo (name, cur.value ());
             else
-            {
                 sLog.exception ("unexpected non-integer combo on pass");
-            }
         }
     }
 

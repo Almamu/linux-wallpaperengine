@@ -242,34 +242,21 @@ void CImage::setup ()
         );
 
         // add blendmode to the combos
-        auto cur = this->m_material->getPasses ().begin ();
-        auto end = this->m_material->getPasses ().end ();
-
-        for (; cur != end; cur ++)
-            this->m_passes.push_back (*cur);
+        for (const auto& cur : this->m_material->getPasses ())
+            this->m_passes.push_back (cur);
     }
 
     // prepare the passes list
     if (this->getImage ()->getEffects ().empty () == false)
     {
         // generate the effects used by this material
-        auto cur = this->getImage ()->getEffects ().begin ();
-        auto end = this->getImage ()->getEffects ().end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : this->getImage ()->getEffects ())
         {
-            auto effect = new CEffect (this, *cur);
-            auto materialCur = effect->getMaterials ().begin ();
-            auto materialEnd = effect->getMaterials ().end ();
+            auto effect = new CEffect (this, cur);
 
-            for (; materialCur != materialEnd; materialCur ++)
-            {
-                auto passCur = (*materialCur)->getPasses ().begin ();
-                auto passEnd = (*materialCur)->getPasses ().end ();
-
-                for (; passCur != passEnd; passCur ++)
-                    this->m_passes.push_back (*passCur);
-            }
+            for (const auto& material : effect->getMaterials ())
+                for (const auto& pass : material->getPasses ())
+                    this->m_passes.push_back (pass);
 
             this->m_effects.push_back (effect);
         }
@@ -289,11 +276,8 @@ void CImage::setup ()
         );
 
         // add blendmode to the combos
-        auto cur = this->m_colorBlendMaterial->getPasses ().begin ();
-        auto end = this->m_colorBlendMaterial->getPasses ().end ();
-
-        for (; cur != end; cur ++)
-            this->m_passes.push_back (*cur);
+        for (const auto& cur : this->m_colorBlendMaterial->getPasses ())
+            this->m_passes.push_back (cur);
     }
 
     // if there's more than one pass the blendmode has to be moved from the beginning to the end
@@ -306,16 +290,11 @@ void CImage::setup ()
         (*first)->getPass ()->setBlendingMode ("normal");
     }
 
-    {
-        // calculate full animation time (if any)
-        this->m_animationTime = 0.0f;
+    // calculate full animation time (if any)
+    this->m_animationTime = 0.0f;
 
-        auto cur = this->getTexture ()->getFrames ().begin ();
-        auto end = this->getTexture ()->getFrames ().end ();
-
-        for (; cur != end; cur++)
-            this->m_animationTime += (*cur)->frametime;
-    }
+    for (const auto& cur : this->getTexture ()->getFrames ())
+        this->m_animationTime += cur->frametime;
 
     this->setupPasses ();
     this->m_initialized = true;

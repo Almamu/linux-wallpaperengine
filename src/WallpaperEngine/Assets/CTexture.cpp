@@ -322,16 +322,10 @@ CTexture::TextureHeader::TextureHeader ()
 
 CTexture::TextureHeader::~TextureHeader ()
 {
-    auto imgCur = this->images.begin ();
-    auto imgEnd = this->images.end ();
-
-    for (; imgCur != imgEnd; imgCur ++)
+    for (const auto& imgCur : this->images)
     {
-        auto cur = (*imgCur).second.begin ();
-        auto end = (*imgCur).second.end ();
-
-        for (; cur != end; cur ++)
-            delete *cur;
+        for (auto cur : imgCur.second)
+            delete cur;
     }
 }
 

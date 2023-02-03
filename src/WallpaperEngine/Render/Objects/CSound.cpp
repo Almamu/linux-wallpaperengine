@@ -13,13 +13,10 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
 
 void CSound::load ()
 {
-    auto cur = this->m_sound->getSounds ().begin ();
-    auto end = this->m_sound->getSounds ().end ();
-
-    for (; cur != end; cur ++)
+    for (const auto& cur : this->m_sound->getSounds ())
     {
         uint32_t filesize = 0;
-        const void* filebuffer = this->getContainer ()->readFile ((*cur), &filesize);
+        const void* filebuffer = this->getContainer ()->readFile (cur, &filesize);
 
         this->m_audioStreams.push_back (new Audio::CAudioStream (filebuffer, filesize));
         this->m_soundBuffer.push_back (filebuffer);

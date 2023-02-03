@@ -84,21 +84,17 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
 
             Images::CMaterial* material = effect->getMaterials ().at (passNumber);
 
-            auto passCur = material->getPasses ().begin ();
-            auto passEnd = material->getPasses ().end ();
-
-            for (; passCur != passEnd; passCur ++)
+            for (const auto& passCur : material->getPasses ())
             {
                 if (textures_it != (*cur).end ())
                 {
-                    auto texturesCur = (*textures_it).begin ();
-                    auto texturesEnd = (*textures_it).end ();
+                    int textureNumber = 0;
 
-                    for (int textureNumber = 0; texturesCur != texturesEnd; texturesCur ++)
+                    for (const auto& texturesCur : (*textures_it))
                     {
                         std::string texture;
 
-                        if ((*texturesCur).is_null () == true)
+                        if (texturesCur.is_null () == true)
                         {
                             if (textureNumber == 0)
                             {
@@ -113,15 +109,15 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
                         }
                         else
                         {
-                            texture = *texturesCur;
+                            texture = texturesCur;
                         }
 
-                        std::vector<std::string> passTextures = (*passCur)->getTextures ();
+                        std::vector<std::string> passTextures = passCur->getTextures ();
 
                         if (textureNumber < passTextures.size ())
-                            (*passCur)->setTexture (textureNumber, texture);
+                            passCur->setTexture (textureNumber, texture);
                         else
-                            (*passCur)->insertTexture (texture);
+                            passCur->insertTexture (texture);
 
                         textureNumber ++;
                     }
@@ -129,12 +125,12 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
 
                 if (combos_it != (*cur).end ())
                 {
-                    CEffect::combosFromJSON (combos_it, *passCur);
+                    CEffect::combosFromJSON (combos_it, passCur);
                 }
 
                 if (constants_it != (*cur).end ())
                 {
-                    CEffect::constantsFromJSON (constants_it, *passCur);
+                    CEffect::constantsFromJSON (constants_it, passCur);
                 }
             }
         }
@@ -145,23 +141,15 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
 
 void CEffect::combosFromJSON (json::const_iterator combos_it, Core::Objects::Images::Materials::CPass* pass)
 {
-    auto cur = (*combos_it).begin ();
-    auto end = (*combos_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        pass->insertCombo (cur.key (), *cur);
-    }
+    for (const auto& cur : (*combos_it).items ())
+        pass->insertCombo (cur.key (), cur.value ());
 }
 
 void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Objects::Images::Materials::CPass* pass)
 {
-    auto cur = (*constants_it).begin ();
-    auto end = (*constants_it).end ();
-
-    for (; cur != end; cur ++)
+    for (auto& cur : (*constants_it).items ())
     {
-        json::const_iterator val = cur;
+        auto val = cur.value ();
 
         Effects::Constants::CShaderConstant* constant = nullptr;
 
@@ -169,33 +157,35 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
         // for the UI, take the value, which is what we need
 
         // TODO: SUPPORT USER SETTINGS HERE
-        if ((*cur).is_object () == true)
+        if (cur.value ().is_object () == true)
         {
-            val = (*cur).find ("value");
+            auto it = cur.value ().find ("value");
 
-            if (val == (*cur).end ())
+            if (it == cur.value ().end ())
             {
                 sLog.error ("Found object for shader constant without \"value\" member");
                 continue;
             }
+
+            val = it.value ();
         }
 
-        if ((*val).is_number_float () == true)
+        if (val.is_number_float () == true)
         {
-            constant = new Effects::Constants::CShaderConstantFloat ((*val).get <float> ());
+            constant = new Effects::Constants::CShaderConstantFloat (val.get <float> ());
         }
-        else if ((*val).is_number_integer () == true)
+        else if (val.is_number_integer () == true)
         {
-            constant = new Effects::Constants::CShaderConstantInteger ((*val).get <int> ());
+            constant = new Effects::Constants::CShaderConstantInteger (val.get <int> ());
         }
-        else if ((*val).is_string () == true)
+        else if (val.is_string () == true)
         {
             // try a vector 4 first, then a vector3 and then a vector 2
-            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (*val));
+            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (val));
         }
         else
         {
-            sLog.exception ("unknown shader constant type ", *val);
+            sLog.exception ("unknown shader constant type ", val);
         }
 
         pass->insertConstant (cur.key (), constant);
@@ -204,64 +194,38 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
 
 void CEffect::fbosFromJSON (json::const_iterator fbos_it, CEffect* effect)
 {
-    auto cur = (*fbos_it).begin ();
-    auto end = (*fbos_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        effect->insertFBO (
-            Effects::CFBO::fromJSON (*cur)
-        );
-    }
+    for (const auto& cur : (*fbos_it))
+        effect->insertFBO (Effects::CFBO::fromJSON (cur));
 }
 
 void CEffect::dependencyFromJSON (json::const_iterator dependencies_it, CEffect* effect)
 {
-    auto cur = (*dependencies_it).begin ();
-    auto end = (*dependencies_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        effect->insertDependency (*cur);
-    }
+    for (const auto& cur : (*dependencies_it))
+        effect->insertDependency (cur);
 }
 
 void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect, const CContainer* container)
 {
-    auto cur = (*passes_it).begin ();
-    auto end = (*passes_it).end ();
-
-    for (; cur != end; cur ++)
+    for (const auto& cur : (*passes_it))
     {
-        auto materialfile = (*cur).find ("material");
-        auto target = (*cur).find ("target");
-        auto bind = (*cur).find ("bind");
+        auto materialfile = cur.find ("material");
+        auto target = cur.find ("target");
+        auto bind = cur.find ("bind");
 
-        if (materialfile == (*cur).end ())
+        if (materialfile == cur.end ())
             sLog.exception ("Found an effect ", effect->m_name, " without material");
 
         Images::CMaterial* material = nullptr;
 
-        if (target == (*cur).end ())
-        {
+        if (target == cur.end ())
             material = Images::CMaterial::fromFile ((*materialfile).get <std::string> (), container);
-        }
         else
-        {
             material = Images::CMaterial::fromFile ((*materialfile).get <std::string> (), *target, container);
-        }
 
-        if (bind != (*cur).end ())
+        if (bind != cur.end ())
         {
-            auto bindCur = (*bind).begin ();
-            auto bindEnd = (*bind).end ();
-
-            for (; bindCur != bindEnd; bindCur ++)
-            {
-                material->insertTextureBind (
-                    Effects::CBind::fromJSON (*bindCur)
-                );
-            }
+            for (const auto& bindCur : (*bind))
+                material->insertTextureBind (Effects::CBind::fromJSON (bindCur));
         }
 
         effect->insertMaterial (material);
@@ -290,16 +254,9 @@ bool CEffect::isVisible () const
 
 Effects::CFBO* CEffect::findFBO (const std::string& name)
 {
-    auto cur = this->m_fbos.begin ();
-    auto end = this->m_fbos.end ();
-
-    for (; cur != end; cur ++)
-    {
-        if ((*cur)->getName () == name)
-        {
-            return (*cur);
-        }
-    }
+    for (const auto& cur : this->m_fbos)
+        if (cur->getName () == name)
+            return cur;
 
     sLog.exception ("cannot find fbo ", name);
 }

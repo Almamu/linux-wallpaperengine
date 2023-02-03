@@ -121,28 +121,20 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
 
     if (effects_it != data.end () && (*effects_it).is_array () == true)
     {
-        auto cur = (*effects_it).begin ();
-        auto end = (*effects_it).end ();
-
-        for (; cur != end; cur ++)
+        for (const auto& cur : *effects_it)
         {
             auto effectVisible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
             
             object->insertEffect (
-                Objects::CEffect::fromJSON (*cur, effectVisible, object, container)
+                Objects::CEffect::fromJSON (cur, effectVisible, object, container)
             );
         }
     }
 
     if (dependencies_it != data.end () && (*dependencies_it).is_array () == true)
     {
-        auto cur = (*dependencies_it).begin ();
-        auto end = (*dependencies_it).end ();
-
-        for (; cur != end; cur ++)
-        {
-            object->insertDependency (*cur);
-        }
+        for (const auto& cur : *dependencies_it)
+            object->insertDependency (cur);
     }
 
     return object;

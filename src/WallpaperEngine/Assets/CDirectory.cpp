@@ -1,13 +1,15 @@
 #include "common.h"
 #include <sys/stat.h>
 
+#include <utility>
+
 #include "CDirectory.h"
 #include "CAssetLoadException.h"
 
 using namespace WallpaperEngine::Assets;
 
-CDirectory::CDirectory (std::string basepath) :
-    m_basepath (std::move (basepath))
+CDirectory::CDirectory (std::filesystem::path  basepath) :
+    m_basepath (std::move(basepath))
 {
     // ensure the specified path exists
     struct stat buffer;
@@ -26,7 +28,7 @@ CDirectory::~CDirectory ()
 
 const void* CDirectory::readFile (std::string filename, uint32_t* length) const
 {
-    std::string final = this->m_basepath + filename;
+    std::filesystem::path final = std::filesystem::path (this->m_basepath) / filename;
 
     // first check the cache, if the file is there already just return the data in there
     auto it = this->m_cache.find (final);

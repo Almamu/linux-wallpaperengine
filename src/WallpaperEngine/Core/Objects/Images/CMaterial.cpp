@@ -43,15 +43,8 @@ CMaterial* CMaterial::fromJSON (const std::string& name, json data)
 
     CMaterial* material = new CMaterial (name);
 
-    auto cur = (*passes_it).begin ();
-    auto end = (*passes_it).end ();
-
-    for (; cur != end; cur ++)
-    {
-        material->insertPass (
-            Materials::CPass::fromJSON (*cur)
-        );
-    }
+    for (const auto& cur : (*passes_it))
+        material->insertPass (Materials::CPass::fromJSON (cur));
 
     return material;
 }
