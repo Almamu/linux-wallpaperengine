@@ -788,7 +788,6 @@ void CPass::setupShaderVariables ()
     for (const auto& cur : this->m_fragShader->getParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
-
 }
 
 // define some basic methods for the template

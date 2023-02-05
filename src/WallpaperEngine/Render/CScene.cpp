@@ -74,7 +74,7 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     this->_rt_4FrameBuffer = this->createFBO (
         "_rt_4FrameBuffer",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
+        ITexture::TextureFlags::ClampUVs,
         1.0,
         sceneWidth / 4, sceneHeight / 4,
         sceneWidth / 4, sceneHeight / 4
@@ -82,7 +82,7 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     this->_rt_8FrameBuffer = this->createFBO (
         "_rt_8FrameBuffer",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
+        ITexture::TextureFlags::ClampUVs,
         1.0,
         sceneWidth / 8, sceneHeight / 8,
         sceneWidth / 8, sceneHeight / 8
@@ -90,7 +90,7 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
     this->_rt_Bloom = this->createFBO (
         "_rt_Bloom",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
+        ITexture::TextureFlags::ClampUVs,
         1.0,
         sceneWidth / 8, sceneHeight / 8,
         sceneWidth / 8, sceneHeight / 8
