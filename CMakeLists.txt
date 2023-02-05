@@ -65,12 +65,6 @@ add_executable(
     src/WallpaperEngine/Core/Core.h
     src/WallpaperEngine/Core/Core.cpp
 
-    src/WallpaperEngine/Audio/Drivers/CAudioDriver.cpp
-    src/WallpaperEngine/Audio/Drivers/CAudioDriver.h
-    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.cpp
-    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h
-    src/WallpaperEngine/Audio/CAudioContext.cpp
-    src/WallpaperEngine/Audio/CAudioContext.h
     src/WallpaperEngine/Audio/CAudioStream.cpp
     src/WallpaperEngine/Audio/CAudioStream.h
 
