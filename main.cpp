@@ -33,6 +33,7 @@
 float g_Time;
 float g_TimeLast;
 bool g_KeepRunning = true;
+bool g_AudioEnabled = true;
 int g_AudioVolume = 15;
 
 void print_help (const char* route)
@@ -258,7 +259,6 @@ int main (int argc, char* argv[])
     std::map <std::string, std::string> propertyOverrides;
 
     int maximumFPS = 30;
-    bool shouldEnableAudio = true;
     bool shouldTakeScreenshot = false;
     bool shouldListPropertiesAndStop = false;
     FREE_IMAGE_FORMAT screenshotFormat = FIF_UNKNOWN;
@@ -321,7 +321,7 @@ int main (int argc, char* argv[])
                 break;
 
             case 's':
-                shouldEnableAudio = false;
+                g_AudioEnabled = false;
                 break;
 
             case 'h':
@@ -445,7 +445,7 @@ int main (int argc, char* argv[])
     std::signal(SIGINT, signalhandler);
     std::signal(SIGTERM, signalhandler);
 
-    if (shouldEnableAudio == true && SDL_Init (SDL_INIT_AUDIO) < 0)
+    if (g_AudioEnabled == true && SDL_Init (SDL_INIT_AUDIO) < 0)
     {
         sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError());
         sLog.error ("Continuing without audio support");
@@ -453,7 +453,7 @@ int main (int argc, char* argv[])
 
     // initialize OpenGL driver
     WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver ("Wallpaper Engine");
-    // initialize custom context class
+    // initialize render context
     WallpaperEngine::Render::CRenderContext context (screens, videoDriver, &containers);
     // initialize mouse support
     context.setMouse (new CMouseInput (videoDriver.getWindow ()));
@@ -461,10 +461,6 @@ int main (int argc, char* argv[])
     context.setWallpaper (
         WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), &context)
     );
-
-    // update maximum FPS if it's a video
-    if (context.getWallpaper ()->is <WallpaperEngine::Render::CVideo> () == true)
-        maximumFPS = context.getWallpaper ()->as <WallpaperEngine::Render::CVideo> ()->getFPS ();
 
     float startTime, endTime, minimumTime = 1.0f / maximumFPS;
 

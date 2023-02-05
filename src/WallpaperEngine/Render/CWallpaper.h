@@ -46,11 +46,11 @@ namespace WallpaperEngine::Render
         /**
          * @return The scene's framebuffer
          */
-        GLuint getWallpaperFramebuffer () const;
+        virtual GLuint getWallpaperFramebuffer () const;
         /**
          * @return The scene's texture
          */
-        GLuint getWallpaperTexture () const;
+        virtual GLuint getWallpaperTexture () const;
         /**
          * Creates a new FBO for this wallpaper
          *
@@ -89,6 +89,16 @@ namespace WallpaperEngine::Render
         void setDestinationFramebuffer (GLuint framebuffer);
 
         /**
+         * @return The width of this wallpaper
+         */
+        virtual uint32_t getWidth () const = 0;
+
+        /**
+         * @return The height of this wallpaper
+         */
+        virtual uint32_t getHeight () const = 0;
+
+        /**
          * Creates a new instance of CWallpaper based on the information provided by the read backgrounds
          *
          * @param wallpaper
@@ -110,7 +120,7 @@ namespace WallpaperEngine::Render
 
         Core::CWallpaper* m_wallpaperData;
 
-        Core::CWallpaper* getWallpaperData ();
+        Core::CWallpaper* getWallpaperData () const;
 
         /**
          * The FBO used for scene output

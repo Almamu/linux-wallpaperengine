@@ -43,13 +43,13 @@ CScene::CScene (Core::CScene* scene, CRenderContext* context) :
         scene->getOrthogonalProjection ()->getHeight ()
     );
 
+    // setup framebuffers here as they're required for the scene setup
+    this->setupFramebuffers();
+
     // set clear color
     glm::vec3 clearColor = this->getScene ()->getClearColor ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
-
-    // setup framebuffers
-    this->setupFramebuffers ();
 
     // create all objects based off their dependencies
     for (const auto& cur : scene->getObjects ())
@@ -258,9 +258,19 @@ void CScene::updateMouse (glm::ivec4 viewport)
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-Core::CScene* CScene::getScene ()
+Core::CScene* CScene::getScene () const
 {
     return this->getWallpaperData ()->as<Core::CScene> ();
+}
+
+uint32_t CScene::getWidth () const
+{
+    return this->getScene ()->getOrthogonalProjection()->getWidth ();
+}
+
+uint32_t CScene::getHeight () const
+{
+    return this->getScene ()->getOrthogonalProjection()->getHeight ();
 }
 
 glm::vec2* CScene::getMousePosition ()

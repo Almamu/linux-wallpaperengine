@@ -58,7 +58,7 @@ const CContainer* CWallpaper::getContainer () const
     return this->m_context->getContainer ();
 }
 
-WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData ()
+WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const
 {
     return this->m_wallpaperData;
 }
@@ -205,23 +205,8 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
     if (renderFrame == true)
         this->renderFrame (viewport);
 
-    int projectionWidth = 1920;
-    int projectionHeight = 1080;
-
-    if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
-    {
-        auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
-
-        projectionWidth = projection->getWidth ();
-        projectionHeight = projection->getHeight ();
-    }
-    else if (this->is <WallpaperEngine::Render::CVideo> ())
-    {
-        auto video = this->as <WallpaperEngine::Render::CVideo> ();
-
-        projectionWidth = video->getWidth ();
-        projectionHeight = video->getHeight ();
-    }
+    uint32_t projectionWidth = this->getWidth ();
+    uint32_t projectionHeight = this->getHeight ();
 
     float ustart = 0.0f;
     float uend = 0.0f;
@@ -295,6 +280,8 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
 
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
 
+    glBindVertexArray (this->m_vaoBuffer);
+
     if (newFrame)
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -323,23 +310,8 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
 
 void CWallpaper::setupFramebuffers ()
 {
-    int projectionWidth = 1920;
-    int projectionHeight = 1080;
-
-    if (this->getWallpaperData ()->is <WallpaperEngine::Core::CScene> ())
-    {
-        auto projection = this->getWallpaperData ()->as <WallpaperEngine::Core::CScene> ()->getOrthogonalProjection ();
-
-        projectionWidth = projection->getWidth ();
-        projectionHeight = projection->getHeight ();
-    }
-    else if (this->is <WallpaperEngine::Render::CVideo> ())
-    {
-        auto video = this->as <WallpaperEngine::Render::CVideo> ();
-
-        projectionWidth = video->getWidth ();
-        projectionHeight = video->getHeight ();
-    }
+    uint32_t width = this->getWidth ();
+    uint32_t height = this->getHeight ();
 
     // create framebuffer for the scene
     this->m_sceneFBO = this->createFBO (
@@ -347,8 +319,8 @@ void CWallpaper::setupFramebuffers ()
         ITexture::TextureFormat::ARGB8888,
         ITexture::TextureFlags::NoInterpolation,
         1.0,
-        projectionWidth, projectionHeight,
-        projectionWidth, projectionHeight
+        width, height,
+        width, height
     );
 }
 

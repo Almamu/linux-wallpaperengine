@@ -1,242 +1,133 @@
 #include "common.h"
 #include "CVideo.h"
 
+#include <pthread.h>
+#include <GL/glew.h>
+
+extern bool g_AudioEnabled;
+
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CVideo::CVideo (Core::CVideo* video, CRenderContext* context) :
-    CWallpaper (video, Type, context)
+void* get_proc_address (void* ctx, const char* name)
 {
-    if (avformat_open_input (&m_formatCtx, video->getFilename ().c_str (), NULL, NULL) < 0)
-        sLog.exception ("Failed to open video file ", video->getFilename ());
-
-    if (avformat_find_stream_info (m_formatCtx, NULL) < 0)
-        sLog.exception ("Failed to get stream info for video file ", video->getFilename ());
-
-    // Find first video stream
-    for (int i = 0; i < m_formatCtx->nb_streams; i++)
-    {
-        if (m_formatCtx->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-        {
-            m_videoStream = i;
-            break;
-        }
-    }
-
-    // Find first audio stream
-    for (int i = 0; i < m_formatCtx->nb_streams; i++)
-    {
-        if (m_formatCtx->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            m_audioStream = i; 
-            break;
-        }
-    }
-
-    // Only video stream is required
-    if (m_videoStream == -1)
-        sLog.exception ("Failed to find video stream for file ", video->getFilename ());
-
-    const AVCodec* codec = avcodec_find_decoder (m_formatCtx->streams [m_videoStream]->codecpar->codec_id);
-    if (codec == nullptr)
-        sLog.exception ("Failed to find codec for video ", video->getFilename ());
-
-    m_codecCtx = avcodec_alloc_context3 (codec);
-    if (avcodec_parameters_to_context (m_codecCtx, m_formatCtx->streams [m_videoStream]->codecpar))
-        sLog.exception ("Failed to copy codec parameters when playing video ", video->getFilename ());
-
-    if (avcodec_open2 (m_codecCtx, codec, NULL) < 0)
-        sLog.exception ("Failed to open coded for playback of video ", video->getFilename ());
-
-    // initialize audio if there's any audio stream
-    if (m_audioStream != -1)
-    {
-        const AVCodec* audioCodec = avcodec_find_decoder (m_formatCtx->streams [m_audioStream]->codecpar->codec_id);
-        if (audioCodec == nullptr)
-            sLog.exception ("Failed to find coded for audio in video ", video->getFilename ());
-
-        AVCodecContext* audioContext = avcodec_alloc_context3 (audioCodec);
-        if (avcodec_parameters_to_context (audioContext, m_formatCtx->streams [m_audioStream]->codecpar))
-            sLog.exception ("Failed to setup audio context for video ", video->getFilename ());
-
-        if (avcodec_open2 (audioContext, audioCodec, NULL) < 0)
-            sLog.exception ("Failed to open audio coded for video ", video->getFilename ());
-
-        this->m_audio = new Audio::CAudioStream (audioContext);
-    }
-
-    m_videoFrame = av_frame_alloc ();
-    m_videoFrameRGB = av_frame_alloc ();
-    if (m_videoFrameRGB == nullptr)
-        sLog.exception ("Cannot allocate video frame");
-
-    GLfloat texCoords [] = {
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f
-    };
-
-    // inverted positions so the final texture is rendered properly
-    GLfloat position [] = {
-        -1.0f, 1.0f, 0.0f,
-        1.0, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f
-    };
-
-    glGenBuffers (1, &this->m_texCoordBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
-
-    glGenBuffers (1, &this->m_positionBuffer);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
-
-    // setup gl things to render the background
-    glGenTextures (1, &this->m_texture);
-    // configure the texture
-    glBindTexture (GL_TEXTURE_2D, this->m_texture);
-    // set filtering parameters, otherwise the texture is not rendered
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // set texture basic data
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, m_codecCtx->width, m_codecCtx->height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-
-    this->setupShaders ();
-    this->setupFramebuffers ();
+    return reinterpret_cast <void*> (glfwGetProcAddress (name));
 }
 
-void CVideo::setSize (int width, int height)
+CVideo::CVideo (Core::CVideo* video, CRenderContext* context) :
+    CWallpaper (video, Type, context),
+    m_width (16),
+    m_height (16)
 {
-    if (m_buffer != nullptr)
-        av_free (m_buffer);
+    // create mpv contexts
+    this->m_mpv = mpv_create ();
 
-    if (m_swsCtx != nullptr)
-        sws_freeContext (m_swsCtx);
+    if (this->m_mpv == nullptr)
+        sLog.exception ("Could not create mpv context");
 
-    int numBytes = av_image_get_buffer_size (AV_PIX_FMT_RGB24, width, height, 1);
-    m_buffer = (uint8_t*) av_malloc (numBytes * sizeof (uint8_t));
+    mpv_set_option_string (this->m_mpv, "terminal", "yes");
+    mpv_set_option_string (this->m_mpv, "msg-level", "all=v");
+    mpv_set_option_string (this->m_mpv, "input-cursor", "no");
+    mpv_set_option_string (this->m_mpv, "cursor-autohide", "no");
+    mpv_set_option_string (this->m_mpv, "config", "no");
+    mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
 
-    av_image_fill_arrays (m_videoFrameRGB->data, m_videoFrameRGB->linesize, m_buffer, AV_PIX_FMT_RGB24, width, height, 1);
+    if (mpv_initialize (this->m_mpv) < 0)
+        sLog.exception ("Could not initialize mpv context");
 
-    m_swsCtx = sws_getContext (m_codecCtx->width, m_codecCtx->height,
-                    m_codecCtx->pix_fmt,
-                    width, height,
-                    AV_PIX_FMT_RGB24,
-                    SWS_BILINEAR, NULL, NULL, NULL);
+    mpv_set_option_string (this->m_mpv, "hwdec", "auto");
+    mpv_set_option_string (this->m_mpv, "loop", "inf");
+
+    // initialize gl context for mpv
+    mpv_opengl_init_params gl_init_params {get_proc_address, nullptr};
+    mpv_render_param params[] {
+        {MPV_RENDER_PARAM_API_TYPE, const_cast <char*> (MPV_RENDER_API_TYPE_OPENGL)},
+        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
+        {MPV_RENDER_PARAM_INVALID, nullptr}
+    };
+
+    if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0)
+        sLog.exception ("Failed to initialize MPV's GL context");
+
+    const char* command [] = {
+        "loadfile", this->getVideo ()->getFilename ().c_str (), nullptr
+    };
+
+    if (mpv_command (this->m_mpv, command) < 0)
+        sLog.exception ("Cannot load video to play");
+
+    if (g_AudioEnabled == false)
+    {
+        const char* mutecommand [] = {
+            "set", "mute", "yes", nullptr
+        };
+
+        mpv_command (this->m_mpv, mutecommand);
+    }
+
+    // setup framebuffers
+    this->setupFramebuffers();
+}
+
+void CVideo::setSize (int64_t width, int64_t height)
+{
+    this->m_width = width > 0 ? width : this->m_width;
+    this->m_height = height > 0 ? height : this->m_height;
+
+    // do not refresh the texture if any of the sizes are invalid
+    if (this->m_width <= 0 || this->m_height <= 0)
+        return;
+
+    // reconfigure the texture
+    glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture());
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 }
 
 void CVideo::renderFrame (glm::ivec4 viewport)
 {
-    // do not render using the CWallpaper function, just use this one
-    this->setSize (m_codecCtx->width, m_codecCtx->height);
-    getNextFrame ();
-    writeFrameToImage ();
+    // read any and all the events available
+    while (this->m_mpv)
+    {
+        mpv_event* event = mpv_wait_event (this->m_mpv, 0);
 
+        if (event == nullptr || event->event_id == MPV_EVENT_NONE)
+            break;
+
+        // we do not care about any of the events
+        switch (event->event_id)
+        {
+            case MPV_EVENT_VIDEO_RECONFIG:
+                {
+                    int64_t width, height;
+
+                    if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
+                        mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
+                        this->setSize (width, height);
+                }
+                break;
+        }
+    }
+
+    // render the next
     glViewport (0, 0, this->getWidth (), this->getHeight ());
 
-    // do the actual rendering
-    // write to default's framebuffer
-    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
+    mpv_opengl_fbo fbo {
+        static_cast <int> (this->getWallpaperFramebuffer()),
+        static_cast <int> (this->m_width),
+        static_cast <int> (this->m_height),
+        GL_RGBA8
+    };
 
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable (GL_BLEND);
-    glDisable (GL_DEPTH_TEST);
-    // do not use any shader
-    glUseProgram (this->m_shader);
-    // activate scene texture
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, this->m_texture);
-    // set uniforms and attribs
-    glEnableVertexAttribArray (this->a_TexCoord);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // no need to flip as it'll be handled by the wallpaper rendering code
+    int flip_y = 0;
 
-    glEnableVertexAttribArray (this->a_Position);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    mpv_render_param params [] = {
+        {MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
+        {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
+        {MPV_RENDER_PARAM_INVALID, nullptr}
+    };
 
-    glUniform1i (this->g_Texture0, 0);
-    // write the framebuffer as is to the screen
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glDrawArrays (GL_TRIANGLES, 0, 6);
-}
-
-void CVideo::getNextFrame ()
-{
-    bool eof = false;
-    AVPacket packet;
-    packet.data = nullptr;
-    
-    // Find video streams packet
-    do
-    {
-        if (packet.data != nullptr)
-            av_packet_unref (&packet);
-
-        int readError = av_read_frame (m_formatCtx, &packet);
-        if (readError == AVERROR_EOF)
-        {
-            eof = true;
-            break;
-        }
-        else if (readError < 0)
-        {
-            char err[AV_ERROR_MAX_STRING_SIZE];
-            sLog.exception (av_make_error_string (err, AV_ERROR_MAX_STRING_SIZE, readError));
-        }
-        
-    } while (packet.stream_index != m_videoStream /*&& packet.stream_index != m_audioStream*/);
-
-    if (!eof && packet.stream_index == m_videoStream)
-    {
-        // Send video stream packet to codec
-        if (avcodec_send_packet (m_codecCtx, &packet) < 0)
-            return;
-
-        // Receive frame from codec
-        if (avcodec_receive_frame (m_codecCtx, m_videoFrame) < 0)
-            return;
-
-        sws_scale (m_swsCtx, (uint8_t const* const*) m_videoFrame->data, m_videoFrame->linesize,
-                   0, m_codecCtx->height, m_videoFrameRGB->data, m_videoFrameRGB->linesize);
-
-    }
-    /*else if (packet.stream_index == m_audioStream)
-    {
-        this->m_audio->queuePacket (&packet);
-    }*/
-
-    av_packet_unref (&packet);
-
-    if (eof)
-        restartStream ();
-}
-
-void CVideo::writeFrameToImage ()
-{
-    uint8_t* frameData = m_videoFrameRGB->data [0];
-
-    if (frameData == nullptr)
-        return;
-
-    // bind the texture
-    glBindTexture (GL_TEXTURE_2D, this->m_texture);
-    // give openGL the new image's data
-    glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, m_codecCtx->width, m_codecCtx->height, GL_RGB, GL_UNSIGNED_BYTE, frameData);
-}
-
-void CVideo::restartStream ()
-{
-    av_seek_frame (m_formatCtx, m_videoStream, 0, AVSEEK_FLAG_FRAME);
-    avcodec_flush_buffers (m_codecCtx);
+    mpv_render_context_render (this->m_mpvGl, params);
 }
 
 Core::CVideo* CVideo::getVideo ()
@@ -244,137 +135,14 @@ Core::CVideo* CVideo::getVideo ()
     return this->getWallpaperData ()->as<Core::CVideo> ();
 }
 
-
-void CVideo::setupShaders ()
+uint32_t CVideo::getWidth () const
 {
-    // reserve shaders in OpenGL
-    GLuint vertexShaderID = glCreateShader (GL_VERTEX_SHADER);
-
-    // give shader's source code to OpenGL to be compiled
-    const char* sourcePointer = "#version 120\n"
-                                "attribute vec3 a_Position;\n"
-                                "attribute vec2 a_TexCoord;\n"
-                                "varying vec2 v_TexCoord;\n"
-                                "void main () {\n"
-                                "gl_Position = vec4 (a_Position, 1.0);\n"
-                                "v_TexCoord = a_TexCoord;\n"
-                                "}";
-
-    glShaderSource (vertexShaderID, 1, &sourcePointer, nullptr);
-    glCompileShader (vertexShaderID);
-
-    GLint result = GL_FALSE;
-    int infoLogLength = 0;
-
-    // ensure the vertex shader was correctly compiled
-    glGetShaderiv (vertexShaderID, GL_COMPILE_STATUS, &result);
-    glGetShaderiv (vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-    if (infoLogLength > 0)
-    {
-        char* logBuffer = new char [infoLogLength + 1];
-        // ensure logBuffer ends with a \0
-        memset (logBuffer, 0, infoLogLength + 1);
-        // get information about the error
-        glGetShaderInfoLog (vertexShaderID, infoLogLength, nullptr, logBuffer);
-        // throw an exception about the issue
-        std::string message = logBuffer;
-        // free the buffer
-        delete[] logBuffer;
-        // throw an exception
-        sLog.exception (message);
-    }
-
-    // reserve shaders in OpenGL
-    GLuint fragmentShaderID = glCreateShader (GL_FRAGMENT_SHADER);
-
-    // give shader's source code to OpenGL to be compiled
-    sourcePointer = "#version 120\n"
-                    "uniform sampler2D g_Texture0;\n"
-                    "varying vec2 v_TexCoord;\n"
-                    "void main () {\n"
-                    "gl_FragColor = texture2D (g_Texture0, v_TexCoord);\n"
-                    "}";
-
-    glShaderSource (fragmentShaderID, 1, &sourcePointer, nullptr);
-    glCompileShader (fragmentShaderID);
-
-    result = GL_FALSE;
-    infoLogLength = 0;
-
-    // ensure the vertex shader was correctly compiled
-    glGetShaderiv (fragmentShaderID, GL_COMPILE_STATUS, &result);
-    glGetShaderiv (fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-    if (infoLogLength > 0)
-    {
-        char* logBuffer = new char [infoLogLength + 1];
-        // ensure logBuffer ends with a \0
-        memset (logBuffer, 0, infoLogLength + 1);
-        // get information about the error
-        glGetShaderInfoLog (fragmentShaderID, infoLogLength, nullptr, logBuffer);
-        // throw an exception about the issue
-        std::string message = logBuffer;
-        // free the buffer
-        delete[] logBuffer;
-        // throw an exception
-        sLog.exception (message);
-    }
-
-    // create the final program
-    this->m_shader = glCreateProgram ();
-    // link the shaders together
-    glAttachShader (this->m_shader, vertexShaderID);
-    glAttachShader (this->m_shader, fragmentShaderID);
-    glLinkProgram (this->m_shader);
-    // check that the shader was properly linked
-    result = GL_FALSE;
-    infoLogLength = 0;
-
-    glGetProgramiv (this->m_shader, GL_LINK_STATUS, &result);
-    glGetProgramiv (this->m_shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-    if (infoLogLength > 0)
-    {
-        char* logBuffer = new char [infoLogLength + 1];
-        // ensure logBuffer ends with a \0
-        memset (logBuffer, 0, infoLogLength + 1);
-        // get information about the error
-        glGetProgramInfoLog (this->m_shader, infoLogLength, nullptr, logBuffer);
-        // throw an exception about the issue
-        std::string message = logBuffer;
-        // free the buffer
-        delete[] logBuffer;
-        // throw an exception
-        sLog.exception (message);
-    }
-
-    // after being liked shaders can be dettached and deleted
-    glDetachShader (this->m_shader, vertexShaderID);
-    glDetachShader (this->m_shader, fragmentShaderID);
-
-    glDeleteShader (vertexShaderID);
-    glDeleteShader (fragmentShaderID);
-
-    // get textures
-    this->g_Texture0 = glGetUniformLocation (this->m_shader, "g_Texture0");
-    this->a_Position = glGetAttribLocation (this->m_shader, "a_Position");
-    this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
+    return this->m_width;
 }
 
-int CVideo::getWidth ()
+uint32_t CVideo::getHeight () const
 {
-    return this->m_codecCtx->width;
-}
-
-int CVideo::getHeight ()
-{
-    return this->m_codecCtx->height;
-}
-
-int CVideo::getFPS ()
-{
-    return this->m_codecCtx->framerate.num;
+    return this->m_height;
 }
 
 const std::string CVideo::Type = "video";
