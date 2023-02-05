@@ -782,42 +782,30 @@ void CPass::setupShaderVariables ()
     }
 
     for (const auto& cur : this->m_vertShader->getParameters ())
-    {
-        if (this->m_uniforms.find (cur->getName ()) != this->m_uniforms.end ())
-            continue;
-
-        if (cur->is <CShaderVariableFloat> ())
-            this->addUniform (cur->getName (), const_cast <float*> (reinterpret_cast <const float*> (cur->as <CShaderVariableFloat> ()->getValue ())));
-        else if (cur->is <CShaderVariableInteger> ())
-            this->addUniform (cur->getName (), const_cast <int*> (reinterpret_cast <const int*> (cur->as <CShaderVariableInteger> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector2> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> (cur->as <CShaderVariableVector2> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector3> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> (cur->as <CShaderVariableVector3> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector4> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> (cur->as <CShaderVariableVector4> ()->getValue ())));
-    }
+        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+            this->addUniform (cur);
 
     for (const auto& cur : this->m_fragShader->getParameters ())
-    {
-        if (this->m_uniforms.find (cur->getName ()) != this->m_uniforms.end ())
-            continue;
+        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+            this->addUniform (cur);
 
-        if (cur->is <CShaderVariableFloat> ())
-            this->addUniform (cur->getName (), const_cast <float*> (reinterpret_cast <const float*> (cur->as <CShaderVariableFloat> ()->getValue ())));
-        else if (cur->is <CShaderVariableInteger> ())
-            this->addUniform (cur->getName (), const_cast <int*> (reinterpret_cast <const int*> (cur->as <CShaderVariableInteger> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector2> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> (cur->as <CShaderVariableVector2> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector3> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> (cur->as <CShaderVariableVector3> ()->getValue ())));
-        else if (cur->is <CShaderVariableVector4> ())
-            this->addUniform (cur->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> (cur->as <CShaderVariableVector4> ()->getValue ())));
-    }
 }
 
 // define some basic methods for the template
-/*template double Core::jsonFindDefault (nlohmann::json& data, const char *key, double defaultValue);*/
+void CPass::addUniform (CShaderVariable* value)
+{
+    if (value->is <CShaderVariableFloat> ())
+        this->addUniform (value->getName (), const_cast <float*> (reinterpret_cast <const float*> (value->as <CShaderVariableFloat> ()->getValue ())));
+    else if (value->is <CShaderVariableInteger> ())
+        this->addUniform (value->getName (), const_cast <int*> (reinterpret_cast <const int*> (value->as <CShaderVariableInteger> ()->getValue ())));
+    else if (value->is <CShaderVariableVector2> ())
+        this->addUniform (value->getName (), const_cast <glm::vec2*> (reinterpret_cast <const glm::vec2*> (value->as <CShaderVariableVector2> ()->getValue ())));
+    else if (value->is <CShaderVariableVector3> ())
+        this->addUniform (value->getName (), const_cast <glm::vec3*> (reinterpret_cast <const glm::vec3*> (value->as <CShaderVariableVector3> ()->getValue ())));
+    else if (value->is <CShaderVariableVector4> ())
+        this->addUniform (value->getName (), const_cast <glm::vec4*> (reinterpret_cast <const glm::vec4*> (value->as <CShaderVariableVector4> ()->getValue ())));
+}
+
 void CPass::addUniform (const std::string& name, int value)
 {
     this->addUniform (name, UniformType::Integer, value);

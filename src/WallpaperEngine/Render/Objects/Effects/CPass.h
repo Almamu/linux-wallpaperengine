@@ -89,6 +89,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void setupUniforms ();
         void setupAttributes ();
         void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
+        void addUniform (CShaderVariable* value);
         void addUniform (const std::string& name, int value);
         void addUniform (const std::string& name, double value);
         void addUniform (const std::string& name, float value);
