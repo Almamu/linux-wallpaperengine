@@ -317,7 +317,7 @@ void CWallpaper::setupFramebuffers ()
     this->m_sceneFBO = this->createFBO (
         "_rt_FullFrameBuffer",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::NoInterpolation,
+        ITexture::TextureFlags::ClampUVs,
         1.0,
         width, height,
         width, height
