@@ -55,8 +55,8 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     auto image_it = data.find ("image");
     auto size_val = jsonFindDefault <std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
     auto alignment = jsonFindDefault <std::string> (data, "alignment", "center");
-    auto alpha = jsonFindUserConfig <CUserSettingFloat, double> (data, "alpha", 1.0);
-    auto color = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "color", {1, 1, 1});
+    auto alpha = jsonFindUserConfig <CUserSettingFloat> (data, "alpha", 1.0);
+    auto color = jsonFindUserConfig <CUserSettingVector3> (data, "color", {1, 1, 1});
     auto brightness_val = jsonFindDefault <float> (data, "brightness", 1.0);
     auto colorBlendMode_val = jsonFindDefault <uint32_t> (data, "colorBlendMode", 0);
     auto parallaxDepth_val = jsonFindDefault <std::string> (data, "parallaxDepth", "0 0");

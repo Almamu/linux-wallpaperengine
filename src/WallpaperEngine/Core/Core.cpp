@@ -144,7 +144,7 @@ template uint64_t Core::jsonFindDefault (nlohmann::json& data, const char *key, 
 template float Core::jsonFindDefault (nlohmann::json& data, const char *key, float defaultValue);
 template double Core::jsonFindDefault (nlohmann::json& data, const char *key, double defaultValue);
 
-template <typename T, typename S> T* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, S defaultValue)
+template <typename T> T* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, typename T::data_type defaultValue)
 {
     auto it = data.find (key);
 
@@ -154,6 +154,6 @@ template <typename T, typename S> T* Core::jsonFindUserConfig (nlohmann::json& d
     return T::fromJSON (*it);
 }
 
-template CUserSettingBoolean* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, bool defaultValue);
-template CUserSettingVector3* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, glm::vec3 defaultValue);
-template CUserSettingFloat* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, double defaultValue);
+template CUserSettingBoolean* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, CUserSettingBoolean::data_type defaultValue);
+template CUserSettingVector3* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, CUserSettingVector3::data_type defaultValue);
+template CUserSettingFloat* Core::jsonFindUserConfig (nlohmann::json& data, const char *key, CUserSettingFloat::data_type defaultValue);

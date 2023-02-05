@@ -12,6 +12,8 @@ namespace WallpaperEngine::Core::UserSettings
     class CUserSettingBoolean : public CUserSettingValue
     {
     public:
+        typedef bool data_type;
+
         static CUserSettingBoolean* fromJSON (nlohmann::json& data);
         static CUserSettingBoolean* fromScalar (bool value);
         static std::string Type;

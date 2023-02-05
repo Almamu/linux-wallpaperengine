@@ -14,6 +14,8 @@ namespace WallpaperEngine::Core::UserSettings
     class CUserSettingVector3 : public CUserSettingValue
     {
     public:
+        typedef glm::vec3 data_type;
+
         static CUserSettingVector3* fromJSON (nlohmann::json& data);
         static CUserSettingVector3* fromScalar (glm::vec3 value);
         static std::string Type;

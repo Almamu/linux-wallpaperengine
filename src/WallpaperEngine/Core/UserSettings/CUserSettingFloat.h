@@ -12,6 +12,8 @@ namespace WallpaperEngine::Core::UserSettings
     class CUserSettingFloat : public CUserSettingValue
     {
     public:
+        typedef double data_type;
+
         static CUserSettingFloat* fromJSON (nlohmann::json& data);
         static CUserSettingFloat* fromScalar (double value);
         static std::string Type;

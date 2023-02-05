@@ -40,9 +40,9 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
-    auto origin = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "origin", {0, 0, 0});
-    auto scale = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (data, "scale", {0, 0, 0});
+    auto visible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
+    auto origin = jsonFindUserConfig <CUserSettingVector3> (data, "origin", {0, 0, 0});
+    auto scale = jsonFindUserConfig <CUserSettingVector3> (data, "scale", {0, 0, 0});
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
     auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
@@ -123,7 +123,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer* containe
     {
         for (const auto& cur : *effects_it)
         {
-            auto effectVisible = jsonFindUserConfig <CUserSettingBoolean, bool> (data, "visible", true);
+            auto effectVisible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
             
             object->insertEffect (
                 Objects::CEffect::fromJSON (cur, effectVisible, object, container)

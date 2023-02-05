@@ -62,9 +62,9 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA PARALLAX ARE PRESENT
     auto ambientcolor = jsonFindDefault <std::string> (*general_it, "ambientcolor", "0 0 0");
-    auto bloom = jsonFindUserConfig <CUserSettingBoolean, bool> (*general_it, "bloom", false);
-    auto bloomstrength = jsonFindUserConfig <CUserSettingFloat, double> (*general_it, "bloomstrength", 0.0);
-    auto bloomthreshold = jsonFindUserConfig <CUserSettingFloat, double> (*general_it, "bloomthreshold", 0.0);
+    auto bloom = jsonFindUserConfig <CUserSettingBoolean> (*general_it, "bloom", false);
+    auto bloomstrength = jsonFindUserConfig <CUserSettingFloat> (*general_it, "bloomstrength", 0.0);
+    auto bloomthreshold = jsonFindUserConfig <CUserSettingFloat> (*general_it, "bloomthreshold", 0.0);
     auto camerafade = jsonFindDefault <bool> (*general_it, "camerafade", false);
     auto cameraparallax = jsonFindDefault <bool> (*general_it, "cameraparallax", true);
     auto cameraparallaxamount = jsonFindDefault <double> (*general_it, "cameraparallaxamount", 1.0f);
@@ -75,7 +75,7 @@ CScene* CScene::fromFile (const std::string& filename, CContainer* container)
     auto camerashakeamplitude = jsonFindDefault <double> (*general_it, "camerashakeamplitude", 0.0f);
     auto camerashakeroughness = jsonFindDefault <double> (*general_it, "camerashakeroughness", 0.0f);
     auto camerashakespeed = jsonFindDefault <double> (*general_it, "camerashakespeed", 0.0f);
-    auto clearcolor = jsonFindUserConfig <CUserSettingVector3, glm::vec3> (*general_it, "clearcolor", {1, 1, 1});
+    auto clearcolor = jsonFindUserConfig <CUserSettingVector3> (*general_it, "clearcolor", {1, 1, 1});
     auto orthogonalprojection_it = jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
     auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
 
