@@ -37,16 +37,8 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 
 ## Commands
 ```
-sudo apt update
-```
-```
 sudo apt-get update
-```
-```
-sudo apt -y install cmake lz4 zlib1g ffmpeg libxxf86vm-dev libglm-dev freeglut3-dev libxrandr-dev libavcodec-dev libavformat-dev libavfilter-dev libsdl1.2-dev libsdl-mixer1.2-dev
-```
-```
-sudo apt-get -y install libsdl2-2.0 libsdl-image1.2-dev libsdl1.2-dev libglfw3 libglfw3-dev libmpv-dev mpv libmpv1
+sudo apt-get install build-essential cmake libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1
 ```
 
 # 5. How to use

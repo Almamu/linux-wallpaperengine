@@ -27,6 +27,7 @@ namespace WallpaperEngine::Core::Objects
 
         void insertSound (std::string filename);
         const std::vector<std::string>& getSounds () const;
+        bool isRepeat () const;
 
     protected:
         CSound (
@@ -36,11 +37,13 @@ namespace WallpaperEngine::Core::Objects
             std::string name,
             CUserSettingVector3* origin,
             CUserSettingVector3* scale,
-            const glm::vec3& angles
+            const glm::vec3& angles,
+            bool repeat
         );
 
         static const std::string Type;
     private:
+        bool m_repeat;
         std::vector<std::string> m_sounds;
     };
 }

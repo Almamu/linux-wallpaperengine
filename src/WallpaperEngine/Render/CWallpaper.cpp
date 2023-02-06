@@ -9,11 +9,12 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context, CAudioContext* audioContext) :
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
     m_context (context),
-    m_destFramebuffer (GL_NONE)
+    m_destFramebuffer (GL_NONE),
+    m_audioContext (audioContext)
 {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
@@ -329,6 +330,11 @@ CRenderContext* CWallpaper::getContext ()
     return this->m_context;
 }
 
+CAudioContext* CWallpaper::getAudioContext ()
+{
+    return this->m_audioContext;
+}
+
 CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)
 {
     CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
@@ -359,12 +365,12 @@ CFBO* CWallpaper::getFBO () const
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context)
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context, CAudioContext* audioContext)
 {
     if (wallpaper->is <Core::CScene> () == true)
-        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context);
+        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext);
     else if (wallpaper->is <Core::CVideo> () == true)
-        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context);
+        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context, audioContext);
     else
         sLog.exception ("Unsupported wallpaper type");
 }

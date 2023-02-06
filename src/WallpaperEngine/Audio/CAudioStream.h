@@ -15,74 +15,79 @@ extern "C"
 #include <SDL.h>
 #include <SDL_thread.h>
 
-#define SDL_AUDIO_BUFFER_SIZE 1024
-#define MAX_AUDIO_FRAME_SIZE 192000
+#include "WallpaperEngine/Audio/CAudioContext.h"
 
-namespace WallpaperEngine
+namespace WallpaperEngine::Audio
 {
-    namespace Audio
+    class CAudioStream
     {
-        class CAudioStream
+    public:
+        CAudioStream (CAudioContext* context, const std::string& filename);
+        CAudioStream (CAudioContext* context, const void* buffer, int length);
+        CAudioStream (CAudioContext* audioContext, AVCodecContext* context);
+
+        void queuePacket (AVPacket* pkt);
+
+        /**
+         * Gets the next packet in the queue
+         *
+         * WARNING: BLOCKS UNTIL SOME DATA IS READ FROM IT
+         *
+         * @return
+         */
+        void dequeuePacket (AVPacket* output);
+
+        AVCodecContext* getContext ();
+        AVFormatContext* getFormatContext ();
+        int getAudioStream ();
+        bool isInitialized ();
+        void setRepeat (bool newRepeat = true);
+        bool isRepeat ();
+        void stop ();
+        const void* getBuffer ();
+        int getLength ();
+        int getPosition ();
+        void setPosition (int current);
+        SDL_cond* getWaitCondition ();
+        int getQueueSize ();
+        int getQueuePacketCount ();
+        int64_t getQueueDuration ();
+        AVRational getTimeBase ();
+        bool isQueueEmpty ();
+        SDL_mutex* getMutex ();
+
+        int decodeFrame (uint8_t* audioBuffer, int bufferSize);
+
+    private:
+        void loadCustomContent (const char* filename = nullptr);
+        int resampleAudio (AVFrame * decoded_audio_frame, enum AVSampleFormat out_sample_fmt, int out_channels, int out_sample_rate, uint8_t* out_buf);
+        bool doQueue (AVPacket* pkt);
+        void initialize ();
+
+        CAudioContext* m_audioContext;
+        bool m_initialized;
+        bool m_repeat;
+        AVCodecContext* m_context = nullptr;
+        AVFormatContext* m_formatContext = nullptr;
+        int m_audioStream = -1;
+        const void* m_buffer;
+        int m_length;
+        int m_position = 0;
+
+        struct MyAVPacketList
         {
-        public:
-            CAudioStream (const std::string& filename);
-            CAudioStream (const void* buffer, int length);
-            CAudioStream (AVCodecContext* context);
-
-            void queuePacket (AVPacket* pkt);
-
-            /**
-             * Gets the next packet in the queue
-             *
-             * WARNING: BLOCKS UNTIL SOME DATA IS READ FROM IT
-             *
-             * @return
-             */
-            void dequeuePacket (AVPacket* output);
-
-            AVCodecContext* getContext ();
-            AVFormatContext* getFormatContext ();
-            int getAudioStream ();
-            bool isInitialized ();
-            void setRepeat (bool newRepeat = true);
-            bool isRepeat ();
-            void stop ();
-            const void* getBuffer ();
-            int getLength ();
-            int getPosition ();
-            void setPosition (int current);
-
-            int decodeFrame (uint8_t* audioBuffer, int bufferSize);
-
-        private:
-            void loadCustomContent (const char* filename = nullptr);
-            int resampleAudio (AVFrame * decoded_audio_frame, enum AVSampleFormat out_sample_fmt, int out_channels, int out_sample_rate, uint8_t* out_buf);
-            bool doQueue (AVPacket* pkt);
-            void initialize ();
-
-            bool m_initialized;
-            bool m_repeat;
-            AVCodecContext* m_context = nullptr;
-            AVFormatContext* m_formatContext = nullptr;
-            int m_audioStream = -1;
-            const void* m_buffer;
-            int m_length;
-            int m_position = 0;
-
-            struct MyAVPacketList
-            {
-                AVPacket *packet;
-            };
-
-            struct PacketQueue
-            {
-                AVFifoBuffer* packetList;
-                int nb_packets;
-                int size;
-                int64_t duration;
-                SDL_mutex *mutex;
-                SDL_cond *cond;
-            } *m_queue;
+            AVPacket *packet;
         };
-    }
+
+        struct PacketQueue
+        {
+            AVFifo* packetList;
+            int nb_packets;
+            int size;
+            int64_t duration;
+            SDL_mutex *mutex;
+            SDL_cond *wait;
+            SDL_cond *cond;
+        } *m_queue;
+    };
 };

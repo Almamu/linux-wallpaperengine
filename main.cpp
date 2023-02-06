@@ -2,7 +2,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SDL.h>
-#include <SDL_mixer.h>
 #include <csignal>
 #include <filesystem>
 #include <getopt.h>
@@ -23,8 +22,10 @@
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 #include "WallpaperEngine/Assets/CPackageLoadException.h"
 
-#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
 #include "Steam/FileSystem/FileSystem.h"
+#include "WallpaperEngine/Audio/CAudioContext.h"
+#include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
+#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
 #include "common.h"
 
 #define WORKSHOP_APP_ID 431960
@@ -34,7 +35,7 @@ float g_Time;
 float g_TimeLast;
 bool g_KeepRunning = true;
 bool g_AudioEnabled = true;
-int g_AudioVolume = 15;
+int g_AudioVolume = 128;
 
 void print_help (const char* route)
 {
@@ -445,12 +446,10 @@ int main (int argc, char* argv[])
     std::signal(SIGINT, signalhandler);
     std::signal(SIGTERM, signalhandler);
 
-    if (g_AudioEnabled == true && SDL_Init (SDL_INIT_AUDIO) < 0)
-    {
-        sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError());
-        sLog.error ("Continuing without audio support");
-    }
-
+    // initialize sdl audio driver
+    WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver;
+    // initialize audio context
+    WallpaperEngine::Audio::CAudioContext audioContext (&audioDriver);
     // initialize OpenGL driver
     WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver ("Wallpaper Engine");
     // initialize render context
@@ -459,7 +458,7 @@ int main (int argc, char* argv[])
     context.setMouse (new CMouseInput (videoDriver.getWindow ()));
     // ensure the context knows what wallpaper to render
     context.setWallpaper (
-        WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), &context)
+        WallpaperEngine::Render::CWallpaper::fromWallpaper (project->getWallpaper (), &context, &audioContext)
     );
 
     float startTime, endTime, minimumTime = 1.0f / maximumFPS;
@@ -494,8 +493,6 @@ int main (int argc, char* argv[])
 
     sLog.out ("Stop requested");
 
-    // terminate SDL
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_Quit ();
 
     return 0;

@@ -14,8 +14,8 @@ void* get_proc_address (void* ctx, const char* name)
     return reinterpret_cast <void*> (glfwGetProcAddress (name));
 }
 
-CVideo::CVideo (Core::CVideo* video, CRenderContext* context) :
-    CWallpaper (video, Type, context),
+CVideo::CVideo (Core::CVideo* video, CRenderContext* context, CAudioContext* audioContext) :
+    CWallpaper (video, Type, context, audioContext),
     m_width (16),
     m_height (16)
 {

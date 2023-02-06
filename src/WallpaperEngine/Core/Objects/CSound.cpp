@@ -5,14 +5,17 @@
 using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
-        CScene* scene,
-        CUserSettingBoolean* visible,
-        uint32_t id,
-        std::string name,
-        CUserSettingVector3* origin,
-        CUserSettingVector3* scale,
-        const glm::vec3& angles) :
-        CObject (scene, visible, id, std::move(name), Type, origin, scale, angles)
+    CScene* scene,
+    CUserSettingBoolean* visible,
+    uint32_t id,
+    std::string name,
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale,
+    const glm::vec3& angles,
+    bool repeat
+) :
+    CObject (scene, visible, id, std::move(name), Type, origin, scale, angles),
+    m_repeat (repeat)
 {
 }
 
@@ -26,8 +29,13 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         CUserSettingVector3* scale,
         const glm::vec3& angles)
 {
+    bool repeat = false;
     // TODO: PARSE AUDIO VOLUME
     auto sound_it = jsonFindRequired (data, "sound", "Sound information not present");
+    auto playbackmode = jsonFindDefault <std::string> (data, "playbackmode", "");
+
+    if (playbackmode == "loop")
+        repeat = true;
 
     if ((*sound_it).is_array () == false)
         sLog.exception ("Expected sound list on element ", name);
@@ -39,7 +47,8 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         name,
         origin,
         scale,
-        angles
+        angles,
+        repeat
     );
 
     for (const auto& cur : (*sound_it))
@@ -56,6 +65,10 @@ void CSound::insertSound (std::string filename)
 const std::vector<std::string>& CSound::getSounds () const
 {
     return this->m_sounds;
+}
+bool CSound::isRepeat () const
+{
+    return this->m_repeat;
 }
 
 const std::string CSound::Type = "sound";

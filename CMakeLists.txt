@@ -7,7 +7,7 @@ set(OpenGL_GL_PREFERENCE "LEGACY")
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(DEBUG=1)
-add_compile_definitions(ERRORONLY=0)
+add_compile_definitions(ERRORONLY=1)
 
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
@@ -15,7 +15,7 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(SDL REQUIRED)
+find_package(SDL2 REQUIRED)
 find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
@@ -27,8 +27,7 @@ include_directories(
     ${XRANDR_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
-    ${SDL_INCLUDE_DIRS}
-    ${SDL_MIXER_INCLUDE_DIRS}
+    ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
     ${FREEIMAGE_INCLUDE_DIR}
     src
@@ -65,6 +64,12 @@ add_executable(
     src/WallpaperEngine/Core/Core.h
     src/WallpaperEngine/Core/Core.cpp
 
+    src/WallpaperEngine/Audio/Drivers/CAudioDriver.cpp
+    src/WallpaperEngine/Audio/Drivers/CAudioDriver.h
+    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.cpp
+    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h
+    src/WallpaperEngine/Audio/CAudioContext.cpp
+    src/WallpaperEngine/Audio/CAudioContext.h
     src/WallpaperEngine/Audio/CAudioStream.cpp
     src/WallpaperEngine/Audio/CAudioStream.h
 
@@ -227,8 +232,7 @@ target_link_libraries(linux-wallpaperengine
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${LZ4_LIBRARY}
-    ${SDL_LIBRARY}
-    ${SDL_MIXER_LIBRARIES}
+    ${SDL2_LIBRARIES}
     ${FFMPEG_LIBRARIES}
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}

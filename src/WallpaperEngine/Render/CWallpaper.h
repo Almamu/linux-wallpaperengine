@@ -10,8 +10,10 @@
 #include "CFBO.h"
 #include "CRenderContext.h"
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Audio/CAudioContext.h"
 
 using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Audio;
 
 namespace WallpaperEngine::Render
 {
@@ -25,7 +27,7 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context, CAudioContext* audioContext);
         ~CWallpaper ();
 
         /**
@@ -42,6 +44,11 @@ namespace WallpaperEngine::Render
          * @return The current context rendering this wallpaper
          */
         CRenderContext* getContext ();
+
+        /**
+         * @return The current audio context for this wallpaper
+         */
+        CAudioContext* getAudioContext ();
 
         /**
          * @return The scene's framebuffer
@@ -105,7 +112,7 @@ namespace WallpaperEngine::Render
          *
          * @return
          */
-        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context);
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context, CAudioContext* audioContext);
 
     protected:
         /**
@@ -160,5 +167,9 @@ namespace WallpaperEngine::Render
          * Context that is using this wallpaper
          */
         CRenderContext* m_context;
+        /*
+         * Audio context that is using this wallpaper
+         */
+        CAudioContext* m_audioContext;
     };
 }

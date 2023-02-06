@@ -4,74 +4,52 @@
 #include <iostream>
 #include <math.h>
 
+// maximum size of the queue to prevent reading too much data
+#define MAX_QUEUE_SIZE (5 * 1024 * 1024)
+#define MIN_FRAMES 25
+
 extern int g_AudioVolume;
 extern bool g_KeepRunning;
 
 using namespace WallpaperEngine::Audio;
 
-// callback for sdl to play our audio
-void audio_callback (void* userdata, uint8_t* stream, int length)
-{
-    auto audioStream = static_cast <CAudioStream*> (userdata);
-    int len1, audio_size;
-
-    static uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
-    static unsigned int audio_buf_size = 0;
-    static unsigned int audio_buf_index = 0;
-
-    while (length > 0 && g_KeepRunning)
-    {
-        if (audio_buf_index >= audio_buf_size)
-        {
-            /* We have already sent all our data; get more */
-            audio_size = audioStream->decodeFrame (audio_buf, sizeof (audio_buf));
-
-            if (audio_size < 0)
-            {
-                /* If error, output silence */
-                audio_buf_size = 1024; // arbitrary?
-                memset(audio_buf, 0, audio_buf_size);
-            }
-            else
-            {
-                audio_buf_size = audio_size;
-            }
-
-            audio_buf_index = 0;
-        }
-
-        len1 = audio_buf_size - audio_buf_index;
-
-        if (len1 > length)
-            len1 = length;
-
-        // mix the audio so the volume is right
-        SDL_MixAudio (stream, (uint8_t*) audio_buf + audio_buf_index, len1, g_AudioVolume);
-
-        length -= len1;
-        stream += len1;
-        audio_buf_index += len1;
-
-        if (audioStream->isInitialized () == false)
-            break;
-    }
-}
-
 int audio_read_thread (void* arg)
 {
+    SDL_mutex* waitMutex = SDL_CreateMutex ();
     CAudioStream* stream = static_cast <CAudioStream*> (arg);
     AVPacket* packet = av_packet_alloc ();
     int ret = 0;
 
+    if (waitMutex == nullptr)
+        sLog.exception ("Cannot create mutex for audio playback waiting");
+
     while (ret >= 0 && g_KeepRunning == true)
     {
+        // give the cpu some time to play the queued frames if there's enough info there
+        if (
+            stream->getQueueSize () >= MAX_QUEUE_SIZE ||
+            (stream->getQueuePacketCount () > MIN_FRAMES &&
+             (av_q2d (stream->getTimeBase ()) * stream->getQueueDuration () > 1.0))
+            )
+        {
+            SDL_LockMutex (waitMutex);
+            SDL_CondWaitTimeout (stream->getWaitCondition (), waitMutex, 10);
+            SDL_UnlockMutex (waitMutex);
+            continue;
+        }
+
         ret = av_read_frame (stream->getFormatContext (), packet);
 
         if (ret == AVERROR_EOF)
         {
             // seek to the beginning of the file again
-            av_seek_frame (stream->getFormatContext (), stream->getAudioStream (), 0, AVSEEK_FLAG_FRAME);
+            avformat_seek_file (stream->getFormatContext (), stream->getAudioStream (), 0, 0, 0, ~AVSEEK_FLAG_FRAME);
             avcodec_flush_buffers (stream->getContext ());
+
+            // ensure the thread is not killed if audio has to be looped
+            if (stream->isRepeat() == true)
+                ret = 0;
+
             continue;
         }
 
@@ -79,7 +57,7 @@ int audio_read_thread (void* arg)
         if (packet->stream_index == stream->getAudioStream ())
             stream->queuePacket (packet);
         else
-            av_packet_unref (packet);
+            av_packet_free (&packet);
 
         if (stream->isInitialized () == false)
             break;
@@ -87,6 +65,7 @@ int audio_read_thread (void* arg)
 
     // stop the audio too just in case
     stream->stop ();
+    SDL_DestroyMutex (waitMutex);
 
     return 0;
 }
@@ -126,21 +105,15 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence)
     return offset;
 }
 
-CAudioStream::CAudioStream (const std::string& filename)
+CAudioStream::CAudioStream (CAudioContext* context, const std::string& filename) :
+    m_audioContext (context)
 {
-    // do not do anything if sdl audio was not initialized
-    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
-        return;
-
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (const void* buffer, int length)
+CAudioStream::CAudioStream (CAudioContext* context, const void* buffer, int length) :
+    m_audioContext (context)
 {
-    // do not do anything if sdl audio was not initialized
-    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
-        return;
-
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
 
@@ -169,14 +142,11 @@ CAudioStream::CAudioStream (const void* buffer, int length)
     this->loadCustomContent ();
 }
 
-CAudioStream::CAudioStream(AVCodecContext* context)
-    : m_context (context),
-    m_queue (new PacketQueue)
+CAudioStream::CAudioStream(CAudioContext* audioContext, AVCodecContext* context) :
+    m_context (context),
+    m_queue (new PacketQueue),
+    m_audioContext (audioContext)
 {
-    // do not do anything if sdl audio was not initialized
-    if (SDL_WasInit (SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
-        return;
-
     this->initialize ();
 }
 
@@ -222,38 +192,18 @@ void CAudioStream::loadCustomContent (const char* filename)
     this->initialize ();
 
     // initialize an SDL thread to read the file
-    SDL_CreateThread (audio_read_thread, this);
+    SDL_CreateThread (audio_read_thread, filename, this);
 }
 
 void CAudioStream::initialize ()
 {
     // allocate the FIFO buffer
-    this->m_queue->packetList = av_fifo_alloc (sizeof (MyAVPacketList));
+    this->m_queue->packetList = av_fifo_alloc2 (1, sizeof (MyAVPacketList), AV_FIFO_FLAG_AUTO_GROW);
 
     // setup the queue information
     this->m_queue->mutex = SDL_CreateMutex ();
     this->m_queue->cond = SDL_CreateCond ();
-
-    // take control of the audio device
-
-    SDL_AudioSpec requestedSpec, finalSpec;
-
-    // Set audio settings from codec info
-    requestedSpec.freq = this->m_context->sample_rate;
-    requestedSpec.format = AUDIO_S16SYS;
-    requestedSpec.channels = this->m_context->channels;
-    requestedSpec.silence = 0;
-    requestedSpec.samples = SDL_AUDIO_BUFFER_SIZE;
-    requestedSpec.callback = audio_callback;
-    requestedSpec.userdata = this;
-
-    if (SDL_OpenAudio (&requestedSpec, &finalSpec) < 0)
-    {
-        sLog.error ("SDL_OpenAudio: ", SDL_GetError ());
-        return;
-    }
-
-    SDL_PauseAudio (0);
+    this->m_queue->wait = SDL_CreateCond ();
 
     this->m_initialized = true;
 }
@@ -281,21 +231,11 @@ void CAudioStream::queuePacket(AVPacket *pkt)
 
 bool CAudioStream::doQueue (AVPacket* pkt)
 {
-    MyAVPacketList entry;
+    MyAVPacketList entry { pkt };
 
-    // ensure the FIFO has enough space to hold the new entry
-    if (av_fifo_space (this->m_queue->packetList) < sizeof (entry))
-    {
-        if (av_fifo_grow (this->m_queue->packetList, sizeof (entry)) < 0)
-        {
-            return false;
-        }
-    }
-
-    entry.packet = pkt;
-
-    // write to the FIFO
-    av_fifo_generic_write (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
+    // write the entry if possible
+    if (av_fifo_write (this->m_queue->packetList, &entry, 1) < 0)
+        return false;
 
     this->m_queue->nb_packets ++;
     this->m_queue->size += entry.packet->size + sizeof (entry);
@@ -315,12 +255,11 @@ void CAudioStream::dequeuePacket (AVPacket* output)
     while (g_KeepRunning)
     {
         // enough data available, read it
-        if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
+        if (av_fifo_read (this->m_queue->packetList, &entry, 1) >= 0)
         {
-            av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
-
             this->m_queue->nb_packets --;
-            this->m_queue->size -= entry.packet->duration;
+            this->m_queue->size -= entry.packet->size + sizeof (entry);
+            this->m_queue->duration -= entry.packet->duration;
 
             // move the reference and free the old one
             av_packet_move_ref (output, entry.packet);
@@ -329,7 +268,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
         }
 
         // make the thread wait if nothing was available
-        SDL_CondWaitTimeout (this->m_queue->cond, this->m_queue->mutex, 1000);
+        SDL_CondWait (this->m_queue->cond, this->m_queue->mutex);
     }
 
     SDL_UnlockMutex (this->m_queue->mutex);
@@ -385,13 +324,45 @@ void CAudioStream::setPosition (int current)
     this->m_position = current;
 }
 
+SDL_cond* CAudioStream::getWaitCondition ()
+{
+    return this->m_queue->wait;
+}
+
+int CAudioStream::getQueueSize ()
+{
+    return this->m_queue->size;
+}
+
+int CAudioStream::getQueuePacketCount ()
+{
+    return this->m_queue->nb_packets;
+}
+
+AVRational CAudioStream::getTimeBase ()
+{
+    return this->m_formatContext->streams [this->m_audioStream]->time_base;
+}
+
+int64_t CAudioStream::getQueueDuration ()
+{
+    return this->m_queue->duration;
+}
+
+bool CAudioStream::isQueueEmpty ()
+{
+    return this->m_queue->nb_packets == 0;
+}
+
+SDL_mutex* CAudioStream::getMutex ()
+{
+    return this->m_queue->mutex;
+}
+
 void CAudioStream::stop ()
 {
     if (this->isInitialized () == false)
         return;
-
-    // pause audio
-    SDL_PauseAudio (1);
 
     // stop the threads running
     this->m_initialized = false;
@@ -421,7 +392,7 @@ int CAudioStream::resampleAudio (
 
     if (!swr_ctx)
     {
-        printf("swr_alloc error.\n");
+        sLog.error("swr_alloc error.\n");
         return -1;
     }
 
@@ -434,7 +405,7 @@ int CAudioStream::resampleAudio (
     // check input audio channels correctly retrieved
     if (in_channel_layout <= 0)
     {
-        printf("in_channel_layout error.\n");
+        sLog.error("in_channel_layout error.\n");
         return -1;
     }
 
@@ -456,7 +427,7 @@ int CAudioStream::resampleAudio (
     in_nb_samples = decoded_audio_frame->nb_samples;
     if (in_nb_samples <= 0)
     {
-        printf("in_nb_samples error.\n");
+        sLog.error("in_nb_samples error.");
         return -1;
     }
 
@@ -513,7 +484,7 @@ int CAudioStream::resampleAudio (
     ret = swr_init(swr_ctx);;
     if (ret < 0)
     {
-        printf("Failed to initialize the resampling context.\n");
+        sLog.error("Failed to initialize the resampling context.");
         return -1;
     }
 
@@ -527,7 +498,7 @@ int CAudioStream::resampleAudio (
     // check rescaling was successful
     if (max_out_nb_samples <= 0)
     {
-        printf("av_rescale_rnd error.\n");
+        sLog.error("av_rescale_rnd error.");
         return -1;
     }
 
@@ -545,7 +516,7 @@ int CAudioStream::resampleAudio (
 
     if (ret < 0)
     {
-        printf("av_samples_alloc_array_and_samples() error: Could not allocate destination samples.\n");
+        sLog.error("av_samples_alloc_array_and_samples() error: Could not allocate destination samples.");
         return -1;
     }
 
@@ -560,7 +531,7 @@ int CAudioStream::resampleAudio (
     // check output samples number was correctly retrieved
     if (out_nb_samples <= 0)
     {
-        printf("av_rescale_rnd error\n");
+        sLog.error("av_rescale_rnd error");
         return -1;
     }
 
@@ -582,50 +553,42 @@ int CAudioStream::resampleAudio (
         // check samples buffer correctly allocated
         if (ret < 0)
         {
-            printf("av_samples_alloc failed.\n");
+            sLog.error("av_samples_alloc failed.");
             return -1;
         }
 
         max_out_nb_samples = out_nb_samples;
     }
 
-    if (swr_ctx)
+    // do the actual audio data resampling
+    ret = swr_convert(
+        swr_ctx,
+        resampled_data,
+        out_nb_samples,
+        (const uint8_t **) decoded_audio_frame->data,
+        decoded_audio_frame->nb_samples
+    );
+
+    // check audio conversion was successful
+    if (ret < 0)
     {
-        // do the actual audio data resampling
-        ret = swr_convert(
-            swr_ctx,
-            resampled_data,
-            out_nb_samples,
-            (const uint8_t **) decoded_audio_frame->data,
-            decoded_audio_frame->nb_samples
-        );
-
-        // check audio conversion was successful
-        if (ret < 0)
-        {
-            printf("swr_convert_error.\n");
-            return -1;
-        }
-
-        // Get the required buffer size for the given audio parameters
-        resampled_data_size = av_samples_get_buffer_size(
-            &out_linesize,
-            out_nb_channels,
-            ret,
-            out_sample_fmt,
-            1
-        );
-
-        // check audio buffer size
-        if (resampled_data_size < 0)
-        {
-            printf("av_samples_get_buffer_size error.\n");
-            return -1;
-        }
+        sLog.error("swr_convert_error.");
+        return -1;
     }
-    else
+
+    // Get the required buffer size for the given audio parameters
+    resampled_data_size = av_samples_get_buffer_size(
+        &out_linesize,
+        out_nb_channels,
+        ret,
+        out_sample_fmt,
+        1
+    );
+
+    // check audio buffer size
+    if (resampled_data_size < 0)
     {
-        printf("swr_ctx null error.\n");
+        sLog.error ("av_samples_get_buffer_size error.");
         return -1;
     }
 
@@ -666,39 +629,28 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
     avFrame = av_frame_alloc();
     if (!avFrame)
     {
-        printf("Could not allocate AVFrame.\n");
+        sLog.error("Could not allocate AVFrame.\n");
         return -1;
     }
 
-    for (; g_KeepRunning;) {
+    // block until there's any data in the buffers
+    while (g_KeepRunning) {
         while (audio_pkt_size > 0) {
             int got_frame = 0;
             int ret = avcodec_receive_frame(this->getContext (), avFrame);
 
             if (ret == 0)
-            {
                 got_frame = 1;
-            }
             if (ret == AVERROR(EAGAIN))
-            {
                 ret = 0;
-            }
             if (ret == 0)
-            {
                 ret = avcodec_send_packet(this->getContext (), pkt);
-            }
             if (ret == AVERROR(EAGAIN))
-            {
                 ret = 0;
-            }
             else if (ret < 0)
-            {
                 return -1;
-            }
             else
-            {
                 len1 = pkt->size;
-            }
 
             if (len1 < 0)
             {
@@ -715,18 +667,18 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
                 // audio resampling
                 data_size = this->resampleAudio (
                     avFrame,
-                    AV_SAMPLE_FMT_S16,
-                    this->getContext ()->channels,
-                    this->getContext ()->sample_rate,
+                    this->m_audioContext->getFormat (),
+                    this->m_audioContext->getChannels (),
+                    this->m_audioContext->getSampleRate (),
                     audioBuffer
                 );
                 assert(data_size <= bufferSize);
             }
             if (data_size <= 0) {
-                /* No data yet, get more frames */
+                // no data found, keep waiting
                 continue;
             }
-            /* We have data, return it and come back for more later */
+            // some data was found
             return data_size;
         }
         if (pkt->data)

@@ -14,8 +14,8 @@ extern float g_TimeLast;
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CRenderContext* context) :
-    CWallpaper (scene, Type, context)
+CScene::CScene (Core::CScene* scene, CRenderContext* context, CAudioContext* audioContext) :
+    CWallpaper (scene, Type, context, audioContext)
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
