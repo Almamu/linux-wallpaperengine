@@ -106,13 +106,15 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence)
 }
 
 CAudioStream::CAudioStream (CAudioContext* context, const std::string& filename) :
-    m_audioContext (context)
+    m_audioContext (context),
+    m_swrctx (nullptr)
 {
     this->loadCustomContent (filename.c_str ());
 }
 
 CAudioStream::CAudioStream (CAudioContext* context, const void* buffer, int length) :
-    m_audioContext (context)
+    m_audioContext (context),
+    m_swrctx (nullptr)
 {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
@@ -145,9 +147,20 @@ CAudioStream::CAudioStream (CAudioContext* context, const void* buffer, int leng
 CAudioStream::CAudioStream(CAudioContext* audioContext, AVCodecContext* context) :
     m_context (context),
     m_queue (new PacketQueue),
-    m_audioContext (audioContext)
+    m_audioContext (audioContext),
+    m_swrctx (nullptr)
 {
     this->initialize ();
+}
+
+CAudioStream::~CAudioStream()
+{
+    if (this->m_swrctx != nullptr && swr_is_initialized (this->m_swrctx) == true)
+        swr_close (this->m_swrctx);
+    if (this->m_swrctx != nullptr)
+        swr_free (&this->m_swrctx);
+
+    // TODO: FREE EVERYTHING ELSE THAT THIS CLASS HOLDS!
 }
 
 void CAudioStream::loadCustomContent (const char* filename)
@@ -203,6 +216,51 @@ void CAudioStream::initialize ()
 #else
     this->m_queue->packetList = av_fifo_alloc (sizeof (MyAVPacketList));
 #endif
+
+    int64_t out_channel_layout;
+
+    // set output audio channels based on the input audio channels
+    switch (this->m_audioContext->getChannels ())
+    {
+        case 1: out_channel_layout = AV_CH_LAYOUT_MONO; break;
+        case 2: out_channel_layout = AV_CH_LAYOUT_STEREO; break;
+        default: out_channel_layout = AV_CH_LAYOUT_SURROUND; break;
+    }
+
+#if FF_API_OLD_CHANNEL_LAYOUT
+    av_channel_layout_from_mask (&this->m_out_channel_layout, out_channel_layout);
+
+    swr_alloc_set_opts2 (
+        &this->m_swrctx,
+        &this->m_out_channel_layout,
+        this->m_audioContext->getFormat (),
+        this->m_audioContext->getSampleRate (),
+        &this->m_context->ch_layout,
+        this->m_context->sample_fmt,
+        this->m_context->sample_rate,
+        0,
+        nullptr
+    );
+#else
+    // initialize swrctx
+    this->m_swrctx = swr_alloc_set_opts (
+        nullptr,
+        out_channel_layout,
+        this->m_audioContext->getFormat (),
+        this->m_audioContext->getSampleRate (),
+        this->getContext ()->channel_layout,
+        this->getContext ()->sample_fmt,
+        this->getContext ()->sample_rate,
+        0,
+        nullptr
+    );
+#endif
+    if (this->m_swrctx == nullptr)
+        sLog.exception ("Cannot initialize swrctx for audio resampling");
+
+    // initialize the context
+    if (swr_init (this->m_swrctx) < 0)
+        sLog.exception("Failed to initialize the resampling context.");
 
     // setup the queue information
     this->m_queue->mutex = SDL_CreateMutex ();
@@ -397,10 +455,7 @@ int CAudioStream::resampleAudio (
     uint8_t * out_buf
 )
 {
-    SwrContext * swr_ctx = NULL;
     int ret = 0;
-    int64_t in_channel_layout = this->getContext ()->channel_layout;
-    int64_t out_channel_layout = AV_CH_LAYOUT_STEREO;
     int out_nb_channels = 0;
     int out_linesize = 0;
     int in_nb_samples = 0;
@@ -409,103 +464,11 @@ int CAudioStream::resampleAudio (
     uint8_t ** resampled_data = NULL;
     int resampled_data_size = 0;
 
-    swr_ctx = swr_alloc();
-
-    if (!swr_ctx)
-    {
-        sLog.error("swr_alloc error.\n");
-        return -1;
-    }
-
-    // get input audio channels
-    in_channel_layout = (this->getContext ()->channels ==
-                         av_get_channel_layout_nb_channels(this->getContext ()->channel_layout)) ?   // 2
-                            this->getContext ()->channel_layout :
-                            av_get_default_channel_layout(this->getContext ()->channels);
-
-    // check input audio channels correctly retrieved
-    if (in_channel_layout <= 0)
-    {
-        sLog.error("in_channel_layout error.\n");
-        return -1;
-    }
-
-    // set output audio channels based on the input audio channels
-    if (out_channels == 1)
-    {
-        out_channel_layout = AV_CH_LAYOUT_MONO;
-    }
-    else if (out_channels == 2)
-    {
-        out_channel_layout = AV_CH_LAYOUT_STEREO;
-    }
-    else
-    {
-        out_channel_layout = AV_CH_LAYOUT_SURROUND;
-    }
-
     // retrieve number of audio samples (per channel)
     in_nb_samples = decoded_audio_frame->nb_samples;
     if (in_nb_samples <= 0)
     {
         sLog.error("in_nb_samples error.");
-        return -1;
-    }
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_int(   // 3
-        swr_ctx,
-        "in_channel_layout",
-        in_channel_layout,
-        0
-    );
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_int(
-        swr_ctx,
-        "in_sample_rate",
-        this->getContext ()->sample_rate,
-        0
-    );
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_sample_fmt(
-        swr_ctx,
-        "in_sample_fmt",
-        this->getContext ()->sample_fmt,
-        0
-    );
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_int(
-        swr_ctx,
-        "out_channel_layout",
-        out_channel_layout,
-        0
-    );
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_int(
-        swr_ctx,
-        "out_sample_rate",
-        out_sample_rate,
-        0
-    );
-
-    // Set SwrContext parameters for resampling
-    av_opt_set_sample_fmt(
-        swr_ctx,
-        "out_sample_fmt",
-        out_sample_fmt,
-        0
-    );
-
-    // Once all values have been set for the SwrContext, it must be initialized
-    // with swr_init().
-    ret = swr_init(swr_ctx);;
-    if (ret < 0)
-    {
-        sLog.error("Failed to initialize the resampling context.");
         return -1;
     }
 
@@ -524,7 +487,7 @@ int CAudioStream::resampleAudio (
     }
 
     // get number of output audio channels
-    out_nb_channels = av_get_channel_layout_nb_channels(out_channel_layout);
+    out_nb_channels = this->getContext ()->ch_layout.nb_channels;
 
     ret = av_samples_alloc_array_and_samples(
         &resampled_data,
@@ -543,7 +506,7 @@ int CAudioStream::resampleAudio (
 
     // retrieve output samples number taking into account the progressive delay
     out_nb_samples = av_rescale_rnd(
-        swr_get_delay(swr_ctx, this->getContext ()->sample_rate) + in_nb_samples,
+        swr_get_delay(this->m_swrctx, this->getContext ()->sample_rate) + in_nb_samples,
         out_sample_rate,
         this->getContext ()->sample_rate,
         AV_ROUND_UP
@@ -583,7 +546,7 @@ int CAudioStream::resampleAudio (
 
     // do the actual audio data resampling
     ret = swr_convert(
-        swr_ctx,
+        this->m_swrctx,
         resampled_data,
         out_nb_samples,
         (const uint8_t **) decoded_audio_frame->data,
@@ -627,12 +590,6 @@ int CAudioStream::resampleAudio (
 
     av_freep(&resampled_data);
     resampled_data = NULL;
-
-    if (swr_ctx)
-    {
-        // Free the given SwrContext and set the pointer to NULL
-        swr_free(&swr_ctx);
-    }
 
     return resampled_data_size;
 }

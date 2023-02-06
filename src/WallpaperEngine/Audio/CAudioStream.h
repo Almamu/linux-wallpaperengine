@@ -25,6 +25,7 @@ namespace WallpaperEngine::Audio
         CAudioStream (CAudioContext* context, const std::string& filename);
         CAudioStream (CAudioContext* context, const void* buffer, int length);
         CAudioStream (CAudioContext* audioContext, AVCodecContext* context);
+        ~CAudioStream ();
 
         void queuePacket (AVPacket* pkt);
 
@@ -64,6 +65,11 @@ namespace WallpaperEngine::Audio
         bool doQueue (AVPacket* pkt);
         void initialize ();
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+        AVChannelLayout m_out_channel_layout;
+#endif
+
+        SwrContext* m_swrctx;
         CAudioContext* m_audioContext;
         bool m_initialized;
         bool m_repeat;
