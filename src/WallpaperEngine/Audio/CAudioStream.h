@@ -81,7 +81,11 @@ namespace WallpaperEngine::Audio
 
         struct PacketQueue
         {
+            #if FF_API_FIFO_OLD_API
             AVFifo* packetList;
+            #else
+            AVFifoBuffer* packetList;
+            #endif
             int nb_packets;
             int size;
             int64_t duration;
