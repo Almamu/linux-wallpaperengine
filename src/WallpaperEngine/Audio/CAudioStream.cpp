@@ -272,7 +272,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
         ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
 #else
         if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
-            ret = av_fifo_generic_read (this->n_queue->packetList, &entry, sizeof (entry), nullptr);
+            ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
 #endif
 
         // enough data available, read it
