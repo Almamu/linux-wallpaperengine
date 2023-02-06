@@ -487,8 +487,21 @@ int CAudioStream::resampleAudio (
     }
 
     // get number of output audio channels
+#if FF_API_OLD_CHANNEL_LAYOUT
     out_nb_channels = this->getContext ()->ch_layout.nb_channels;
+#else
+    int64_t out_channel_layout;
 
+    // set output audio channels based on the input audio channels
+    switch (this->m_audioContext->getChannels ())
+    {
+        case 1: out_channel_layout = AV_CH_LAYOUT_MONO; break;
+        case 2: out_channel_layout = AV_CH_LAYOUT_STEREO; break;
+        default: out_channel_layout = AV_CH_LAYOUT_SURROUND; break;
+    }
+
+    out_nb_channels = av_get_channel_layout_nb_channels(out_channel_layout);
+#endif
     ret = av_samples_alloc_array_and_samples(
         &resampled_data,
         &out_linesize,
