@@ -1,11 +1,8 @@
-//
-// Created by almamu on 8/8/21.
-//
-
 #pragma once
 
 #include <vector>
 #include <stdexcept>
+#include <filesystem>
 
 #include "CContainer.h"
 
@@ -20,6 +17,7 @@ namespace WallpaperEngine::Assets
          * @param container
          */
         void add (CContainer* container);
+        void addPkg (const std::filesystem::path& path);
 
         const void* readFile (std::string filename, uint32_t* length) const override;
 

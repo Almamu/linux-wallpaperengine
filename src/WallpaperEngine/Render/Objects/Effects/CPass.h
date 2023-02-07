@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 #include "WallpaperEngine/Assets/ITexture.h"
@@ -13,6 +14,7 @@ namespace WallpaperEngine::Render::Objects::Effects
 {
     using namespace WallpaperEngine::Assets;
     using namespace WallpaperEngine::Render::Shaders::Variables;
+    using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
     class CMaterial;
 
@@ -90,6 +92,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void setupAttributes ();
         void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
         void addUniform (CShaderVariable* value);
+        void addUniform (const std::string& name, CShaderConstant* value);
         void addUniform (const std::string& name, int value);
         void addUniform (const std::string& name, double value);
         void addUniform (const std::string& name, float value);

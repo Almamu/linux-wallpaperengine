@@ -43,6 +43,11 @@ add_executable(
     src/WallpaperEngine/Logging/CLog.cpp
     src/WallpaperEngine/Logging/CLog.h
 
+    src/WallpaperEngine/Application/CApplicationContext.cpp
+    src/WallpaperEngine/Application/CApplicationContext.h
+    src/WallpaperEngine/Application/CWallpaperApplication.cpp
+    src/WallpaperEngine/Application/CWallpaperApplication.h
+
     src/WallpaperEngine/Assets/CPackageLoadException.cpp
     src/WallpaperEngine/Assets/CPackageLoadException.h
     src/WallpaperEngine/Assets/CAssetLoadException.cpp

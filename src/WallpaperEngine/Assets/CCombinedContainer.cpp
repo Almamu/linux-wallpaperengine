@@ -1,11 +1,34 @@
 #include "CCombinedContainer.h"
 #include "CAssetLoadException.h"
+#include "CPackage.h"
+#include "CPackageLoadException.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Assets;
 
 void CCombinedContainer::add (CContainer* container)
 {
     this->m_containers.emplace_back (container);
+}
+
+void CCombinedContainer::addPkg (const std::filesystem::path& path)
+{
+    try
+    {
+        // add the package to the list
+        this->add (new CPackage (path));
+        sLog.out ("Detected ", path.filename (), " file at ", path, ". Adding to list of searchable paths");
+    }
+    catch (CPackageLoadException& ex)
+    {
+        // ignore this error, the package file was not found
+        sLog.out ("No ", path.filename (), " file found at ", path, ". Defaulting to normal folder storage");
+    }
+    catch (std::runtime_error& ex)
+    {
+        // the package was found but there was an error loading it (wrong header or something)
+        sLog.exception ("Failed to load scene.pkg file: ", ex.what());
+    }
 }
 
 const void* CCombinedContainer::readFile (std::string filename, uint32_t* length) const
