@@ -57,7 +57,7 @@ int audio_read_thread (void* arg)
         if (packet->stream_index == stream->getAudioStream ())
             stream->queuePacket (packet);
         else
-            av_packet_free (&packet);
+            av_packet_unref (packet);
 
         if (stream->isInitialized () == false)
             break;
