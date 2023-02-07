@@ -20,6 +20,9 @@ using namespace WallpaperEngine::Application;
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context)
 {
+    // copy state to global variables for now
+    g_AudioVolume = context.audioVolume;
+    g_AudioEnabled = context.audioEnabled;
     this->setupContainer ();
     this->loadProject ();
     this->setupProperties ();

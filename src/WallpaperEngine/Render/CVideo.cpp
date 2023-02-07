@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 
 extern bool g_AudioEnabled;
+extern int g_AudioVolume;
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -19,6 +20,8 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext* context, CAudioContext* aud
     m_width (16),
     m_height (16)
 {
+    double volume = g_AudioVolume * 100.0 / 128.0;
+
     // create mpv contexts
     this->m_mpv = mpv_create ();
 
@@ -37,6 +40,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext* context, CAudioContext* aud
 
     mpv_set_option_string (this->m_mpv, "hwdec", "auto");
     mpv_set_option_string (this->m_mpv, "loop", "inf");
+    mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     // initialize gl context for mpv
     mpv_opengl_init_params gl_init_params {get_proc_address, nullptr};

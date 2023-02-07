@@ -12,7 +12,7 @@ using namespace WallpaperEngine::Audio::Drivers;
 
 void audio_callback (void* userdata, uint8_t* streamData, int length)
 {
-    CSDLAudioDriver* driver = reinterpret_cast <CSDLAudioDriver*> (userdata);
+    auto* driver = reinterpret_cast <CSDLAudioDriver*> (userdata);
 
     memset (streamData, 0, length);
 

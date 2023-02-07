@@ -66,5 +66,7 @@ int main (int argc, char* argv[])
     // show the wallpaper application
     app.show ();
 
+    appPointer = nullptr;
+
     return 0;
 }
