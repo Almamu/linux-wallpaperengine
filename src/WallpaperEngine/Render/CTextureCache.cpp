@@ -20,16 +20,12 @@ const ITexture* CTextureCache::resolve (const std::string& filename)
 
     const ITexture* texture = this->m_context->getContainer ()->readTexture (filename);
 
-    this->m_textureCache.insert (
-        std::make_pair (filename, texture)
-    );
+    this->store (filename, texture);
 
     return texture;
 }
 
-void CTextureCache::store (std::string name, const ITexture* texture)
+void CTextureCache::store (const std::string& name, const ITexture* texture)
 {
-    this->m_textureCache.insert (
-        std::make_pair (name, texture)
-    );
+    this->m_textureCache.insert_or_assign (name, texture);
 }

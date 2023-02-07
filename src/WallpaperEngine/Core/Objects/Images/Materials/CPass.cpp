@@ -85,7 +85,7 @@ void CPass::insertCombo (const std::string& name, int value)
     std::string uppercase = std::string (name);
 
     std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
-    this->m_combos.insert (std::pair <std::string, int> (uppercase, value));
+    this->m_combos.insert_or_assign (uppercase, value);
 }
 
 const std::vector<std::string>& CPass::getTextures () const
@@ -135,5 +135,5 @@ void CPass::setBlendingMode (std::string mode)
 
 void CPass::insertConstant (const std::string& name, CShaderConstant* constant)
 {
-    this->m_constants.insert (std::pair <std::string, CShaderConstant*> (name, constant));
+    this->m_constants.insert_or_assign (name, constant);
 }

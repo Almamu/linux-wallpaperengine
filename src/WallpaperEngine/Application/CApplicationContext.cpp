@@ -4,8 +4,9 @@
 #include "WallpaperEngine/Logging/CLog.h"
 
 #include <cstring>
-#include <string>
 #include <getopt.h>
+#include <glm/common.hpp>
+#include <string>
 
 #define WORKSHOP_APP_ID 431960
 #define APP_DIRECTORY "wallpaper_engine"
@@ -103,7 +104,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
                 break;
 
             case 'v':
-                this->audioVolume = std::max (atoi (optarg), 128);
+                this->audioVolume = glm::clamp (atoi (optarg), 0, 128);
                 break;
 
             case 'c':
@@ -189,7 +190,7 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("");
     sLog.out ("options:");
     sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
-    sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
+    sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background (0 - 128)");
     sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
     sLog.out ("\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low");
     sLog.out ("\t--assets-dir <path>\t\t\tFolder where the assets are stored");

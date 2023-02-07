@@ -56,7 +56,7 @@ namespace WallpaperEngine::Render::Shaders
 
         // clone the combos into the baseCombos to keep track of values that must be embedded no matter what
         for (const auto& cur : *this->m_combos)
-            this->m_baseCombos.insert (std::make_pair (cur.first, cur.second));
+            this->m_baseCombos.insert_or_assign(cur.first, cur.second);
     }
 
     bool Compiler::peekString(std::string str, std::string::const_iterator& it)
@@ -572,7 +572,7 @@ namespace WallpaperEngine::Render::Shaders
         std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
 
         // add the combo to the found list
-        this->m_foundCombos->insert (std::make_pair <std::string, int> (*combo, true));
+        this->m_foundCombos->insert_or_assign (*combo, true);
 
         // if the combo was not found in the predefined values this means that the default value in the JSON data can be used
         // so only define the ones that are not already defined
@@ -582,7 +582,7 @@ namespace WallpaperEngine::Render::Shaders
             if (defvalue == data.end ())
             {
                 // TODO: PROPERLY SUPPORT EMPTY COMBOS
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
+                this->m_combos->insert_or_assign (*combo, (int) defaultValue);
             }
             else if ((*defvalue).is_number_float ())
             {
@@ -590,7 +590,7 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if ((*defvalue).is_number_integer ())
             {
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
+                this->m_combos->insert_or_assign (*combo, (*defvalue).get <int> ());
             }
             else if ((*defvalue).is_string ())
             {
@@ -691,17 +691,17 @@ namespace WallpaperEngine::Render::Shaders
                 if (this->m_passTextures.size () > index && (this->m_passTextures.at (index) != "" || textureName != data.end ()))
                 {
                     // add the new combo to the list
-                    this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
+                    this->m_combos->insert_or_assign (*combo, 1);
 
                     // textures linked to combos need to be tracked too
                     if (this->m_foundCombos->find (*combo) == this->m_foundCombos->end ())
-                        this->m_foundCombos->insert (std::make_pair <std::string, bool> (*combo, true));
+                        this->m_foundCombos->insert_or_assign (*combo, true);
                 }
 
             }
 
             if (textureName != data.end ())
-                this->m_textures.insert (std::make_pair (index, *textureName));
+                this->m_textures.insert_or_assign (index, *textureName);
 
             // samplers are not saved, we can ignore them for now
             return;
