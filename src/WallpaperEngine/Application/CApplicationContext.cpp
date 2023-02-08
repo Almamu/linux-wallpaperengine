@@ -13,23 +13,23 @@
 using namespace WallpaperEngine::Application;
 
 struct option long_options [] = {
-    {"screen-root",     required_argument, 0, 'r'},
-    {"pkg",             required_argument, 0, 'p'},
-    {"dir",             required_argument, 0, 'd'},
-    {"silent",          no_argument,       0, 's'},
-    {"volume",          required_argument, 0, 'v'},
-    {"help",            no_argument,       0, 'h'},
-    {"fps",             required_argument, 0, 'f'},
-    {"assets-dir",      required_argument, 0, 'a'},
-    {"screenshot",      required_argument, 0, 'c'},
-    {"list-properties", no_argument,       0, 'l'},
-    {"set-property",    required_argument, 0, 'o'},
-    {nullptr,                           0, 0,   0}
+    {"screen-root",     required_argument, nullptr, 'r'},
+    {"pkg",             required_argument, nullptr, 'p'},
+    {"dir",             required_argument, nullptr, 'd'},
+    {"silent",          no_argument,       nullptr, 's'},
+    {"volume",          required_argument, nullptr, 'v'},
+    {"help",            no_argument,       nullptr, 'h'},
+    {"fps",             required_argument, nullptr, 'f'},
+    {"assets-dir",      required_argument, nullptr, 'a'},
+    {"screenshot",      required_argument, nullptr, 'c'},
+    {"list-properties", no_argument,       nullptr, 'l'},
+    {"set-property",    required_argument, nullptr, 'o'},
+    {nullptr,                           0, nullptr,   0}
 };
 
 std::string stringPathFixes(const std::string& s)
 {
-    if (s.empty () == true)
+    if (s.empty ())
         return s;
 
     std::string str (s);
@@ -113,7 +113,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
         }
     }
 
-    if (this->background.empty () == true)
+    if (this->background.empty ())
     {
         if (optind < argc && strlen (argv [optind]) > 0)
         {
@@ -121,7 +121,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
         }
         else
         {
-            this->printHelp (argv [0]);
+            printHelp (argv [0]);
         }
     }
 
@@ -141,7 +141,7 @@ void CApplicationContext::validatePath ()
 
 void CApplicationContext::validateAssets ()
 {
-    if (this->assets.empty () == false)
+    if (!this->assets.empty ())
     {
         sLog.out ("Using wallpaper engine's assets at ", this->assets, " based on --assets-dir parameter");
         return;
@@ -161,10 +161,10 @@ void CApplicationContext::validateAssets ()
 
 void CApplicationContext::validateScreenshot ()
 {
-    if (this->takeScreenshot == false)
+    if (!this->takeScreenshot)
         return;
 
-    if (this->screenshot.has_extension () == false)
+    if (!this->screenshot.has_extension ())
         sLog.exception ("Cannot determine screenshot format");
 
     std::string extension = this->screenshot.extension ();
