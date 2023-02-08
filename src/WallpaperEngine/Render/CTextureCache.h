@@ -33,7 +33,7 @@ namespace WallpaperEngine::Render
          * @param name
          * @param texture
          */
-        void store (const std::string& name, const ITexture* texture);
+        void store (std::string name, const ITexture* texture);
 
     private:
         CRenderContext& m_context;

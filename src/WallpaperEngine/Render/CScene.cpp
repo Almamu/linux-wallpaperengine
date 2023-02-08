@@ -209,7 +209,7 @@ Render::CObject* CScene::createObject (Core::CObject* object)
     }
 
     if (renderObject != nullptr)
-        this->m_objects.insert_or_assign (renderObject->getId (), renderObject);
+        this->m_objects.insert (std::make_pair (renderObject->getId (), renderObject));
 
     return renderObject;
 }

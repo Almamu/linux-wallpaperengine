@@ -121,7 +121,7 @@ void CScene::insertObject (CObject* object)
     /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
     if (object != nullptr)
     {
-        this->m_objects.insert_or_assign (object->getId (), object);
+        this->m_objects.insert (std::make_pair (object->getId (), object));
         this->m_objectsByRenderOrder.emplace_back (object);
     }
 }

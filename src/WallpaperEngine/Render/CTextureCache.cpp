@@ -24,7 +24,7 @@ const ITexture* CTextureCache::resolve (const std::string& filename)
     return texture;
 }
 
-void CTextureCache::store (const std::string& name, const ITexture* texture)
+void CTextureCache::store (std::string name, const ITexture* texture)
 {
     this->m_textureCache.insert_or_assign (name, texture);
 }

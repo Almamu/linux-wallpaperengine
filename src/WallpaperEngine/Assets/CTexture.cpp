@@ -409,7 +409,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
             mipmaps.emplace_back (parseMipmap (header, &fileData));
 
         // add the pixmaps back
-        header->images.insert_or_assign (image, mipmaps);
+        header->images.insert (std::pair <uint32_t, std::vector <TextureMipmap*>> (image, mipmaps));
 
         pointer = reinterpret_cast <const uint32_t*> (fileData);
     }

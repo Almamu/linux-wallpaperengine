@@ -492,14 +492,14 @@ void CPass::setupUniforms ()
         {
             if (bindCur != bindEnd)
             {
-                this->m_finalTextures.insert_or_assign ((*bindCur).first, nullptr);
+                this->m_finalTextures.insert (std::make_pair ((*bindCur).first, nullptr));
                 bindCur ++;
             }
 
             if (cur != end)
             {
                 if ((*cur) != nullptr)
-                    this->m_finalTextures.insert_or_assign (index, *cur);
+                    this->m_finalTextures.insert (std::make_pair (index, *cur));
 
                 index ++;
                 cur ++;
@@ -524,7 +524,7 @@ void CPass::setupUniforms ()
                     else
                         textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
 
-                    this->m_finalTextures.insert_or_assign ((*fragCur).first, textureRef);
+                    this->m_finalTextures.insert (std::make_pair ((*fragCur).first, textureRef));
                 }
                 catch (std::runtime_error& ex)
                 {
@@ -553,7 +553,7 @@ void CPass::setupUniforms ()
                     else
                         textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
 
-                    this->m_finalTextures.insert_or_assign ((*vertCur).first, textureRef);
+                    this->m_finalTextures.insert (std::make_pair ((*vertCur).first, textureRef));
                 }
                 catch (std::runtime_error& ex)
                 {
@@ -621,7 +621,9 @@ void CPass::addUniform (const std::string& name, UniformType type, T value)
     T* newValue = new T (value);
 
     // uniform found, add it to the list
-    this->m_uniforms.insert_or_assign (name, new UniformEntry (id, name, type, newValue));
+    this->m_uniforms.insert (
+        std::make_pair (name, new UniformEntry (id, name, type, newValue))
+    );
 }
 
 template <typename T>
@@ -635,7 +637,9 @@ void CPass::addUniform (const std::string& name, UniformType type, T* value)
         return;
 
     // uniform found, add it to the list
-    this->m_uniforms.insert_or_assign (name, new UniformEntry (id, name, type, value));
+    this->m_uniforms.insert (
+        std::make_pair (name, new UniformEntry (id, name, type, value))
+    );
 }
 
 template <typename T>
@@ -649,8 +653,8 @@ void CPass::addUniform (const std::string& name, UniformType type, T** value)
         return;
 
     // uniform found, add it to the list
-    this->m_referenceUniforms.insert_or_assign (
-        name, new ReferenceUniformEntry (id, name, type, reinterpret_cast <const void**> (value))
+    this->m_referenceUniforms.insert (
+        std::make_pair (name, new ReferenceUniformEntry (id, name, type, reinterpret_cast <const void**> (value)))
     );
 }
 
@@ -675,7 +679,7 @@ void CPass::setupTextures ()
 
             if (fbo != nullptr)
             {
-                this->m_fbos.insert_or_assign (index, fbo);
+                this->m_fbos.insert (std::make_pair (index, fbo));
                 this->m_textures.emplace_back (
                     fbo
                 );

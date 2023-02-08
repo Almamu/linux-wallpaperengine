@@ -7,7 +7,9 @@ using namespace WallpaperEngine::Assets;
 
 void CVirtualContainer::add (const std::string& filename, void* contents, uint32_t length)
 {
-    this->m_virtualFiles.insert_or_assign (filename, CFileEntry (contents, length));
+    this->m_virtualFiles.insert (
+        std::make_pair (filename, CFileEntry (contents, length))
+    );
 }
 
 void CVirtualContainer::add (const std::string& filename, const std::string& contents)
