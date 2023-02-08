@@ -52,12 +52,13 @@ int CustomXIOErrorHandler (Display* dsp)
     return 0;
 }
 
-CRenderContext::CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CContainer& container, CWallpaperApplication& app) :
+CRenderContext::CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CInputContext& input, CContainer& container, CWallpaperApplication& app) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_driver (driver),
     m_container (container),
     m_app (app),
+    m_input (input),
     m_textureCache (new CTextureCache (*this))
 {
     this->initialize ();
@@ -228,9 +229,6 @@ void CRenderContext::render ()
     if (this->m_wallpaper == nullptr)
         return;
 
-    // ensure mouse information is up to date before drawing any frame
-    this->m_mouse->update ();
-
     if (this->m_viewports.empty () == false)
         this->renderScreens ();
     else
@@ -260,14 +258,9 @@ void CRenderContext::setWallpaper (CWallpaper* wallpaper)
     }
 }
 
-CMouseInput* CRenderContext::getMouse () const
+CInputContext& CRenderContext::getInputContext () const
 {
-    return this->m_mouse;
-}
-
-void CRenderContext::setMouse (CMouseInput* mouse)
-{
-    this->m_mouse = mouse;
+    return this->m_input;
 }
 
 CWallpaper* CRenderContext::getWallpaper () const

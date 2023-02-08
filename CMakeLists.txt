@@ -78,8 +78,10 @@ add_executable(
     src/WallpaperEngine/Audio/CAudioStream.cpp
     src/WallpaperEngine/Audio/CAudioStream.h
 
-    src/WallpaperEngine/Input/CMouseInput.h
+    src/WallpaperEngine/Input/CInputContext.cpp
+    src/WallpaperEngine/Input/CInputContext.h
     src/WallpaperEngine/Input/CMouseInput.cpp
+    src/WallpaperEngine/Input/CMouseInput.h
 
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp

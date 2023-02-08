@@ -15,7 +15,7 @@ namespace WallpaperEngine::Audio
     class CAudioContext
     {
     public:
-        CAudioContext (Drivers::CAudioDriver* driver);
+        CAudioContext (Drivers::CAudioDriver& driver);
 
         void addStream (CAudioStream* stream);
 
@@ -23,6 +23,6 @@ namespace WallpaperEngine::Audio
         int getSampleRate () const;
         int getChannels () const;
     private:
-        Drivers::CAudioDriver* m_driver;
+        Drivers::CAudioDriver& m_driver;
     };
 }

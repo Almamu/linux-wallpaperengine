@@ -1,33 +1,8 @@
-#include <FreeImage.h>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <SDL.h>
 #include <csignal>
-#include <filesystem>
-#include <getopt.h>
 #include <iostream>
-#include <libgen.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
-#include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/CVideo.h"
-#include "WallpaperEngine/Render/CWallpaper.h"
-
-#include "WallpaperEngine/Assets/CPackage.h"
-#include "WallpaperEngine/Assets/CDirectory.h"
-#include "WallpaperEngine/Assets/CVirtualContainer.h"
-#include "WallpaperEngine/Assets/CCombinedContainer.h"
-#include "WallpaperEngine/Assets/CPackageLoadException.h"
-
-#include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "WallpaperEngine/Audio/CAudioContext.h"
-#include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
-#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
 #include "common.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;

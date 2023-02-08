@@ -1,8 +1,8 @@
 #pragma once
 
-#include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 
 namespace WallpaperEngine::Render::Drivers
 {

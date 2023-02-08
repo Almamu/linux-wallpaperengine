@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CApplicationContext.h"
+#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"

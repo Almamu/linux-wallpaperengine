@@ -5,7 +5,6 @@
 #include "WallpaperEngine/Core/CVideo.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
 
 #include <unistd.h>
 
@@ -216,13 +215,13 @@ void CWallpaperApplication::show ()
     // initialize sdl audio driver
     WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver;
     // initialize audio context
-    WallpaperEngine::Audio::CAudioContext audioContext (&audioDriver);
+    WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
     // initialize OpenGL driver
     WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver (this->m_project->getTitle ().c_str ());
+    // initialize the input subsystem
+    WallpaperEngine::Input::CInputContext inputContext (videoDriver);
     // initialize render context
-    WallpaperEngine::Render::CRenderContext context (this->m_context.screens, videoDriver, this->m_vfs, *this);
-    // initialize mouse support
-    context.setMouse (new CMouseInput (videoDriver.getWindow ()));
+    WallpaperEngine::Render::CRenderContext context (this->m_context.screens, videoDriver, inputContext, this->m_vfs, *this);
     // ensure the context knows what wallpaper to render
     context.setWallpaper (
         WallpaperEngine::Render::CWallpaper::fromWallpaper (this->m_project->getWallpaper (), context, audioContext)
@@ -232,6 +231,8 @@ void CWallpaperApplication::show ()
 
     while (videoDriver.closeRequested () == false && g_KeepRunning == true)
     {
+        // update input information
+        inputContext.update ();
         // keep track of the previous frame's time
         g_TimeLast = g_Time;
         // calculate the current time value
