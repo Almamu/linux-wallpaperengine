@@ -17,7 +17,7 @@ namespace WallpaperEngine::Core
     class CScene : public CWallpaper
     {
     public:
-        static CScene* fromFile (const std::string& filename, CContainer& container);
+        static CScene* fromFile (const std::string& filename, CProject& project, CContainer& container);
 
         const std::map<uint32_t, CObject*>& getObjects () const;
         const std::vector<CObject*>& getObjectsByRenderOrder () const;
@@ -45,6 +45,7 @@ namespace WallpaperEngine::Core
         friend class CWallpaper;
 
         CScene (
+				CProject& project,
                 CContainer& container,
                 Scenes::CCamera* camera,
                 glm::vec3 ambientColor,

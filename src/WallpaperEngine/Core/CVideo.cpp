@@ -4,10 +4,9 @@
 
 using namespace WallpaperEngine::Core;
 
-CVideo::CVideo (
-        std::string  filename) :
-        CWallpaper (Type),
-        m_filename (std::move(filename))
+CVideo::CVideo (std::string filename, CProject& project) :
+	CWallpaper (Type, project),
+	m_filename (std::move(filename))
 {
 }
 

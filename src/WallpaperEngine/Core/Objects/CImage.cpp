@@ -101,12 +101,12 @@ const std::string& CImage::getAlignment () const
 
 float CImage::getAlpha () const
 {
-    return this->m_alpha->processValue (this->getScene ()->getProject ()->getProperties ());
+    return this->m_alpha->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
 glm::vec3 CImage::getColor () const
 {
-    return this->m_color->processValue (this->getScene ()->getProject ()->getProperties ());
+    return this->m_color->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
 float CImage::getBrightness () const

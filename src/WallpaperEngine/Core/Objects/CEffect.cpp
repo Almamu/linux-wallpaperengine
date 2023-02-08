@@ -247,7 +247,7 @@ const std::vector<Effects::CFBO*>& CEffect::getFbos () const
 
 bool CEffect::isVisible () const
 {
-    return this->m_visible->processValue (this->m_object->getScene ()->getProject ()->getProperties ());
+    return this->m_visible->processValue (this->m_object->getScene ()->getProject ().getProperties ());
 }
 
 Effects::CFBO* CEffect::findFBO (const std::string& name)

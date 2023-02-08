@@ -16,17 +16,15 @@ namespace WallpaperEngine::Core
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (std::string  type);
+        CWallpaper (std::string type, CProject& project);
 
-        CProject* getProject () const;
+        CProject& getProject () const;
 
     protected:
         friend class CProject;
 
-        void setProject (CProject* project);
-
     private:
-        CProject* m_project;
+        CProject& m_project;
 
         std::string m_type;
     };

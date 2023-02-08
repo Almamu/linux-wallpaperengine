@@ -9,6 +9,7 @@
 using namespace WallpaperEngine::Core;
 
 CScene::CScene (
+		CProject& project,
         CContainer& container,
         Scenes::CCamera* camera,
         glm::vec3 ambientColor,
@@ -28,7 +29,7 @@ CScene::CScene (
                 CUserSettingVector3* clearColor,
         Scenes::CProjection* orthogonalProjection,
         glm::vec3 skylightColor) :
-    CWallpaper (Type),
+    CWallpaper (Type, project),
     m_container (container),
     m_camera (camera),
     m_ambientColor (ambientColor),
@@ -51,7 +52,7 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const std::string& filename, CContainer& container)
+CScene* CScene::fromFile (const std::string& filename, CProject& project, CContainer& container)
 {
     std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename, container);
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
@@ -80,25 +81,26 @@ CScene* CScene::fromFile (const std::string& filename, CContainer& container)
     auto skylightcolor = jsonFindDefault <std::string> (*general_it, "skylightcolor", "0 0 0");
 
     CScene* scene = new CScene (
-            container,
-            Scenes::CCamera::fromJSON (*camera_it),
-            WallpaperEngine::Core::aToColorf(ambientcolor),
-            bloom,
-            bloomstrength,
-            bloomthreshold,
-            camerafade,
-            cameraparallax,
-            cameraparallaxamount,
-            cameraparallaxdelay,
-            cameraparallaxmouseinfluence,
-            camerapreview,
-            camerashake,
-            camerashakeamplitude,
-            camerashakeroughness,
-            camerashakespeed,
-            clearcolor,
-            Scenes::CProjection::fromJSON (*orthogonalprojection_it),
-            WallpaperEngine::Core::aToColorf(skylightcolor)
+		project,
+		container,
+		Scenes::CCamera::fromJSON (*camera_it),
+		WallpaperEngine::Core::aToColorf(ambientcolor),
+		bloom,
+		bloomstrength,
+		bloomthreshold,
+		camerafade,
+		cameraparallax,
+		cameraparallaxamount,
+		cameraparallaxdelay,
+		cameraparallaxmouseinfluence,
+		camerapreview,
+		camerashake,
+		camerashakeamplitude,
+		camerashakeroughness,
+		camerashakespeed,
+		clearcolor,
+		Scenes::CProjection::fromJSON (*orthogonalprojection_it),
+		WallpaperEngine::Core::aToColorf(skylightcolor)
     );
 
     for (const auto& cur : *objects_it)
@@ -143,17 +145,17 @@ const glm::vec3 &CScene::getAmbientColor() const
 
 const bool CScene::isBloom () const
 {
-    return this->m_bloom->processValue (this->getProject ()->getProperties ());
+    return this->m_bloom->processValue (this->getProject ().getProperties ());
 }
 
 double CScene::getBloomStrength () const
 {
-    return this->m_bloomStrength->processValue (this->getProject ()->getProperties ());
+    return this->m_bloomStrength->processValue (this->getProject ().getProperties ());
 }
 
 double CScene::getBloomThreshold () const
 {
-    return this->m_bloomThreshold->processValue (this->getProject ()->getProperties ());
+    return this->m_bloomThreshold->processValue (this->getProject ().getProperties ());
 }
 
 const bool CScene::isCameraFade () const
@@ -208,7 +210,7 @@ const double CScene::getCameraShakeSpeed () const
 
 glm::vec3 CScene::getClearColor () const
 {
-    return this->m_clearColor->processValue (this->getProject ()->getProperties ());
+    return this->m_clearColor->processValue (this->getProject ().getProperties ());
 }
 
 Scenes::CProjection* CScene::getOrthogonalProjection () const

@@ -128,7 +128,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
         {
             auto effectVisible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
 
-			if (!effectVisible->processValue (scene->getProject ()->getProperties ()))
+			if (!effectVisible->processValue (scene->getProject ().getProperties ()))
 				continue;
 
             object->insertEffect (
@@ -146,12 +146,12 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
 
 glm::vec3 CObject::getOrigin () const
 {
-    return this->m_origin->processValue (this->getScene ()->getProject ()->getProperties ());
+    return this->m_origin->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
 glm::vec3 CObject::getScale () const
 {
-    return this->m_scale->processValue (this->getScene ()->getProject ()->getProperties ());
+    return this->m_scale->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
 const glm::vec3& CObject::getAngles () const
@@ -177,7 +177,7 @@ const std::vector<uint32_t>& CObject::getDependencies () const
 bool CObject::isVisible () const
 {
     // TODO: cache this
-    return this->m_visible->processValue (this->getScene ()->getProject ()->getProperties ());
+    return this->m_visible->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
 CScene* CObject::getScene () const

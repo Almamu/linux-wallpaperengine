@@ -27,8 +27,9 @@ namespace WallpaperEngine::Core
         CContainer& getContainer ();
 
     protected:
-        CProject (std::string title, std::string type, CWallpaper* wallpaper, CContainer& container);
+        CProject (std::string title, std::string type, CContainer& container);
 
+		void setWallpaper (CWallpaper* wallpaper);
         void insertProperty (Projects::CProperty* property);
     private:
         std::vector<Projects::CProperty*> m_properties;

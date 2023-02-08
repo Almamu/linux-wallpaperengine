@@ -16,7 +16,7 @@ namespace WallpaperEngine::Core
     class CVideo : public CWallpaper
     {
     public:
-        explicit CVideo (std::string filename);
+        explicit CVideo (std::string filename, CProject& project);
 
         const std::string& getFilename ();
 

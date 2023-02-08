@@ -9,13 +9,11 @@
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 
-CProject::CProject (std::string title, std::string type, CWallpaper* wallpaper, CContainer& container) :
+CProject::CProject (std::string title, std::string type, CContainer& container) :
     m_title (std::move (title)),
     m_type (std::move (type)),
-    m_wallpaper (wallpaper),
     m_container (container)
 {
-    this->m_wallpaper->setProject (this);
 }
 
 CProject* CProject::fromFile (const std::string& filename, CContainer& container)
@@ -30,25 +28,18 @@ CProject* CProject::fromFile (const std::string& filename, CContainer& container
 
     std::transform (type.begin (), type.end (), type.begin (), tolower);
 
+    CProject* project = new CProject (title, type, container);
+
     if (type == "scene")
-    {
-        wallpaper = CScene::fromFile (file, container);
-    }
+        wallpaper = CScene::fromFile (file, *project, container);
     else if (type == "video")
-    {
-        wallpaper = new CVideo (file.c_str ());
-    }
+        wallpaper = new CVideo (file.c_str (), *project);
     else if (type == "web")
         sLog.exception ("Web wallpapers are not supported yet");
     else
         sLog.exception ("Unsupported wallpaper type: ", type);
 
-    CProject* project = new CProject (
-        title,
-        type,
-        wallpaper,
-        container
-    );
+	project->setWallpaper (wallpaper);
 
     if (general != content.end ())
     {
@@ -67,6 +58,11 @@ CProject* CProject::fromFile (const std::string& filename, CContainer& container
     }
 
     return project;
+}
+
+void CProject::setWallpaper (CWallpaper* wallpaper)
+{
+	this->m_wallpaper = wallpaper;
 }
 
 CWallpaper* CProject::getWallpaper () const
