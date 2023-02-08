@@ -16,7 +16,7 @@ namespace WallpaperEngine::Assets
     class CPackage : public CContainer
     {
     public:
-        CPackage (std::filesystem::path  path);
+        explicit CPackage (std::filesystem::path path);
         ~CPackage ();
 
         const void* readFile (std::string filename, uint32_t* length) const override;

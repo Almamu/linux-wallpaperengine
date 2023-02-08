@@ -24,7 +24,8 @@ namespace WallpaperEngine::Render
         const glm::vec3& getUp () const;
         const glm::mat4& getProjection () const;
         const glm::mat4& getLookAt () const;
-        const bool isOrthogonal () const;
+		CScene* getScene () const;
+        bool isOrthogonal () const;
 
     private:
         bool m_isOrthogonal;

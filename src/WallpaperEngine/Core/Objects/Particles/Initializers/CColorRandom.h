@@ -21,4 +21,4 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
         glm::ivec3 m_max;
         glm::ivec3 m_min;
     };
-};
+}

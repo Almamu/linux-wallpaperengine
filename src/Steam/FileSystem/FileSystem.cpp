@@ -27,7 +27,7 @@ std::filesystem::path detectHomepath ()
 
     std::filesystem::path path = home;
 
-    if (std::filesystem::is_directory (path) == false)
+    if (!std::filesystem::is_directory (path))
         sLog.exception ("Cannot find home directory for current user, ", home, " is not a directory");
 
     return home;
@@ -41,7 +41,7 @@ std::filesystem::path Steam::FileSystem::workshopDirectory (int appID, const std
     {
         auto currentpath = std::filesystem::path (homepath) / *current / std::to_string (appID) / contentID;
 
-        if (std::filesystem::exists (currentpath) == false || std::filesystem::is_directory (currentpath) == false)
+        if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
             continue;
 
         return currentpath;
@@ -58,7 +58,7 @@ std::filesystem::path Steam::FileSystem::appDirectory (const std::string& appDir
     {
         auto currentpath = std::filesystem::path (homepath) / *current / appDirectory / path;
 
-        if (std::filesystem::exists (currentpath) == false || std::filesystem::is_directory (currentpath) == false)
+        if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
             continue;
 
         return currentpath;

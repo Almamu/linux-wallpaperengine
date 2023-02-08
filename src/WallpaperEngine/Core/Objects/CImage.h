@@ -41,10 +41,10 @@ namespace WallpaperEngine::Core::Objects
         const Images::CMaterial* getMaterial () const;
         const glm::vec2& getSize () const;
         const std::string& getAlignment () const;
-        const float getAlpha () const;
+        float getAlpha () const;
         glm::vec3 getColor () const;
-        const float getBrightness () const;
-        const uint32_t getColorBlendMode () const;
+        float getBrightness () const;
+        uint32_t getColorBlendMode () const;
         const glm::vec2& getParallaxDepth () const;
 
     protected:
@@ -78,4 +78,4 @@ namespace WallpaperEngine::Core::Objects
         CUserSettingVector3* m_color;
         uint32_t m_colorBlendMode;
     };
-};
+}

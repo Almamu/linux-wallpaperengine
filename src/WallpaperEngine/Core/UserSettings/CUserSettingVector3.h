@@ -21,7 +21,7 @@ namespace WallpaperEngine::Core::UserSettings
         static std::string Type;
 
         glm::vec3 processValue (const std::vector<Projects::CProperty*>& properties);
-        glm::vec3 getDefaultValue ();
+        glm::vec3 getDefaultValue () const;
 
     private:
         CUserSettingVector3 (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source, std::string expectedValue);

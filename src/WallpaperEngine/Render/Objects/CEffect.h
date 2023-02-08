@@ -36,4 +36,4 @@ namespace WallpaperEngine::Render::Objects
         std::vector<CFBO*> m_fbos;
         std::vector<Effects::CMaterial*> m_materials;
     };
-};
+}

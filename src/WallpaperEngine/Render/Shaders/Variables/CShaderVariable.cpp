@@ -45,7 +45,7 @@ void CShaderVariable::setIdentifierName (std::string identifierName)
     this->m_identifierName = std::move(identifierName);
 }
 
-void CShaderVariable::setName (std::string name)
+void CShaderVariable::setName (const std::string& name)
 {
-    this->m_name = std::move(name);
+    this->m_name = name;
 }

@@ -10,7 +10,7 @@
 namespace WallpaperEngine::Core
 {
     class CObject;
-};
+}
 
 namespace WallpaperEngine::Core::UserSettings
 {

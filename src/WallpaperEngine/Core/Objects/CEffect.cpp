@@ -51,7 +51,7 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
     auto dependencies_it = jsonFindRequired (content, "dependencies", "");
     auto fbos_it = content.find ("fbos");
 
-    CEffect* effect = new CEffect (
+    auto* effect = new CEffect (
         *name_it,
         description,
         *group_it,
@@ -64,9 +64,7 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
     CEffect::dependencyFromJSON (dependencies_it, effect);
 
     if (fbos_it != content.end ())
-    {
         CEffect::fbosFromJSON (fbos_it, effect);
-    }
 
     if (effectpasses_it != data.end ())
     {
@@ -94,11 +92,11 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObje
                     {
                         std::string texture;
 
-                        if (texturesCur.is_null () == true)
+                        if (texturesCur.is_null ())
                         {
                             if (textureNumber == 0)
                             {
-                                CImage* image = object->as <CImage> ();
+                                auto* image = object->as <CImage> ();
 
                                 texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
                             }
@@ -151,13 +149,13 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
     {
         auto val = cur.value ();
 
-        Effects::Constants::CShaderConstant* constant = nullptr;
+        Effects::Constants::CShaderConstant* constant;
 
         // if the constant is an object, that means the constant has some extra information
         // for the UI, take the value, which is what we need
 
         // TODO: SUPPORT USER SETTINGS HERE
-        if (cur.value ().is_object () == true)
+        if (cur.value ().is_object ())
         {
             auto it = cur.value ().find ("value");
 
@@ -170,15 +168,15 @@ void CEffect::constantsFromJSON (json::const_iterator constants_it, Core::Object
             val = it.value ();
         }
 
-        if (val.is_number_float () == true)
+        if (val.is_number_float ())
         {
             constant = new Effects::Constants::CShaderConstantFloat (val.get <float> ());
         }
-        else if (val.is_number_integer () == true)
+        else if (val.is_number_integer ())
         {
             constant = new Effects::Constants::CShaderConstantInteger (val.get <int> ());
         }
-        else if (val.is_string () == true)
+        else if (val.is_string ())
         {
             // try a vector 4 first, then a vector3 and then a vector 2
             constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (val));
@@ -215,7 +213,7 @@ void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect
         if (materialfile == cur.end ())
             sLog.exception ("Found an effect ", effect->m_name, " without material");
 
-        Images::CMaterial* material = nullptr;
+        Images::CMaterial* material;
 
         if (target == cur.end ())
             material = Images::CMaterial::fromFile ((*materialfile).get <std::string> (), container);

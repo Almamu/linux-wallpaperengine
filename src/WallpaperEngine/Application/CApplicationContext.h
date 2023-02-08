@@ -29,6 +29,6 @@ namespace WallpaperEngine::Application
         void validatePath ();
         void validateAssets ();
         void validateScreenshot ();
-        void printHelp (const char* route);
+        static void printHelp (const char* route);
     };
 }

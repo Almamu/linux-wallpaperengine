@@ -19,13 +19,13 @@ namespace WallpaperEngine::Core::Objects
             json data,
             CUserSettingBoolean* visible,
             uint32_t id,
-            std::string name,
+            const std::string& name,
             CUserSettingVector3* origin,
             CUserSettingVector3* scale,
             const glm::vec3& angles
         );
 
-        void insertSound (std::string filename);
+        void insertSound (const std::string& filename);
         const std::vector<std::string>& getSounds () const;
         bool isRepeat () const;
 

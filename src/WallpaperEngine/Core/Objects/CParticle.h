@@ -54,4 +54,4 @@ namespace WallpaperEngine::Core::Objects
         std::vector<Particles::CEmitter*> m_emitters;
         std::vector<Particles::CInitializer*> m_initializers;
     };
-};
+}

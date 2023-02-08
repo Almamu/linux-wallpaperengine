@@ -10,7 +10,7 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants
     class CShaderConstantVector3 : public CShaderConstant
     {
     public:
-        CShaderConstantVector3 (glm::vec3 value);
+        explicit CShaderConstantVector3 (glm::vec3 value);
 
         glm::vec3* getValue ();
 

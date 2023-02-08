@@ -11,12 +11,12 @@ CShaderVariableVector4::CShaderVariableVector4 (const glm::vec4& defaultValue) :
 {
 }
 
-CShaderVariableVector4::CShaderVariableVector4 (const glm::vec4& defaultValue, std::string name) :
+CShaderVariableVector4::CShaderVariableVector4 (const glm::vec4& defaultValue, const std::string& name) :
     m_defaultValue (defaultValue),
     m_value (glm::vec4 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
 {
-    this->setName (std::move(name));
+    this->setName (name);
 }
 
 void CShaderVariableVector4::setValue (const glm::vec4& value)

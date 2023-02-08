@@ -23,7 +23,7 @@ int audio_read_thread (void* arg)
     if (waitMutex == nullptr)
         sLog.exception ("Cannot create mutex for audio playback waiting");
 
-    while (ret >= 0 && g_KeepRunning == true)
+    while (ret >= 0 && g_KeepRunning)
     {
         // give the cpu some time to play the queued frames if there's enough info there
         if (
@@ -47,7 +47,7 @@ int audio_read_thread (void* arg)
             avcodec_flush_buffers (stream->getContext ());
 
             // ensure the thread is not killed if audio has to be looped
-            if (stream->isRepeat() == true)
+            if (stream->isRepeat())
                 ret = 0;
 
             continue;
@@ -59,7 +59,7 @@ int audio_read_thread (void* arg)
         else
             av_packet_unref (packet);
 
-        if (stream->isInitialized () == false)
+        if (!stream->isInitialized ())
             break;
     }
 
@@ -165,8 +165,8 @@ CAudioStream::~CAudioStream()
 
 void CAudioStream::loadCustomContent (const char* filename)
 {
-    const AVCodec* aCodec = nullptr;
-    AVCodecContext* avCodecContext = nullptr;
+    const AVCodec* aCodec;
+    AVCodecContext* avCodecContext;
 
     if (avformat_open_input (&this->m_formatContext, filename, nullptr, nullptr) != 0)
         sLog.exception ("Cannot open audio file: ", filename);
@@ -287,7 +287,7 @@ void CAudioStream::queuePacket(AVPacket *pkt)
     bool gotQueued = this->doQueue (clone);
     SDL_UnlockMutex (this->m_queue->mutex);
 
-    if (gotQueued == false)
+    if (!gotQueued)
         av_packet_free (&pkt);
 }
 
@@ -324,11 +324,12 @@ void CAudioStream::dequeuePacket (AVPacket* output)
 
     while (g_KeepRunning)
     {
-        int ret = -1;
 
 #if FF_API_FIFO_OLD_API
-        ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
+        int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
 #else
+		int ret = -1;
+
         if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
             ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
 #endif
@@ -440,29 +441,23 @@ SDL_mutex* CAudioStream::getMutex ()
 
 void CAudioStream::stop ()
 {
-    if (this->isInitialized () == false)
+    if (!this->isInitialized ())
         return;
 
     // stop the threads running
     this->m_initialized = false;
 }
 
-int CAudioStream::resampleAudio (
-    AVFrame * decoded_audio_frame,
-    enum AVSampleFormat out_sample_fmt,
-    int out_channels,
-    int out_sample_rate,
-    uint8_t * out_buf
-)
+int CAudioStream::resampleAudio (AVFrame * decoded_audio_frame, uint8_t * out_buf)
 {
-    int ret = 0;
-    int out_nb_channels = 0;
-    int out_linesize = 0;
-    int in_nb_samples = 0;
-    int out_nb_samples = 0;
-    int max_out_nb_samples = 0;
-    uint8_t ** resampled_data = NULL;
-    int resampled_data_size = 0;
+	int out_linesize = 0;
+    int ret;
+    int out_nb_channels;
+    int in_nb_samples;
+    int out_nb_samples;
+    int max_out_nb_samples;
+    uint8_t** resampled_data = nullptr;
+    int resampled_data_size;
 
     // retrieve number of audio samples (per channel)
     in_nb_samples = decoded_audio_frame->nb_samples;
@@ -474,7 +469,7 @@ int CAudioStream::resampleAudio (
 
     max_out_nb_samples = out_nb_samples = av_rescale_rnd(
         in_nb_samples,
-        out_sample_rate,
+        this->m_audioContext.getSampleRate (),
         this->getContext ()->sample_rate,
         AV_ROUND_UP
     );
@@ -507,7 +502,7 @@ int CAudioStream::resampleAudio (
         &out_linesize,
         out_nb_channels,
         out_nb_samples,
-        out_sample_fmt,
+        this->m_audioContext.getFormat (),
         0
     );
 
@@ -520,7 +515,7 @@ int CAudioStream::resampleAudio (
     // retrieve output samples number taking into account the progressive delay
     out_nb_samples = av_rescale_rnd(
         swr_get_delay(this->m_swrctx, this->getContext ()->sample_rate) + in_nb_samples,
-        out_sample_rate,
+		this->m_audioContext.getSampleRate (),
         this->getContext ()->sample_rate,
         AV_ROUND_UP
     );
@@ -543,7 +538,7 @@ int CAudioStream::resampleAudio (
             &out_linesize,
             out_nb_channels,
             out_nb_samples,
-            out_sample_fmt,
+            this->m_audioContext.getFormat (),
             1
         );
 
@@ -561,7 +556,7 @@ int CAudioStream::resampleAudio (
     ret = swr_convert(
         this->m_swrctx,
         resampled_data,
-        out_nb_samples,
+        max_out_nb_samples,
         (const uint8_t **) decoded_audio_frame->data,
         decoded_audio_frame->nb_samples
     );
@@ -578,7 +573,7 @@ int CAudioStream::resampleAudio (
         &out_linesize,
         out_nb_channels,
         ret,
-        out_sample_fmt,
+        this->m_audioContext.getFormat (),
         1
     );
 
@@ -613,7 +608,7 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
     static uint8_t *audio_pkt_data = NULL;
     static int audio_pkt_size = 0;
 
-    int len1, data_size = 0;
+    int len1, data_size;
 
     // allocate a new frame, used to decode audio packets
     static AVFrame * avFrame = NULL;
@@ -636,12 +631,10 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
                 ret = 0;
             if (ret == 0)
                 ret = avcodec_send_packet(this->getContext (), pkt);
-            if (ret == AVERROR(EAGAIN))
-                ret = 0;
-            else if (ret < 0)
+            if (ret < 0 && ret != AVERROR (EAGAIN))
                 return -1;
-            else
-                len1 = pkt->size;
+
+			len1 = pkt->size;
 
             if (len1 < 0)
             {
@@ -656,13 +649,7 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
 
             if (got_frame) {
                 // audio resampling
-                data_size = this->resampleAudio (
-                    avFrame,
-                    this->m_audioContext.getFormat (),
-                    this->m_audioContext.getChannels (),
-                    this->m_audioContext.getSampleRate (),
-                    audioBuffer
-                );
+                data_size = this->resampleAudio (avFrame, audioBuffer);
                 assert(data_size <= bufferSize);
             }
             if (data_size <= 0) {

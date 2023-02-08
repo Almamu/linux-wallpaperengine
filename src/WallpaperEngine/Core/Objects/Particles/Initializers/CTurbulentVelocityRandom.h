@@ -29,4 +29,4 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
         uint32_t m_speedmin;
         uint32_t m_speedmax;
     };
-};
+}

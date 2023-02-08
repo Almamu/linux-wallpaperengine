@@ -41,8 +41,8 @@ namespace WallpaperEngine::Render::Shaders
         m_recursive (recursive),
         m_type (type),
         m_file (std::move(filename)),
-        m_error (""),
-        m_errorInfo (""),
+        m_error (),
+        m_errorInfo (),
         m_constants (constants),
         m_container (container),
         m_baseCombos ()
@@ -91,7 +91,7 @@ namespace WallpaperEngine::Render::Shaders
         if (*it != ';')
         {
             this->m_error = true;
-            this->m_errorInfo = "Expected semicolon but got " + *it;
+            this->m_errorInfo = std::string ("Expected semicolon but got ") + *it;
             return false;
         }
 
@@ -112,7 +112,7 @@ namespace WallpaperEngine::Render::Shaders
 
     void Compiler::ignoreUpToBlockCommentEnd (std::string::const_iterator& it)
     {
-        while (it != this->m_content.end() && this->peekString ("*/", it) == false) it ++;
+        while (it != this->m_content.end() && !this->peekString ("*/", it)) it ++;
     }
 
     std::string Compiler::extractType (std::string::const_iterator& it)
@@ -128,10 +128,8 @@ namespace WallpaperEngine::Render::Shaders
 
         while (cur != end)
         {
-            if (this->peekString (*cur + " ", it) == true)
-            {
+            if (this->peekString (*cur + " ", it))
                 return *cur;
-            }
 
             cur ++;
         }
@@ -147,7 +145,7 @@ namespace WallpaperEngine::Render::Shaders
         std::string::const_iterator begin = cur;
 
         // first character has to be a valid alphabetic characer
-        if (this->isChar (cur) == false && *cur != '_')
+        if (!this->isChar (cur) && *cur != '_')
         {
             this->m_error = true;
             this->m_errorInfo = "Expected name doesn't start with a valid character";
@@ -156,11 +154,11 @@ namespace WallpaperEngine::Render::Shaders
 
         cur ++;
 
-        while (cur != this->m_content.end () && (this->isChar (cur) == true || *cur == '_' || this->isNumeric (cur) == true)) cur ++;
+        while (cur != this->m_content.end () && (this->isChar (cur) || *cur == '_' || this->isNumeric (cur))) cur ++;
 
         it = cur;
 
-        return std::string (begin, cur);
+        return {begin, cur};
     }
 
     std::string Compiler::extractArray(std::string::const_iterator &it, bool mustExists)
@@ -170,7 +168,7 @@ namespace WallpaperEngine::Render::Shaders
 
         if (*cur != '[')
         {
-            if (mustExists == false)
+            if (!mustExists)
                 return "";
 
             this->m_error = true;
@@ -184,7 +182,7 @@ namespace WallpaperEngine::Render::Shaders
 
         it = ++cur;
 
-        return std::string (begin, cur);
+        return {begin, cur};
     }
 
     bool Compiler::isChar (std::string::const_iterator& it)
@@ -204,7 +202,7 @@ namespace WallpaperEngine::Render::Shaders
         if (*cur != '"')
         {
             m_error = true;
-            m_errorInfo = "Expected opening \" but got " + (*cur);
+            m_errorInfo = std::string ("Expected opening \" but got ") + (*cur);
             return "";
         }
 
@@ -246,7 +244,7 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::precompile()
     {
         // TODO: SEPARATE THIS IN TWO SO THE COMBOS ARE DETECTED FIRST AND WE DO NOT REQUIRE DOUBLE COMPILATION OF THE SHADER'S SOURCE
-    #define BREAK_IF_ERROR if (this->m_error == true) { sLog.exception ("ERROR PRE-COMPILING SHADER.", this->m_errorInfo); }
+    #define BREAK_IF_ERROR if (this->m_error) { sLog.exception ("ERROR PRE-COMPILING SHADER.", this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
         // also remove any #version definition to prevent errors
         std::string::const_iterator it = this->m_content.begin ();
@@ -259,7 +257,7 @@ namespace WallpaperEngine::Render::Shaders
         this->m_includesProcessed = false;
 
         // search preprocessor macros and parse them
-        while (it != this->m_content.end () && this->m_error == false)
+        while (it != this->m_content.end () && !this->m_error)
         {
             if (*it == ' ' || *it == '\t' || *it == '\n' || *it == '\r' || *it == '\0' || *it == '{' || *it == '}' || *it == '[' || *it == ']' || *it == '.')
             {
@@ -268,14 +266,12 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if (*it == '#')
             {
-                if (this->peekString ("#include ", it) == true)
+                if (this->peekString ("#include ", it))
                 {
-                    std::string filename = "";
-
                     // ignore whitespaces
                     this->ignoreSpaces (it); BREAK_IF_ERROR
                     // extract value between quotes
-                    filename = this->extractQuotedValue (it); BREAK_IF_ERROR
+                    std::string filename = this->extractQuotedValue (it); BREAK_IF_ERROR
 
                     if (this->m_recursive)
                     {
@@ -301,7 +297,7 @@ namespace WallpaperEngine::Render::Shaders
             else if (*it == 'u')
             {
                 // uniforms might have extra information for their values
-                if (this->peekString ("uniform ", it) == true)
+                if (this->peekString ("uniform ", it))
                 {
                     this->ignoreSpaces (it);
                     std::string type = this->extractType (it); BREAK_IF_ERROR
@@ -314,7 +310,7 @@ namespace WallpaperEngine::Render::Shaders
                     this->ignoreSpaces (it);
 
                     // check if there is any actual extra information and parse it
-                    if (this->peekString ("//", it) == true)
+                    if (this->peekString ("//", it))
                     {
                         this->ignoreSpaces (it);
                         std::string::const_iterator begin = it;
@@ -324,11 +320,22 @@ namespace WallpaperEngine::Render::Shaders
 
                         // parse the parameter information
                         this->parseParameterConfiguration (type, name, configuration); BREAK_IF_ERROR
-                        this->m_compiledContent += "uniform " + type + " " + name + array + "; // " + configuration;
+                        this->m_compiledContent += "uniform ";
+						this->m_compiledContent += type;
+						this->m_compiledContent += " ";
+						this->m_compiledContent += name;
+						this->m_compiledContent += array;
+						this->m_compiledContent += "; // ";
+						this->m_compiledContent += configuration;
                     }
                     else
                     {
-                        this->m_compiledContent += "uniform " + type + " " + name + array + ";";
+                        this->m_compiledContent += "uniform ";
+						this->m_compiledContent += type;
+						this->m_compiledContent += " ";
+						this->m_compiledContent += name;
+						this->m_compiledContent += array;
+						this->m_compiledContent += ";";
                     }
                 }
                 else
@@ -342,7 +349,7 @@ namespace WallpaperEngine::Render::Shaders
             else if (*it == 'a')
             {
                 // find attribute definitions
-                if (this->peekString ("attribute ", it) == true)
+                if (this->peekString ("attribute ", it))
                 {
                     this->ignoreSpaces (it);
                     std::string type = this->extractType (it); BREAK_IF_ERROR
@@ -361,7 +368,7 @@ namespace WallpaperEngine::Render::Shaders
                     std::string type = this->extractType (it);
 
                     // types not found, try names
-                    if (this->m_error == false)
+                    if (!this->m_error)
                     {
                         this->ignoreSpaces (it);
                         this->m_compiledContent += type;
@@ -371,7 +378,7 @@ namespace WallpaperEngine::Render::Shaders
                         this->m_error = false;
                         std::string name = this->extractName (it);
 
-                        if (this->m_error == false)
+                        if (!this->m_error)
                         {
                             // check if the name is a translated one or not
                             this->m_compiledContent += name;
@@ -387,13 +394,13 @@ namespace WallpaperEngine::Render::Shaders
             }
             else if (*it == '/')
             {
-                if (this->peekString ("//", it) == true)
+                if (this->peekString ("//", it))
                 {
                     std::string::const_iterator begin = it - 2;
                     // is there a COMBO mark to take care of?
                     this->ignoreSpaces (it);
 
-                    if (this->peekString ("[COMBO]", it) == true)
+                    if (this->peekString ("[COMBO]", it))
                     {
                         // parse combo json data to define the proper variables
                         this->ignoreSpaces (it);
@@ -406,7 +413,7 @@ namespace WallpaperEngine::Render::Shaders
 
                         this->parseComboConfiguration (configuration, 0); BREAK_IF_ERROR;
                     }
-                    else if (this->peekString ("[COMBO_OFF]", it) == true)
+                    else if (this->peekString ("[COMBO_OFF]", it))
                     {
                         // parse combo json data to define the proper variables
                         this->ignoreSpaces (it);
@@ -426,7 +433,7 @@ namespace WallpaperEngine::Render::Shaders
                         this->m_compiledContent.append (begin, it);
                     }
                 }
-                else if (this->peekString ("/*", it) == true)
+                else if (this->peekString ("/*", it))
                 {
                     std::string::const_iterator begin = it - 2;
                     this->ignoreUpToBlockCommentEnd (it);
@@ -444,7 +451,7 @@ namespace WallpaperEngine::Render::Shaders
                 std::string type = this->extractType (it);
 
                 // type found
-                if (this->m_error == false)
+                if (!this->m_error)
                 {
                     this->ignoreSpaces (it);
                     // check for main, and take it into account, this also helps adding the includes
@@ -452,9 +459,9 @@ namespace WallpaperEngine::Render::Shaders
 
                     this->ignoreSpaces (it);
 
-                    if (this->peekString ("(", it) == true)
+                    if (this->peekString ("(", it))
                     {
-                        if (this->m_includesProcessed == false)
+                        if (!this->m_includesProcessed)
                         {
                             this->m_compiledContent += "\n\n" + this->m_includesContent + "\n\n";
                             this->m_includesProcessed = true;
@@ -472,7 +479,7 @@ namespace WallpaperEngine::Render::Shaders
                     this->m_error = false;
                     std::string name = this->extractName (it);
 
-                    if (this->m_error == false)
+                    if (!this->m_error)
                     {
                         // check if the name is a translated one or not
                         this->m_compiledContent += name;
@@ -488,7 +495,7 @@ namespace WallpaperEngine::Render::Shaders
 
         std::string finalCode;
 
-        if (this->m_recursive == false)
+        if (!this->m_recursive)
         {
             // add the opengl compatibility at the top
             finalCode =   "#version 150\n"
@@ -548,7 +555,7 @@ namespace WallpaperEngine::Render::Shaders
 
         finalCode += this->m_compiledContent;
 
-        if (this->m_recursive == false)
+        if (!this->m_recursive)
         {
             sLog.debug("======================== COMPILED ", (this->m_type == Type_Vertex ? "VERTEX" : "FRAGMENT"), " SHADER ", this->m_file, " ========================");
             sLog.debug(finalCode);
@@ -569,7 +576,7 @@ namespace WallpaperEngine::Render::Shaders
         this->m_compiledContent += "\n";
 
         // check the combos
-        std::map<std::string, int>::const_iterator entry = this->m_combos->find ((*combo).get <std::string> ());
+        auto entry = this->m_combos->find ((*combo).get <std::string> ());
 
         // add the combo to the found list
         this->m_foundCombos->insert_or_assign (*combo, true);
@@ -654,9 +661,9 @@ namespace WallpaperEngine::Render::Shaders
 
             if (constant == this->m_constants.end ())
                 value = (*defvalue).get <float> ();
-            else if ((*constant).second->is <CShaderConstantFloat> () == true)
+            else if ((*constant).second->is <CShaderConstantFloat> ())
                 value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
-            else if ((*constant).second->is <CShaderConstantInteger> () == true)
+            else if ((*constant).second->is <CShaderConstantInteger> ())
                 value = *(*constant).second->as <CShaderConstantInteger> ()->getValue ();
 
             parameter = new Variables::CShaderVariableFloat (value);
@@ -667,9 +674,9 @@ namespace WallpaperEngine::Render::Shaders
 
             if (constant == this->m_constants.end ())
                 value = (*defvalue).get <int> ();
-            else if ((*constant).second->is <CShaderConstantFloat> () == true)
+            else if ((*constant).second->is <CShaderConstantFloat> ())
                 value = *(*constant).second->as <CShaderConstantFloat> ()->getValue ();
-            else if ((*constant).second->is <CShaderConstantInteger> () == true)
+            else if ((*constant).second->is <CShaderConstantInteger> ())
                 value = *(*constant).second->as <CShaderConstantInteger> ()->getValue ();
 
             parameter = new Variables::CShaderVariableInteger (value);
@@ -678,7 +685,6 @@ namespace WallpaperEngine::Render::Shaders
         {
             // samplers can have special requirements, check what sampler we're working with and create definitions
             // if needed
-            auto combo = data.find ("combo");
             auto textureName = data.find ("default");
             // extract the texture number from the name
             char value = name.at (std::string("g_Texture").length ());
@@ -688,7 +694,7 @@ namespace WallpaperEngine::Render::Shaders
             if (combo != data.end ())
             {
                 // if the texture exists (and is not null), add to the combo
-                if (this->m_passTextures.size () > index && (this->m_passTextures.at (index) != "" || textureName != data.end ()))
+                if (this->m_passTextures.size () > index && (!this->m_passTextures.at (index).empty() || textureName != data.end ()))
                 {
                     // add the new combo to the list
                     this->m_combos->insert_or_assign (*combo, 1);
@@ -697,7 +703,6 @@ namespace WallpaperEngine::Render::Shaders
                     if (this->m_foundCombos->find (*combo) == this->m_foundCombos->end ())
                         this->m_foundCombos->insert_or_assign (*combo, true);
                 }
-
             }
 
             if (textureName != data.end ())

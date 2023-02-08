@@ -18,12 +18,12 @@ CLifeTimeRandom::CLifeTimeRandom (uint32_t id, uint32_t min, uint32_t max) :
 {
 }
 
-const uint32_t CLifeTimeRandom::getMinimum () const
+uint32_t CLifeTimeRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-const uint32_t CLifeTimeRandom::getMaximum () const
+uint32_t CLifeTimeRandom::getMaximum () const
 {
     return this->m_max;
 }

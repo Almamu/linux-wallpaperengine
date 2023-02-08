@@ -19,7 +19,7 @@ namespace WallpaperEngine::Core::UserSettings
         static std::string Type;
 
         double processValue (const std::vector<Projects::CProperty*>& properties);
-        double getDefaultValue ();
+        double getDefaultValue () const;
 
     private:
         CUserSettingFloat (bool hasCondition, bool hasSource, double defaultValue, std::string source, std::string expectedValue);

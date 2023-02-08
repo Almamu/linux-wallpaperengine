@@ -11,7 +11,7 @@ namespace WallpaperEngine::Input
     class CMouseInput
     {
     public:
-        CMouseInput(GLFWwindow* window);
+        explicit CMouseInput(GLFWwindow* window);
 
         /**
          * Takes current mouse position and updates it
@@ -33,5 +33,5 @@ namespace WallpaperEngine::Input
          */
         glm::dvec2 m_mousePosition;
     };
-};
+}
 

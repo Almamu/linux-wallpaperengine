@@ -1,6 +1,7 @@
 #include "CMaterial.h"
 
 #include <nlohmann/json.hpp>
+#include <utility>
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
@@ -9,9 +10,9 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
-CMaterial::CMaterial (const std::string& name) :
-    m_target (""),
-    m_name (name)
+CMaterial::CMaterial (std::string  name) :
+    m_target (),
+    m_name (std::move(name))
 {
 }
 
@@ -30,7 +31,7 @@ CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& 
 
 CMaterial* CMaterial::fromJSON (const std::string& name, json data, const std::string& target)
 {
-    CMaterial* material = fromJSON (name, data);
+    CMaterial* material = fromJSON (name, std::move(data));
 
     material->setTarget (target);
 
@@ -41,7 +42,7 @@ CMaterial* CMaterial::fromJSON (const std::string& name, json data)
 {
     auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
 
-    CMaterial* material = new CMaterial (name);
+    auto* material = new CMaterial (name);
 
     for (const auto& cur : (*passes_it))
         material->insertPass (Materials::CPass::fromJSON (cur));
@@ -83,7 +84,7 @@ const std::string& CMaterial::getName () const
     return this->m_name;
 }
 
-const bool CMaterial::hasTarget () const
+bool CMaterial::hasTarget () const
 {
-    return this->m_target.empty () == false;
+    return !this->m_target.empty ();
 }

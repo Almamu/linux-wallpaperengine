@@ -9,15 +9,15 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CRotationRandom : CInitializer
     {
     public:
-        const glm::vec3 getMinimumVector () const;
-        const glm::vec3 getMaximumVector () const;
-        const double             getMinimumNumber () const;
-        const double             getMaximumNumber () const;
+        glm::vec3 getMinimumVector () const;
+        glm::vec3 getMaximumVector () const;
+        double             getMinimumNumber () const;
+        double             getMaximumNumber () const;
 
-        const bool isMinimumVector () const;
-        const bool isMinimumNumber () const;
-        const bool isMaximumVector () const;
-        const bool isMaximumNumber () const;
+        bool isMinimumVector () const;
+        bool isMinimumNumber () const;
+        bool isMaximumVector () const;
+        bool isMaximumNumber () const;
 
     protected:
         friend class CInitializer;
@@ -42,4 +42,4 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
         bool m_isMinimumVector;
         bool m_isMaximumVector;
     };
-};
+}

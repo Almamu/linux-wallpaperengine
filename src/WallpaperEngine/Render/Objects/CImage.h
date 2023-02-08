@@ -38,15 +38,15 @@ namespace WallpaperEngine::Render::Objects
 
         const Core::Objects::CImage* getImage () const;
         const std::vector<CEffect*>& getEffects () const;
-        const glm::vec2 getSize() const;
+        glm::vec2 getSize() const;
 
-        const GLuint getSceneSpacePosition () const;
-        const GLuint getCopySpacePosition () const;
-        const GLuint getPassSpacePosition () const;
-        const GLuint getTexCoordCopy () const;
-        const GLuint getTexCoordPass () const;
+        GLuint getSceneSpacePosition () const;
+        GLuint getCopySpacePosition () const;
+        GLuint getPassSpacePosition () const;
+        GLuint getTexCoordCopy () const;
+        GLuint getTexCoordPass () const;
         const ITexture* getTexture () const;
-        const double getAnimationTime () const;
+        double getAnimationTime () const;
 
         /**
          * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them

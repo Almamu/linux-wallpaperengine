@@ -6,6 +6,12 @@
 
 using namespace WallpaperEngine::Assets;
 
+CCombinedContainer::CCombinedContainer () :
+	CContainer (),
+	m_containers ()
+{
+}
+
 void CCombinedContainer::add (CContainer* container)
 {
     this->m_containers.emplace_back (container);

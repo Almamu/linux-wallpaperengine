@@ -13,9 +13,9 @@ namespace WallpaperEngine::Core::UserSettings
         template<class T> bool is () { return this->m_type == T::Type; }
 
     protected:
-        CUserSettingValue (std::string type);
+        explicit CUserSettingValue (std::string type);
 
     private:
         std::string m_type;
     };
-};
+}

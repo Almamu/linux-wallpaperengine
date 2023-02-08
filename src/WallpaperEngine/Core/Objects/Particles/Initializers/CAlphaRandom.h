@@ -9,8 +9,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CAlphaRandom : CInitializer
     {
     public:
-        const double getMinimum () const;
-        const double getMaximum () const;
+        double getMinimum () const;
+        double getMaximum () const;
     protected:
         friend class CInitializer;
 
@@ -21,4 +21,4 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
         double m_max;
         double m_min;
     };
-};
+}

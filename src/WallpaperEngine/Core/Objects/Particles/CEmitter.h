@@ -11,6 +11,7 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CEmitter* fromJSON (json data);
 
+		uint32_t getId () const;
         const std::string& getName () const;
         const uint32_t getDistanceMax () const;
         const uint32_t getDistanceMin () const;
@@ -36,4 +37,4 @@ namespace WallpaperEngine::Core::Objects::Particles
         glm::vec3 m_origin;
         double m_rate;
     };
-};
+}

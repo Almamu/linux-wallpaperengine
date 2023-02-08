@@ -29,13 +29,9 @@ glm::vec3 ParseColor (std::string value)
 CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name)
 {
     std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
-    std::string text = jsonFindDefault <std::string> (data, "text", "");
+    auto text = jsonFindDefault <std::string> (data, "text", "");
 
-    return new CPropertyColor (
-        ParseColor (value),
-        name,
-        text
-    );
+    return new CPropertyColor (ParseColor (value), name, text);
 }
 
 const glm::vec3& CPropertyColor::getValue () const

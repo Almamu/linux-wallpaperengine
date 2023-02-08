@@ -50,10 +50,8 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
 
     // a bind named "previous" is just another way of telling it to use whatever texture there was already
     if ((*it).second->getName () == "previous")
-        if (previous == nullptr)
-            return expected;
-        else
-            return previous;
+		return previous ?: expected;
+
     // the bind actually has a name, search the FBO in the effect and return it
     auto fbo = this->m_material->m_effect->findFBO ((*it).second->getName ());
 
@@ -131,7 +129,7 @@ void CPass::render ()
     glm::vec2 translation = {0.0f, 0.0f};
     glm::vec4 rotation = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    if (texture->isAnimated () == true)
+    if (texture->isAnimated ())
     {
         // calculate current texture and frame
         double currentRenderTime = fmod (static_cast <double> (g_Time), this->m_material->getImage ()->getAnimationTime ());
@@ -162,7 +160,7 @@ void CPass::render ()
     glBindTexture (GL_TEXTURE_2D, texture->getTextureID (currentTexture));
 
     // continue on the map from the second texture
-    if (this->m_finalTextures.empty () == false)
+    if (!this->m_finalTextures.empty ())
     {
         for (const auto& cur : this->m_finalTextures)
         {
@@ -248,13 +246,14 @@ void CPass::render ()
         glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
         glVertexAttribPointer (cur->id, cur->elements, cur->type, GL_FALSE, 0, nullptr);
 
-        if (DEBUG)
-            glObjectLabel (GL_BUFFER, *cur->value, -1, (
-                    "Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
-                    " Pass " + this->m_pass->getShader() +
-                    " " + cur->name
-                ).c_str ()
-            );
+#if DEBUG
+		glObjectLabel (GL_BUFFER, *cur->value, -1, (
+				"Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
+				" Pass " + this->m_pass->getShader() +
+				" " + cur->name
+			).c_str ()
+		);
+#endif /* DEBUG */
     }
 
     // start actual rendering now
@@ -270,7 +269,7 @@ void CPass::render ()
     glBindTexture (GL_TEXTURE_2D, 0);
 
     // continue on the map from the second texture
-    if (this->m_finalTextures.empty () == false)
+    if (!this->m_finalTextures.empty ())
     {
         for (const auto& cur : this->m_finalTextures)
         {
@@ -430,12 +429,11 @@ void CPass::setupShaders ()
         sLog.exception (message);
     }
 
-    if (DEBUG)
-    {
-        glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
-        glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
-        glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
-    }
+#if DEBUG
+	glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
+	glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
+	glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
+#endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted
     glDetachShader (this->m_programID, vertexShaderID);
@@ -686,7 +684,7 @@ void CPass::setupTextures ()
         }
         else
         {
-            if ((*cur) == "")
+            if ((*cur).empty())
             {
                 this->m_textures.emplace_back (nullptr);
             }
@@ -726,26 +724,26 @@ void CPass::setupShaderVariables ()
         // integers and floats are equivalent, this could be detected at load time
         // but that'd mean to compile the shader in the load, and not on the render stage
         // so take into account these conversions here
-        if (cur.second->is <CShaderConstantFloat> () == true && var->is <CShaderVariableInteger> () == true)
+        if (cur.second->is <CShaderConstantFloat> () && var->is <CShaderVariableInteger> ())
         {
             // create an integer value from a float
             this->addUniform (var->getName (), static_cast <int> (*cur.second->as <CShaderConstantFloat> ()->getValue ()));
         }
-        else if (cur.second->is <CShaderConstantInteger> () == true && var->is <CShaderVariableFloat> () == true)
+        else if (cur.second->is <CShaderConstantInteger> () && var->is <CShaderVariableFloat> ())
         {
             // create a float value from an integer
             this->addUniform (var->getName (), static_cast <float> (*cur.second->as <CShaderConstantInteger> ()->getValue ()));
         }
-        else if (cur.second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector2> () == true)
+        else if (cur.second->is <CShaderConstantVector4> () && var->is <CShaderVariableVector2> ())
         {
-            CShaderConstantVector4* val = cur.second->as <CShaderConstantVector4> ();
+            auto* val = cur.second->as <CShaderConstantVector4> ();
 
             // create a new vector2 with the first two values
             this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
         }
-        else if (cur.second->is <CShaderConstantVector4> () == true && var->is <CShaderVariableVector3> () == true)
+        else if (cur.second->is <CShaderConstantVector4> () && var->is <CShaderVariableVector3> ())
         {
-            CShaderConstantVector4* val = cur.second->as <CShaderConstantVector4> ();
+            auto* val = cur.second->as <CShaderConstantVector4> ();
 
             this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
         }

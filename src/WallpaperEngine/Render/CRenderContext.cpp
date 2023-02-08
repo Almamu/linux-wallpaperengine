@@ -59,14 +59,20 @@ CRenderContext::CRenderContext (std::vector <std::string> screens, CVideoDriver&
     m_container (container),
     m_app (app),
     m_input (input),
-    m_textureCache (new CTextureCache (*this))
+    m_textureCache (new CTextureCache (*this)),
+	m_display (nullptr),
+	m_pixmap (0),
+	m_gc (nullptr),
+	m_image (nullptr),
+	m_imageData (nullptr),
+	m_fbo (nullptr)
 {
     this->initialize ();
 }
 
 void CRenderContext::initialize ()
 {
-    if (this->m_screens.empty () == true)
+    if (this->m_screens.empty ())
         this->setupWindow ();
     else
         this->setupScreens ();
@@ -162,7 +168,7 @@ void CRenderContext::setupScreens ()
 
 CRenderContext::~CRenderContext ()
 {
-    if (this->m_screens.empty () == false)
+    if (!this->m_screens.empty ())
     {
         // free any used resource
         XDestroyImage (this->m_image);
@@ -182,12 +188,11 @@ void CRenderContext::renderScreens ()
 
     for (const auto& cur : this->m_viewports)
     {
-        if (DEBUG)
-        {
-            std::string str = "Rendering to screen " + cur.name;
+#if DEBUG
+		std::string str = "Rendering to screen " + cur.name;
 
-            glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
-        }
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+#endif /* DEBUG */
 
         // render the background
         this->m_wallpaper->render (cur.viewport, false, renderFrame, firstFrame);
@@ -196,8 +201,9 @@ void CRenderContext::renderScreens ()
         firstFrame = false;
         renderFrame = !this->m_wallpaper->is <CVideo> ();
 
-        if (DEBUG)
-            glPopDebugGroup ();
+#if DEBUG
+		glPopDebugGroup ();
+#endif /* DEBUG */
     }
 
     // read the full texture into the image
@@ -229,10 +235,10 @@ void CRenderContext::render ()
     if (this->m_wallpaper == nullptr)
         return;
 
-    if (this->m_viewports.empty () == false)
-        this->renderScreens ();
-    else
-        this->renderWindow ();
+	if (this->m_viewports.empty ())
+		this->renderWindow ();
+	else
+		this->renderScreens ();
 
     this->m_driver.swapBuffers ();
 }
@@ -242,7 +248,7 @@ void CRenderContext::setWallpaper (CWallpaper* wallpaper)
     this->m_wallpaper = wallpaper;
 
     // update the wallpaper's texcoords based on the mode we're running
-    if (this->m_screens.empty () == false)
+    if (!this->m_screens.empty ())
     {
         GLfloat texCoords [] = {
             0.0f, 1.0f,

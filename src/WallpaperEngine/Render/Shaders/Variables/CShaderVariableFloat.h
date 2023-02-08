@@ -8,7 +8,7 @@ namespace WallpaperEngine::Render::Shaders::Variables
     {
     public:
         explicit CShaderVariableFloat (float defaultValue);
-        CShaderVariableFloat (float defaultValue, std::string name);
+        CShaderVariableFloat (float defaultValue, const std::string& name);
 
         const int getSize () const override;
 

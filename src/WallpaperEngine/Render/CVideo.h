@@ -35,4 +35,4 @@ namespace WallpaperEngine::Render
         int64_t m_width;
         int64_t m_height;
     };
-};
+}

@@ -180,11 +180,11 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * @return Whether the character in the current position is a character or not
          */
-        bool isChar (std::string::const_iterator& it);
+        static bool isChar (std::string::const_iterator& it);
         /**
          * @return Whether the character in the current position is a number or not
          */
-        bool isNumeric (std::string::const_iterator& it);
+        static bool isNumeric (std::string::const_iterator& it);
         /**
          * Parses a COMBO value to add the proper define to the code
          *

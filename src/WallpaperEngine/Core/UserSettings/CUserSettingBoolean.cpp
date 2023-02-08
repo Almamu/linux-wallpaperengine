@@ -26,15 +26,15 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data)
 {
     bool hasCondition = false;
     bool hasSource = false;
-    bool defaultValue = false;
+    bool defaultValue;
     std::string source;
     std::string expectedValue;
 
-    if (data.is_object () == true)
+    if (data.is_object ())
     {
         hasSource = true;
         auto userIt = data.find ("user");
-        defaultValue = jsonFindDefault (data, "value", false); // is this default value right?
+        defaultValue = jsonFindDefault (data, "value", true); // is this default value right?
 
         if (userIt != data.end ())
         {
@@ -56,7 +56,7 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data)
     }
     else
     {
-        if (data.is_boolean () == false)
+        if (!data.is_boolean ())
             sLog.error ("Expected boolean value on user setting");
 
         defaultValue = data.get<bool> ();
@@ -70,14 +70,14 @@ CUserSettingBoolean* CUserSettingBoolean::fromScalar (bool value)
     return new CUserSettingBoolean (false, false, value, "", "");
 }
 
-bool CUserSettingBoolean::getDefaultValue ()
+bool CUserSettingBoolean::getDefaultValue () const
 {
     return this->m_default;
 }
 
 bool CUserSettingBoolean::processValue (const std::vector<Projects::CProperty*>& properties)
 {
-    if (this->m_hasSource == false && this->m_hasCondition == false)
+    if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
     for (auto cur : properties)
@@ -85,7 +85,7 @@ bool CUserSettingBoolean::processValue (const std::vector<Projects::CProperty*>&
         if (cur->getName () != this->m_source)
             continue;
 
-        if (this->m_hasCondition == false)
+        if (!this->m_hasCondition)
         {
             if (cur->is <CPropertyBoolean> ())
                 return cur->as <CPropertyBoolean> ()->getValue ();

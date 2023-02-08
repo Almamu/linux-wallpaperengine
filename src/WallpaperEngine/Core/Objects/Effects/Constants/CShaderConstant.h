@@ -7,7 +7,7 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants
     class CShaderConstant
     {
     public:
-        CShaderConstant (std::string  type);
+        explicit CShaderConstant (std::string type);
 
         template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }

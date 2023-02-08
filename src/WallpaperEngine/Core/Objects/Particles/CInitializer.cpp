@@ -69,7 +69,7 @@ const std::string& CInitializer::getName () const
     return this->m_name;
 }
 
-const uint32_t CInitializer::getId () const
+uint32_t CInitializer::getId () const
 {
     return this->m_id;
 }

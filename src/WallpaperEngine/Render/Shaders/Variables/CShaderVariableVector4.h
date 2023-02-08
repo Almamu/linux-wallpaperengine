@@ -9,7 +9,7 @@ namespace WallpaperEngine::Render::Shaders::Variables
     {
     public:
         explicit CShaderVariableVector4 (const glm::vec4& defaultValue);
-        CShaderVariableVector4 (const glm::vec4& defaultValue, std::string name);
+        CShaderVariableVector4 (const glm::vec4& defaultValue, const std::string& name);
 
         const int getSize () const override;
 

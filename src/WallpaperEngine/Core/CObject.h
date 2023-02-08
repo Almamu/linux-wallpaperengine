@@ -42,14 +42,14 @@ namespace WallpaperEngine::Core
 
         const std::vector<Objects::CEffect*>& getEffects () const;
         const std::vector<uint32_t>& getDependencies () const;
-        const int getId () const;
+        int getId () const;
 
         glm::vec3 getOrigin () const;
         glm::vec3 getScale () const;
         const glm::vec3& getAngles () const;
         const std::string& getName () const;
 
-        const bool isVisible () const;
+        bool isVisible () const;
         CScene* getScene () const;
     protected:
         CObject (
@@ -80,4 +80,4 @@ namespace WallpaperEngine::Core
 
         CScene* m_scene;
     };
-};
+}

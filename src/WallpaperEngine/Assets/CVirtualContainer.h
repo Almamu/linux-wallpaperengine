@@ -11,8 +11,8 @@ namespace WallpaperEngine::Assets
     class CVirtualContainer : public CContainer
     {
     public:
-        CVirtualContainer () {}
-        ~CVirtualContainer () {}
+        CVirtualContainer () = default;
+        ~CVirtualContainer () = default;
 
         /**
          * Adds a new file to the virtual container

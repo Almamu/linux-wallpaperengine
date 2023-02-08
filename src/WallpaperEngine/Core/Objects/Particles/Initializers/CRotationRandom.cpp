@@ -60,42 +60,42 @@ CRotationRandom::CRotationRandom (
 {
 }
 
-const glm::vec3 CRotationRandom::getMinimumVector () const
+glm::vec3 CRotationRandom::getMinimumVector () const
 {
     return this->m_minVector;
 }
 
-const glm::vec3 CRotationRandom::getMaximumVector () const
+glm::vec3 CRotationRandom::getMaximumVector () const
 {
     return this->m_maxVector;
 }
 
-const double CRotationRandom::getMinimumNumber () const
+double CRotationRandom::getMinimumNumber () const
 {
     return this->m_minNumber;
 }
 
-const double CRotationRandom::getMaximumNumber () const
+double CRotationRandom::getMaximumNumber () const
 {
     return this->m_maxNumber;
 }
 
-const bool CRotationRandom::isMinimumVector () const
+bool CRotationRandom::isMinimumVector () const
 {
-    return this->m_isMinimumVector == true;
+    return this->m_isMinimumVector;
 }
 
-const bool CRotationRandom::isMinimumNumber () const
+bool CRotationRandom::isMinimumNumber () const
 {
-    return this->m_isMinimumVector == false;
+    return !this->m_isMinimumVector;
 }
 
-const bool CRotationRandom::isMaximumVector () const
+bool CRotationRandom::isMaximumVector () const
 {
-    return this->m_isMaximumVector == true;
+    return this->m_isMaximumVector;
 }
 
-const bool CRotationRandom::isMaximumNumber () const
+bool CRotationRandom::isMaximumNumber () const
 {
-    return this->m_isMaximumVector == false;
+    return !this->m_isMaximumVector;
 }

@@ -15,18 +15,21 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext) :
-    CWallpaper (scene, Type, context, audioContext)
+    CWallpaper (scene, Type, context, audioContext),
+	m_mousePosition (),
+	m_mousePositionLast (),
+	m_parallaxDisplacement ()
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
 
     // detect size if the orthogonal project is auto
-    if (scene->getOrthogonalProjection ()->isAuto () == true)
+    if (scene->getOrthogonalProjection ()->isAuto ())
     {
         // calculate the size of the projection based on the size of everything
         for (const auto& cur : scene->getObjects ())
         {
-            if (cur.second->is<Core::Objects::CImage> () == false)
+            if (!cur.second->is <Core::Objects::CImage> ())
                 continue;
 
             glm::vec2 size = cur.second->as <Core::Objects::CImage> ()->getSize ();
@@ -149,7 +152,7 @@ CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& aud
     auto json = nlohmann::json::parse (imagejson);
 
     // create image for bloom passes
-    if (this->getScene ()->isBloom () == true)
+    if (this->getScene ()->isBloom ())
     {
         this->m_bloomObject = this->createObject (
             WallpaperEngine::Core::CObject::fromJSON (
@@ -184,15 +187,15 @@ Render::CObject* CScene::createObject (Core::CObject* object)
             this->createObject ((*dep).second);
     }
 
-    if (object->is<Core::Objects::CImage>() == true)
+    if (object->is <Core::Objects::CImage> ())
     {
-        Objects::CImage* image = new Objects::CImage (this, object->as<Core::Objects::CImage>());
+        auto* image = new Objects::CImage (this, object->as<Core::Objects::CImage>());
 
         try
         {
             image->setup ();
         }
-        catch (std::runtime_error ex)
+        catch (std::runtime_error& ex)
         {
             // this error message is already printed, so just show extra info about it
             sLog.error ("Cannot setup image ", image->getImage ()->getName ());
@@ -200,7 +203,7 @@ Render::CObject* CScene::createObject (Core::CObject* object)
 
         renderObject = image;
     }
-    else if (object->is<Core::Objects::CSound>() == true)
+    else if (object->is <Core::Objects::CSound> ())
     {
         renderObject = new Objects::CSound (this, object->as<Core::Objects::CSound>());
     }
@@ -222,7 +225,7 @@ void CScene::renderFrame (glm::ivec4 viewport)
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ()->isCameraParallax () == true)
+    if (this->getScene ()->isCameraParallax ())
     {
         float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
         float amount = this->getScene ()->getCameraParallaxAmount ();

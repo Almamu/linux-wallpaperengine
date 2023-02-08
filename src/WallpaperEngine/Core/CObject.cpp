@@ -54,9 +54,9 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
     auto text_it = data.find ("text");
     auto light_it = data.find ("light");
 
-    CObject* object = nullptr;
+    CObject* object;
 
-    if (image_it != data.end () && (*image_it).is_null () == false)
+    if (image_it != data.end () && !(*image_it).is_null ())
     {
         object = Objects::CImage::fromJSON (
                 scene,
@@ -70,7 +70,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
                 WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
-    else if (sound_it != data.end () && (*sound_it).is_null () == false)
+    else if (sound_it != data.end () && !(*sound_it).is_null ())
     {
         object = Objects::CSound::fromJSON (
                 scene,
@@ -83,7 +83,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
                 WallpaperEngine::Core::aToVector3 (angles_val)
         );
     }
-    else if (particle_it != data.end () && (*particle_it).is_null () == false)
+    else if (particle_it != data.end () && !(*particle_it).is_null ())
     {
         /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
         try
@@ -99,17 +99,17 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
                 scale
             );
         }
-        catch (std::runtime_error ex)
+        catch (std::runtime_error& ex)
         {
             return nullptr;
         }
     }
-    else if (text_it != data.end () && (*text_it).is_null () == false)
+    else if (text_it != data.end () && !(*text_it).is_null ())
     {
         /// TODO: XXXHACK -- TO REMOVE WHEN TEXT SUPPORT IS IMPLEMENTED
         return nullptr;
     }
-    else if (light_it != data.end () && (*light_it).is_null () == false)
+    else if (light_it != data.end () && !(*light_it).is_null ())
     {
         /// TODO: XXXHACK -- TO REMOVE WHEN LIGHT SUPPORT IS IMPLEMENTED
         return nullptr;
@@ -119,23 +119,24 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
         sLog.exception ("Unknown object type detected: ", *name_it);
     }
 
-    if (effects_it != data.end () && (*effects_it).is_array () == true)
+    if (effects_it != data.end () && (*effects_it).is_array ())
     {
         for (const auto& cur : *effects_it)
         {
             auto effectVisible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
-            
+
+			if (!effectVisible->processValue (scene->getProject ()->getProperties ()))
+				continue;
+
             object->insertEffect (
                 Objects::CEffect::fromJSON (cur, effectVisible, object, container)
             );
         }
     }
 
-    if (dependencies_it != data.end () && (*dependencies_it).is_array () == true)
-    {
+    if (dependencies_it != data.end () && (*dependencies_it).is_array ())
         for (const auto& cur : *dependencies_it)
             object->insertDependency (cur);
-    }
 
     return object;
 }
@@ -170,7 +171,7 @@ const std::vector<uint32_t>& CObject::getDependencies () const
     return this->m_dependencies;
 }
 
-const bool CObject::isVisible () const
+bool CObject::isVisible () const
 {
     // TODO: cache this
     return this->m_visible->processValue (this->getScene ()->getProject ()->getProperties ());
@@ -181,7 +182,7 @@ CScene* CObject::getScene () const
     return this->m_scene;
 }
 
-const int CObject::getId () const
+int CObject::getId () const
 {
     return this->m_id;
 }

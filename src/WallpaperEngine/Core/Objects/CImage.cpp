@@ -70,7 +70,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         Images::CMaterial::fromFile ((*material_it).get <std::string> (), container),
         visible,
         id,
-        name,
+        std::move(name),
         origin,
         scale,
         angles,
@@ -99,7 +99,7 @@ const std::string& CImage::getAlignment () const
     return this->m_alignment;
 }
 
-const float CImage::getAlpha () const
+float CImage::getAlpha () const
 {
     return this->m_alpha->processValue (this->getScene ()->getProject ()->getProperties ());
 }
@@ -109,12 +109,12 @@ glm::vec3 CImage::getColor () const
     return this->m_color->processValue (this->getScene ()->getProject ()->getProperties ());
 }
 
-const float CImage::getBrightness () const
+float CImage::getBrightness () const
 {
     return this->m_brightness;
 }
 
-const uint32_t CImage::getColorBlendMode () const
+uint32_t CImage::getColorBlendMode () const
 {
     return this->m_colorBlendMode;
 }

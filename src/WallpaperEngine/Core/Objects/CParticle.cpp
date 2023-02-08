@@ -1,4 +1,6 @@
 #include "CParticle.h"
+
+#include <utility>
 #include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
@@ -20,13 +22,13 @@ CParticle* CParticle::fromFile (
     auto emitter_it = jsonFindRequired (data, "emitter", "Particles must have emitters");
     auto initializer_it = jsonFindRequired (data, "initializer", "Particles must have initializers");
 
-    CParticle* particle = new CParticle (
+    auto* particle = new CParticle (
         scene,
         *starttime_it,
         *maxcount_it,
         visible,
         id,
-        name,
+        std::move(name),
         origin,
         scale
     );

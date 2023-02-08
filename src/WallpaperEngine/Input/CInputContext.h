@@ -13,7 +13,7 @@ namespace WallpaperEngine::Input
     class CInputContext
     {
     public:
-        CInputContext (Render::Drivers::COpenGLDriver& videoDriver);
+        explicit CInputContext (Render::Drivers::COpenGLDriver& videoDriver);
         void update ();
 
         const CMouseInput& getMouseInput () const;

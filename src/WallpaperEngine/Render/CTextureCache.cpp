@@ -8,8 +8,7 @@ CTextureCache::CTextureCache (CRenderContext& context) :
 }
 
 CTextureCache::~CTextureCache ()
-{
-}
+ = default;
 
 const ITexture* CTextureCache::resolve (const std::string& filename)
 {

@@ -41,6 +41,10 @@ CEmitter::CEmitter (
 {
 }
 
+uint32_t CEmitter::getId () const
+{
+	return this->m_id;
+}
 
 const std::string& CEmitter::getName () const
 {

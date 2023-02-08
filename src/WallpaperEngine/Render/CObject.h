@@ -22,7 +22,7 @@ namespace WallpaperEngine::Render
 
         CScene* getScene () const;
         const CContainer& getContainer () const;
-        const int getId () const;
+        int getId () const;
 
     protected:
         CObject (CScene* scene, std::string type, Core::CObject *object);

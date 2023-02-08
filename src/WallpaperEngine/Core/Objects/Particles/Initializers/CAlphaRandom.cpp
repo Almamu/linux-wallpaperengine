@@ -17,12 +17,12 @@ CAlphaRandom::CAlphaRandom (uint32_t id, double min, double max) :
 {
 }
 
-const double CAlphaRandom::getMinimum () const
+double CAlphaRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-const double CAlphaRandom::getMaximum () const
+double CAlphaRandom::getMaximum () const
 {
     return this->m_max;
 }

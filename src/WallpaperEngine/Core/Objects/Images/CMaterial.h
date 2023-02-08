@@ -25,10 +25,10 @@ namespace WallpaperEngine::Core::Objects::Images
         const std::vector <Materials::CPass*>& getPasses () const;
         const std::map <int, Effects::CBind*>& getTextureBinds () const;
         const std::string& getTarget () const;
-        const bool hasTarget () const;
+        bool hasTarget () const;
         const std::string& getName () const;
     protected:
-        CMaterial (const std::string& name);
+        explicit CMaterial (std::string  name);
 
         void setTarget (const std::string& target);
     private:
@@ -37,4 +37,4 @@ namespace WallpaperEngine::Core::Objects::Images
         std::string m_target;
         std::string m_name;
     };
-};
+}

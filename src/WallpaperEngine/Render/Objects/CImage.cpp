@@ -7,8 +7,20 @@ using namespace WallpaperEngine::Render::Objects;
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_image (image),
+	m_animationTime (0.0),
+	m_material (nullptr),
+	m_colorBlendMaterial (nullptr),
     m_texture (nullptr),
-    m_initialized (false)
+    m_initialized (false),
+	m_sceneSpacePosition (GL_NONE),
+	m_copySpacePosition (GL_NONE),
+	m_texcoordCopy (GL_NONE),
+	m_texcoordPass (GL_NONE),
+	m_passSpacePosition (GL_NONE),
+	m_modelViewProjectionScreen (),
+	m_modelViewProjectionCopy (),
+	m_modelViewProjectionPass (glm::mat4 (1.0)),
+	m_pos ()
 {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
@@ -58,7 +70,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // detect texture (if any)
     auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
 
-    if (textures.empty() == false)
+    if (!textures.empty())
     {
         std::string textureName = *textures.begin ();
 
@@ -144,7 +156,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float width = 1.0f;
     float height = 1.0f;
 
-    if (this->getTexture ()->isAnimated () == true)
+    if (this->getTexture ()->isAnimated ())
     {
         // animated images use different coordinates as they're essentially a texture atlas
         width = static_cast<float> (this->getTexture ()->getRealWidth ()) / static_cast<float> (this->getTexture ()->getTextureWidth ());
@@ -169,7 +181,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float x = 0.0f;
     float y = 0.0f;
 
-    if (this->getTexture ()->isAnimated () == true)
+    if (this->getTexture ()->isAnimated ())
     {
         // animations should be copied completely
         x = 0.0f;
@@ -222,7 +234,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
             this->getScene ()->getCamera ()->getProjection () *
             this->getScene ()->getCamera ()->getLookAt ();
 
-    this->m_modelViewProjectionPass = glm::mat4(1.0f);
     this->m_modelViewProjectionCopy = glm::ortho <float> (0.0, size.x, 0.0, size.y);
 }
 
@@ -247,7 +258,7 @@ void CImage::setup ()
     }
 
     // prepare the passes list
-    if (this->getImage ()->getEffects ().empty () == false)
+    if (!this->getImage ()->getEffects ().empty ())
     {
         // generate the effects used by this material
         for (const auto& cur : this->getImage ()->getEffects ())
@@ -321,7 +332,7 @@ void CImage::setupPasses ()
         first = false;
 
         // set viewport and target texture if needed
-        if (pass->getMaterial ()->getMaterial ()->hasTarget () == true)
+        if (pass->getMaterial ()->getMaterial ()->hasTarget ())
         {
             // setup target texture
             std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
@@ -334,7 +345,7 @@ void CImage::setupPasses ()
                 drawTo = this->getScene ()->findFBO (target);
         }
         // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end && this->getImage ()->isVisible () == true)
+        else if (std::next (cur) == end && this->getImage ()->isVisible ())
         {
             // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
             spacePosition = this->getSceneSpacePosition ();
@@ -351,7 +362,7 @@ void CImage::setupPasses ()
         texcoord = this->getTexCoordPass ();
         drawTo = prevDrawTo;
 
-        if (pass->getMaterial ()->getMaterial ()->hasTarget () == false)
+        if (!pass->getMaterial ()->getMaterial ()->hasTarget ())
             this->pinpongFramebuffer (&drawTo, &asInput);
     }
 }
@@ -375,29 +386,28 @@ void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
 void CImage::render ()
 {
     // do not try to render something that did not initialize successfully
-    if (this->m_initialized == false)
+    if (!this->m_initialized)
         return;
 
     glColorMask (true, true, true, true);
 
     // update the position if required
-    if (this->getScene ()->getScene ()->isCameraParallax () == true)
+    if (this->getScene ()->getScene ()->isCameraParallax ())
         this->updateScreenSpacePosition ();
 
-    if (DEBUG)
-    {
-        std::string str = "Rendering ";
+#if DEBUG
+	std::string str = "Rendering ";
 
-        if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
-            str += "bloom";
-        else
-        {
-            str += this->getImage ()->getName () +
-                   " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
-        }
+	if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
+		str += "bloom";
+	else
+	{
+		str += this->getImage ()->getName () +
+			   " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
+	}
 
-        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
-    }
+	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+#endif /* DEBUG */
 
     auto cur = this->m_passes.begin ();
     auto end = this->m_passes.end ();
@@ -411,8 +421,9 @@ void CImage::render ()
         (*cur)->render ();
     }
 
-    if (DEBUG)
+#if DEBUG
         glPopDebugGroup ();
+#endif /* DEBUG */
 }
 
 void CImage::updateScreenSpacePosition ()
@@ -440,7 +451,7 @@ const ITexture* CImage::getTexture () const
     return this->m_texture;
 }
 
-const double CImage::getAnimationTime () const
+double CImage::getAnimationTime () const
 {
     return this->m_animationTime;
 }
@@ -455,7 +466,7 @@ const std::vector<CEffect*>& CImage::getEffects () const
     return this->m_effects;
 }
 
-const glm::vec2 CImage::getSize() const
+glm::vec2 CImage::getSize() const
 {
     if (this->m_texture == nullptr)
         return this->getImage ()->getSize ();
@@ -463,27 +474,27 @@ const glm::vec2 CImage::getSize() const
     return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }
 
-const GLuint CImage::getSceneSpacePosition () const
+GLuint CImage::getSceneSpacePosition () const
 {
     return this->m_sceneSpacePosition;
 }
 
-const GLuint CImage::getCopySpacePosition () const
+GLuint CImage::getCopySpacePosition () const
 {
     return this->m_copySpacePosition;
 }
 
-const GLuint CImage::getPassSpacePosition () const
+GLuint CImage::getPassSpacePosition () const
 {
     return this->m_passSpacePosition;
 }
 
-const GLuint CImage::getTexCoordCopy () const
+GLuint CImage::getTexCoordCopy () const
 {
     return this->m_texcoordCopy;
 }
 
-const GLuint CImage::getTexCoordPass () const
+GLuint CImage::getTexCoordPass () const
 {
     return this->m_texcoordPass;
 }

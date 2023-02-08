@@ -24,11 +24,11 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
 
         // sound is not initialized or stopped and is not in loop mode
         // ignore mixing it in
-        if (buffer->stream->isInitialized () == false)
+        if (!buffer->stream->isInitialized ())
             continue;
 
-        // check if thread is empty and signal the read thread
-        if (buffer->stream->isQueueEmpty () == true)
+        // check if queue is empty and signal the read thread
+        if (buffer->stream->isQueueEmpty ())
         {
             SDL_CondSignal (buffer->stream->getWaitCondition ());
             continue;
@@ -74,7 +74,8 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
 }
 
 CSDLAudioDriver::CSDLAudioDriver () :
-    m_initialized (false)
+    m_initialized (false),
+	m_audioSpec ()
 {
     if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0)
     {
@@ -110,7 +111,7 @@ CSDLAudioDriver::CSDLAudioDriver () :
 
 CSDLAudioDriver::~CSDLAudioDriver ()
 {
-    if (this->m_initialized == false)
+    if (!this->m_initialized)
         return;
 
     SDL_CloseAudioDevice (this->m_deviceID);

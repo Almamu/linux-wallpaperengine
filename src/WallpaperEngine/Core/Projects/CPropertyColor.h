@@ -24,4 +24,4 @@ namespace WallpaperEngine::Core::Projects
 
         glm::vec3 m_color;
     };
-};
+}

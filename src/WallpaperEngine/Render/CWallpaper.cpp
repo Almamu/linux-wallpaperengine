@@ -14,6 +14,14 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     m_type (std::move(type)),
     m_context (context),
     m_destFramebuffer (GL_NONE),
+	m_sceneFBO (nullptr),
+	m_texCoordBuffer (GL_NONE),
+	m_positionBuffer (GL_NONE),
+	m_shader (GL_NONE),
+	g_Texture0 (GL_NONE),
+	a_Position (GL_NONE),
+	a_TexCoord (GL_NONE),
+	m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext)
 {
     // generate the VAO to stop opengl from complaining
@@ -51,8 +59,7 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
 }
 
 CWallpaper::~CWallpaper ()
-{
-}
+= default;
 
 const CContainer& CWallpaper::getContainer () const
 {
@@ -203,7 +210,7 @@ void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
 
 void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool newFrame)
 {
-    if (renderFrame == true)
+    if (renderFrame)
         this->renderFrame (viewport);
 
     uint32_t projectionWidth = this->getWidth ();
@@ -367,9 +374,9 @@ CFBO* CWallpaper::getFBO () const
 
 CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext)
 {
-    if (wallpaper->is <Core::CScene> () == true)
+    if (wallpaper->is <Core::CScene> ())
         return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext);
-    else if (wallpaper->is <Core::CVideo> () == true)
+    else if (wallpaper->is <Core::CVideo> ())
         return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context, audioContext);
     else
         sLog.exception ("Unsupported wallpaper type");

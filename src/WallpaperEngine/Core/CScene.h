@@ -97,4 +97,4 @@ namespace WallpaperEngine::Core
         std::map<uint32_t, CObject*> m_objects;
         std::vector<CObject*> m_objectsByRenderOrder;
     };
-};
+}

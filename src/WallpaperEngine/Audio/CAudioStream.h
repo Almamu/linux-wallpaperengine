@@ -10,7 +10,7 @@ extern "C"
     #include <libswscale/swscale.h>
     #include <libswresample/swresample.h>
     #include <libavutil/opt.h>
-};
+}
 
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -61,7 +61,7 @@ namespace WallpaperEngine::Audio
 
     private:
         void loadCustomContent (const char* filename = nullptr);
-        int resampleAudio (AVFrame * decoded_audio_frame, enum AVSampleFormat out_sample_fmt, int out_channels, int out_sample_rate, uint8_t* out_buf);
+        int resampleAudio (AVFrame * decoded_audio_frame, uint8_t* out_buf);
         bool doQueue (AVPacket* pkt);
         void initialize ();
 
@@ -100,4 +100,4 @@ namespace WallpaperEngine::Audio
             SDL_cond *cond;
         } *m_queue;
     };
-};
+}

@@ -15,7 +15,7 @@ namespace WallpaperEngine::Audio
     class CAudioContext
     {
     public:
-        CAudioContext (Drivers::CAudioDriver& driver);
+        explicit CAudioContext (Drivers::CAudioDriver& driver);
 
         void addStream (CAudioStream* stream);
 

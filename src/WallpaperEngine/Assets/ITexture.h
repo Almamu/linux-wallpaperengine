@@ -36,6 +36,7 @@ namespace WallpaperEngine::Assets
          */
         enum TextureFormat : uint32_t
         {
+			UNKNOWN = 0xFFFFFFFF,
             ARGB8888 = 0,
             RGB888 = 1,
             RGB565 = 2,
@@ -74,4 +75,4 @@ namespace WallpaperEngine::Assets
         virtual const glm::vec4* getResolution () const = 0;
         virtual const bool isAnimated () const = 0;
     };
-};
+}

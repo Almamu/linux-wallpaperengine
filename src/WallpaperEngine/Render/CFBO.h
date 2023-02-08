@@ -41,4 +41,4 @@ namespace WallpaperEngine::Render
         /** Placeholder for frames, FBOs only have ONE */
         std::vector<TextureFrame*> m_frames;
     };
-};
+}

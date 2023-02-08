@@ -9,8 +9,8 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
     class CLifeTimeRandom : CInitializer
     {
     public:
-        const uint32_t getMinimum () const;
-        const uint32_t getMaximum () const;
+        uint32_t getMinimum () const;
+        uint32_t getMaximum () const;
     protected:
         friend class CInitializer;
 
@@ -21,4 +21,4 @@ namespace WallpaperEngine::Core::Objects::Particles::Initializers
         uint32_t m_max;
         uint32_t m_min;
     };
-};
+}

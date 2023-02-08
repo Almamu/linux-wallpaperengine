@@ -16,9 +16,7 @@ namespace WallpaperEngine::Core
     class CVideo : public CWallpaper
     {
     public:
-        CVideo (
-                std::string  filename
-        );
+        explicit CVideo (std::string filename);
 
         const std::string& getFilename ();
 
@@ -31,4 +29,4 @@ namespace WallpaperEngine::Core
 
     private:
     };
-};
+}

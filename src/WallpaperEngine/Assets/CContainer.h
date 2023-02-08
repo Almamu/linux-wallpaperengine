@@ -17,7 +17,7 @@ namespace WallpaperEngine::Assets
          *
          * @return
          */
-        const virtual void* readFile (std::string filename, uint32_t* length = nullptr) const = 0;
+        virtual const void* readFile (std::string filename, uint32_t* length = nullptr) const = 0;
 
         /**
          * Wrapper for readFile, appends the texture extension at the end of the filename

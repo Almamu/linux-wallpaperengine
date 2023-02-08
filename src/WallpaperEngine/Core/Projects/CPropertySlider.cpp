@@ -7,19 +7,12 @@ using namespace WallpaperEngine::Core::Projects;
 CPropertySlider* CPropertySlider::fromJSON (json data, const std::string& name)
 {
     auto value = data.find ("value");
-    std::string text = jsonFindDefault <std::string> (data, "text", "");
+    auto text = jsonFindDefault <std::string> (data, "text", "");
     auto min = jsonFindDefault(data, "min", 0.0);
     auto max = jsonFindDefault (data, "max", 0.0);
     auto step = jsonFindDefault (data, "step", 0.0);
 
-    return new CPropertySlider (
-        *value,
-        name,
-        text,
-        min,
-        max,
-        step
-    );
+    return new CPropertySlider (*value, name, text, min, max, step);
 }
 
 const double& CPropertySlider::getValue () const
@@ -59,7 +52,7 @@ std::string CPropertySlider::dump () const
 
 void CPropertySlider::update (const std::string& value)
 {
-    double newValue = atof (value.c_str ());
+    double newValue = strtod (value.c_str (), nullptr);
 
     if (newValue < this->m_min || newValue > this->m_max)
         sLog.exception ("Slider value (", newValue, ") is out of range (", this->m_min, ",", this->m_max, ")");

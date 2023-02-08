@@ -38,4 +38,4 @@ namespace WallpaperEngine::Core
         CWallpaper* m_wallpaper;
         CContainer& m_container;
     };
-};
+}

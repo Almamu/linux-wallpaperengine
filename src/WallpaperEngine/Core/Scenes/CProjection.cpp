@@ -3,13 +3,16 @@
 using namespace WallpaperEngine::Core::Scenes;
 
 CProjection::CProjection (uint32_t width, uint32_t height) :
+	m_isAuto (false),
     m_width (width),
     m_height (height)
 {
 }
 
 CProjection::CProjection (bool isAuto) :
-    m_isAuto (isAuto)
+    m_isAuto (isAuto),
+	m_width (0),
+	m_height (0)
 {
 }
 
@@ -23,7 +26,7 @@ const uint32_t& CProjection::getHeight () const
     return this->m_height;
 }
 
-const bool CProjection::isAuto () const
+bool CProjection::isAuto () const
 {
     return this->m_isAuto;
 }
@@ -46,7 +49,7 @@ CProjection* CProjection::fromJSON (json data)
     auto height_it = jsonFindRequired (data, "height", "Projection must have height");
 
     // TODO: PROPERLY SUPPORT AUTO-DETECTING SIZE
-    if (auto_it == true)
+    if (auto_it)
         return new CProjection (true);
     else
         return new CProjection (

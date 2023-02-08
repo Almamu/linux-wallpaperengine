@@ -67,9 +67,9 @@ glm::vec3 Core::aToColorf (const std::string& str)
 
 glm::ivec3 Core::aToColori (const char* str)
 {
-    uint8_t r = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
-    uint8_t g = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
-    uint8_t b = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10));
+    auto r = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
+    auto g = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10)); while (*str == ' ') str ++;
+    auto b = static_cast <uint8_t> (strtol (str, const_cast<char **>(&str), 10));
 
     return {r, g, b};
 }

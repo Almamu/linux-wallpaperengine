@@ -11,10 +11,11 @@ namespace WallpaperEngine::Core::Objects::Particles
     public:
         static CControlPoint* fromJSON (json data);
 
+		uint32_t getId () const;
         const glm::vec3& getOffset () const;
-        const uint32_t getFlags () const;
+        uint32_t getFlags () const;
     protected:
-        CControlPoint (uint32_t id, uint32_t flags = 0);
+        explicit CControlPoint (uint32_t id, uint32_t flags = 0);
 
         void setOffset (const glm::vec3& offset);
         void setFlags (uint32_t flags);
@@ -23,4 +24,4 @@ namespace WallpaperEngine::Core::Objects::Particles
         uint32_t m_flags;
         glm::vec3 m_offset;
     };
-};
+}

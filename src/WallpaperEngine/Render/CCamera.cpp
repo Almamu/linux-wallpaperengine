@@ -9,7 +9,9 @@ using namespace WallpaperEngine::Render;
 CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
     m_camera (camera),
     m_scene (scene),
-    m_isOrthogonal (false)
+    m_isOrthogonal (false),
+	m_projection (),
+	m_lookat ()
 {
     // get the lookat position
     // TODO: ENSURE THIS IS ONLY USED WHEN NOT DOING AN ORTOGRAPHIC CAMERA AS IT THROWS OFF POINTS
@@ -17,9 +19,7 @@ CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
 }
 
 CCamera::~CCamera ()
-{
-
-}
+= default;
 
 const glm::vec3& CCamera::getCenter () const
 {
@@ -46,9 +46,14 @@ const glm::mat4& CCamera::getLookAt () const
     return this->m_lookat;
 }
 
-const bool CCamera::isOrthogonal () const
+bool CCamera::isOrthogonal () const
 {
     return this->m_isOrthogonal;
+}
+
+CScene* CCamera::getScene () const
+{
+	return this->m_scene;
 }
 
 void CCamera::setOrthogonalProjection (float width, float height)

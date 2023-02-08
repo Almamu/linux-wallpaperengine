@@ -7,14 +7,15 @@
 
 using namespace WallpaperEngine::Assets;
 
-CTexture::CTexture (const void* fileData)
+CTexture::CTexture (const void* fileData) :
+	m_resolution ()
 {
     // ensure the header is parsed
-    this->m_header = this->parseHeader (static_cast <const char*> (fileData));
+    this->m_header = parseHeader (static_cast <const char*> (fileData));
 
     GLint internalFormat;
 
-    if (this->isAnimated () == true)
+    if (this->isAnimated ())
     {
         this->m_resolution = {
             this->m_header->textureWidth, this->m_header->textureHeight,
@@ -27,7 +28,7 @@ CTexture::CTexture (const void* fileData)
         {
             // wpengine-texture format always has one mipmap
             // get first image size
-            std::vector<TextureMipmap*>::const_iterator element = this->m_header->images.find (0)->second.begin ();
+            auto element = this->m_header->images.find (0)->second.begin ();
 
             // set the texture resolution
             this->m_resolution = {
@@ -160,14 +161,14 @@ CTexture::CTexture (const void* fileData)
             }
             else
             {
-                if (this->m_header->format == TextureFormat::RG88)
+				if (this->m_header->format == TextureFormat::R8)
+				{
+					// red textures are 1-byte-per-pixel, so it's alignment has to be set manually
+					glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+					textureFormat = GL_RED;
+				}
+				else if (this->m_header->format == TextureFormat::RG88)
                     textureFormat = GL_RG;
-                else if (this->m_header->format == TextureFormat::R8)
-                {
-                    // red textures are 1-byte-per-pixel, so it's alignment has to be set manually
-                    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-                    textureFormat = GL_RED;
-                }
             }
 
             switch (internalFormat)
@@ -242,12 +243,12 @@ const uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const
 
 const uint32_t CTexture::getRealWidth () const
 {
-    return this->isAnimated () == true ? this->getHeader ()->gifWidth : this->getHeader ()->width;
+    return this->isAnimated () ? this->getHeader ()->gifWidth : this->getHeader ()->width;
 }
 
 const uint32_t CTexture::getRealHeight () const
 {
-    return this->isAnimated () == true ? this->getHeader ()->gifHeight : this->getHeader ()->height;
+    return this->isAnimated () ? this->getHeader ()->gifHeight : this->getHeader ()->height;
 }
 
 const ITexture::TextureFormat CTexture::getFormat () const
@@ -281,8 +282,7 @@ const bool CTexture::isAnimated () const
 }
 
 CTexture::TextureMipmap::TextureMipmap ()
-{
-}
+= default;
 
 CTexture::TextureMipmap::~TextureMipmap ()
 {
@@ -308,25 +308,40 @@ void CTexture::TextureMipmap::decompressData ()
     }
 }
 
-CTexture::TextureFrame::TextureFrame ()
+CTexture::TextureFrame::TextureFrame () :
+	frameNumber (0),
+	frametime (0.0f),
+	x (0),
+	y (0),
+	width1 (0),
+	width2 (0),
+	height1 (0),
+	height2 (0)
 {
 }
 
 CTexture::TextureFrame::~TextureFrame ()
-{
-}
+= default;
 
-CTexture::TextureHeader::TextureHeader ()
+CTexture::TextureHeader::TextureHeader () :
+	flags (NoFlags),
+	width (0),
+	height (0),
+	textureWidth (0),
+	textureHeight (0),
+	gifWidth (0),
+	gifHeight (0),
+	format (TextureFormat::UNKNOWN),
+	imageCount (0),
+	mipmapCount (0)
 {
 }
 
 CTexture::TextureHeader::~TextureHeader ()
 {
     for (const auto& imgCur : this->images)
-    {
         for (auto cur : imgCur.second)
             delete cur;
-    }
 }
 
 CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
@@ -342,9 +357,9 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
     // jump through the string again
     fileData += 9;
 
-    TextureHeader* header = new TextureHeader;
+    auto* header = new TextureHeader;
 
-    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     header->format = static_cast <TextureFormat>(*pointer ++);
     header->flags = static_cast <TextureFlags> (*pointer ++);
@@ -433,7 +448,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
         while (framecount > 0)
         {
             // add the frame to the list
-            header->frames.push_back (parseAnimation (header, &fileData));
+            header->frames.push_back (parseAnimation (&fileData));
 
             framecount --;
         }
@@ -451,19 +466,19 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
     return header;
 }
 
-CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, const char** originalFileData)
+CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData)
 {
     const char* fileData = *originalFileData;
     // get back the pointer into integer
-    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     // start reading frame information
-    TextureFrame* frame = new TextureFrame();
+    auto* frame = new TextureFrame();
 
     frame->frameNumber = *pointer++;
 
     // reinterpret the pointer into float
-    const float* fPointer = reinterpret_cast <const float*> (pointer);
+    const auto* fPointer = reinterpret_cast <const float*> (pointer);
 
     frame->frametime = *fPointer ++;
     frame->x = *fPointer ++;
@@ -481,13 +496,13 @@ CTexture::TextureFrame* CTexture::parseAnimation (TextureHeader* header, const c
 
 CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const char** originalFileData)
 {
-    TextureMipmap* mipmap = new TextureMipmap ();
+    auto* mipmap = new TextureMipmap ();
 
     // get the current position
     const char* fileData = *originalFileData;
 
     // get an integer pointer
-    const uint32_t* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
 
     mipmap->width = *pointer++;
     mipmap->height = *pointer++;
@@ -536,7 +551,7 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const cha
     return mipmap;
 }
 
-const bool CTexture::TextureHeader::isAnimated () const
+bool CTexture::TextureHeader::isAnimated () const
 {
     return this->flags & TextureFlags::IsGif;
 }

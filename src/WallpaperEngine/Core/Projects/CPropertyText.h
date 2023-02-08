@@ -18,4 +18,4 @@ namespace WallpaperEngine::Core::Projects
     private:
         CPropertyText (const std::string& name, const std::string& text);
     };
-};
+}

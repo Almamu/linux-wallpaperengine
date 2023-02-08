@@ -8,17 +8,13 @@ CControlPoint* CControlPoint::fromJSON (json data)
     auto id_it = jsonFindRequired (data, "id", "Particle's control point must have id");
     auto offset_it = data.find ("offset");
 
-    CControlPoint* controlpoint = new CControlPoint (*id_it, 0);
+    auto* controlpoint = new CControlPoint (*id_it, 0);
 
     if (offset_it != data.end ())
-    {
         controlpoint->setOffset (WallpaperEngine::Core::aToVector3 (*offset_it));
-    }
 
     if (flags_it != data.end ())
-    {
         controlpoint->setFlags (*flags_it);
-    }
 
     return controlpoint;
 }
@@ -39,13 +35,17 @@ void CControlPoint::setFlags (uint32_t flags)
 {
     this->m_flags = flags;
 }
+uint32_t CControlPoint::getId () const
+{
+	return this->m_id;
+}
 
 const glm::vec3& CControlPoint::getOffset () const
 {
     return this->m_offset;
 }
 
-const uint32_t CControlPoint::getFlags () const
+uint32_t CControlPoint::getFlags () const
 {
     return this->m_flags;
 }

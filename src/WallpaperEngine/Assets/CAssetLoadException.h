@@ -14,4 +14,4 @@ namespace WallpaperEngine::Assets
     private:
         std::string m_message;
     };
-};
+}

@@ -32,4 +32,4 @@ namespace WallpaperEngine::Core::Projects
         std::vector <CPropertyComboValue*> m_values;
         std::string m_defaultValue;
     };
-};
+}

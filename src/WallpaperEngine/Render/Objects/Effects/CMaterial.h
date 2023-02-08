@@ -39,4 +39,4 @@ namespace WallpaperEngine::Render::Objects::Effects
 
         std::vector<CPass*> m_passes;
     };
-};
+}

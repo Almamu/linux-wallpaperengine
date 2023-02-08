@@ -9,7 +9,7 @@ CShaderVariableVector3::CShaderVariableVector3 (const glm::vec3& defaultValue) :
 {
 }
 
-CShaderVariableVector3::CShaderVariableVector3 (const glm::vec3& defaultValue, std::string name) :
+CShaderVariableVector3::CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name) :
     m_defaultValue (defaultValue),
     m_value (glm::vec3 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)

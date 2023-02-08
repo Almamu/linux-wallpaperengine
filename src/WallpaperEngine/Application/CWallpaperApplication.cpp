@@ -139,7 +139,7 @@ void CWallpaperApplication::loadProject ()
     this->m_project = CProject::fromFile ("project.json", this->m_vfs);
     // go to the right folder so the videos will play
     // TODO: stop doing chdir and use full path
-    if (this->m_project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> () == true)
+    if (this->m_project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> ())
         chdir (this->m_context.background.c_str ());
 }
 
@@ -229,7 +229,7 @@ void CWallpaperApplication::show ()
 
     float startTime, endTime, minimumTime = 1.0f / this->m_context.maximumFPS;
 
-    while (videoDriver.closeRequested () == false && g_KeepRunning == true)
+    while (!videoDriver.closeRequested () && g_KeepRunning)
     {
         // update input information
         inputContext.update ();
@@ -248,7 +248,7 @@ void CWallpaperApplication::show ()
         if ((endTime - startTime) < minimumTime)
             usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 
-        if (this->m_context.takeScreenshot == true && videoDriver.getFrameCounter () == 5)
+        if (this->m_context.takeScreenshot && videoDriver.getFrameCounter () == 5)
         {
             this->takeScreenshot (context.getWallpaper (), this->m_context.screenshot, this->m_context.screenshotFormat);
             // disable screenshot just in case the counter overflows

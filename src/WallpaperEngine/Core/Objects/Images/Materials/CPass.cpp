@@ -1,6 +1,8 @@
 #include "common.h"
 #include "CPass.h"
 
+#include <utility>
+
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Core::Objects::Images::Materials;
 
@@ -27,11 +29,11 @@ CPass* CPass::fromJSON (json data)
     if (textures_it != data.end ())
     {
         // TODO: FETCH THIS FROM CImage TO MAKE IT COMPATIBLE WITH OLDER WALLPAPERS
-        if ((*textures_it).is_array () == false)
+        if (!(*textures_it).is_array ())
             sLog.exception ("Material's textures must be a list");
     }
 
-    CPass* pass = new CPass (
+    auto* pass = new CPass (
         blending,
         cullmode,
         *depthtest_it,
@@ -40,28 +42,15 @@ CPass* CPass::fromJSON (json data)
     );
 
     if (textures_it != data.end ())
-    {
         for (const auto& cur : (*textures_it))
-        {
-            if (cur.is_null () == true)
-            {
-                pass->insertTexture ("");
-            }
-            else
-            {
-                pass->insertTexture (cur);
-            }
-        }
-    }
+			pass->insertTexture (cur.is_null () ? "" : cur);
 
     if (combos_it != data.end ())
     {
         for (const auto& cur : (*combos_it).items ())
         {
-            std::string name = cur.key ();
-
-            if (cur.value ().is_number_integer () == true)
-                pass->insertCombo (name, cur.value ());
+            if (cur.value ().is_number_integer ())
+                pass->insertCombo (cur.key (), cur.value ());
             else
                 sLog.exception ("unexpected non-integer combo on pass");
         }
@@ -128,7 +117,7 @@ const std::string& CPass::getDepthWrite ()const
     return this->m_depthwrite;
 }
 
-void CPass::setBlendingMode (std::string mode)
+void CPass::setBlendingMode (const std::string& mode)
 {
     this->m_blending = mode;
 }

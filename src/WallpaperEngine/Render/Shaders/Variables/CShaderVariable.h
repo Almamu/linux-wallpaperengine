@@ -19,7 +19,7 @@ namespace WallpaperEngine::Render::Shaders::Variables
         const std::string& getType () const;
 
         void setIdentifierName (std::string identifierName);
-        void setName (std::string name);
+        void setName (const std::string& name);
         const void* getValue () const;
 
         virtual const int getSize () const = 0;

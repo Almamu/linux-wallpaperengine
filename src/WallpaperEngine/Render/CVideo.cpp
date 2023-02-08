@@ -18,7 +18,8 @@ void* get_proc_address (void* ctx, const char* name)
 CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext) :
     CWallpaper (video, Type, context, audioContext),
     m_width (16),
-    m_height (16)
+    m_height (16),
+	m_mpvGl (nullptr)
 {
     double volume = g_AudioVolume * 100.0 / 128.0;
 
@@ -60,7 +61,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     if (mpv_command (this->m_mpv, command) < 0)
         sLog.exception ("Cannot load video to play");
 
-    if (g_AudioEnabled == false)
+    if (!g_AudioEnabled)
     {
         const char* mutecommand [] = {
             "set", "mute", "yes", nullptr
@@ -98,18 +99,14 @@ void CVideo::renderFrame (glm::ivec4 viewport)
             break;
 
         // we do not care about any of the events
-        switch (event->event_id)
-        {
-            case MPV_EVENT_VIDEO_RECONFIG:
-                {
-                    int64_t width, height;
+		if (event->event_id == MPV_EVENT_VIDEO_RECONFIG)
+		{
+			int64_t width, height;
 
-                    if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
-                        mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
-                        this->setSize (width, height);
-                }
-                break;
-        }
+			if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
+				mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
+				this->setSize (width, height);
+		}
     }
 
     // render the next

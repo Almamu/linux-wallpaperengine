@@ -13,7 +13,7 @@ namespace WallpaperEngine::Assets
     class CDirectory : public CContainer
     {
     public:
-        CDirectory (std::filesystem::path  basepath);
+        explicit CDirectory (std::filesystem::path basepath);
         ~CDirectory ();
 
         const void* readFile (std::string filename, uint32_t* length) const override;
@@ -21,4 +21,4 @@ namespace WallpaperEngine::Assets
         std::filesystem::path m_basepath;
         std::map <std::string, CFileEntry> m_cache;
     };
-};
+}

@@ -29,9 +29,7 @@ CPackage::CPackage (std::filesystem::path  path) :
 }
 
 CPackage::~CPackage()
-{
-
-}
+= default;
 
 
 const void* CPackage::readFile (std::string filename, uint32_t* length) const

@@ -18,7 +18,7 @@ namespace WallpaperEngine::Assets
         struct TextureHeader;
 
     public:
-        CTexture (const void* fileData);
+        explicit CTexture (const void* fileData);
         ~CTexture ();
 
         const GLuint getTextureID (uint32_t imageIndex = 0) const override;
@@ -82,7 +82,7 @@ namespace WallpaperEngine::Assets
             TextureHeader ();
             ~TextureHeader ();
 
-            const bool isAnimated () const;
+            bool isAnimated () const;
 
             /** The version of the texture container */
             ContainerVersion containerVersion = ContainerVersion::UNKNOWN;
@@ -117,7 +117,7 @@ namespace WallpaperEngine::Assets
         };
     private:
         static TextureHeader* parseHeader (const char* fileData);
-        static TextureFrame* parseAnimation (TextureHeader* header, const char** originalFileData);
+        static TextureFrame* parseAnimation (const char** originalFileData);
         static TextureMipmap* parseMipmap (TextureHeader* header, const char** fileData);
 
         TextureHeader* m_header;

@@ -17,12 +17,12 @@ CSizeRandom::CSizeRandom (uint32_t id, uint32_t min, uint32_t max) :
 {
 }
 
-const uint32_t CSizeRandom::getMinimum () const
+uint32_t CSizeRandom::getMinimum () const
 {
     return this->m_min;
 }
 
-const uint32_t CSizeRandom::getMaximum () const
+uint32_t CSizeRandom::getMaximum () const
 {
     return this->m_max;
 }

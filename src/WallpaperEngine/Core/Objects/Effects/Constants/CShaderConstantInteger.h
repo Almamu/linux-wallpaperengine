@@ -9,7 +9,7 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants
     class CShaderConstantInteger : public CShaderConstant
     {
     public:
-        CShaderConstantInteger (int32_t value);
+        explicit CShaderConstantInteger (int32_t value);
 
         int32_t* getValue ();
 

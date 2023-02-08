@@ -18,8 +18,9 @@ COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint (GLFW_VISIBLE, GLFW_FALSE);
 
-    if (DEBUG)
-        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#if DEBUG
+	glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif /* DEBUG */
 
     // create window, size doesn't matter as long as we don't show it
     this->m_window = glfwCreateWindow (640, 480, windowTitle, nullptr, nullptr);

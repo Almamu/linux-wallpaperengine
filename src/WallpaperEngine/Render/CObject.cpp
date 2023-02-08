@@ -13,8 +13,7 @@ CObject::CObject(CScene* scene, std::string type, Core::CObject *object) :
 }
 
 CObject::~CObject ()
-{
-}
+= default;
 
 CScene* CObject::getScene () const
 {
@@ -26,7 +25,7 @@ const CContainer& CObject::getContainer () const
     return this->getScene ()->getContainer ();
 }
 
-const int CObject::getId () const
+int CObject::getId () const
 {
     return this->m_object->getId ();
 }

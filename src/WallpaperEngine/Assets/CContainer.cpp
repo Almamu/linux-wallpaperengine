@@ -15,8 +15,9 @@ const ITexture* CContainer::readTexture (std::string filename) const
 
     ITexture* result = new CTexture (textureContents);
 
-    if (DEBUG)
+#if DEBUG
         glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, filename.c_str ());
+#endif /* DEBUG */
 
     return result;
 }

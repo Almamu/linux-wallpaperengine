@@ -19,7 +19,7 @@ namespace WallpaperEngine::Core::UserSettings
         static std::string Type;
 
         bool processValue (const std::vector<Projects::CProperty*>& properties);
-        bool getDefaultValue ();
+        bool getDefaultValue () const;
 
     private:
         CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source, std::string expectedValue);

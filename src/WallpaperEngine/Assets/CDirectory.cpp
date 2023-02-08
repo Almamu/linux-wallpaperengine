@@ -12,7 +12,7 @@ CDirectory::CDirectory (std::filesystem::path  basepath) :
     m_basepath (std::move(basepath))
 {
     // ensure the specified path exists
-    struct stat buffer;
+    struct stat buffer {};
 
     if (stat (this->m_basepath.c_str (), &buffer) != 0)
         sLog.exception ("Cannot find ", this->m_basepath, ". This folder is required for wallpaper engine to work");
@@ -22,9 +22,7 @@ CDirectory::CDirectory (std::filesystem::path  basepath) :
 }
 
 CDirectory::~CDirectory ()
-{
-
-}
+= default;
 
 const void* CDirectory::readFile (std::string filename, uint32_t* length) const
 {

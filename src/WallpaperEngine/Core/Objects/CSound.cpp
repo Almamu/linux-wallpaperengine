@@ -24,7 +24,7 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
         json data,
         CUserSettingBoolean* visible,
         uint32_t id,
-        std::string name,
+        const std::string& name,
         CUserSettingVector3* origin,
         CUserSettingVector3* scale,
         const glm::vec3& angles)
@@ -37,10 +37,10 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
     if (playbackmode == "loop")
         repeat = true;
 
-    if ((*sound_it).is_array () == false)
+    if (!(*sound_it).is_array ())
         sLog.exception ("Expected sound list on element ", name);
 
-    CSound* sound = new CSound (
+    auto* sound = new CSound (
         scene,
         visible,
         id,
@@ -57,7 +57,7 @@ WallpaperEngine::Core::CObject* CSound::fromJSON (
     return sound;
 }
 
-void CSound::insertSound (std::string filename)
+void CSound::insertSound (const std::string& filename)
 {
     this->m_sounds.push_back (filename);
 }

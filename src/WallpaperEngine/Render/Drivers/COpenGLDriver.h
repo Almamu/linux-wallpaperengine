@@ -9,7 +9,7 @@ namespace WallpaperEngine::Render::Drivers
     class COpenGLDriver : public CVideoDriver
     {
     public:
-        COpenGLDriver (const char* windowTitle);
+        explicit COpenGLDriver (const char* windowTitle);
         ~COpenGLDriver();
 
         float getRenderTime () override;

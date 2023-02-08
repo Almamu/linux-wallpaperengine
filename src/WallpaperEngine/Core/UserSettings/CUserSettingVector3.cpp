@@ -28,7 +28,7 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data)
     std::string source;
     std::string expectedValue;
 
-    if (data.is_object () == true)
+    if (data.is_object ())
     {
         hasSource = true;
         auto userIt = data.find ("user");
@@ -54,7 +54,7 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data)
     }
     else
     {
-        if (data.is_string () == false)
+        if (!data.is_string ())
             sLog.exception ("Expected vector value on user settings");
 
         defaultValue = WallpaperEngine::Core::aToColorf (data.get <std::string> ().c_str ());
@@ -68,14 +68,14 @@ CUserSettingVector3* CUserSettingVector3::fromScalar (glm::vec3 value)
     return new CUserSettingVector3 (false, false, value, "", "");
 }
 
-glm::vec3 CUserSettingVector3::getDefaultValue ()
+glm::vec3 CUserSettingVector3::getDefaultValue () const
 {
     return this->m_default;
 }
 
 glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProperty*>& properties)
 {
-    if (this->m_hasSource == false && this->m_hasCondition == false)
+    if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
     for (auto cur : properties)
@@ -83,7 +83,7 @@ glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProper
         if (cur->getName () != this->m_source)
             continue;
 
-        if (this->m_hasCondition == false)
+        if (!this->m_hasCondition)
         {
             if (cur->is <CPropertyColor> ())
                 return cur->as <CPropertyColor> ()->getValue ();

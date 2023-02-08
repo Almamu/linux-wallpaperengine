@@ -8,16 +8,12 @@ using namespace WallpaperEngine::Core::Projects;
 CPropertyBoolean* CPropertyBoolean::fromJSON (json data, const std::string& name)
 {
     json::const_iterator value = data.find ("value");
-    std::string text = jsonFindDefault <std::string> (data, "text", "");
+    auto text = jsonFindDefault <std::string> (data, "text", "");
 
-    return new CPropertyBoolean (
-        *value,
-        name,
-        text
-    );
+    return new CPropertyBoolean (*value, name, text);
 }
 
-bool CPropertyBoolean::getValue ()
+bool CPropertyBoolean::getValue () const
 {
     return this->m_value;
 }

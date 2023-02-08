@@ -21,13 +21,13 @@ CUserSettingFloat::CUserSettingFloat (bool hasCondition, bool hasSource, double 
 
 CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data)
 {
-    bool hasCondition = false;
-    bool hasSource = false;
-    double defaultValue = false;
+    double defaultValue;
     std::string source;
     std::string expectedValue;
+	bool hasCondition = false;
+	bool hasSource = false;
 
-    if (data.is_object () == true)
+    if (data.is_object ())
     {
         hasSource = true;
         auto userIt = data.find ("user");
@@ -53,7 +53,7 @@ CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data)
     }
     else
     {
-        if (data.is_number () == false)
+        if (!data.is_number ())
             sLog.exception ("Expected numeric value on user settings");
 
         defaultValue = data.get<double> ();
@@ -67,14 +67,14 @@ CUserSettingFloat* CUserSettingFloat::fromScalar (double value)
     return new CUserSettingFloat (false, false, value, "", "");
 }
 
-double CUserSettingFloat::getDefaultValue ()
+double CUserSettingFloat::getDefaultValue () const
 {
     return this->m_default;
 }
 
 double CUserSettingFloat::processValue (const std::vector<Projects::CProperty*>& properties)
 {
-    if (this->m_hasSource == false && this->m_hasCondition == false)
+    if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
     for (auto cur : properties)
@@ -82,7 +82,7 @@ double CUserSettingFloat::processValue (const std::vector<Projects::CProperty*>&
         if (cur->getName () != this->m_source)
             continue;
 
-        if (this->m_hasCondition == false)
+        if (!this->m_hasCondition)
         {
             if (cur->is <CPropertySlider> ())
                 return cur->as <CPropertySlider> ()->getValue ();

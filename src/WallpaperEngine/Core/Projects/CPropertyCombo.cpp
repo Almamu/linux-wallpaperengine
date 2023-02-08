@@ -11,29 +11,29 @@ using namespace WallpaperEngine::Core::Projects;
 CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
 {
     auto value = data.find ("value");
-    std::string text = jsonFindDefault <std::string> (data, "text", "");
+    auto text = jsonFindDefault <std::string> (data, "text", "");
     auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
 
-    CPropertyCombo* combo = new CPropertyCombo (
+    auto* combo = new CPropertyCombo (
         name,
         text,
         *value
     );
 
-    if (options->is_array () == false)
+    if (!options->is_array ())
         sLog.exception ("Property combo options should be an array");
 
     for (auto& cur : (*options))
     {
         // TODO: PROPERLY REPORT THESE ISSUES
-        if (cur.is_object () == false)
+        if (!cur.is_object ())
             continue;
 
         // check for label and value to ensure they're there
         auto label = jsonFindRequired (cur, "label", "Label is required for a property combo option");
-        auto value = jsonFindRequired (cur, "value", "Value is required for a property combo option");
+        auto propertyValue = jsonFindRequired (cur, "value", "Value is required for a property combo option");
 
-        combo->addValue (*label, *value);
+        combo->addValue (*label, *propertyValue);
     }
 
     return combo;
@@ -61,9 +61,7 @@ std::string CPropertyCombo::dump () const
         << "\t\t" << "Posible values:" << std::endl;
 
     for (auto cur : this->m_values)
-    {
         ss << "\t\t" << cur->label << " -> " << cur->value << std::endl;
-    }
 
     return ss.str();
 }
@@ -81,7 +79,7 @@ void CPropertyCombo::update (const std::string& value)
         found = true;
     }
 
-    if (found == false)
+    if (!found)
         sLog.exception ("Assigning invalid value to property ", this->m_name);
 
     this->m_defaultValue = value;
@@ -90,7 +88,7 @@ void CPropertyCombo::update (const std::string& value)
 
 void CPropertyCombo::addValue (std::string label, std::string value)
 {
-    CPropertyComboValue* prop = new CPropertyComboValue;
+    auto* prop = new CPropertyComboValue;
 
     prop->label = std::move (label);
     prop->value = std::move (value);

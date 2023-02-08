@@ -14,7 +14,11 @@ CFBO::CFBO (
     m_name (std::move (name)),
     m_format (format),
     m_scale (scale),
-    m_flags (flags)
+    m_flags (flags),
+	m_framebuffer (GL_NONE),
+	m_depthbuffer (GL_NONE),
+	m_texture (GL_NONE),
+	m_resolution ()
 {
     // create an empty texture that'll be free'd so the FBO is transparent
     GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
@@ -28,9 +32,9 @@ CFBO::CFBO (
     // give OpenGL an empty image
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     // label stuff for debugging
-    if (DEBUG)
+#if DEBUG
         glObjectLabel (GL_TEXTURE, this->m_texture, -1, this->m_name.c_str ());
-
+#endif /* DEBUG */
     // set filtering parameters, otherwise the texture is not rendered
     if (flags & TextureFlags::ClampUVs)
     {
@@ -74,7 +78,7 @@ CFBO::CFBO (
     };
 
     // create the textureframe entries
-    TextureFrame* frame = new TextureFrame;
+    auto* frame = new TextureFrame;
 
     frame->frameNumber = 0;
     frame->frametime = 0;

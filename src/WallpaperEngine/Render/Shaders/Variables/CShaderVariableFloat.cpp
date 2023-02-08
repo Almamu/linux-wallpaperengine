@@ -11,12 +11,12 @@ CShaderVariableFloat::CShaderVariableFloat(float defaultValue) :
 {
 }
 
-CShaderVariableFloat::CShaderVariableFloat(float defaultValue, std::string name) :
+CShaderVariableFloat::CShaderVariableFloat(float defaultValue, const std::string& name) :
     m_defaultValue (defaultValue),
     m_value (0),
     CShaderVariable (&this->m_defaultValue, nullptr, Type)
 {
-    this->setName (std::move(name));
+    this->setName (name);
 }
 
 void CShaderVariableFloat::setValue (float value)

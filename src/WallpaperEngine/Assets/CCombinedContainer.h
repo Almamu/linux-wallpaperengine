@@ -11,6 +11,8 @@ namespace WallpaperEngine::Assets
     class CCombinedContainer : public CContainer
     {
     public:
+		CCombinedContainer ();
+
         /**
          * Adds a container to the list
          *
@@ -19,7 +21,7 @@ namespace WallpaperEngine::Assets
         void add (CContainer* container);
         void addPkg (const std::filesystem::path& path);
 
-        const void* readFile (std::string filename, uint32_t* length) const override;
+        const void* readFile (std::string filename, uint32_t* length = nullptr) const override;
 
     private:
         std::vector<CContainer*> m_containers;

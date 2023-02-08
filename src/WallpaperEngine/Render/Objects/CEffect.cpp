@@ -1,7 +1,7 @@
 #include "CEffect.h"
 
-using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Objects;
 
 CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect) :
     m_image (image),

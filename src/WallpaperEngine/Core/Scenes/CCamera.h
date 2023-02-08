@@ -21,4 +21,4 @@ namespace WallpaperEngine::Core::Scenes
         glm::vec3 m_eye;
         glm::vec3 m_up;
     };
-};
+}

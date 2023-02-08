@@ -3,7 +3,7 @@
 
 using namespace WallpaperEngine::Input;
 
-CMouseInput::CMouseInput (GLFWwindow* window) : position(0, 0), m_window (window) {}
+CMouseInput::CMouseInput (GLFWwindow* window) : position (), m_mousePosition (), m_window (window) {}
 
 void CMouseInput::update ()
 {

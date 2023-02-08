@@ -30,4 +30,4 @@ namespace WallpaperEngine::Core::Projects
         double m_max;
         double m_step;
     };
-};
+}
