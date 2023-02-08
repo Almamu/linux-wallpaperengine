@@ -19,7 +19,7 @@ namespace WallpaperEngine::Core::Objects
         static CParticle* fromFile (
                 CScene* scene,
                 const std::string& filename,
-                const CContainer* container,
+                const CContainer& container,
                 CUserSettingBoolean* visible,
                 uint32_t id,
                 std::string name,

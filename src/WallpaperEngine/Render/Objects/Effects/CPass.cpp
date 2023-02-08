@@ -524,7 +524,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ()->resolveTexture (textureName);
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
 
                     this->m_finalTextures.insert_or_assign ((*fragCur).first, textureRef);
                 }
@@ -553,7 +553,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ()->resolveTexture (textureName);
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
 
                     this->m_finalTextures.insert_or_assign ((*vertCur).first, textureRef);
                 }
@@ -693,7 +693,7 @@ void CPass::setupTextures ()
             else
             {
                 this->m_textures.emplace_back (
-                    this->m_material->getImage ()->getScene ()->getContext ()->resolveTexture ((*cur))
+                    this->m_material->getImage ()->getScene ()->getContext ().resolveTexture ((*cur))
                 );
             }
         }

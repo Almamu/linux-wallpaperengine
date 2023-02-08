@@ -33,7 +33,7 @@ namespace WallpaperEngine::Core
     {
         friend class CScene;
     public:
-        static CObject* fromJSON (json data, CScene* scene, const CContainer* container);
+        static CObject* fromJSON (json data, CScene* scene, const CContainer& container);
 
         template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
         template<class T> T* as () { assert (is <T> ()); return (T*) this; }

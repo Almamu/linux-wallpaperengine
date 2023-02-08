@@ -9,7 +9,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context, CAudioContext* audioContext) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext) :
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
     m_context (context),
@@ -54,9 +54,9 @@ CWallpaper::~CWallpaper ()
 {
 }
 
-const CContainer* CWallpaper::getContainer () const
+const CContainer& CWallpaper::getContainer () const
 {
-    return this->m_context->getContainer ();
+    return this->m_context.getContainer ();
 }
 
 WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const
@@ -325,12 +325,12 @@ void CWallpaper::setupFramebuffers ()
     );
 }
 
-CRenderContext* CWallpaper::getContext ()
+CRenderContext& CWallpaper::getContext ()
 {
     return this->m_context;
 }
 
-CAudioContext* CWallpaper::getAudioContext ()
+CAudioContext& CWallpaper::getAudioContext ()
 {
     return this->m_audioContext;
 }
@@ -365,7 +365,7 @@ CFBO* CWallpaper::getFBO () const
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context, CAudioContext* audioContext)
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext)
 {
     if (wallpaper->is <Core::CScene> () == true)
         return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext);

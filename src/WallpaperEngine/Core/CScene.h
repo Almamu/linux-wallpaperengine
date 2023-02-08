@@ -17,7 +17,7 @@ namespace WallpaperEngine::Core
     class CScene : public CWallpaper
     {
     public:
-        static CScene* fromFile (const std::string& filename, CContainer* container);
+        static CScene* fromFile (const std::string& filename, CContainer& container);
 
         const std::map<uint32_t, CObject*>& getObjects () const;
         const std::vector<CObject*>& getObjectsByRenderOrder () const;
@@ -45,7 +45,7 @@ namespace WallpaperEngine::Core
         friend class CWallpaper;
 
         CScene (
-                CContainer* container,
+                CContainer& container,
                 Scenes::CCamera* camera,
                 glm::vec3 ambientColor,
                 CUserSettingBoolean* bloom,
@@ -70,9 +70,9 @@ namespace WallpaperEngine::Core
 
         void insertObject (CObject* object);
 
-        CContainer* getContainer ();
+        CContainer& getContainer ();
     private:
-        CContainer* m_container;
+        CContainer& m_container;
         Scenes::CCamera* m_camera;
 
         // data from general section on the json

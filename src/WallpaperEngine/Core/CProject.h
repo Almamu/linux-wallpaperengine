@@ -16,7 +16,7 @@ namespace WallpaperEngine::Core
     class CProject
     {
     public:
-        static CProject* fromFile (const std::string& filename, CContainer* container);
+        static CProject* fromFile (const std::string& filename, CContainer& container);
 
         CWallpaper* getWallpaper () const;
 
@@ -24,10 +24,10 @@ namespace WallpaperEngine::Core
         const std::string& getType () const;
         const std::vector<Projects::CProperty*>& getProperties () const;
 
-        CContainer* getContainer ();
+        CContainer& getContainer ();
 
     protected:
-        CProject (std::string title, std::string type, CWallpaper* wallpaper, CContainer* container);
+        CProject (std::string title, std::string type, CWallpaper* wallpaper, CContainer& container);
 
         void insertProperty (Projects::CProperty* property);
     private:
@@ -36,6 +36,6 @@ namespace WallpaperEngine::Core
         std::string m_title;
         std::string m_type;
         CWallpaper* m_wallpaper;
-        CContainer* m_container;
+        CContainer& m_container;
     };
 };

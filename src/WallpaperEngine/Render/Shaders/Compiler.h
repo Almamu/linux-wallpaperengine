@@ -51,7 +51,7 @@ namespace WallpaperEngine::Render::Shaders
          * @param recursive Whether the compiler should add base definitions or not
          */
         Compiler (
-            const CContainer* container,
+            const CContainer& container,
             std::string filename,
             Type type,
             std::map<std::string, int>* combos,
@@ -259,7 +259,7 @@ namespace WallpaperEngine::Render::Shaders
          /**
           * The container to load files from
           */
-         const CContainer* m_container;
+         const CContainer& m_container;
          /**
           * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
           */

@@ -15,7 +15,7 @@ namespace WallpaperEngine::Render
     class CTextureCache
     {
     public:
-        CTextureCache (CRenderContext* context);
+        CTextureCache (CRenderContext& context);
         ~CTextureCache ();
 
         /**
@@ -36,7 +36,7 @@ namespace WallpaperEngine::Render
         void store (const std::string& name, const ITexture* texture);
 
     private:
-        CRenderContext* m_context;
+        CRenderContext& m_context;
         std::map<std::string, const ITexture*> m_textureCache;
     };
 }

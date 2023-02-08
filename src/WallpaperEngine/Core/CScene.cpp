@@ -9,7 +9,7 @@
 using namespace WallpaperEngine::Core;
 
 CScene::CScene (
-        CContainer* container,
+        CContainer& container,
         Scenes::CCamera* camera,
         glm::vec3 ambientColor,
         CUserSettingBoolean* bloom,
@@ -51,7 +51,7 @@ CScene::CScene (
 {
 }
 
-CScene* CScene::fromFile (const std::string& filename, CContainer* container)
+CScene* CScene::fromFile (const std::string& filename, CContainer& container)
 {
     std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename, container);
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
@@ -126,7 +126,7 @@ void CScene::insertObject (CObject* object)
     }
 }
 
-CContainer* CScene::getContainer ()
+CContainer& CScene::getContainer ()
 {
     return this->m_container;
 }

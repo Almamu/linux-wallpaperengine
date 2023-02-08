@@ -16,6 +16,7 @@ bool g_AudioEnabled = true;
 int g_AudioVolume = 128;
 
 using namespace WallpaperEngine::Application;
+using namespace WallpaperEngine::Core;
 
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context)
@@ -136,7 +137,7 @@ void CWallpaperApplication::setupContainer ()
 
 void CWallpaperApplication::loadProject ()
 {
-    this->m_project = CProject::fromFile ("project.json", &this->m_vfs);
+    this->m_project = CProject::fromFile ("project.json", this->m_vfs);
     // go to the right folder so the videos will play
     // TODO: stop doing chdir and use full path
     if (this->m_project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> () == true)
@@ -219,12 +220,12 @@ void CWallpaperApplication::show ()
     // initialize OpenGL driver
     WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver (this->m_project->getTitle ().c_str ());
     // initialize render context
-    WallpaperEngine::Render::CRenderContext context (this->m_context.screens, videoDriver, &this->m_vfs);
+    WallpaperEngine::Render::CRenderContext context (this->m_context.screens, videoDriver, this->m_vfs, *this);
     // initialize mouse support
     context.setMouse (new CMouseInput (videoDriver.getWindow ()));
     // ensure the context knows what wallpaper to render
     context.setWallpaper (
-        WallpaperEngine::Render::CWallpaper::fromWallpaper (this->m_project->getWallpaper (), &context, &audioContext)
+        WallpaperEngine::Render::CWallpaper::fromWallpaper (this->m_project->getWallpaper (), context, audioContext)
     );
 
     float startTime, endTime, minimumTime = 1.0f / this->m_context.maximumFPS;

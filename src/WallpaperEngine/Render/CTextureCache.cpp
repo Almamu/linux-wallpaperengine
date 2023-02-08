@@ -2,7 +2,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CTextureCache::CTextureCache (CRenderContext* context) :
+CTextureCache::CTextureCache (CRenderContext& context) :
     m_context (context)
 {
 }
@@ -18,7 +18,7 @@ const ITexture* CTextureCache::resolve (const std::string& filename)
     if (found != this->m_textureCache.end ())
         return (*found).second;
 
-    const ITexture* texture = this->m_context->getContainer ()->readTexture (filename);
+    const ITexture* texture = this->m_context.getContainer ().readTexture (filename);
 
     this->store (filename, texture);
 

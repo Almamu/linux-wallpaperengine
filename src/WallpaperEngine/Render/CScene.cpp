@@ -14,7 +14,7 @@ extern float g_TimeLast;
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CRenderContext* context, CAudioContext* audioContext) :
+CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext) :
     CWallpaper (scene, Type, context, audioContext)
 {
     // setup the scene camera
@@ -245,7 +245,7 @@ void CScene::renderFrame (glm::ivec4 viewport)
 void CScene::updateMouse (glm::ivec4 viewport)
 {
     // update virtual mouse position first
-    CMouseInput* mouse = this->getContext ()->getMouse ();
+    CMouseInput* mouse = this->getContext ().getMouse ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
 
     // rollover the position to the last

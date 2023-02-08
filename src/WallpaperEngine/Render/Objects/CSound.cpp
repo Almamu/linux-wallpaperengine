@@ -16,7 +16,7 @@ void CSound::load ()
     for (const auto& cur : this->m_sound->getSounds ())
     {
         uint32_t filesize = 0;
-        const void* filebuffer = this->getContainer ()->readFile (cur, &filesize);
+        const void* filebuffer = this->getContainer ().readFile (cur, &filesize);
 
         auto stream = new Audio::CAudioStream (this->getScene ()->getAudioContext (), filebuffer, filesize);
 
@@ -26,7 +26,7 @@ void CSound::load ()
         this->m_soundBuffer.push_back (filebuffer);
 
         // add the stream to the context so it can be played
-        this->getScene ()->getAudioContext ()->addStream (stream);
+        this->getScene ()->getAudioContext ().addStream (stream);
     }
 }
 

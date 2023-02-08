@@ -27,7 +27,7 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext* context, CAudioContext* audioContext);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext);
         ~CWallpaper ();
 
         /**
@@ -38,17 +38,17 @@ namespace WallpaperEngine::Render
         /**
          * @return The container to resolve files for this wallpaper
          */
-        const CContainer* getContainer () const;
+        const CContainer& getContainer () const;
 
         /**
          * @return The current context rendering this wallpaper
          */
-        CRenderContext* getContext ();
+        CRenderContext& getContext ();
 
         /**
          * @return The current audio context for this wallpaper
          */
-        CAudioContext* getAudioContext ();
+        CAudioContext& getAudioContext ();
 
         /**
          * @return The scene's framebuffer
@@ -112,7 +112,7 @@ namespace WallpaperEngine::Render
          *
          * @return
          */
-        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext* context, CAudioContext* audioContext);
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext);
 
     protected:
         /**
@@ -166,10 +166,10 @@ namespace WallpaperEngine::Render
         /**
          * Context that is using this wallpaper
          */
-        CRenderContext* m_context;
+        CRenderContext& m_context;
         /*
          * Audio context that is using this wallpaper
          */
-        CAudioContext* m_audioContext;
+        CAudioContext& m_audioContext;
     };
 }

@@ -36,7 +36,7 @@ CEffect::CEffect (
 {
 }
 
-CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObject* object, const CContainer* container)
+CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObject* object, const CContainer& container)
 {
     auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");
@@ -204,7 +204,7 @@ void CEffect::dependencyFromJSON (json::const_iterator dependencies_it, CEffect*
         effect->insertDependency (cur);
 }
 
-void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect, const CContainer* container)
+void CEffect::materialsFromJSON (json::const_iterator passes_it, CEffect* effect, const CContainer& container)
 {
     for (const auto& cur : (*passes_it))
     {

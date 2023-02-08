@@ -22,9 +22,9 @@ namespace WallpaperEngine::Audio
     class CAudioStream
     {
     public:
-        CAudioStream (CAudioContext* context, const std::string& filename);
-        CAudioStream (CAudioContext* context, const void* buffer, int length);
-        CAudioStream (CAudioContext* audioContext, AVCodecContext* context);
+        CAudioStream (CAudioContext& context, const std::string& filename);
+        CAudioStream (CAudioContext& context, const void* buffer, int length);
+        CAudioStream (CAudioContext& audioContext, AVCodecContext* context);
         ~CAudioStream ();
 
         void queuePacket (AVPacket* pkt);
@@ -70,7 +70,7 @@ namespace WallpaperEngine::Audio
 #endif
 
         SwrContext* m_swrctx;
-        CAudioContext* m_audioContext;
+        CAudioContext& m_audioContext;
         bool m_initialized;
         bool m_repeat;
         AVCodecContext* m_context = nullptr;

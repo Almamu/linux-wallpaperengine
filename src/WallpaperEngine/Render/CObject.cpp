@@ -21,7 +21,7 @@ CScene* CObject::getScene () const
     return this->m_scene;
 }
 
-const CContainer* CObject::getContainer () const
+const CContainer& CObject::getContainer () const
 {
     return this->getScene ()->getContainer ();
 }

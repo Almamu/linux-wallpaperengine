@@ -5,10 +5,12 @@
 
 #include "WallpaperEngine/Input/CMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
+#include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "CTextureCache.h"
 #include "CWallpaper.h"
 #include <X11/Xlib.h>
 
+using namespace WallpaperEngine::Application;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Input;
 using namespace WallpaperEngine::Render::Drivers;
@@ -16,6 +18,11 @@ using namespace WallpaperEngine::Render::Drivers;
 namespace WallpaperEngine::Render::Drivers
 {
     class CVideoDriver;
+}
+
+namespace WallpaperEngine::Application
+{
+    class CWallpaperApplication;
 }
 
 namespace WallpaperEngine::Render
@@ -26,7 +33,7 @@ namespace WallpaperEngine::Render
     class CRenderContext
     {
     public:
-        CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CContainer* container);
+        CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CContainer& container, CWallpaperApplication& app);
         ~CRenderContext ();
 
         void initialize ();
@@ -35,7 +42,8 @@ namespace WallpaperEngine::Render
         CMouseInput* getMouse () const;
         void setMouse (CMouseInput* mouse);
         CWallpaper* getWallpaper () const;
-        const CContainer* getContainer () const;
+        const CContainer& getContainer () const;
+        const CWallpaperApplication& getApp () const;
         const ITexture* resolveTexture (const std::string& name);
 
     private:
@@ -62,7 +70,8 @@ namespace WallpaperEngine::Render
         std::vector <viewport> m_viewports;
         CWallpaper* m_wallpaper;
         CMouseInput* m_mouse;
-        CContainer* m_container;
+        CContainer& m_container;
+        CWallpaperApplication& m_app;
         CTextureCache* m_textureCache;
     };
 }

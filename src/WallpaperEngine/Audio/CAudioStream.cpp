@@ -105,14 +105,14 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence)
     return offset;
 }
 
-CAudioStream::CAudioStream (CAudioContext* context, const std::string& filename) :
+CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename) :
     m_audioContext (context),
     m_swrctx (nullptr)
 {
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (CAudioContext* context, const void* buffer, int length) :
+CAudioStream::CAudioStream (CAudioContext& context, const void* buffer, int length) :
     m_audioContext (context),
     m_swrctx (nullptr)
 {
@@ -144,7 +144,7 @@ CAudioStream::CAudioStream (CAudioContext* context, const void* buffer, int leng
     this->loadCustomContent ();
 }
 
-CAudioStream::CAudioStream(CAudioContext* audioContext, AVCodecContext* context) :
+CAudioStream::CAudioStream(CAudioContext& audioContext, AVCodecContext* context) :
     m_context (context),
     m_queue (new PacketQueue),
     m_audioContext (audioContext),
@@ -220,7 +220,7 @@ void CAudioStream::initialize ()
     int64_t out_channel_layout;
 
     // set output audio channels based on the input audio channels
-    switch (this->m_audioContext->getChannels ())
+    switch (this->m_audioContext.getChannels ())
     {
         case 1: out_channel_layout = AV_CH_LAYOUT_MONO; break;
         case 2: out_channel_layout = AV_CH_LAYOUT_STEREO; break;
@@ -233,8 +233,8 @@ void CAudioStream::initialize ()
     swr_alloc_set_opts2 (
         &this->m_swrctx,
         &this->m_out_channel_layout,
-        this->m_audioContext->getFormat (),
-        this->m_audioContext->getSampleRate (),
+        this->m_audioContext.getFormat (),
+        this->m_audioContext.getSampleRate (),
         &this->m_context->ch_layout,
         this->m_context->sample_fmt,
         this->m_context->sample_rate,
@@ -658,9 +658,9 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
                 // audio resampling
                 data_size = this->resampleAudio (
                     avFrame,
-                    this->m_audioContext->getFormat (),
-                    this->m_audioContext->getChannels (),
-                    this->m_audioContext->getSampleRate (),
+                    this->m_audioContext.getFormat (),
+                    this->m_audioContext.getChannels (),
+                    this->m_audioContext.getSampleRate (),
                     audioBuffer
                 );
                 assert(data_size <= bufferSize);

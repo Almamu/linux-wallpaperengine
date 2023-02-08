@@ -6,7 +6,7 @@ using namespace WallpaperEngine::Core::Objects;
 CParticle* CParticle::fromFile (
     CScene* scene,
     const std::string& filename,
-    const CContainer* container,
+    const CContainer& container,
     CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,

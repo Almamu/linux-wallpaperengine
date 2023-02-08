@@ -52,12 +52,13 @@ int CustomXIOErrorHandler (Display* dsp)
     return 0;
 }
 
-CRenderContext::CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CContainer* container) :
+CRenderContext::CRenderContext (std::vector <std::string> screens, CVideoDriver& driver, CContainer& container, CWallpaperApplication& app) :
     m_wallpaper (nullptr),
     m_screens (std::move (screens)),
     m_driver (driver),
     m_container (container),
-    m_textureCache (new CTextureCache (this))
+    m_app (app),
+    m_textureCache (new CTextureCache (*this))
 {
     this->initialize ();
 }
@@ -274,9 +275,14 @@ CWallpaper* CRenderContext::getWallpaper () const
     return this->m_wallpaper;
 }
 
-const CContainer* CRenderContext::getContainer () const
+const CContainer& CRenderContext::getContainer () const
 {
     return this->m_container;
+}
+
+const CWallpaperApplication& CRenderContext::getApp () const
+{
+    return this->m_app;
 }
 
 const ITexture* CRenderContext::resolveTexture (const std::string& name)
