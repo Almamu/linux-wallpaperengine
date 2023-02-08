@@ -246,8 +246,8 @@ void CAudioStream::initialize ()
     this->m_swrctx = swr_alloc_set_opts (
         nullptr,
         out_channel_layout,
-        this->m_audioContext->getFormat (),
-        this->m_audioContext->getSampleRate (),
+        this->m_audioContext.getFormat (),
+        this->m_audioContext.getSampleRate (),
         this->getContext ()->channel_layout,
         this->getContext ()->sample_fmt,
         this->getContext ()->sample_rate,
@@ -493,7 +493,7 @@ int CAudioStream::resampleAudio (
     int64_t out_channel_layout;
 
     // set output audio channels based on the input audio channels
-    switch (this->m_audioContext->getChannels ())
+    switch (this->m_audioContext.getChannels ())
     {
         case 1: out_channel_layout = AV_CH_LAYOUT_MONO; break;
         case 2: out_channel_layout = AV_CH_LAYOUT_STEREO; break;
