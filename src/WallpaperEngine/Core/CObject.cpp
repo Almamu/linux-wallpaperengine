@@ -40,7 +40,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
+    auto visible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", false);
     auto origin = jsonFindUserConfig <CUserSettingVector3> (data, "origin", {0, 0, 0});
     auto scale = jsonFindUserConfig <CUserSettingVector3> (data, "scale", {0, 0, 0});
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
@@ -58,6 +58,9 @@ CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& containe
 
     if (image_it != data.end () && !(*image_it).is_null ())
     {
+		if (*image_it == "models/util/composelayer.json")
+			return nullptr;
+		
         object = Objects::CImage::fromJSON (
                 scene,
                 data,
