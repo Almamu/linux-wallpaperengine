@@ -28,6 +28,15 @@ namespace WallpaperEngine::Assets
          */
         const ITexture* readTexture (std::string filename) const;
 
+		/**
+		 * Wrapper for readFile, checks for compat versions of the given shader file
+		 *
+		 * @param filename
+		 *
+		 * @return The shader code as an string to be used
+		 */
+		std::string readShader (const std::string& filename) const;
+
         /**
          * Wrapper for readFile, appends the .vert extension at the end and opens the given shader file
          *

@@ -1,8 +1,11 @@
 #include "CContainer.h"
 #include "CTexture.h"
+#include "WallpaperEngine/Logging/CLog.h"
+#include "CAssetLoadException.h"
 
 #include <cstring>
 #include <utility>
+#include <filesystem>
 
 using namespace WallpaperEngine::Assets;
 
@@ -21,15 +24,44 @@ const ITexture* CContainer::readTexture (std::string filename) const
 
     return result;
 }
+std::string CContainer::readShader (const std::string& filename) const
+{
+	std::filesystem::path shader = filename;
+	auto it = shader.begin ();
+
+	// detect workshop shaders and check if there's a
+	if (*it++ == "workshop")
+	{
+		std::filesystem::path workshopId = *it++;
+		std::filesystem::path shaderfile = *++it;
+
+		try
+		{
+			shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
+			// replace the old path with the new one
+			std::string contents = this->readFileAsString (shader);
+
+			sLog.out ("Replaced ", filename, " with compat ", shader);
+
+			return contents;
+		}
+		catch (CAssetLoadException&)
+		{
+
+		}
+	}
+
+	return this->readFileAsString ("shaders/" + filename);
+}
 
 std::string CContainer::readVertexShader (const std::string& filename) const
 {
-    return this->readFileAsString ("shaders/" + filename + ".vert");
+    return this->readShader (filename + ".vert");
 }
 
 std::string CContainer::readFragmentShader (const std::string& filename) const
 {
-    return this->readFileAsString ("shaders/" + filename + ".frag");
+    return this->readShader (filename + ".frag");
 }
 
 std::string CContainer::readIncludeShader (const std::string& filename) const
