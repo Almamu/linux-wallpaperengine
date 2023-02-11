@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "matches": [
+        "varying vec2 v_TexCoord;",
+        "vec4 scene= texSample2D(g_Texture0, v_TexCoord);",
+        "float mask= texSample2D(g_Texture1, v_TexCoord.zw).r;"
+      ],
+      "replacements": {
+        "varying vec2 v_TexCoord;": "varying vec4 v_TexCoord;",
+        "vec4 scene= texSample2D(g_Texture0, v_TexCoord);": "vec4 scene= texSample2D(g_Texture0, v_TexCoord.xy);",
+        "vec3 colour= vec3(pow(abs(c),  u_WaveColor * u_Brightness));": "vec3 colour= vec3(pow(abs(c),  (u_WaveColor * u_Brightness).x));"
+      }
+    }
+  ]
+}
