@@ -18,7 +18,7 @@ COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint (GLFW_VISIBLE, GLFW_FALSE);
 
-#if DEBUG
+#if !NDEBUG
 	glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif /* DEBUG */
 

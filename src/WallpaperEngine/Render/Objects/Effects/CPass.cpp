@@ -246,7 +246,7 @@ void CPass::render ()
         glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
         glVertexAttribPointer (cur->id, cur->elements, cur->type, GL_FALSE, 0, nullptr);
 
-#if DEBUG
+#if !NDEBUG
 		glObjectLabel (GL_BUFFER, *cur->value, -1, (
 				"Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
 				" Pass " + this->m_pass->getShader() +
@@ -429,7 +429,7 @@ void CPass::setupShaders ()
         sLog.exception (message);
     }
 
-#if DEBUG
+#if !NDEBUG
 	glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
 	glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
 	glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());

@@ -23,7 +23,7 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 {
     auto context = static_cast <CRenderContext*> (userdata);
 
-#ifdef DEBUG
+#if !NDEBUG
     sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
 #endif /* DEBUG */
 
@@ -33,7 +33,7 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 
 int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 {
-#ifdef DEBUG
+#if !NDEBUG
     sLog.debugerror ("Detected X error");
 #endif /* DEBUG */
 
@@ -45,7 +45,7 @@ int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 
 int CustomXIOErrorHandler (Display* dsp)
 {
-#ifdef DEBUG
+#if !NDEBUG
     sLog.debugerror ("Detected X error");
 #endif /* DEBUG */
 
@@ -188,7 +188,7 @@ void CRenderContext::renderScreens ()
 
     for (const auto& cur : this->m_viewports)
     {
-#if DEBUG
+#if !NDEBUG
 		std::string str = "Rendering to screen " + cur.name;
 
 		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
@@ -199,9 +199,7 @@ void CRenderContext::renderScreens ()
         // scenes need to render a new frame for each viewport as they produce different results
         // but videos should only be rendered once per group of viewports
         firstFrame = false;
-        renderFrame = !this->m_wallpaper->is <CVideo> ();
-
-#if DEBUG
+#if !NDEBUG
 		glPopDebugGroup ();
 #endif /* DEBUG */
     }

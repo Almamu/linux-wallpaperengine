@@ -34,6 +34,11 @@ void CWallpaperApplication::setupContainer ()
     this->m_vfs.addPkg (std::filesystem::path (this->m_context.background) / "scene.pkg");
     this->m_vfs.addPkg (std::filesystem::path (this->m_context.background) / "gifscene.pkg");
     this->m_vfs.add (new CDirectory (this->m_context.assets));
+#if !NDEBUG
+	this->m_vfs.add (new CDirectory ("../share/"));
+#else
+	this->m_vfs.add (new CDirectory (DATADIR));
+#endif /* DEBUG */
 
     // TODO: move this somewhere else?
     CVirtualContainer* container = new CVirtualContainer ();

@@ -87,10 +87,11 @@ void CWallpaper::setupShaders ()
     GLuint vertexShaderID = glCreateShader (GL_VERTEX_SHADER);
 
     // give shader's source code to OpenGL to be compiled
-    const char* sourcePointer = "#version 120\n"
-                                "attribute vec3 a_Position;\n"
-                                "attribute vec2 a_TexCoord;\n"
-                                "varying vec2 v_TexCoord;\n"
+    const char* sourcePointer = "#version 330\n"
+								"precision highp float;\n"
+                                "in vec3 a_Position;\n"
+                                "in vec2 a_TexCoord;\n"
+                                "out vec2 v_TexCoord;\n"
                                 "void main () {\n"
                                 "gl_Position = vec4 (a_Position, 1.0);\n"
                                 "v_TexCoord = a_TexCoord;\n"
@@ -125,11 +126,13 @@ void CWallpaper::setupShaders ()
     GLuint fragmentShaderID = glCreateShader (GL_FRAGMENT_SHADER);
 
     // give shader's source code to OpenGL to be compiled
-    sourcePointer = "#version 120\n"
+    sourcePointer = "#version 330\n"
+					"precision highp float;\n"
                     "uniform sampler2D g_Texture0;\n"
-                    "varying vec2 v_TexCoord;\n"
+                    "in vec2 v_TexCoord;\n"
+					"out vec4 out_FragColor;\n"
                     "void main () {\n"
-                    "gl_FragColor = texture2D (g_Texture0, v_TexCoord);\n"
+                    "out_FragColor = texture (g_Texture0, v_TexCoord);\n"
                     "}";
 
     glShaderSource (fragmentShaderID, 1, &sourcePointer, nullptr);

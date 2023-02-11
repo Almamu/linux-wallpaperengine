@@ -102,6 +102,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // register both FBOs into the scene
     std::ostringstream nameA, nameB;
 
+	// TODO: determine when _rt_imageLayerComposite and _rt_imageLayerAlbedo is used
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
@@ -395,7 +396,7 @@ void CImage::render ()
     if (this->getScene ()->getScene ()->isCameraParallax ())
         this->updateScreenSpacePosition ();
 
-#if DEBUG
+#if !NDEBUG
 	std::string str = "Rendering ";
 
 	if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
@@ -421,8 +422,8 @@ void CImage::render ()
         (*cur)->render ();
     }
 
-#if DEBUG
-        glPopDebugGroup ();
+#if !NDEBUG
+	glPopDebugGroup ();
 #endif /* DEBUG */
 }
 

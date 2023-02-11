@@ -35,7 +35,7 @@ namespace WallpaperEngine::Logging
         template<typename... Data>
         void debug (Data... data)
         {
-#if DEBUG && !ERRORONLY
+#if (!NDEBUG) && (!ERRORONLY)
             // buffer the string first
             std::stringbuf buffer;
             std::ostream bufferStream (&buffer);
@@ -51,7 +51,7 @@ namespace WallpaperEngine::Logging
         template<typename... Data>
         void debugerror (Data... data)
         {
-#if DEBUG && ERRORONLY
+#if (!NDEBUG) && (ERRORONLY)
             // buffer the string first
             std::stringbuf buffer;
             std::ostream bufferStream (&buffer);

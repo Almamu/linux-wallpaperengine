@@ -4,10 +4,16 @@ project(linux-wallpaperengine)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
+set(DATADIR ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME})
+set(PATCHESDIR ${DATADIR}/patches/)
+
+if(NOT ERRORONLY)
+    set(ERRORONLY 0)
+endif()
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
-add_compile_definitions(DEBUG=1)
-add_compile_definitions(ERRORONLY=1)
+add_compile_definitions(ERRORONLY=${ERRORONLY})
+add_compile_definitions(DATADIR="${DATADIR}")
 
 find_package(X11 REQUIRED)
 find_package(Xrandr REQUIRED)
@@ -254,4 +260,10 @@ check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
 
 if(HAVE_XSETIOERROREXITHANDLER)
     add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
+endif()
+
+# set some install parameters if not in debug mode
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    install(TARGETS linux-wallpaperengine)
+    install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})
 endif()

@@ -18,9 +18,9 @@ const ITexture* CContainer::readTexture (std::string filename) const
 
     ITexture* result = new CTexture (textureContents);
 
-#if DEBUG
+#if !NDEBUG
         glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, filename.c_str ());
-#endif /* DEBUG */
+#endif /* NDEBUG */
 
     return result;
 }
@@ -33,21 +33,25 @@ std::string CContainer::readShader (const std::string& filename) const
 	if (*it++ == "workshop")
 	{
 		std::filesystem::path workshopId = *it++;
-		std::filesystem::path shaderfile = *++it;
 
-		try
+		if (++it != shader.end ())
 		{
-			shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
-			// replace the old path with the new one
-			std::string contents = this->readFileAsString (shader);
+			std::filesystem::path shaderfile = *it;
 
-			sLog.out ("Replaced ", filename, " with compat ", shader);
+			try
+			{
+				shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
+				// replace the old path with the new one
+				std::string contents = this->readFileAsString (shader);
 
-			return contents;
-		}
-		catch (CAssetLoadException&)
-		{
+				sLog.out ("Replaced ", filename, " with compat ", shader);
 
+				return contents;
+			}
+			catch (CAssetLoadException&)
+			{
+
+			}
 		}
 	}
 

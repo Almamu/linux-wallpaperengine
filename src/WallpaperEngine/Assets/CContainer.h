@@ -64,7 +64,6 @@ namespace WallpaperEngine::Assets
          */
         std::string readIncludeShader (const std::string& filename) const;
 
-    private:
         /**
          * Reads a file as string
          *

@@ -199,6 +199,11 @@ namespace WallpaperEngine::Render::Shaders
          * @param content The parameter configuration
          */
         void parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content);
+		/**
+		 * Applies any available patches for this shader
+		 */
+		void applyPatches ();
+
         /**
          * The shader file this instance is loading
          */

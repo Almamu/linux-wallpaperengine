@@ -12,6 +12,8 @@
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
+#include <regex>
+#include <filesystem>
 
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
@@ -498,17 +500,14 @@ namespace WallpaperEngine::Render::Shaders
         if (!this->m_recursive)
         {
             // add the opengl compatibility at the top
-            finalCode =   "#version 150\n"
+            finalCode =   "#version 330\n"
                           "// ======================================================\n"
                           "// Processed shader " + this->m_file + "\n"
                           "// ======================================================\n"
-                          "#define highp\n"
-                          "#define mediump\n"
-                          "#define lowp\n"
+                          "precision highp float;\n"
                           "#define mul(x, y) ((y) * (x))\n"
-                          "#define max(x, y) max (y, x)\n"
-                          "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
-                          "#define lerp mix\n"
+						  "#define max(x, y) max (y, x)\n"
+						  "#define lerp mix\n"
                           "#define frac fract\n"
                           "#define CAST2(x) (vec2(x))\n"
                           "#define CAST3(x) (vec3(x))\n"
@@ -518,13 +517,21 @@ namespace WallpaperEngine::Render::Shaders
                           "#define texSample2D texture\n"
                           "#define texSample2DLod textureLod\n"
                           "#define atan2 atan\n"
+						  "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
                           "#define ddx dFdx\n"
                           "#define ddy(x) dFdy(-(x))\n"
-                          "#define GLSL 1\n"
-                          "#define float1 float\n"
-                          "#define float2 vec2\n"
-                          "#define float3 vec3\n"
-                          "#define float4 vec4\n\n";
+                          "#define GLSL 1\n\n";
+
+			if (this->m_type == Type_Vertex)
+			{
+				finalCode += "#define attribute in\n"
+							 "#define varying out\n";
+			}
+			else
+			{
+				finalCode += "out vec4 out_FragColor;\n"
+							 "#define varying in\n";
+			}
 
             finalCode +=  "// ======================================================\n"
                           "// Shader combo parameter definitions\n"
@@ -551,7 +558,68 @@ namespace WallpaperEngine::Render::Shaders
 
                 finalCode += "#define " + cur.first + " " + std::to_string (cur.second) + "\n";
             }
+
+			// define to 0 everything else found in the code
+			std::regex ifs ("#if ([A-Za-z0-9_]+)");
+			auto words_begin = std::sregex_iterator (this->m_compiledContent.begin (), this->m_compiledContent.end (), ifs);
+			auto words_end = std::sregex_iterator ();
+			std::map <std::string, bool> inserted;
+
+			for (; words_begin != words_end; words_begin ++)
+			{
+				std::string define = (*words_begin).str ().substr (4);
+
+				if (
+					this->m_foundCombos->find (define) != this->m_foundCombos->end () ||
+					this->m_baseCombos.find (define) != this->m_baseCombos.end () ||
+					inserted.find (define) != inserted.end ())
+					continue;
+
+				finalCode += "#define " + define + " 0\n";
+			}
         }
+
+		// replace gl_FragColor with the equivalent
+		std::string from = "gl_FragColor";
+		std::string to = "out_FragColor";
+
+		size_t start_pos = 0;
+		while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+			this->m_compiledContent.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+		}
+
+		// replace sample occurrences
+		from = "sample";
+		to = "_sample";
+
+		start_pos = 0;
+		while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+			// ensure that after it comes something like a space or a ; or a tab
+			std::string after = this->m_compiledContent.substr (start_pos + from.length (), 1);
+
+			if (
+				after != " " && after != ";" && after != "\t" &&
+				after != "=" && after != "+" && after != "-" &&
+				after != "/" && after != "*" && after != "." &&
+				after != "," && after != ")")
+			{
+				start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+				continue;
+			}
+
+			this->m_compiledContent.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+		}
+
+		try
+		{
+			this->applyPatches ();
+		}
+		catch (CAssetLoadException&)
+		{
+			// nothing important, no patch was found
+		}
 
         finalCode += this->m_compiledContent;
 
@@ -565,6 +633,51 @@ namespace WallpaperEngine::Render::Shaders
         this->m_compiledContent = finalCode;
     #undef BREAK_IF_ERROR
     }
+
+	void Compiler::applyPatches ()
+	{
+		// small patches for things, looks like the official wpengine does the same thing
+		std::filesystem::path file = this->m_file;
+		file = "patches" / file.filename ();
+
+		if (this->m_type == Type_Vertex)
+			file += ".vert";
+		else if (this->m_type == Type_Pixel)
+			file += ".frag";
+
+		file += ".json";
+
+		std::string tmp = file;
+		std::string patchContents = this->m_container.readFileAsString (file);
+
+		json data = json::parse (patchContents);
+		auto patches = data.find ("patches");
+
+		for (auto patch : *patches)
+		{
+			auto matches = patch.find ("matches");
+
+			// check for matches first, as these signal whether the patch can be applied or not
+			for (const auto& match : *matches)
+				if (this->m_compiledContent.find (match) == std::string::npos)
+					continue;
+
+			auto replacements = patch.find ("replacements");
+
+			for (const auto& replacement : (*replacements).items ())
+			{
+				// replace gl_FragColor with the equivalent
+				std::string from = replacement.key ();
+				std::string to = replacement.value ();
+
+				size_t start_pos = 0;
+				while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+					this->m_compiledContent.replace(start_pos, from.length(), to);
+					start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+				}
+			}
+		}
+	}
 
     void Compiler::parseComboConfiguration (const std::string& content, int defaultValue)
     {
