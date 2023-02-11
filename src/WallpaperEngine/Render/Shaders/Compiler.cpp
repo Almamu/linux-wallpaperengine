@@ -576,6 +576,8 @@ namespace WallpaperEngine::Render::Shaders
 					continue;
 
 				finalCode += "#define " + define + " 0\n";
+
+				inserted.insert_or_assign (define, true);
 			}
         }
 
