@@ -685,6 +685,7 @@ namespace WallpaperEngine::Render::Shaders
     {
         json data = json::parse (content);
         auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
+		auto type = data.find ("type");
         auto defvalue = data.find ("default");
 
         // add line feed just in case
@@ -700,28 +701,39 @@ namespace WallpaperEngine::Render::Shaders
         // so only define the ones that are not already defined
         if (entry == this->m_combos->end ())
         {
-            // if no combo is defined just load the default settings
-            if (defvalue == data.end ())
-            {
-                // TODO: PROPERLY SUPPORT EMPTY COMBOS
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
-            }
-            else if ((*defvalue).is_number_float ())
-            {
-                sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
-            }
-            else if ((*defvalue).is_number_integer ())
-            {
-                this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
-            }
-            else if ((*defvalue).is_string ())
-            {
-                sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
-            }
-            else
-            {
-                sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
-            }
+			if (type != data.end () && (*type) == "audioprocessingoptions")
+			{
+				sLog.out ("Found audioprocessing value, nothing working yet");
+				this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
+			}
+			else
+			{
+				if (type != data.end ())
+					sLog.error ("Resorting to default value as type ", *type, " is unknown");
+
+				// if no combo is defined just load the default settings
+				if (defvalue == data.end ())
+				{
+					// TODO: PROPERLY SUPPORT EMPTY COMBOS
+					this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
+				}
+				else if ((*defvalue).is_number_float ())
+				{
+					sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
+				}
+				else if ((*defvalue).is_number_integer ())
+				{
+					this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
+				}
+				else if ((*defvalue).is_string ())
+				{
+					sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
+				}
+				else
+				{
+					sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
+				}
+			}
         }
     }
 
