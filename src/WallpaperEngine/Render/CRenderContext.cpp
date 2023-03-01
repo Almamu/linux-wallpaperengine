@@ -12,8 +12,6 @@
 #include "CRenderContext.h"
 #include "CVideo.h"
 
-#define DEFAULT_WINDOW_WIDTH 1280
-#define DEFAULT_WINDOW_HEIGHT 720
 
 using namespace WallpaperEngine::Render;
 
@@ -81,7 +79,7 @@ void CRenderContext::initialize ()
 void CRenderContext::setupWindow ()
 {
     this->m_driver.showWindow ();
-    this->m_driver.resizeWindow ({DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT});
+    this->m_driver.resizeWindow ({this->m_app.get_context().window_width, this->m_app.get_context().window_height});
 }
 
 void CRenderContext::setupScreens ()

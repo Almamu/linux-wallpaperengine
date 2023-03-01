@@ -273,3 +273,8 @@ void CWallpaperApplication::signal (int signal)
 {
     g_KeepRunning = false;
 }
+
+const CApplicationContext& CWallpaperApplication::get_context () const
+{
+    return this->m_context;
+}

@@ -25,6 +25,8 @@ namespace WallpaperEngine::Application
         bool onlyListProperties;
         FREE_IMAGE_FORMAT screenshotFormat;
         std::string window_class;
+        int window_width;
+        int window_height;
 
     private:
         void validatePath ();

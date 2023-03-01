@@ -22,6 +22,7 @@ namespace WallpaperEngine::Application
 
         void show ();
         void signal (int signal);
+        const CApplicationContext& get_context () const;
 
     private:
         void setupContainer ();
