@@ -24,6 +24,7 @@ struct option long_options [] = {
     {"screenshot",      required_argument, nullptr, 'c'},
     {"list-properties", no_argument,       nullptr, 'l'},
     {"set-property",    required_argument, nullptr, 'o'},
+    {"class",           required_argument, nullptr, 'x'},
     {nullptr,                           0, nullptr,   0}
 };
 
@@ -48,7 +49,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
     maximumFPS (30),
     audioVolume (128),
     audioEnabled (true),
-    onlyListProperties (false)
+    onlyListProperties (false),
+    window_class (""),
 {
     int c;
 
@@ -109,6 +111,10 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
             case 'c':
                 this->takeScreenshot = true;
                 this->screenshot = stringPathFixes (optarg);
+                break;
+
+            case 'x':
+                this->window_class = optarg;
                 break;
         }
     }
@@ -196,4 +202,5 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--screenshot\t\t\t\tTakes a screenshot of the background");
     sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
+    sLog.out ("\t--class <class name>\t\t\tSets X11 window class");
 }

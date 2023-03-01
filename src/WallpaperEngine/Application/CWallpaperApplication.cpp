@@ -222,7 +222,7 @@ void CWallpaperApplication::show ()
     // initialize audio context
     WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
     // initialize OpenGL driver
-    WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver (this->m_project->getTitle ().c_str ());
+    WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver (this->m_project->getTitle ().c_str (), this->m_context);
     // initialize the input subsystem
     WallpaperEngine::Input::CInputContext inputContext (videoDriver);
     // initialize render context

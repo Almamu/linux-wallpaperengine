@@ -3,13 +3,20 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
+#include "WallpaperEngine/Application/CApplicationContext.h"
+
+using namespace WallpaperEngine::Application;
+namespace WallpaperEngine::Application
+{
+    class CWallpaperApplication;
+}
 
 namespace WallpaperEngine::Render::Drivers
 {
     class COpenGLDriver : public CVideoDriver
     {
     public:
-        explicit COpenGLDriver (const char* windowTitle);
+        explicit COpenGLDriver (const char* windowTitle, CApplicationContext& m_context);
         ~COpenGLDriver();
 
         float getRenderTime () override;

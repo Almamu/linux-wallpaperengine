@@ -24,6 +24,7 @@ namespace WallpaperEngine::Application
         bool audioEnabled;
         bool onlyListProperties;
         FREE_IMAGE_FORMAT screenshotFormat;
+        std::string window_class;
 
     private:
         void validatePath ();

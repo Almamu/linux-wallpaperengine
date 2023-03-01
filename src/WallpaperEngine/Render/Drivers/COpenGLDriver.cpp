@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Render::Drivers;
 
-COpenGLDriver::COpenGLDriver (const char* windowTitle) :
+COpenGLDriver::COpenGLDriver (const char* windowTitle, CApplicationContext& m_context) :
     m_frameCounter (0)
 {
     // initialize glfw
@@ -21,6 +21,9 @@ COpenGLDriver::COpenGLDriver (const char* windowTitle) :
 #if !NDEBUG
 	glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif /* DEBUG */
+
+    if (!m_context.window_class.empty())
+        windowTitle = m_context.window_class.c_str();
 
     // create window, size doesn't matter as long as we don't show it
     this->m_window = glfwCreateWindow (640, 480, windowTitle, nullptr, nullptr);
