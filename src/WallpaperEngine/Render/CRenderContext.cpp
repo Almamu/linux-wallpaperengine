@@ -80,6 +80,7 @@ void CRenderContext::setupWindow ()
 {
     this->m_driver.showWindow ();
     this->m_driver.resizeWindow ({this->m_app.get_context().window_width, this->m_app.get_context().window_height});
+    this->m_driver.reposWindow({this->m_app.get_context().window_pos_x, this->m_app.get_context().window_pos_y});
 }
 
 void CRenderContext::setupScreens ()

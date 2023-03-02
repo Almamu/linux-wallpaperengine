@@ -60,6 +60,11 @@ bool COpenGLDriver::closeRequested ()
     return glfwWindowShouldClose (this->m_window);
 }
 
+void COpenGLDriver::reposWindow (glm::ivec2 pos)
+{
+    glfwSetWindowPos (this->m_window, pos.x, pos.y);
+}
+
 void COpenGLDriver::resizeWindow (glm::ivec2 size)
 {
     glfwSetWindowSize (this->m_window, size.x, size.y);

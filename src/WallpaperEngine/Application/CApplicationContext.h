@@ -25,6 +25,8 @@ namespace WallpaperEngine::Application
         bool onlyListProperties;
         FREE_IMAGE_FORMAT screenshotFormat;
         std::string window_class;
+        int window_pos_x;
+        int window_pos_y;
         int window_width;
         int window_height;
 

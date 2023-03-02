@@ -25,6 +25,8 @@ struct option long_options [] = {
     {"list-properties", no_argument,       nullptr, 'l'},
     {"set-property",    required_argument, nullptr, 'o'},
     {"class",           required_argument, nullptr, 'x'},
+    {"x",               required_argument, nullptr, 'z'},
+    {"y",               required_argument, nullptr, 'y'},
     {"width",           required_argument, nullptr, 'w'},
     {"height",          required_argument, nullptr, 't'},
     {nullptr,                           0, nullptr,   0}
@@ -53,6 +55,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
     audioEnabled (true),
     onlyListProperties (false),
     window_class (""),
+    window_pos_x(0),
+    window_pos_y(0),
     window_width(1280),
     window_height(720)
 {
@@ -120,6 +124,15 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
             case 'x':
                 this->window_class = optarg;
                 break;
+
+            case 'z':
+                this->window_pos_x = atoi(optarg);
+                break;
+
+            case 'y':
+                this->window_pos_y = atoi(optarg);
+                break;
+
             case 'w':
                 this->window_width = atoi(optarg);
                 break;
@@ -214,6 +227,8 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
     sLog.out ("\t--class <class name>\t\t\tSets X11 window class");
+    sLog.out ("\t--x <x>\t\t\tSets the window x pos");
+    sLog.out ("\t--y <y>\t\t\tSets the window y pos");
     sLog.out ("\t--width <width>\t\t\tSets the window width");
     sLog.out ("\t--height <height>\t\t\tSets the window height");
 }

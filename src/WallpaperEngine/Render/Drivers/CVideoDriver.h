@@ -9,6 +9,7 @@ namespace WallpaperEngine::Render::Drivers
     public:
         virtual float getRenderTime () = 0;
         virtual bool closeRequested () = 0;
+        virtual void reposWindow (glm::ivec2 size) = 0;
         virtual void resizeWindow (glm::ivec2 size) = 0;
         virtual void showWindow () = 0;
         virtual void hideWindow () = 0;

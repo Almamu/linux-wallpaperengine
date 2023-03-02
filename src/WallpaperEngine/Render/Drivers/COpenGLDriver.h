@@ -21,6 +21,7 @@ namespace WallpaperEngine::Render::Drivers
 
         float getRenderTime () override;
         bool closeRequested () override;
+        void reposWindow (glm::ivec2 size) override;
         void resizeWindow (glm::ivec2 size) override;
         void showWindow () override;
         void hideWindow () override;
