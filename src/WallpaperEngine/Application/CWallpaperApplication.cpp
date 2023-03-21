@@ -40,11 +40,32 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 	container.addPkg (basepath / "scene.pkg");
 	container.addPkg (basepath / "gifscene.pkg");
 	container.add (new CDirectory (this->m_context.assets));
-#if !NDEBUG
-	container.add (new CDirectory ("../share/"));
-#else
-	container.add (new CDirectory (DATADIR));
-#endif /* DEBUG */
+
+	// add two possible patches directories to the container
+	// hopefully one sticks
+	bool relative = true;
+	bool absolute = true;
+
+	try
+	{
+		container.add (new CDirectory ("../share/"));
+	}
+	catch (std::runtime_error& ex)
+	{
+		relative = false;
+	}
+
+	try
+	{
+		container.add (new CDirectory (DATADIR));
+	}
+	catch (std::runtime_error& ex)
+	{
+		absolute = false;
+	}
+
+	if (!relative && !absolute)
+		sLog.error ("WARNING: Shader patches directory cannot be found, this might make some backgrounds not work properly");
 
     // TODO: move this somewhere else?
     CVirtualContainer* virtualContainer = new CVirtualContainer ();

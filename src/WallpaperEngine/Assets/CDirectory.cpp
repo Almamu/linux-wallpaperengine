@@ -8,7 +8,7 @@
 
 using namespace WallpaperEngine::Assets;
 
-CDirectory::CDirectory (std::filesystem::path  basepath) :
+CDirectory::CDirectory (std::filesystem::path basepath) :
     m_basepath (std::move(basepath))
 {
     // ensure the specified path exists

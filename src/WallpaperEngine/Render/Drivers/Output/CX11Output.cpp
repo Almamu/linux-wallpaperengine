@@ -13,9 +13,7 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 {
     auto context = static_cast <CX11Output*> (userdata);
 
-#if !NDEBUG
     sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
-#endif /* DEBUG */
 
     // refetch all the resources
     context->reset ();
@@ -23,9 +21,7 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
 
 int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 {
-#if !NDEBUG
     sLog.debugerror ("Detected X error");
-#endif /* DEBUG */
 
     // call the original handler so we can keep some information reporting
     originalErrorHandler (dpy, event);
@@ -35,9 +31,7 @@ int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 
 int CustomXIOErrorHandler (Display* dsp)
 {
-#if !NDEBUG
     sLog.debugerror ("Detected X error");
-#endif /* DEBUG */
 
     return 0;
 }
