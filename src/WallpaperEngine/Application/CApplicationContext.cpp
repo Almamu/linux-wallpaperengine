@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Application;
 struct option long_options [] = {
     {"screen-root",     required_argument, nullptr, 'r'},
 	{"bg",				required_argument, nullptr, 'b'},
-	{"window",			optional_argument, nullptr, 'w'},
+	{"window",			required_argument, nullptr, 'w'},
     {"pkg",             required_argument, nullptr, 'p'},
     {"dir",             required_argument, nullptr, 'd'},
     {"silent",          no_argument,       nullptr, 's'},
@@ -56,7 +56,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[]) :
 
 	std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w::", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:", long_options, nullptr)) != -1)
     {
         switch (c)
         {
@@ -235,7 +235,7 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
     sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
     sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
-	sLog.out ("\t--window <geometry>\tRuns in window mode, geometry has to be XxYxWxH");
+	sLog.out ("\t--window <geometry>\tRuns in window mode, geometry has to be XxYxWxH and sets the position and size of the window");
     sLog.out ("\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low");
     sLog.out ("\t--assets-dir <path>\t\t\tFolder where the assets are stored");
     sLog.out ("\t--screenshot\t\t\t\tTakes a screenshot of the background");

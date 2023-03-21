@@ -43,7 +43,7 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 #if !NDEBUG
 	container.add (new CDirectory ("../share/"));
 #else
-	this->m_vfs.add (new CDirectory (DATADIR));
+	container.add (new CDirectory (DATADIR));
 #endif /* DEBUG */
 
     // TODO: move this somewhere else?
