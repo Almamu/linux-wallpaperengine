@@ -8,6 +8,8 @@
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
+extern bool g_KeepRunning;
+
 using namespace WallpaperEngine::Render::Drivers::Output;
 
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
@@ -228,5 +230,5 @@ void CX11Output::updateRender () const
 		// give the cpu some time to check again later
 		usleep (FULLSCREEN_CHECK_WAIT_TIME);
 	}
-	while (isFullscreen);
+	while (isFullscreen && g_KeepRunning);
 }
