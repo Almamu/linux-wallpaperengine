@@ -4,9 +4,16 @@
 
 using namespace WallpaperEngine::Render::Drivers;
 
+void CustomGLFWErrorHandler (int errorCode, const char* reason)
+{
+	sLog.error ("GLFW error ", errorCode, ": ", reason);
+}
+
 COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     m_frameCounter (0)
 {
+	glfwSetErrorCallback (CustomGLFWErrorHandler);
+
     // initialize glfw
     if (glfwInit () == GLFW_FALSE)
         sLog.exception ("Failed to initialize glfw");
