@@ -36,5 +36,6 @@ namespace WallpaperEngine::Render::Drivers::Output
 		char* m_imageData;
 		XImage* m_image;
 		CVideoDriver& m_driver;
+		std::vector <ScreenInfo> m_screens;
 	};
 }
