@@ -7,7 +7,6 @@ using namespace WallpaperEngine::Audio::Drivers;
 CAudioContext::CAudioContext (CAudioDriver& driver) :
     m_driver (driver)
 {
-
 }
 
 void CAudioContext::addStream (CAudioStream* stream)

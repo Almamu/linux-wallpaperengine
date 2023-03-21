@@ -8,7 +8,7 @@ using namespace WallpaperEngine::Core::Objects;
 CParticle* CParticle::fromFile (
     CScene* scene,
     const std::string& filename,
-    const CContainer& container,
+    CContainer* container,
     CUserSettingBoolean* visible,
     uint32_t id,
     std::string name,
@@ -34,10 +34,8 @@ CParticle* CParticle::fromFile (
     );
 
     if (controlpoint_it != data.end ())
-    {
         for (const auto& cur : (*controlpoint_it))
             particle->insertControlPoint (Particles::CControlPoint::fromJSON (cur));
-    }
 
     for (const auto& cur : (*emitter_it))
         particle->insertEmitter (Particles::CEmitter::fromJSON (cur));

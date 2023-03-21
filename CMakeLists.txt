@@ -105,6 +105,12 @@ add_executable(
     src/WallpaperEngine/Render/Shaders/Compiler.h
     src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+    src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/COutput.h
+    src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
+    src/WallpaperEngine/Render/Drivers/Output/CWindowOutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CWindowOutput.h
     src/WallpaperEngine/Render/Drivers/COpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/COpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h

@@ -21,6 +21,7 @@ namespace WallpaperEngine::Assets
         void add (CContainer* container);
         void addPkg (const std::filesystem::path& path);
 
+		std::filesystem::path resolveRealFile (std::string filename) const override;
         const void* readFile (std::string filename, uint32_t* length = nullptr) const override;
 
     private:

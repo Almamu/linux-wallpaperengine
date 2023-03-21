@@ -37,6 +37,27 @@ void CCombinedContainer::addPkg (const std::filesystem::path& path)
     }
 }
 
+
+std::filesystem::path CCombinedContainer::resolveRealFile (std::string filename) const
+{
+    for (auto cur : this->m_containers)
+    {
+        try
+        {
+            // try to read the file on the current container, if the file doesn't exists
+            // an exception will be thrown
+            return cur->resolveRealFile (filename);
+        }
+        catch (CAssetLoadException& ex)
+        {
+            // not found in this container, next try
+        }
+    }
+
+    // no container was able to load the file, abort!
+    throw CAssetLoadException (filename, "Cannot resolve file in any of the containers");
+}
+
 const void* CCombinedContainer::readFile (std::string filename, uint32_t* length) const
 {
     for (auto cur : this->m_containers)

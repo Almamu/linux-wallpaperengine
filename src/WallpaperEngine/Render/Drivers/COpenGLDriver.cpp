@@ -62,6 +62,12 @@ void COpenGLDriver::resizeWindow (glm::ivec2 size)
     glfwSetWindowSize (this->m_window, size.x, size.y);
 }
 
+void COpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
+{
+	glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
+    glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
+}
+
 void COpenGLDriver::showWindow ()
 {
     glfwShowWindow (this->m_window);

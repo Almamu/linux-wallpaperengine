@@ -16,13 +16,13 @@ CMaterial::CMaterial (std::string  name) :
 {
 }
 
-CMaterial* CMaterial::fromFile (const std::string& filename, const CContainer& container)
+CMaterial* CMaterial::fromFile (const std::string& filename, CContainer* container)
 {
     return fromJSON (
         filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container))
     );
 }
-CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, const CContainer& container)
+CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, CContainer* container)
 {
     return fromJSON (
         filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)), target

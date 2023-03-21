@@ -35,7 +35,7 @@ CObject::CObject (
 {
 }
 
-CObject* CObject::fromJSON (json data, CScene* scene, const CContainer& container)
+CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container)
 {
     std::string json = data.dump ();
 

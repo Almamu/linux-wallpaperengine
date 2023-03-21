@@ -9,14 +9,14 @@
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 
-CProject::CProject (std::string title, std::string type, CContainer& container) :
+CProject::CProject (std::string title, std::string type, CContainer* container) :
     m_title (std::move (title)),
     m_type (std::move (type)),
     m_container (container)
 {
 }
 
-CProject* CProject::fromFile (const std::string& filename, CContainer& container)
+CProject* CProject::fromFile (const std::string& filename, CContainer* container)
 {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
@@ -85,7 +85,7 @@ const std::vector<Projects::CProperty*>& CProject::getProperties () const
     return this->m_properties;
 }
 
-CContainer& CProject::getContainer ()
+CContainer* CProject::getContainer ()
 {
     return this->m_container;
 }

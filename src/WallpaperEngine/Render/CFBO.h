@@ -12,6 +12,7 @@ namespace WallpaperEngine::Render
     {
     public:
         CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+		// TODO: ADD DESTRUCTOR TO FREE RESOURCES
 
         const std::string& getName () const;
         const float& getScale () const;

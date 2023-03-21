@@ -5,10 +5,12 @@
 #include "WallpaperEngine/Assets/CCombinedContainer.h"
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
+#include "WallpaperEngine/Render/CRenderContext.h"
 
 namespace WallpaperEngine::Render
 {
     class CWallpaper;
+	class CRenderContext;
 }
 
 namespace WallpaperEngine::Application
@@ -22,15 +24,19 @@ namespace WallpaperEngine::Application
 
         void show ();
         void signal (int signal);
+		const std::map <std::string, Core::CProject*>& getProjects () const;
+		Core::CProject* getDefaultProject () const;
 
-    private:
-        void setupContainer ();
-        void loadProject ();
+	private:
+        void setupContainer (CCombinedContainer& container, const std::string& bg) const;
+		void loadProjects ();
+        Core::CProject* loadProject (const std::string& bg);
         void setupProperties ();
-        void takeScreenshot (WallpaperEngine::Render::CWallpaper* wp, const std::filesystem::path& filename, FREE_IMAGE_FORMAT format);
+		void setupPropertiesForProject (Core::CProject* project);
+        void takeScreenshot (const Render::CRenderContext& context, const std::filesystem::path& filename, FREE_IMAGE_FORMAT format);
 
-        Core::CProject* m_project;
+        Core::CProject* m_defaultProject;
         CApplicationContext& m_context;
-        CCombinedContainer m_vfs;
+		std::map <std::string, Core::CProject*> m_projects;
     };
 }

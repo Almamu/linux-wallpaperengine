@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/vec4.hpp>
 #include <glm/vec2.hpp>
 
 namespace WallpaperEngine::Render::Drivers
@@ -10,6 +11,7 @@ namespace WallpaperEngine::Render::Drivers
         virtual float getRenderTime () = 0;
         virtual bool closeRequested () = 0;
         virtual void resizeWindow (glm::ivec2 size) = 0;
+		virtual void resizeWindow (glm::ivec4 size) = 0;
         virtual void showWindow () = 0;
         virtual void hideWindow () = 0;
         virtual glm::ivec2 getFramebufferSize () = 0;

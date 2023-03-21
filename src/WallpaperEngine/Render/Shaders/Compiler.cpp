@@ -29,7 +29,7 @@ using namespace WallpaperEngine::Assets;
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (
-            const CContainer& container,
+            CContainer* container,
             std::string filename,
             Type type,
             std::map <std::string, int>* combos,
@@ -50,11 +50,11 @@ namespace WallpaperEngine::Render::Shaders
         m_baseCombos ()
     {
         if (type == Type_Vertex)
-            this->m_content = this->m_container.readVertexShader (this->m_file);
+            this->m_content = this->m_container->readVertexShader (this->m_file);
         else if (type == Type_Pixel)
-            this->m_content = this->m_container.readFragmentShader (this->m_file);
+            this->m_content = this->m_container->readFragmentShader (this->m_file);
         else if (type == Type_Include)
-            this->m_content = this->m_container.readIncludeShader (this->m_file);
+            this->m_content = this->m_container->readIncludeShader (this->m_file);
 
         // clone the combos into the baseCombos to keep track of values that must be embedded no matter what
         for (const auto& cur : *this->m_combos)
@@ -650,7 +650,7 @@ namespace WallpaperEngine::Render::Shaders
 		file += ".json";
 
 		std::string tmp = file;
-		std::string patchContents = this->m_container.readFileAsString (file);
+		std::string patchContents = this->m_container->readFileAsString (file);
 
 		json data = json::parse (patchContents);
 		auto patches = data.find ("patches");

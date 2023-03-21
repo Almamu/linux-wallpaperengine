@@ -29,7 +29,7 @@ namespace WallpaperEngine::Core::Objects
         static CObject* fromJSON (
             CScene* scene,
             json data,
-            const CContainer& container,
+            CContainer* container,
             CUserSettingBoolean* visible,
             uint32_t id,
             std::string name,

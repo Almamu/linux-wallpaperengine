@@ -2,13 +2,16 @@
 
 #include "CSound.h"
 
+extern bool g_AudioEnabled;
+
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
     CObject (scene, Type, sound),
     m_sound (sound)
 {
-    this->load ();
+	if (g_AudioEnabled)
+	    this->load ();
 }
 
 void CSound::load ()
@@ -16,7 +19,7 @@ void CSound::load ()
     for (const auto& cur : this->m_sound->getSounds ())
     {
         uint32_t filesize = 0;
-        const void* filebuffer = this->getContainer ().readFile (cur, &filesize);
+        const void* filebuffer = this->getContainer ()->readFile (cur, &filesize);
 
         auto stream = new Audio::CAudioStream (this->getScene ()->getAudioContext (), filebuffer, filesize);
 

@@ -54,8 +54,11 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0)
         sLog.exception ("Failed to initialize MPV's GL context");
 
+	std::filesystem::path videopath = this->getVideo ()->getProject ().getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+
+	// build the path to the video file
     const char* command [] = {
-        "loadfile", this->getVideo ()->getFilename ().c_str (), nullptr
+        "loadfile", videopath.c_str (), nullptr
     };
 
     if (mpv_command (this->m_mpv, command) < 0)

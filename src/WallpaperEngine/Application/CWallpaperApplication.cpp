@@ -5,8 +5,12 @@
 #include "WallpaperEngine/Core/CVideo.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
+#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#include "WallpaperEngine/Render/Drivers/Output/CWindowOutput.h"
+#include "Steam/FileSystem/FileSystem.h"
 
 #include <unistd.h>
+
 
 float g_Time;
 float g_TimeLast;
@@ -18,30 +22,32 @@ using namespace WallpaperEngine::Application;
 using namespace WallpaperEngine::Core;
 
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
-    m_context (context)
+    m_context (context),
+	m_defaultProject (nullptr)
 {
     // copy state to global variables for now
     g_AudioVolume = context.audioVolume;
     g_AudioEnabled = context.audioEnabled;
-    this->setupContainer ();
-    this->loadProject ();
+    this->loadProjects ();
     this->setupProperties ();
 }
 
-void CWallpaperApplication::setupContainer ()
+void CWallpaperApplication::setupContainer (CCombinedContainer& container, const std::string& bg) const
 {
-    this->m_vfs.add (new CDirectory (this->m_context.background));
-    this->m_vfs.addPkg (std::filesystem::path (this->m_context.background) / "scene.pkg");
-    this->m_vfs.addPkg (std::filesystem::path (this->m_context.background) / "gifscene.pkg");
-    this->m_vfs.add (new CDirectory (this->m_context.assets));
+	std::filesystem::path basepath = bg;
+
+    container.add (new CDirectory (basepath));
+	container.addPkg (basepath / "scene.pkg");
+	container.addPkg (basepath / "gifscene.pkg");
+	container.add (new CDirectory (this->m_context.assets));
 #if !NDEBUG
-	this->m_vfs.add (new CDirectory ("../share/"));
+	container.add (new CDirectory ("../share/"));
 #else
 	this->m_vfs.add (new CDirectory (DATADIR));
 #endif /* DEBUG */
 
     // TODO: move this somewhere else?
-    CVirtualContainer* container = new CVirtualContainer ();
+    CVirtualContainer* virtualContainer = new CVirtualContainer ();
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -50,7 +56,7 @@ void CWallpaperApplication::setupContainer ()
     //
 
     // add the effect file for screen bloom
-    container->add (
+	virtualContainer->add (
         "effects/wpenginelinux/bloomeffect.json",
         "{"
         "\t\"name\":\"camerabloom_wpengine_linux\","
@@ -111,7 +117,7 @@ void CWallpaperApplication::setupContainer ()
     );
 
     // add some model for the image element even if it's going to waste rendering cycles
-    container->add (
+	virtualContainer->add (
         "models/wpenginelinux.json",
         "{"
         "\t\"material\":\"materials/wpenginelinux.json\""
@@ -119,7 +125,7 @@ void CWallpaperApplication::setupContainer ()
     );
 
     // models require materials, so add that too
-    container->add (
+	virtualContainer->add (
         "materials/wpenginelinux.json",
         "{"
         "\t\"passes\":"
@@ -136,47 +142,74 @@ void CWallpaperApplication::setupContainer ()
         "}"
     );
 
-    this->m_vfs.add (container);
+	container.add (virtualContainer);
 }
 
-void CWallpaperApplication::loadProject ()
+void CWallpaperApplication::loadProjects ()
 {
-    this->m_project = CProject::fromFile ("project.json", this->m_vfs);
-    // go to the right folder so the videos will play
-    // TODO: stop doing chdir and use full path
-    if (this->m_project->getWallpaper ()->is <WallpaperEngine::Core::CVideo> ())
-        chdir (this->m_context.background.c_str ());
+	for (const auto& it : this->m_context.screenSettings)
+	{
+		// ignore the screen settings if there was no background specified
+		// the default will be used
+		if (it.second.empty())
+			continue;
+
+		this->m_projects.insert_or_assign (
+			it.first,
+			this->loadProject (it.second)
+		);
+	}
+
+	// load the default project if required
+	if (!this->m_context.background.empty ())
+		this->m_defaultProject = this->loadProject (this->m_context.background);
+}
+
+CProject* CWallpaperApplication::loadProject (const std::string& bg)
+{
+	CCombinedContainer* container = new CCombinedContainer ();
+
+	this->setupContainer (*container, bg);
+
+	// TODO: Change this to pointer instead of reference
+    return CProject::fromFile ("project.json", container);
+}
+
+void CWallpaperApplication::setupPropertiesForProject (CProject* project)
+{
+	// show properties if required
+	for (auto cur : project->getProperties ())
+	{
+		// update the value of the property
+		auto override = this->m_context.properties.find (cur->getName ());
+
+		if (override != this->m_context.properties.end ())
+		{
+			sLog.out ("Applying override value for ", cur->getName ());
+
+			cur->update (override->second);
+		}
+
+		if (this->m_context.onlyListProperties)
+			sLog.out (cur->dump ());
+	}
 }
 
 void CWallpaperApplication::setupProperties ()
 {
-    // show properties if required
-    for (auto cur : this->m_project->getProperties ())
-    {
-        // update the value of the property
-        auto override = this->m_context.properties.find (cur->getName ());
+	for (const auto& it : this->m_projects)
+		this->setupPropertiesForProject (it.second);
 
-        if (override != this->m_context.properties.end ())
-        {
-            sLog.out ("Applying override value for ", cur->getName ());
-
-            cur->update (override->second);
-        }
-
-        if (this->m_context.onlyListProperties)
-            sLog.out (cur->dump ());
-    }
+	if (this->m_defaultProject != nullptr)
+		this->setupPropertiesForProject (this->m_defaultProject);
 }
 
-void CWallpaperApplication::takeScreenshot (WallpaperEngine::Render::CWallpaper* wp, const std::filesystem::path& filename, FREE_IMAGE_FORMAT format)
+void CWallpaperApplication::takeScreenshot (const Render::CRenderContext& context, const std::filesystem::path& filename, FREE_IMAGE_FORMAT format)
 {
-    GLint width, height;
+	// this should be getting called at the end of the frame, so the right thing should be bound already
 
-    // bind texture and get the size
-    glBindFramebuffer (GL_FRAMEBUFFER, wp->getWallpaperFramebuffer ());
-    glBindTexture (GL_TEXTURE_2D, wp->getWallpaperTexture ());
-    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+	int width = context.getOutput ()->getFullWidth ();
+	int height = context.getOutput ()->getFullHeight ();
 
     // make room for storing the pixel data
     uint8_t* buffer = new uint8_t [width * height * sizeof (uint8_t) * 3];
@@ -222,15 +255,42 @@ void CWallpaperApplication::show ()
     // initialize audio context
     WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
     // initialize OpenGL driver
-    WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver (this->m_project->getTitle ().c_str ());
+    WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver ("wallpaperengine");
     // initialize the input subsystem
     WallpaperEngine::Input::CInputContext inputContext (videoDriver);
+	// output requested
+	WallpaperEngine::Render::Drivers::Output::COutput* output;
+
+	// initialize the requested output
+	switch (this->m_context.windowMode)
+	{
+		case CApplicationContext::EXPLICIT_WINDOW:
+		case CApplicationContext::NORMAL_WINDOW:
+			output = new WallpaperEngine::Render::Drivers::Output::CWindowOutput (this->m_context, videoDriver);
+			break;
+
+		case CApplicationContext::X11_BACKGROUND:
+			output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver);
+			break;
+	}
+
     // initialize render context
-    WallpaperEngine::Render::CRenderContext context (this->m_context.screens, videoDriver, inputContext, this->m_vfs, *this);
-    // ensure the context knows what wallpaper to render
-    context.setWallpaper (
-        WallpaperEngine::Render::CWallpaper::fromWallpaper (this->m_project->getWallpaper (), context, audioContext)
-    );
+    WallpaperEngine::Render::CRenderContext context (output, videoDriver, inputContext, *this);
+
+	// set all the specific wallpapers required
+	for (const auto& it : this->m_projects)
+	{
+		context.setWallpaper (
+			it.first,
+			WallpaperEngine::Render::CWallpaper::fromWallpaper (it.second->getWallpaper (), context, audioContext)
+		);
+	}
+
+    // set the default rendering wallpaper if available
+	if (this->m_defaultProject != nullptr)
+		context.setDefaultWallpaper (
+			WallpaperEngine::Render::CWallpaper::fromWallpaper (this->m_defaultProject->getWallpaper (), context, audioContext)
+		);
 
     float startTime, endTime, minimumTime = 1.0f / this->m_context.maximumFPS;
 
@@ -255,7 +315,7 @@ void CWallpaperApplication::show ()
 
         if (this->m_context.takeScreenshot && videoDriver.getFrameCounter () == 5)
         {
-            this->takeScreenshot (context.getWallpaper (), this->m_context.screenshot, this->m_context.screenshotFormat);
+            this->takeScreenshot (context, this->m_context.screenshot, this->m_context.screenshotFormat);
             // disable screenshot just in case the counter overflows
             this->m_context.takeScreenshot = false;
         }
@@ -272,4 +332,14 @@ void CWallpaperApplication::show ()
 void CWallpaperApplication::signal (int signal)
 {
     g_KeepRunning = false;
+}
+
+const std::map <std::string, CProject*>& CWallpaperApplication::getProjects () const
+{
+	return this->m_projects;
+}
+
+CProject* CWallpaperApplication::getDefaultProject () const
+{
+	return this->m_defaultProject;
 }

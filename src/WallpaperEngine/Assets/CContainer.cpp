@@ -9,6 +9,11 @@
 
 using namespace WallpaperEngine::Assets;
 
+std::filesystem::path CContainer::resolveRealFile (std::string filename) const
+{
+	throw CAssetLoadException (filename, "Cannot resolve physical file in this container");
+}
+
 const ITexture* CContainer::readTexture (std::string filename) const
 {
     // get the texture's filename (usually .tex)

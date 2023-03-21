@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include "WallpaperEngine/Assets/ITexture.h"
 
@@ -8,6 +9,14 @@ namespace WallpaperEngine::Assets
     class CContainer
     {
     public:
+		/**
+		 * Resolves the full path to the specified file in the filesystem
+		 *
+		 * @param filename
+		 * @return
+		 */
+		virtual std::filesystem::path resolveRealFile (std::string filename) const;
+
         /**
          * Reads the given file from the container and returns it's data
          * Additionally sets a length parameter to return back the file's length

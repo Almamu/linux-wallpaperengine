@@ -38,7 +38,7 @@ namespace WallpaperEngine::Render
         /**
          * @return The container to resolve files for this wallpaper
          */
-        const CContainer& getContainer () const;
+        CContainer* getContainer () const;
 
         /**
          * @return The current context rendering this wallpaper

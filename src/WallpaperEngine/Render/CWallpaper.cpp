@@ -61,9 +61,9 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
 CWallpaper::~CWallpaper ()
 = default;
 
-const CContainer& CWallpaper::getContainer () const
+CContainer* CWallpaper::getContainer () const
 {
-    return this->m_context.getContainer ();
+    return this->m_wallpaperData->getProject ().getContainer ();
 }
 
 WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const
