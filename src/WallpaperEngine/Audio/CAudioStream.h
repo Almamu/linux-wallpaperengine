@@ -44,6 +44,11 @@ namespace WallpaperEngine::Audio
         void dequeuePacket (AVPacket* output);
 
         /**
+         * @return The audio context in use for this audio stream
+         */
+        CAudioContext& getAudioContext () const;
+
+        /**
          * @return to the codec context, which provides information on the audio stream's format
          */
         AVCodecContext* getContext ();

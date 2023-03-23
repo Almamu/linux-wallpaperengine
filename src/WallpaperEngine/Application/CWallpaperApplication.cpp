@@ -9,14 +9,12 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#include "WallpaperEngine/Application/CApplicationState.h"
 
 #include <unistd.h>
 
 float g_Time;
 float g_TimeLast;
-bool g_KeepRunning = true;
-bool g_AudioEnabled = true;
-int g_AudioVolume = 128;
 
 namespace WallpaperEngine::Application
 {
@@ -24,9 +22,6 @@ namespace WallpaperEngine::Application
         m_context (context),
         m_defaultBackground (nullptr)
     {
-        // copy state to global variables for now
-        g_AudioVolume = context.audio.volume;
-        g_AudioEnabled = context.audio.enabled;
         this->loadBackgrounds ();
         this->setupProperties ();
     }
@@ -38,7 +33,7 @@ namespace WallpaperEngine::Application
         container.add (new CDirectory (basepath));
         container.addPkg (basepath / "scene.pkg");
         container.addPkg (basepath / "gifscene.pkg");
-        container.add (new CDirectory (this->m_context.general.assets));
+        container.add (new CDirectory (this->m_context.settings.general.assets));
 
         // add two possible patches directories to the container
         // hopefully one sticks
@@ -171,7 +166,7 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::loadBackgrounds ()
     {
-        for (const auto& it : this->m_context.general.screenBackgrounds)
+        for (const auto& it : this->m_context.settings.general.screenBackgrounds)
         {
             // ignore the screen settings if there was no background specified
             // the default will be used
@@ -182,8 +177,8 @@ namespace WallpaperEngine::Application
         }
 
         // load the default project if required
-        if (!this->m_context.general.defaultBackground.empty ())
-            this->m_defaultBackground = this->loadBackground (this->m_context.general.defaultBackground);
+        if (!this->m_context.settings.general.defaultBackground.empty ())
+            this->m_defaultBackground = this->loadBackground (this->m_context.settings.general.defaultBackground);
     }
 
     Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg)
@@ -201,16 +196,16 @@ namespace WallpaperEngine::Application
         for (auto cur : project->getProperties ())
         {
             // update the value of the property
-            auto override = this->m_context.general.properties.find (cur->getName ());
+            auto override = this->m_context.settings.general.properties.find (cur->getName ());
 
-            if (override != this->m_context.general.properties.end ())
+            if (override != this->m_context.settings.general.properties.end ())
             {
                 sLog.out ("Applying override value for ", cur->getName ());
 
                 cur->update (override->second);
             }
 
-            if (this->m_context.general.onlyListProperties)
+            if (this->m_context.settings.general.onlyListProperties)
                 sLog.out (cur->dump ());
         }
     }
@@ -265,15 +260,12 @@ namespace WallpaperEngine::Application
         delete[] buffer;
 
         FreeImage_Unload (bitmap);
-
-        // unbind the textures
-        glBindTexture (GL_TEXTURE_2D, GL_NONE);
     }
 
     void CWallpaperApplication::show ()
     {
         // initialize sdl audio driver
-        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver;
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context);
         // initialize audio context
         WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
         // initialize OpenGL driver
@@ -284,16 +276,16 @@ namespace WallpaperEngine::Application
         WallpaperEngine::Render::Drivers::Output::COutput* output;
 
         // initialize the requested output
-        switch (this->m_context.render.mode)
+        switch (this->m_context.settings.render.mode)
         {
-        case CApplicationContext::EXPLICIT_WINDOW:
-        case CApplicationContext::NORMAL_WINDOW:
-            output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, videoDriver);
-            break;
+            case CApplicationContext::EXPLICIT_WINDOW:
+            case CApplicationContext::NORMAL_WINDOW:
+                output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, videoDriver);
+                break;
 
-        case CApplicationContext::X11_BACKGROUND:
-            output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver);
-            break;
+            case CApplicationContext::X11_BACKGROUND:
+                output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver);
+                break;
         }
 
         // initialize render context
@@ -312,9 +304,9 @@ namespace WallpaperEngine::Application
                 this->m_defaultBackground->getWallpaper (), context, audioContext
             ));
 
-        float startTime, endTime, minimumTime = 1.0f / this->m_context.render.maximumFPS;
+        float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
 
-        while (!videoDriver.closeRequested () && g_KeepRunning)
+        while (!videoDriver.closeRequested () && this->m_context.state.general.keepRunning)
         {
             // update input information
             inputContext.update ();
@@ -333,16 +325,16 @@ namespace WallpaperEngine::Application
             if ((endTime - startTime) < minimumTime)
                 usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 
-            if (!this->m_context.screenshot.take || videoDriver.getFrameCounter () != 5)
+            if (!this->m_context.settings.screenshot.take || videoDriver.getFrameCounter () != 5)
                 continue;
 
-            this->takeScreenshot (context, this->m_context.screenshot.path, this->m_context.screenshot.format);
+            this->takeScreenshot (context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
             // disable screenshot just in case the counter overflows
-            this->m_context.screenshot.take = false;
+            this->m_context.settings.screenshot.take = false;
         }
 
         // ensure this is updated as sometimes it might not come from a signal
-        g_KeepRunning = false;
+        this->m_context.state.general.keepRunning = false;
 
         sLog.out ("Stop requested");
 
@@ -351,7 +343,7 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::signal (int signal)
     {
-        g_KeepRunning = false;
+        this->m_context.state.general.keepRunning = false;
     }
 
     const std::map<std::string, Core::CProject*>& CWallpaperApplication::getBackgrounds () const
@@ -362,5 +354,10 @@ namespace WallpaperEngine::Application
     Core::CProject* CWallpaperApplication::getDefaultBackground () const
     {
         return this->m_defaultBackground;
+    }
+
+    CApplicationContext& CWallpaperApplication::getContext () const
+    {
+        return this->m_context;
     }
 }

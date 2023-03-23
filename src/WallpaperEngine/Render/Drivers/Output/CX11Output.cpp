@@ -8,8 +8,6 @@
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
-extern bool g_KeepRunning;
-
 using namespace WallpaperEngine::Render::Drivers::Output;
 
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
@@ -142,7 +140,7 @@ void CX11Output::loadScreenInfo ()
         );
 
         // only keep info of registered screens
-        if (this->m_context.general.screenBackgrounds.find (info->name) != this->m_context.general.screenBackgrounds.end ())
+        if (this->m_context.settings.general.screenBackgrounds.find (info->name) != this->m_context.settings.general.screenBackgrounds.end ())
         {
             sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
 
@@ -230,5 +228,5 @@ void CX11Output::updateRender () const
         // give the cpu some time to check again later
         usleep (FULLSCREEN_CHECK_WAIT_TIME);
     }
-    while (isFullscreen && g_KeepRunning);
+    while (isFullscreen && this->m_context.state.general.keepRunning);
 }

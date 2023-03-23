@@ -47,30 +47,33 @@ std::string stringPathFixes (const std::string& s)
 CApplicationContext::CApplicationContext (int argc, char* argv[])
 {
     // setup structs with sane default values for now
-    this->general =
+    this->settings =
     {
-        .onlyListProperties = false,
-        .assets = "",
-        .defaultBackground = "",
-        .screenBackgrounds = {},
-        .properties = {},
-    };
-    this->render =
-    {
-        .mode = NORMAL_WINDOW,
-        .maximumFPS = 30,
-        .window = { .geometry = {}},
-    };
-    this->audio =
-    {
-        .enabled = true,
-        .volume = 127,
-    };
-    this->screenshot =
-    {
-        .take = false,
-        .path = "",
-        .format = FIF_UNKNOWN,
+        .general =
+        {
+            .onlyListProperties = false,
+            .assets = "",
+            .defaultBackground = "",
+            .screenBackgrounds = {},
+            .properties = {},
+        },
+        .render =
+        {
+            .mode = NORMAL_WINDOW,
+            .maximumFPS = 30,
+            .window = { .geometry = {}},
+        },
+        .audio =
+        {
+            .enabled = true,
+            .volume = 127,
+        },
+        .screenshot =
+        {
+            .take = false,
+            .path = "",
+            .format = FIF_UNKNOWN,
+        },
     };
 
     int c;
@@ -87,7 +90,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
             // no need to check for previous screen being in the list, as it's the only way for this variable
             // to have any value
-            this->general.screenBackgrounds[lastScreen] = translateBackground (optarg);
+            this->settings.general.screenBackgrounds[lastScreen] = translateBackground (optarg);
             break;
 
         case 'o':
@@ -97,56 +100,56 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
             // properties without value are treated as booleans for now
             if (equals == std::string::npos)
-                this->general.properties[value] = "1";
+                this->settings.general.properties[value] = "1";
             else
-                this->general.properties[value.substr (0, equals)] = value.substr (equals + 1);
+                this->settings.general.properties[value.substr (0, equals)] = value.substr (equals + 1);
         }
             break;
 
         case 'l':
-            this->general.onlyListProperties = true;
+            this->settings.general.onlyListProperties = true;
             break;
 
         case 'r':
-            if (this->general.screenBackgrounds.find (optarg) != this->general.screenBackgrounds.end ())
+            if (this->settings.general.screenBackgrounds.find (optarg) != this->settings.general.screenBackgrounds.end ())
                 sLog.exception ("Cannot specify the same screen more than once: ", optarg);
-            if (this->render.mode == EXPLICIT_WINDOW)
+            if (this->settings.render.mode == EXPLICIT_WINDOW)
                 sLog.exception ("Cannot run in both background and window mode");
 
-            this->render.mode = X11_BACKGROUND;
+            this->settings.render.mode = X11_BACKGROUND;
             lastScreen = optarg;
-            this->general.screenBackgrounds[lastScreen] = "";
+            this->settings.general.screenBackgrounds[lastScreen] = "";
             break;
 
         case 'w':
-            if (this->render.mode == X11_BACKGROUND)
+            if (this->settings.render.mode == X11_BACKGROUND)
                 sLog.exception ("Cannot run in both background and window mode");
 
             if (optarg != nullptr)
             {
-                this->render.mode = EXPLICIT_WINDOW;
+                this->settings.render.mode = EXPLICIT_WINDOW;
                 // read window geometry
                 char* pos = optarg;
 
                 if (pos != nullptr)
-                    this->render.window.geometry.x = atoi (pos);
+                    this->settings.render.window.geometry.x = atoi (pos);
                 if ((pos = strchr (pos, '.')) != nullptr)
-                    this->render.window.geometry.y = atoi (pos + 1);
+                    this->settings.render.window.geometry.y = atoi (pos + 1);
                 if ((pos = strchr (pos + 1, '.')) != nullptr)
-                    this->render.window.geometry.z = atoi (pos + 1);
+                    this->settings.render.window.geometry.z = atoi (pos + 1);
                 if ((pos = strchr (pos + 1, '.')) != nullptr)
-                    this->render.window.geometry.w = atoi (pos + 1);
+                    this->settings.render.window.geometry.w = atoi (pos + 1);
             }
             break;
 
         case 'p':
         case 'd':
             sLog.error ("--dir/--pkg is deprecated and not used anymore");
-            this->general.defaultBackground = translateBackground (stringPathFixes (optarg));
+            this->settings.general.defaultBackground = translateBackground (stringPathFixes (optarg));
             break;
 
         case 's':
-            this->audio.enabled = false;
+            this->settings.audio.enabled = false;
             break;
 
         case 'h':
@@ -154,20 +157,20 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
             break;
 
         case 'f':
-            this->render.maximumFPS = atoi (optarg);
+            this->settings.render.maximumFPS = atoi (optarg);
             break;
 
         case 'a':
-            this->general.assets = stringPathFixes (optarg);
+            this->settings.general.assets = stringPathFixes (optarg);
             break;
 
         case 'v':
-            this->audio.volume = std::max (atoi (optarg), 128);
+            this->settings.audio.volume = std::max (atoi (optarg), 128);
             break;
 
         case 'c':
-            this->screenshot.take = true;
-            this->screenshot.path = stringPathFixes (optarg);
+            this->settings.screenshot.take = true;
+                this->settings.screenshot.path = stringPathFixes (optarg);
             break;
 
         default:
@@ -176,11 +179,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
         }
     }
 
-    if (this->general.defaultBackground.empty ())
+    if (this->settings.general.defaultBackground.empty ())
     {
         if (optind < argc && strlen (argv[optind]) > 0)
         {
-            this->general.defaultBackground = translateBackground (argv[optind]);
+            this->settings.general.defaultBackground = translateBackground (argv[optind]);
         }
         else
         {
@@ -191,6 +194,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
     // perform some extra validation on the inputs
     this->validateAssets ();
     this->validateScreenshot ();
+
+    // setup application state
+    this->state.general.keepRunning = true;
+    this->state.audio.enabled = this->settings.audio.enabled;
+    this->state.audio.volume = this->settings.audio.volume;
 }
 
 std::filesystem::path CApplicationContext::translateBackground (const std::string& bgIdOrPath)
@@ -203,15 +211,15 @@ std::filesystem::path CApplicationContext::translateBackground (const std::strin
 
 void CApplicationContext::validateAssets ()
 {
-    if (!this->general.assets.empty ())
+    if (!this->settings.general.assets.empty ())
     {
-        sLog.out ("Using wallpaper engine's assets at ", this->general.assets, " based on --assets-dir parameter");
+        sLog.out ("Using wallpaper engine's assets at ", this->settings.general.assets, " based on --assets-dir parameter");
         return;
     }
 
     try
     {
-        this->general.assets = Steam::FileSystem::appDirectory (APP_DIRECTORY, "assets");
+        this->settings.general.assets = Steam::FileSystem::appDirectory (APP_DIRECTORY, "assets");
     }
     catch (std::runtime_error&)
     {
@@ -222,20 +230,20 @@ void CApplicationContext::validateAssets ()
 
 void CApplicationContext::validateScreenshot ()
 {
-    if (!this->screenshot.take)
+    if (!this->settings.screenshot.take)
         return;
 
-    if (!this->screenshot.path.has_extension ())
+    if (!this->settings.screenshot.path.has_extension ())
         sLog.exception ("Cannot determine screenshot format");
 
-    std::string extension = this->screenshot.path.extension ();
+    std::string extension = this->settings.screenshot.path.extension ();
 
     if (extension == ".bmp")
-        this->screenshot.format = FIF_BMP;
+        this->settings.screenshot.format = FIF_BMP;
     else if (extension == ".png")
-        this->screenshot.format = FIF_PNG;
+        this->settings.screenshot.format = FIF_PNG;
     else if (extension == ".jpg" || extension == ".jpeg")
-        this->screenshot.format = FIF_JPEG;
+        this->settings.screenshot.format = FIF_JPEG;
     else
         sLog.exception ("Cannot determine screenshot format, unknown extension ", extension);
 }

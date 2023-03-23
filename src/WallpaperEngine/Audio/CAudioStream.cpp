@@ -8,22 +8,19 @@
 #define MAX_QUEUE_SIZE (5 * 1024 * 1024)
 #define MIN_FRAMES 25
 
-extern int g_AudioVolume;
-extern bool g_KeepRunning;
-
 using namespace WallpaperEngine::Audio;
 
 int audio_read_thread (void* arg)
 {
     SDL_mutex* waitMutex = SDL_CreateMutex ();
-    CAudioStream* stream = static_cast <CAudioStream*> (arg);
+    auto* stream = static_cast <CAudioStream*> (arg);
     AVPacket* packet = av_packet_alloc ();
     int ret = 0;
 
     if (waitMutex == nullptr)
         sLog.exception ("Cannot create mutex for audio playback waiting");
 
-    while (ret >= 0 && g_KeepRunning)
+    while (ret >= 0 && stream->getAudioContext ().getApplicationContext ().state.general.keepRunning)
     {
         // give the cpu some time to play the queued frames if there's enough info there
         if (
@@ -322,7 +319,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
 
     SDL_LockMutex (this->m_queue->mutex);
 
-    while (g_KeepRunning)
+    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning)
     {
 
 #if FF_API_FIFO_OLD_API
@@ -620,7 +617,7 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
     }
 
     // block until there's any data in the buffers
-    while (g_KeepRunning) {
+    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
         while (audio_pkt_size > 0) {
             int got_frame = 0;
             int ret = avcodec_receive_frame(this->getContext (), avFrame);
@@ -669,4 +666,9 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
     }
 
     return 0;
+}
+
+CAudioContext& CAudioStream::getAudioContext () const
+{
+    return this->m_audioContext;
 }

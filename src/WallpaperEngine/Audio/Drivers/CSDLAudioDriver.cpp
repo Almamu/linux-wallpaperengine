@@ -4,9 +4,6 @@
 #define SDL_AUDIO_BUFFER_SIZE 4096
 #define MAX_AUDIO_FRAME_SIZE 192000
 
-extern int g_AudioVolume;
-extern bool g_KeepRunning;
-
 using namespace WallpaperEngine::Audio;
 using namespace WallpaperEngine::Audio::Drivers;
 
@@ -34,7 +31,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
             continue;
         }
 
-        while (streamLength > 0 && g_KeepRunning)
+        while (streamLength > 0 && driver->getApplicationContext ().state.general.keepRunning)
         {
             if (buffer->audio_buf_index >= buffer->audio_buf_size)
             {
@@ -63,7 +60,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
             // mix the audio
             SDL_MixAudioFormat (
                 streamDataPointer, &buffer->audio_buf [buffer->audio_buf_index],
-                driver->getSpec ().format, len1, g_AudioVolume
+                driver->getSpec ().format, len1, driver->getApplicationContext ().state.audio.volume
             );
 
             streamLength -= len1;
@@ -73,7 +70,8 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
     }
 }
 
-CSDLAudioDriver::CSDLAudioDriver () :
+CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext) :
+    CAudioDriver (applicationContext),
     m_initialized (false),
     m_audioSpec ()
 {

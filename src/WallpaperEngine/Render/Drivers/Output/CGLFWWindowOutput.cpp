@@ -9,17 +9,17 @@ CGLFWWindowOutput::CGLFWWindowOutput (CApplicationContext& context, CVideoDriver
     m_driver (driver)
 {
     if (
-        this->m_context.render.mode != Application::CApplicationContext::NORMAL_WINDOW &&
-            this->m_context.render.mode != Application::CApplicationContext::EXPLICIT_WINDOW)
+        this->m_context.settings.render.mode != Application::CApplicationContext::NORMAL_WINDOW &&
+        this->m_context.settings.render.mode != Application::CApplicationContext::EXPLICIT_WINDOW)
         sLog.exception ("Initializing window output when not in output mode, how did you get here?!");
 
     // window should be visible
     driver.showWindow ();
 
-    if (this->m_context.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
+    if (this->m_context.settings.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
     {
-        this->m_fullWidth = this->m_context.render.window.geometry.z;
-        this->m_fullHeight = this->m_context.render.window.geometry.w;
+        this->m_fullWidth = this->m_context.settings.render.window.geometry.z;
+        this->m_fullHeight = this->m_context.settings.render.window.geometry.w;
         this->repositionWindow ();
     }
     else
@@ -36,12 +36,12 @@ CGLFWWindowOutput::CGLFWWindowOutput (CApplicationContext& context, CVideoDriver
 void CGLFWWindowOutput::repositionWindow ()
 {
     // reposition the window
-    this->m_driver.resizeWindow (this->m_context.render.window.geometry);
+    this->m_driver.resizeWindow (this->m_context.settings.render.window.geometry);
 }
 
 void CGLFWWindowOutput::reset ()
 {
-    if (this->m_context.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
+    if (this->m_context.settings.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
         this->repositionWindow ();
 }
 
@@ -66,7 +66,7 @@ void* CGLFWWindowOutput::getImageBuffer () const
 }
 void CGLFWWindowOutput::updateRender () const
 {
-    if (this->m_context.render.mode != Application::CApplicationContext::NORMAL_WINDOW)
+    if (this->m_context.settings.render.mode != Application::CApplicationContext::NORMAL_WINDOW)
         return;
 
     // take the size from the driver (default window size)

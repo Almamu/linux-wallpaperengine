@@ -1,11 +1,7 @@
 #include "common.h"
 #include "CVideo.h"
 
-#include <pthread.h>
 #include <GL/glew.h>
-
-extern bool g_AudioEnabled;
-extern int g_AudioVolume;
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -21,7 +17,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     m_height (16),
     m_mpvGl (nullptr)
 {
-    double volume = g_AudioVolume * 100.0 / 128.0;
+    double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts
     this->m_mpv = mpv_create ();
@@ -64,7 +60,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     if (mpv_command (this->m_mpv, command) < 0)
         sLog.exception ("Cannot load video to play");
 
-    if (!g_AudioEnabled)
+    if (!this->getContext ().getApp ().getContext ().settings.audio.enabled)
     {
         const char* mutecommand [] = {
             "set", "mute", "yes", nullptr

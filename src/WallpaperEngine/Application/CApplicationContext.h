@@ -9,6 +9,8 @@
 
 #include <FreeImage.h>
 
+#include "CApplicationState.h"
+
 namespace WallpaperEngine::Application
 {
 	/**
@@ -21,105 +23,79 @@ namespace WallpaperEngine::Application
 
 		enum WINDOW_MODE
 		{
-			/**
-			 * Default window mode
-			 */
+			/** Default window mode */
 			NORMAL_WINDOW = 0,
-			/**
-			 * Draw to X11 background
-			 */
+			/** Draw to X11 background */
 			X11_BACKGROUND = 1,
-			/**
-			 * Explicit window mode with specified geometry
-			 */
+			/** Explicit window mode with specified geometry */
 			EXPLICIT_WINDOW = 2,
 		};
 
-		/**
-		 * General settings
-		 */
-		struct
-		{
-			/**
-			 * If the user requested a list of properties for the given background
-			 */
-			bool onlyListProperties;
+        struct
+        {
+            /**
+             * General settings
+             */
+            struct
+            {
+                /** If the user requested a list of properties for the given background */
+                bool onlyListProperties;
 
-			/**
-			 * The path to the assets folder
-			 */
-			std::filesystem::path assets;
-			/**
-			 * Background to load (provided as the final argument) as fallback for multi-screen setups
-			 */
-			std::filesystem::path defaultBackground;
+                /** The path to the assets folder */
+                std::filesystem::path assets;
+                /** Background to load (provided as the final argument) as fallback for multi-screen setups */
+                std::filesystem::path defaultBackground;
 
-			/**
-			 * The backgrounds specified for different screens
-			 */
-			std::map <std::string, std::filesystem::path> screenBackgrounds;
-			/**
-			 * Properties to change values for
-			 */
-			std::map <std::string, std::string> properties;
-		} general;
+                /** The backgrounds specified for different screens */
+                std::map <std::string, std::filesystem::path> screenBackgrounds;
+                /** Properties to change values for */
+                std::map <std::string, std::string> properties;
+            } general;
 
-		/**
-		 * Render settings
-		 */
-		struct
-		{
-			/**
-			 * The mode to run the background in
-			 */
-			WINDOW_MODE mode;
-			/**
-			 * Maximum FPS
-			 */
-			int maximumFPS;
+            /**
+             * Render settings
+             */
+            struct
+            {
+                /** The mode to run the background in */
+                WINDOW_MODE mode;
+                /** Maximum FPS */
+                int maximumFPS;
 
-			struct
-			{
-				/**
-				 * The window size used in explicit window
-				 */
-				glm::ivec4 geometry;
-			} window;
-		} render;
+                struct
+                {
+                    /** The window size used in explicit window */
+                    glm::ivec4 geometry;
+                } window;
+            } render;
 
-		/**
-		 * Audio settings
-		 */
-		struct
-		{
-			/**
-			 * If the audio system is enabled
-			 */
-			bool enabled;
-			/**
-			 * Sound volume (0-128)
-			 */
-			int volume;
-		} audio;
+            /**
+             * Audio settings
+             */
+            struct
+            {
+                /** If the audio system is enabled */
+                bool enabled;
+                /** Sound volume (0-128) */
+                int volume;
+            } audio;
 
-		/**
-		 * Screenshot settings
-		 */
-		struct
-		{
-			/**
-			 * If an screenshot should be taken
-			 */
-			bool take;
-			/**
-			 * The path to where the screenshot must be saved
-			 */
-			std::filesystem::path path;
-			/**
-			 * The image format
-			 */
-			FREE_IMAGE_FORMAT format;
-		} screenshot;
+            /**
+             * Screenshot settings
+             */
+            struct
+            {
+                /** If an screenshot should be taken */
+                bool take;
+                /** The path to where the screenshot must be saved */
+                std::filesystem::path path;
+                /** The image format */
+                FREE_IMAGE_FORMAT format;
+            } screenshot;
+        } settings;
+
+        CApplicationState state;
+
 	private:
 		/**
 		 * Validates the assets folder and ensures a valid one is present

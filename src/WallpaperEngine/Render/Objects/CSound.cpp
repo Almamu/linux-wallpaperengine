@@ -2,15 +2,13 @@
 
 #include "CSound.h"
 
-extern bool g_AudioEnabled;
-
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
     CObject (scene, Type, sound),
     m_sound (sound)
 {
-    if (g_AudioEnabled)
+    if (this->getScene ()->getContext ().getApp ().getContext ().settings.audio.enabled)
         this->load ();
 }
 
@@ -35,7 +33,6 @@ void CSound::load ()
 
 void CSound::render ()
 {
-
 }
 
 const std::string CSound::Type = "sound";
