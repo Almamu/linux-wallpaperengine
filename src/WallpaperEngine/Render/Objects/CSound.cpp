@@ -8,7 +8,7 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
     CObject (scene, Type, sound),
     m_sound (sound)
 {
-    if (this->getScene ()->getContext ().getApp ().getContext ().settings.audio.enabled)
+    if (this->getContext ().getApp ().getContext ().settings.audio.enabled)
         this->load ();
 }
 

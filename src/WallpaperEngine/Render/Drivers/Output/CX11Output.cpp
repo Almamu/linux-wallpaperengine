@@ -24,9 +24,6 @@ int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
 {
     sLog.debugerror ("Detected X error");
 
-    // call the original handler so we can keep some information reporting
-    // originalErrorHandler (dpy, event);
-
     return 0;
 }
 
@@ -37,8 +34,8 @@ int CustomXIOErrorHandler (Display* dsp)
     return 0;
 }
 
-CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) :
-    COutput (context),
+CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector) :
+    COutput (context, detector),
     m_driver (driver)
 {
     // do not use previous handler, it might stop the app under weird circumstances
@@ -59,6 +56,8 @@ void CX11Output::reset ()
     this->free ();
     // re-load screen info
     this->loadScreenInfo ();
+    // do the same for the detector
+    this->m_detector.reset ();
 }
 
 void CX11Output::free ()
@@ -187,46 +186,7 @@ void CX11Output::updateRender () const
     XClearWindow(this->m_display, this->m_root);
     XFlush(this->m_display);
 
-    // stop rendering if anything is fullscreen
-    bool isFullscreen = false;
-    XWindowAttributes attribs;
-    Window _;
-    Window* children;
-    unsigned int nchildren;
-
-    do
-    {
-        isFullscreen = false;
-
-        if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
-            return;
-
-        for (int i = 0; i < nchildren; i++)
-        {
-            if (!XGetWindowAttributes (this->m_display, children [i], &attribs))
-                continue;
-
-            if (attribs.map_state != IsViewable)
-                continue;
-
-            // compare width and height with the different screens we have
-            for (const auto& screen : this->m_screens)
-            {
-                if (
-                    attribs.x == screen.viewport.x && attribs.y == screen.viewport.y &&
-                        attribs.width == screen.viewport.z && attribs.height == screen.viewport.w
-                    )
-                {
-                    isFullscreen = true;
-                    break;
-                }
-            }
-        }
-
-        XFree (children);
-
-        // give the cpu some time to check again later
+    // check for fullscreen windows and wait until there's none fullscreen
+    while (this->m_detector.anythingFullscreen () && this->m_context.state.general.keepRunning)
         usleep (FULLSCREEN_CHECK_WAIT_TIME);
-    }
-    while (isFullscreen && this->m_context.state.general.keepRunning);
 }

@@ -5,6 +5,7 @@
 #include <glm/vec4.hpp>
 
 #include "WallpaperEngine/Application/CApplicationContext.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h"
 
 using namespace WallpaperEngine::Application;
 
@@ -13,12 +14,17 @@ namespace WallpaperEngine::Application
     class CApplicationContext;
 }
 
+namespace WallpaperEngine::Render::Drivers::Detectors
+{
+    class CFullScreenDetector;
+}
+
 namespace WallpaperEngine::Render::Drivers::Output
 {
     class COutput
     {
     public:
-        COutput (CApplicationContext& context);
+        COutput (CApplicationContext& context, Detectors::CFullScreenDetector& detector);
 
         virtual void reset () = 0;
 
@@ -43,5 +49,6 @@ namespace WallpaperEngine::Render::Drivers::Output
         mutable int m_fullHeight;
         mutable std::map <std::string, ScreenInfo> m_viewports;
         CApplicationContext& m_context;
+        Detectors::CFullScreenDetector& m_detector;
     };
 }

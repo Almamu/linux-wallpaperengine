@@ -108,14 +108,19 @@ add_executable(
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
 
+    src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.cpp
+    src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
+    src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
+    src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
+
     src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutput.h
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
-    src/WallpaperEngine/Render/Drivers/COpenGLDriver.h
-    src/WallpaperEngine/Render/Drivers/COpenGLDriver.cpp
+    src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
     src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
     src/WallpaperEngine/Render/CRenderContext.h

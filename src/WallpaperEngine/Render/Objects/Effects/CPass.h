@@ -10,6 +10,8 @@
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CFBO.h"
 
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+
 namespace WallpaperEngine::Render::Objects::Effects
 {
     using namespace WallpaperEngine::Assets;
@@ -18,7 +20,7 @@ namespace WallpaperEngine::Render::Objects::Effects
 
     class CMaterial;
 
-    class CPass
+    class CPass : public Helpers::CContextAware
     {
     public:
         CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);

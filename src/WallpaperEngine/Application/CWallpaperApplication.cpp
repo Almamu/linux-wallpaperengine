@@ -10,6 +10,7 @@
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
 
 #include <unistd.h>
 
@@ -65,7 +66,7 @@ namespace WallpaperEngine::Application
             );
 
         // TODO: move this somewhere else?
-        CVirtualContainer* virtualContainer = new CVirtualContainer ();
+        auto* virtualContainer = new CVirtualContainer ();
 
         //
         // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -183,7 +184,7 @@ namespace WallpaperEngine::Application
 
     Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg)
     {
-        CCombinedContainer* container = new CCombinedContainer ();
+        auto* container = new CCombinedContainer ();
 
         this->setupContainer (*container, bg);
 
@@ -269,22 +270,24 @@ namespace WallpaperEngine::Application
         // initialize audio context
         WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
         // initialize OpenGL driver
-        WallpaperEngine::Render::Drivers::COpenGLDriver videoDriver ("wallpaperengine");
+        WallpaperEngine::Render::Drivers::CX11OpenGLDriver videoDriver ("wallpaperengine");
         // initialize the input subsystem
         WallpaperEngine::Input::CInputContext inputContext (videoDriver);
         // output requested
         WallpaperEngine::Render::Drivers::Output::COutput* output;
+        // fullscreen detector is common for the different render modes
+        WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (videoDriver);
 
         // initialize the requested output
         switch (this->m_context.settings.render.mode)
         {
             case CApplicationContext::EXPLICIT_WINDOW:
             case CApplicationContext::NORMAL_WINDOW:
-                output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, videoDriver);
+                output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, videoDriver, fullscreenDetector);
                 break;
 
             case CApplicationContext::X11_BACKGROUND:
-                output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver);
+                output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver, fullscreenDetector);
                 break;
         }
 

@@ -23,6 +23,7 @@ using namespace WallpaperEngine::Render::Objects::Effects;
 extern float g_Time;
 
 CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass) :
+    Helpers::CContextAware (material),
     m_material (material),
     m_pass (pass)
 {
@@ -132,7 +133,7 @@ void CPass::render ()
     if (texture->isAnimated ())
     {
         // calculate current texture and frame
-        double currentRenderTime = fmod (static_cast <double> (this->getMaterial ()->getImage ()->getScene ()->getContext ().getDriver ().getRenderTime ()), this->m_material->getImage ()->getAnimationTime ());
+        double currentRenderTime = fmod (static_cast <double> (this->getContext ().getDriver ().getRenderTime ()), this->m_material->getImage ()->getAnimationTime ());
 
         for (const auto& frameCur : texture->getFrames ())
         {
@@ -522,7 +523,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
+                        textureRef = this->getContext ().resolveTexture (textureName);
 
                     this->m_finalTextures.insert (std::make_pair ((*fragCur).first, textureRef));
                 }
@@ -551,7 +552,7 @@ void CPass::setupUniforms ()
                             textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
                     }
                     else
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->getContext ().resolveTexture (textureName);
+                        textureRef = this->getContext ().resolveTexture (textureName);
 
                     this->m_finalTextures.insert (std::make_pair ((*vertCur).first, textureRef));
                 }
@@ -695,7 +696,7 @@ void CPass::setupTextures ()
             else
             {
                 this->m_textures.emplace_back (
-                    this->m_material->getImage ()->getScene ()->getContext ().resolveTexture ((*cur))
+                    this->m_material->getImage ()->getContext ().resolveTexture ((*cur))
                 );
             }
         }

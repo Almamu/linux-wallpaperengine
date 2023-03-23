@@ -5,6 +5,7 @@ using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render::Objects::Effects;
 
 CMaterial::CMaterial (const Render::Objects::CEffect* effect, const Core::Objects::Images::CMaterial* material) :
+    Helpers::CContextAware (effect->getImage ()),
     m_effect (effect),
     m_material (material)
 {

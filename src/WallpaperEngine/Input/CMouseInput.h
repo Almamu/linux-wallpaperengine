@@ -22,6 +22,7 @@ namespace WallpaperEngine::Input
          * The virtual pointer's position
          */
         glm::dvec2 position;
+
     private:
         /**
          * The GLFW window to get mouse position from

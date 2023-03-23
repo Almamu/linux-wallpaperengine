@@ -81,7 +81,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         else
         {
             // get the first texture on the first pass (this one represents the image assigned to this object)
-            this->m_texture = this->getScene ()->getContext ().resolveTexture (textureName);
+            this->m_texture = this->getContext ().resolveTexture (textureName);
         }
     }
     else

@@ -6,6 +6,8 @@
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Objects/CEffect.h"
 
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+
 #include "CPass.h"
 
 using namespace WallpaperEngine;
@@ -20,16 +22,16 @@ namespace WallpaperEngine::Render::Objects::Effects
 {
     class CPass;
 
-    class CMaterial
+    class CMaterial : public Helpers::CContextAware
     {
         friend class CPass;
     public:
         CMaterial (const Render::Objects::CEffect* effect, const Core::Objects::Images::CMaterial* material);
 
-        const std::vector<CPass*>& getPasses () const;
-        CImage* getImage () const;
-        const Core::Objects::Images::CMaterial* getMaterial () const;
-        const CEffect* getEffect () const;
+        [[nodiscard]] const std::vector<CPass*>& getPasses () const;
+        [[nodiscard]] CImage* getImage () const;
+        [[nodiscard]] const Core::Objects::Images::CMaterial* getMaterial () const;
+        [[nodiscard]] const CEffect* getEffect () const;
 
     private:
         void generatePasses ();

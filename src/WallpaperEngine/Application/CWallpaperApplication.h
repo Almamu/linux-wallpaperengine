@@ -8,7 +8,7 @@
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
 
 namespace WallpaperEngine::Application
 {

@@ -1,6 +1,9 @@
-#include "COpenGLDriver.h"
+#include "CX11OpenGLDriver.h"
 #include "common.h"
 #include <FreeImage.h>
+
+#define GLFW_EXPOSE_NATIVE_X11
+#include <GLFW/glfw3native.h>
 
 using namespace WallpaperEngine::Render::Drivers;
 
@@ -9,7 +12,7 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason)
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-COpenGLDriver::COpenGLDriver (const char* windowTitle) :
+CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle) :
     m_frameCounter (0)
 {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
@@ -48,44 +51,49 @@ COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     FreeImage_Initialise (TRUE);
 }
 
-COpenGLDriver::~COpenGLDriver ()
+CX11OpenGLDriver::~CX11OpenGLDriver ()
 {
     glfwTerminate ();
     FreeImage_DeInitialise();
 }
 
-float COpenGLDriver::getRenderTime () const
+void* CX11OpenGLDriver::getWindowHandle () const
+{
+    return reinterpret_cast <void*> (glfwGetX11Window (this->m_window));
+}
+
+float CX11OpenGLDriver::getRenderTime () const
 {
     return (float) glfwGetTime ();
 }
 
-bool COpenGLDriver::closeRequested ()
+bool CX11OpenGLDriver::closeRequested ()
 {
     return glfwWindowShouldClose (this->m_window);
 }
 
-void COpenGLDriver::resizeWindow (glm::ivec2 size)
+void CX11OpenGLDriver::resizeWindow (glm::ivec2 size)
 {
     glfwSetWindowSize (this->m_window, size.x, size.y);
 }
 
-void COpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
+void CX11OpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
 {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
-void COpenGLDriver::showWindow ()
+void CX11OpenGLDriver::showWindow ()
 {
     glfwShowWindow (this->m_window);
 }
 
-void COpenGLDriver::hideWindow ()
+void CX11OpenGLDriver::hideWindow ()
 {
     glfwHideWindow (this->m_window);
 }
 
-glm::ivec2 COpenGLDriver::getFramebufferSize () const
+glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const
 {
     glm::ivec2 size;
 
@@ -94,7 +102,7 @@ glm::ivec2 COpenGLDriver::getFramebufferSize () const
     return size;
 }
 
-void COpenGLDriver::swapBuffers ()
+void CX11OpenGLDriver::swapBuffers ()
 {
     // do buffer swapping first
     glfwSwapBuffers (this->m_window);
@@ -104,12 +112,12 @@ void COpenGLDriver::swapBuffers ()
     this->m_frameCounter ++;
 }
 
-uint32_t COpenGLDriver::getFrameCounter () const
+uint32_t CX11OpenGLDriver::getFrameCounter () const
 {
     return this->m_frameCounter;
 }
 
-GLFWwindow* COpenGLDriver::getWindow ()
+GLFWwindow* CX11OpenGLDriver::getWindow ()
 {
     return this->m_window;
 }

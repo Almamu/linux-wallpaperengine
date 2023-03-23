@@ -6,6 +6,7 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 CObject::CObject(CScene* scene, std::string type, Core::CObject *object) :
+    Helpers::CContextAware (scene),
     m_scene (scene),
     m_object (object),
     m_type (std::move (type))

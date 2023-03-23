@@ -7,6 +7,11 @@ namespace WallpaperEngine::Render::Helpers
     {
     }
 
+    CContextAware::CContextAware (CContextAware* from) :
+        CContextAware (from->getContext ())
+    {
+    }
+
     CContextAware::CContextAware (CRenderContext& context) :
         m_context (context)
     {

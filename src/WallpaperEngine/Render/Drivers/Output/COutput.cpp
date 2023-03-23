@@ -2,8 +2,9 @@
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
-COutput::COutput (CApplicationContext& context) :
-    m_context (context)
+COutput::COutput (CApplicationContext& context, Detectors::CFullScreenDetector& detector) :
+    m_context (context),
+    m_detector (detector)
 {
 }
 

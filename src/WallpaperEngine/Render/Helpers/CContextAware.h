@@ -17,6 +17,10 @@ namespace WallpaperEngine::Render
              * @param from Object to get the render context from
              */
             CContextAware (CContextAware& from);
+            /**
+             * @param from Object to get the render context from
+             */
+            explicit CContextAware (CContextAware* from);
             explicit CContextAware (CRenderContext& context);
 
             /**

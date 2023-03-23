@@ -3,6 +3,7 @@
 #include <string>
 
 #include "WallpaperEngine/Core/CObject.h"
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 #include "CScene.h"
 
@@ -10,7 +11,7 @@ namespace WallpaperEngine::Render
 {
     class CScene;
 
-    class CObject
+    class CObject : public Helpers::CContextAware
     {
     public:
         template<class T> const T* as () const { assert (is<T>()); return (const T*) this; }

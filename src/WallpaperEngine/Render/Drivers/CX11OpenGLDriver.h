@@ -14,12 +14,13 @@ namespace WallpaperEngine::Render::Drivers
 {
     using namespace WallpaperEngine::Application;
 
-    class COpenGLDriver : public CVideoDriver
+    class CX11OpenGLDriver : public CVideoDriver
     {
     public:
-        explicit COpenGLDriver (const char* windowTitle);
-        ~COpenGLDriver();
+        explicit CX11OpenGLDriver (const char* windowTitle);
+        ~CX11OpenGLDriver();
 
+        void* getWindowHandle () const;
         float getRenderTime () const override;
         bool closeRequested () override;
         void resizeWindow (glm::ivec2 size) override;

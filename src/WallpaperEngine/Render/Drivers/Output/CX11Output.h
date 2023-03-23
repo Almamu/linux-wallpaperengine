@@ -14,7 +14,7 @@ namespace WallpaperEngine::Render::Drivers::Output
     class CX11Output : public COutput
     {
     public:
-        CX11Output (CApplicationContext& context, CVideoDriver& driver);
+        CX11Output (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector);
         ~CX11Output ();
 
         void reset () override;

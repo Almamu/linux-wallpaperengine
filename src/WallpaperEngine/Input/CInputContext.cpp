@@ -1,10 +1,10 @@
 #include "CInputContext.h"
-#include "WallpaperEngine/Render/Drivers/COpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
 
 using namespace WallpaperEngine::Input;
 using namespace WallpaperEngine::Render::Drivers;
 
-CInputContext::CInputContext (COpenGLDriver& videoDriver) :
+CInputContext::CInputContext (CX11OpenGLDriver& videoDriver) :
     m_mouse (videoDriver.getWindow ())
 {
 }

@@ -9,6 +9,10 @@ namespace WallpaperEngine::Render::Drivers
     {
     public:
         /**
+         * @return The window handle used by this video driver
+         */
+        virtual void* getWindowHandle () const = 0;
+        /**
          * @return The time that has passed since the driver started
          */
         virtual float getRenderTime () const = 0;

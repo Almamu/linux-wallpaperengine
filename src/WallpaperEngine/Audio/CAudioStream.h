@@ -46,7 +46,7 @@ namespace WallpaperEngine::Audio
         /**
          * @return The audio context in use for this audio stream
          */
-        CAudioContext& getAudioContext () const;
+        [[nodiscard]] CAudioContext& getAudioContext () const;
 
         /**
          * @return to the codec context, which provides information on the audio stream's format
