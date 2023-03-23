@@ -37,7 +37,7 @@ void CControlPoint::setFlags (uint32_t flags)
 }
 uint32_t CControlPoint::getId () const
 {
-	return this->m_id;
+    return this->m_id;
 }
 
 const glm::vec3& CControlPoint::getOffset () const

@@ -24,8 +24,8 @@ CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data)
     double defaultValue;
     std::string source;
     std::string expectedValue;
-	bool hasCondition = false;
-	bool hasSource = false;
+    bool hasCondition = false;
+    bool hasSource = false;
 
     if (data.is_object ())
     {

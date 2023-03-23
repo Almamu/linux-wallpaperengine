@@ -29,7 +29,7 @@ int main (int argc, char* argv[])
     WallpaperEngine::Application::CWallpaperApplication app (appContext);
 
     // halt if the list-properties option was specified
-    if (appContext.onlyListProperties)
+    if (appContext.general.onlyListProperties)
         return 0;
 
     appPointer = &app;

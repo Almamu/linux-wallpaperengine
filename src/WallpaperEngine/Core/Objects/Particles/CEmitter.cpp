@@ -13,24 +13,24 @@ CEmitter* CEmitter::fromJSON (json data)
     auto rate_it = jsonFindRequired (data, "rate", "Particle emitter must have a rate");
 
     return new CEmitter (
-            WallpaperEngine::Core::aToVector3 (*directions_it),
-            *distancemax_it,
-            *distancemin_it,
-            (id_it == data.end () ? 0 : (uint32_t) (*id_it)),
-            *name_it,
-            WallpaperEngine::Core::aToVector3 (*origin_it),
-            *rate_it
+        WallpaperEngine::Core::aToVector3 (*directions_it),
+        *distancemax_it,
+        *distancemin_it,
+        (id_it == data.end () ? 0 : (uint32_t) (*id_it)),
+        *name_it,
+        WallpaperEngine::Core::aToVector3 (*origin_it),
+        *rate_it
     );
 }
 
 CEmitter::CEmitter (
-        const glm::vec3& directions,
-        uint32_t distancemax,
-        uint32_t distancemin,
-        uint32_t id,
-        std::string name,
-        const glm::vec3& origin,
-        double rate):
+    const glm::vec3& directions,
+    uint32_t distancemax,
+    uint32_t distancemin,
+    uint32_t id,
+    std::string name,
+    const glm::vec3& origin,
+    double rate):
     m_directions (directions),
     m_distancemax (distancemax),
     m_distancemin (distancemin),
@@ -43,7 +43,7 @@ CEmitter::CEmitter (
 
 uint32_t CEmitter::getId () const
 {
-	return this->m_id;
+    return this->m_id;
 }
 
 const std::string& CEmitter::getName () const

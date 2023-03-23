@@ -11,9 +11,9 @@ CSizeRandom* CSizeRandom::fromJSON (json data, uint32_t id)
 }
 
 CSizeRandom::CSizeRandom (uint32_t id, uint32_t min, uint32_t max) :
-        CInitializer (id, "sizerandom"),
-        m_min (min),
-        m_max (max)
+    CInitializer (id, "sizerandom"),
+    m_min (min),
+    m_max (max)
 {
 }
 

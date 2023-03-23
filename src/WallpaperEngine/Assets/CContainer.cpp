@@ -9,58 +9,58 @@
 
 using namespace WallpaperEngine::Assets;
 
-std::filesystem::path CContainer::resolveRealFile (std::string filename) const
+std::filesystem::path CContainer::resolveRealFile (const std::string& filename) const
 {
-	throw CAssetLoadException (filename, "Cannot resolve physical file in this container");
+    throw CAssetLoadException (filename, "Cannot resolve physical file in this container");
 }
 
-const ITexture* CContainer::readTexture (std::string filename) const
+const ITexture* CContainer::readTexture (const std::string& filename) const
 {
     // get the texture's filename (usually .tex)
-    filename = "materials/" + filename + ".tex";
+    std::string texture = "materials/" + filename + ".tex";
 
-    const void* textureContents = this->readFile (filename, nullptr);
+    const void* textureContents = this->readFile (texture, nullptr);
 
     ITexture* result = new CTexture (textureContents);
 
 #if !NDEBUG
-        glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, filename.c_str ());
+    glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, texture.c_str ());
 #endif /* NDEBUG */
 
     return result;
 }
 std::string CContainer::readShader (const std::string& filename) const
 {
-	std::filesystem::path shader = filename;
-	auto it = shader.begin ();
+    std::filesystem::path shader = filename;
+    auto it = shader.begin ();
 
-	// detect workshop shaders and check if there's a
-	if (*it++ == "workshop")
-	{
-		std::filesystem::path workshopId = *it++;
+    // detect workshop shaders and check if there's a
+    if (*it++ == "workshop")
+    {
+        std::filesystem::path workshopId = *it++;
 
-		if (++it != shader.end ())
-		{
-			std::filesystem::path shaderfile = *it;
+        if (++it != shader.end ())
+        {
+            std::filesystem::path shaderfile = *it;
 
-			try
-			{
-				shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
-				// replace the old path with the new one
-				std::string contents = this->readFileAsString (shader);
+            try
+            {
+                shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
+                // replace the old path with the new one
+                std::string contents = this->readFileAsString (shader);
 
-				sLog.out ("Replaced ", filename, " with compat ", shader);
+                sLog.out ("Replaced ", filename, " with compat ", shader);
 
-				return contents;
-			}
-			catch (CAssetLoadException&)
-			{
+                return contents;
+            }
+            catch (CAssetLoadException&)
+            {
 
-			}
-		}
-	}
+            }
+        }
+    }
 
-	return this->readFileAsString ("shaders/" + filename);
+    return this->readFileAsString ("shaders/" + filename);
 }
 
 std::string CContainer::readVertexShader (const std::string& filename) const
@@ -78,7 +78,7 @@ std::string CContainer::readIncludeShader (const std::string& filename) const
     return this->readFileAsString ("shaders/" + filename);
 }
 
-std::string CContainer::readFileAsString (std::string filename) const
+std::string CContainer::readFileAsString (const std::string& filename) const
 {
     uint32_t length = 0;
 

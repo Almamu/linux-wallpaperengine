@@ -105,12 +105,15 @@ add_executable(
     src/WallpaperEngine/Render/Shaders/Compiler.h
     src/WallpaperEngine/Render/Shaders/Compiler.cpp
 
+    src/WallpaperEngine/Render/Helpers/CContextAware.cpp
+    src/WallpaperEngine/Render/Helpers/CContextAware.h
+
     src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutput.h
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
-    src/WallpaperEngine/Render/Drivers/Output/CWindowOutput.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CWindowOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
     src/WallpaperEngine/Render/Drivers/COpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/COpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
@@ -119,6 +122,9 @@ add_executable(
     src/WallpaperEngine/Render/CRenderContext.cpp
     src/WallpaperEngine/Render/CTextureCache.h
     src/WallpaperEngine/Render/CTextureCache.cpp
+
+    src/WallpaperEngine/Render/Helpers/CContextAware.cpp
+    src/WallpaperEngine/Render/Helpers/CContextAware.h
 
     src/WallpaperEngine/Render/CWallpaper.h
     src/WallpaperEngine/Render/CWallpaper.cpp

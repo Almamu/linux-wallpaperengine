@@ -28,8 +28,8 @@ int audio_read_thread (void* arg)
         // give the cpu some time to play the queued frames if there's enough info there
         if (
             stream->getQueueSize () >= MAX_QUEUE_SIZE ||
-            (stream->getQueuePacketCount () > MIN_FRAMES &&
-             (av_q2d (stream->getTimeBase ()) * stream->getQueueDuration () > 1.0))
+                (stream->getQueuePacketCount () > MIN_FRAMES &&
+                    (av_q2d (stream->getTimeBase ()) * stream->getQueueDuration () > 1.0))
             )
         {
             SDL_LockMutex (waitMutex);
@@ -328,7 +328,7 @@ void CAudioStream::dequeuePacket (AVPacket* output)
 #if FF_API_FIFO_OLD_API
         int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
 #else
-		int ret = -1;
+        int ret = -1;
 
         if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
             ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
@@ -450,7 +450,7 @@ void CAudioStream::stop ()
 
 int CAudioStream::resampleAudio (AVFrame * decoded_audio_frame, uint8_t * out_buf)
 {
-	int out_linesize = 0;
+    int out_linesize = 0;
     int ret;
     int out_nb_channels;
     int in_nb_samples;
@@ -515,7 +515,7 @@ int CAudioStream::resampleAudio (AVFrame * decoded_audio_frame, uint8_t * out_bu
     // retrieve output samples number taking into account the progressive delay
     out_nb_samples = av_rescale_rnd(
         swr_get_delay(this->m_swrctx, this->getContext ()->sample_rate) + in_nb_samples,
-		this->m_audioContext.getSampleRate (),
+        this->m_audioContext.getSampleRate (),
         this->getContext ()->sample_rate,
         AV_ROUND_UP
     );
@@ -634,7 +634,7 @@ int CAudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize)
             if (ret < 0 && ret != AVERROR (EAGAIN))
                 return -1;
 
-			len1 = pkt->size;
+            len1 = pkt->size;
 
             if (len1 < 0)
             {

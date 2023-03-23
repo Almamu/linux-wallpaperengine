@@ -8,6 +8,9 @@
 
 namespace WallpaperEngine::Assets
 {
+    /**
+     * Virtual container implementation, provides virtual files for the backgrounds to use
+     */
     class CVirtualContainer : public CContainer
     {
     public:
@@ -30,10 +33,11 @@ namespace WallpaperEngine::Assets
          * @param contents
          */
         void add (const std::string& filename, const std::string& contents);
-
-        const void* readFile (std::string filename, uint32_t* length) const override;
+        /** @inheritdoc */
+        const void* readFile (const std::string& filename, uint32_t* length) const override;
 
     private:
+        /** The recorded files in this virtual container */
         std::map <std::string, CFileEntry> m_virtualFiles;
     };
 }

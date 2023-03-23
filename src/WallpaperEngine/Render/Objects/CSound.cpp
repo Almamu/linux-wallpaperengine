@@ -10,8 +10,8 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
     CObject (scene, Type, sound),
     m_sound (sound)
 {
-	if (g_AudioEnabled)
-	    this->load ();
+    if (g_AudioEnabled)
+        this->load ();
 }
 
 void CSound::load ()

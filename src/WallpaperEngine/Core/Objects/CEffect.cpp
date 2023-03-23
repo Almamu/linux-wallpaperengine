@@ -21,12 +21,12 @@ using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CEffect::CEffect (
-        std::string name,
-        std::string description,
-        std::string group,
-        std::string preview,
-        Core::CObject* object,
-        CUserSettingBoolean* visible):
+    std::string name,
+    std::string description,
+    std::string group,
+    std::string preview,
+    CObject* object,
+    CUserSettingBoolean* visible):
     m_name (std::move(name)),
     m_description (std::move(description)),
     m_group (std::move(group)),
@@ -36,7 +36,7 @@ CEffect::CEffect (
 {
 }
 
-CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, Core::CObject* object, CContainer* container)
+CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* object, CContainer* container)
 {
     auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");

@@ -40,137 +40,137 @@ int CustomXIOErrorHandler (Display* dsp)
 }
 
 CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) :
-	COutput (context),
-	m_driver (driver)
+    COutput (context),
+    m_driver (driver)
 {
-	// do not use previous handler, it might stop the app under weird circumstances
-	XSetErrorHandler (CustomXErrorHandler);
-	XSetIOErrorHandler (CustomXIOErrorHandler);
+    // do not use previous handler, it might stop the app under weird circumstances
+    XSetErrorHandler (CustomXErrorHandler);
+    XSetIOErrorHandler (CustomXIOErrorHandler);
 
-	this->loadScreenInfo ();
+    this->loadScreenInfo ();
 }
 
 CX11Output::~CX11Output ()
 {
-	this->free ();
+    this->free ();
 }
 
 void CX11Output::reset ()
 {
-	// first free whatever we have right now
-	this->free ();
-	// re-load screen info
-	this->loadScreenInfo ();
+    // first free whatever we have right now
+    this->free ();
+    // re-load screen info
+    this->loadScreenInfo ();
 }
 
 void CX11Output::free ()
 {
-	// free all the resources we've got
-	XDestroyImage (this->m_image);
-	XFreeGC (this->m_display, this->m_gc);
-	XFreePixmap (this->m_display, this->m_pixmap);
-	delete this->m_imageData;
-	XCloseDisplay (this->m_display);
+    // free all the resources we've got
+    XDestroyImage (this->m_image);
+    XFreeGC (this->m_display, this->m_gc);
+    XFreePixmap (this->m_display, this->m_pixmap);
+    delete this->m_imageData;
+    XCloseDisplay (this->m_display);
 }
 
 void* CX11Output::getImageBuffer () const
 {
-	return this->m_imageData;
+    return this->m_imageData;
 }
 
 bool CX11Output::renderVFlip () const
 {
-	return false;
+    return false;
 }
 
 bool CX11Output::renderMultiple () const
 {
-	return this->m_viewports.size () > 1;
+    return this->m_viewports.size () > 1;
 }
 
 bool CX11Output::haveImageBuffer () const
 {
-	return true;
+    return true;
 }
 
 void CX11Output::loadScreenInfo ()
 {
-	// reset the viewports
-	this->m_viewports.clear ();
+    // reset the viewports
+    this->m_viewports.clear ();
 
-	this->m_display = XOpenDisplay (nullptr);
+    this->m_display = XOpenDisplay (nullptr);
     // set the error handling to try and recover from X disconnections
 #ifdef HAVE_XSETIOERROREXITHANDLER
     XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
 #endif /* HAVE_XSETIOERROREXITHANDLER */
 
-	int xrandr_result, xrandr_error;
+    int xrandr_result, xrandr_error;
 
-	if (!XRRQueryExtension (this->m_display, &xrandr_result, &xrandr_error))
-	{
-		sLog.error ("XRandr is not present, cannot detect specified screens, running in window mode");
-		return;
-	}
+    if (!XRRQueryExtension (this->m_display, &xrandr_result, &xrandr_error))
+    {
+        sLog.error ("XRandr is not present, cannot detect specified screens, running in window mode");
+        return;
+    }
 
-	this->m_root = DefaultRootWindow (this->m_display);
-	this->m_fullWidth = DisplayWidth (this->m_display, DefaultScreen (this->m_display));
-	this->m_fullHeight = DisplayHeight (this->m_display, DefaultScreen (this->m_display));
-	XRRScreenResources* screenResources = XRRGetScreenResources (this->m_display, DefaultRootWindow (this->m_display));
+    this->m_root = DefaultRootWindow (this->m_display);
+    this->m_fullWidth = DisplayWidth (this->m_display, DefaultScreen (this->m_display));
+    this->m_fullHeight = DisplayHeight (this->m_display, DefaultScreen (this->m_display));
+    XRRScreenResources* screenResources = XRRGetScreenResources (this->m_display, DefaultRootWindow (this->m_display));
 
-	if (screenResources == nullptr)
-	{
-		sLog.error ("Cannot detect screen sizes using xrandr, running in window mode");
-		return;
-	}
+    if (screenResources == nullptr)
+    {
+        sLog.error ("Cannot detect screen sizes using xrandr, running in window mode");
+        return;
+    }
 
-	for (int i = 0; i < screenResources->noutput; i ++)
-	{
-		XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs [i]);
+    for (int i = 0; i < screenResources->noutput; i ++)
+    {
+        XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs [i]);
 
-		// screen not in use, ignore it
-		if (info == nullptr || info->connection != RR_Connected)
-			continue;
+        // screen not in use, ignore it
+        if (info == nullptr || info->connection != RR_Connected)
+            continue;
 
-		XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
+        XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
 
-		// add the screen to the list of screens
-		this->m_screens.push_back (
-			{
-				{crtc->x, crtc->y, crtc->width, crtc->height},
-				info->name
-			}
-		);
+        // add the screen to the list of screens
+        this->m_screens.push_back (
+            {
+                {crtc->x, crtc->y, crtc->width, crtc->height},
+                info->name
+            }
+        );
 
-		// only keep info of registered screens
-		if (this->m_context.screenSettings.find (info->name) != this->m_context.screenSettings.end ())
-		{
-			sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
+        // only keep info of registered screens
+        if (this->m_context.general.screenBackgrounds.find (info->name) != this->m_context.general.screenBackgrounds.end ())
+        {
+            sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
 
-			this->m_viewports[info->name] =
-			{
-				{crtc->x, crtc->y, crtc->width, crtc->height},
-				info->name
-			};
-		}
+            this->m_viewports[info->name] =
+                {
+                    {crtc->x, crtc->y, crtc->width, crtc->height},
+                    info->name
+                };
+        }
 
-		XRRFreeCrtcInfo (crtc);
-	}
+        XRRFreeCrtcInfo (crtc);
+    }
 
-	XRRFreeScreenResources (screenResources);
+    XRRFreeScreenResources (screenResources);
 
-	// create pixmap so we can draw things in there
-	this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
-	this->m_gc = XCreateGC (this->m_display, this->m_pixmap, 0, nullptr);
-	// pre-fill it with black
-	XFillRectangle (this->m_display, this->m_pixmap, this->m_gc, 0, 0, this->m_fullWidth, this->m_fullHeight);
-	// set the window background as our pixmap
-	XSetWindowBackgroundPixmap (this->m_display, this->m_root, this->m_pixmap);
-	// allocate space for the image's data
-	this->m_imageData = new char [this->m_fullWidth * this->m_fullHeight * 4];
-	// create an image so we can copy it over
-	this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth, this->m_fullHeight, 32, 0);
-	// setup driver's render changing the window's size
-	this->m_driver.resizeWindow ({this->m_fullWidth, this->m_fullHeight});
+    // create pixmap so we can draw things in there
+    this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
+    this->m_gc = XCreateGC (this->m_display, this->m_pixmap, 0, nullptr);
+    // pre-fill it with black
+    XFillRectangle (this->m_display, this->m_pixmap, this->m_gc, 0, 0, this->m_fullWidth, this->m_fullHeight);
+    // set the window background as our pixmap
+    XSetWindowBackgroundPixmap (this->m_display, this->m_root, this->m_pixmap);
+    // allocate space for the image's data
+    this->m_imageData = new char [this->m_fullWidth * this->m_fullHeight * 4];
+    // create an image so we can copy it over
+    this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth, this->m_fullHeight, 32, 0);
+    // setup driver's render changing the window's size
+    this->m_driver.resizeWindow ({this->m_fullWidth, this->m_fullHeight});
 }
 
 void CX11Output::updateRender () const
@@ -189,46 +189,46 @@ void CX11Output::updateRender () const
     XClearWindow(this->m_display, this->m_root);
     XFlush(this->m_display);
 
-	// stop rendering if anything is fullscreen
-	bool isFullscreen = false;
-	XWindowAttributes attribs;
-	Window _;
-	Window* children;
-	unsigned int nchildren;
+    // stop rendering if anything is fullscreen
+    bool isFullscreen = false;
+    XWindowAttributes attribs;
+    Window _;
+    Window* children;
+    unsigned int nchildren;
 
-	do
-	{
-		isFullscreen = false;
+    do
+    {
+        isFullscreen = false;
 
-		if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
-			return;
+        if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
+            return;
 
-		for (int i = 0; i < nchildren; i++)
-		{
-			if (!XGetWindowAttributes (this->m_display, children [i], &attribs))
-				continue;
+        for (int i = 0; i < nchildren; i++)
+        {
+            if (!XGetWindowAttributes (this->m_display, children [i], &attribs))
+                continue;
 
-			if (attribs.map_state != IsViewable)
-				continue;
+            if (attribs.map_state != IsViewable)
+                continue;
 
-			// compare width and height with the different screens we have
-			for (const auto& screen : this->m_screens)
-			{
-				if (
-					attribs.x == screen.viewport.x && attribs.y == screen.viewport.y &&
-					attribs.width == screen.viewport.z && attribs.height == screen.viewport.w
-				)
-				{
-					isFullscreen = true;
-					break;
-				}
-			}
-		}
+            // compare width and height with the different screens we have
+            for (const auto& screen : this->m_screens)
+            {
+                if (
+                    attribs.x == screen.viewport.x && attribs.y == screen.viewport.y &&
+                        attribs.width == screen.viewport.z && attribs.height == screen.viewport.w
+                    )
+                {
+                    isFullscreen = true;
+                    break;
+                }
+            }
+        }
 
-		XFree (children);
+        XFree (children);
 
-		// give the cpu some time to check again later
-		usleep (FULLSCREEN_CHECK_WAIT_TIME);
-	}
-	while (isFullscreen && g_KeepRunning);
+        // give the cpu some time to check again later
+        usleep (FULLSCREEN_CHECK_WAIT_TIME);
+    }
+    while (isFullscreen && g_KeepRunning);
 }

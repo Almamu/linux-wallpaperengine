@@ -1,14 +1,19 @@
 #pragma once
 
-#include <string>
-
 #include "WallpaperEngine/Core/Core.h"
+
 #include <nlohmann/json.hpp>
+#include <string>
 
 namespace WallpaperEngine::Core::Objects::Effects
 {
     using json = nlohmann::json;
 
+    /**
+     * FBO = Frame Buffer Object
+     *
+     * Represents a framebuffer object used in objects with multiple effects or render passes
+     */
     class CFBO
     {
     public:
@@ -16,13 +21,25 @@ namespace WallpaperEngine::Core::Objects::Effects
 
         static CFBO* fromJSON (json data);
 
-        const std::string& getName () const;
-        const float& getScale () const;
-        const std::string& getFormat () const;
+        /**
+         * @return The FBO name used to identify it in the background's files
+         */
+        [[nodiscard]] const std::string& getName () const;
+        /**
+         * @return The scale factor of the FBO
+         */
+        [[nodiscard]] const float& getScale () const;
+        /**
+         * @return The FBO's format for the render
+         */
+        [[nodiscard]] const std::string& getFormat () const;
 
     private:
+        /** The name of the FBO */
         std::string m_name;
+        /** The scale factor of the FBO */
         float m_scale;
+        /** The FBO's format for the render */
         std::string m_format;
     };
 }

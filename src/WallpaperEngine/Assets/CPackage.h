@@ -13,13 +13,17 @@
 
 namespace WallpaperEngine::Assets
 {
+    /**
+     * Package container implementation, provides access to background files that are stored
+     * inside the WallpaperEngine's pkg format
+     */
     class CPackage : public CContainer
     {
     public:
         explicit CPackage (std::filesystem::path path);
         ~CPackage ();
 
-        const void* readFile (std::string filename, uint32_t* length) const override;
+        [[nodiscard]] const void* readFile (const std::string& filename, uint32_t* length) const override;
 
     protected:
         /**
@@ -59,7 +63,9 @@ namespace WallpaperEngine::Assets
         uint32_t readInteger (FILE* fp);
 
     private:
+        /** The path to the package file */
         std::filesystem::path m_path;
+        /** Contents of the package file */
         std::map <std::string, CFileEntry> m_contents;
     };
 }

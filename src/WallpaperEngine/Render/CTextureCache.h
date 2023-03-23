@@ -5,17 +5,23 @@
 
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render
 {
+    namespace Helpers
+    {
+        class CContextAware;
+    }
+
     class CRenderContext;
 
-    class CTextureCache
+    class CTextureCache : Helpers::CContextAware
     {
     public:
-        CTextureCache (CRenderContext& context);
+        explicit CTextureCache (CRenderContext& context);
         ~CTextureCache ();
 
         /**
@@ -33,10 +39,10 @@ namespace WallpaperEngine::Render
          * @param name
          * @param texture
          */
-        void store (std::string name, const ITexture* texture);
+        void store (const std::string& name, const ITexture* texture);
 
     private:
-        CRenderContext& m_context;
+        /** Cached textures */
         std::map<std::string, const ITexture*> m_textureCache;
     };
 }

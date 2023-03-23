@@ -1,24 +1,16 @@
 #pragma once
 
-#include <map>
-#include <string>
-#include <glm/vec4.hpp>
-
-#include <X11/Xlib.h>
-
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "COutput.h"
 
 namespace WallpaperEngine::Render::Drivers::Output
 {
-    class CX11Output : public COutput
+    class CGLFWWindowOutput : public COutput
     {
     public:
-        CX11Output (CApplicationContext& context, CVideoDriver& driver);
-        ~CX11Output ();
+        CGLFWWindowOutput (CApplicationContext& context, CVideoDriver& driver);
 
         void reset () override;
-
         bool renderVFlip () const override;
         bool renderMultiple () const override;
         bool haveImageBuffer () const override;
@@ -26,16 +18,8 @@ namespace WallpaperEngine::Render::Drivers::Output
         void updateRender () const override;
 
     private:
-        void loadScreenInfo ();
-        void free ();
+        void repositionWindow ();
 
-        Display* m_display;
-        Pixmap m_pixmap;
-        Window m_root;
-        GC m_gc;
-        char* m_imageData;
-        XImage* m_image;
         CVideoDriver& m_driver;
-        std::vector <ScreenInfo> m_screens;
     };
 }

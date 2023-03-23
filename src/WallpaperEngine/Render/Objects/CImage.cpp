@@ -7,20 +7,20 @@ using namespace WallpaperEngine::Render::Objects;
 CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_image (image),
-	m_animationTime (0.0),
-	m_material (nullptr),
-	m_colorBlendMaterial (nullptr),
+    m_animationTime (0.0),
+    m_material (nullptr),
+    m_colorBlendMaterial (nullptr),
     m_texture (nullptr),
     m_initialized (false),
-	m_sceneSpacePosition (GL_NONE),
-	m_copySpacePosition (GL_NONE),
-	m_texcoordCopy (GL_NONE),
-	m_texcoordPass (GL_NONE),
-	m_passSpacePosition (GL_NONE),
-	m_modelViewProjectionScreen (),
-	m_modelViewProjectionCopy (),
-	m_modelViewProjectionPass (glm::mat4 (1.0)),
-	m_pos ()
+    m_sceneSpacePosition (GL_NONE),
+    m_copySpacePosition (GL_NONE),
+    m_texcoordCopy (GL_NONE),
+    m_texcoordPass (GL_NONE),
+    m_passSpacePosition (GL_NONE),
+    m_modelViewProjectionScreen (),
+    m_modelViewProjectionCopy (),
+    m_modelViewProjectionPass (glm::mat4 (1.0)),
+    m_pos ()
 {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
@@ -102,7 +102,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // register both FBOs into the scene
     std::ostringstream nameA, nameB;
 
-	// TODO: determine when _rt_imageLayerComposite and _rt_imageLayerAlbedo is used
+    // TODO: determine when _rt_imageLayerComposite and _rt_imageLayerAlbedo is used
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
@@ -163,10 +163,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         width = static_cast<float> (this->getTexture ()->getRealWidth ()) / static_cast<float> (this->getTexture ()->getTextureWidth ());
         height = static_cast<float> (this->getTexture ()->getRealHeight ()) / static_cast<float> (this->getTexture ()->getTextureHeight ());
     }
-    // calculate the correct texCoord limits for the texture based on the texture screen size and real size
+        // calculate the correct texCoord limits for the texture based on the texture screen size and real size
     else if (this->getTexture () != nullptr &&
-            (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
-             this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
+        (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
+            this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
         )
     {
         uint32_t x = 1;
@@ -232,7 +232,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
     this->m_modelViewProjectionScreen =
-            this->getScene ()->getCamera ()->getProjection () *
+        this->getScene ()->getCamera ()->getProjection () *
             this->getScene ()->getCamera ()->getLookAt ();
 
     this->m_modelViewProjectionCopy = glm::ortho <float> (0.0, size.x, 0.0, size.y);
@@ -345,7 +345,7 @@ void CImage::setupPasses ()
                 // this one throws if no fbo was found
                 drawTo = this->getScene ()->findFBO (target);
         }
-        // determine if it's the last element in the list as this is a screen-copy-like process
+            // determine if it's the last element in the list as this is a screen-copy-like process
         else if (std::next (cur) == end && this->getImage ()->isVisible ())
         {
             // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
@@ -397,17 +397,17 @@ void CImage::render ()
         this->updateScreenSpacePosition ();
 
 #if !NDEBUG
-	std::string str = "Rendering ";
+    std::string str = "Rendering ";
 
-	if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
-		str += "bloom";
-	else
-	{
-		str += this->getImage ()->getName () +
-			   " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
-	}
+    if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
+        str += "bloom";
+    else
+    {
+        str += this->getImage ()->getName () +
+            " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
+    }
 
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
     auto cur = this->m_passes.begin ();
@@ -423,7 +423,7 @@ void CImage::render ()
     }
 
 #if !NDEBUG
-	glPopDebugGroup ();
+    glPopDebugGroup ();
 #endif /* DEBUG */
 }
 
@@ -442,7 +442,7 @@ void CImage::updateScreenSpacePosition ()
     this->m_modelViewProjectionScreen =
         glm::translate (
             this->getScene ()->getCamera ()->getProjection () *
-            this->getScene ()->getCamera ()->getLookAt (),
+                this->getScene ()->getCamera ()->getLookAt (),
             {x, y, 0.0f}
         );
 }

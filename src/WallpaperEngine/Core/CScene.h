@@ -45,26 +45,26 @@ namespace WallpaperEngine::Core
         friend class CWallpaper;
 
         CScene (
-				CProject& project,
-                CContainer* container,
-                Scenes::CCamera* camera,
-                glm::vec3 ambientColor,
-                CUserSettingBoolean* bloom,
-                CUserSettingFloat* bloomStrength,
-                CUserSettingFloat* bloomThreshold,
-                bool cameraFade,
-                bool cameraParallax,
-                double cameraParallaxAmount,
-                double cameraParallaxDelay,
-                double cameraParallaxMouseInfluence,
-                bool cameraPreview,
-                bool cameraShake,
-                double cameraShakeAmplitude,
-                double cameraShakeRoughness,
-                double cameraShakeSpeed,
-                CUserSettingVector3* clearColor,
-                Scenes::CProjection* orthogonalProjection,
-                glm::vec3 skylightColor
+            CProject& project,
+            CContainer* container,
+            Scenes::CCamera* camera,
+            glm::vec3 ambientColor,
+            CUserSettingBoolean* bloom,
+            CUserSettingFloat* bloomStrength,
+            CUserSettingFloat* bloomThreshold,
+            bool cameraFade,
+            bool cameraParallax,
+            double cameraParallaxAmount,
+            double cameraParallaxDelay,
+            double cameraParallaxMouseInfluence,
+            bool cameraPreview,
+            bool cameraShake,
+            double cameraShakeAmplitude,
+            double cameraShakeRoughness,
+            double cameraShakeSpeed,
+            CUserSettingVector3* clearColor,
+            Scenes::CProjection* orthogonalProjection,
+            glm::vec3 skylightColor
         );
 
         static const std::string Type;

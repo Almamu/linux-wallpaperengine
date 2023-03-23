@@ -1,6 +1,5 @@
 #pragma once
 
-#include <FreeImage.h>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -8,38 +7,141 @@
 
 #include <glm/vec4.hpp>
 
+#include <FreeImage.h>
+
 namespace WallpaperEngine::Application
 {
-    class CApplicationContext
-    {
-    public:
-        CApplicationContext (int argc, char* argv[]);
+	/**
+	 * Application information as parsed off the command line arguments
+	 */
+	class CApplicationContext
+	{
+	public:
+		CApplicationContext (int argc, char* argv[]);
 
 		enum WINDOW_MODE
 		{
+			/**
+			 * Default window mode
+			 */
 			NORMAL_WINDOW = 0,
+			/**
+			 * Draw to X11 background
+			 */
 			X11_BACKGROUND = 1,
+			/**
+			 * Explicit window mode with specified geometry
+			 */
 			EXPLICIT_WINDOW = 2,
 		};
 
-		glm::ivec4 windowGeometry;
-        std::map <std::string, std::string> screenSettings;
-        std::map <std::string, std::string> properties;
-        std::string background;
-        std::filesystem::path assets;
-        std::filesystem::path screenshot;
-        bool takeScreenshot;
-        int maximumFPS;
-        int audioVolume;
-        bool audioEnabled;
-        bool onlyListProperties;
-        FREE_IMAGE_FORMAT screenshotFormat;
-		WINDOW_MODE windowMode;
+		/**
+		 * General settings
+		 */
+		struct
+		{
+			/**
+			 * If the user requested a list of properties for the given background
+			 */
+			bool onlyListProperties;
 
-    private:
-		std::string validatePath (const std::string& path);
-        void validateAssets ();
-        void validateScreenshot ();
-        static void printHelp (const char* route);
-    };
+			/**
+			 * The path to the assets folder
+			 */
+			std::filesystem::path assets;
+			/**
+			 * Background to load (provided as the final argument) as fallback for multi-screen setups
+			 */
+			std::filesystem::path defaultBackground;
+
+			/**
+			 * The backgrounds specified for different screens
+			 */
+			std::map <std::string, std::filesystem::path> screenBackgrounds;
+			/**
+			 * Properties to change values for
+			 */
+			std::map <std::string, std::string> properties;
+		} general;
+
+		/**
+		 * Render settings
+		 */
+		struct
+		{
+			/**
+			 * The mode to run the background in
+			 */
+			WINDOW_MODE mode;
+			/**
+			 * Maximum FPS
+			 */
+			int maximumFPS;
+
+			struct
+			{
+				/**
+				 * The window size used in explicit window
+				 */
+				glm::ivec4 geometry;
+			} window;
+		} render;
+
+		/**
+		 * Audio settings
+		 */
+		struct
+		{
+			/**
+			 * If the audio system is enabled
+			 */
+			bool enabled;
+			/**
+			 * Sound volume (0-128)
+			 */
+			int volume;
+		} audio;
+
+		/**
+		 * Screenshot settings
+		 */
+		struct
+		{
+			/**
+			 * If an screenshot should be taken
+			 */
+			bool take;
+			/**
+			 * The path to where the screenshot must be saved
+			 */
+			std::filesystem::path path;
+			/**
+			 * The image format
+			 */
+			FREE_IMAGE_FORMAT format;
+		} screenshot;
+	private:
+		/**
+		 * Validates the assets folder and ensures a valid one is present
+		 */
+		void validateAssets ();
+
+		/**
+		 * Validates the screenshot settings
+		 */
+		void validateScreenshot ();
+
+		/**
+		 * Validates a background parameter and returns the real bgIdOrPath to it
+		 *
+		 * @param bgIdOrPath
+		 * @return
+		 */
+		static std::filesystem::path translateBackground (const std::string& bgIdOrPath);
+
+		/**
+		 * Prints the normal help message
+		 */
+		static void printHelp (const char* route);
+	};
 }

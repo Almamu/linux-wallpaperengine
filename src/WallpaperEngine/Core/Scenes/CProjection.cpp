@@ -3,7 +3,7 @@
 using namespace WallpaperEngine::Core::Scenes;
 
 CProjection::CProjection (uint32_t width, uint32_t height) :
-	m_isAuto (false),
+    m_isAuto (false),
     m_width (width),
     m_height (height)
 {
@@ -11,8 +11,8 @@ CProjection::CProjection (uint32_t width, uint32_t height) :
 
 CProjection::CProjection (bool isAuto) :
     m_isAuto (isAuto),
-	m_width (0),
-	m_height (0)
+    m_width (0),
+    m_height (0)
 {
 }
 

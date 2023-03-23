@@ -2,7 +2,6 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-
 CShaderConstantFloat::CShaderConstantFloat (float value) :
     CShaderConstant (Type),
     m_value (value)

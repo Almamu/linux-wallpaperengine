@@ -39,7 +39,7 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
     else
         sLog.exception ("Unsupported wallpaper type: ", type);
 
-	project->setWallpaper (wallpaper);
+    project->setWallpaper (wallpaper);
 
     if (general != content.end ())
     {
@@ -62,7 +62,7 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
 
 void CProject::setWallpaper (CWallpaper* wallpaper)
 {
-	this->m_wallpaper = wallpaper;
+    this->m_wallpaper = wallpaper;
 }
 
 CWallpaper* CProject::getWallpaper () const

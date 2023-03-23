@@ -50,7 +50,7 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
 
     // a bind named "previous" is just another way of telling it to use whatever texture there was already
     if ((*it).second->getName () == "previous")
-		return previous ?: expected;
+        return previous ?: expected;
 
     // the bind actually has a name, search the FBO in the effect and return it
     auto fbo = this->m_material->m_effect->findFBO ((*it).second->getName ());
@@ -132,7 +132,7 @@ void CPass::render ()
     if (texture->isAnimated ())
     {
         // calculate current texture and frame
-        double currentRenderTime = fmod (static_cast <double> (g_Time), this->m_material->getImage ()->getAnimationTime ());
+        double currentRenderTime = fmod (static_cast <double> (this->getMaterial ()->getImage ()->getScene ()->getContext ().getDriver ().getRenderTime ()), this->m_material->getImage ()->getAnimationTime ());
 
         for (const auto& frameCur : texture->getFrames ())
         {
@@ -247,12 +247,12 @@ void CPass::render ()
         glVertexAttribPointer (cur->id, cur->elements, cur->type, GL_FALSE, 0, nullptr);
 
 #if !NDEBUG
-		glObjectLabel (GL_BUFFER, *cur->value, -1, (
-				"Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
-				" Pass " + this->m_pass->getShader() +
-				" " + cur->name
-			).c_str ()
-		);
+        glObjectLabel (GL_BUFFER, *cur->value, -1, (
+                           "Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) +
+                               " Pass " + this->m_pass->getShader() +
+                               " " + cur->name
+                       ).c_str ()
+        );
 #endif /* DEBUG */
     }
 
@@ -430,9 +430,9 @@ void CPass::setupShaders ()
     }
 
 #if !NDEBUG
-	glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
-	glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
-	glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
+    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
+    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
+    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
 #endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted

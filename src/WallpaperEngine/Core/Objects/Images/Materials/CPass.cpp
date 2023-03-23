@@ -43,7 +43,7 @@ CPass* CPass::fromJSON (json data)
 
     if (textures_it != data.end ())
         for (const auto& cur : (*textures_it))
-			pass->insertTexture (cur.is_null () ? "" : cur);
+            pass->insertTexture (cur.is_null () ? "" : cur);
 
     if (combos_it != data.end ())
     {

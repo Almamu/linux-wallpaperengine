@@ -75,7 +75,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
 
 CSDLAudioDriver::CSDLAudioDriver () :
     m_initialized (false),
-	m_audioSpec ()
+    m_audioSpec ()
 {
     if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0)
     {
@@ -122,6 +122,7 @@ void CSDLAudioDriver::addStream (CAudioStream* stream)
 {
     this->m_streams.push_back (new CSDLAudioBuffer { stream });
 }
+
 const std::vector <CSDLAudioBuffer*>& CSDLAudioDriver::getStreams ()
 {
     return this->m_streams;

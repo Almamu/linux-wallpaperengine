@@ -1,40 +1,26 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <stdexcept>
-
-#include <GL/glew.h>
-#include <glm/vec4.hpp>
+#include "ITexture.h"
 
 #include <FreeImage.h>
+#include <GL/glew.h>
+#include <glm/vec4.hpp>
 #include <map>
-#include "ITexture.h"
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace WallpaperEngine::Assets
 {
+    /**
+     * A normal texture file in WallpaperEngine's format
+     */
     class CTexture : public ITexture
     {
-        struct TextureHeader;
-
-    public:
-        explicit CTexture (const void* fileData);
-        ~CTexture ();
-
-        const GLuint getTextureID (uint32_t imageIndex = 0) const override;
-        const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
-        const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
-        const uint32_t getRealWidth () const override;
-        const uint32_t getRealHeight () const override;
-        const TextureFormat getFormat () const override;
-        const TextureFlags getFlags () const override;
-        const glm::vec4* getResolution () const override;
-        const std::vector<TextureFrame*>& getFrames () const override;
-        const bool isAnimated () const override;
-
     private:
-        const TextureHeader* getHeader () const;
-
+        /**
+         * Different texture container versions supported
+         */
         enum ContainerVersion : int
         {
             UNKNOWN = -1,
@@ -43,6 +29,9 @@ namespace WallpaperEngine::Assets
             TEXB0001 = 1
         };
 
+        /**
+         * Different texture animation versions supported
+         */
         enum AnimatedVersion : int
         {
             TEXSUNKN = -1,
@@ -50,6 +39,9 @@ namespace WallpaperEngine::Assets
             TEXS0003 = 1,
         };
 
+        /**
+         * Texture mipmap data
+         */
         class TextureMipmap
         {
         public:
@@ -76,13 +68,16 @@ namespace WallpaperEngine::Assets
             void decompressData ();
         };
 
+        /**
+         * Texture header data
+         */
         class TextureHeader
         {
         public:
             TextureHeader ();
             ~TextureHeader ();
 
-            bool isAnimated () const;
+            [[nodiscard]] bool isAnimated () const;
 
             /** The version of the texture container */
             ContainerVersion containerVersion = ContainerVersion::UNKNOWN;
@@ -111,17 +106,70 @@ namespace WallpaperEngine::Assets
             /** Number of mipmap levels on the texture */
             uint32_t mipmapCount;
             /** List of mipmaps */
-            std::map <uint32_t, std::vector <TextureMipmap*>> images;
+            std::map<uint32_t, std::vector<TextureMipmap*>> images;
             /** List of animation frames */
-            std::vector <TextureFrame*> frames;
+            std::vector<TextureFrame*> frames;
         };
+
+    public:
+        explicit CTexture (const void* fileData);
+        ~CTexture ();
+
+        /** @inheritdoc */
+        [[nodiscard]] const GLuint getTextureID (uint32_t imageIndex = 0) const override;
+        /** @inheritdoc */
+        [[nodiscard]] const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
+        /** @inheritdoc */
+        [[nodiscard]] const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
+        /** @inheritdoc */
+        [[nodiscard]] const uint32_t getRealWidth () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const uint32_t getRealHeight () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const TextureFormat getFormat () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const TextureFlags getFlags () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const glm::vec4* getResolution () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const std::vector<TextureFrame*>& getFrames () const override;
+        /** @inheritdoc */
+        [[nodiscard]] const bool isAnimated () const override;
+
     private:
+        /**
+         * @return The texture header
+         */
+        [[nodiscard]] const TextureHeader* getHeader () const;
+
+        /**
+         * Tries to parse a header off the given data pointer
+         *
+         * @param fileData The point at which to start reading data off from
+         * @return
+         */
         static TextureHeader* parseHeader (const char* fileData);
+        /**
+         * Tries to parse an animation frame off the given data pointer
+         *
+         * @param originalFileData The point at which to start reading data off from
+         * @return
+         */
         static TextureFrame* parseAnimation (const char** originalFileData);
+        /**
+         * Tries to parse mipmap information off the given data pointer
+         *
+         * @param header The file header
+         * @param fileData The point at which to start reading data off from
+         * @return
+         */
         static TextureMipmap* parseMipmap (TextureHeader* header, const char** fileData);
 
+        /** The texture header */
         TextureHeader* m_header;
+        /** OpenGL's texture ID */
         GLuint* m_textureID;
+        /** Resolution vector of the texture */
         glm::vec4 m_resolution;
     };
 }

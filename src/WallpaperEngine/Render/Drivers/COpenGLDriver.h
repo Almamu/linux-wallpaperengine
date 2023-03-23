@@ -7,12 +7,12 @@
 
 namespace WallpaperEngine::Application
 {
-	class CApplicationContext;
+    class CApplicationContext;
 }
 
 namespace WallpaperEngine::Render::Drivers
 {
-	using namespace WallpaperEngine::Application;
+    using namespace WallpaperEngine::Application;
 
     class COpenGLDriver : public CVideoDriver
     {
@@ -20,15 +20,15 @@ namespace WallpaperEngine::Render::Drivers
         explicit COpenGLDriver (const char* windowTitle);
         ~COpenGLDriver();
 
-        float getRenderTime () override;
+        float getRenderTime () const override;
         bool closeRequested () override;
         void resizeWindow (glm::ivec2 size) override;
-		void resizeWindow (glm::ivec4 sizeandpos) override;
+        void resizeWindow (glm::ivec4 sizeandpos) override;
         void showWindow () override;
         void hideWindow () override;
-        glm::ivec2 getFramebufferSize () override;
+        glm::ivec2 getFramebufferSize () const override;
         void swapBuffers () override;
-        uint32_t getFrameCounter () override;
+        uint32_t getFrameCounter () const override;
 
         GLFWwindow* getWindow ();
 

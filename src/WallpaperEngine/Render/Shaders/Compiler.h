@@ -199,10 +199,10 @@ namespace WallpaperEngine::Render::Shaders
          * @param content The parameter configuration
          */
         void parseParameterConfiguration (const std::string& type, const std::string& name, const std::string& content);
-		/**
-		 * Applies any available patches for this shader
-		 */
-		void applyPatches ();
+        /**
+         * Applies any available patches for this shader
+         */
+        void applyPatches ();
 
         /**
          * The shader file this instance is loading
@@ -237,38 +237,38 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * The combos the shader should be generated with
          */
-         std::map <std::string, int>* m_combos;
+        std::map <std::string, int>* m_combos;
 
-         /**
-          * Combos that come from the pass' chain that should be added
-          */
-         std::map <std::string, int> m_baseCombos;
+        /**
+         * Combos that come from the pass' chain that should be added
+         */
+        std::map <std::string, int> m_baseCombos;
 
-         /**
-          * The combos the shader code has defined (shared between fragment and vertex)
-          */
-         std::map <std::string, bool>* m_foundCombos;
+        /**
+         * The combos the shader code has defined (shared between fragment and vertex)
+         */
+        std::map <std::string, bool>* m_foundCombos;
 
-         /**
-          * The list of textures the pass knows about
-          */
-         const std::vector <std::string> m_passTextures;
-         /**
-          * The shader constants with values for variables inside the shader
-          */
-         const std::map<std::string, CShaderConstant*>& m_constants;
-         /**
-          * Whether this compilation is a recursive one or not
-          */
-         bool m_recursive;
-         /**
-          * The container to load files from
-          */
-         CContainer* m_container;
-         /**
-          * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
-          */
-         std::map<int, std::string> m_textures;
-         bool m_includesProcessed = false;
+        /**
+         * The list of textures the pass knows about
+         */
+        const std::vector <std::string> m_passTextures;
+        /**
+         * The shader constants with values for variables inside the shader
+         */
+        const std::map<std::string, CShaderConstant*>& m_constants;
+        /**
+         * Whether this compilation is a recursive one or not
+         */
+        bool m_recursive;
+        /**
+         * The container to load files from
+         */
+        CContainer* m_container;
+        /**
+         * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
+         */
+        std::map<int, std::string> m_textures;
+        bool m_includesProcessed = false;
     };
 }

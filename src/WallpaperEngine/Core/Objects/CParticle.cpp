@@ -46,17 +46,17 @@ CParticle* CParticle::fromFile (
 }
 
 CParticle::CParticle (
-        CScene* scene,
-        uint32_t starttime,
-        uint32_t maxcount,
-        CUserSettingBoolean* visible,
-        uint32_t id,
-        std::string name,
-        CUserSettingVector3* origin,
-        CUserSettingVector3* scale):
-        CObject (scene, visible, id, std::move(name), Type, origin, scale, glm::vec3 ()),
-        m_starttime (starttime),
-        m_maxcount (maxcount)
+    CScene* scene,
+    uint32_t starttime,
+    uint32_t maxcount,
+    CUserSettingBoolean* visible,
+    uint32_t id,
+    std::string name,
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale):
+    CObject (scene, visible, id, std::move(name), Type, origin, scale, glm::vec3 ()),
+    m_starttime (starttime),
+    m_maxcount (maxcount)
 {
 }
 

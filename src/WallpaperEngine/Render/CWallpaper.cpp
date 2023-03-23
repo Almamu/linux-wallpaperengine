@@ -10,18 +10,18 @@
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext) :
+    CContextAware (context),
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
-    m_context (context),
     m_destFramebuffer (GL_NONE),
-	m_sceneFBO (nullptr),
-	m_texCoordBuffer (GL_NONE),
-	m_positionBuffer (GL_NONE),
-	m_shader (GL_NONE),
-	g_Texture0 (GL_NONE),
-	a_Position (GL_NONE),
-	a_TexCoord (GL_NONE),
-	m_vaoBuffer (GL_NONE),
+    m_sceneFBO (nullptr),
+    m_texCoordBuffer (GL_NONE),
+    m_positionBuffer (GL_NONE),
+    m_shader (GL_NONE),
+    g_Texture0 (GL_NONE),
+    a_Position (GL_NONE),
+    a_TexCoord (GL_NONE),
+    m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext)
 {
     // generate the VAO to stop opengl from complaining
@@ -88,7 +88,7 @@ void CWallpaper::setupShaders ()
 
     // give shader's source code to OpenGL to be compiled
     const char* sourcePointer = "#version 330\n"
-								"precision highp float;\n"
+                                "precision highp float;\n"
                                 "in vec3 a_Position;\n"
                                 "in vec2 a_TexCoord;\n"
                                 "out vec2 v_TexCoord;\n"
@@ -127,10 +127,10 @@ void CWallpaper::setupShaders ()
 
     // give shader's source code to OpenGL to be compiled
     sourcePointer = "#version 330\n"
-					"precision highp float;\n"
+                    "precision highp float;\n"
                     "uniform sampler2D g_Texture0;\n"
                     "in vec2 v_TexCoord;\n"
-					"out vec4 out_FragColor;\n"
+                    "out vec4 out_FragColor;\n"
                     "void main () {\n"
                     "out_FragColor = texture (g_Texture0, v_TexCoord);\n"
                     "}";
@@ -226,7 +226,7 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
 
     if (
         (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
-        (viewport.z > viewport.w && projectionHeight > projectionWidth)
+            (viewport.z > viewport.w && projectionHeight > projectionWidth)
         )
     {
         if (vflip)
@@ -253,7 +253,7 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
 
     if (
         (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
-        (viewport.w > viewport.z && projectionHeight > projectionWidth)
+            (viewport.w > viewport.z && projectionHeight > projectionWidth)
         )
     {
         ustart = 0.0f;
@@ -333,11 +333,6 @@ void CWallpaper::setupFramebuffers ()
         width, height,
         width, height
     );
-}
-
-CRenderContext& CWallpaper::getContext ()
-{
-    return this->m_context;
 }
 
 CAudioContext& CWallpaper::getAudioContext ()

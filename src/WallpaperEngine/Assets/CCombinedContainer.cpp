@@ -7,8 +7,8 @@
 using namespace WallpaperEngine::Assets;
 
 CCombinedContainer::CCombinedContainer () :
-	CContainer (),
-	m_containers ()
+    CContainer (),
+    m_containers ()
 {
 }
 
@@ -38,7 +38,7 @@ void CCombinedContainer::addPkg (const std::filesystem::path& path)
 }
 
 
-std::filesystem::path CCombinedContainer::resolveRealFile (std::string filename) const
+std::filesystem::path CCombinedContainer::resolveRealFile (const std::string& filename) const
 {
     for (auto cur : this->m_containers)
     {
@@ -58,7 +58,7 @@ std::filesystem::path CCombinedContainer::resolveRealFile (std::string filename)
     throw CAssetLoadException (filename, "Cannot resolve file in any of the containers");
 }
 
-const void* CCombinedContainer::readFile (std::string filename, uint32_t* length) const
+const void* CCombinedContainer::readFile (const std::string& filename, uint32_t* length) const
 {
     for (auto cur : this->m_containers)
     {

@@ -2,7 +2,6 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-
 CShaderConstantInteger::CShaderConstantInteger (int32_t value) :
     CShaderConstant (Type),
     m_value (value)

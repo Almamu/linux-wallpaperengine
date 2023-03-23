@@ -1,17 +1,20 @@
 #pragma once
 
-#include <vector>
-#include <stdexcept>
-#include <filesystem>
-
 #include "CContainer.h"
+
+#include <filesystem>
+#include <stdexcept>
+#include <vector>
 
 namespace WallpaperEngine::Assets
 {
+    /**
+     * A meta-container that allows backgrounds to have files spread across different containers
+     */
     class CCombinedContainer : public CContainer
     {
     public:
-		CCombinedContainer ();
+        CCombinedContainer ();
 
         /**
          * Adds a container to the list
@@ -19,12 +22,20 @@ namespace WallpaperEngine::Assets
          * @param container
          */
         void add (CContainer* container);
+        /**
+         * Adds the given package to the list
+         *
+         * @param path
+         */
         void addPkg (const std::filesystem::path& path);
 
-		std::filesystem::path resolveRealFile (std::string filename) const override;
-        const void* readFile (std::string filename, uint32_t* length = nullptr) const override;
+        /** @inheritdoc */
+        [[nodiscard]] std::filesystem::path resolveRealFile (const std::string& filename) const override;
+        /** @inheritdoc */
+        [[nodiscard]] const void* readFile (const std::string& filename, uint32_t* length) const override;
 
     private:
+        /** The list of containers to search files off from */
         std::vector<CContainer*> m_containers;
     };
 };

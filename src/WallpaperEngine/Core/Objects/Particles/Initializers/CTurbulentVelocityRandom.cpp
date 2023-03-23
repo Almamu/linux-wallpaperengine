@@ -36,13 +36,13 @@ CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, uint32_
 
 
 CTurbulentVelocityRandom::CTurbulentVelocityRandom (uint32_t id,
-                          double phasemax, double scale, double timescale, uint32_t speedmin, uint32_t speedmax) :
-        CInitializer (id, "turbulentvelocityrandom"),
-        m_phasemax (phasemax),
-        m_scale (scale),
-        m_timescale (timescale),
-        m_speedmin (speedmin),
-        m_speedmax (speedmax)
+    double phasemax, double scale, double timescale, uint32_t speedmin, uint32_t speedmax) :
+    CInitializer (id, "turbulentvelocityrandom"),
+    m_phasemax (phasemax),
+    m_scale (scale),
+    m_timescale (timescale),
+    m_speedmin (speedmin),
+    m_speedmax (speedmax)
 {
 }
 

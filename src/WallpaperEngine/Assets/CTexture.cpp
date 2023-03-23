@@ -8,7 +8,7 @@
 using namespace WallpaperEngine::Assets;
 
 CTexture::CTexture (const void* fileData) :
-	m_resolution ()
+    m_resolution ()
 {
     // ensure the header is parsed
     this->m_header = parseHeader (static_cast <const char*> (fileData));
@@ -62,27 +62,27 @@ CTexture::CTexture (const void* fileData) :
         // detect the image format and hand it to openGL to be used
         switch (this->m_header->format)
         {
-            case TextureFormat::DXT5:
-                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-                break;
-            case TextureFormat::DXT3:
-                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-                break;
-            case TextureFormat::DXT1:
-                internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-                break;
-            case TextureFormat::ARGB8888:
-                internalFormat = GL_RGBA8;
-                break;
-            case TextureFormat::R8:
-                internalFormat = GL_R8;
-                break;
-            case TextureFormat::RG88:
-                internalFormat = GL_RG8;
-                break;
-            default:
-                delete this->m_header;
-                sLog.exception ("Cannot determine texture format");
+        case TextureFormat::DXT5:
+            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            break;
+        case TextureFormat::DXT3:
+            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+            break;
+        case TextureFormat::DXT1:
+            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+            break;
+        case TextureFormat::ARGB8888:
+            internalFormat = GL_RGBA8;
+            break;
+        case TextureFormat::R8:
+            internalFormat = GL_R8;
+            break;
+        case TextureFormat::RG88:
+            internalFormat = GL_RG8;
+            break;
+        default:
+            delete this->m_header;
+            sLog.exception ("Cannot determine texture format");
         }
     }
 
@@ -161,39 +161,39 @@ CTexture::CTexture (const void* fileData) :
             }
             else
             {
-				if (this->m_header->format == TextureFormat::R8)
-				{
-					// red textures are 1-byte-per-pixel, so it's alignment has to be set manually
-					glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-					textureFormat = GL_RED;
-				}
-				else if (this->m_header->format == TextureFormat::RG88)
+                if (this->m_header->format == TextureFormat::R8)
+                {
+                    // red textures are 1-byte-per-pixel, so it's alignment has to be set manually
+                    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+                    textureFormat = GL_RED;
+                }
+                else if (this->m_header->format == TextureFormat::RG88)
                     textureFormat = GL_RG;
             }
 
             switch (internalFormat)
             {
-                case GL_RGBA8:
-                case GL_RG8:
-                case GL_R8:
-                    glTexImage2D (
-                        GL_TEXTURE_2D, level, internalFormat,
-                        width, height, 0,
-                        textureFormat, GL_UNSIGNED_BYTE,
-                        dataptr
-                    );
-                    break;
-                case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-                case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-                case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-                    glCompressedTexImage2D (
-                        GL_TEXTURE_2D, level, internalFormat,
-                        width, height, 0,
-                        bufferSize, dataptr
-                    );
-                    break;
-                default:
-                    sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
+            case GL_RGBA8:
+            case GL_RG8:
+            case GL_R8:
+                glTexImage2D (
+                    GL_TEXTURE_2D, level, internalFormat,
+                    width, height, 0,
+                    textureFormat, GL_UNSIGNED_BYTE,
+                    dataptr
+                );
+                break;
+            case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+            case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+            case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+                glCompressedTexImage2D (
+                    GL_TEXTURE_2D, level, internalFormat,
+                    width, height, 0,
+                    bufferSize, dataptr
+                );
+                break;
+            default:
+                sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
             }
 
             // freeimage buffer won't be used anymore, so free memory
@@ -309,14 +309,14 @@ void CTexture::TextureMipmap::decompressData ()
 }
 
 CTexture::TextureFrame::TextureFrame () :
-	frameNumber (0),
-	frametime (0.0f),
-	x (0),
-	y (0),
-	width1 (0),
-	width2 (0),
-	height1 (0),
-	height2 (0)
+    frameNumber (0),
+    frametime (0.0f),
+    x (0),
+    y (0),
+    width1 (0),
+    width2 (0),
+    height1 (0),
+    height2 (0)
 {
 }
 
@@ -324,16 +324,16 @@ CTexture::TextureFrame::~TextureFrame ()
 = default;
 
 CTexture::TextureHeader::TextureHeader () :
-	flags (NoFlags),
-	width (0),
-	height (0),
-	textureWidth (0),
-	textureHeight (0),
-	gifWidth (0),
-	gifHeight (0),
-	format (TextureFormat::UNKNOWN),
-	imageCount (0),
-	mipmapCount (0)
+    flags (NoFlags),
+    width (0),
+    height (0),
+    textureWidth (0),
+    textureHeight (0),
+    gifWidth (0),
+    gifHeight (0),
+    format (TextureFormat::UNKNOWN),
+    imageCount (0),
+    mipmapCount (0)
 {
 }
 

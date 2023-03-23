@@ -6,7 +6,7 @@ using namespace WallpaperEngine::Core;
 
 CWallpaper::CWallpaper (std::string type, CProject& project) :
     m_type (std::move(type)),
-	m_project (project)
+    m_project (project)
 {
 }
 

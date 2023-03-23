@@ -1,11 +1,10 @@
-//
-// Created by almamu on 8/8/21.
-//
-
 #pragma once
 
 namespace WallpaperEngine::Assets
 {
+    /**
+     * File cache entry to prevent hit the disk when loading the same file multiple times
+     */
     class CFileEntry
     {
     public:
@@ -13,7 +12,9 @@ namespace WallpaperEngine::Assets
             address (address),
             length (length) { }
 
+        /** File contents */
         const void* address;
+        /** File length */
         uint32_t length;
     };
 }

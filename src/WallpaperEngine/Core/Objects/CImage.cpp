@@ -23,7 +23,7 @@ CImage::CImage (
     const glm::vec3& angles,
     const glm::vec2& size,
     std::string alignment,
-                CUserSettingVector3* color,
+    CUserSettingVector3* color,
     CUserSettingFloat* alpha,
     float brightness,
     uint32_t colorBlendMode,

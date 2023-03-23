@@ -24,12 +24,12 @@ CDirectory::CDirectory (std::filesystem::path basepath) :
 CDirectory::~CDirectory ()
 = default;
 
-std::filesystem::path CDirectory::resolveRealFile (std::string filename) const
+std::filesystem::path CDirectory::resolveRealFile (const std::string& filename) const
 {
-	return std::filesystem::path (this->m_basepath) / filename;
+    return std::filesystem::path (this->m_basepath) / filename;
 }
 
-const void* CDirectory::readFile (std::string filename, uint32_t* length) const
+const void* CDirectory::readFile (const std::string& filename, uint32_t* length) const
 {
     std::filesystem::path final = std::filesystem::path (this->m_basepath) / filename;
 

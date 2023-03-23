@@ -1,24 +1,36 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
-
 #include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Core/Objects/Particles/CInitializer.h"
 
 namespace WallpaperEngine::Core::Objects::Particles::Initializers
 {
-    class CAlphaRandom : CInitializer
-    {
-    public:
-        double getMinimum () const;
-        double getMaximum () const;
-    protected:
-        friend class CInitializer;
+	/**
+	 * Initializer for particles that decides the base alpha for the particles
+	 */
+	class CAlphaRandom : CInitializer
+	{
+	public:
+		/**
+		 * @return The minimum alpha value to be used
+		 */
+		[[nodiscard]] double getMinimum () const;
+		/**
+		 * @return The maximum alpha value to be used
+		 */
+		[[nodiscard]] double getMaximum () const;
 
-        static CAlphaRandom* fromJSON (json data, uint32_t id);
+	protected:
+		friend class CInitializer;
 
-        CAlphaRandom (uint32_t id, double min, double max);
-    private:
-        double m_max;
-        double m_min;
-    };
+		static CAlphaRandom* fromJSON (json data, uint32_t id);
+
+		CAlphaRandom (uint32_t id, double min, double max);
+
+	private:
+		/** Maximum alpha */
+		double m_max;
+		/** Minimum alpha */
+		double m_min;
+	};
 }

@@ -50,13 +50,13 @@ CRotationRandom::CRotationRandom (
     double maxNumber,
     bool isMaximumVector
 ) :
-        CInitializer (id, "rotationrandom"),
-        m_minVector (minVector),
-        m_maxVector (maxVector),
-        m_minNumber (minNumber),
-        m_maxNumber (maxNumber),
-        m_isMinimumVector (isMinimumVector),
-        m_isMaximumVector (isMaximumVector)
+    CInitializer (id, "rotationrandom"),
+    m_minVector (minVector),
+    m_maxVector (maxVector),
+    m_minNumber (minNumber),
+    m_maxNumber (maxNumber),
+    m_isMinimumVector (isMinimumVector),
+    m_isMaximumVector (isMaximumVector)
 {
 }
 

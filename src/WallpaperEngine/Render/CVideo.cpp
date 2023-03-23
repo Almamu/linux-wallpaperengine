@@ -19,7 +19,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     CWallpaper (video, Type, context, audioContext),
     m_width (16),
     m_height (16),
-	m_mpvGl (nullptr)
+    m_mpvGl (nullptr)
 {
     double volume = g_AudioVolume * 100.0 / 128.0;
 
@@ -54,9 +54,9 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0)
         sLog.exception ("Failed to initialize MPV's GL context");
 
-	std::filesystem::path videopath = this->getVideo ()->getProject ().getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+    std::filesystem::path videopath = this->getVideo ()->getProject ().getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
 
-	// build the path to the video file
+    // build the path to the video file
     const char* command [] = {
         "loadfile", videopath.c_str (), nullptr
     };
@@ -102,14 +102,14 @@ void CVideo::renderFrame (glm::ivec4 viewport)
             break;
 
         // we do not care about any of the events
-		if (event->event_id == MPV_EVENT_VIDEO_RECONFIG)
-		{
-			int64_t width, height;
+        if (event->event_id == MPV_EVENT_VIDEO_RECONFIG)
+        {
+            int64_t width, height;
 
-			if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
-				mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
-				this->setSize (width, height);
-		}
+            if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
+                mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
+                this->setSize (width, height);
+        }
     }
 
     // render the next

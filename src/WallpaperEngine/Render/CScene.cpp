@@ -16,9 +16,9 @@ using namespace WallpaperEngine::Render;
 
 CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext) :
     CWallpaper (scene, Type, context, audioContext),
-	m_mousePosition (),
-	m_mousePositionLast (),
-	m_parallaxDisplacement ()
+    m_mousePosition (),
+    m_mousePositionLast (),
+    m_parallaxDisplacement ()
 {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());

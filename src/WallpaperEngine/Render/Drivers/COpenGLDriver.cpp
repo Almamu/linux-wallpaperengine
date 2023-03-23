@@ -6,13 +6,13 @@ using namespace WallpaperEngine::Render::Drivers;
 
 void CustomGLFWErrorHandler (int errorCode, const char* reason)
 {
-	sLog.error ("GLFW error ", errorCode, ": ", reason);
+    sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
 COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     m_frameCounter (0)
 {
-	glfwSetErrorCallback (CustomGLFWErrorHandler);
+    glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw
     if (glfwInit () == GLFW_FALSE)
@@ -26,7 +26,7 @@ COpenGLDriver::COpenGLDriver (const char* windowTitle) :
     glfwWindowHint (GLFW_VISIBLE, GLFW_FALSE);
 
 #if !NDEBUG
-	glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif /* DEBUG */
 
     // create window, size doesn't matter as long as we don't show it
@@ -54,7 +54,7 @@ COpenGLDriver::~COpenGLDriver ()
     FreeImage_DeInitialise();
 }
 
-float COpenGLDriver::getRenderTime ()
+float COpenGLDriver::getRenderTime () const
 {
     return (float) glfwGetTime ();
 }
@@ -71,7 +71,7 @@ void COpenGLDriver::resizeWindow (glm::ivec2 size)
 
 void COpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
 {
-	glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
+    glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
@@ -85,7 +85,7 @@ void COpenGLDriver::hideWindow ()
     glfwHideWindow (this->m_window);
 }
 
-glm::ivec2 COpenGLDriver::getFramebufferSize ()
+glm::ivec2 COpenGLDriver::getFramebufferSize () const
 {
     glm::ivec2 size;
 
@@ -104,7 +104,7 @@ void COpenGLDriver::swapBuffers ()
     this->m_frameCounter ++;
 }
 
-uint32_t COpenGLDriver::getFrameCounter ()
+uint32_t COpenGLDriver::getFrameCounter () const
 {
     return this->m_frameCounter;
 }

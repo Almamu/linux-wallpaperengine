@@ -3,23 +3,28 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Audio/CAudioContext.h"
+
 #include "WallpaperEngine/Core/CWallpaper.h"
 #include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/CVideo.h"
 
-#include "CFBO.h"
-#include "CRenderContext.h"
-#include "WallpaperEngine/Assets/CContainer.h"
-#include "WallpaperEngine/Audio/CAudioContext.h"
+#include "WallpaperEngine/Render/CRenderContext.h"
+#include "WallpaperEngine/Render/CFBO.h"
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
 
 namespace WallpaperEngine::Render
 {
-    class CRenderContext;
+    namespace Helpers
+    {
+        class CContextAware;
+    }
 
-    class CWallpaper
+    class CWallpaper : public Helpers::CContextAware
     {
     public:
         template<class T> const T* as () const { assert (is<T> ()); return (const T*) this; }
@@ -27,7 +32,6 @@ namespace WallpaperEngine::Render
 
         template<class T> bool is () { return this->m_type == T::Type; }
 
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext);
         ~CWallpaper ();
 
         /**
@@ -38,12 +42,7 @@ namespace WallpaperEngine::Render
         /**
          * @return The container to resolve files for this wallpaper
          */
-        CContainer* getContainer () const;
-
-        /**
-         * @return The current context rendering this wallpaper
-         */
-        CRenderContext& getContext ();
+        [[nodiscard]] CContainer* getContainer () const;
 
         /**
          * @return The current audio context for this wallpaper
@@ -53,11 +52,11 @@ namespace WallpaperEngine::Render
         /**
          * @return The scene's framebuffer
          */
-        virtual GLuint getWallpaperFramebuffer () const;
+        [[nodiscard]] virtual GLuint getWallpaperFramebuffer () const;
         /**
          * @return The scene's texture
          */
-        virtual GLuint getWallpaperTexture () const;
+        [[nodiscard]] virtual GLuint getWallpaperTexture () const;
         /**
          * Creates a new FBO for this wallpaper
          *
@@ -69,19 +68,19 @@ namespace WallpaperEngine::Render
         /**
          * @return The full FBO list to work with
          */
-        const std::map<std::string, CFBO*>& getFBOs () const;
+        [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;
         /**
          * Searches the FBO list for the given FBO
          *
          * @param name
          * @return
          */
-        CFBO* findFBO (const std::string& name) const;
+        [[nodiscard]] CFBO* findFBO (const std::string& name) const;
 
         /**
          * @return The main FBO of this wallpaper
          */
-        CFBO* getFBO () const;
+        [[nodiscard]] CFBO* getFBO () const;
 
         /**
          * Updates the texcoord used for drawing to the used framebuffer
@@ -98,12 +97,12 @@ namespace WallpaperEngine::Render
         /**
          * @return The width of this wallpaper
          */
-        virtual uint32_t getWidth () const = 0;
+        [[nodiscard]] virtual uint32_t getWidth () const = 0;
 
         /**
          * @return The height of this wallpaper
          */
-        virtual uint32_t getHeight () const = 0;
+        [[nodiscard]] virtual uint32_t getHeight () const = 0;
 
         /**
          * Creates a new instance of CWallpaper based on the information provided by the read backgrounds
@@ -115,6 +114,8 @@ namespace WallpaperEngine::Render
         static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext);
 
     protected:
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext);
+
         /**
          * Renders a frame of the wallpaper
          */
@@ -127,17 +128,13 @@ namespace WallpaperEngine::Render
 
         Core::CWallpaper* m_wallpaperData;
 
-        Core::CWallpaper* getWallpaperData () const;
+        [[nodiscard]] Core::CWallpaper* getWallpaperData () const;
 
-        /**
-         * The FBO used for scene output
-         */
+        /** The FBO used for scene output */
         CFBO* m_sceneFBO;
 
     private:
-        /**
-         * The texture used for the scene output
-         */
+        /** The texture used for the scene output */
         GLuint m_texCoordBuffer;
         GLuint m_positionBuffer;
         GLuint m_shader;
@@ -146,30 +143,15 @@ namespace WallpaperEngine::Render
         GLint a_Position;
         GLint a_TexCoord;
         GLuint m_vaoBuffer;
-        /**
-         * The framebuffer to draw the background to
-         */
+        /** The framebuffer to draw the background to */
         GLuint m_destFramebuffer;
-        /**
-         * Setups OpenGL's shaders for this wallpaper backbuffer
-         */
+        /** Setups OpenGL's shaders for this wallpaper backbuffer */
         void setupShaders ();
-        /**
-         * The type of background this wallpaper is (used
-         */
+        /** The type of background this wallpaper is */
         std::string m_type;
-
-        /**
-         * List of FBOs registered for this wallpaper
-         */
+        /** List of FBOs registered for this wallpaper */
         std::map<std::string, CFBO*> m_fbos;
-        /**
-         * Context that is using this wallpaper
-         */
-        CRenderContext& m_context;
-        /*
-         * Audio context that is using this wallpaper
-         */
+        /** Audio context that is using this wallpaper */
         CAudioContext& m_audioContext;
     };
 }

@@ -29,14 +29,14 @@ using namespace WallpaperEngine::Assets;
 namespace WallpaperEngine::Render::Shaders
 {
     Compiler::Compiler (
-            CContainer* container,
-            std::string filename,
-            Type type,
-            std::map <std::string, int>* combos,
-            std::map <std::string, bool>* foundCombos,
-            const std::vector <std::string>& textures,
-            const std::map<std::string, CShaderConstant*>& constants,
-            bool recursive) :
+        CContainer* container,
+        std::string filename,
+        Type type,
+        std::map <std::string, int>* combos,
+        std::map <std::string, bool>* foundCombos,
+        const std::vector <std::string>& textures,
+        const std::map<std::string, CShaderConstant*>& constants,
+        bool recursive) :
         m_combos (combos),
         m_foundCombos (foundCombos),
         m_passTextures (textures),
@@ -246,7 +246,7 @@ namespace WallpaperEngine::Render::Shaders
     void Compiler::precompile()
     {
         // TODO: SEPARATE THIS IN TWO SO THE COMBOS ARE DETECTED FIRST AND WE DO NOT REQUIRE DOUBLE COMPILATION OF THE SHADER'S SOURCE
-    #define BREAK_IF_ERROR if (this->m_error) { sLog.exception ("ERROR PRE-COMPILING SHADER.", this->m_errorInfo); }
+#define BREAK_IF_ERROR if (this->m_error) { sLog.exception ("ERROR PRE-COMPILING SHADER.", this->m_errorInfo); }
         // parse the shader and find #includes and such things and translate them to the correct name
         // also remove any #version definition to prevent errors
         std::string::const_iterator it = this->m_content.begin ();
@@ -323,21 +323,21 @@ namespace WallpaperEngine::Render::Shaders
                         // parse the parameter information
                         this->parseParameterConfiguration (type, name, configuration); BREAK_IF_ERROR
                         this->m_compiledContent += "uniform ";
-						this->m_compiledContent += type;
-						this->m_compiledContent += " ";
-						this->m_compiledContent += name;
-						this->m_compiledContent += array;
-						this->m_compiledContent += "; // ";
-						this->m_compiledContent += configuration;
+                        this->m_compiledContent += type;
+                        this->m_compiledContent += " ";
+                        this->m_compiledContent += name;
+                        this->m_compiledContent += array;
+                        this->m_compiledContent += "; // ";
+                        this->m_compiledContent += configuration;
                     }
                     else
                     {
                         this->m_compiledContent += "uniform ";
-						this->m_compiledContent += type;
-						this->m_compiledContent += " ";
-						this->m_compiledContent += name;
-						this->m_compiledContent += array;
-						this->m_compiledContent += ";";
+                        this->m_compiledContent += type;
+                        this->m_compiledContent += " ";
+                        this->m_compiledContent += name;
+                        this->m_compiledContent += array;
+                        this->m_compiledContent += ";";
                     }
                 }
                 else
@@ -506,8 +506,8 @@ namespace WallpaperEngine::Render::Shaders
                           "// ======================================================\n"
                           "precision highp float;\n"
                           "#define mul(x, y) ((y) * (x))\n"
-						  "#define max(x, y) max (y, x)\n"
-						  "#define lerp mix\n"
+                          "#define max(x, y) max (y, x)\n"
+                          "#define lerp mix\n"
                           "#define frac fract\n"
                           "#define CAST2(x) (vec2(x))\n"
                           "#define CAST3(x) (vec3(x))\n"
@@ -517,21 +517,21 @@ namespace WallpaperEngine::Render::Shaders
                           "#define texSample2D texture\n"
                           "#define texSample2DLod textureLod\n"
                           "#define atan2 atan\n"
-						  "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
+                          "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
                           "#define ddx dFdx\n"
                           "#define ddy(x) dFdy(-(x))\n"
                           "#define GLSL 1\n\n";
 
-			if (this->m_type == Type_Vertex)
-			{
-				finalCode += "#define attribute in\n"
-							 "#define varying out\n";
-			}
-			else
-			{
-				finalCode += "out vec4 out_FragColor;\n"
-							 "#define varying in\n";
-			}
+            if (this->m_type == Type_Vertex)
+            {
+                finalCode += "#define attribute in\n"
+                             "#define varying out\n";
+            }
+            else
+            {
+                finalCode += "out vec4 out_FragColor;\n"
+                             "#define varying in\n";
+            }
 
             finalCode +=  "// ======================================================\n"
                           "// Shader combo parameter definitions\n"
@@ -559,69 +559,69 @@ namespace WallpaperEngine::Render::Shaders
                 finalCode += "#define " + cur.first + " " + std::to_string (cur.second) + "\n";
             }
 
-			// define to 0 everything else found in the code
-			std::regex ifs ("#if ([A-Za-z0-9_]+)");
-			auto words_begin = std::sregex_iterator (this->m_compiledContent.begin (), this->m_compiledContent.end (), ifs);
-			auto words_end = std::sregex_iterator ();
-			std::map <std::string, bool> inserted;
+            // define to 0 everything else found in the code
+            std::regex ifs ("#if ([A-Za-z0-9_]+)");
+            auto words_begin = std::sregex_iterator (this->m_compiledContent.begin (), this->m_compiledContent.end (), ifs);
+            auto words_end = std::sregex_iterator ();
+            std::map <std::string, bool> inserted;
 
-			for (; words_begin != words_end; words_begin ++)
-			{
-				std::string define = (*words_begin).str ().substr (4);
+            for (; words_begin != words_end; words_begin ++)
+            {
+                std::string define = (*words_begin).str ().substr (4);
 
-				if (
-					this->m_foundCombos->find (define) != this->m_foundCombos->end () ||
-					this->m_baseCombos.find (define) != this->m_baseCombos.end () ||
-					inserted.find (define) != inserted.end ())
-					continue;
+                if (
+                    this->m_foundCombos->find (define) != this->m_foundCombos->end () ||
+                        this->m_baseCombos.find (define) != this->m_baseCombos.end () ||
+                        inserted.find (define) != inserted.end ())
+                    continue;
 
-				finalCode += "#define " + define + " 0\n";
+                finalCode += "#define " + define + " 0\n";
 
-				inserted.insert_or_assign (define, true);
-			}
+                inserted.insert_or_assign (define, true);
+            }
         }
 
-		// replace gl_FragColor with the equivalent
-		std::string from = "gl_FragColor";
-		std::string to = "out_FragColor";
+        // replace gl_FragColor with the equivalent
+        std::string from = "gl_FragColor";
+        std::string to = "out_FragColor";
 
-		size_t start_pos = 0;
-		while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
-			this->m_compiledContent.replace(start_pos, from.length(), to);
-			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-		}
+        size_t start_pos = 0;
+        while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+            this->m_compiledContent.replace(start_pos, from.length(), to);
+            start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+        }
 
-		// replace sample occurrences
-		from = "sample";
-		to = "_sample";
+        // replace sample occurrences
+        from = "sample";
+        to = "_sample";
 
-		start_pos = 0;
-		while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
-			// ensure that after it comes something like a space or a ; or a tab
-			std::string after = this->m_compiledContent.substr (start_pos + from.length (), 1);
+        start_pos = 0;
+        while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+            // ensure that after it comes something like a space or a ; or a tab
+            std::string after = this->m_compiledContent.substr (start_pos + from.length (), 1);
 
-			if (
-				after != " " && after != ";" && after != "\t" &&
-				after != "=" && after != "+" && after != "-" &&
-				after != "/" && after != "*" && after != "." &&
-				after != "," && after != ")")
-			{
-				start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-				continue;
-			}
+            if (
+                after != " " && after != ";" && after != "\t" &&
+                    after != "=" && after != "+" && after != "-" &&
+                    after != "/" && after != "*" && after != "." &&
+                    after != "," && after != ")")
+            {
+                start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+                continue;
+            }
 
-			this->m_compiledContent.replace(start_pos, from.length(), to);
-			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-		}
+            this->m_compiledContent.replace(start_pos, from.length(), to);
+            start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+        }
 
-		try
-		{
-			this->applyPatches ();
-		}
-		catch (CAssetLoadException&)
-		{
-			// nothing important, no patch was found
-		}
+        try
+        {
+            this->applyPatches ();
+        }
+        catch (CAssetLoadException&)
+        {
+            // nothing important, no patch was found
+        }
 
         finalCode += this->m_compiledContent;
 
@@ -633,59 +633,59 @@ namespace WallpaperEngine::Render::Shaders
 
         // store the final final code here
         this->m_compiledContent = finalCode;
-    #undef BREAK_IF_ERROR
+#undef BREAK_IF_ERROR
     }
 
-	void Compiler::applyPatches ()
-	{
-		// small patches for things, looks like the official wpengine does the same thing
-		std::filesystem::path file = this->m_file;
-		file = "patches" / file.filename ();
+    void Compiler::applyPatches ()
+    {
+        // small patches for things, looks like the official wpengine does the same thing
+        std::filesystem::path file = this->m_file;
+        file = "patches" / file.filename ();
 
-		if (this->m_type == Type_Vertex)
-			file += ".vert";
-		else if (this->m_type == Type_Pixel)
-			file += ".frag";
+        if (this->m_type == Type_Vertex)
+            file += ".vert";
+        else if (this->m_type == Type_Pixel)
+            file += ".frag";
 
-		file += ".json";
+        file += ".json";
 
-		std::string tmp = file;
-		std::string patchContents = this->m_container->readFileAsString (file);
+        std::string tmp = file;
+        std::string patchContents = this->m_container->readFileAsString (file);
 
-		json data = json::parse (patchContents);
-		auto patches = data.find ("patches");
+        json data = json::parse (patchContents);
+        auto patches = data.find ("patches");
 
-		for (auto patch : *patches)
-		{
-			auto matches = patch.find ("matches");
+        for (auto patch : *patches)
+        {
+            auto matches = patch.find ("matches");
 
-			// check for matches first, as these signal whether the patch can be applied or not
-			for (const auto& match : *matches)
-				if (this->m_compiledContent.find (match) == std::string::npos)
-					continue;
+            // check for matches first, as these signal whether the patch can be applied or not
+            for (const auto& match : *matches)
+                if (this->m_compiledContent.find (match) == std::string::npos)
+                    continue;
 
-			auto replacements = patch.find ("replacements");
+            auto replacements = patch.find ("replacements");
 
-			for (const auto& replacement : (*replacements).items ())
-			{
-				// replace gl_FragColor with the equivalent
-				std::string from = replacement.key ();
-				std::string to = replacement.value ();
+            for (const auto& replacement : (*replacements).items ())
+            {
+                // replace gl_FragColor with the equivalent
+                std::string from = replacement.key ();
+                std::string to = replacement.value ();
 
-				size_t start_pos = 0;
-				while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
-					this->m_compiledContent.replace(start_pos, from.length(), to);
-					start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-				}
-			}
-		}
-	}
+                size_t start_pos = 0;
+                while((start_pos = this->m_compiledContent.find(from, start_pos)) != std::string::npos) {
+                    this->m_compiledContent.replace(start_pos, from.length(), to);
+                    start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+                }
+            }
+        }
+    }
 
     void Compiler::parseComboConfiguration (const std::string& content, int defaultValue)
     {
         json data = json::parse (content);
         auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
-		auto type = data.find ("type");
+        auto type = data.find ("type");
         auto defvalue = data.find ("default");
 
         // add line feed just in case
@@ -701,39 +701,39 @@ namespace WallpaperEngine::Render::Shaders
         // so only define the ones that are not already defined
         if (entry == this->m_combos->end ())
         {
-			if (type != data.end () && (*type) == "audioprocessingoptions")
-			{
-				sLog.out ("Found audioprocessing value, nothing working yet");
-				this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
-			}
-			else
-			{
-				if (type != data.end ())
-					sLog.error ("Resorting to default value as type ", *type, " is unknown");
+            if (type != data.end () && (*type) == "audioprocessingoptions")
+            {
+                sLog.out ("Found audioprocessing value, nothing working yet");
+                this->m_combos->insert (std::make_pair <std::string, int> (*combo, 1));
+            }
+            else
+            {
+                if (type != data.end ())
+                    sLog.error ("Resorting to default value as type ", *type, " is unknown");
 
-				// if no combo is defined just load the default settings
-				if (defvalue == data.end ())
-				{
-					// TODO: PROPERLY SUPPORT EMPTY COMBOS
-					this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
-				}
-				else if ((*defvalue).is_number_float ())
-				{
-					sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
-				}
-				else if ((*defvalue).is_number_integer ())
-				{
-					this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
-				}
-				else if ((*defvalue).is_string ())
-				{
-					sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
-				}
-				else
-				{
-					sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
-				}
-			}
+                // if no combo is defined just load the default settings
+                if (defvalue == data.end ())
+                {
+                    // TODO: PROPERLY SUPPORT EMPTY COMBOS
+                    this->m_combos->insert (std::make_pair <std::string, int> (*combo, (int) defaultValue));
+                }
+                else if ((*defvalue).is_number_float ())
+                {
+                    sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
+                }
+                else if ((*defvalue).is_number_integer ())
+                {
+                    this->m_combos->insert (std::make_pair <std::string, int> (*combo, (*defvalue).get <int> ()));
+                }
+                else if ((*defvalue).is_string ())
+                {
+                    sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
+                }
+                else
+                {
+                    sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
+                }
+            }
         }
     }
 
@@ -879,11 +879,11 @@ namespace WallpaperEngine::Render::Shaders
     }
 
     std::vector<std::string> Compiler::sTypes =
-    {
-        "vec4", "uvec4", "ivec4", "dvec4", "bvec4",
-        "vec3", "uvec3", "ivec3", "dvec3", "bvec3",
-        "vec2", "uvec2", "ivec2", "dvec2", "bvec2",
-        "float", "sampler2D", "mat4x3", "mat4", "mat3", "uint4",
-        "void"
-    };
+        {
+            "vec4", "uvec4", "ivec4", "dvec4", "bvec4",
+            "vec3", "uvec3", "ivec3", "dvec3", "bvec3",
+            "vec2", "uvec2", "ivec2", "dvec2", "bvec2",
+            "float", "sampler2D", "mat4x3", "mat4", "mat3", "uint4",
+            "void"
+        };
 }

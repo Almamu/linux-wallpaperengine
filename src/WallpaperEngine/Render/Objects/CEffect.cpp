@@ -40,6 +40,7 @@ void CEffect::generateFBOs ()
 {
     for (const auto& cur : this->m_effect->getFbos ())
     {
+        // TODO: IS THAT DIVISION OKAY? SHOULDN'T IT BE A MULTIPLICATION? WTF?
         this->m_fbos.push_back (
             new CFBO (
                 cur->getName (),

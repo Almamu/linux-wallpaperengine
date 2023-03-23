@@ -20,14 +20,14 @@ CSound::CSound (
 }
 
 WallpaperEngine::Core::CObject* CSound::fromJSON (
-        CScene* scene,
-        json data,
-        CUserSettingBoolean* visible,
-        uint32_t id,
-        const std::string& name,
-        CUserSettingVector3* origin,
-        CUserSettingVector3* scale,
-        const glm::vec3& angles)
+    CScene* scene,
+    json data,
+    CUserSettingBoolean* visible,
+    uint32_t id,
+    const std::string& name,
+    CUserSettingVector3* origin,
+    CUserSettingVector3* scale,
+    const glm::vec3& angles)
 {
     bool repeat = false;
     // TODO: PARSE AUDIO VOLUME

@@ -22,60 +22,80 @@ namespace WallpaperEngine::Core::Objects
     using namespace WallpaperEngine::Assets;
     using namespace WallpaperEngine::Core::UserSettings;
 
+    /**
+     * Represents an image in a background
+     */
     class CImage : public CObject
     {
         friend class CObject;
     public:
         static CObject* fromJSON (
-            CScene* scene,
-            json data,
-            CContainer* container,
-            CUserSettingBoolean* visible,
-            uint32_t id,
-            std::string name,
-            CUserSettingVector3* origin,
-            CUserSettingVector3* scale,
-            const glm::vec3& angles
+            CScene* scene, json data, CContainer* container, CUserSettingBoolean* visible, uint32_t id,
+            std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles
         );
 
-        const Images::CMaterial* getMaterial () const;
-        const glm::vec2& getSize () const;
-        const std::string& getAlignment () const;
-        float getAlpha () const;
-        glm::vec3 getColor () const;
-        float getBrightness () const;
-        uint32_t getColorBlendMode () const;
-        const glm::vec2& getParallaxDepth () const;
+        /**
+         * @return The base material to use for the image
+         */
+        [[nodiscard]] const Images::CMaterial* getMaterial () const;
+        /**
+         * @return The size of the image
+         */
+        [[nodiscard]] const glm::vec2& getSize () const;
+        /**
+         * @return The type of alignment to use for image positioning
+         */
+        [[nodiscard]] const std::string& getAlignment () const;
+        /**
+         * @return The alpha value for the image's rendering
+         */
+        [[nodiscard]] float getAlpha () const;
+        /**
+         * @return The color to use for the image
+         */
+        [[nodiscard]] glm::vec3 getColor () const;
+        /**
+         * @return The brightness to use for the image
+         */
+        [[nodiscard]] float getBrightness () const;
+        /**
+         * @return The color blending mode to be used, special value for shaders
+         */
+        [[nodiscard]] uint32_t getColorBlendMode () const;
+        /**
+         * @return Parallax depth of the image
+         */
+        [[nodiscard]] const glm::vec2& getParallaxDepth () const;
 
     protected:
         CImage (
-            CScene* scene,
-            Images::CMaterial* material,
-            CUserSettingBoolean* visible,
-            uint32_t id,
-            std::string name,
-            CUserSettingVector3* origin,
-            CUserSettingVector3* scale,
-            const glm::vec3& angles,
-            const glm::vec2& size,
-            std::string alignment,
-                CUserSettingVector3* color,
-            CUserSettingFloat* alpha,
-            float brightness,
-            uint32_t colorBlendMode,
-            const glm::vec2& parallaxDepth
+            CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, uint32_t id, std::string name,
+            CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
+            std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
+            uint32_t colorBlendMode, const glm::vec2& parallaxDepth
         );
 
+        /**
+         * Type value used to differentiate the different types of objects in a background
+         */
         static const std::string Type;
 
     private:
+        /** The image's size */
         glm::vec2 m_size;
+        /** Parallax depth */
         const glm::vec2 m_parallaxDepth;
+        /** Base material for the image */
         Images::CMaterial* m_material;
+        /** What type of alignment to use for the image's position */
         std::string m_alignment;
+        /** The alpha value for the image */
         CUserSettingFloat* m_alpha;
+        /** The brightness for the image */
         float m_brightness;
+        /** The color to use for the image */
         CUserSettingVector3* m_color;
+        /** The color blending mode used for the image, special value for shaders */
         uint32_t m_colorBlendMode;
     };
 }

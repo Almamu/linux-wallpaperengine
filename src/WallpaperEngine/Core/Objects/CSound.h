@@ -9,6 +9,9 @@ namespace WallpaperEngine::Core::Objects
     using json = nlohmann::json;
     using namespace WallpaperEngine::Core::UserSettings;
 
+    /**
+     * Represents a sound played while the background is working
+     */
     class CSound : public CObject
     {
         friend class CObject;
@@ -25,9 +28,14 @@ namespace WallpaperEngine::Core::Objects
             const glm::vec3& angles
         );
 
-        void insertSound (const std::string& filename);
-        const std::vector<std::string>& getSounds () const;
-        bool isRepeat () const;
+        /**
+         * @return The list of sounds to play
+         */
+        [[nodiscard]] const std::vector<std::string>& getSounds () const;
+        /**
+         * @return If the sound should repeat or not
+         */
+        [[nodiscard]] bool isRepeat () const;
 
     protected:
         CSound (
@@ -41,9 +49,20 @@ namespace WallpaperEngine::Core::Objects
             bool repeat
         );
 
+        /**
+         * @param filename The sound to add
+         */
+        void insertSound (const std::string& filename);
+
+        /**
+         * Type value used to differentiate the different types of objects in a background
+         */
         static const std::string Type;
+
     private:
+        /** If the sounds should repeat or not */
         bool m_repeat;
+        /** The list of sounds to play */
         std::vector<std::string> m_sounds;
     };
 }

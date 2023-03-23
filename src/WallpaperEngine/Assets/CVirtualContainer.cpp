@@ -23,7 +23,7 @@ void CVirtualContainer::add (const std::string& filename, const std::string& con
     this->add (filename, copy, contents.length () + 1);
 }
 
-const void* CVirtualContainer::readFile (std::string filename, uint32_t* length) const
+const void* CVirtualContainer::readFile (const std::string& filename, uint32_t* length) const
 {
     auto cur = this->m_virtualFiles.find (filename);
 
