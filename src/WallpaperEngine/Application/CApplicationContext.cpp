@@ -25,6 +25,7 @@ struct option long_options[] = {
     { "screenshot", required_argument,   nullptr, 'c' },
     { "list-properties", no_argument,    nullptr, 'l' },
     { "set-property", required_argument, nullptr, 'o' },
+    { "noautomute", no_argument,         nullptr, 'm' },
     { nullptr, 0,                        nullptr, 0 }
 };
 
@@ -66,7 +67,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
         .audio =
         {
             .enabled = true,
-            .volume = 127,
+            .volume = 15,
+            .automute = true
         },
         .screenshot =
         {
@@ -80,7 +82,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:m", long_options, nullptr)) != -1)
     {
         switch (c)
         {
@@ -170,9 +172,12 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
         case 'c':
             this->settings.screenshot.take = true;
-                this->settings.screenshot.path = stringPathFixes (optarg);
+            this->settings.screenshot.path = stringPathFixes (optarg);
             break;
 
+        case 'm':
+            this->settings.audio.automute = false;
+            break;
         default:
             sLog.out ("Default on path parsing: ", optarg);
             break;
@@ -259,6 +264,7 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("options:");
     sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
     sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
+    sLog.out ("\t--noautomute\t\t\t\tDisables the automute when an app is playing sound");
     sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
     sLog.out ("\t--window <geometry>\tRuns in window mode, geometry has to be XxYxWxH and sets the position and size of the window");
     sLog.out ("\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low");

@@ -2,29 +2,25 @@
 
 #include <vector>
 
+#include "WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Audio/CAudioStream.h"
-
-namespace WallpaperEngine::Audio
-{
-    class CAudioStream;
-}
-
-namespace WallpaperEngine::Application
-{
-    class CApplicationContext;
-}
 
 namespace WallpaperEngine
 {
     namespace Application
     {
-
+        class CApplicationContext;
     }
 
     namespace Audio
     {
         class CAudioStream;
+
+        namespace Detectors
+        {
+            class CAudioPlayingDetector;
+        }
 
         namespace Drivers
         {
@@ -34,7 +30,7 @@ namespace WallpaperEngine
             class CAudioDriver
             {
             public:
-                explicit CAudioDriver (Application::CApplicationContext& applicationContext);
+                explicit CAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector);
 
                 /**
                  * Registers the given stream in the driver for playing
@@ -61,9 +57,14 @@ namespace WallpaperEngine
                  * @return The application context under which the audio driver is initialized
                  */
                 Application::CApplicationContext& getApplicationContext ();
+                /**
+                 * @return The audio playing detector to use to stop playing sound when something else starts playing
+                 */
+                [[nodiscard]] Detectors::CAudioPlayingDetector& getAudioDetector ();
 
             private:
                 Application::CApplicationContext& m_applicationContext;
+                Detectors::CAudioPlayingDetector& m_detector;
             };
         }
     }

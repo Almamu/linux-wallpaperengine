@@ -26,6 +26,7 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
+find_package(PulseAudio REQUIRED)
 
 include_directories(
     ${MPV_INCLUDE_DIR}
@@ -36,6 +37,7 @@ include_directories(
     ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
     ${FREEIMAGE_INCLUDE_DIR}
+    ${PULSEAUDIO_INCLUDE_DIR}
     src
     include)
 
@@ -74,6 +76,11 @@ add_executable(
 
     src/WallpaperEngine/Core/Core.h
     src/WallpaperEngine/Core/Core.cpp
+
+    src/WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.h
+    src/WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.cpp
 
     src/WallpaperEngine/Audio/Drivers/CAudioDriver.cpp
     src/WallpaperEngine/Audio/Drivers/CAudioDriver.h
@@ -266,6 +273,7 @@ target_link_libraries(linux-wallpaperengine
     ${FFMPEG_LIBRARIES}
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
+    ${PULSEAUDIO_LIBRARY}
     glfw)
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)

@@ -83,15 +83,15 @@ namespace WallpaperEngine::Render::Shaders
         /**
          * @return The list of parameters available for this shader with their default values
          */
-        const std::vector <Variables::CShaderVariable*>& getParameters () const;
+        [[nodiscard]] const std::vector <Variables::CShaderVariable*>& getParameters () const;
         /**
          * @return The list of combos available for this shader after compilation
          */
-        std::map <std::string, int>* getCombos () const;
+        [[nodiscard]] std::map <std::string, int>* getCombos () const;
         /**
          * @return The list of textures inferred from the shader's code
          */
-        const std::map <int, std::string>& getTextures () const;
+        [[nodiscard]] const std::map <int, std::string>& getTextures () const;
 
     private:
         /**

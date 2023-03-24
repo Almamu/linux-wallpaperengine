@@ -13,6 +13,10 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
 
     memset (streamData, 0, length);
 
+    // if audio is playing do not do anything here!
+    if (driver->getAudioDetector ().anythingPlaying ())
+        return;
+
     for (const auto& buffer : driver->getStreams ())
     {
         uint8_t* streamDataPointer = streamData;
@@ -70,8 +74,8 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
     }
 }
 
-CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext) :
-    CAudioDriver (applicationContext),
+CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector) :
+    CAudioDriver (applicationContext, detector),
     m_initialized (false),
     m_audioSpec ()
 {

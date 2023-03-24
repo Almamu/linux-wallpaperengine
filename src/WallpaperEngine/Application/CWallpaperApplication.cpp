@@ -11,6 +11,7 @@
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#include "WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.h"
 
 #include <unistd.h>
 
@@ -265,8 +266,10 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::show ()
     {
+        // audio playing detector
+        WallpaperEngine::Audio::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context);
         // initialize sdl audio driver
-        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context);
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector);
         // initialize audio context
         WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
         // initialize OpenGL driver

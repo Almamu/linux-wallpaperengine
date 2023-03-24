@@ -78,6 +78,8 @@ namespace WallpaperEngine::Application
                 bool enabled;
                 /** Sound volume (0-128) */
                 int volume;
+                /** If the audio must be muted if something else is playing sound */
+                bool automute;
             } audio;
 
             /**
