@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.h"
+#include "WallpaperEngine/Audio/Drivers/Detectors/CAudioPlayingDetector.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Audio/CAudioStream.h"
 

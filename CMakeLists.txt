@@ -77,10 +77,10 @@ add_executable(
     src/WallpaperEngine/Core/Core.h
     src/WallpaperEngine/Core/Core.cpp
 
-    src/WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.cpp
-    src/WallpaperEngine/Audio/Detectors/CAudioPlayingDetector.h
-    src/WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.cpp
-    src/WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h
+    src/WallpaperEngine/Audio/Drivers/Detectors/CAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Drivers/Detectors/CAudioPlayingDetector.h
 
     src/WallpaperEngine/Audio/Drivers/CAudioDriver.cpp
     src/WallpaperEngine/Audio/Drivers/CAudioDriver.h

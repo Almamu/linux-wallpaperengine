@@ -1,7 +1,7 @@
 #include "CPulseAudioPlayingDetector.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
-namespace WallpaperEngine::Audio::Detectors
+namespace WallpaperEngine::Audio::Drivers::Detectors
 {
     void sinkInputInfoCallback (pa_context* context, const pa_sink_input_info* info, int eol, void* userdata)
     {

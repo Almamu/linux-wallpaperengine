@@ -5,7 +5,7 @@
 #include "CAudioPlayingDetector.h"
 #include <pulse/pulseaudio.h>
 
-namespace WallpaperEngine::Audio::Detectors
+namespace WallpaperEngine::Audio::Drivers::Detectors
 {
     class CPulseAudioPlayingDetector : public CAudioPlayingDetector
     {

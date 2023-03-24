@@ -11,7 +11,7 @@
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
-#include "WallpaperEngine/Audio/Detectors/CPulseAudioPlayingDetector.h"
+#include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
 
 #include <unistd.h>
 
@@ -275,7 +275,7 @@ namespace WallpaperEngine::Application
         // fullscreen detector is common for the different render modes
         WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (videoDriver);
         // audio playing detector
-        WallpaperEngine::Audio::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, fullscreenDetector);
+        WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, fullscreenDetector);
         // initialize sdl audio driver
         WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector);
         // initialize audio context

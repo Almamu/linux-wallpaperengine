@@ -1,6 +1,6 @@
 #include "CAudioPlayingDetector.h"
 
-namespace WallpaperEngine::Audio::Detectors
+namespace WallpaperEngine::Audio::Drivers::Detectors
 {
     CAudioPlayingDetector::CAudioPlayingDetector (
         Application::CApplicationContext& appContext,

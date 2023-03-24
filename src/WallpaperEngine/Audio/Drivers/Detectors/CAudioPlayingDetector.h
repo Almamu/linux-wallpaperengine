@@ -15,7 +15,7 @@ namespace WallpaperEngine
         class CFullScreenDetector;
     }
 
-    namespace Audio::Detectors
+    namespace Audio::Drivers::Detectors
     {
         class CAudioPlayingDetector
         {
