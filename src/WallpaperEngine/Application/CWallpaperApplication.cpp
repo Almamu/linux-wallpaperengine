@@ -266,12 +266,6 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::show ()
     {
-        // audio playing detector
-        WallpaperEngine::Audio::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context);
-        // initialize sdl audio driver
-        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector);
-        // initialize audio context
-        WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
         // initialize OpenGL driver
         WallpaperEngine::Render::Drivers::CX11OpenGLDriver videoDriver ("wallpaperengine");
         // initialize the input subsystem
@@ -280,6 +274,12 @@ namespace WallpaperEngine::Application
         WallpaperEngine::Render::Drivers::Output::COutput* output;
         // fullscreen detector is common for the different render modes
         WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (videoDriver);
+        // audio playing detector
+        WallpaperEngine::Audio::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, fullscreenDetector);
+        // initialize sdl audio driver
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector);
+        // initialize audio context
+        WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
 
         // initialize the requested output
         switch (this->m_context.settings.render.mode)

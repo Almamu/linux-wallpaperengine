@@ -30,8 +30,10 @@ namespace WallpaperEngine::Audio::Detectors
         pa_operation_unref (op);
     }
 
-    CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (Application::CApplicationContext& appContext) :
-        CAudioPlayingDetector (appContext),
+    CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (
+        Application::CApplicationContext& appContext,
+        Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
+        CAudioPlayingDetector (appContext, fullscreenDetector),
         m_mainloop (nullptr),
         m_mainloopApi (nullptr),
         m_context (nullptr),
@@ -69,6 +71,8 @@ namespace WallpaperEngine::Audio::Detectors
     {
         if (!this->getApplicationContext ().settings.audio.automute)
             return false;
+        if (this->getFullscreenDetector ().anythingFullscreen ())
+            return true;
 
         // reset playing state
         this->setIsPlaying (false);

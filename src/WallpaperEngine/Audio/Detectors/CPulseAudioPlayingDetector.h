@@ -10,7 +10,7 @@ namespace WallpaperEngine::Audio::Detectors
     class CPulseAudioPlayingDetector : public CAudioPlayingDetector
     {
     public:
-        explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext);
+        explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext, Render::Drivers::Detectors::CFullScreenDetector&);
         ~CPulseAudioPlayingDetector ();
 
         [[nodiscard]] bool anythingPlaying () override;
