@@ -3,6 +3,7 @@
 #include <libavutil/samplefmt.h>
 #include <vector>
 
+#include "WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
 
 namespace WallpaperEngine
@@ -17,6 +18,11 @@ namespace WallpaperEngine
         namespace Drivers
         {
             class CAudioDriver;
+
+            namespace Recorders
+            {
+                class CPulseAudioPlaybackRecorder;
+            }
         }
 
         class CAudioStream;
@@ -51,6 +57,10 @@ namespace WallpaperEngine
              * @return The application context under which the audio driver is initialized
              */
             Application::CApplicationContext& getApplicationContext ();
+            /**
+             * @return The audio recorder to use to capture stereo mix data
+             */
+            [[nodiscard]] Drivers::Recorders::CPlaybackRecorder& getRecorder ();
 
         private:
             /** The audio driver in use */

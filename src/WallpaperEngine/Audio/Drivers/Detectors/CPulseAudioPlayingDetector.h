@@ -13,15 +13,11 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
         explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext, Render::Drivers::Detectors::CFullScreenDetector&);
         ~CPulseAudioPlayingDetector ();
 
-        [[nodiscard]] bool anythingPlaying () override;
-        void setIsPlaying (bool newState);
+        void update () override;
 
     private:
-        bool m_isPlaying;
-
         pa_mainloop* m_mainloop;
         pa_mainloop_api* m_mainloopApi;
         pa_context* m_context;
-        pa_operation* m_operation;
     };
 }

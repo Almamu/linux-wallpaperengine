@@ -180,14 +180,15 @@ void CPass::render ()
         switch (entry->type)
         {
             case Double:
-                glUniform1d (entry->id, *reinterpret_cast <const double*> (entry->value));
+                glUniform1dv (entry->id, entry->count, reinterpret_cast <const double*> (entry->value));
                 break;
             case Float:
-                glUniform1f (entry->id, *reinterpret_cast <const float*> (entry->value));
+                glUniform1fv (entry->id, entry->count, reinterpret_cast <const float*> (entry->value));
                 break;
             case Integer:
-                glUniform1i (entry->id, *reinterpret_cast <const int*> (entry->value));
+                glUniform1iv (entry->id, entry->count, reinterpret_cast <const int*> (entry->value));
                 break;
+            // TODO: THESE MIGHT NEED SPECIAL TREATMENT? IDK ONLY SUPPORT 1 FOR NOW
             case Vector4:
                 glUniform4fv (entry->id, 1, glm::value_ptr (*reinterpret_cast <const glm::vec4*> (entry->value)));
                 break;
@@ -595,6 +596,12 @@ void CPass::setupUniforms ()
     this->addUniform ("g_EffectTextureProjectionMatrixInverse", glm::mat4(1.0));
     this->addUniform ("g_TexelSize", glm::vec2 (1.0 / projection->getWidth (), 1.0 / projection->getHeight ()));
     this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
+    this->addUniform ("g_AudioSpectrum16Left", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
+    this->addUniform ("g_AudioSpectrum16Right", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
+    this->addUniform ("g_AudioSpectrum32Left", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
+    this->addUniform ("g_AudioSpectrum32Right", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
+    this->addUniform ("g_AudioSpectrum64Left", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
+    this->addUniform ("g_AudioSpectrum64Right", this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
 }
 
 void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value)
@@ -623,12 +630,12 @@ void CPass::addUniform (const std::string& name, UniformType type, T value)
 
     // uniform found, add it to the list
     this->m_uniforms.insert (
-        std::make_pair (name, new UniformEntry (id, name, type, newValue))
+        std::make_pair (name, new UniformEntry (id, name, type, newValue, 1))
     );
 }
 
 template <typename T>
-void CPass::addUniform (const std::string& name, UniformType type, T* value)
+void CPass::addUniform (const std::string& name, UniformType type, T* value, int count)
 {
     // this version is used to reference to system variables so things like g_Time works fine
     GLint id = glGetUniformLocation (this->m_programID, name.c_str ());
@@ -639,7 +646,7 @@ void CPass::addUniform (const std::string& name, UniformType type, T* value)
 
     // uniform found, add it to the list
     this->m_uniforms.insert (
-        std::make_pair (name, new UniformEntry (id, name, type, value))
+        std::make_pair (name, new UniformEntry (id, name, type, value, count))
     );
 }
 
@@ -804,9 +811,9 @@ void CPass::addUniform (const std::string& name, int value)
     this->addUniform (name, UniformType::Integer, value);
 }
 
-void CPass::addUniform (const std::string& name, const int* value)
+void CPass::addUniform (const std::string& name, const int* value, int count)
 {
-    this->addUniform (name, UniformType::Integer, value);
+    this->addUniform (name, UniformType::Integer, value, count);
 }
 
 void CPass::addUniform (const std::string& name, const int** value)
@@ -819,9 +826,9 @@ void CPass::addUniform (const std::string& name, double value)
     this->addUniform (name, UniformType::Double, value);
 }
 
-void CPass::addUniform (const std::string& name, const double* value)
+void CPass::addUniform (const std::string& name, const double* value, int count)
 {
-    this->addUniform (name, UniformType::Double, value);
+    this->addUniform (name, UniformType::Double, value, count);
 }
 
 void CPass::addUniform (const std::string& name, const double** value)
@@ -834,9 +841,9 @@ void CPass::addUniform (const std::string& name, float value)
     this->addUniform (name, UniformType::Float, value);
 }
 
-void CPass::addUniform (const std::string& name, const float* value)
+void CPass::addUniform (const std::string& name, const float* value, int count)
 {
-    this->addUniform (name, UniformType::Float, value);
+    this->addUniform (name, UniformType::Float, value, count);
 }
 
 void CPass::addUniform (const std::string& name, const float** value)
@@ -852,12 +859,12 @@ void CPass::addUniform (const std::string& name, glm::vec2 value)
 
 void CPass::addUniform (const std::string& name, const glm::vec2* value)
 {
-    this->addUniform (name, UniformType::Vector2, value);
+    this->addUniform (name, UniformType::Vector2, value, 1);
 }
 
 void CPass::addUniform (const std::string& name, const glm::vec2** value)
 {
-    this->addUniform (name, UniformType::Vector2, value);
+    this->addUniform (name, UniformType::Vector2, value, 1);
 }
 
 
@@ -868,7 +875,7 @@ void CPass::addUniform (const std::string& name, glm::vec3 value)
 
 void CPass::addUniform (const std::string& name, const glm::vec3* value)
 {
-    this->addUniform (name, UniformType::Vector3, value);
+    this->addUniform (name, UniformType::Vector3, value, 1);
 }
 
 void CPass::addUniform (const std::string& name, const glm::vec3** value)
@@ -884,7 +891,7 @@ void CPass::addUniform (const std::string& name, glm::vec4 value)
 
 void CPass::addUniform (const std::string& name, const glm::vec4* value)
 {
-    this->addUniform (name, UniformType::Vector4, value);
+    this->addUniform (name, UniformType::Vector4, value, 1);
 }
 
 void CPass::addUniform (const std::string& name, const glm::vec4** value)
@@ -899,7 +906,7 @@ void CPass::addUniform (const std::string& name, glm::mat4 value)
 
 void CPass::addUniform (const std::string& name, const glm::mat4* value)
 {
-    this->addUniform (name, UniformType::Matrix4, value);
+    this->addUniform (name, UniformType::Matrix4, value, 1);
 }
 
 void CPass::addUniform (const std::string& name, const glm::mat4** value)

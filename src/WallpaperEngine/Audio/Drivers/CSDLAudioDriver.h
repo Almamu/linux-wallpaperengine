@@ -29,7 +29,7 @@ namespace WallpaperEngine::Audio::Drivers
     class CSDLAudioDriver : public CAudioDriver
     {
     public:
-        CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector);
+        CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector, Recorders::CPlaybackRecorder& recorder);
         ~CSDLAudioDriver ();
 
         /** @inheritdoc */

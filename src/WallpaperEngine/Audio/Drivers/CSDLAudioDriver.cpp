@@ -74,8 +74,8 @@ void audio_callback (void* userdata, uint8_t* streamData, int length)
     }
 }
 
-CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector) :
-    CAudioDriver (applicationContext, detector),
+CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector, Recorders::CPlaybackRecorder& recorder) :
+    CAudioDriver (applicationContext, detector, recorder),
     m_initialized (false),
     m_audioSpec ()
 {

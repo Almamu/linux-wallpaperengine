@@ -52,13 +52,14 @@ namespace WallpaperEngine::Render::Objects::Effects
         class UniformEntry
         {
         public:
-            UniformEntry (GLint id, std::string name, UniformType type, const void* value) :
-                id (id), name (std::move (name)), type (type), value (value) { }
+            UniformEntry (GLint id, std::string name, UniformType type, const void* value, int count) :
+                id (id), name (std::move (name)), type (type), value (value), count (count) { }
 
             GLint id;
             std::string name;
             UniformType type;
             const void* value;
+            int count;
         };
 
         class ReferenceUniformEntry
@@ -102,9 +103,9 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, glm::vec3 value);
         void addUniform (const std::string& name, glm::vec4 value);
         void addUniform (const std::string& name, glm::mat4 value);
-        void addUniform (const std::string& name, const int* value);
-        void addUniform (const std::string& name, const double* value);
-        void addUniform (const std::string& name, const float* value);
+        void addUniform (const std::string& name, const int* value, int count = 1);
+        void addUniform (const std::string& name, const double* value, int count = 1);
+        void addUniform (const std::string& name, const float* value, int count = 1);
         void addUniform (const std::string& name, const glm::vec2* value);
         void addUniform (const std::string& name, const glm::vec3* value);
         void addUniform (const std::string& name, const glm::vec4* value);
@@ -117,7 +118,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, const glm::vec4** value);
         void addUniform (const std::string& name, const glm::mat4** value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T value);
-        template <typename T> void addUniform (const std::string& name, UniformType type, T* value);
+        template <typename T> void addUniform (const std::string& name, UniformType type, T* value, int count = 1);
         template <typename T> void addUniform (const std::string& name, UniformType type, T** value);
 
         const ITexture* resolveTexture (const ITexture* expected, int index, const ITexture* previous = nullptr);

@@ -11,6 +11,8 @@ if(NOT ERRORONLY)
     set(ERRORONLY 0)
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(ERRORONLY=${ERRORONLY})
 add_compile_definitions(DATADIR="${DATADIR}")
@@ -45,6 +47,9 @@ add_executable(
     linux-wallpaperengine
     main.cpp
 
+    src/External/Android/fft.cpp
+    src/External/Android/fft.h
+
     src/Steam/FileSystem/FileSystem.h
     src/Steam/FileSystem/FileSystem.cpp
 
@@ -76,6 +81,11 @@ add_executable(
 
     src/WallpaperEngine/Core/Core.h
     src/WallpaperEngine/Core/Core.cpp
+
+    src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.cpp
+    src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.h
+    src/WallpaperEngine/Audio/Drivers/Recorders/CPlaybackRecorder.cpp
+    src/WallpaperEngine/Audio/Drivers/Recorders/CPlaybackRecorder.h
 
     src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.cpp
     src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h
@@ -288,7 +298,5 @@ if(HAVE_XSETIOERROREXITHANDLER)
 endif()
 
 # set some install parameters if not in debug mode
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    install(TARGETS linux-wallpaperengine)
-    install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})
-endif()
+install(TARGETS linux-wallpaperengine)
+install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})

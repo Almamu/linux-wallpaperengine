@@ -36,8 +36,7 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
         CAudioPlayingDetector (appContext, fullscreenDetector),
         m_mainloop (nullptr),
         m_mainloopApi (nullptr),
-        m_context (nullptr),
-        m_isPlaying (false)
+        m_context (nullptr)
     {
         this->m_mainloop = pa_mainloop_new ();
         this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
@@ -62,17 +61,13 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
             pa_mainloop_free (this->m_mainloop);
     }
 
-    void CPulseAudioPlayingDetector::setIsPlaying (bool newState)
-    {
-        this->m_isPlaying = newState;
-    }
 
-    bool CPulseAudioPlayingDetector::anythingPlaying ()
+    void CPulseAudioPlayingDetector::update ()
     {
         if (!this->getApplicationContext ().settings.audio.automute)
-            return false;
+            return this->setIsPlaying (false);
         if (this->getFullscreenDetector ().anythingFullscreen ())
-            return true;
+            return this->setIsPlaying (true);
 
         // reset playing state
         this->setIsPlaying (false);
@@ -85,7 +80,5 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
             pa_mainloop_iterate (this->m_mainloop, 1, nullptr);
 
         pa_operation_unref (op);
-
-        return this->m_isPlaying;
     }
 }

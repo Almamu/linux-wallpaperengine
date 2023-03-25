@@ -17,6 +17,9 @@ namespace WallpaperEngine
 
     namespace Audio::Drivers::Detectors
     {
+        /**
+         * Base class for any implementation of audio playing detection
+         */
         class CAudioPlayingDetector
         {
         public:
@@ -25,7 +28,19 @@ namespace WallpaperEngine
             /**
              * @return If any kind of sound is currently playing on the default audio device
              */
-            virtual bool anythingPlaying () = 0;
+            [[nodiscard]] bool anythingPlaying () const;
+
+            /**
+             * Updates the playing status to the specified value
+             *
+             * @param newState
+             */
+            void setIsPlaying (bool newState);
+
+            /**
+             * Checks if any audio is playing and updates state accordingly
+             */
+            virtual void update () = 0;
             /**
              * @return The application context using this detector
              */
@@ -36,6 +51,8 @@ namespace WallpaperEngine
             [[nodiscard]] Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector ();
 
         private:
+            bool m_isPlaying;
+
             Application::CApplicationContext& m_applicationContext;
             Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;
         };

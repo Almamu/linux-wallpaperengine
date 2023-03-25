@@ -274,10 +274,12 @@ namespace WallpaperEngine::Application
         WallpaperEngine::Render::Drivers::Output::COutput* output;
         // fullscreen detector is common for the different render modes
         WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (videoDriver);
+        // stereo mix recorder for audio processing
+        WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder audioRecorder;
         // audio playing detector
         WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, fullscreenDetector);
         // initialize sdl audio driver
-        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector);
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector, audioRecorder);
         // initialize audio context
         WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
 
@@ -314,6 +316,8 @@ namespace WallpaperEngine::Application
 
         while (!videoDriver.closeRequested () && this->m_context.state.general.keepRunning)
         {
+            // update audio recorder
+            audioDriver.update ();
             // update input information
             inputContext.update ();
             // keep track of the previous frame's time

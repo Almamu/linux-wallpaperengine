@@ -32,4 +32,9 @@ namespace WallpaperEngine::Audio
     {
         return this->m_driver.getApplicationContext ();
     }
+
+    Drivers::Recorders::CPlaybackRecorder& CAudioContext::getRecorder ()
+    {
+        return this->m_driver.getRecorder ();
+    }
 }
