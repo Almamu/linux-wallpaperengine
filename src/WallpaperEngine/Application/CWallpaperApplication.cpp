@@ -267,7 +267,7 @@ namespace WallpaperEngine::Application
     void CWallpaperApplication::show ()
     {
         // initialize OpenGL driver
-        WallpaperEngine::Render::Drivers::CX11OpenGLDriver videoDriver ("wallpaperengine");
+        WallpaperEngine::Render::Drivers::CX11OpenGLDriver videoDriver ("wallpaperengine", this->m_context);
         // initialize the input subsystem
         WallpaperEngine::Input::CInputContext inputContext (videoDriver);
         // output requested

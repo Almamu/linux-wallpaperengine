@@ -12,7 +12,7 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason)
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle) :
+CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context) :
     m_frameCounter (0)
 {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
@@ -27,6 +27,17 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle) :
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint (GLFW_VISIBLE, GLFW_FALSE);
+    // set X11-specific hints
+    glfwWindowHintString (GLFW_X11_CLASS_NAME, "linux-wallpaperengine");
+    glfwWindowHintString (GLFW_X11_INSTANCE_NAME, "linux-wallpaperengine");
+
+    // for forced window mode, we can set some hints that'll help position the window
+    if (context.settings.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
+    {
+        glfwWindowHint (GLFW_RESIZABLE, GLFW_FALSE);
+        glfwWindowHint (GLFW_DECORATED, GLFW_FALSE);
+        glfwWindowHint (GLFW_FLOATING, GLFW_TRUE);
+    }
 
 #if !NDEBUG
     glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);

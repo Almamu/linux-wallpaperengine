@@ -17,7 +17,7 @@ namespace WallpaperEngine::Render::Drivers
     class CX11OpenGLDriver : public CVideoDriver
     {
     public:
-        explicit CX11OpenGLDriver (const char* windowTitle);
+        explicit CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context);
         ~CX11OpenGLDriver();
 
         void* getWindowHandle () const;

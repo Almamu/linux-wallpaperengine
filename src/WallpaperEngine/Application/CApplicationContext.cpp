@@ -135,11 +135,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
                 if (pos != nullptr)
                     this->settings.render.window.geometry.x = atoi (pos);
-                if ((pos = strchr (pos, '.')) != nullptr)
+                if ((pos = strchr (pos, 'x')) != nullptr)
                     this->settings.render.window.geometry.y = atoi (pos + 1);
-                if ((pos = strchr (pos + 1, '.')) != nullptr)
+                if ((pos = strchr (pos + 1, 'x')) != nullptr)
                     this->settings.render.window.geometry.z = atoi (pos + 1);
-                if ((pos = strchr (pos + 1, '.')) != nullptr)
+                if ((pos = strchr (pos + 1, 'x')) != nullptr)
                     this->settings.render.window.geometry.w = atoi (pos + 1);
             }
             break;
