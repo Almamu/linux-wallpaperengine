@@ -42,7 +42,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container)
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
     auto visible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", false);
     auto origin = jsonFindUserConfig <CUserSettingVector3> (data, "origin", {0, 0, 0});
-    auto scale = jsonFindUserConfig <CUserSettingVector3> (data, "scale", {0, 0, 0});
+    auto scale = jsonFindUserConfig <CUserSettingVector3> (data, "scale", {1, 1, 1});
     auto angles_val = jsonFindDefault <std::string> (data, "angles", "0.0 0.0 0.0");
     auto name_it = jsonFindRequired (data, "name", "Objects must have name");
     auto effects_it = data.find ("effects");
@@ -124,9 +124,9 @@ CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container)
 
     if (effects_it != data.end () && (*effects_it).is_array ())
     {
-        for (const auto& cur : *effects_it)
+        for (auto& cur : *effects_it)
         {
-            auto effectVisible = jsonFindUserConfig <CUserSettingBoolean> (data, "visible", true);
+            auto effectVisible = jsonFindUserConfig <CUserSettingBoolean> (cur, "visible", true);
 
 			if (!effectVisible->processValue (scene->getProject ().getProperties ()))
 				continue;
