@@ -92,9 +92,17 @@ namespace WallpaperEngine::Audio::Drivers::Recorders
         spec.channels = 1;
 
         if (recorder->getCaptureStream ())
+        {
             pa_stream_unref (recorder->getCaptureStream ());
+            // get rid of the reference just in case
+            recorder->setCaptureStream (nullptr);
+        }
 
         pa_stream* captureStream = pa_stream_new(ctx, "output monitor", &spec, nullptr);
+
+        // store the stream first, if the record start fails there'll still be a reference to it
+        // so it can be free'd later
+        recorder->setCaptureStream (captureStream),
 
         pa_stream_set_state_callback(captureStream, &pa_stream_notify_cb, userdata);
         pa_stream_set_read_callback(captureStream, &pa_stream_read_cb, userdata);
@@ -105,8 +113,6 @@ namespace WallpaperEngine::Audio::Drivers::Recorders
             sLog.error ("Failed to connect to input for recording");
             return;
         }
-
-        recorder->setCaptureStream (captureStream);
     }
 
     void pa_context_subscribe_cb (pa_context *ctx, pa_subscription_event_type_t t, uint32_t idx, void *userdata)
@@ -143,7 +149,8 @@ namespace WallpaperEngine::Audio::Drivers::Recorders
         }
     }
 
-    CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder ()
+    CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () :
+        m_captureStream (nullptr)
     {
         this->m_mainloop = pa_mainloop_new ();
         this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
