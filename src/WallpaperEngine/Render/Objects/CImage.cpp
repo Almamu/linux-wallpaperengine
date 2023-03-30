@@ -31,6 +31,17 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glm::vec3 origin = this->getImage ()->getOrigin ();
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ()->getScale ();
+
+    // fullscreen layers should use the whole projection's size
+    // TODO: WHAT SHOULD AUTOSIZE DO?
+    if (this->getImage ()->isFullscreen ())
+    {
+        size = { scene_width, scene_height };
+        origin = { scene_width / 2, scene_height / 2, 0 };
+
+        // TODO: CHANGE ALIGNMENT TOO?
+    }
+
     glm::vec2 scaledSize = size * glm::vec2 (scale);
 
     // calculate the center and shift from there
@@ -86,16 +97,14 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     }
     else
     {
-        glm::vec2 realSize = size * glm::vec2 (scale);
-
         // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly handled
         this->m_texture = new CFBO (
             "",
             ITexture::TextureFormat::ARGB8888,
             ITexture::TextureFlags::NoFlags,
             1,
-            realSize.x, realSize.y,
-            realSize.x, realSize.y
+            size.x, size.y,
+            size.x, size.y
         );
     }
 
@@ -123,9 +132,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
     );
 
-    GLfloat realWidth = this->m_texture->getRealWidth ();
-    GLfloat realHeight = this->m_texture->getRealHeight ();
-
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {
         this->m_pos.x, this->m_pos.y, 0.0f,
@@ -134,24 +140,6 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->m_pos.z, this->m_pos.y, 0.0f,
         this->m_pos.x, this->m_pos.w, 0.0f,
         this->m_pos.z, this->m_pos.w, 0.0f
-    };
-
-    GLfloat copySpacePosition [] = {
-        0.0, realHeight, 0.0f,
-        0.0, 0.0, 0.0f,
-        realWidth, realHeight, 0.0f,
-        realWidth, realHeight, 0.0f,
-        0.0, 0.0, 0.0f,
-        realWidth, 0.0, 0.0f
-    };
-
-    GLfloat passSpacePosition [] = {
-        -1.0, 1.0, 0.0f,
-        -1.0, -1.0, 0.0f,
-        1.0, 1.0, 0.0f,
-        1.0, 1.0, 0.0f,
-        -1.0, -1.0, 0.0f,
-        1.0, -1.0, 0.0f
     };
 
     float width = 1.0f;
@@ -166,9 +154,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         // calculate the correct texCoord limits for the texture based on the texture screen size and real size
     else if (this->getTexture () != nullptr &&
         (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
-            this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
-        )
-    {
+        this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
+    ) {
         uint32_t x = 1;
         uint32_t y = 1;
 
@@ -179,6 +166,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         height = scaledSize.y / y;
     }
 
+    // TODO: RECALCULATE THESE POSITIONS FOR PASSTHROUGH SO THEY TAKE THE RIGHT PART OF THE TEXTURE
     float x = 0.0f;
     float y = 0.0f;
 
@@ -191,6 +179,27 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         height = 1.0f;
     }
 
+    GLfloat realWidth = size.x;
+    GLfloat realHeight = size.y;
+    GLfloat realX = 0.0;
+    GLfloat realY = 0.0;
+
+    if (this->getImage ()->isPassthrough())
+    {
+        x = -((this->m_pos.x + (scene_width / 2)) / size.x);
+        y = -((this->m_pos.w + (scene_height / 2)) / size.y);
+        height = (this->m_pos.y + (scene_height / 2)) / size.y;
+        width = (this->m_pos.z + (scene_width / 2)) / size.x;
+
+        if (this->getImage ()->isFullscreen ())
+        {
+            realX = -1.0;
+            realY = -1.0;
+            realWidth = 1.0;
+            realHeight = 1.0;
+        }
+    }
+
     GLfloat texcoordCopy [] = {
         x, height,
         x, y,
@@ -200,6 +209,15 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         width, y
     };
 
+    GLfloat copySpacePosition [] = {
+        realX, realHeight, 0.0f,
+        realX, realY, 0.0f,
+        realWidth, realHeight, 0.0f,
+        realWidth, realHeight, 0.0f,
+        realX, realY, 0.0f,
+        realWidth, realY, 0.0f
+    };
+
     GLfloat texcoordPass [] = {
         0.0f, 1.0f,
         0.0f, 0.0f,
@@ -207,6 +225,15 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         1.0f, 1.0f,
         0.0f, 0.0f,
         1.0f, 0.0f
+    };
+
+    GLfloat passSpacePosition [] = {
+        -1.0, 1.0, 0.0f,
+        -1.0, -1.0, 0.0f,
+        1.0, 1.0, 0.0f,
+        1.0, 1.0, 0.0f,
+        -1.0, -1.0, 0.0f,
+        1.0, -1.0, 0.0f
     };
 
     // bind vertex list to the openGL buffers
@@ -245,6 +272,10 @@ void CImage::setup ()
         return;
 
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
+
+    // passthrough images without effects are bad, do not draw them
+    if (this->getImage ()->isPassthrough() && this->getImage ()->getEffects ().empty ())
+        return;
 
     {
         // generate the main material used to render the image
@@ -387,13 +418,15 @@ void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
 void CImage::render ()
 {
     // do not try to render something that did not initialize successfully
+    // non-visible materials do need to be rendered
     if (!this->m_initialized)
         return;
 
     glColorMask (true, true, true, true);
 
     // update the position if required
-    if (this->getScene ()->getScene ()->isCameraParallax ())
+    // TODO: There's more images that are not affected by parallax, autosize or fullscreen are not affected
+    if (this->getScene ()->getScene ()->isCameraParallax () && !this->getImage ()->isFullscreen ())
         this->updateScreenSpacePosition ();
 
 #if !NDEBUG
@@ -433,12 +466,9 @@ void CImage::updateScreenSpacePosition ()
     glm::vec2 depth = this->getImage ()->getParallaxDepth ();
     glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();
 
-    // no need to update if the depth is 0
-    if (depth.x == 0.0 && depth.y == 0.0)
-        return;
-
     float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
     float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+
     this->m_modelViewProjectionScreen =
         glm::translate (
             this->getScene ()->getCamera ()->getProjection () *

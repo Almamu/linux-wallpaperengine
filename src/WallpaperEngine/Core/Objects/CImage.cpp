@@ -27,7 +27,10 @@ CImage::CImage (
     CUserSettingFloat* alpha,
     float brightness,
     uint32_t colorBlendMode,
-    const glm::vec2& parallaxDepth
+    const glm::vec2& parallaxDepth,
+    bool fullscreen,
+    bool passthrough,
+    bool autosize
 ) :
     CObject (scene, visible, id, std::move(name), Type, origin, scale, angles),
     m_size (size),
@@ -37,7 +40,10 @@ CImage::CImage (
     m_alpha (alpha),
     m_brightness (brightness),
     m_colorBlendMode (colorBlendMode),
-    m_parallaxDepth(parallaxDepth)
+    m_parallaxDepth(parallaxDepth),
+    m_fullscreen (fullscreen),
+    m_passthrough (passthrough),
+    m_autosize (autosize)
 {
 }
 
@@ -64,6 +70,9 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile ((*image_it).get <std::string> (), container));
 
     auto material_it = jsonFindRequired (content, "material", "Image must have a material");
+    auto fullscreen = jsonFindDefault <bool> (content, "fullscreen", false);
+    auto passthrough = jsonFindDefault <bool> (content, "passthrough", false);
+    auto autosize = jsonFindDefault <bool> (content, "autosize", false);
 
     return new CImage (
         scene,
@@ -80,7 +89,10 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (
         alpha,
         brightness_val,
         colorBlendMode_val,
-        WallpaperEngine::Core::aToVector2 (parallaxDepth_val)
+        WallpaperEngine::Core::aToVector2 (parallaxDepth_val),
+        fullscreen,
+        passthrough,
+        autosize
     );
 }
 
@@ -123,6 +135,21 @@ uint32_t CImage::getColorBlendMode () const
 const glm::vec2& CImage::getParallaxDepth () const
 {
     return this->m_parallaxDepth;
+}
+
+bool CImage::isFullscreen () const
+{
+    return this->m_fullscreen;
+}
+
+bool CImage::isPassthrough () const
+{
+    return this->m_passthrough;
+}
+
+bool CImage::isAutosize () const
+{
+    return this->m_autosize;
 }
 
 const std::string CImage::Type = "image";

@@ -58,9 +58,6 @@ CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container)
 
     if (image_it != data.end () && !(*image_it).is_null ())
     {
-		if (*image_it == "models/util/composelayer.json")
-			return nullptr;
-		
         object = Objects::CImage::fromJSON (
                 scene,
                 data,

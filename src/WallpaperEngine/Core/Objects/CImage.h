@@ -66,13 +66,25 @@ namespace WallpaperEngine::Core::Objects
          * @return Parallax depth of the image
          */
         [[nodiscard]] const glm::vec2& getParallaxDepth () const;
+        /**
+         * @return If the image is fullscreen or not
+         */
+        [[nodiscard]] bool isFullscreen () const;
+        /**
+         * @return If the image is passthrough or not
+         */
+        [[nodiscard]] bool isPassthrough () const;
+        /**
+         * @return If the image is autosized or not
+         */
+        [[nodiscard]] bool isAutosize () const;
 
     protected:
         CImage (
             CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, uint32_t id, std::string name,
             CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
             std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
-            uint32_t colorBlendMode, const glm::vec2& parallaxDepth
+            uint32_t colorBlendMode, const glm::vec2& parallaxDepth, bool fullscreen, bool passthrough, bool autosize
         );
 
         /**
@@ -97,5 +109,11 @@ namespace WallpaperEngine::Core::Objects
         CUserSettingVector3* m_color;
         /** The color blending mode used for the image, special value for shaders */
         uint32_t m_colorBlendMode;
+        /** If the image is fullscreen or not */
+        bool m_fullscreen;
+        /** If the image is passthrough or not */
+        bool m_passthrough;
+        /** If the image's size should be automatically determined */
+        bool m_autosize;
     };
 }
