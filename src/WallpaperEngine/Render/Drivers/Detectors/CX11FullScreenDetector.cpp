@@ -31,7 +31,8 @@ namespace WallpaperEngine::Render::Drivers::Detectors
         return 0;
     }
 
-    CX11FullScreenDetector::CX11FullScreenDetector (CVideoDriver& driver) :
+    CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext, CVideoDriver& driver) :
+        CFullScreenDetector (appContext),
         m_driver (driver)
     {
         // do not use previous handler, it might stop the app under weird circumstances
@@ -51,6 +52,9 @@ namespace WallpaperEngine::Render::Drivers::Detectors
 
     bool CX11FullScreenDetector::anythingFullscreen () const
     {
+        if (!this->getApplicationContext ().settings.render.pauseOnFullscreen)
+            return false;
+
         // stop rendering if anything is fullscreen
         bool isFullscreen = false;
         XWindowAttributes attribs;

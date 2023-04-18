@@ -273,7 +273,7 @@ namespace WallpaperEngine::Application
         // output requested
         WallpaperEngine::Render::Drivers::Output::COutput* output;
         // fullscreen detector is common for the different render modes
-        WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (videoDriver);
+        WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (this->m_context, videoDriver);
         // stereo mix recorder for audio processing
         WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder audioRecorder;
         // audio playing detector

@@ -11,10 +11,10 @@
 
 namespace WallpaperEngine::Render::Drivers::Detectors
 {
-    class CX11FullScreenDetector : public  CFullScreenDetector
+    class CX11FullScreenDetector : public CFullScreenDetector
     {
     public:
-        CX11FullScreenDetector (CVideoDriver& driver);
+        CX11FullScreenDetector (Application::CApplicationContext& appContext, CVideoDriver& driver);
         ~CX11FullScreenDetector ();
 
         [[nodiscard]] bool anythingFullscreen () const override;

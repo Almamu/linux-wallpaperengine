@@ -61,6 +61,8 @@ namespace WallpaperEngine::Application
                 WINDOW_MODE mode;
                 /** Maximum FPS */
                 int maximumFPS;
+                /** Indicates if pausing should happen when something goes fullscreen */
+                bool pauseOnFullscreen;
 
                 struct
                 {

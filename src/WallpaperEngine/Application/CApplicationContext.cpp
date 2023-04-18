@@ -26,6 +26,7 @@ struct option long_options[] = {
     { "list-properties", no_argument,    nullptr, 'l' },
     { "set-property", required_argument, nullptr, 'o' },
     { "noautomute", no_argument,         nullptr, 'm' },
+    { "no-fullscreen-pause", no_argument,nullptr, 'n' },
     { nullptr, 0,                        nullptr, 0 }
 };
 
@@ -62,6 +63,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
         {
             .mode = NORMAL_WINDOW,
             .maximumFPS = 30,
+            .pauseOnFullscreen = true,
             .window = { .geometry = {}},
         },
         .audio =
@@ -82,105 +84,110 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:m", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mn", long_options, nullptr)) != -1)
     {
         switch (c)
         {
-        case 'b':
-            if (lastScreen.empty ())
-                sLog.exception ("--bg has to go after a --screen-root argument");
+            case 'n':
+                this->settings.render.pauseOnFullscreen = false;
+                break;
 
-            // no need to check for previous screen being in the list, as it's the only way for this variable
-            // to have any value
-            this->settings.general.screenBackgrounds[lastScreen] = translateBackground (optarg);
-            break;
+            case 'b':
+                if (lastScreen.empty ())
+                    sLog.exception ("--bg has to go after a --screen-root argument");
 
-        case 'o':
-        {
-            std::string value = optarg;
-            std::string::size_type equals = value.find ('=');
+                // no need to check for previous screen being in the list, as it's the only way for this variable
+                // to have any value
+                this->settings.general.screenBackgrounds[lastScreen] = translateBackground (optarg);
+                break;
 
-            // properties without value are treated as booleans for now
-            if (equals == std::string::npos)
-                this->settings.general.properties[value] = "1";
-            else
-                this->settings.general.properties[value.substr (0, equals)] = value.substr (equals + 1);
-        }
-            break;
+            case 'o':
+                {
+                    std::string value = optarg;
+                    std::string::size_type equals = value.find ('=');
 
-        case 'l':
-            this->settings.general.onlyListProperties = true;
-            break;
+                    // properties without value are treated as booleans for now
+                    if (equals == std::string::npos)
+                        this->settings.general.properties[value] = "1";
+                    else
+                        this->settings.general.properties[value.substr (0, equals)] = value.substr (equals + 1);
+                }
+                break;
 
-        case 'r':
-            if (this->settings.general.screenBackgrounds.find (optarg) != this->settings.general.screenBackgrounds.end ())
-                sLog.exception ("Cannot specify the same screen more than once: ", optarg);
-            if (this->settings.render.mode == EXPLICIT_WINDOW)
-                sLog.exception ("Cannot run in both background and window mode");
+            case 'l':
+                this->settings.general.onlyListProperties = true;
+                break;
 
-            this->settings.render.mode = X11_BACKGROUND;
-            lastScreen = optarg;
-            this->settings.general.screenBackgrounds[lastScreen] = "";
-            break;
+            case 'r':
+                if (this->settings.general.screenBackgrounds.find (optarg) != this->settings.general.screenBackgrounds.end ())
+                    sLog.exception ("Cannot specify the same screen more than once: ", optarg);
+                if (this->settings.render.mode == EXPLICIT_WINDOW)
+                    sLog.exception ("Cannot run in both background and window mode");
 
-        case 'w':
-            if (this->settings.render.mode == X11_BACKGROUND)
-                sLog.exception ("Cannot run in both background and window mode");
+                this->settings.render.mode = X11_BACKGROUND;
+                lastScreen = optarg;
+                this->settings.general.screenBackgrounds[lastScreen] = "";
+                break;
 
-            if (optarg != nullptr)
-            {
-                this->settings.render.mode = EXPLICIT_WINDOW;
-                // read window geometry
-                char* pos = optarg;
+            case 'w':
+                if (this->settings.render.mode == X11_BACKGROUND)
+                    sLog.exception ("Cannot run in both background and window mode");
 
-                if (pos != nullptr)
-                    this->settings.render.window.geometry.x = atoi (pos);
-                if ((pos = strchr (pos, 'x')) != nullptr)
-                    this->settings.render.window.geometry.y = atoi (pos + 1);
-                if ((pos = strchr (pos + 1, 'x')) != nullptr)
-                    this->settings.render.window.geometry.z = atoi (pos + 1);
-                if ((pos = strchr (pos + 1, 'x')) != nullptr)
-                    this->settings.render.window.geometry.w = atoi (pos + 1);
-            }
-            break;
+                if (optarg != nullptr)
+                {
+                    this->settings.render.mode = EXPLICIT_WINDOW;
+                    // read window geometry
+                    char* pos = optarg;
 
-        case 'p':
-        case 'd':
-            sLog.error ("--dir/--pkg is deprecated and not used anymore");
-            this->settings.general.defaultBackground = translateBackground (stringPathFixes (optarg));
-            break;
+                    if (pos != nullptr)
+                        this->settings.render.window.geometry.x = atoi (pos);
+                    if ((pos = strchr (pos, 'x')) != nullptr)
+                        this->settings.render.window.geometry.y = atoi (pos + 1);
+                    if ((pos = strchr (pos + 1, 'x')) != nullptr)
+                        this->settings.render.window.geometry.z = atoi (pos + 1);
+                    if ((pos = strchr (pos + 1, 'x')) != nullptr)
+                        this->settings.render.window.geometry.w = atoi (pos + 1);
+                }
+                break;
 
-        case 's':
-            this->settings.audio.enabled = false;
-            break;
+            case 'p':
+            case 'd':
+                sLog.error ("--dir/--pkg is deprecated and not used anymore");
+                this->settings.general.defaultBackground = translateBackground (stringPathFixes (optarg));
+                break;
 
-        case 'h':
-            printHelp (argv[0]);
-            break;
+            case 's':
+                this->settings.audio.enabled = false;
+                break;
 
-        case 'f':
-            this->settings.render.maximumFPS = atoi (optarg);
-            break;
+            case 'h':
+                printHelp (argv[0]);
+                break;
 
-        case 'a':
-            this->settings.general.assets = stringPathFixes (optarg);
-            break;
+            case 'f':
+                this->settings.render.maximumFPS = atoi (optarg);
+                break;
 
-        case 'v':
-            this->settings.audio.volume = std::max (atoi (optarg), 128);
-            break;
+            case 'a':
+                this->settings.general.assets = stringPathFixes (optarg);
+                break;
 
-        case 'c':
-            this->settings.screenshot.take = true;
-            this->settings.screenshot.path = stringPathFixes (optarg);
-            break;
+            case 'v':
+                this->settings.audio.volume = std::max (atoi (optarg), 128);
+                break;
 
-        case 'm':
-            this->settings.audio.automute = false;
-            break;
-        default:
-            sLog.out ("Default on path parsing: ", optarg);
-            break;
+            case 'c':
+                this->settings.screenshot.take = true;
+                this->settings.screenshot.path = stringPathFixes (optarg);
+                break;
+
+            case 'm':
+                this->settings.audio.automute = false;
+                break;
+
+            default:
+                sLog.out ("Default on path parsing: ", optarg);
+                break;
         }
     }
 
@@ -272,4 +279,5 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--screenshot\t\t\t\tTakes a screenshot of the background");
     sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
+    sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
 }
