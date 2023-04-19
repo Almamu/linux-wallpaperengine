@@ -307,7 +307,7 @@ void* CWaylandOpenGLDriver::getWindowHandle () const {
 }
 
 float CWaylandOpenGLDriver::getRenderTime () const {
-    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - renderStart).count() / 1000000;
+    return (float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - renderStart).count() / 1000000.0;
 }
 
 bool CWaylandOpenGLDriver::closeRequested () {
