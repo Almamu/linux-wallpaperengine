@@ -26,7 +26,8 @@ void geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width
 }
 
 void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
-    // ignored
+    const auto PMONITOR = (SWaylandOutput*)data;
+    PMONITOR->size = {width, height};
 }
 
 void done(void* data, wl_output* wl_output) {
