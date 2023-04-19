@@ -186,7 +186,7 @@ namespace WallpaperEngine::Audio::Drivers::Recorders
 
     void CPulseAudioPlaybackRecorder::update ()
     {
-        pa_mainloop_iterate (this->m_mainloop, 1, nullptr);
+        pa_mainloop_iterate (this->m_mainloop, 0, nullptr);
 
         // interpolate current values to the destination
         for (int i = 0; i < 64; i ++) {
@@ -199,7 +199,7 @@ namespace WallpaperEngine::Audio::Drivers::Recorders
             this->audio16 [i] = movetowards (this->audio16[i], fft_destination16[i], 0.1f);
         }
 
-        if (this->fullframeReady == false)
+        if (!this->fullframeReady)
             return;
 
         this->fullframeReady = false;
