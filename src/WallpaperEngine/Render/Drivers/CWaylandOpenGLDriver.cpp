@@ -132,8 +132,8 @@ void CWaylandOpenGLDriver::initEGL() {
         EGL_RED_SIZE, 1,
         EGL_GREEN_SIZE, 1,
         EGL_BLUE_SIZE, 1,
-        EGL_ALPHA_SIZE, 1,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_SAMPLES, 4,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_NONE,
     };
     if (!eglChooseConfig(eglContext.display, CONFIG_ATTRIBUTES, &eglContext.config, 1, &matchedConfigs)) {
@@ -328,6 +328,8 @@ void CWaylandOpenGLDriver::swapBuffers () {
     wl_surface_set_buffer_scale(waylandContext.layerSurface.surface, 1);
     wl_surface_damage_buffer(waylandContext.layerSurface.surface, 0, 0, INT32_MAX, INT32_MAX);
     wl_surface_commit(waylandContext.layerSurface.surface);
+
+    m_frameCounter++;
 }
 
 uint32_t CWaylandOpenGLDriver::getFrameCounter () const {
