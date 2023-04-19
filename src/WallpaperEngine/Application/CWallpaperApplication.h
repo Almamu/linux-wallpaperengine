@@ -9,6 +9,18 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+
+#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+
+#include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+
+#include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
+
+#include "WallpaperEngine/Input/CInputContext.h"
 
 namespace WallpaperEngine::Application
 {
@@ -44,6 +56,10 @@ namespace WallpaperEngine::Application
          * @return The current application context
          */
         [[nodiscard]] CApplicationContext& getContext () const;
+        /**
+         * Renders a frame
+        */
+        void renderFrame();
 
     private:
         /**
@@ -89,5 +105,13 @@ namespace WallpaperEngine::Application
         CApplicationContext& m_context;
         /** Maps screens to backgrounds */
         std::map <std::string, Core::CProject*> m_backgrounds;
+
+        std::unique_ptr<WallpaperEngine::Render::Drivers::CVideoDriver> videoDriver;
+        std::unique_ptr<WallpaperEngine::Input::CInputContext> inputContext;
+        WallpaperEngine::Render::Drivers::Output::COutput* output;
+        std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector> fullscreenDetector;
+        std::unique_ptr<WallpaperEngine::Audio::Drivers::CSDLAudioDriver> audioDriver;
+        std::unique_ptr<WallpaperEngine::Render::CRenderContext> context;
+        std::unique_ptr<WallpaperEngine::Audio::CAudioContext> audioContext;
     };
 }

@@ -3,14 +3,10 @@
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CVirtualContainer.h"
-#include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
 #include "WallpaperEngine/Core/CVideo.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
-#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
-#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
 
 #include <unistd.h>
@@ -267,80 +263,72 @@ namespace WallpaperEngine::Application
     void CWallpaperApplication::show ()
     {
         // initialize OpenGL driver
-        WallpaperEngine::Render::Drivers::CX11OpenGLDriver videoDriver ("wallpaperengine", this->m_context);
-        // initialize the input subsystem
-        WallpaperEngine::Input::CInputContext inputContext (videoDriver);
-        // output requested
-        WallpaperEngine::Render::Drivers::Output::COutput* output;
-        // fullscreen detector is common for the different render modes
-        WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector fullscreenDetector (this->m_context, videoDriver);
+        const bool WAYLAND = getenv("WAYLAND_DISPLAY");
+        if (WAYLAND) {
+            videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver>("wallpaperengine", this->m_context, this);
+            inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*)videoDriver.get());
+            this->m_context.settings.render.mode = CApplicationContext::WAYLAND_LAYER_SHELL;
+        } else {
+            videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CX11OpenGLDriver>("wallpaperengine", this->m_context);
+            inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CX11OpenGLDriver*)videoDriver.get());
+        }
+
+        if (WAYLAND)
+            fullscreenDetector = std::make_unique<WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector>(this->m_context, *(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*)videoDriver.get());
+        else
+            fullscreenDetector = std::make_unique<WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector>(this->m_context, *videoDriver);
         // stereo mix recorder for audio processing
         WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder audioRecorder;
         // audio playing detector
-        WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, fullscreenDetector);
+        WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context, *fullscreenDetector);
         // initialize sdl audio driver
-        WallpaperEngine::Audio::Drivers::CSDLAudioDriver audioDriver (this->m_context, audioDetector, audioRecorder);
+        audioDriver = std::make_unique<WallpaperEngine::Audio::Drivers::CSDLAudioDriver> (this->m_context, audioDetector, audioRecorder);
         // initialize audio context
-        WallpaperEngine::Audio::CAudioContext audioContext (audioDriver);
+        audioContext = std::make_unique<WallpaperEngine::Audio::CAudioContext> (*audioDriver);
 
         // initialize the requested output
         switch (this->m_context.settings.render.mode)
         {
             case CApplicationContext::EXPLICIT_WINDOW:
             case CApplicationContext::NORMAL_WINDOW:
-                output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, videoDriver, fullscreenDetector);
+                output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (this->m_context, *videoDriver, *fullscreenDetector);
                 break;
 
             case CApplicationContext::X11_BACKGROUND:
-                output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, videoDriver, fullscreenDetector);
+                output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, *videoDriver, *fullscreenDetector);
+                break;
+            
+            case CApplicationContext::WAYLAND_LAYER_SHELL:
+                output = new WallpaperEngine::Render::Drivers::Output::CWaylandOutput (this->m_context, *videoDriver, *fullscreenDetector);
                 break;
         }
 
         // initialize render context
-        WallpaperEngine::Render::CRenderContext context (output, videoDriver, inputContext, *this);
+        context = std::make_unique<WallpaperEngine::Render::CRenderContext> (output, *videoDriver, *inputContext, *this);
 
         // set all the specific wallpapers required
         for (const auto& it : this->m_backgrounds)
-            context.setWallpaper (
+            context->setWallpaper (
                 it.first,
-                WallpaperEngine::Render::CWallpaper::fromWallpaper (it.second->getWallpaper (), context, audioContext)
+                WallpaperEngine::Render::CWallpaper::fromWallpaper (it.second->getWallpaper (), *context, *audioContext)
             );
 
         // set the default rendering wallpaper if available
         if (this->m_defaultBackground != nullptr)
-            context.setDefaultWallpaper (WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                this->m_defaultBackground->getWallpaper (), context, audioContext
+            context->setDefaultWallpaper (WallpaperEngine::Render::CWallpaper::fromWallpaper (
+                this->m_defaultBackground->getWallpaper (), *context, *audioContext
             ));
 
-        float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+        if (WAYLAND) {
+            renderFrame();
 
-        while (!videoDriver.closeRequested () && this->m_context.state.general.keepRunning)
-        {
-            // update audio recorder
-            audioDriver.update ();
-            // update input information
-            inputContext.update ();
-            // keep track of the previous frame's time
-            g_TimeLast = g_Time;
-            // calculate the current time value
-            g_Time = videoDriver.getRenderTime ();
-            // get the start time of the frame
-            startTime = g_Time;
-            // render the scene
-            context.render ();
-            // get the end time of the frame
-            endTime = videoDriver.getRenderTime ();
-
-            // ensure the frame time is correct to not overrun FPS
-            if ((endTime - startTime) < minimumTime)
-                usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
-
-            if (!this->m_context.settings.screenshot.take || videoDriver.getFrameCounter () != 5)
-                continue;
-
-            this->takeScreenshot (context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
-            // disable screenshot just in case the counter overflows
-            this->m_context.settings.screenshot.take = false;
+            while (this->m_context.state.general.keepRunning && !videoDriver->closeRequested ()) {
+                videoDriver->dispatchEventQueue();
+            }
+        } else {
+            while (!videoDriver->closeRequested () && this->m_context.state.general.keepRunning) {
+                renderFrame();
+            }
         }
 
         // ensure this is updated as sometimes it might not come from a signal
@@ -349,6 +337,37 @@ namespace WallpaperEngine::Application
         sLog.out ("Stop requested");
 
         SDL_Quit ();
+    }
+
+    void CWallpaperApplication::renderFrame() {
+
+        float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+
+        // update audio recorder
+        audioDriver->update ();
+        // update input information
+        inputContext->update ();
+        // keep track of the previous frame's time
+        g_TimeLast = g_Time;
+        // calculate the current time value
+        g_Time = videoDriver->getRenderTime ();
+        // get the start time of the frame
+        startTime = g_Time;
+        // render the scene
+        context->render ();
+        // get the end time of the frame
+        endTime = videoDriver->getRenderTime ();
+
+         // ensure the frame time is correct to not overrun FPS
+        if ((endTime - startTime) < minimumTime)
+            usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
+
+        if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () != 5)
+            return;
+
+        this->takeScreenshot (*context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
+        // disable screenshot just in case the counter overflows
+        this->m_context.settings.screenshot.take = false;
     }
 
     void CWallpaperApplication::signal (int signal)

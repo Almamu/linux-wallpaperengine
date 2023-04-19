@@ -48,5 +48,13 @@ namespace WallpaperEngine::Render::Drivers
          * @return The number of rendered frames since the start of the driver
          */
         virtual uint32_t getFrameCounter () const = 0;
+        /**
+         * Wayland only: dispatch wayland event queue
+        */
+        virtual void dispatchEventQueue() const;
+        /**
+         * Wayland only: make EGL current
+        */
+        void makeCurrent() const;
     };
 }

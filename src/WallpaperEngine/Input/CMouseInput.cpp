@@ -7,6 +7,9 @@ CMouseInput::CMouseInput (GLFWwindow* window) : position (), m_mousePosition (),
 
 void CMouseInput::update ()
 {
+    if (!m_window)
+        return;
+
     // update current mouse position
     glfwGetCursorPos (this->m_window, &this->m_mousePosition.x, &this->m_mousePosition.y);
     // interpolate to the new position

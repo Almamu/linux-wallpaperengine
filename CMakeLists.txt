@@ -41,6 +41,7 @@ include_directories(
     ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
+    ${CMAKE_SOURCE_DIR}
     include)
 
 add_executable(
@@ -129,15 +130,21 @@ add_executable(
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
     src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
     src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
+    src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp
+    src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h
 
     src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutput.h
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
+    src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
+    src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
     src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
     src/WallpaperEngine/Render/CRenderContext.h
@@ -284,7 +291,15 @@ target_link_libraries(linux-wallpaperengine
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
-    glfw)
+    ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1.o
+    ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
+    glfw
+    GLESv2
+    pthread
+    wayland-cursor
+    /usr/lib/libEGL.so.1
+    wayland-client
+    wayland-egl)
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
 

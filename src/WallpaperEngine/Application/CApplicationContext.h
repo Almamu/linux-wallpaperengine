@@ -29,6 +29,8 @@ namespace WallpaperEngine::Application
 			X11_BACKGROUND = 1,
 			/** Explicit window mode with specified geometry */
 			EXPLICIT_WINDOW = 2,
+            /** Wayland mode - zwlr_layer_shell_v1 */
+            WAYLAND_LAYER_SHELL = 3,
 		};
 
         struct
