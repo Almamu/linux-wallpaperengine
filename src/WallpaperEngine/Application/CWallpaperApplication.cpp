@@ -263,11 +263,10 @@ namespace WallpaperEngine::Application
     void CWallpaperApplication::show ()
     {
         // initialize OpenGL driver
-        const bool WAYLAND = getenv("WAYLAND_DISPLAY");
+        const bool WAYLAND = getenv("WAYLAND_DISPLAY") && this->m_context.settings.render.mode == CApplicationContext::WAYLAND_LAYER_SHELL;
         if (WAYLAND) {
             videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver>("wallpaperengine", this->m_context, this);
             inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*)videoDriver.get());
-            this->m_context.settings.render.mode = CApplicationContext::WAYLAND_LAYER_SHELL;
         } else {
             videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CX11OpenGLDriver>("wallpaperengine", this->m_context);
             inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CX11OpenGLDriver*)videoDriver.get());

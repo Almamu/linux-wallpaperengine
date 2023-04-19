@@ -12,22 +12,23 @@
 using namespace WallpaperEngine::Application;
 
 struct option long_options[] = {
-    { "screen-root", required_argument,  nullptr, 'r' },
-    { "bg", required_argument,           nullptr, 'b' },
-    { "window", required_argument,       nullptr, 'w' },
-    { "pkg", required_argument,          nullptr, 'p' },
-    { "dir", required_argument,          nullptr, 'd' },
-    { "silent", no_argument,             nullptr, 's' },
-    { "volume", required_argument,       nullptr, 'v' },
-    { "help", no_argument,               nullptr, 'h' },
-    { "fps", required_argument,          nullptr, 'f' },
-    { "assets-dir", required_argument,   nullptr, 'a' },
-    { "screenshot", required_argument,   nullptr, 'c' },
-    { "list-properties", no_argument,    nullptr, 'l' },
-    { "set-property", required_argument, nullptr, 'o' },
-    { "noautomute", no_argument,         nullptr, 'm' },
-    { "no-fullscreen-pause", no_argument,nullptr, 'n' },
-    { nullptr, 0,                        nullptr, 0 }
+    { "screen-root", required_argument,     nullptr, 'r' },
+    { "wayland-display", required_argument, nullptr, 'i' },
+    { "bg", required_argument,              nullptr, 'b' },
+    { "window", required_argument,          nullptr, 'w' },
+    { "pkg", required_argument,             nullptr, 'p' },
+    { "dir", required_argument,             nullptr, 'd' },
+    { "silent", no_argument,                nullptr, 's' },
+    { "volume", required_argument,          nullptr, 'v' },
+    { "help", no_argument,                  nullptr, 'h' },
+    { "fps", required_argument,             nullptr, 'f' },
+    { "assets-dir", required_argument,      nullptr, 'a' },
+    { "screenshot", required_argument,      nullptr, 'c' },
+    { "list-properties", no_argument,       nullptr, 'l' },
+    { "set-property", required_argument,    nullptr, 'o' },
+    { "noautomute", no_argument,            nullptr, 'm' },
+    { "no-fullscreen-pause", no_argument,   nullptr, 'n' },
+    { nullptr, 0,                           nullptr, 0 }
 };
 
 std::string stringPathFixes (const std::string& s)
@@ -84,7 +85,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mn", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:ri:p:d:shf:a:w:mn", long_options, nullptr)) != -1)
     {
         switch (c)
         {
@@ -127,6 +128,18 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 this->settings.render.mode = X11_BACKGROUND;
                 lastScreen = optarg;
                 this->settings.general.screenBackgrounds[lastScreen] = "";
+                break;
+
+            case 'i':
+                if (this->settings.general.screenBackgrounds.find (optarg) != this->settings.general.screenBackgrounds.end ())
+                    sLog.exception ("Cannot specify the same screen more than once: ", optarg);
+                if (this->settings.render.mode == EXPLICIT_WINDOW)
+                    sLog.exception ("Cannot run in both background and window mode");
+
+                this->settings.render.mode = WAYLAND_LAYER_SHELL;
+                lastScreen = optarg;
+                this->settings.general.screenBackgrounds[lastScreen] = "";
+
                 break;
 
             case 'w':

@@ -229,6 +229,19 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     if (!waylandContext.compositor || !waylandContext.shm || !waylandContext.layerShell || m_outputs.empty())
         sLog.exception("Failed to bind to required interfaces");
 
+    SWaylandOutput* outputToUse = nullptr;
+    for (auto& o : m_outputs) {
+        if (std::find_if(context.settings.general.screenBackgrounds.begin(), context.settings.general.screenBackgrounds.end(), [&] (const auto& e) { return e.first == o->name; }) != context.settings.general.screenBackgrounds.end()) {
+            outputToUse = o.get();
+            break;
+        }
+    }
+
+    if (!outputToUse) {
+        sLog.debug("Failed to find any output, using first");
+        outputToUse = m_outputs[0].get();
+    }
+
     const auto XCURSORSIZE = getenv("XCURSOR_SIZE") ? std::stoi(getenv("XCURSOR_SIZE")) : 24;
     const auto PRCURSORTHEME = wl_cursor_theme_load(NULL, XCURSORSIZE, waylandContext.shm);
 
@@ -244,7 +257,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     initEGL();
     
     waylandContext.layerSurface.surface = wl_compositor_create_surface(waylandContext.compositor);
-    waylandContext.layerSurface.layerSurface = zwlr_layer_shell_v1_get_layer_surface(waylandContext.layerShell, waylandContext.layerSurface.surface, m_outputs[0]->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
+    waylandContext.layerSurface.layerSurface = zwlr_layer_shell_v1_get_layer_surface(waylandContext.layerShell, waylandContext.layerSurface.surface, outputToUse->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
 
     if (!waylandContext.layerSurface.layerSurface) {
         finishEGL();
