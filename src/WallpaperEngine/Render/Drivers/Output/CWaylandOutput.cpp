@@ -9,9 +9,15 @@ CWaylandOutput::CWaylandOutput (CApplicationContext& context, CVideoDriver& driv
     m_driver (driver)
 {
     const auto PDRIVER = (CWaylandOpenGLDriver*)&driver;
+    glm::ivec2 fullw = {0,0};
     for (auto& o : PDRIVER->m_outputs) {
         m_viewports[o->name] = {{0, 0, o->size.x, o->size.y}, o->name};
+
+        fullw = fullw + glm::ivec2{o->size.x, o->size.y};
     }
+
+    m_fullWidth = fullw.x;
+    m_fullHeight = fullw.y;
 }
 
 CWaylandOutput::~CWaylandOutput ()
