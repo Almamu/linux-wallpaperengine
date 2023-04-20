@@ -263,18 +263,22 @@ namespace WallpaperEngine::Application
     void CWallpaperApplication::show ()
     {
         // initialize OpenGL driver
+#ifdef ENABLE_WAYLAND
         const bool WAYLAND = getenv("WAYLAND_DISPLAY") && this->m_context.settings.render.mode == CApplicationContext::WAYLAND_LAYER_SHELL;
         if (WAYLAND) {
             videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver>("wallpaperengine", this->m_context, this);
             inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*)videoDriver.get());
         } else {
+#endif
             videoDriver = std::make_unique<WallpaperEngine::Render::Drivers::CX11OpenGLDriver>("wallpaperengine", this->m_context);
             inputContext = std::make_unique<WallpaperEngine::Input::CInputContext>(*(WallpaperEngine::Render::Drivers::CX11OpenGLDriver*)videoDriver.get());
+#ifdef ENABLE_WAYLAND
         }
 
         if (WAYLAND)
             fullscreenDetector = std::make_unique<WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector>(this->m_context, *(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*)videoDriver.get());
         else
+#endif
             fullscreenDetector = std::make_unique<WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector>(this->m_context, *videoDriver);
         // stereo mix recorder for audio processing
         WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder audioRecorder;
@@ -296,10 +300,11 @@ namespace WallpaperEngine::Application
             case CApplicationContext::X11_BACKGROUND:
                 output = new WallpaperEngine::Render::Drivers::Output::CX11Output (this->m_context, *videoDriver, *fullscreenDetector);
                 break;
-            
+#ifdef ENABLE_WAYLAND
             case CApplicationContext::WAYLAND_LAYER_SHELL:
                 output = new WallpaperEngine::Render::Drivers::Output::CWaylandOutput (this->m_context, *videoDriver, *fullscreenDetector);
                 break;
+#endif
         }
 
         // initialize render context
@@ -318,6 +323,7 @@ namespace WallpaperEngine::Application
                 this->m_defaultBackground->getWallpaper (), *context, *audioContext
             ));
 
+#ifdef ENABLE_WAYLAND
         if (WAYLAND) {
             renderFrame();
 
@@ -325,10 +331,13 @@ namespace WallpaperEngine::Application
                 videoDriver->dispatchEventQueue();
             }
         } else {
+#endif
             while (!videoDriver->closeRequested () && this->m_context.state.general.keepRunning) {
                 renderFrame();
             }
+#ifdef ENABLE_WAYLAND
         }
+#endif
 
         // ensure this is updated as sometimes it might not come from a signal
         this->m_context.state.general.keepRunning = false;

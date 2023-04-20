@@ -9,14 +9,20 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+#endif
 
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+#endif
 
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+#endif
 
 #include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
 

@@ -44,6 +44,15 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     include)
 
+if (ENABLE_WAYLAND)
+    message(STATUS "Wayland support is enabled!")
+    add_compile_definitions(ENABLE_WAYLAND)
+    set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
+    "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h")
+else()
+    set(WAYLAND_SOURCES "")
+endif()
+
 add_executable(
     linux-wallpaperengine
     main.cpp
@@ -130,21 +139,15 @@ add_executable(
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
     src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
     src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
-    src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp
-    src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h
 
     src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutput.h
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
-    src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
-    src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h
-    src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
     src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
     src/WallpaperEngine/Render/CRenderContext.h
@@ -275,6 +278,8 @@ add_executable(
 
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
+
+    ${WAYLAND_SOURCES}
 )
 
 target_link_libraries(linux-wallpaperengine
@@ -291,15 +296,18 @@ target_link_libraries(linux-wallpaperengine
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
-    ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1.o
-    ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
-    glfw
-    GLESv2
-    pthread
-    wayland-cursor
-    /usr/lib/libEGL.so.1
-    wayland-client
-    wayland-egl)
+    glfw)
+
+if (ENABLE_WAYLAND)
+    target_link_libraries(linux-wallpaperengine ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1.o
+                                                ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
+                                                GLESv2
+                                                pthread
+                                                wayland-cursor
+                                                /usr/lib/libEGL.so.1
+                                                wayland-client
+                                                wayland-egl)
+endif()
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
 
