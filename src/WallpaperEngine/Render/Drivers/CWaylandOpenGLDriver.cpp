@@ -230,7 +230,7 @@ const struct wl_callback_listener frameListener = {
 
 CLayerSurface::CLayerSurface(CWaylandOpenGLDriver* pDriver, SWaylandOutput* pOutput) {
     surface = wl_compositor_create_surface(pDriver->waylandContext.compositor);
-    layerSurface = zwlr_layer_shell_v1_get_layer_surface(pDriver->waylandContext.layerShell, surface, output->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
+    layerSurface = zwlr_layer_shell_v1_get_layer_surface(pDriver->waylandContext.layerShell, surface, pOutput->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
     output = pOutput;
 
     if (!layerSurface)
@@ -362,7 +362,7 @@ void CWaylandOpenGLDriver::swapBuffers () {
 
         eglMakeCurrent(eglContext.display, o->layerSurface->eglSurface, o->layerSurface->eglSurface, eglContext.context);
         o->layerSurface->frameCallback = wl_surface_frame(o->layerSurface->surface);
-        wl_callback_add_listener(o->layerSurface->frameCallback, &frameListener, this);
+        wl_callback_add_listener(o->layerSurface->frameCallback, &frameListener, o->layerSurface.get());
         eglSwapBuffers(eglContext.display, o->layerSurface->eglSurface);
         wl_surface_set_buffer_scale(o->layerSurface->surface, o->scale);
         wl_surface_damage_buffer(o->layerSurface->surface, 0, 0, INT32_MAX, INT32_MAX);
