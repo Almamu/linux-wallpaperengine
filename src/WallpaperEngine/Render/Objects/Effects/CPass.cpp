@@ -21,6 +21,7 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Render::Objects::Effects;
 
 extern float g_Time;
+extern float g_Daytime;
 
 CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass) :
     Helpers::CContextAware (material),
@@ -602,6 +603,7 @@ void CPass::setupUniforms ()
     this->addUniform ("g_CompositeColor", this->m_material->getImage ()->getImage ()->getColor ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
+    this->addUniform ("g_Daytime", &g_Daytime);
     // add model-view-projection matrix
     this->addUniform ("g_ModelViewProjectionMatrix", &this->m_modelViewProjectionMatrix);
     this->addUniform ("g_ModelMatrix", &this->m_modelMatrix);
