@@ -52,6 +52,8 @@ if (ENABLE_WAYLAND)
         COMMAND ./protocols.sh
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+    pkg_check_modules(wayland-cursor wayland-protocols egl wayland-egl)
+
     add_compile_definitions(ENABLE_WAYLAND)
     set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
     "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h")
