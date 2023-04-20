@@ -4,19 +4,21 @@
 using namespace WallpaperEngine::Input;
 
 CMouseInput::CMouseInput (GLFWwindow* window) : position (), m_mousePosition (), m_window (window) {}
-
+#ifdef ENABLE_WAYLAND
 CMouseInput::CMouseInput(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver) {
     waylandDriver = driver;
 }
+#endif
 
 void CMouseInput::update ()
 {
     if (!m_window) {
+#ifdef ENABLE_WAYLAND
         if (!waylandDriver || !waylandDriver->lastLSInFocus)
             return;
 
         this->position = waylandDriver->lastLSInFocus->mousePos;
-
+#endif
         return;
     }
 
