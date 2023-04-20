@@ -29,7 +29,7 @@ void CWaylandOutput::reset () {
 }
 
 bool CWaylandOutput::renderVFlip () const {
-    return false;
+    return true;
 }
 
 bool CWaylandOutput::renderMultiple () const  {
