@@ -12,9 +12,8 @@ CInputContext::CInputContext (CX11OpenGLDriver& videoDriver) :
 
 #ifdef ENABLE_WAYLAND
 CInputContext::CInputContext (CWaylandOpenGLDriver& videoDriver) :
-    m_mouse (nullptr)
+    m_mouse (&videoDriver)
 {
-    // todo
 }
 #endif
 

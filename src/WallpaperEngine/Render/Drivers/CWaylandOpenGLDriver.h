@@ -51,6 +51,9 @@ namespace WallpaperEngine::Render::Drivers
         glm::ivec2 size;
         wl_callback* frameCallback = nullptr;
         SWaylandOutput* output = nullptr;
+        glm::dvec2 mousePos = {0, 0};
+        wl_cursor* pointer = nullptr;
+        wl_surface* cursorSurface = nullptr;
     };
 
     class CWaylandOpenGLDriver : public CVideoDriver
@@ -80,12 +83,12 @@ namespace WallpaperEngine::Render::Drivers
             wl_compositor* compositor = nullptr;
             wl_shm* shm = nullptr;
             zwlr_layer_shell_v1* layerShell = nullptr;
-            wl_cursor* pointer = nullptr;
-            wl_surface* cursorSurface = nullptr;
+            wl_seat* seat = nullptr;
         } waylandContext;
 
         void onLayerClose(CLayerSurface*);
         void resizeLSSurfaceEGL(CLayerSurface*);
+        CLayerSurface* surfaceToLS(wl_surface*);
 
         std::vector<std::unique_ptr<SWaylandOutput>> m_outputs;
 
@@ -97,6 +100,8 @@ namespace WallpaperEngine::Render::Drivers
             EGLContext context = nullptr;
             PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
         } eglContext;
+
+        CLayerSurface* lastLSInFocus = nullptr;
 
     private:
 

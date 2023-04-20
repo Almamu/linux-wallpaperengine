@@ -1,7 +1,10 @@
 #pragma once
 
+#include "../Render/Drivers/CWaylandOpenGLDriver.h"
+
 #include <glm/vec2.hpp>
 #include "GLFW/glfw3.h"
+
 
 namespace WallpaperEngine::Input
 {
@@ -12,6 +15,9 @@ namespace WallpaperEngine::Input
     {
     public:
         explicit CMouseInput(GLFWwindow* window);
+
+        explicit CMouseInput(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver);
+
 
         /**
          * Takes current mouse position and updates it
@@ -27,12 +33,17 @@ namespace WallpaperEngine::Input
         /**
          * The GLFW window to get mouse position from
          */
-        GLFWwindow* m_window;
+        GLFWwindow* m_window = nullptr;
 
         /**
          * The current mouse position
          */
         glm::dvec2 m_mousePosition;
+
+        /**
+         * Wayland: Driver
+        */
+        WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* waylandDriver = nullptr;
     };
 }
 

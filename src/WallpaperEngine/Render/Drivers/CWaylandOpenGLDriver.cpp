@@ -20,12 +20,54 @@ extern "C" {
 
 using namespace WallpaperEngine::Render::Drivers;
 
-void geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
+static void handlePointerEnter(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    const auto PDRIVER = (CWaylandOpenGLDriver*)data;
+    const auto PLS = PDRIVER->surfaceToLS(surface);
+    PDRIVER->lastLSInFocus = PLS;
+    wl_surface_set_buffer_scale(PLS->cursorSurface, PLS->output->scale);
+    wl_surface_attach(PLS->cursorSurface, wl_cursor_image_get_buffer(PLS->pointer->images[0]), 0, 0);
+    wl_pointer_set_cursor(wl_pointer, serial, PLS->cursorSurface, PLS->pointer->images[0]->hotspot_x, PLS->pointer->images[0]->hotspot_y);
+    wl_surface_commit(PLS->cursorSurface);
+}
+
+static void handlePointerLeave(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface) {
+    // ignored
+}
+
+static void handlePointerAxis(void* data, wl_pointer* wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {
+    // ignored
+}
+
+static void handlePointerMotion(void* data, struct wl_pointer* wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    auto x = wl_fixed_to_double(surface_x);
+    auto y = wl_fixed_to_double(surface_y);
+
+    const auto PDRIVER = (CWaylandOpenGLDriver*)data;
+    if (!PDRIVER->lastLSInFocus)
+        return;
+
+    PDRIVER->lastLSInFocus->mousePos = {x, y};
+}
+
+static void handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+    // ignored
+}
+
+const struct wl_pointer_listener pointerListener = { .enter = handlePointerEnter, .leave = handlePointerLeave, .motion = handlePointerMotion, .button = handlePointerButton, .axis = handlePointerAxis };
+
+static void handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilities) {
+    if (capabilities & WL_SEAT_CAPABILITY_POINTER)
+        wl_pointer_add_listener(wl_seat_get_pointer(wl_seat), &pointerListener, data);
+}
+
+const struct wl_seat_listener seatListener = { .capabilities = handleCapabilities };
+
+static void geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
                       int32_t transform) {
     // ignored
 }
 
-void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
+static void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto PMONITOR = (SWaylandOutput*)data;
     PMONITOR->size = {width, height};
     PMONITOR->lsSize = {width, height};
@@ -37,13 +79,13 @@ void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t 
         PMONITOR->driver->wallpaperApplication->getOutput()->reset();
 }
 
-void done(void* data, wl_output* wl_output) {
+static void done(void* data, wl_output* wl_output) {
     const auto PMONITOR = (SWaylandOutput*)data;
 
     PMONITOR->initialized = true;
 }
 
-void scale(void* data, wl_output* wl_output, int32_t scale) {
+static void scale(void* data, wl_output* wl_output, int32_t scale) {
     const auto PMONITOR = (SWaylandOutput*)data;
 
     PMONITOR->scale = scale;
@@ -55,14 +97,14 @@ void scale(void* data, wl_output* wl_output, int32_t scale) {
         PMONITOR->driver->wallpaperApplication->getOutput()->reset();
 }
 
-void name(void* data, wl_output* wl_output, const char* name) {
+static void name(void* data, wl_output* wl_output, const char* name) {
     const auto PMONITOR = (SWaylandOutput*)data;
 
     if (name)
         PMONITOR->name = name;
 }
 
-void description(void* data, wl_output* wl_output, const char* description) {
+static void description(void* data, wl_output* wl_output, const char* description) {
     // ignored
 }
 
@@ -85,6 +127,9 @@ static void handleGlobal(void *data, struct wl_registry *registry, uint32_t name
         wl_output_add_listener(POUTPUT->output, &outputListener, POUTPUT);
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         PDRIVER->waylandContext.layerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
+    } else if (strcmp(interface, wl_seat_interface.name) == 0) {
+        PDRIVER->waylandContext.seat = (wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1);
+        wl_seat_add_listener(PDRIVER->waylandContext.seat, &seatListener, PDRIVER);
     }
 }
 
@@ -237,6 +282,7 @@ CLayerSurface::CLayerSurface(CWaylandOpenGLDriver* pDriver, SWaylandOutput* pOut
         sLog.exception("Failed to get a layer surface");
 
     wl_region* region = wl_compositor_create_region(pDriver->waylandContext.compositor);
+    wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
 
     zwlr_layer_surface_v1_set_size(layerSurface, 0, 0);
     zwlr_layer_surface_v1_set_anchor(layerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
@@ -253,6 +299,18 @@ CLayerSurface::CLayerSurface(CWaylandOpenGLDriver* pDriver, SWaylandOutput* pOut
     wl_surface_commit(surface);
     wl_display_roundtrip(pDriver->waylandContext.display);
     wl_display_flush(pDriver->waylandContext.display);
+
+    static const auto XCURSORSIZE = getenv("XCURSOR_SIZE") ? std::stoi(getenv("XCURSOR_SIZE")) : 24;
+    const auto PRCURSORTHEME = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSORSIZE * output->scale, pDriver->waylandContext.shm);
+
+    if (!PRCURSORTHEME)
+        sLog.exception("Failed to get a cursor theme");
+
+    pointer = wl_cursor_theme_get_cursor(PRCURSORTHEME, "left_ptr");
+    cursorSurface = wl_compositor_create_surface(pDriver->waylandContext.compositor);
+
+    if (!cursorSurface)
+        sLog.exception("Failed to get a cursor surface");
 
     if (eglMakeCurrent(pDriver->eglContext.display, eglSurface, eglSurface, pDriver->eglContext.context) == EGL_FALSE)
         sLog.exception("Failed to make egl current");
@@ -290,18 +348,6 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
         sLog.debug("Failed to find any output, using first");
         outputToUse = m_outputs[0].get();
     }
-
-    const auto XCURSORSIZE = getenv("XCURSOR_SIZE") ? std::stoi(getenv("XCURSOR_SIZE")) : 24;
-    const auto PRCURSORTHEME = wl_cursor_theme_load(NULL, XCURSORSIZE, waylandContext.shm);
-
-    if (!PRCURSORTHEME)
-        sLog.exception("Failed to get a cursor theme");
-
-    waylandContext.pointer = wl_cursor_theme_get_cursor(PRCURSORTHEME, "left_ptr");
-    waylandContext.cursorSurface = wl_compositor_create_surface(waylandContext.compositor);
-
-    if (!waylandContext.cursorSurface)
-        sLog.exception("Failed to get a cursor surface");
 
     initEGL();
 
@@ -408,4 +454,13 @@ void CWaylandOpenGLDriver::makeCurrent(const std::string& outputName) const {
             std::cerr << "Couldn't make egl current";
         }
     }
+}
+
+CLayerSurface* CWaylandOpenGLDriver::surfaceToLS(wl_surface* surface) {
+    for (auto& o : m_outputs) {
+        if (o->layerSurface->surface == surface)
+            return o->layerSurface.get();
+    }
+
+    return nullptr;
 }
