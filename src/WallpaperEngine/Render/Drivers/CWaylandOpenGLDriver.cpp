@@ -336,22 +336,23 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     if (!waylandContext.compositor || !waylandContext.shm || !waylandContext.layerShell || m_outputs.empty())
         sLog.exception("Failed to bind to required interfaces");
 
-    SWaylandOutput* outputToUse = nullptr;
+    initEGL();
+
+    bool any = false;
     for (auto& o : m_outputs) {
         if (std::find_if(context.settings.general.screenBackgrounds.begin(), context.settings.general.screenBackgrounds.end(), [&] (const auto& e) { return e.first == o->name; }) != context.settings.general.screenBackgrounds.end()) {
-            outputToUse = o.get();
-            break;
+            o->layerSurface = std::make_unique<CLayerSurface>(this, o.get());
+            any = true;
         }
     }
 
-    if (!outputToUse) {
-        sLog.debug("Failed to find any output, using first");
-        outputToUse = m_outputs[0].get();
+    if (!any && std::find_if(context.settings.general.screenBackgrounds.begin(), context.settings.general.screenBackgrounds.end(), [&] (const auto& e) { return e.first == "auto"; }) != context.settings.general.screenBackgrounds.end()) {
+        m_outputs[0]->layerSurface = std::make_unique<CLayerSurface>(this, m_outputs[0].get());
+        any = true;
     }
 
-    initEGL();
-
-    const auto PLS = (outputToUse->layerSurface = std::make_unique<CLayerSurface>(this, outputToUse)).get();
+    if (!any)
+        sLog.exception("No outputs could be initialized!");
 
     GLenum result = glewInit ();
 
