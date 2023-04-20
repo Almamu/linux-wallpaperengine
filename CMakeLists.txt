@@ -307,18 +307,11 @@ target_link_libraries(linux-wallpaperengine
     glfw)
 
 if (ENABLE_WAYLAND)
-    # finding EGL is a bit troublesome
-    pkg_check_modules(PKG_EGL QUIET egl)
-    find_library(EGL_LIBRARY NAMES EGL libEGL HINTS ${PKG_EGL_LIBRARY_DIRS})
-    add_library(EGL::EGL UNKNOWN IMPORTED)
-
-    target_link_libraries(linux-wallpaperengine ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
-                                                ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
-                                                pthread
+    target_link_libraries(linux-wallpaperengine pthread
                                                 wayland-cursor
                                                 wayland-client
                                                 wayland-egl
-                                                ${EGL_LIBRARY})
+                                                ${OPENGL_egl_LIBRARY})
 endif()
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
