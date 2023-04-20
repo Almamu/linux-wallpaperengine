@@ -32,6 +32,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void setTexCoord (GLuint texcoord);
         void setPosition (GLuint position);
         void setModelViewProjectionMatrix (const glm::mat4* projection);
+        void setModelViewProjectionMatrixInverse (const glm::mat4* projection);
         void setModelMatrix (const glm::mat4* model);
         void setViewProjectionMatrix (const glm::mat4* viewProjection);
 
@@ -137,6 +138,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         std::map<std::string, UniformEntry*> m_uniforms;
         std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms;
         const glm::mat4* m_modelViewProjectionMatrix;
+        const glm::mat4* m_modelViewProjectionMatrixInverse;
         const glm::mat4* m_modelMatrix;
         const glm::mat4* m_viewProjectionMatrix;
 

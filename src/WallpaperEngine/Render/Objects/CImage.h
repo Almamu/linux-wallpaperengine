@@ -73,6 +73,9 @@ namespace WallpaperEngine::Render::Objects
         glm::mat4 m_modelViewProjectionScreen;
         glm::mat4 m_modelViewProjectionPass;
         glm::mat4 m_modelViewProjectionCopy;
+        glm::mat4 m_modelViewProjectionScreenInverse;
+        glm::mat4 m_modelViewProjectionPassInverse;
+        glm::mat4 m_modelViewProjectionCopyInverse;
 
         glm::mat4 m_modelMatrix;
         glm::mat4 m_viewProjectionMatrix;
