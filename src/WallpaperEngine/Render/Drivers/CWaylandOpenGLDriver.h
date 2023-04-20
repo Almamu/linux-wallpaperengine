@@ -25,6 +25,7 @@ namespace WallpaperEngine::Render::Drivers
 {
     using namespace WallpaperEngine::Application;
     class CWaylandOpenGLDriver;
+    class CLayerSurface;
 
     struct SWaylandOutput {
         wl_output* output;
@@ -35,6 +36,21 @@ namespace WallpaperEngine::Render::Drivers
         int scale = 1;
         CWaylandOpenGLDriver* driver = nullptr;
         bool initialized = false;
+        std::unique_ptr<CLayerSurface> layerSurface;
+    };
+
+    class CLayerSurface {
+    public:
+        CLayerSurface(CWaylandOpenGLDriver*, SWaylandOutput*);
+        ~CLayerSurface();
+
+        wl_egl_window* eglWindow = nullptr;
+        EGLSurface eglSurface = nullptr;
+        wl_surface* surface = nullptr;
+        zwlr_layer_surface_v1* layerSurface = nullptr;
+        glm::ivec2 size;
+        wl_callback* frameCallback = nullptr;
+        SWaylandOutput* output = nullptr;
     };
 
     class CWaylandOpenGLDriver : public CVideoDriver
@@ -54,7 +70,7 @@ namespace WallpaperEngine::Render::Drivers
         void swapBuffers () override;
         uint32_t getFrameCounter () const override;
         void dispatchEventQueue() const override;
-        void makeCurrent() const;
+        void makeCurrent(const std::string& outputName) const;
 
         GLFWwindow* getWindow ();
 
@@ -66,29 +82,14 @@ namespace WallpaperEngine::Render::Drivers
             zwlr_layer_shell_v1* layerShell = nullptr;
             wl_cursor* pointer = nullptr;
             wl_surface* cursorSurface = nullptr;
-
-            struct {
-                wl_egl_window* eglWindow = nullptr;
-                EGLSurface eglSurface = nullptr;
-                wl_surface* surface = nullptr;
-                zwlr_layer_surface_v1* layerSurface = nullptr;
-                glm::ivec2 size;
-                wl_callback* frameCallback = nullptr;
-                SWaylandOutput* output = nullptr;
-            } layerSurface;
         } waylandContext;
 
-        void onLayerClose();
-        void resizeLSSurfaceEGL();
+        void onLayerClose(CLayerSurface*);
+        void resizeLSSurfaceEGL(CLayerSurface*);
 
         std::vector<std::unique_ptr<SWaylandOutput>> m_outputs;
 
         CWallpaperApplication* wallpaperApplication;
-
-    private:
-
-        void initEGL();
-        void finishEGL();
 
         struct {
             EGLDisplay display = nullptr;
@@ -96,6 +97,11 @@ namespace WallpaperEngine::Render::Drivers
             EGLContext context = nullptr;
             PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
         } eglContext;
+
+    private:
+
+        void initEGL();
+        void finishEGL();
 
         uint32_t m_frameCounter;
 

@@ -2,6 +2,7 @@
 
 #include <glm/vec4.hpp>
 #include <glm/vec2.hpp>
+#include <string>
 
 namespace WallpaperEngine::Render::Drivers
 {
@@ -55,6 +56,6 @@ namespace WallpaperEngine::Render::Drivers
         /**
          * Wayland only: make EGL current
         */
-        void makeCurrent() const;
+        void makeCurrent(const std::string& outputName) const;
     };
 }

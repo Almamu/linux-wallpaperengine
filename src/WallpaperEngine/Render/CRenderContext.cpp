@@ -29,6 +29,8 @@ namespace WallpaperEngine::Render
 
         for (const auto& cur : this->m_output->getViewports ())
         {
+            this->m_driver.makeCurrent(cur.first);
+
 #if !NDEBUG
             std::string str = "Rendering to output " + cur.first;
 

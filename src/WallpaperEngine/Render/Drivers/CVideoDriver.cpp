@@ -6,6 +6,6 @@ void CVideoDriver::dispatchEventQueue() const {
     // intentionally left blank
 }
 
-void CVideoDriver::makeCurrent() const {
+void CVideoDriver::makeCurrent(const std::string& outputName) const {
     // intentionally left blank
 }
