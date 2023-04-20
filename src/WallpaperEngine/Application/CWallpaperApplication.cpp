@@ -388,4 +388,8 @@ namespace WallpaperEngine::Application
     {
         return this->m_context;
     }
+
+    WallpaperEngine::Render::Drivers::Output::COutput* CWallpaperApplication::getOutput() const {
+        return this->output;
+    }
 }

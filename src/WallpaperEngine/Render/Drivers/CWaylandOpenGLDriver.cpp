@@ -28,16 +28,29 @@ void geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width
 void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto PMONITOR = (SWaylandOutput*)data;
     PMONITOR->size = {width, height};
+    PMONITOR->lsSize = {width, height};
+
+    PMONITOR->driver->resizeLSSurfaceEGL();
+
+    if (PMONITOR->initialized)
+        PMONITOR->driver->wallpaperApplication->getOutput()->reset();
 }
 
 void done(void* data, wl_output* wl_output) {
     const auto PMONITOR = (SWaylandOutput*)data;
+
+    PMONITOR->initialized = true;
 }
 
 void scale(void* data, wl_output* wl_output, int32_t scale) {
     const auto PMONITOR = (SWaylandOutput*)data;
 
     PMONITOR->scale = scale;
+
+    PMONITOR->driver->resizeLSSurfaceEGL();
+
+    if (PMONITOR->initialized)
+        PMONITOR->driver->wallpaperApplication->getOutput()->reset();
 }
 
 void name(void* data, wl_output* wl_output, const char* name) {
@@ -66,6 +79,7 @@ static void handleGlobal(void *data, struct wl_registry *registry, uint32_t name
         POUTPUT->name = "";
         POUTPUT->size = {0, 0};
         POUTPUT->waylandName = name;
+        POUTPUT->driver = PDRIVER;
         wl_output_add_listener(POUTPUT->output, &outputListener, POUTPUT);
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         PDRIVER->waylandContext.layerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
@@ -178,8 +192,7 @@ static void handleLSConfigure(void *data, zwlr_layer_surface_v1 *surface, uint32
     const auto PDRIVER = (CWaylandOpenGLDriver*)data;
     PDRIVER->waylandContext.layerSurface.size = {w, h};
 
-    if (PDRIVER->waylandContext.layerSurface.eglWindow)
-        wl_egl_window_resize(PDRIVER->waylandContext.layerSurface.eglWindow, w, h, 0, 0);
+    PDRIVER->resizeLSSurfaceEGL();
 
     zwlr_layer_surface_v1_ack_configure(surface, serial);
 }
@@ -258,6 +271,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     
     waylandContext.layerSurface.surface = wl_compositor_create_surface(waylandContext.compositor);
     waylandContext.layerSurface.layerSurface = zwlr_layer_shell_v1_get_layer_surface(waylandContext.layerShell, waylandContext.layerSurface.surface, outputToUse->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
+    waylandContext.layerSurface.output = outputToUse;
 
     if (!waylandContext.layerSurface.layerSurface) {
         finishEGL();
@@ -275,8 +289,9 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     wl_surface_commit(waylandContext.layerSurface.surface);
     wl_display_roundtrip(waylandContext.display);
 
-    waylandContext.layerSurface.eglWindow = wl_egl_window_create(waylandContext.layerSurface.surface, waylandContext.layerSurface.size.x, waylandContext.layerSurface.size.y);
+    waylandContext.layerSurface.eglWindow = wl_egl_window_create(waylandContext.layerSurface.surface, waylandContext.layerSurface.size.x * outputToUse->scale, waylandContext.layerSurface.size.y * outputToUse->scale);
     waylandContext.layerSurface.eglSurface = eglContext.eglCreatePlatformWindowSurfaceEXT(eglContext.display, eglContext.config, waylandContext.layerSurface.eglWindow, nullptr);
+    outputToUse->lsSize = waylandContext.layerSurface.size;
     wl_surface_commit(waylandContext.layerSurface.surface);
     wl_display_roundtrip(waylandContext.display);
     wl_display_flush(waylandContext.display);
@@ -338,11 +353,28 @@ void CWaylandOpenGLDriver::swapBuffers () {
     waylandContext.layerSurface.frameCallback = wl_surface_frame(waylandContext.layerSurface.surface);
     wl_callback_add_listener(waylandContext.layerSurface.frameCallback, &frameListener, this);
     eglSwapBuffers(eglContext.display, waylandContext.layerSurface.eglSurface);
-    wl_surface_set_buffer_scale(waylandContext.layerSurface.surface, 1);
+    wl_surface_set_buffer_scale(waylandContext.layerSurface.surface, waylandContext.layerSurface.output->scale);
     wl_surface_damage_buffer(waylandContext.layerSurface.surface, 0, 0, INT32_MAX, INT32_MAX);
     wl_surface_commit(waylandContext.layerSurface.surface);
 
     m_frameCounter++;
+}
+
+void CWaylandOpenGLDriver::resizeLSSurfaceEGL() {
+    if (waylandContext.layerSurface.eglWindow) {
+        waylandContext.layerSurface.output->lsSize = waylandContext.layerSurface.size;
+
+        wl_egl_window_resize(waylandContext.layerSurface.eglWindow, waylandContext.layerSurface.size.x * waylandContext.layerSurface.output->scale, waylandContext.layerSurface.size.y * waylandContext.layerSurface.output->scale, 0, 0);
+        
+        if (waylandContext.layerSurface.frameCallback) {
+            wl_callback_destroy(waylandContext.layerSurface.frameCallback);
+            waylandContext.layerSurface.frameCallback = nullptr;
+        }
+
+        wallpaperApplication->getOutput()->reset();
+        
+        wallpaperApplication->renderFrame();
+    }
 }
 
 uint32_t CWaylandOpenGLDriver::getFrameCounter () const {

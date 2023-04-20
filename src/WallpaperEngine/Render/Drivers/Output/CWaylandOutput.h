@@ -24,6 +24,8 @@ namespace WallpaperEngine::Render::Drivers::Output
         void updateRender () const override;
 
     private:
+        void updateViewports();
+
         CVideoDriver& m_driver;
     };
 }

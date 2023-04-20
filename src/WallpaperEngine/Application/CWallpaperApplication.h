@@ -60,6 +60,10 @@ namespace WallpaperEngine::Application
          * Renders a frame
         */
         void renderFrame();
+        /**
+         * Gets the output
+        */
+        WallpaperEngine::Render::Drivers::Output::COutput* getOutput() const;
 
     private:
         /**

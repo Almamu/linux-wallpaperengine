@@ -24,13 +24,17 @@ struct zwlr_layer_surface_v1;
 namespace WallpaperEngine::Render::Drivers
 {
     using namespace WallpaperEngine::Application;
+    class CWaylandOpenGLDriver;
 
     struct SWaylandOutput {
         wl_output* output;
         std::string name;
         glm::ivec2 size;
+        glm::ivec2 lsSize;
         uint32_t waylandName;
         int scale = 1;
+        CWaylandOpenGLDriver* driver = nullptr;
+        bool initialized = false;
     };
 
     class CWaylandOpenGLDriver : public CVideoDriver
@@ -70,10 +74,12 @@ namespace WallpaperEngine::Render::Drivers
                 zwlr_layer_surface_v1* layerSurface = nullptr;
                 glm::ivec2 size;
                 wl_callback* frameCallback = nullptr;
+                SWaylandOutput* output = nullptr;
             } layerSurface;
         } waylandContext;
 
         void onLayerClose();
+        void resizeLSSurfaceEGL();
 
         std::vector<std::unique_ptr<SWaylandOutput>> m_outputs;
 
