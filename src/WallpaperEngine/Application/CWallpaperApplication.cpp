@@ -13,6 +13,7 @@
 
 float g_Time;
 float g_TimeLast;
+float g_Daytime;
 
 namespace WallpaperEngine::Application
 {
@@ -349,7 +350,14 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::renderFrame() {
 
-        float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+        static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+        static time_t seconds;
+        static struct tm* timeinfo;
+
+        // update g_Daytime
+        time (&seconds);
+        timeinfo = localtime(&seconds);
+        g_Daytime = ((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0 * 60.0);
 
         // update audio recorder
         audioDriver->update ();
