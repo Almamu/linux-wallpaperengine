@@ -201,6 +201,9 @@ void CPass::render ()
             case Matrix4:
                 glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (entry->value)));
                 break;
+            case Matrix3:
+                glUniformMatrix3fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat3*> (entry->value)));
+                break;
         }
     }
     // add reference uniforms
@@ -230,6 +233,9 @@ void CPass::render ()
                 break;
             case Matrix4:
                 glUniformMatrix4fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat4*> (*entry->value)));
+                break;
+            case Matrix3:
+                glUniformMatrix3fv (entry->id, 1, GL_FALSE, glm::value_ptr (*reinterpret_cast <const glm::mat3*> (*entry->value)));
                 break;
         }
     }
@@ -301,9 +307,14 @@ void CPass::setModelViewProjectionMatrix (const glm::mat4* projection)
     this->m_modelViewProjectionMatrix = projection;
 }
 
-void CPass::setModelMatrix (glm::mat4 model)
+void CPass::setModelMatrix (const glm::mat4* model)
 {
     this->m_modelMatrix = model;
+}
+
+void CPass::setViewProjectionMatrix (const glm::mat4* viewProjection)
+{
+    this->m_viewProjectionMatrix = viewProjection;
 }
 
 void CPass::setTexCoord (GLuint texcoord)
@@ -579,6 +590,9 @@ void CPass::setupUniforms ()
 
     auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
 
+    // lighting variables
+    this->addUniform ("g_LightAmbientColor", this->m_material->getImage ()->getScene ()->getScene ()->getAmbientColor ());
+    this->addUniform ("g_LightSkylightColor", this->m_material->getImage ()->getScene ()->getScene ()->getSkylightColor ());
     // register variables like brightness and alpha with some default value
     this->addUniform ("g_Brightness", this->m_material->getImage ()->getImage ()->getBrightness ());
     this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
@@ -590,6 +604,9 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Time", &g_Time);
     // add model-view-projection matrix
     this->addUniform ("g_ModelViewProjectionMatrix", &this->m_modelViewProjectionMatrix);
+    this->addUniform ("g_ModelMatrix", &this->m_modelMatrix);
+    this->addUniform ("g_NormalModelMatrix", glm::identity <glm::mat3> ());
+    this->addUniform ("g_ViewProjectionMatrix", &this->m_viewProjectionMatrix);
     this->addUniform ("g_PointerPosition", this->m_material->getImage ()->getScene ()->getMousePosition ());
     this->addUniform ("g_PointerPositionLast", this->m_material->getImage ()->getScene ()->getMousePositionLast ());
     this->addUniform ("g_EffectTextureProjectionMatrix", glm::mat4(1.0));
@@ -897,6 +914,21 @@ void CPass::addUniform (const std::string& name, const glm::vec4* value)
 void CPass::addUniform (const std::string& name, const glm::vec4** value)
 {
     this->addUniform (name, UniformType::Vector4, value);
+}
+
+void CPass::addUniform (const std::string& name, glm::mat3 value)
+{
+    this->addUniform (name, UniformType::Matrix3, value);
+}
+
+void CPass::addUniform (const std::string& name, const glm::mat3* value)
+{
+    this->addUniform (name, UniformType::Matrix3, value, 1);
+}
+
+void CPass::addUniform (const std::string& name, const glm::mat3** value)
+{
+    this->addUniform (name, UniformType::Matrix3, value);
 }
 
 void CPass::addUniform (const std::string& name, glm::mat4 value)

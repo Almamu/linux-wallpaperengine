@@ -32,7 +32,8 @@ namespace WallpaperEngine::Render::Objects::Effects
         void setTexCoord (GLuint texcoord);
         void setPosition (GLuint position);
         void setModelViewProjectionMatrix (const glm::mat4* projection);
-        void setModelMatrix (glm::mat4 model);
+        void setModelMatrix (const glm::mat4* model);
+        void setViewProjectionMatrix (const glm::mat4* viewProjection);
 
         const CMaterial* getMaterial () const;
         Core::Objects::Images::Materials::CPass* getPass ();
@@ -41,12 +42,13 @@ namespace WallpaperEngine::Render::Objects::Effects
         enum UniformType
         {
             Float = 0,
-            Matrix4 = 1,
-            Integer = 2,
-            Vector2 = 3,
-            Vector3 = 4,
-            Vector4 = 5,
-            Double = 6
+            Matrix3 = 1,
+            Matrix4 = 2,
+            Integer = 3,
+            Vector2 = 4,
+            Vector3 = 5,
+            Vector4 = 6,
+            Double = 7
         };
 
         class UniformEntry
@@ -102,6 +104,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, glm::vec2 value);
         void addUniform (const std::string& name, glm::vec3 value);
         void addUniform (const std::string& name, glm::vec4 value);
+        void addUniform (const std::string& name, glm::mat3 value);
         void addUniform (const std::string& name, glm::mat4 value);
         void addUniform (const std::string& name, const int* value, int count = 1);
         void addUniform (const std::string& name, const double* value, int count = 1);
@@ -109,6 +112,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, const glm::vec2* value);
         void addUniform (const std::string& name, const glm::vec3* value);
         void addUniform (const std::string& name, const glm::vec4* value);
+        void addUniform (const std::string& name, const glm::mat3* value);
         void addUniform (const std::string& name, const glm::mat4* value);
         void addUniform (const std::string& name, const int** value);
         void addUniform (const std::string& name, const double** value);
@@ -116,6 +120,7 @@ namespace WallpaperEngine::Render::Objects::Effects
         void addUniform (const std::string& name, const glm::vec2** value);
         void addUniform (const std::string& name, const glm::vec3** value);
         void addUniform (const std::string& name, const glm::vec4** value);
+        void addUniform (const std::string& name, const glm::mat3** value);
         void addUniform (const std::string& name, const glm::mat4** value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T value);
         template <typename T> void addUniform (const std::string& name, UniformType type, T* value, int count = 1);
@@ -132,7 +137,8 @@ namespace WallpaperEngine::Render::Objects::Effects
         std::map<std::string, UniformEntry*> m_uniforms;
         std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms;
         const glm::mat4* m_modelViewProjectionMatrix;
-        glm::mat4 m_modelMatrix;
+        const glm::mat4* m_modelMatrix;
+        const glm::mat4* m_viewProjectionMatrix;
 
         /**
          * Contains the final map of textures to be used
