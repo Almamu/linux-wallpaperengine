@@ -18,8 +18,11 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     m_texcoordPass (GL_NONE),
     m_passSpacePosition (GL_NONE),
     m_modelViewProjectionScreen (),
+    m_modelViewProjectionScreenInverse (),
     m_modelViewProjectionCopy (),
+    m_modelViewProjectionCopyInverse (),
     m_modelViewProjectionPass (glm::mat4 (1.0)),
+    m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
     m_pos ()
 {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
@@ -262,7 +265,10 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         this->getScene ()->getCamera ()->getProjection () *
             this->getScene ()->getCamera ()->getLookAt ();
 
+    this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
+
     this->m_modelViewProjectionCopy = glm::ortho <float> (0.0, size.x, 0.0, size.y);
+    this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
     this->m_modelMatrix = glm::ortho <float> (0.0, size.x, 0.0, size.y);
     this->m_viewProjectionMatrix = glm::mat4 (1.0);
 }
@@ -363,6 +369,7 @@ void CImage::setupPasses ()
         const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
         glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
+        glm::mat4* inverseProjection = (first) ? &this->m_modelViewProjectionCopyInverse : &this->m_modelViewProjectionPassInverse;
         first = false;
 
         pass->setModelMatrix (&this->m_modelMatrix);
@@ -388,6 +395,7 @@ void CImage::setupPasses ()
             spacePosition = this->getSceneSpacePosition ();
             drawTo = this->getScene ()->getFBO ();
             projection = &this->m_modelViewProjectionScreen;
+            inverseProjection = &this->m_modelViewProjectionScreenInverse;
         }
 
         pass->setDestination (drawTo);
@@ -395,6 +403,7 @@ void CImage::setupPasses ()
         pass->setPosition (spacePosition);
         pass->setTexCoord (texcoord);
         pass->setModelViewProjectionMatrix (projection);
+        pass->setModelViewProjectionMatrixInverse (inverseProjection);
 
         texcoord = this->getTexCoordPass ();
         drawTo = prevDrawTo;

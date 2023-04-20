@@ -308,6 +308,11 @@ void CPass::setModelViewProjectionMatrix (const glm::mat4* projection)
     this->m_modelViewProjectionMatrix = projection;
 }
 
+void CPass::setModelViewProjectionMatrixInverse (const glm::mat4* projection)
+{
+    this->m_modelViewProjectionMatrixInverse = projection;
+}
+
 void CPass::setModelMatrix (const glm::mat4* model)
 {
     this->m_modelMatrix = model;
@@ -605,6 +610,7 @@ void CPass::setupUniforms ()
     this->addUniform ("g_Time", &g_Time);
     this->addUniform ("g_Daytime", &g_Daytime);
     // add model-view-projection matrix
+    this->addUniform("g_ModelViewProjectionMatrixInverse", &this->m_modelViewProjectionMatrixInverse);
     this->addUniform ("g_ModelViewProjectionMatrix", &this->m_modelViewProjectionMatrix);
     this->addUniform ("g_ModelMatrix", &this->m_modelMatrix);
     this->addUniform ("g_NormalModelMatrix", glm::identity <glm::mat3> ());
