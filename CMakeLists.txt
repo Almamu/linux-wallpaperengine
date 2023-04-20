@@ -47,16 +47,35 @@ include_directories(
 if (ENABLE_WAYLAND)
     message(STATUS "Wayland support is enabled!")
 
+    pkg_check_modules(wayland-cursor wayland-protocols egl wayland-egl)
+
+    find_program(WaylandScanner NAMES wayland-scanner)
+    message(STATUS "Found WaylandScanner at ${WaylandScanner}")
+    execute_process(
+        COMMAND pkg-config --variable=pkgdatadir wayland-protocols
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+
     message(STATUS "Building protocols...")
     execute_process(
-        COMMAND ./protocols.sh
+        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.h
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-
-    pkg_check_modules(wayland-cursor wayland-protocols egl wayland-egl)
+    execute_process(
+        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.c
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(
+        COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.h
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(
+        COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
     add_compile_definitions(ENABLE_WAYLAND)
     set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
-    "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h")
+    "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+    "xdg-shell-protocol.c" "wlr-layer-shell-unstable-v1-protocol.c")
 else()
     set(WAYLAND_SOURCES "")
 endif()
