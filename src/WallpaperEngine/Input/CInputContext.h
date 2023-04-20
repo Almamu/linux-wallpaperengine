@@ -25,6 +25,6 @@ namespace WallpaperEngine::Input
         [[nodiscard]] const CMouseInput& getMouseInput () const;
 
     private:
-        CMouseInput m_mouse;
+        std::unique_ptr<CMouseInput> m_mouse;
     };
 }

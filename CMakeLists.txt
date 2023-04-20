@@ -75,7 +75,7 @@ if (ENABLE_WAYLAND)
     add_compile_definitions(ENABLE_WAYLAND)
     set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
     "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
-    "xdg-shell-protocol.c" "wlr-layer-shell-unstable-v1-protocol.c")
+    "src/WallpaperEngine/Input/CWaylandMouseInput.cpp" "src/WallpaperEngine/Input/CWaylandMouseInput.h" "xdg-shell-protocol.c" "wlr-layer-shell-unstable-v1-protocol.c")
 else()
     set(WAYLAND_SOURCES "")
 endif()
@@ -142,6 +142,8 @@ add_executable(
     src/WallpaperEngine/Input/CInputContext.h
     src/WallpaperEngine/Input/CMouseInput.cpp
     src/WallpaperEngine/Input/CMouseInput.h
+    src/WallpaperEngine/Input/CGLFWMouseInput.cpp
+    src/WallpaperEngine/Input/CGLFWMouseInput.h
 
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
