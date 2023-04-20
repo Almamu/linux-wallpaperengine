@@ -46,6 +46,12 @@ include_directories(
 
 if (ENABLE_WAYLAND)
     message(STATUS "Wayland support is enabled!")
+
+    message(STATUS "Building protocols...")
+    execute_process(
+        COMMAND ./protocols.sh
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
     add_compile_definitions(ENABLE_WAYLAND)
     set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
     "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h")
@@ -299,7 +305,7 @@ target_link_libraries(linux-wallpaperengine
     glfw)
 
 if (ENABLE_WAYLAND)
-    target_link_libraries(linux-wallpaperengine ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1.o
+    target_link_libraries(linux-wallpaperengine ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
                                                 ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
                                                 GLESv2
                                                 pthread
