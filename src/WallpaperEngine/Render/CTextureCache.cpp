@@ -24,21 +24,34 @@ const ITexture* CTextureCache::resolve (const std::string& filename)
     // search for the texture in all the different containers just in case
     for (auto it : this->getContext ().getApp ().getBackgrounds ())
     {
-        const ITexture* texture = it.second->getContainer ()->readTexture (filename);
+        try
+        {
+            const ITexture* texture = it.second->getContainer ()->readTexture (filename);
 
-        this->store (filename, texture);
+            this->store (filename, texture);
 
-        return texture;
+            return texture;
+        }
+        catch (CAssetLoadException& ex)
+        {
+            // ignored, this happens if we're looking at the wrong background
+        }
     }
 
     if (this->getContext ().getApp ().getDefaultBackground () != nullptr)
     {
-        const ITexture* texture =
-            this->getContext ().getApp ().getDefaultBackground ()->getContainer ()->readTexture (filename);
+        try
+        {
+            const ITexture* texture = this->getContext ().getApp ().getDefaultBackground ()->getContainer ()->readTexture (filename);
 
-        this->store (filename, texture);
+            this->store (filename, texture);
 
-        return texture;
+            return texture;
+        }
+        catch (CAssetLoadException& ex)
+        {
+            // ignored, this happens if we're looking at the wrong background
+        }
     }
 
     throw CAssetLoadException (filename, "Cannot find file");
