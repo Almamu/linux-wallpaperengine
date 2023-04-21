@@ -6,10 +6,17 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-void* get_proc_address (void* ctx, const char* name)
+void* get_proc_address_glfw (void* ctx, const char* name)
 {
     return reinterpret_cast <void*> (glfwGetProcAddress (name));
 }
+
+#ifdef ENABLE_WAYLAND
+#include <EGL/egl.h>
+void* get_proc_address_wayland(void* ctx, const char* name) {
+    return reinterpret_cast <void*> (eglGetProcAddress (name));
+}
+#endif
 
 CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext) :
     CWallpaper (video, Type, context, audioContext),
@@ -40,7 +47,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     // initialize gl context for mpv
-    mpv_opengl_init_params gl_init_params {get_proc_address, nullptr};
+    mpv_opengl_init_params gl_init_params {this->getContext().getDriver().getWindowHandle() ? get_proc_address_glfw : get_proc_address_wayland, nullptr};
     mpv_render_param params[] {
         {MPV_RENDER_PARAM_API_TYPE, const_cast <char*> (MPV_RENDER_API_TYPE_OPENGL)},
         {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
