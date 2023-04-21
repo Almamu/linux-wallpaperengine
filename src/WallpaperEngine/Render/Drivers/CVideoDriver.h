@@ -69,5 +69,9 @@ namespace WallpaperEngine::Render::Drivers
          * Wayland only: flip output
         */
         virtual void swapOutputBuffer(const std::string& outputName);
+        /**
+         * Wayland only: gets currently rendered output
+        */
+        virtual std::string getCurrentlyRendered() const;
     };
 }

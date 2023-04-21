@@ -235,30 +235,71 @@ namespace WallpaperEngine::Application
         glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
         // build the output file with FreeImage
-        FIBITMAP* bitmap = FreeImage_Allocate (width, height, 24);
+        static FIBITMAP* bitmap = FreeImage_Allocate (width, height, 24);
         RGBQUAD color;
 
-        // now get access to the pixels
-        for (int y = height; y > 0; y--)
-        {
-            for (int x = 0; x < width; x++)
+        if (!context.getDriver().requiresSeparateFlips()) {
+            // now get access to the pixels
+            for (int y = height; y > 0; y--)
             {
-                color.rgbRed = *pixel++;
-                color.rgbGreen = *pixel++;
-                color.rgbBlue = *pixel++;
+                for (int x = 0; x < width; x++)
+                {
+                    color.rgbRed = *pixel++;
+                    color.rgbGreen = *pixel++;
+                    color.rgbBlue = *pixel++;
 
-                // set the pixel in the destination
-                FreeImage_SetPixelColor (bitmap, x, (context.getOutput()->renderVFlip() ? (height - y) : y), &color);
+                    // set the pixel in the destination
+                    FreeImage_SetPixelColor (bitmap, x, (context.getOutput()->renderVFlip() ? (height - y) : y), &color);
+                }
+            }
+
+            // finally save the file
+            FreeImage_Save (format, bitmap, filename.c_str (), 0);
+
+            // free all the used memory
+            delete[] buffer;
+
+            FreeImage_Unload (bitmap);
+
+            const_cast<CWallpaperApplication*>(&context.getApp())->getContext().settings.screenshot.take = false;
+        } else {
+            const auto RENDERING = context.getDriver().getCurrentlyRendered();
+            static int xoff = 0;
+
+            for (int y = height; y > 0; y--)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    color.rgbRed = *pixel++;
+                    color.rgbGreen = *pixel++;
+                    color.rgbBlue = *pixel++;
+
+                    // set the pixel in the destination
+                    FreeImage_SetPixelColor (bitmap, x + xoff, (context.getOutput()->renderVFlip() ? (height - y) : y), &color);
+                }
+            }
+
+            for (auto& [name, data] : context.getOutput()->getViewports()) {
+                if (name == RENDERING) {
+                    xoff += data.viewport.z;
+                    break;
+                }
+            }
+
+            const_cast<CWallpaperApplication*>(&context.getApp())->screenshotOutputsDone.push_back(RENDERING);
+
+            if (const_cast<CWallpaperApplication*>(&context.getApp())->screenshotOutputsDone.size() >= context.getOutput()->getViewports().size()) {
+                // finally save the file
+                FreeImage_Save (format, bitmap, filename.c_str (), 0);
+
+                // free all the used memory
+                delete[] buffer;
+
+                FreeImage_Unload (bitmap);
+
+                const_cast<CWallpaperApplication*>(&context.getApp())->getContext().settings.screenshot.take = false;
             }
         }
-
-        // finally save the file
-        FreeImage_Save (format, bitmap, filename.c_str (), 0);
-
-        // free all the used memory
-        delete[] buffer;
-
-        FreeImage_Unload (bitmap);
     }
 
     void CWallpaperApplication::show ()
@@ -378,12 +419,13 @@ namespace WallpaperEngine::Application
         // render the scene
         context->render ();
 
-        if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () != 5)
+        if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () < 5)
+            return;
+
+        if (std::find_if(screenshotOutputsDone.begin(), screenshotOutputsDone.end(), [&] (const auto& other) { return other == context->getDriver().getCurrentlyRendered(); }) != screenshotOutputsDone.end())
             return;
 
         this->takeScreenshot (*context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
-        // disable screenshot just in case the counter overflows
-        this->m_context.settings.screenshot.take = false;
     }
 
     void CWallpaperApplication::signal (int signal)

@@ -21,3 +21,7 @@ bool CVideoDriver::requiresSeparateFlips() const {
 void CVideoDriver::swapOutputBuffer(const std::string& outputName) {
     // intentionally left blank
 }
+
+std::string CVideoDriver::getCurrentlyRendered() const {
+    return "";
+}

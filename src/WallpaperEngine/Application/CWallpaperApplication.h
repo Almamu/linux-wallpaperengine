@@ -123,5 +123,7 @@ namespace WallpaperEngine::Application
         std::unique_ptr<WallpaperEngine::Audio::Drivers::CSDLAudioDriver> audioDriver;
         std::unique_ptr<WallpaperEngine::Render::CRenderContext> context;
         std::unique_ptr<WallpaperEngine::Audio::CAudioContext> audioContext;
+
+        std::vector<std::string> screenshotOutputsDone;
     };
 }

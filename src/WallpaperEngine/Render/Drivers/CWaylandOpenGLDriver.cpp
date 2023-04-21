@@ -500,3 +500,12 @@ void CWaylandOpenGLDriver::swapOutputBuffer(const std::string& outputName) {
         m_frameCounter++;
     }
 }
+
+std::string CWaylandOpenGLDriver::getCurrentlyRendered() const {
+    for (auto& o : m_outputs) {
+        if (o->rendering)
+            return o->name;
+    }
+
+    return "";
+}

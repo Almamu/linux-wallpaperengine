@@ -80,6 +80,7 @@ namespace WallpaperEngine::Render::Drivers
         bool shouldRenderOutput(const std::string& outputName) const override;
         bool requiresSeparateFlips() const override;
         void swapOutputBuffer(const std::string& outputName) override;
+        std::string getCurrentlyRendered() const override;
 
         GLFWwindow* getWindow ();
 
