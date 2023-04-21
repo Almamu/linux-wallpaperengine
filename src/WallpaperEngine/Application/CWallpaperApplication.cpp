@@ -248,7 +248,7 @@ namespace WallpaperEngine::Application
                 color.rgbBlue = *pixel++;
 
                 // set the pixel in the destination
-                FreeImage_SetPixelColor (bitmap, x, y, &color);
+                FreeImage_SetPixelColor (bitmap, x, (context.getOutput()->renderVFlip() ? (height - y) : y), &color);
             }
         }
 
