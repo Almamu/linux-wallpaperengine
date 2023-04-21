@@ -110,7 +110,6 @@ namespace WallpaperEngine::Render::Drivers
         CLayerSurface* lastLSInFocus = nullptr;
 
     private:
-
         void initEGL();
         void finishEGL();
 
