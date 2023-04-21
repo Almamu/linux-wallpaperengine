@@ -46,7 +46,7 @@ static void handlePointerMotion(void* data, struct wl_pointer* wl_pointer, uint3
     if (!PDRIVER->lastLSInFocus)
         return;
 
-    PDRIVER->lastLSInFocus->mousePos = {x, y};
+    PDRIVER->lastLSInFocus->mousePos = {x * PDRIVER->lastLSInFocus->output->scale, y * PDRIVER->lastLSInFocus->output->scale};
 }
 
 static void handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
