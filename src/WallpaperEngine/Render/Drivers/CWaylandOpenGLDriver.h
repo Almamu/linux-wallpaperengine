@@ -37,6 +37,7 @@ namespace WallpaperEngine::Render::Drivers
         CWaylandOpenGLDriver* driver = nullptr;
         bool initialized = false;
         std::unique_ptr<CLayerSurface> layerSurface;
+        bool rendering = false;
     };
 
     class CLayerSurface {
@@ -54,6 +55,7 @@ namespace WallpaperEngine::Render::Drivers
         glm::dvec2 mousePos = {0, 0};
         wl_cursor* pointer = nullptr;
         wl_surface* cursorSurface = nullptr;
+        bool callbackInitialized = false;
     };
 
     class CWaylandOpenGLDriver : public CVideoDriver
@@ -73,7 +75,10 @@ namespace WallpaperEngine::Render::Drivers
         void swapBuffers () override;
         uint32_t getFrameCounter () const override;
         void dispatchEventQueue() const override;
-        void makeCurrent(const std::string& outputName) const;
+        void makeCurrent(const std::string& outputName) const override;
+        bool shouldRenderOutput(const std::string& outputName) const override;
+        bool requiresSeparateFlips() const override;
+        void swapOutputBuffer(const std::string& outputName) override;
 
         GLFWwindow* getWindow ();
 

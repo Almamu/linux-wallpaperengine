@@ -56,6 +56,18 @@ namespace WallpaperEngine::Render::Drivers
         /**
          * Wayland only: make EGL current
         */
-        void makeCurrent(const std::string& outputName) const;
+        virtual void makeCurrent(const std::string& outputName) const;
+        /**
+         * Wayland only: whether an output should be rendered
+        */
+        virtual bool shouldRenderOutput(const std::string& outputName) const;
+        /**
+         * Wayland only: whether requires separate buffer flips on monitors
+        */
+        virtual bool requiresSeparateFlips() const;
+        /**
+         * Wayland only: flip output
+        */
+        virtual void swapOutputBuffer(const std::string& outputName);
     };
 }

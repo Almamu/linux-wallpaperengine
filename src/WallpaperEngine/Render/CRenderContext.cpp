@@ -29,6 +29,9 @@ namespace WallpaperEngine::Render
 
         for (const auto& cur : this->m_output->getViewports ())
         {
+            if (!this->m_driver.shouldRenderOutput(cur.first))
+                continue;
+            
             this->m_driver.makeCurrent(cur.first);
 
 #if !NDEBUG
@@ -53,6 +56,9 @@ namespace WallpaperEngine::Render
 #if !NDEBUG
             glPopDebugGroup ();
 #endif /* DEBUG */
+
+            if (this->m_driver.requiresSeparateFlips())
+                this->m_driver.swapOutputBuffer(cur.first);
         }
 
         // read the full texture into the image
@@ -65,7 +71,8 @@ namespace WallpaperEngine::Render
         // update the output with the given image
         this->m_output->updateRender ();
         // finally swap buffers
-        this->m_driver.swapBuffers ();
+        if (!this->m_driver.requiresSeparateFlips())
+            this->m_driver.swapBuffers ();
     }
 
     void CRenderContext::setDefaultWallpaper (CWallpaper* wallpaper)

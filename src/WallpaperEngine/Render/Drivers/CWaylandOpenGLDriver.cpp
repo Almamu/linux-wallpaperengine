@@ -266,7 +266,9 @@ static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t ti
     const auto PLS = (CLayerSurface*)data;
     wl_callback_destroy(cb);
     PLS->frameCallback = nullptr;
+    PLS->output->rendering = true;
     PLS->output->driver->wallpaperApplication->renderFrame();
+    PLS->output->rendering = false;
 }
 
 const struct wl_callback_listener frameListener = {
@@ -403,20 +405,7 @@ glm::ivec2 CWaylandOpenGLDriver::getFramebufferSize () const {
 }
 
 void CWaylandOpenGLDriver::swapBuffers () {
-    for (auto& o : m_outputs) {
-        if (!o->layerSurface.get())
-            continue;
-
-        eglMakeCurrent(eglContext.display, o->layerSurface->eglSurface, o->layerSurface->eglSurface, eglContext.context);
-        o->layerSurface->frameCallback = wl_surface_frame(o->layerSurface->surface);
-        wl_callback_add_listener(o->layerSurface->frameCallback, &frameListener, o->layerSurface.get());
-        eglSwapBuffers(eglContext.display, o->layerSurface->eglSurface);
-        wl_surface_set_buffer_scale(o->layerSurface->surface, o->scale);
-        wl_surface_damage_buffer(o->layerSurface->surface, 0, 0, INT32_MAX, INT32_MAX);
-        wl_surface_commit(o->layerSurface->surface);
-
-        m_frameCounter++;
-    }
+    ;
 }
 
 void CWaylandOpenGLDriver::resizeLSSurfaceEGL(CLayerSurface* layerSurface) {
@@ -432,7 +421,9 @@ void CWaylandOpenGLDriver::resizeLSSurfaceEGL(CLayerSurface* layerSurface) {
 
         wallpaperApplication->getOutput()->reset();
         
+        layerSurface->output->rendering = true;
         wallpaperApplication->renderFrame();
+        layerSurface->output->rendering = false;
     }
 }
 
@@ -464,4 +455,36 @@ CLayerSurface* CWaylandOpenGLDriver::surfaceToLS(wl_surface* surface) {
     }
 
     return nullptr;
+}
+
+bool CWaylandOpenGLDriver::shouldRenderOutput(const std::string& outputName) const {
+    for (auto& o : m_outputs) {
+        if (o->name == outputName)
+            return o->layerSurface.get() && (o->rendering || !o->layerSurface->callbackInitialized);
+    }
+
+    return false;
+}
+
+bool CWaylandOpenGLDriver::requiresSeparateFlips() const {
+    return true;
+}
+
+void CWaylandOpenGLDriver::swapOutputBuffer(const std::string& outputName) {
+    for (auto& o : m_outputs) {
+        if (o->name != outputName)
+            continue;
+
+        o->layerSurface->callbackInitialized = true;
+
+        eglMakeCurrent(eglContext.display, o->layerSurface->eglSurface, o->layerSurface->eglSurface, eglContext.context);
+        o->layerSurface->frameCallback = wl_surface_frame(o->layerSurface->surface);
+        wl_callback_add_listener(o->layerSurface->frameCallback, &frameListener, o->layerSurface.get());
+        eglSwapBuffers(eglContext.display, o->layerSurface->eglSurface);
+        wl_surface_set_buffer_scale(o->layerSurface->surface, o->scale);
+        wl_surface_damage_buffer(o->layerSurface->surface, 0, 0, INT32_MAX, INT32_MAX);
+        wl_surface_commit(o->layerSurface->surface);
+
+        m_frameCounter++;
+    }
 }
