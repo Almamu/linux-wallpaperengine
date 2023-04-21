@@ -20,6 +20,9 @@ void CWaylandOutput::updateViewports() {
     const auto PDRIVER = (CWaylandOpenGLDriver*)&m_driver;
     glm::ivec2 fullw = {0,0};
     for (auto& o : PDRIVER->m_outputs) {
+        if (!o->layerSurface.get())
+            continue;
+
         m_viewports[o->name] = {{0, 0, o->lsSize.x * o->scale, o->lsSize.y * o->scale}, o->name};
 
         fullw = fullw + glm::ivec2{o->lsSize.x * o->scale, 0};
