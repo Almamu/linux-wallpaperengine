@@ -459,6 +459,9 @@ void CWaylandOpenGLDriver::makeCurrent(const std::string& outputName) const {
 
 CLayerSurface* CWaylandOpenGLDriver::surfaceToLS(wl_surface* surface) {
     for (auto& o : m_outputs) {
+        if (!o->layerSurface.get())
+            continue;
+
         if (o->layerSurface->surface == surface)
             return o->layerSurface.get();
     }
