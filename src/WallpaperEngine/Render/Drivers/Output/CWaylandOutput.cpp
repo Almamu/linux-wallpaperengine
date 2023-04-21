@@ -22,7 +22,7 @@ void CWaylandOutput::updateViewports() {
     for (auto& o : PDRIVER->m_outputs) {
         m_viewports[o->name] = {{0, 0, o->lsSize.x * o->scale, o->lsSize.y * o->scale}, o->name};
 
-        fullw = fullw + glm::ivec2{o->lsSize.x * o->scale, o->lsSize.y * o->scale};
+        fullw = fullw + glm::ivec2{o->lsSize.x * o->scale, 0};
     }
 
     m_fullWidth = fullw.x;
