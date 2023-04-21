@@ -334,7 +334,16 @@ namespace WallpaperEngine::Application
         } else {
 #endif
             while (!videoDriver->closeRequested () && this->m_context.state.general.keepRunning) {
+                static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+                // get the start time of the frame
+                startTime = videoDriver->getRenderTime ();
                 renderFrame();
+                // get the end time of the frame
+                endTime = videoDriver->getRenderTime ();
+
+                // ensure the frame time is correct to not overrun FPS
+                if ((endTime - startTime) < minimumTime)
+                    usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
             }
 #ifdef ENABLE_WAYLAND
         }
@@ -349,8 +358,6 @@ namespace WallpaperEngine::Application
     }
 
     void CWallpaperApplication::renderFrame() {
-
-        static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
         static time_t seconds;
         static struct tm* timeinfo;
 
@@ -359,24 +366,17 @@ namespace WallpaperEngine::Application
         timeinfo = localtime(&seconds);
         g_Daytime = ((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0 * 60.0);
 
-        // update audio recorder
-        audioDriver->update ();
-        // update input information
-        inputContext->update ();
         // keep track of the previous frame's time
         g_TimeLast = g_Time;
         // calculate the current time value
         g_Time = videoDriver->getRenderTime ();
-        // get the start time of the frame
-        startTime = g_Time;
+
+        // update audio recorder
+        audioDriver->update ();
+        // update input information
+        inputContext->update ();
         // render the scene
         context->render ();
-        // get the end time of the frame
-        endTime = videoDriver->getRenderTime ();
-
-         // ensure the frame time is correct to not overrun FPS
-        if ((endTime - startTime) < minimumTime)
-            usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 
         if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () != 5)
             return;

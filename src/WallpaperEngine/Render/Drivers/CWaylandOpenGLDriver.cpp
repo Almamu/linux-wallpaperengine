@@ -269,6 +269,13 @@ static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t ti
     PLS->output->rendering = true;
     PLS->output->driver->wallpaperApplication->renderFrame();
     PLS->output->rendering = false;
+
+    float renderTime = PLS->output->driver->getRenderTime();
+
+    if ((renderTime - PLS->lastTime) < PLS->minimumTime)
+        usleep ((PLS->minimumTime - (renderTime - PLS->lastTime)) * CLOCKS_PER_SEC);
+
+    PLS->lastTime = renderTime;
 }
 
 const struct wl_callback_listener frameListener = {
@@ -316,6 +323,8 @@ CLayerSurface::CLayerSurface(CWaylandOpenGLDriver* pDriver, SWaylandOutput* pOut
 
     if (eglMakeCurrent(pDriver->eglContext.display, eglSurface, eglSurface, pDriver->eglContext.context) == EGL_FALSE)
         sLog.exception("Failed to make egl current");
+
+    minimumTime = 1.0f / pDriver->wallpaperApplication->getContext().settings.render.maximumFPS;
 }
 
 CLayerSurface::~CLayerSurface() {
