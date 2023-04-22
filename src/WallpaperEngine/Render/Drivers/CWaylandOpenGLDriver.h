@@ -77,6 +77,7 @@ namespace WallpaperEngine::Render::Drivers
         void swapBuffers () override;
         uint32_t getFrameCounter () const override;
         void dispatchEventQueue() const override;
+        [[nodiscard]] void* getProcAddress (const char* name) const override;
 
         void onLayerClose(Output::CWaylandOutputViewport*);
         Output::CWaylandOutputViewport* surfaceToViewport(wl_surface*);

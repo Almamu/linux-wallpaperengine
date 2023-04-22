@@ -67,6 +67,11 @@ namespace WallpaperEngine::Render::Drivers
          */
         [[nodiscard]] virtual uint32_t getFrameCounter () const = 0;
         /**
+         * @param name
+         * @return GetProcAddress for this video driver
+         */
+        [[nodiscard]] virtual void* getProcAddress (const char* name) const = 0;
+        /**
          * Process events on the driver and renders a frame
         */
         virtual void dispatchEventQueue() const = 0;

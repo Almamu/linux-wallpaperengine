@@ -37,6 +37,7 @@ namespace WallpaperEngine::Render::Drivers
         void swapBuffers () override;
         [[nodiscard]] uint32_t getFrameCounter () const override;
         void dispatchEventQueue() const override;
+        [[nodiscard]] void* getProcAddress (const char* name) const override;
 
         GLFWwindow* getWindow ();
 

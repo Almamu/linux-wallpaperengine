@@ -349,6 +349,11 @@ CWaylandOpenGLDriver::SEGLContext* CWaylandOpenGLDriver::getEGLContext ()
     return &this->m_eglContext;
 }
 
+void* CWaylandOpenGLDriver::getProcAddress (const char* name) const
+{
+    return reinterpret_cast <void*> (eglGetProcAddress (name));
+}
+
 CWaylandOpenGLDriver::SWaylandContext* CWaylandOpenGLDriver::getWaylandContext ()
 {
     return &this->m_waylandContext;

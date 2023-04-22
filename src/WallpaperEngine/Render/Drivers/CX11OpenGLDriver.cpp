@@ -6,6 +6,8 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
 
+#include <unistd.h>
+
 using namespace WallpaperEngine::Render::Drivers;
 
 void CustomGLFWErrorHandler (int errorCode, const char* reason)
@@ -160,6 +162,11 @@ void CX11OpenGLDriver::dispatchEventQueue() const
     // ensure the frame time is correct to not overrun FPS
     if ((endTime - startTime) < minimumTime)
         usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
+}
+
+void* CX11OpenGLDriver::getProcAddress (const char* name) const
+{
+    return reinterpret_cast <void*> (glfwGetProcAddress (name));
 }
 
 GLFWwindow* CX11OpenGLDriver::getWindow ()
