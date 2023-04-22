@@ -277,6 +277,7 @@ namespace WallpaperEngine::Application
 
     void CWallpaperApplication::show ()
     {
+#ifdef ENABLE_WAYLAND
         const bool WAYLAND_DISPLAY = getenv ("WAYLAND_DISPLAY");
 
         // setup the right video driver based on the environment and the startup mode requested
@@ -288,6 +289,7 @@ namespace WallpaperEngine::Application
             videoDriver = waylandDriver;
         }
         else
+#endif
         {
             auto x11Driver = new WallpaperEngine::Render::Drivers::CX11OpenGLDriver ("wallpaperengine", this->m_context, *this);
             // no wayland detected, try the old X11 method
