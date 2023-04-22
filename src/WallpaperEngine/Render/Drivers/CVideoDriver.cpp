@@ -2,26 +2,12 @@
 
 using namespace WallpaperEngine::Render::Drivers;
 
-void CVideoDriver::dispatchEventQueue() const {
-    // intentionally left blank
+CVideoDriver::CVideoDriver (CWallpaperApplication& app) :
+    m_app (app)
+{
 }
 
-void CVideoDriver::makeCurrent(const std::string& outputName) const {
-    // intentionally left blank
-}
-
-bool CVideoDriver::shouldRenderOutput(const std::string& outputName) const {
-    return true;
-}
-
-bool CVideoDriver::requiresSeparateFlips() const {
-    return false;
-}
-
-void CVideoDriver::swapOutputBuffer(const std::string& outputName) {
-    // intentionally left blank
-}
-
-std::string CVideoDriver::getCurrentlyRendered() const {
-    return "";
+CWallpaperApplication& CVideoDriver::getApp () const
+{
+    return this->m_app;
 }

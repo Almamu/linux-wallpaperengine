@@ -1,12 +1,6 @@
 #pragma once
 
-#ifdef ENABLE_WAYLAND
-#include "../Render/Drivers/CWaylandOpenGLDriver.h"
-#endif
-
 #include <glm/vec2.hpp>
-#include "GLFW/glfw3.h"
-
 
 namespace WallpaperEngine::Input
 {

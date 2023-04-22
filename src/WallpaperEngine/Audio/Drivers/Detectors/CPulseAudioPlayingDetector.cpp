@@ -34,7 +34,7 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
 
     CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (
         Application::CApplicationContext& appContext,
-        Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
+        const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
         CAudioPlayingDetector (appContext, fullscreenDetector),
         m_mainloop (nullptr),
         m_mainloopApi (nullptr),

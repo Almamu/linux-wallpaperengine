@@ -3,8 +3,8 @@
 using namespace WallpaperEngine::Render::Drivers::Detectors;
 
 CWaylandFullScreenDetector::CWaylandFullScreenDetector (Application::CApplicationContext& appContext, CWaylandOpenGLDriver& driver) :
-        CFullScreenDetector (appContext) {
-    ;
+    CFullScreenDetector (appContext)
+{
 }
 
 CWaylandFullScreenDetector::~CWaylandFullScreenDetector () {

@@ -5,34 +5,37 @@
 #include <glm/vec4.hpp>
 
 #include "CFullScreenDetector.h"
-#include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
-
 #include <X11/Xlib.h>
 
-namespace WallpaperEngine::Render::Drivers::Detectors
+namespace WallpaperEngine::Render::Drivers
 {
-    class CX11FullScreenDetector : public CFullScreenDetector
+    class CX11OpenGLDriver;
+
+    namespace Detectors
     {
-    public:
-        CX11FullScreenDetector (Application::CApplicationContext& appContext, CVideoDriver& driver);
-        ~CX11FullScreenDetector ();
-
-        [[nodiscard]] bool anythingFullscreen () const override;
-        void reset () override;
-
-    private:
-        void initialize ();
-        void stop ();
-
-        struct ScreenInfo
+        class CX11FullScreenDetector : public CFullScreenDetector
         {
-            glm::ivec4 viewport;
-            std::string name;
-        };
+        public:
+            CX11FullScreenDetector (Application::CApplicationContext& appContext, CX11OpenGLDriver& driver);
+            ~CX11FullScreenDetector ();
 
-        Display* m_display;
-        Window m_root;
-        std::vector <ScreenInfo> m_screens;
-        CVideoDriver& m_driver;
-    };
+            [[nodiscard]] bool anythingFullscreen () const override;
+            void reset () override;
+
+        private:
+            void initialize ();
+            void stop ();
+
+            struct ScreenInfo
+            {
+                glm::ivec4 viewport;
+                std::string name;
+            };
+
+            Display* m_display;
+            Window m_root;
+            std::vector <ScreenInfo> m_screens;
+            CX11OpenGLDriver& m_driver;
+        };
+    }
 }

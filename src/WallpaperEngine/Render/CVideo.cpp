@@ -47,7 +47,8 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     // initialize gl context for mpv
-    mpv_opengl_init_params gl_init_params {this->getContext().getDriver().getWindowHandle() ? get_proc_address_glfw : get_proc_address_wayland, nullptr};
+    mpv_opengl_init_params gl_init_params {get_proc_address_wayland, nullptr};
+    // mpv_opengl_init_params gl_init_params {this->getContext().getDriver().getWindowHandle() ? get_proc_address_glfw : get_proc_address_wayland, nullptr};
     mpv_render_param params[] {
         {MPV_RENDER_PARAM_API_TYPE, const_cast <char*> (MPV_RENDER_API_TYPE_OPENGL)},
         {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},

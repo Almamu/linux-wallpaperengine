@@ -1,11 +1,15 @@
 #pragma once
 
-#include "CMouseInput.h"
+#include "WallpaperEngine/Input/CMouseInput.h"
 
 #include <glm/vec2.hpp>
-#include "GLFW/glfw3.h"
 
-namespace WallpaperEngine::Input
+namespace WallpaperEngine::Render::Drivers
+{
+    class CX11OpenGLDriver;
+}
+
+namespace WallpaperEngine::Input::Drivers
 {
     /**
      * Handles mouse input for the background
@@ -13,7 +17,7 @@ namespace WallpaperEngine::Input
     class CGLFWMouseInput : public CMouseInput
     {
     public:
-        explicit CGLFWMouseInput(GLFWwindow* window);
+        explicit CGLFWMouseInput(Render::Drivers::CX11OpenGLDriver* driver);
 
         /**
          * Takes current mouse position and updates it
@@ -26,10 +30,7 @@ namespace WallpaperEngine::Input
         glm::dvec2 position () const override;
 
     private:
-        /**
-         * The GLFW window to get mouse position from
-         */
-        GLFWwindow* m_window = nullptr;
+        Render::Drivers::CX11OpenGLDriver* m_driver;
 
         /**
          * The current mouse position

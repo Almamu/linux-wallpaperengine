@@ -9,6 +9,7 @@
 #include "WallpaperEngine/Input/CMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "WallpaperEngine/Render/Drivers/Output/COutput.h"
+#include "WallpaperEngine/Render/Drivers/Output/COutputViewport.h"
 
 namespace WallpaperEngine
 {
@@ -26,6 +27,7 @@ namespace WallpaperEngine
             namespace Output
             {
                 class COutput;
+                class COutputViewport;
             }
         }
 
@@ -35,7 +37,7 @@ namespace WallpaperEngine
         class CRenderContext
         {
         public:
-            CRenderContext (const Drivers::Output::COutput* output, Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
+            CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
 
             void render ();
             void setDefaultWallpaper (CWallpaper* wallpaper);
@@ -43,7 +45,7 @@ namespace WallpaperEngine
             [[nodiscard]] Input::CInputContext& getInputContext () const;
             [[nodiscard]] const CWallpaperApplication& getApp () const;
             [[nodiscard]] const Drivers::CVideoDriver& getDriver () const;
-            [[nodiscard]] const Drivers::Output::COutput* getOutput () const;
+            [[nodiscard]] const Drivers::Output::COutput& getOutput () const;
             const ITexture* resolveTexture (const std::string& name);
 
         private:
@@ -59,8 +61,6 @@ namespace WallpaperEngine
             CWallpaperApplication& m_app;
             /** Texture cache for the render */
             CTextureCache* m_textureCache;
-            /** Output driver that describes how the wallpapers are rendered */
-            const Drivers::Output::COutput* m_output;
         };
     }
 }

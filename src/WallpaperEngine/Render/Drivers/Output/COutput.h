@@ -14,41 +14,42 @@ namespace WallpaperEngine::Application
     class CApplicationContext;
 }
 
-namespace WallpaperEngine::Render::Drivers::Detectors
+namespace WallpaperEngine::Render::Drivers
 {
-    class CFullScreenDetector;
-}
+    class CVideoDriver;
 
-namespace WallpaperEngine::Render::Drivers::Output
-{
-    class COutput
+    namespace Detectors
     {
-    public:
-        COutput (CApplicationContext& context, Detectors::CFullScreenDetector& detector);
+        class CFullScreenDetector;
+    }
 
-        virtual void reset () = 0;
+    namespace Output
+    {
+        class COutputViewport;
 
-        int getFullWidth () const;
-        int getFullHeight () const;
-
-        struct ScreenInfo
+        class COutput
         {
-            glm::ivec4 viewport;
-            std::string name;
+        public:
+            COutput (CApplicationContext& context, CVideoDriver& driver);
+
+            virtual void reset () = 0;
+
+            int getFullWidth () const;
+            int getFullHeight () const;
+
+            virtual bool renderVFlip () const = 0;
+            virtual bool renderMultiple () const = 0;
+            virtual bool haveImageBuffer () const = 0;
+            const std::map <std::string, COutputViewport*>& getViewports () const;
+            virtual void* getImageBuffer () const = 0;
+            virtual void updateRender () const = 0;
+
+        protected:
+            mutable int m_fullWidth;
+            mutable int m_fullHeight;
+            mutable std::map <std::string, COutputViewport*> m_viewports;
+            CApplicationContext& m_context;
+            CVideoDriver& m_driver;
         };
-
-        virtual bool renderVFlip () const = 0;
-        virtual bool renderMultiple () const = 0;
-        virtual bool haveImageBuffer () const = 0;
-        const std::map <std::string, ScreenInfo>& getViewports () const;
-        virtual void* getImageBuffer () const = 0;
-        virtual void updateRender () const = 0;
-
-    protected:
-        mutable int m_fullWidth;
-        mutable int m_fullHeight;
-        mutable std::map <std::string, ScreenInfo> m_viewports;
-        CApplicationContext& m_context;
-        Detectors::CFullScreenDetector& m_detector;
-    };
+    }
 }

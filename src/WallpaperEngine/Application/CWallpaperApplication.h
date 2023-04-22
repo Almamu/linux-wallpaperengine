@@ -65,7 +65,7 @@ namespace WallpaperEngine::Application
         /**
          * Renders a frame
         */
-        void renderFrame();
+        void update();
         /**
          * Gets the output
         */
@@ -116,13 +116,11 @@ namespace WallpaperEngine::Application
         /** Maps screens to backgrounds */
         std::map <std::string, Core::CProject*> m_backgrounds;
 
-        std::unique_ptr<WallpaperEngine::Render::Drivers::CVideoDriver> videoDriver;
-        std::unique_ptr<WallpaperEngine::Input::CInputContext> inputContext;
-        WallpaperEngine::Render::Drivers::Output::COutput* output;
-        std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector> fullscreenDetector;
-        std::unique_ptr<WallpaperEngine::Audio::Drivers::CSDLAudioDriver> audioDriver;
-        std::unique_ptr<WallpaperEngine::Render::CRenderContext> context;
-        std::unique_ptr<WallpaperEngine::Audio::CAudioContext> audioContext;
+        WallpaperEngine::Render::Drivers::CVideoDriver* videoDriver;
+        WallpaperEngine::Input::CInputContext* inputContext;
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
+        WallpaperEngine::Render::CRenderContext* context;
+        WallpaperEngine::Audio::CAudioContext* audioContext;
 
         std::vector<std::string> screenshotOutputsDone;
     };

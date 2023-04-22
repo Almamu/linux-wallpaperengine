@@ -6,19 +6,21 @@
 
 #include "CFullScreenDetector.h"
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
-#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 
-namespace WallpaperEngine::Render::Drivers::Detectors
+namespace WallpaperEngine::Render::Drivers
 {
-    class CWaylandFullScreenDetector : public CFullScreenDetector
+    class CWaylandOpenGLDriver;
+
+    namespace Detectors
     {
-    public:
-        CWaylandFullScreenDetector (Application::CApplicationContext& appContext, CWaylandOpenGLDriver& driver);
-        ~CWaylandFullScreenDetector ();
+        class CWaylandFullScreenDetector : public CFullScreenDetector
+        {
+        public:
+            CWaylandFullScreenDetector (Application::CApplicationContext& appContext, CWaylandOpenGLDriver& driver);
+            ~CWaylandFullScreenDetector ();
 
-        [[nodiscard]] bool anythingFullscreen () const override;
-        void reset () override;
-
-    private:
-    };
+            [[nodiscard]] bool anythingFullscreen () const override;
+            void reset () override;
+        };
+    }
 }

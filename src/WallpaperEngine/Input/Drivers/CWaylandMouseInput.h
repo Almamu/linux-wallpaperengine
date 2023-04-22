@@ -1,13 +1,13 @@
 #pragma once
 
-#include "CMouseInput.h"
-#include "../Render/Drivers/CWaylandOpenGLDriver.h"
+#include "WallpaperEngine/Input/CMouseInput.h"
+#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 
 #include <glm/vec2.hpp>
 #include "GLFW/glfw3.h"
 
 
-namespace WallpaperEngine::Input
+namespace WallpaperEngine::Input::Drivers
 {
     /**
      * Handles mouse input for the background

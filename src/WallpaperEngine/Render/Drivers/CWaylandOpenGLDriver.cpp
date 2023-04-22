@@ -20,129 +20,97 @@ extern "C" {
 
 using namespace WallpaperEngine::Render::Drivers;
 
-static void handlePointerEnter(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
-    const auto PDRIVER = (CWaylandOpenGLDriver*)data;
-    const auto PLS = PDRIVER->surfaceToLS(surface);
-    PDRIVER->lastLSInFocus = PLS;
-    wl_surface_set_buffer_scale(PLS->cursorSurface, PLS->output->scale);
-    wl_surface_attach(PLS->cursorSurface, wl_cursor_image_get_buffer(PLS->pointer->images[0]), 0, 0);
-    wl_pointer_set_cursor(wl_pointer, serial, PLS->cursorSurface, PLS->pointer->images[0]->hotspot_x, PLS->pointer->images[0]->hotspot_y);
-    wl_surface_commit(PLS->cursorSurface);
+static void handlePointerEnter (
+    void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface,
+    wl_fixed_t surface_x, wl_fixed_t surface_y)
+{
+    const auto driver = static_cast <CWaylandOpenGLDriver*> (data);
+    const auto viewport = driver->surfaceToViewport (surface);
+    driver->viewportInFocus = viewport;
+    wl_surface_set_buffer_scale(viewport->cursorSurface, viewport->scale);
+    wl_surface_attach(viewport->cursorSurface, wl_cursor_image_get_buffer(viewport->pointer->images[0]), 0, 0);
+    wl_pointer_set_cursor(wl_pointer, serial, viewport->cursorSurface, viewport->pointer->images[0]->hotspot_x, viewport->pointer->images[0]->hotspot_y);
+    wl_surface_commit(viewport->cursorSurface);
 }
 
-static void handlePointerLeave(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface) {
-    // ignored
+static void handlePointerLeave(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface)
+{
 }
 
-static void handlePointerAxis(void* data, wl_pointer* wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {
-    // ignored
+static void handlePointerAxis(void* data, wl_pointer* wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value)
+{
 }
 
-static void handlePointerMotion(void* data, struct wl_pointer* wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+static void handlePointerMotion(
+    void* data, struct wl_pointer* wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y)
+{
+    const auto driver = static_cast <CWaylandOpenGLDriver*> (data);
+
     auto x = wl_fixed_to_double(surface_x);
     auto y = wl_fixed_to_double(surface_y);
 
-    const auto PDRIVER = (CWaylandOpenGLDriver*)data;
-    if (!PDRIVER->lastLSInFocus)
+    if (!driver->viewportInFocus)
         return;
 
-    PDRIVER->lastLSInFocus->mousePos = {x * PDRIVER->lastLSInFocus->output->scale, y * PDRIVER->lastLSInFocus->output->scale};
+    driver->viewportInFocus->mousePos = {x * driver->viewportInFocus->scale, y * driver->viewportInFocus->scale};
 }
 
-static void handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
-    // ignored
+static void handlePointerButton(
+    void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state)
+{
 }
 
-const struct wl_pointer_listener pointerListener = { .enter = handlePointerEnter, .leave = handlePointerLeave, .motion = handlePointerMotion, .button = handlePointerButton, .axis = handlePointerAxis };
+const struct wl_pointer_listener pointerListener =
+{
+    .enter = handlePointerEnter,
+    .leave = handlePointerLeave,
+    .motion = handlePointerMotion,
+    .button = handlePointerButton,
+    .axis = handlePointerAxis
+};
 
-static void handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilities) {
+static void handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilities)
+{
     if (capabilities & WL_SEAT_CAPABILITY_POINTER)
         wl_pointer_add_listener(wl_seat_get_pointer(wl_seat), &pointerListener, data);
 }
 
-const struct wl_seat_listener seatListener = { .capabilities = handleCapabilities };
+const struct wl_seat_listener seatListener =
+{
+    .capabilities = handleCapabilities
+};
 
-static void geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
-                      int32_t transform) {
-    // ignored
-}
-
-static void mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
-    const auto PMONITOR = (SWaylandOutput*)data;
-    PMONITOR->size = {width, height};
-    PMONITOR->lsSize = {width, height};
-
-    if (PMONITOR->layerSurface.get())
-        PMONITOR->driver->resizeLSSurfaceEGL(PMONITOR->layerSurface.get());
-
-    if (PMONITOR->initialized)
-        PMONITOR->driver->wallpaperApplication->getOutput()->reset();
-}
-
-static void done(void* data, wl_output* wl_output) {
-    const auto PMONITOR = (SWaylandOutput*)data;
-
-    PMONITOR->initialized = true;
-}
-
-static void scale(void* data, wl_output* wl_output, int32_t scale) {
-    const auto PMONITOR = (SWaylandOutput*)data;
-
-    PMONITOR->scale = scale;
-
-    if (PMONITOR->layerSurface.get())
-        PMONITOR->driver->resizeLSSurfaceEGL(PMONITOR->layerSurface.get());
-
-    if (PMONITOR->initialized)
-        PMONITOR->driver->wallpaperApplication->getOutput()->reset();
-}
-
-static void name(void* data, wl_output* wl_output, const char* name) {
-    const auto PMONITOR = (SWaylandOutput*)data;
-
-    if (name)
-        PMONITOR->name = name;
-}
-
-static void description(void* data, wl_output* wl_output, const char* description) {
-    // ignored
-}
-
-const wl_output_listener outputListener = {.geometry = geometry, .mode = mode, .done = done, .scale = scale, .name = name, .description = description};
-
-static void handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
-    const auto PDRIVER = (CWaylandOpenGLDriver*)data;
+static void handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version)
+{
+    const auto driver = static_cast <CWaylandOpenGLDriver*> (data);
 
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
-        PDRIVER->waylandContext.compositor = (wl_compositor*)wl_registry_bind(registry, name, &wl_compositor_interface, 4);
+        driver->getWaylandContext()->compositor = (wl_compositor*)wl_registry_bind(registry, name, &wl_compositor_interface, 4);
     } else if (strcmp(interface, wl_shm_interface.name) == 0) {
-        PDRIVER->waylandContext.shm = (wl_shm*)wl_registry_bind(registry, name, &wl_shm_interface, 1);
+        driver->getWaylandContext()->shm = (wl_shm*)wl_registry_bind(registry, name, &wl_shm_interface, 1);
     } else if (strcmp(interface, wl_output_interface.name) == 0) {
-        const auto POUTPUT = PDRIVER->m_outputs.emplace_back(std::make_unique<SWaylandOutput>()).get();
-        POUTPUT->output = (wl_output*)wl_registry_bind(registry, name, &wl_output_interface, 4);
-        POUTPUT->name = "";
-        POUTPUT->size = {0, 0};
-        POUTPUT->waylandName = name;
-        POUTPUT->driver = PDRIVER;
-        wl_output_add_listener(POUTPUT->output, &outputListener, POUTPUT);
+        driver->m_screens.emplace_back (new WallpaperEngine::Render::Drivers::Output::CWaylandOutputViewport (driver, name, registry));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
-        PDRIVER->waylandContext.layerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
+        driver->getWaylandContext()->layerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
     } else if (strcmp(interface, wl_seat_interface.name) == 0) {
-        PDRIVER->waylandContext.seat = (wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1);
-        wl_seat_add_listener(PDRIVER->waylandContext.seat, &seatListener, PDRIVER);
+        driver->getWaylandContext()->seat = (wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1);
+        wl_seat_add_listener(driver->getWaylandContext()->seat, &seatListener, driver);
     }
 }
 
-static void handleGlobalRemoved(void *data, struct wl_registry *registry, uint32_t id) {
+static void handleGlobalRemoved(void *data, struct wl_registry *registry, uint32_t id)
+{
     // todo: outputs
 }
 
-const struct wl_registry_listener registryListener = {
+const struct wl_registry_listener registryListener =
+{
     .global = handleGlobal,
     .global_remove = handleGlobalRemoved,
 };
 
-void CWaylandOpenGLDriver::initEGL() {
+void CWaylandOpenGLDriver::initEGL()
+{
     const char* CLIENT_EXTENSIONS = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
     if (!CLIENT_EXTENSIONS)
         sLog.exception("Failed to query EGL Extensions");
@@ -156,31 +124,31 @@ void CWaylandOpenGLDriver::initEGL() {
         sLog.exception("EGL_EXT_platform_wayland not supported by EGL!");
 
     PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
-    eglContext.eglCreatePlatformWindowSurfaceEXT = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
+    m_eglContext.eglCreatePlatformWindowSurfaceEXT = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
 
-    if (!eglGetPlatformDisplayEXT || !eglContext.eglCreatePlatformWindowSurfaceEXT)
+    if (!eglGetPlatformDisplayEXT || !m_eglContext.eglCreatePlatformWindowSurfaceEXT)
         sLog.exception("EGL did not return EXT proc pointers!");
 
     auto deinitEGL = [&] () -> void {
         eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (eglContext.display)
-            eglTerminate(eglContext.display);
+        if (m_eglContext.display)
+            eglTerminate(m_eglContext.display);
         eglReleaseThread();
     };
 
-    eglContext.display = eglGetPlatformDisplayEXT(EGL_PLATFORM_WAYLAND_EXT, waylandContext.display, nullptr);
+    m_eglContext.display = eglGetPlatformDisplayEXT(EGL_PLATFORM_WAYLAND_EXT, m_waylandContext.display, nullptr);
 
-    if (eglContext.display == EGL_NO_DISPLAY) {
+    if (m_eglContext.display == EGL_NO_DISPLAY) {
         deinitEGL();
         sLog.exception("eglGetPlatformDisplayEXT failed!");
     }
 
-    if (!eglInitialize(eglContext.display, nullptr, nullptr)) {
+    if (!eglInitialize(m_eglContext.display, nullptr, nullptr)) {
         deinitEGL();
         sLog.exception("eglInitialize failed!");
     }
 
-    const std::string CLIENTEXTENSIONSPOSTINIT = std::string(eglQueryString(eglContext.display, EGL_EXTENSIONS));
+    const std::string CLIENTEXTENSIONSPOSTINIT = std::string(eglQueryString(m_eglContext.display, EGL_EXTENSIONS));
 
     if (CLIENTEXTENSIONSPOSTINIT.find("EGL_KHR_create_context") == std::string::npos) {
         deinitEGL();
@@ -197,7 +165,8 @@ void CWaylandOpenGLDriver::initEGL() {
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_NONE,
     };
-    if (!eglChooseConfig(eglContext.display, CONFIG_ATTRIBUTES, &eglContext.config, 1, &matchedConfigs)) {
+
+    if (!eglChooseConfig(m_eglContext.display, CONFIG_ATTRIBUTES, &m_eglContext.config, 1, &matchedConfigs)) {
         deinitEGL();
         sLog.exception("eglChooseConfig failed!");
     }
@@ -218,148 +187,91 @@ void CWaylandOpenGLDriver::initEGL() {
         EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
         EGL_NONE,
     };
-    eglContext.context = eglCreateContext(eglContext.display, eglContext.config, EGL_NO_CONTEXT, CONTEXT_ATTRIBUTES);
+    m_eglContext.context = eglCreateContext(m_eglContext.display, m_eglContext.config, EGL_NO_CONTEXT, CONTEXT_ATTRIBUTES);
 
-    if (eglContext.context == EGL_NO_CONTEXT) {
+    if (m_eglContext.context == EGL_NO_CONTEXT) {
         sLog.error("eglCreateContext error " + std::to_string(eglGetError()));
         deinitEGL();
         sLog.exception("eglCreateContext failed!");
     }
 }
 
-void CWaylandOpenGLDriver::finishEGL() {
-    eglMakeCurrent(eglContext.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(eglContext.display, eglContext.context);
-    eglTerminate(eglContext.display);
+void CWaylandOpenGLDriver::finishEGL()
+{
+    eglMakeCurrent(m_eglContext.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(m_eglContext.display, m_eglContext.context);
+    eglTerminate(m_eglContext.display);
     eglReleaseThread();
 }
 
+void CWaylandOpenGLDriver::onLayerClose(Output::CWaylandOutputViewport* viewport)
+{
+    sLog.error ("Compositor closed our LS, freeing data...");
 
-static void handleLSConfigure(void *data, zwlr_layer_surface_v1 *surface, uint32_t serial, uint32_t w, uint32_t h) {
-    const auto PLS = (CLayerSurface*)data;
-    PLS->size = {w, h};
+    if (viewport->eglSurface)
+        eglDestroySurface (m_eglContext.display, viewport->eglSurface);
 
-    PLS->output->driver->resizeLSSurfaceEGL(PLS);
+    if (viewport->eglWindow)
+        wl_egl_window_destroy(viewport->eglWindow);
 
-    zwlr_layer_surface_v1_ack_configure(surface, serial);
+    if (viewport->layerSurface)
+        zwlr_layer_surface_v1_destroy(viewport->layerSurface);
+
+    if (viewport->surface)
+        wl_surface_destroy(viewport->surface);
+
+    // remove the output from the list
+    std::remove (this->m_screens.begin (), this->m_screens.end (), viewport);
+    // TODO: DELETE FROM VIEWPORT LIST
+
+    delete viewport;
 }
 
-static void handleLSClosed(void *data, zwlr_layer_surface_v1 *surface) {
-    const auto PLS = (CLayerSurface*)data;
-    PLS->output->driver->onLayerClose(PLS);
-}
+CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpaperApplication& app) :
+    m_frameCounter(0),
+    m_fullscreenDetector (context, *this),
+    m_output (context, *this),
+    CVideoDriver (app)
+{
+    m_waylandContext.display = wl_display_connect (nullptr);
 
-void CWaylandOpenGLDriver::onLayerClose(CLayerSurface* layerSurface) {
-    eglDestroySurface(eglContext.display, layerSurface->eglSurface);
-    wl_egl_window_destroy(layerSurface->eglWindow);
-    zwlr_layer_surface_v1_destroy(layerSurface->layerSurface);
-    wl_surface_destroy(layerSurface->surface);
-    sLog.exception("Compositor closed our LS!"); // todo: handle this?
-}
+    if (!m_waylandContext.display)
+        sLog.exception ("Failed to query wayland display");
 
-const struct zwlr_layer_surface_v1_listener layerSurfaceListener = {
-    .configure = handleLSConfigure,
-    .closed = handleLSClosed,
-};
+    m_waylandContext.registry = wl_display_get_registry(m_waylandContext.display);
+    wl_registry_add_listener(m_waylandContext.registry, &registryListener, this);
 
-static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t time) {
-    const auto PLS = (CLayerSurface*)data;
-    wl_callback_destroy(cb);
-    PLS->frameCallback = nullptr;
-    PLS->output->rendering = true;
-    PLS->output->driver->wallpaperApplication->renderFrame();
-    PLS->output->rendering = false;
+    wl_display_dispatch(m_waylandContext.display);
+    wl_display_roundtrip(m_waylandContext.display);
 
-    float renderTime = PLS->output->driver->getRenderTime();
-
-    if ((renderTime - PLS->lastTime) < PLS->minimumTime)
-        usleep ((PLS->minimumTime - (renderTime - PLS->lastTime)) * CLOCKS_PER_SEC);
-
-    PLS->lastTime = renderTime;
-}
-
-const struct wl_callback_listener frameListener = {
-    .done = surfaceFrameCallback
-};
-
-CLayerSurface::CLayerSurface(CWaylandOpenGLDriver* pDriver, SWaylandOutput* pOutput) {
-    surface = wl_compositor_create_surface(pDriver->waylandContext.compositor);
-    layerSurface = zwlr_layer_shell_v1_get_layer_surface(pDriver->waylandContext.layerShell, surface, pOutput->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
-    output = pOutput;
-
-    if (!layerSurface)
-        sLog.exception("Failed to get a layer surface");
-
-    wl_region* region = wl_compositor_create_region(pDriver->waylandContext.compositor);
-    wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
-
-    zwlr_layer_surface_v1_set_size(layerSurface, 0, 0);
-    zwlr_layer_surface_v1_set_anchor(layerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
-    zwlr_layer_surface_v1_set_keyboard_interactivity(layerSurface, false);
-    zwlr_layer_surface_v1_add_listener(layerSurface, &layerSurfaceListener, this);
-    zwlr_layer_surface_v1_set_exclusive_zone(layerSurface, -1);
-    wl_surface_set_input_region(surface, region);
-    wl_surface_commit(surface);
-    wl_display_roundtrip(pDriver->waylandContext.display);
-
-    eglWindow = wl_egl_window_create(surface, size.x * output->scale, size.y * output->scale);
-    eglSurface = pDriver->eglContext.eglCreatePlatformWindowSurfaceEXT(pDriver->eglContext.display, pDriver->eglContext.config, eglWindow, nullptr);
-    output->lsSize = size;
-    wl_surface_commit(surface);
-    wl_display_roundtrip(pDriver->waylandContext.display);
-    wl_display_flush(pDriver->waylandContext.display);
-
-    static const auto XCURSORSIZE = getenv("XCURSOR_SIZE") ? std::stoi(getenv("XCURSOR_SIZE")) : 24;
-    const auto PRCURSORTHEME = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSORSIZE * output->scale, pDriver->waylandContext.shm);
-
-    if (!PRCURSORTHEME)
-        sLog.exception("Failed to get a cursor theme");
-
-    pointer = wl_cursor_theme_get_cursor(PRCURSORTHEME, "left_ptr");
-    cursorSurface = wl_compositor_create_surface(pDriver->waylandContext.compositor);
-
-    if (!cursorSurface)
-        sLog.exception("Failed to get a cursor surface");
-
-    if (eglMakeCurrent(pDriver->eglContext.display, eglSurface, eglSurface, pDriver->eglContext.context) == EGL_FALSE)
-        sLog.exception("Failed to make egl current");
-
-    minimumTime = 1.0f / pDriver->wallpaperApplication->getContext().settings.render.maximumFPS;
-}
-
-CLayerSurface::~CLayerSurface() {
-    ;
-}
-
-CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplicationContext& context, CWallpaperApplication* app) : m_frameCounter(0) {
-    wallpaperApplication = app;
-    waylandContext.display = wl_display_connect(NULL);
-
-    if (!waylandContext.display)
-        sLog.exception("Failed to query wayland display");
-
-    waylandContext.registry = wl_display_get_registry(waylandContext.display);
-    wl_registry_add_listener(waylandContext.registry, &registryListener, this);
-
-    wl_display_dispatch(waylandContext.display);
-    wl_display_roundtrip(waylandContext.display);
-
-    if (!waylandContext.compositor || !waylandContext.shm || !waylandContext.layerShell || m_outputs.empty())
-        sLog.exception("Failed to bind to required interfaces");
+    if (!m_waylandContext.compositor || !m_waylandContext.shm || !m_waylandContext.layerShell || this->m_screens.empty())
+        sLog.exception ("Failed to bind to required interfaces");
 
     initEGL();
 
     bool any = false;
-    for (auto& o : m_outputs) {
-        if (std::find_if(context.settings.general.screenBackgrounds.begin(), context.settings.general.screenBackgrounds.end(), [&] (const auto& e) { return e.first == o->name; }) != context.settings.general.screenBackgrounds.end()) {
-            o->layerSurface = std::make_unique<CLayerSurface>(this, o.get());
-            any = true;
-        }
+
+    for (auto& o : this->m_screens)
+    {
+        const auto cur = context.settings.general.screenBackgrounds.find (o->name);
+
+        if (cur == context.settings.general.screenBackgrounds.end ())
+            continue;
+
+        o->setupLS ();
+        any = true;
     }
 
-    if (!any && std::find_if(context.settings.general.screenBackgrounds.begin(), context.settings.general.screenBackgrounds.end(), [&] (const auto& e) { return e.first == "auto"; }) != context.settings.general.screenBackgrounds.end()) {
-        m_outputs[0]->layerSurface = std::make_unique<CLayerSurface>(this, m_outputs[0].get());
-        any = true;
+    if (!any)
+    {
+        const auto cur = context.settings.general.screenBackgrounds.find ("auto");
+
+        if (cur != context.settings.general.screenBackgrounds.end ())
+        {
+            // initializes the default screen only...
+            m_screens [0]->setupLS ();
+            any = true;
+        }
     }
 
     if (!any)
@@ -373,139 +285,82 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(const char* windowTitle, CApplication
     FreeImage_Initialise (TRUE);
 }
 
-CWaylandOpenGLDriver::~CWaylandOpenGLDriver() {
-    ;
+void CWaylandOpenGLDriver::dispatchEventQueue() const
+{
+    // render one frame to force drawing the screens
+    this->getApp ().update ();
+
+    wl_display_dispatch(m_waylandContext.display);
 }
 
-void CWaylandOpenGLDriver::dispatchEventQueue() const {
-    wl_display_dispatch(waylandContext.display);
+Detectors::CFullScreenDetector& CWaylandOpenGLDriver::getFullscreenDetector ()
+{
+    return this->m_fullscreenDetector;
 }
 
-void* CWaylandOpenGLDriver::getWindowHandle () const {
-    return nullptr;
+Output::COutput& CWaylandOpenGLDriver::getOutput ()
+{
+    return this->m_output;
 }
 
-float CWaylandOpenGLDriver::getRenderTime () const {
+float CWaylandOpenGLDriver::getRenderTime () const
+{
     return (float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - renderStart).count() / 1000000.0;
 }
 
-bool CWaylandOpenGLDriver::closeRequested () {
+bool CWaylandOpenGLDriver::closeRequested ()
+{
     return false;
 }
 
-void CWaylandOpenGLDriver::resizeWindow (glm::ivec2 size) {
-    ;
+void CWaylandOpenGLDriver::resizeWindow (glm::ivec2 size)
+{
 }
 
-void CWaylandOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
-    ;
+void CWaylandOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
+{
 }
 
-void CWaylandOpenGLDriver::showWindow () {
-    ;
+void CWaylandOpenGLDriver::showWindow ()
+{
 }
 
-void CWaylandOpenGLDriver::hideWindow () {
-    ;
+void CWaylandOpenGLDriver::hideWindow ()
+{
 }
 
-glm::ivec2 CWaylandOpenGLDriver::getFramebufferSize () const {
+glm::ivec2 CWaylandOpenGLDriver::getFramebufferSize () const
+{
     return glm::ivec2{0, 0};
 }
 
-void CWaylandOpenGLDriver::swapBuffers () {
-    ;
+void CWaylandOpenGLDriver::swapBuffers ()
+{
+    m_frameCounter ++;
 }
 
-void CWaylandOpenGLDriver::resizeLSSurfaceEGL(CLayerSurface* layerSurface) {
-    if (layerSurface->eglWindow) {
-        layerSurface->output->lsSize = layerSurface->size;
-
-        wl_egl_window_resize(layerSurface->eglWindow, layerSurface->size.x * layerSurface->output->scale, layerSurface->size.y * layerSurface->output->scale, 0, 0);
-        
-        if (layerSurface->frameCallback) {
-            wl_callback_destroy(layerSurface->frameCallback);
-            layerSurface->frameCallback = nullptr;
-        }
-
-        wallpaperApplication->getOutput()->reset();
-        
-        layerSurface->output->rendering = true;
-        wallpaperApplication->renderFrame();
-        layerSurface->output->rendering = false;
-    }
-}
-
-uint32_t CWaylandOpenGLDriver::getFrameCounter () const {
+uint32_t CWaylandOpenGLDriver::getFrameCounter () const
+{
     return m_frameCounter;
 }
 
-GLFWwindow* CWaylandOpenGLDriver::getWindow () {
-    return nullptr;
+CWaylandOpenGLDriver::SEGLContext* CWaylandOpenGLDriver::getEGLContext ()
+{
+    return &this->m_eglContext;
 }
 
-#include <iostream>
-
-void CWaylandOpenGLDriver::makeCurrent(const std::string& outputName) const {
-    for (auto& o : m_outputs) {
-        if (o->name != outputName)
-            continue;
-
-        if (eglMakeCurrent(eglContext.display, o->layerSurface->eglSurface, o->layerSurface->eglSurface, eglContext.context) == EGL_FALSE) {
-            std::cerr << "Couldn't make egl current";
-        }
-    }
+CWaylandOpenGLDriver::SWaylandContext* CWaylandOpenGLDriver::getWaylandContext ()
+{
+    return &this->m_waylandContext;
 }
 
-CLayerSurface* CWaylandOpenGLDriver::surfaceToLS(wl_surface* surface) {
-    for (auto& o : m_outputs) {
-        if (!o->layerSurface.get())
-            continue;
-
-        if (o->layerSurface->surface == surface)
-            return o->layerSurface.get();
+Output::CWaylandOutputViewport* CWaylandOpenGLDriver::surfaceToViewport(wl_surface* surface)
+{
+    for (auto& o : m_screens)
+    {
+        if (o->surface == surface)
+            return o;
     }
 
     return nullptr;
-}
-
-bool CWaylandOpenGLDriver::shouldRenderOutput(const std::string& outputName) const {
-    for (auto& o : m_outputs) {
-        if (o->name == outputName)
-            return o->layerSurface.get() && (o->rendering || !o->layerSurface->callbackInitialized);
-    }
-
-    return false;
-}
-
-bool CWaylandOpenGLDriver::requiresSeparateFlips() const {
-    return true;
-}
-
-void CWaylandOpenGLDriver::swapOutputBuffer(const std::string& outputName) {
-    for (auto& o : m_outputs) {
-        if (o->name != outputName)
-            continue;
-
-        o->layerSurface->callbackInitialized = true;
-
-        eglMakeCurrent(eglContext.display, o->layerSurface->eglSurface, o->layerSurface->eglSurface, eglContext.context);
-        o->layerSurface->frameCallback = wl_surface_frame(o->layerSurface->surface);
-        wl_callback_add_listener(o->layerSurface->frameCallback, &frameListener, o->layerSurface.get());
-        eglSwapBuffers(eglContext.display, o->layerSurface->eglSurface);
-        wl_surface_set_buffer_scale(o->layerSurface->surface, o->scale);
-        wl_surface_damage_buffer(o->layerSurface->surface, 0, 0, INT32_MAX, INT32_MAX);
-        wl_surface_commit(o->layerSurface->surface);
-
-        m_frameCounter++;
-    }
-}
-
-std::string CWaylandOpenGLDriver::getCurrentlyRendered() const {
-    for (auto& o : m_outputs) {
-        if (o->rendering)
-            return o->name;
-    }
-
-    return "";
 }

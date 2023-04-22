@@ -7,25 +7,28 @@
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "COutput.h"
 
-namespace WallpaperEngine::Render::Drivers::Output
+namespace WallpaperEngine::Render::Drivers
 {
-    class CWaylandOutput : public COutput
+    class CWaylandOpenGLDriver;
+
+    namespace Output
     {
-    public:
-        CWaylandOutput (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector);
-        ~CWaylandOutput ();
+        class CWaylandOutput : public COutput
+        {
+        public:
+            CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriver& driver);
+            ~CWaylandOutput ();
 
-        void reset () override;
+            void reset () override;
 
-        bool renderVFlip () const override;
-        bool renderMultiple () const override;
-        bool haveImageBuffer () const override;
-        void* getImageBuffer () const override;
-        void updateRender () const override;
+            bool renderVFlip () const override;
+            bool renderMultiple () const override;
+            bool haveImageBuffer () const override;
+            void* getImageBuffer () const override;
+            void updateRender () const override;
 
-    private:
-        void updateViewports();
-
-        CVideoDriver& m_driver;
-    };
+        private:
+            void updateViewports();
+        };
+    }
 }

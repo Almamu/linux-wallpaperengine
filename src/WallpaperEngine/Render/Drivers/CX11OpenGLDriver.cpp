@@ -1,5 +1,6 @@
 #include "CX11OpenGLDriver.h"
 #include "common.h"
+#include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include <FreeImage.h>
 
 #define GLFW_EXPOSE_NATIVE_X11
@@ -12,8 +13,11 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason)
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context) :
-    m_frameCounter (0)
+CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app) :
+    m_frameCounter (0),
+    m_fullscreenDetector (context, *this),
+    m_context (context),
+    CVideoDriver (app)
 {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
@@ -60,6 +64,17 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
 
     // initialize free image
     FreeImage_Initialise (TRUE);
+
+    // setup output
+    if (context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW ||
+        context.settings.render.mode == CApplicationContext::NORMAL_WINDOW)
+    {
+        m_output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (context, *this);
+    }
+    else
+    {
+        m_output = new WallpaperEngine::Render::Drivers::Output::CX11Output (context, *this);
+    }
 }
 
 CX11OpenGLDriver::~CX11OpenGLDriver ()
@@ -68,9 +83,14 @@ CX11OpenGLDriver::~CX11OpenGLDriver ()
     FreeImage_DeInitialise();
 }
 
-void* CX11OpenGLDriver::getWindowHandle () const
+Detectors::CFullScreenDetector& CX11OpenGLDriver::getFullscreenDetector ()
 {
-    return reinterpret_cast <void*> (glfwGetX11Window (this->m_window));
+    return this->m_fullscreenDetector;
+}
+
+Output::COutput& CX11OpenGLDriver::getOutput ()
+{
+    return *this->m_output;
 }
 
 float CX11OpenGLDriver::getRenderTime () const
@@ -126,6 +146,20 @@ void CX11OpenGLDriver::swapBuffers ()
 uint32_t CX11OpenGLDriver::getFrameCounter () const
 {
     return this->m_frameCounter;
+}
+
+void CX11OpenGLDriver::dispatchEventQueue() const
+{
+    static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+    // get the start time of the frame
+    startTime = this->getRenderTime ();
+    this->getApp ().update ();
+    // get the end time of the frame
+    endTime = this->getRenderTime ();
+
+    // ensure the frame time is correct to not overrun FPS
+    if ((endTime - startTime) < minimumTime)
+        usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 }
 
 GLFWwindow* CX11OpenGLDriver::getWindow ()

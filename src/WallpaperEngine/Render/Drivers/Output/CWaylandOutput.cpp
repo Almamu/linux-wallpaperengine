@@ -4,9 +4,8 @@
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
-CWaylandOutput::CWaylandOutput (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector) :
-    COutput (context, detector),
-    m_driver (driver)
+CWaylandOutput::CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriver& driver) :
+    COutput (context, driver)
 {
     updateViewports();
 }
@@ -15,15 +14,17 @@ CWaylandOutput::~CWaylandOutput ()
 {
 }
 
-void CWaylandOutput::updateViewports() {
+void CWaylandOutput::updateViewports()
+{
     m_viewports.clear();
     const auto PDRIVER = (CWaylandOpenGLDriver*)&m_driver;
     glm::ivec2 fullw = {0,0};
-    for (auto& o : PDRIVER->m_outputs) {
-        if (!o->layerSurface.get())
+    for (auto& o : PDRIVER->m_screens)
+    {
+        if (!o->layerSurface)
             continue;
 
-        m_viewports[o->name] = {{0, 0, o->lsSize.x * o->scale, o->lsSize.y * o->scale}, o->name};
+        m_viewports[o->name] = o;
 
         fullw = fullw + glm::ivec2{o->lsSize.x * o->scale, 0};
         if (o->lsSize.y > fullw.y)
@@ -34,26 +35,31 @@ void CWaylandOutput::updateViewports() {
     m_fullHeight = fullw.y;
 }
 
-void CWaylandOutput::reset () {
+void CWaylandOutput::reset ()
+{
     updateViewports();
 }
 
-bool CWaylandOutput::renderVFlip () const {
+bool CWaylandOutput::renderVFlip () const
+{
     return true;
 }
 
-bool CWaylandOutput::renderMultiple () const  {
+bool CWaylandOutput::renderMultiple () const
+{
     return false; // todo
 }
 
-bool CWaylandOutput::haveImageBuffer () const {
+bool CWaylandOutput::haveImageBuffer () const
+{
     return false;
 }
 
-void* CWaylandOutput::getImageBuffer () const {
+void* CWaylandOutput::getImageBuffer () const
+{
     return nullptr;
 }
 
-void CWaylandOutput::updateRender () const {
-    ;
+void CWaylandOutput::updateRender () const
+{
 }

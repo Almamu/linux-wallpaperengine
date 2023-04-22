@@ -73,9 +73,19 @@ if (ENABLE_WAYLAND)
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
     add_compile_definitions(ENABLE_WAYLAND)
-    set(WAYLAND_SOURCES "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h" "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp" "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
-    "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp" "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
-    "src/WallpaperEngine/Input/CWaylandMouseInput.cpp" "src/WallpaperEngine/Input/CWaylandMouseInput.h" "xdg-shell-protocol.c" "wlr-layer-shell-unstable-v1-protocol.c")
+    set(WAYLAND_SOURCES
+            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.cpp"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h"
+            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp"
+            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
+            "xdg-shell-protocol.c"
+            "wlr-layer-shell-unstable-v1-protocol.c")
 else()
     set(WAYLAND_SOURCES "")
 endif()
@@ -142,8 +152,8 @@ add_executable(
     src/WallpaperEngine/Input/CInputContext.h
     src/WallpaperEngine/Input/CMouseInput.cpp
     src/WallpaperEngine/Input/CMouseInput.h
-    src/WallpaperEngine/Input/CGLFWMouseInput.cpp
-    src/WallpaperEngine/Input/CGLFWMouseInput.h
+    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.cpp
+    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.h
 
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
@@ -175,6 +185,10 @@ add_executable(
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.h
+    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h

@@ -9,6 +9,9 @@
 
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h"
+#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
 
 namespace WallpaperEngine::Application
 {
@@ -16,56 +19,54 @@ namespace WallpaperEngine::Application
     class CWallpaperApplication;
 }
 
-struct GLFWwindow;
-typedef GLFWwindow GLFWWindow;
+namespace WallpaperEngine::Input::Drivers
+{
+    class CWaylandMouseInput;
+}
+
 struct zwlr_layer_shell_v1;
 struct zwlr_layer_surface_v1;
 
 namespace WallpaperEngine::Render::Drivers
 {
     using namespace WallpaperEngine::Application;
+    using namespace WallpaperEngine::Input::Drivers;
     class CWaylandOpenGLDriver;
-    class CLayerSurface;
 
-    struct SWaylandOutput {
-        wl_output* output;
-        std::string name;
-        glm::ivec2 size;
-        glm::ivec2 lsSize;
-        uint32_t waylandName;
-        int scale = 1;
-        CWaylandOpenGLDriver* driver = nullptr;
-        bool initialized = false;
-        std::unique_ptr<CLayerSurface> layerSurface;
-        bool rendering = false;
-    };
-
-    class CLayerSurface {
-    public:
-        CLayerSurface(CWaylandOpenGLDriver*, SWaylandOutput*);
-        ~CLayerSurface();
-
-        wl_egl_window* eglWindow = nullptr;
-        EGLSurface eglSurface = nullptr;
-        wl_surface* surface = nullptr;
-        zwlr_layer_surface_v1* layerSurface = nullptr;
-        glm::ivec2 size;
-        wl_callback* frameCallback = nullptr;
-        SWaylandOutput* output = nullptr;
-        glm::dvec2 mousePos = {0, 0};
-        wl_cursor* pointer = nullptr;
-        wl_surface* cursorSurface = nullptr;
-        bool callbackInitialized = false;
-        float lastTime, minimumTime;
-    };
+    namespace Output
+    {
+        class CWaylandOutputViewport;
+        class CWaylandOutput;
+    }
 
     class CWaylandOpenGLDriver : public CVideoDriver
     {
+        friend class Output::CWaylandOutput;
+        friend class CWaylandMouseInput;
     public:
-        explicit CWaylandOpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication* app);
+        struct SEGLContext
+        {
+            EGLDisplay display = nullptr;
+            EGLConfig config = nullptr;
+            EGLContext context = nullptr;
+            PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
+        };
+
+        struct SWaylandContext
+        {
+            wl_display* display = nullptr;
+            wl_registry* registry = nullptr;
+            wl_compositor* compositor = nullptr;
+            wl_shm* shm = nullptr;
+            zwlr_layer_shell_v1* layerShell = nullptr;
+            wl_seat* seat = nullptr;
+        };
+
+        explicit CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app);
         ~CWaylandOpenGLDriver();
 
-        void* getWindowHandle () const;
+        [[nodiscard]] Detectors::CFullScreenDetector& getFullscreenDetector () override;
+        [[nodiscard]] Output::COutput& getOutput () override;
         float getRenderTime () const override;
         bool closeRequested () override;
         void resizeWindow (glm::ivec2 size) override;
@@ -76,49 +77,34 @@ namespace WallpaperEngine::Render::Drivers
         void swapBuffers () override;
         uint32_t getFrameCounter () const override;
         void dispatchEventQueue() const override;
-        void makeCurrent(const std::string& outputName) const override;
-        bool shouldRenderOutput(const std::string& outputName) const override;
-        bool requiresSeparateFlips() const override;
-        void swapOutputBuffer(const std::string& outputName) override;
-        std::string getCurrentlyRendered() const override;
 
-        GLFWwindow* getWindow ();
+        void onLayerClose(Output::CWaylandOutputViewport*);
+        Output::CWaylandOutputViewport* surfaceToViewport(wl_surface*);
 
-        struct {
-            wl_display* display = nullptr;
-            wl_registry* registry = nullptr;
-            wl_compositor* compositor = nullptr;
-            wl_shm* shm = nullptr;
-            zwlr_layer_shell_v1* layerShell = nullptr;
-            wl_seat* seat = nullptr;
-        } waylandContext;
+        Output::CWaylandOutputViewport* viewportInFocus = nullptr;
 
-        void onLayerClose(CLayerSurface*);
-        void resizeLSSurfaceEGL(CLayerSurface*);
-        CLayerSurface* surfaceToLS(wl_surface*);
+        [[nodiscard]] SEGLContext* getEGLContext ();
+        [[nodiscard]] SWaylandContext* getWaylandContext ();
 
-        std::vector<std::unique_ptr<SWaylandOutput>> m_outputs;
 
-        CWallpaperApplication* wallpaperApplication;
-
-        struct {
-            EGLDisplay display = nullptr;
-            EGLConfig config = nullptr;
-            EGLContext context = nullptr;
-            PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
-        } eglContext;
-
-        CLayerSurface* lastLSInFocus = nullptr;
+        /** List of available screens */
+        std::vector <Output::CWaylandOutputViewport*> m_screens;
 
     private:
+        /** Fullscreen detection used by this driver */
+        Detectors::CWaylandFullScreenDetector m_fullscreenDetector;
+        /** The output used by the driver */
+        Output::CWaylandOutput m_output;
+        /** The EGL context in use */
+        SEGLContext m_eglContext;
+        /** The Wayland context in use */
+        SWaylandContext m_waylandContext;
+
         void initEGL();
         void finishEGL();
 
         uint32_t m_frameCounter;
 
         std::chrono::high_resolution_clock::time_point renderStart = std::chrono::high_resolution_clock::now();
-
-        friend class CWaylandOutput;
-        friend class CWallpaperApplication;
     };
 }
