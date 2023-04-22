@@ -129,31 +129,18 @@ void CWaylandOpenGLDriver::initEGL()
     if (!eglGetPlatformDisplayEXT || !m_eglContext.eglCreatePlatformWindowSurfaceEXT)
         sLog.exception("EGL did not return EXT proc pointers!");
 
-    auto deinitEGL = [&] () -> void {
-        eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (m_eglContext.display)
-            eglTerminate(m_eglContext.display);
-        eglReleaseThread();
-    };
-
     m_eglContext.display = eglGetPlatformDisplayEXT(EGL_PLATFORM_WAYLAND_EXT, m_waylandContext.display, nullptr);
 
-    if (m_eglContext.display == EGL_NO_DISPLAY) {
-        deinitEGL();
+    if (m_eglContext.display == EGL_NO_DISPLAY)
         sLog.exception("eglGetPlatformDisplayEXT failed!");
-    }
 
-    if (!eglInitialize(m_eglContext.display, nullptr, nullptr)) {
-        deinitEGL();
+    if (!eglInitialize(m_eglContext.display, nullptr, nullptr))
         sLog.exception("eglInitialize failed!");
-    }
 
     const std::string CLIENTEXTENSIONSPOSTINIT = std::string(eglQueryString(m_eglContext.display, EGL_EXTENSIONS));
 
-    if (CLIENTEXTENSIONSPOSTINIT.find("EGL_KHR_create_context") == std::string::npos) {
-        deinitEGL();
+    if (CLIENTEXTENSIONSPOSTINIT.find("EGL_KHR_create_context") == std::string::npos)
         sLog.exception("EGL_KHR_create_context not supported!");
-    }
 
     EGLint matchedConfigs = 0;
     const EGLint CONFIG_ATTRIBUTES[] = {
@@ -166,20 +153,14 @@ void CWaylandOpenGLDriver::initEGL()
         EGL_NONE,
     };
 
-    if (!eglChooseConfig(m_eglContext.display, CONFIG_ATTRIBUTES, &m_eglContext.config, 1, &matchedConfigs)) {
-        deinitEGL();
+    if (!eglChooseConfig(m_eglContext.display, CONFIG_ATTRIBUTES, &m_eglContext.config, 1, &matchedConfigs))
         sLog.exception("eglChooseConfig failed!");
-    }
 
-    if (matchedConfigs == 0) {
-        deinitEGL();
+    if (matchedConfigs == 0)
         sLog.exception("eglChooseConfig failed! (matched 0 configs)");
-    }
 
-    if (!eglBindAPI(EGL_OPENGL_API)) {
-        deinitEGL();
+    if (!eglBindAPI(EGL_OPENGL_API))
         sLog.exception("eglBindAPI failed!");
-    }
 
     const EGLint CONTEXT_ATTRIBUTES[] = {
         EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
@@ -187,21 +168,13 @@ void CWaylandOpenGLDriver::initEGL()
         EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
         EGL_NONE,
     };
+
     m_eglContext.context = eglCreateContext(m_eglContext.display, m_eglContext.config, EGL_NO_CONTEXT, CONTEXT_ATTRIBUTES);
 
     if (m_eglContext.context == EGL_NO_CONTEXT) {
         sLog.error("eglCreateContext error " + std::to_string(eglGetError()));
-        deinitEGL();
         sLog.exception("eglCreateContext failed!");
     }
-}
-
-void CWaylandOpenGLDriver::finishEGL()
-{
-    eglMakeCurrent(m_eglContext.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(m_eglContext.display, m_eglContext.context);
-    eglTerminate(m_eglContext.display);
-    eglReleaseThread();
 }
 
 void CWaylandOpenGLDriver::onLayerClose(Output::CWaylandOutputViewport* viewport)
@@ -222,8 +195,11 @@ void CWaylandOpenGLDriver::onLayerClose(Output::CWaylandOutputViewport* viewport
 
     // remove the output from the list
     std::remove (this->m_screens.begin (), this->m_screens.end (), viewport);
-    // TODO: DELETE FROM VIEWPORT LIST
 
+    // reset the viewports
+    this->getOutput ().reset ();
+
+    // finally free memory used by the viewport
     delete viewport;
 }
 
@@ -231,6 +207,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpa
     m_frameCounter(0),
     m_fullscreenDetector (context, *this),
     m_output (context, *this),
+    m_requestedExit (false),
     CVideoDriver (app)
 {
     m_waylandContext.display = wl_display_connect (nullptr);
@@ -263,19 +240,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpa
     }
 
     if (!any)
-    {
-        const auto cur = context.settings.general.screenBackgrounds.find ("auto");
-
-        if (cur != context.settings.general.screenBackgrounds.end ())
-        {
-            // initializes the default screen only...
-            m_screens [0]->setupLS ();
-            any = true;
-        }
-    }
-
-    if (!any)
-        sLog.exception("No outputs could be initialized!");
+        sLog.exception("No outputs could be initialized, please check the parameters and try again");
 
     GLenum result = glewInit ();
 
@@ -285,12 +250,37 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpa
     FreeImage_Initialise (TRUE);
 }
 
-void CWaylandOpenGLDriver::dispatchEventQueue() const
+CWaylandOpenGLDriver::~CWaylandOpenGLDriver ()
 {
-    // render one frame to force drawing the screens
-    this->getApp ().update ();
+    eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    wl_display_dispatch(m_waylandContext.display);
+    if (m_eglContext.context != EGL_NO_CONTEXT)
+        eglDestroyContext (m_eglContext.display, m_eglContext.context);
+
+    eglTerminate (m_eglContext.display);
+    eglReleaseThread ();
+
+    // disconnect from wayland display
+    if (this->m_waylandContext.display)
+        wl_display_disconnect (this->m_waylandContext.display);
+}
+
+void CWaylandOpenGLDriver::dispatchEventQueue()
+{
+    static bool initialized = false;
+
+    if (!initialized)
+    {
+        initialized = true;
+
+        for (const auto& viewport : this->getOutput ().getViewports ())
+            this->getApp ().update (viewport.second);
+    }
+    
+    if (wl_display_dispatch(m_waylandContext.display) == -1)
+        m_requestedExit = true;
+
+    m_frameCounter ++;
 }
 
 Detectors::CFullScreenDetector& CWaylandOpenGLDriver::getFullscreenDetector ()
@@ -310,7 +300,7 @@ float CWaylandOpenGLDriver::getRenderTime () const
 
 bool CWaylandOpenGLDriver::closeRequested ()
 {
-    return false;
+    return this->m_requestedExit;
 }
 
 void CWaylandOpenGLDriver::resizeWindow (glm::ivec2 size)
@@ -332,11 +322,6 @@ void CWaylandOpenGLDriver::hideWindow ()
 glm::ivec2 CWaylandOpenGLDriver::getFramebufferSize () const
 {
     return glm::ivec2{0, 0};
-}
-
-void CWaylandOpenGLDriver::swapBuffers ()
-{
-    m_frameCounter ++;
 }
 
 uint32_t CWaylandOpenGLDriver::getFrameCounter () const

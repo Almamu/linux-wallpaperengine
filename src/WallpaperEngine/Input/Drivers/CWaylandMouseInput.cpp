@@ -14,16 +14,8 @@ void CWaylandMouseInput::update ()
 
 glm::dvec2 CWaylandMouseInput::position() const
 {
-    if (!waylandDriver->viewportInFocus)
-        return {0, 0};
-
-    for (auto& o : waylandDriver->m_screens)
-    {
-        if (!o->rendering)
-            continue;
-
-        return o == waylandDriver->viewportInFocus ? o->mousePos : glm::dvec2{-1337, -1337};
-    }
+    if (waylandDriver->viewportInFocus && waylandDriver->viewportInFocus->rendering)
+        return waylandDriver->viewportInFocus->mousePos;
 
     return {0, 0};
 }

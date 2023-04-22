@@ -7,6 +7,10 @@ CVideoDriver::CVideoDriver (CWallpaperApplication& app) :
 {
 }
 
+CVideoDriver::~CVideoDriver ()
+{
+}
+
 CWallpaperApplication& CVideoDriver::getApp () const
 {
     return this->m_app;

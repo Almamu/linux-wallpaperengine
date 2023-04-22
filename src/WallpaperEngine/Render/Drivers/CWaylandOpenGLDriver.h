@@ -75,9 +75,8 @@ namespace WallpaperEngine::Render::Drivers
         void showWindow () override;
         void hideWindow () override;
         glm::ivec2 getFramebufferSize () const override;
-        void swapBuffers () override;
         uint32_t getFrameCounter () const override;
-        void dispatchEventQueue() const override;
+        void dispatchEventQueue() override;
         [[nodiscard]] void* getProcAddress (const char* name) const override;
 
         void onLayerClose(Output::CWaylandOutputViewport*);
@@ -101,6 +100,7 @@ namespace WallpaperEngine::Render::Drivers
         SEGLContext m_eglContext;
         /** The Wayland context in use */
         SWaylandContext m_waylandContext;
+        mutable bool m_requestedExit;
 
         void initEGL();
         void finishEGL();

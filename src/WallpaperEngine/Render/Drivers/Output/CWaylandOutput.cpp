@@ -1,6 +1,7 @@
 #include "common.h"
 #include "CWaylandOutput.h"
 #include "../CWaylandOpenGLDriver.h"
+#include "WallpaperEngine/Application/CWallpaperApplication.h"
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
@@ -26,9 +27,9 @@ void CWaylandOutput::updateViewports()
 
         m_viewports[o->name] = o;
 
-        fullw = fullw + glm::ivec2{o->lsSize.x * o->scale, 0};
-        if (o->lsSize.y > fullw.y)
-            fullw.y = o->lsSize.y;
+        fullw = fullw + glm::ivec2{o->size.x * o->scale, 0};
+        if (o->size.y > fullw.y)
+            fullw.y = o->size.y;
     }
 
     m_fullWidth = fullw.x;

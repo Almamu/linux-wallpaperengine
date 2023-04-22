@@ -35,7 +35,6 @@ namespace WallpaperEngine::Render::Drivers
 
             wl_output* output;
             glm::ivec2 size;
-            glm::ivec2 lsSize;
             uint32_t waylandName;
             int scale = 1;
             bool initialized = false;

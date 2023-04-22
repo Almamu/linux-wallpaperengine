@@ -100,7 +100,7 @@ static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t ti
 
     viewport->frameCallback = nullptr;
     viewport->rendering = true;
-    viewport->getDriver ()->getApp ().update ();
+    viewport->getDriver ()->getApp ().update (viewport);
     viewport->rendering = false;
 
     float renderTime = viewport->getDriver ()->getRenderTime();
@@ -111,7 +111,8 @@ static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t ti
     viewport->lastTime = renderTime;
 }
 
-const struct wl_callback_listener frameListener = {
+const struct wl_callback_listener frameListener =
+{
     .done = surfaceFrameCallback
 };
 
@@ -145,7 +146,7 @@ CWaylandOutputViewport::CWaylandOutputViewport (CWaylandOpenGLDriver* driver, ui
 void CWaylandOutputViewport::setupLS ()
 {
     surface = wl_compositor_create_surface(m_driver->getWaylandContext()->compositor);
-    layerSurface = zwlr_layer_shell_v1_get_layer_surface(m_driver->getWaylandContext()->layerShell, surface, this->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
+    layerSurface = zwlr_layer_shell_v1_get_layer_surface(m_driver->getWaylandContext()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "linux-wallpaperengine");
 
     if (!layerSurface)
         sLog.exception("Failed to get a layer surface");
@@ -164,7 +165,6 @@ void CWaylandOutputViewport::setupLS ()
 
     eglWindow = wl_egl_window_create(surface, size.x * scale, size.y * scale);
     eglSurface = m_driver->getEGLContext ()->eglCreatePlatformWindowSurfaceEXT(m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr);
-    lsSize = size;
     wl_surface_commit(surface);
     wl_display_roundtrip(m_driver->getWaylandContext()->display);
     wl_display_flush(m_driver->getWaylandContext()->display);
@@ -186,8 +186,7 @@ void CWaylandOutputViewport::setupLS ()
 
     minimumTime = 1.0f / m_driver->getApp ().getContext().settings.render.maximumFPS;
 
-    // reset the output to notice the new viewport
-    m_driver->getOutput ().reset ();
+    this->m_driver->getOutput ().reset ();
 }
 
 CWaylandOpenGLDriver* CWaylandOutputViewport::getDriver ()
@@ -227,12 +226,6 @@ void CWaylandOutputViewport::resize ()
         return;
 
     wl_egl_window_resize(this->eglWindow, this->size.x * this->scale, this->size.y * this->scale, 0, 0);
-
-    if (this->frameCallback)
-    {
-        wl_callback_destroy(this->frameCallback);
-        this->frameCallback = nullptr;
-    }
 
     this->getDriver ()->getOutput().reset();
 }

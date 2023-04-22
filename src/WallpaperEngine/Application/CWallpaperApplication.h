@@ -39,6 +39,7 @@ namespace WallpaperEngine::Application
     {
     public:
         explicit CWallpaperApplication (CApplicationContext& context);
+        ~CWallpaperApplication ();
 
         /**
          * Shows the application until it's closed
@@ -65,7 +66,7 @@ namespace WallpaperEngine::Application
         /**
          * Renders a frame
         */
-        void update();
+        void update(Render::Drivers::Output::COutputViewport* viewport);
         /**
          * Gets the output
         */
@@ -121,7 +122,5 @@ namespace WallpaperEngine::Application
         WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
         WallpaperEngine::Render::CRenderContext* context;
         WallpaperEngine::Audio::CAudioContext* audioContext;
-
-        std::vector<std::string> screenshotOutputsDone;
     };
 }

@@ -135,27 +135,37 @@ glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const
     return size;
 }
 
-void CX11OpenGLDriver::swapBuffers ()
+uint32_t CX11OpenGLDriver::getFrameCounter () const
 {
+    return this->m_frameCounter;
+}
+
+void CX11OpenGLDriver::dispatchEventQueue()
+{
+    static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+    // get the start time of the frame
+    startTime = this->getRenderTime ();
+    // clear the screen
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    for (const auto& viewport : this->m_output->getViewports ())
+        this->getApp ().update (viewport.second);
+
+    // read the full texture into the image
+    if (this->m_output->haveImageBuffer ())
+        glReadPixels (
+            0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
+            this->m_output->getImageBuffer ()
+        );
+
+    // update the output with the given image
+    this->m_output->updateRender ();
     // do buffer swapping first
     glfwSwapBuffers (this->m_window);
     // poll for events
     glfwPollEvents ();
     // increase frame counter
     this->m_frameCounter ++;
-}
-
-uint32_t CX11OpenGLDriver::getFrameCounter () const
-{
-    return this->m_frameCounter;
-}
-
-void CX11OpenGLDriver::dispatchEventQueue() const
-{
-    static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
-    // get the start time of the frame
-    startTime = this->getRenderTime ();
-    this->getApp ().update ();
     // get the end time of the frame
     endTime = this->getRenderTime ();
 

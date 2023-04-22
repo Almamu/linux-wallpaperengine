@@ -21,6 +21,7 @@ namespace WallpaperEngine::Render::Drivers
     {
     public:
         CVideoDriver (CWallpaperApplication& app);
+        virtual ~CVideoDriver ();
 
         /**
          * @return The fullscreen detector this video driver uses
@@ -59,10 +60,6 @@ namespace WallpaperEngine::Render::Drivers
          */
         [[nodiscard]] virtual glm::ivec2 getFramebufferSize () const = 0;
         /**
-         * Performs buffer swapping
-         */
-        virtual void swapBuffers () = 0;
-        /**
          * @return The number of rendered frames since the start of the driver
          */
         [[nodiscard]] virtual uint32_t getFrameCounter () const = 0;
@@ -74,7 +71,7 @@ namespace WallpaperEngine::Render::Drivers
         /**
          * Process events on the driver and renders a frame
         */
-        virtual void dispatchEventQueue() const = 0;
+        virtual void dispatchEventQueue() = 0;
         /**
          * @return The app that owns this driver
          */

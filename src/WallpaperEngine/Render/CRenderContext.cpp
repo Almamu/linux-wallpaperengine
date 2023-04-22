@@ -21,51 +21,30 @@ namespace WallpaperEngine::Render
     {
     }
 
-    void CRenderContext::render ()
+    void CRenderContext::render (Drivers::Output::COutputViewport* viewport)
     {
-        bool firstFrame = true;
-        bool renderFrame = true;
-
-        for (const auto& cur : this->getOutput ().getViewports ())
-        {
-            cur.second->makeCurrent ();
+        viewport->makeCurrent ();
 
 #if !NDEBUG
-            std::string str = "Rendering to output " + cur.first;
+        std::string str = "Rendering to output " + viewport->name;
 
-            glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
-            // search the background in the viewport selection
-            auto ref = this->m_wallpapers.find (cur.first);
 
-            // render the background
-            if (ref != this->m_wallpapers.end ())
-                ref->second->render (cur.second->viewport, this->getOutput ().renderVFlip (), renderFrame, firstFrame);
-            else
-                this->m_defaultWallpaper->render (
-                    cur.second->viewport, this->getOutput ().renderVFlip (), renderFrame, firstFrame
-                );
-            // scenes need to render a new frame for each viewport as they produce different results
-            // but videos should only be rendered once per group of viewports
-            firstFrame = false;
+        // search the background in the viewport selection
+        auto ref = this->m_wallpapers.find (viewport->name);
+
+        // render the background
+        if (ref != this->m_wallpapers.end ())
+            ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
+        else
+            this->m_defaultWallpaper->render (viewport->viewport, this->getOutput ().renderVFlip ());
+
 #if !NDEBUG
-            glPopDebugGroup ();
+        glPopDebugGroup ();
 #endif /* DEBUG */
 
-            cur.second->swapOutput ();
-        }
-
-        // read the full texture into the image
-        if (this->getOutput ().haveImageBuffer ())
-            glReadPixels (
-                0, 0, this->getOutput ().getFullWidth (), this->getOutput ().getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
-                this->getOutput ().getImageBuffer ()
-            );
-
-        // update the output with the given image
-        this->getOutput ().updateRender ();
-        // finally swap buffers
-        this->m_driver.swapBuffers ();
+        viewport->swapOutput ();
     }
 
     void CRenderContext::setDefaultWallpaper (CWallpaper* wallpaper)

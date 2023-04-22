@@ -34,9 +34,8 @@ namespace WallpaperEngine::Render::Drivers
         void showWindow () override;
         void hideWindow () override;
         [[nodiscard]] glm::ivec2 getFramebufferSize () const override;
-        void swapBuffers () override;
         [[nodiscard]] uint32_t getFrameCounter () const override;
-        void dispatchEventQueue() const override;
+        void dispatchEventQueue() override;
         [[nodiscard]] void* getProcAddress (const char* name) const override;
 
         GLFWwindow* getWindow ();

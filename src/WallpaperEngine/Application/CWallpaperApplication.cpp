@@ -27,6 +27,15 @@ namespace WallpaperEngine::Application
         this->setupProperties ();
     }
 
+    CWallpaperApplication::~CWallpaperApplication ()
+    {
+        delete context;
+        delete videoDriver;
+        delete audioContext;
+        delete audioDriver;
+        delete inputContext;
+    }
+
     void CWallpaperApplication::setupContainer (CCombinedContainer& container, const std::string& bg) const
     {
         std::filesystem::path basepath = bg;
@@ -322,8 +331,33 @@ namespace WallpaperEngine::Application
                 this->m_defaultBackground->getWallpaper (), *context, *audioContext
             ));
 
+        static time_t seconds;
+        static struct tm* timeinfo;
+
         while (this->m_context.state.general.keepRunning && !videoDriver->closeRequested ())
+        {
+            // update g_Daytime
+            time (&seconds);
+            timeinfo = localtime(&seconds);
+            g_Daytime = ((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0 * 60.0);
+
+            // keep track of the previous frame's time
+            g_TimeLast = g_Time;
+            // calculate the current time value
+            g_Time = videoDriver->getRenderTime ();
+            // update audio recorder
+            audioDriver->update ();
+            // update input information
+            inputContext->update ();
+            // process driver events
             videoDriver->dispatchEventQueue ();
+
+            if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () < 5)
+                continue;
+
+            this->takeScreenshot (*context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
+            this->m_context.settings.screenshot.take = false;
+        }
 
         // ensure this is updated as sometimes it might not come from a signal
         this->m_context.state.general.keepRunning = false;
@@ -333,33 +367,10 @@ namespace WallpaperEngine::Application
         SDL_Quit ();
     }
 
-    void CWallpaperApplication::update()
+    void CWallpaperApplication::update(Render::Drivers::Output::COutputViewport* viewport)
     {
-        static time_t seconds;
-        static struct tm* timeinfo;
-
-        // update g_Daytime
-        time (&seconds);
-        timeinfo = localtime(&seconds);
-        g_Daytime = ((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0 * 60.0);
-
-        // keep track of the previous frame's time
-        g_TimeLast = g_Time;
-        // calculate the current time value
-        g_Time = videoDriver->getRenderTime ();
-
-        // update audio recorder
-        audioDriver->update ();
-        // update input information
-        inputContext->update ();
         // render the scene
-        context->render ();
-
-        if (!this->m_context.settings.screenshot.take || videoDriver->getFrameCounter () < 5)
-            return;
-
-        this->takeScreenshot (*context, this->m_context.settings.screenshot.path, this->m_context.settings.screenshot.format);
-        this->m_context.settings.screenshot.take = false;
+        context->render (viewport);
     }
 
     void CWallpaperApplication::signal (int signal)

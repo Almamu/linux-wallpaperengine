@@ -39,7 +39,7 @@ namespace WallpaperEngine
         public:
             CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
 
-            void render ();
+            void render (Drivers::Output::COutputViewport* viewport);
             void setDefaultWallpaper (CWallpaper* wallpaper);
             void setWallpaper (const std::string& display, CWallpaper* wallpaper);
             [[nodiscard]] Input::CInputContext& getInputContext () const;
