@@ -13,6 +13,8 @@ extern "C" {
 #undef namespace
 #undef static
 
+#include <unistd.h>
+
 using namespace WallpaperEngine::Render::Drivers;
 using namespace WallpaperEngine::Render::Drivers::Output;
 
