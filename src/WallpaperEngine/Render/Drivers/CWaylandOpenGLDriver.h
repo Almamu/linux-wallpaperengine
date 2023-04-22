@@ -1,3 +1,4 @@
+#ifdef ENABLE_WAYLAND
 #pragma once
 
 #include <wayland-client.h>
@@ -109,3 +110,4 @@ namespace WallpaperEngine::Render::Drivers
         std::chrono::high_resolution_clock::time_point renderStart = std::chrono::high_resolution_clock::now();
     };
 }
+#endif /* ENABLE_WAYLAND */

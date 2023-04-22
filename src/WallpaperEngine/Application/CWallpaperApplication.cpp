@@ -8,13 +8,10 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
+#include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
+
 #include "WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
-#include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
-#include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
-#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
-
-#include <unistd.h>
 
 float g_Time;
 float g_TimeLast;

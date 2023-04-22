@@ -1,3 +1,4 @@
+#ifdef ENABLE_WAYLAND
 #pragma once
 
 #include <map>
@@ -32,3 +33,4 @@ namespace WallpaperEngine::Render::Drivers
         };
     }
 }
+#endif /* ENABLE_WAYLAND */

@@ -1,3 +1,4 @@
+#ifdef ENABLE_WAYLAND
 #pragma once
 
 #include <wayland-client.h>
@@ -73,3 +74,4 @@ namespace WallpaperEngine::Render::Drivers
         };
     }
 }
+#endif /* ENABLE_WAYLAND */

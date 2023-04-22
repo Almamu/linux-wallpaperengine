@@ -1,3 +1,4 @@
+#ifdef ENABLE_WAYLAND
 #pragma once
 
 #include "WallpaperEngine/Input/CMouseInput.h"
@@ -37,3 +38,4 @@ namespace WallpaperEngine::Input::Drivers
     };
 }
 
+#endif /* ENABLE_WAYLAND */
