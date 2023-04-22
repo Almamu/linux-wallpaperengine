@@ -18,7 +18,7 @@ namespace WallpaperEngine::Audio::Drivers::Detectors
         // get processid
         const char* value = pa_proplist_gets (info->proplist, PA_PROP_APPLICATION_PROCESS_ID);
 
-        if (atoi (value) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
+        if (value && atoi (value) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
             detector->setIsPlaying (true);
     }
 
