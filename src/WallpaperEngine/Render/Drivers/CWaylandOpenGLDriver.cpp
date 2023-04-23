@@ -129,18 +129,34 @@ void CWaylandOpenGLDriver::initEGL()
     if (!eglGetPlatformDisplayEXT || !m_eglContext.eglCreatePlatformWindowSurfaceEXT)
         sLog.exception("EGL did not return EXT proc pointers!");
 
+    auto deinitEGL = [&] () -> void {
+        eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (m_eglContext.display)
+            eglTerminate(m_eglContext.display);
+        eglReleaseThread();
+    };
+
     m_eglContext.display = eglGetPlatformDisplayEXT(EGL_PLATFORM_WAYLAND_EXT, m_waylandContext.display, nullptr);
 
     if (m_eglContext.display == EGL_NO_DISPLAY)
-        sLog.exception("eglGetPlatformDisplayEXT failed!");
+    {
+        deinitEGL ();
+        sLog.exception ("eglGetPlatformDisplayEXT failed!");
+    }
 
     if (!eglInitialize(m_eglContext.display, nullptr, nullptr))
-        sLog.exception("eglInitialize failed!");
+    {
+        deinitEGL ();
+        sLog.exception ("eglInitialize failed!");
+    }
 
     const std::string CLIENTEXTENSIONSPOSTINIT = std::string(eglQueryString(m_eglContext.display, EGL_EXTENSIONS));
 
     if (CLIENTEXTENSIONSPOSTINIT.find("EGL_KHR_create_context") == std::string::npos)
-        sLog.exception("EGL_KHR_create_context not supported!");
+    {
+        deinitEGL ();
+        sLog.exception ("EGL_KHR_create_context not supported!");
+    }
 
     EGLint matchedConfigs = 0;
     const EGLint CONFIG_ATTRIBUTES[] = {
@@ -154,13 +170,22 @@ void CWaylandOpenGLDriver::initEGL()
     };
 
     if (!eglChooseConfig(m_eglContext.display, CONFIG_ATTRIBUTES, &m_eglContext.config, 1, &matchedConfigs))
-        sLog.exception("eglChooseConfig failed!");
+    {
+        deinitEGL ();
+        sLog.exception ("eglChooseConfig failed!");
+    }
 
     if (matchedConfigs == 0)
-        sLog.exception("eglChooseConfig failed! (matched 0 configs)");
+    {
+        deinitEGL ();
+        sLog.exception ("eglChooseConfig failed! (matched 0 configs)");
+    }
 
     if (!eglBindAPI(EGL_OPENGL_API))
-        sLog.exception("eglBindAPI failed!");
+    {
+        deinitEGL ();
+        sLog.exception ("eglBindAPI failed!");
+    }
 
     const EGLint CONTEXT_ATTRIBUTES[] = {
         EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
@@ -171,7 +196,9 @@ void CWaylandOpenGLDriver::initEGL()
 
     m_eglContext.context = eglCreateContext(m_eglContext.display, m_eglContext.config, EGL_NO_CONTEXT, CONTEXT_ATTRIBUTES);
 
-    if (m_eglContext.context == EGL_NO_CONTEXT) {
+    if (m_eglContext.context == EGL_NO_CONTEXT)
+    {
+        deinitEGL ();
         sLog.error("eglCreateContext error " + std::to_string(eglGetError()));
         sLog.exception("eglCreateContext failed!");
     }
@@ -252,6 +279,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpa
 
 CWaylandOpenGLDriver::~CWaylandOpenGLDriver ()
 {
+    // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     if (m_eglContext.context != EGL_NO_CONTEXT)
