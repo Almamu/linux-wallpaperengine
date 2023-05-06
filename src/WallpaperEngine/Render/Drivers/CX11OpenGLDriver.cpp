@@ -158,6 +158,8 @@ void CX11OpenGLDriver::dispatchEventQueue()
             this->m_output->getImageBuffer ()
         );
 
+    // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
+    // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
     // update the output with the given image
     this->m_output->updateRender ();
     // do buffer swapping first

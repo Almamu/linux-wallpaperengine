@@ -106,6 +106,7 @@ namespace WallpaperEngine::Render::Drivers
         void finishEGL();
 
         uint32_t m_frameCounter;
+        CApplicationContext& m_context;
 
         std::chrono::high_resolution_clock::time_point renderStart = std::chrono::high_resolution_clock::now();
     };

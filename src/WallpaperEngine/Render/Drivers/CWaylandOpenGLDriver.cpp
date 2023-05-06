@@ -235,6 +235,7 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver(CApplicationContext& context, CWallpa
     m_fullscreenDetector (context, *this),
     m_output (context, *this),
     m_requestedExit (false),
+    m_context (context),
     CVideoDriver (app)
 {
     m_waylandContext.display = wl_display_connect (nullptr);
@@ -304,11 +305,26 @@ void CWaylandOpenGLDriver::dispatchEventQueue()
         for (const auto& viewport : this->getOutput ().getViewports ())
             this->getApp ().update (viewport.second);
     }
-    
+
+    // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
+    // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
+
+    // TODO: WRITE A NON-BLOCKING VERSION OF THIS ONCE PARTICLE SIMULATION STARTS WORKING
+    // TODO: OTHERWISE wl_display_dispatch WILL BLOCK IF NO SURFACES ARE BEING DRAWN
+    static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+    // get the start time of the frame
+    startTime = this->getRenderTime ();
+
     if (wl_display_dispatch(m_waylandContext.display) == -1)
         m_requestedExit = true;
 
     m_frameCounter ++;
+
+    endTime = this->getRenderTime ();
+
+    // ensure the frame time is correct to not overrun FPS
+    if ((endTime - startTime) < minimumTime)
+        usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 }
 
 Detectors::CFullScreenDetector& CWaylandOpenGLDriver::getFullscreenDetector ()

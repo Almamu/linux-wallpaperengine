@@ -104,11 +104,6 @@ static void surfaceFrameCallback(void *data, struct wl_callback *cb, uint32_t ti
     viewport->rendering = false;
 
     float renderTime = viewport->getDriver ()->getRenderTime();
-
-    if ((renderTime - viewport->lastTime) < viewport->minimumTime)
-        usleep ((viewport->minimumTime - (renderTime - viewport->lastTime)) * CLOCKS_PER_SEC);
-
-    viewport->lastTime = renderTime;
 }
 
 const struct wl_callback_listener frameListener =
@@ -183,8 +178,6 @@ void CWaylandOutputViewport::setupLS ()
 
     if (eglMakeCurrent(m_driver->getEGLContext ()->display, eglSurface, eglSurface, m_driver->getEGLContext ()->context) == EGL_FALSE)
         sLog.exception("Failed to make egl current");
-
-    minimumTime = 1.0f / m_driver->getApp ().getContext().settings.render.maximumFPS;
 
     this->m_driver->getOutput ().reset ();
 }

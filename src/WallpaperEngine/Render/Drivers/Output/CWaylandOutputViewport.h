@@ -49,7 +49,6 @@ namespace WallpaperEngine::Render::Drivers
             wl_cursor* pointer = nullptr;
             wl_surface* cursorSurface = nullptr;
             bool callbackInitialized = false;
-            float lastTime, minimumTime;
 
             void setupLS ();
 
