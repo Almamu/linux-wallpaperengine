@@ -44,11 +44,10 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     include)
 
-if (ENABLE_WAYLAND)
-    message(STATUS "Wayland support is enabled!")
+# try to enable wayland builds when possible
+pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
 
-    pkg_check_modules(wayland-cursor wayland-protocols egl wayland-egl)
-
+if(WAYLAND_SUPPORT_FOUND)
     find_program(WaylandScanner NAMES wayland-scanner)
     message(STATUS "Found WaylandScanner at ${WaylandScanner}")
     execute_process(
@@ -86,8 +85,6 @@ if (ENABLE_WAYLAND)
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
             "xdg-shell-protocol.c"
             "wlr-layer-shell-unstable-v1-protocol.c")
-else()
-    set(WAYLAND_SOURCES "")
 endif()
 
 add_executable(
@@ -341,12 +338,13 @@ target_link_libraries(linux-wallpaperengine
     ${PULSEAUDIO_LIBRARY}
     glfw)
 
-if (ENABLE_WAYLAND)
-    target_link_libraries(linux-wallpaperengine pthread
-                                                wayland-cursor
-                                                wayland-client
-                                                wayland-egl
-                                                ${OPENGL_egl_LIBRARY})
+if (WAYLAND_SUPPORT_FOUND)
+    target_link_libraries(linux-wallpaperengine
+        pthread
+        wayland-cursor
+        wayland-client
+        wayland-egl
+        ${OPENGL_egl_LIBRARY})
 endif()
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
