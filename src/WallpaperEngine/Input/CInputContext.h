@@ -1,11 +1,10 @@
 #pragma once
 
-#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
 #include "CMouseInput.h"
 
 namespace WallpaperEngine::Render::Drivers
 {
-    class CX11OpenGLDriver;
+    class CVideoDriver;
 }
 
 namespace WallpaperEngine::Input
@@ -13,12 +12,16 @@ namespace WallpaperEngine::Input
     class CInputContext
     {
     public:
-        explicit CInputContext (Render::Drivers::CX11OpenGLDriver& videoDriver);
+        explicit CInputContext (CMouseInput* mouseInput);
+
+        /**
+         * Updates input information
+         */
         void update ();
 
         [[nodiscard]] const CMouseInput& getMouseInput () const;
 
     private:
-        CMouseInput m_mouse;
+        CMouseInput* m_mouse;
     };
 }

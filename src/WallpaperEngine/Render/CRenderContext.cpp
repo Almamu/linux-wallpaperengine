@@ -10,11 +10,10 @@
 namespace WallpaperEngine::Render
 {
     CRenderContext::CRenderContext (
-        const Drivers::Output::COutput* output, Drivers::CVideoDriver& driver, Input::CInputContext& input,
+        Drivers::CVideoDriver& driver, Input::CInputContext& input,
         CWallpaperApplication& app
     ) :
         m_defaultWallpaper (nullptr),
-        m_output (output),
         m_driver (driver),
         m_app (app),
         m_input (input),
@@ -22,48 +21,30 @@ namespace WallpaperEngine::Render
     {
     }
 
-    void CRenderContext::render ()
+    void CRenderContext::render (Drivers::Output::COutputViewport* viewport)
     {
-        bool firstFrame = true;
-        bool renderFrame = true;
+        viewport->makeCurrent ();
 
-        for (const auto& cur : this->m_output->getViewports ())
-        {
 #if !NDEBUG
-            std::string str = "Rendering to output " + cur.first;
+        std::string str = "Rendering to output " + viewport->name;
 
-            glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
-            // search the background in the viewport selection
-            auto ref = this->m_wallpapers.find (cur.first);
+        // search the background in the viewport selection
+        auto ref = this->m_wallpapers.find (viewport->name);
 
-            // render the background
-            if (ref != this->m_wallpapers.end ())
-                ref->second->render (cur.second.viewport, this->m_output->renderVFlip (), renderFrame, firstFrame);
-            else
-                this->m_defaultWallpaper->render (
-                    cur.second.viewport, this->m_output->renderVFlip (), renderFrame, firstFrame
-                );
-            // scenes need to render a new frame for each viewport as they produce different results
-            // but videos should only be rendered once per group of viewports
-            firstFrame = false;
+        // render the background
+        if (ref != this->m_wallpapers.end ())
+            ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
+        else
+            this->m_defaultWallpaper->render (viewport->viewport, this->getOutput ().renderVFlip ());
+
 #if !NDEBUG
-            glPopDebugGroup ();
+        glPopDebugGroup ();
 #endif /* DEBUG */
-        }
 
-        // read the full texture into the image
-        if (this->m_output->haveImageBuffer ())
-            glReadPixels (
-                0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
-                this->m_output->getImageBuffer ()
-            );
-
-        // update the output with the given image
-        this->m_output->updateRender ();
-        // finally swap buffers
-        this->m_driver.swapBuffers ();
+        viewport->swapOutput ();
     }
 
     void CRenderContext::setDefaultWallpaper (CWallpaper* wallpaper)
@@ -91,9 +72,9 @@ namespace WallpaperEngine::Render
         return this->m_driver;
     }
 
-    const Drivers::Output::COutput* CRenderContext::getOutput () const
+    const Drivers::Output::COutput& CRenderContext::getOutput () const
     {
-        return this->m_output;
+        return this->m_driver.getOutput ();
     }
 
     const ITexture* CRenderContext::resolveTexture (const std::string& name)

@@ -2,20 +2,39 @@
 
 #include <glm/vec4.hpp>
 #include <glm/vec2.hpp>
+#include <string>
+#include "WallpaperEngine/Render/Drivers/Output/COutput.h"
+
+namespace WallpaperEngine::Application
+{
+    class CWallpaperApplication;
+}
 
 namespace WallpaperEngine::Render::Drivers
 {
+    namespace Detectors
+    {
+        class CFullScreenDetector;
+    }
+
     class CVideoDriver
     {
     public:
+        CVideoDriver (CWallpaperApplication& app);
+        virtual ~CVideoDriver ();
+
         /**
-         * @return The window handle used by this video driver
+         * @return The fullscreen detector this video driver uses
          */
-        virtual void* getWindowHandle () const = 0;
+        [[nodiscard]] virtual Detectors::CFullScreenDetector& getFullscreenDetector () = 0;
+        /**
+         * @return The current output in use
+         */
+        [[nodiscard]] virtual Output::COutput& getOutput () = 0;
         /**
          * @return The time that has passed since the driver started
          */
-        virtual float getRenderTime () const = 0;
+        [[nodiscard]] virtual float getRenderTime () const = 0;
         /**
          * @return If a close was requested by the OS
          */
@@ -39,14 +58,27 @@ namespace WallpaperEngine::Render::Drivers
         /**
          * @return The size of the framebuffer available for the driver
          */
-        virtual glm::ivec2 getFramebufferSize () const = 0;
-        /**
-         * Performs buffer swapping
-         */
-        virtual void swapBuffers () = 0;
+        [[nodiscard]] virtual glm::ivec2 getFramebufferSize () const = 0;
         /**
          * @return The number of rendered frames since the start of the driver
          */
-        virtual uint32_t getFrameCounter () const = 0;
+        [[nodiscard]] virtual uint32_t getFrameCounter () const = 0;
+        /**
+         * @param name
+         * @return GetProcAddress for this video driver
+         */
+        [[nodiscard]] virtual void* getProcAddress (const char* name) const = 0;
+        /**
+         * Process events on the driver and renders a frame
+        */
+        virtual void dispatchEventQueue() = 0;
+        /**
+         * @return The app that owns this driver
+         */
+        [[nodiscard]] CWallpaperApplication& getApp () const;
+
+    private:
+        /** App that owns this driver */
+        CWallpaperApplication& m_app;
     };
 }

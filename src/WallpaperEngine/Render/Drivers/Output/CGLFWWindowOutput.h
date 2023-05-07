@@ -8,7 +8,7 @@ namespace WallpaperEngine::Render::Drivers::Output
     class CGLFWWindowOutput : public COutput
     {
     public:
-        CGLFWWindowOutput (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector);
+        CGLFWWindowOutput (CApplicationContext& context, CVideoDriver& driver);
 
         void reset () override;
         bool renderVFlip () const override;
@@ -19,7 +19,5 @@ namespace WallpaperEngine::Render::Drivers::Output
 
     private:
         void repositionWindow ();
-
-        CVideoDriver& m_driver;
     };
 }

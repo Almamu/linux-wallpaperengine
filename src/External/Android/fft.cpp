@@ -26,8 +26,8 @@ namespace External::Android
  * half of the twiddle factors are stored. Although there are still ways to make
  * it even faster or smaller, it costs too much on one of the aspects.
  */
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #ifdef __arm__
 #include <machine/cpu-features.h>
 #endif

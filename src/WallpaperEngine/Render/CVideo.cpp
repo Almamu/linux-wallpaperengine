@@ -8,7 +8,7 @@ using namespace WallpaperEngine::Render;
 
 void* get_proc_address (void* ctx, const char* name)
 {
-    return reinterpret_cast <void*> (glfwGetProcAddress (name));
+    return static_cast<CVideo*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
 CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext) :
@@ -40,7 +40,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     // initialize gl context for mpv
-    mpv_opengl_init_params gl_init_params {get_proc_address, nullptr};
+    mpv_opengl_init_params gl_init_params {get_proc_address, this};
     mpv_render_param params[] {
         {MPV_RENDER_PARAM_API_TYPE, const_cast <char*> (MPV_RENDER_API_TYPE_OPENGL)},
         {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},

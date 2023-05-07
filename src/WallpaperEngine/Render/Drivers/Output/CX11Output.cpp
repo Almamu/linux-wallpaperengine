@@ -1,5 +1,6 @@
 #include "common.h"
 #include "CX11Output.h"
+#include "CX11OutputViewport.h"
 
 #include <unistd.h>
 #include <X11/Xlib.h>
@@ -34,9 +35,8 @@ int CustomXIOErrorHandler (Display* dsp)
     return 0;
 }
 
-CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector) :
-    COutput (context, detector),
-    m_driver (driver)
+CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) :
+    COutput (context, driver)
 {
     // do not use previous handler, it might stop the app under weird circumstances
     XSetErrorHandler (CustomXErrorHandler);
@@ -57,11 +57,17 @@ void CX11Output::reset ()
     // re-load screen info
     this->loadScreenInfo ();
     // do the same for the detector
-    this->m_detector.reset ();
+    this->m_driver.getFullscreenDetector ().reset ();
 }
 
 void CX11Output::free ()
 {
+    // go through all the viewports and free them
+    for(const auto& cur : this->m_viewports)
+        delete cur.second;
+
+    this->m_viewports.clear ();
+
     // free all the resources we've got
     XDestroyImage (this->m_image);
     XFreeGC (this->m_display, this->m_gc);
@@ -132,6 +138,7 @@ void CX11Output::loadScreenInfo ()
 
         // add the screen to the list of screens
         this->m_screens.push_back (
+            new CX11OutputViewport
             {
                 {crtc->x, crtc->y, crtc->width, crtc->height},
                 info->name
@@ -144,6 +151,7 @@ void CX11Output::loadScreenInfo ()
             sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
 
             this->m_viewports[info->name] =
+                new CX11OutputViewport
                 {
                     {crtc->x, crtc->y, crtc->width, crtc->height},
                     info->name
@@ -187,6 +195,6 @@ void CX11Output::updateRender () const
     XFlush(this->m_display);
 
     // check for fullscreen windows and wait until there's none fullscreen
-    while (this->m_detector.anythingFullscreen () && this->m_context.state.general.keepRunning)
+    while (this->m_driver.getFullscreenDetector ().anythingFullscreen () && this->m_context.state.general.keepRunning)
         usleep (FULLSCREEN_CHECK_WAIT_TIME);
 }

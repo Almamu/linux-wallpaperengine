@@ -14,7 +14,7 @@ namespace WallpaperEngine::Render::Drivers::Output
     class CX11Output : public COutput
     {
     public:
-        CX11Output (CApplicationContext& context, CVideoDriver& driver, Detectors::CFullScreenDetector& detector);
+        CX11Output (CApplicationContext& context, CVideoDriver& driver);
         ~CX11Output ();
 
         void reset () override;
@@ -35,7 +35,6 @@ namespace WallpaperEngine::Render::Drivers::Output
         GC m_gc;
         char* m_imageData;
         XImage* m_image;
-        CVideoDriver& m_driver;
-        std::vector <ScreenInfo> m_screens;
+        std::vector <COutputViewport*> m_screens;
     };
 }

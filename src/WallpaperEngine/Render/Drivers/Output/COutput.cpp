@@ -2,13 +2,13 @@
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
-COutput::COutput (CApplicationContext& context, Detectors::CFullScreenDetector& detector) :
+COutput::COutput (CApplicationContext& context, CVideoDriver& driver) :
     m_context (context),
-    m_detector (detector)
+    m_driver (driver)
 {
 }
 
-const std::map <std::string, COutput::ScreenInfo>& COutput::getViewports () const
+const std::map <std::string, COutputViewport*>& COutput::getViewports () const
 {
     return this->m_viewports;
 }

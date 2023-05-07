@@ -23,7 +23,7 @@ namespace WallpaperEngine
         class CAudioPlayingDetector
         {
         public:
-            CAudioPlayingDetector (Application::CApplicationContext& appContext, Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector);
+            CAudioPlayingDetector (Application::CApplicationContext& appContext, const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector);
 
             /**
              * @return If any kind of sound is currently playing on the default audio device
@@ -48,13 +48,13 @@ namespace WallpaperEngine
             /**
              * @return The fullscreen detector used
              */
-            [[nodiscard]] Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector ();
+            [[nodiscard]] const Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector () const;
 
         private:
             bool m_isPlaying;
 
             Application::CApplicationContext& m_applicationContext;
-            Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;
+            const Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;
         };
     }
 }

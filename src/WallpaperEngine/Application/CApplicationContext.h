@@ -25,8 +25,8 @@ namespace WallpaperEngine::Application
 		{
 			/** Default window mode */
 			NORMAL_WINDOW = 0,
-			/** Draw to X11 background */
-			X11_BACKGROUND = 1,
+			/** Draw to the window server desktop */
+			DESKTOP_BACKGROUND = 1,
 			/** Explicit window mode with specified geometry */
 			EXPLICIT_WINDOW = 2,
 		};

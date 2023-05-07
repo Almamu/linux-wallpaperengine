@@ -9,6 +9,24 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#ifdef ENABLE_WAYLAND
+#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+#endif
+
+#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#ifdef ENABLE_WAYLAND
+#include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+#endif
+
+#include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#ifdef ENABLE_WAYLAND
+#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+#endif
+
+#include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
+
+#include "WallpaperEngine/Input/CInputContext.h"
 
 namespace WallpaperEngine::Application
 {
@@ -21,6 +39,7 @@ namespace WallpaperEngine::Application
     {
     public:
         explicit CWallpaperApplication (CApplicationContext& context);
+        ~CWallpaperApplication ();
 
         /**
          * Shows the application until it's closed
@@ -44,6 +63,14 @@ namespace WallpaperEngine::Application
          * @return The current application context
          */
         [[nodiscard]] CApplicationContext& getContext () const;
+        /**
+         * Renders a frame
+        */
+        void update(Render::Drivers::Output::COutputViewport* viewport);
+        /**
+         * Gets the output
+        */
+        WallpaperEngine::Render::Drivers::Output::COutput* getOutput() const;
 
     private:
         /**
@@ -89,5 +116,11 @@ namespace WallpaperEngine::Application
         CApplicationContext& m_context;
         /** Maps screens to backgrounds */
         std::map <std::string, Core::CProject*> m_backgrounds;
+
+        WallpaperEngine::Render::Drivers::CVideoDriver* videoDriver;
+        WallpaperEngine::Input::CInputContext* inputContext;
+        WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
+        WallpaperEngine::Render::CRenderContext* context;
+        WallpaperEngine::Audio::CAudioContext* audioContext;
     };
 }

@@ -12,22 +12,22 @@
 using namespace WallpaperEngine::Application;
 
 struct option long_options[] = {
-    { "screen-root", required_argument,  nullptr, 'r' },
-    { "bg", required_argument,           nullptr, 'b' },
-    { "window", required_argument,       nullptr, 'w' },
-    { "pkg", required_argument,          nullptr, 'p' },
-    { "dir", required_argument,          nullptr, 'd' },
-    { "silent", no_argument,             nullptr, 's' },
-    { "volume", required_argument,       nullptr, 'v' },
-    { "help", no_argument,               nullptr, 'h' },
-    { "fps", required_argument,          nullptr, 'f' },
-    { "assets-dir", required_argument,   nullptr, 'a' },
-    { "screenshot", required_argument,   nullptr, 'c' },
-    { "list-properties", no_argument,    nullptr, 'l' },
-    { "set-property", required_argument, nullptr, 'o' },
-    { "noautomute", no_argument,         nullptr, 'm' },
-    { "no-fullscreen-pause", no_argument,nullptr, 'n' },
-    { nullptr, 0,                        nullptr, 0 }
+    { "screen-root", required_argument,     nullptr, 'r' },
+    { "bg", required_argument,              nullptr, 'b' },
+    { "window", required_argument,          nullptr, 'w' },
+    { "pkg", required_argument,             nullptr, 'p' },
+    { "dir", required_argument,             nullptr, 'd' },
+    { "silent", no_argument,                nullptr, 's' },
+    { "volume", required_argument,          nullptr, 'v' },
+    { "help", no_argument,                  nullptr, 'h' },
+    { "fps", required_argument,             nullptr, 'f' },
+    { "assets-dir", required_argument,      nullptr, 'a' },
+    { "screenshot", required_argument,      nullptr, 'c' },
+    { "list-properties", no_argument,       nullptr, 'l' },
+    { "set-property", required_argument,    nullptr, 'o' },
+    { "noautomute", no_argument,            nullptr, 'm' },
+    { "no-fullscreen-pause", no_argument,   nullptr, 'n' },
+    { nullptr, 0,                           nullptr, 0 }
 };
 
 std::string stringPathFixes (const std::string& s)
@@ -124,13 +124,13 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 if (this->settings.render.mode == EXPLICIT_WINDOW)
                     sLog.exception ("Cannot run in both background and window mode");
 
-                this->settings.render.mode = X11_BACKGROUND;
+                this->settings.render.mode = DESKTOP_BACKGROUND;
                 lastScreen = optarg;
                 this->settings.general.screenBackgrounds[lastScreen] = "";
                 break;
 
             case 'w':
-                if (this->settings.render.mode == X11_BACKGROUND)
+                if (this->settings.render.mode == DESKTOP_BACKGROUND)
                     sLog.exception ("Cannot run in both background and window mode");
 
                 if (optarg != nullptr)

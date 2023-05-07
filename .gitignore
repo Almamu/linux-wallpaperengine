@@ -1,2 +1,8 @@
 cmake-build-debug*
 .idea
+build/
+.vscode/
+
+*-protocol.o
+*-protocol.c
+*-protocol.h

@@ -41,7 +41,54 @@ include_directories(
     ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
+    ${CMAKE_SOURCE_DIR}
     include)
+
+if (ENABLE_WAYLAND)
+    message(STATUS "Wayland support is enabled!")
+
+    pkg_check_modules(wayland-cursor wayland-protocols egl wayland-egl)
+
+    find_program(WaylandScanner NAMES wayland-scanner)
+    message(STATUS "Found WaylandScanner at ${WaylandScanner}")
+    execute_process(
+        COMMAND pkg-config --variable=pkgdatadir wayland-protocols
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+
+    message(STATUS "Building protocols...")
+    execute_process(
+        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.h
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(
+        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.c
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(
+        COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.h
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(
+        COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+    add_compile_definitions(ENABLE_WAYLAND)
+    set(WAYLAND_SOURCES
+            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.cpp"
+            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h"
+            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp"
+            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
+            "xdg-shell-protocol.c"
+            "wlr-layer-shell-unstable-v1-protocol.c")
+else()
+    set(WAYLAND_SOURCES "")
+endif()
 
 add_executable(
     linux-wallpaperengine
@@ -105,6 +152,8 @@ add_executable(
     src/WallpaperEngine/Input/CInputContext.h
     src/WallpaperEngine/Input/CMouseInput.cpp
     src/WallpaperEngine/Input/CMouseInput.h
+    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.cpp
+    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.h
 
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
@@ -136,6 +185,10 @@ add_executable(
     src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.h
+    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
     src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
@@ -268,6 +321,8 @@ add_executable(
 
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
+
+    ${WAYLAND_SOURCES}
 )
 
 target_link_libraries(linux-wallpaperengine
@@ -285,6 +340,14 @@ target_link_libraries(linux-wallpaperengine
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
     glfw)
+
+if (ENABLE_WAYLAND)
+    target_link_libraries(linux-wallpaperengine pthread
+                                                wayland-cursor
+                                                wayland-client
+                                                wayland-egl
+                                                ${OPENGL_egl_LIBRARY})
+endif()
 
 file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
 

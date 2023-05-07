@@ -4,6 +4,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
+#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
 
 namespace WallpaperEngine::Render::Drivers::Detectors
 {
@@ -31,7 +32,7 @@ namespace WallpaperEngine::Render::Drivers::Detectors
         return 0;
     }
 
-    CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext, CVideoDriver& driver) :
+    CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext, CX11OpenGLDriver& driver) :
         CFullScreenDetector (appContext),
         m_driver (driver)
     {
@@ -67,7 +68,7 @@ namespace WallpaperEngine::Render::Drivers::Detectors
         if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
             return false;
 
-        auto ourWindow = reinterpret_cast <Window> (this->m_driver.getWindowHandle ());
+        auto ourWindow = reinterpret_cast <Window> (this->m_driver.getWindow ());
         Window parentWindow;
 
         {

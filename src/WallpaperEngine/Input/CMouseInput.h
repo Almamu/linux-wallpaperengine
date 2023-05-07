@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/vec2.hpp>
-#include "GLFW/glfw3.h"
 
 namespace WallpaperEngine::Input
 {
@@ -11,28 +10,15 @@ namespace WallpaperEngine::Input
     class CMouseInput
     {
     public:
-        explicit CMouseInput(GLFWwindow* window);
-
         /**
          * Takes current mouse position and updates it
          */
-        void update ();
+        virtual void update () = 0;
 
         /**
          * The virtual pointer's position
          */
-        glm::dvec2 position;
-
-    private:
-        /**
-         * The GLFW window to get mouse position from
-         */
-        GLFWwindow* m_window;
-
-        /**
-         * The current mouse position
-         */
-        glm::dvec2 m_mousePosition;
+        virtual glm::dvec2 position () const = 0;
     };
 }
 

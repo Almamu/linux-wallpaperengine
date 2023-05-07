@@ -211,10 +211,9 @@ void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
     this->m_destFramebuffer = framebuffer;
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool newFrame)
+void CWallpaper::render (glm::ivec4 viewport, bool vflip)
 {
-    if (renderFrame)
-        this->renderFrame (viewport);
+    this->renderFrame (viewport);
 
     uint32_t projectionWidth = this->getWidth ();
     uint32_t projectionHeight = this->getHeight ();
@@ -292,9 +291,6 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool renderFrame, bool
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
 
     glBindVertexArray (this->m_vaoBuffer);
-
-    if (newFrame)
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);

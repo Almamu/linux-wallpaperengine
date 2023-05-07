@@ -248,7 +248,7 @@ void CScene::renderFrame (glm::ivec4 viewport)
 void CScene::updateMouse (glm::ivec4 viewport)
 {
     // update virtual mouse position first
-    glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position;
+    glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
 
     // rollover the position to the last
