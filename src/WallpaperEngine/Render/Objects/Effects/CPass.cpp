@@ -511,14 +511,14 @@ void CPass::setupUniforms ()
         {
             if (bindCur != bindEnd)
             {
-                this->m_finalTextures.insert (std::make_pair ((*bindCur).first, nullptr));
+                this->m_finalTextures [(*bindCur).first] = nullptr;
                 bindCur ++;
             }
 
             if (cur != end)
             {
                 if ((*cur) != nullptr)
-                    this->m_finalTextures.insert (std::make_pair (index, *cur));
+                    this->m_finalTextures [index] = *cur;
 
                 index ++;
                 cur ++;
@@ -543,7 +543,9 @@ void CPass::setupUniforms ()
                     else
                         textureRef = this->getContext ().resolveTexture (textureName);
 
-                    this->m_finalTextures.insert (std::make_pair ((*fragCur).first, textureRef));
+                    // ensure there's no texture in that slot already, shader textures are defaults in case nothing is there
+                    if (this->m_finalTextures.find ((*fragCur).first) == this->m_finalTextures.end ())
+                        this->m_finalTextures [(*fragCur).first] = textureRef;
                 }
                 catch (std::runtime_error& ex)
                 {
@@ -572,7 +574,9 @@ void CPass::setupUniforms ()
                     else
                         textureRef = this->getContext ().resolveTexture (textureName);
 
-                    this->m_finalTextures.insert (std::make_pair ((*vertCur).first, textureRef));
+                    // ensure there's no texture in that slot already, shader textures are defaults in case nothing is there
+                    if (this->m_finalTextures.find ((*vertCur).first) == this->m_finalTextures.end ())
+                        this->m_finalTextures [(*vertCur).first] = textureRef;
                 }
                 catch (std::runtime_error& ex)
                 {

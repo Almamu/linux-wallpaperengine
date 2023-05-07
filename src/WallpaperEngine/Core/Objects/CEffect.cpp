@@ -110,7 +110,7 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* ob
                             texture = texturesCur;
                         }
 
-                        std::vector<std::string> passTextures = passCur->getTextures ();
+                        const auto& passTextures = passCur->getTextures ();
 
                         if (textureNumber < passTextures.size ())
                             passCur->setTexture (textureNumber, texture);
