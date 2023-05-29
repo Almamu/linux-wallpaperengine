@@ -10,11 +10,11 @@ assignees: Almamu
 
 **Wallpaper Engine Background(s)**
 
-Link(s) to the backgorund(s) in the steam workshop or their background ID(s).
+Link(s) to the background(s) in the steam workshop or their background ID(s).
 
 **Console output**
 
-When a background cannot be loaded It's usually due to some unexpected error that is logged into the terminal. Please attach the program's output so we can properly debug it if needed.
+When a background cannot be loaded, it's usually due to some unexpected error that is logged into the terminal. Please attach the program's output so we can properly debug it if needed.
 
 **Screenshots**
 
