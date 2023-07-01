@@ -136,6 +136,9 @@ void CX11Output::loadScreenInfo ()
 
         XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
 
+	if (crtc == nullptr)
+		continue;
+
         // add the screen to the list of screens
         this->m_screens.push_back (
             new CX11OutputViewport
