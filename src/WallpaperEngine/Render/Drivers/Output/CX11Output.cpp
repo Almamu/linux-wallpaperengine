@@ -167,10 +167,20 @@ void CX11Output::loadScreenInfo ()
 
     XRRFreeScreenResources (screenResources);
 
-    // Check if all screens from --screen-root are actually screens
-    if (this->m_viewports.size() != this->m_context.settings.general.screenBackgrounds.size()) {
-	    sLog.exception("Some outputs could not be initialized, please check parameters and try again");
+    bool any = false;
+
+    for (auto& o : this->m_screens)
+    {
+        const auto cur = this->m_context.settings.general.screenBackgrounds.find (o->name);
+
+        if (cur == this->m_context.settings.general.screenBackgrounds.end ())
+            continue;
+
+        any = true;
     }
+
+    if (!any)
+        sLog.exception("No outputs could be initialized, please check the parameters and try again");
 
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
