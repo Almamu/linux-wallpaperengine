@@ -136,6 +136,7 @@ void CX11Output::loadScreenInfo ()
 
         XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
 
+	// screen not active, ignore it
 	if (crtc == nullptr)
 		continue;
 
