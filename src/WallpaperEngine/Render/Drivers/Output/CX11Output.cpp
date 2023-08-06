@@ -169,7 +169,7 @@ void CX11Output::loadScreenInfo ()
 
     // Check if all screens from --screen-root are actually screens
     if (this->m_viewports.size() != this->m_context.settings.general.screenBackgrounds.size()) {
-	    sLog.exception("Invalid screen in arguments.");
+	    sLog.exception("Some outputs could not be initialized, please check parameters and try again");
     }
 
     // create pixmap so we can draw things in there
