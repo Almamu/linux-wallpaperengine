@@ -167,6 +167,11 @@ void CX11Output::loadScreenInfo ()
 
     XRRFreeScreenResources (screenResources);
 
+    // Check if all screens from --screen-root are actually screens
+    if (this->m_viewports.size() != this->m_context.settings.general.screenBackgrounds.size()) {
+	    sLog.exception("Invalid screen in arguments.");
+    }
+
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
     this->m_gc = XCreateGC (this->m_display, this->m_pixmap, 0, nullptr);
