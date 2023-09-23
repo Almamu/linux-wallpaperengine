@@ -27,7 +27,7 @@ namespace WallpaperEngine::Input::Drivers
         /**
          * The virtual pointer's position
          */
-        glm::dvec2 position () const override;
+        [[nodiscard]] glm::dvec2 position () const override;
 
     private:
         Render::Drivers::CX11OpenGLDriver* m_driver;

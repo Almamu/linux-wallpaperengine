@@ -14,6 +14,11 @@ void CWaylandMouseInput::update ()
 
 glm::dvec2 CWaylandMouseInput::position() const
 {
+    if (!this->waylandDriver->getApp().getContext ().settings.mouse.enabled)
+    {
+        return {0, 0};
+    }
+
     if (waylandDriver->viewportInFocus && waylandDriver->viewportInFocus->rendering)
         return waylandDriver->viewportInFocus->mousePos;
 

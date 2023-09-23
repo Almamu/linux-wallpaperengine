@@ -12,6 +12,12 @@ CGLFWMouseInput::CGLFWMouseInput (Render::Drivers::CX11OpenGLDriver* driver) :
 
 void CGLFWMouseInput::update ()
 {
+    if (!this->m_driver->getApp ().getContext ().settings.mouse.enabled)
+    {
+        this->m_reportedPosition = {0, 0};
+        return;
+    }
+
     // update current mouse position
     glfwGetCursorPos (this->m_driver->getWindow (), &this->m_mousePosition.x, &this->m_mousePosition.y);
     // interpolate to the new position

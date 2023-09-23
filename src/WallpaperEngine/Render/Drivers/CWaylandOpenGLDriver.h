@@ -10,6 +10,7 @@
 
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
+#include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
 #include "WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h"
 #include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"

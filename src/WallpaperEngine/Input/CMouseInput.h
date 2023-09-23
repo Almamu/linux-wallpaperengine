@@ -18,7 +18,7 @@ namespace WallpaperEngine::Input
         /**
          * The virtual pointer's position
          */
-        virtual glm::dvec2 position () const = 0;
+        [[nodiscard]] virtual glm::dvec2 position () const = 0;
     };
 }
 

@@ -85,6 +85,15 @@ namespace WallpaperEngine::Application
             } audio;
 
             /**
+             * Mouse input settings
+             */
+            struct
+            {
+                /** If the mouse movement is enabled */
+                bool enabled;
+            } mouse;
+
+            /**
              * Screenshot settings
              */
             struct

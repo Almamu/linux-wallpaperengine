@@ -27,6 +27,7 @@ struct option long_options[] = {
     { "set-property", required_argument,    nullptr, 'o' },
     { "noautomute", no_argument,            nullptr, 'm' },
     { "no-fullscreen-pause", no_argument,   nullptr, 'n' },
+    { "disable-mouse", no_argument,         nullptr, 'e' },
     { nullptr, 0,                           nullptr, 0 }
 };
 
@@ -71,6 +72,10 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
             .enabled = true,
             .volume = 15,
             .automute = true
+        },
+        .mouse =
+        {
+            .enabled = true,
         },
         .screenshot =
         {
@@ -185,6 +190,10 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 this->settings.audio.automute = false;
                 break;
 
+            case 'e':
+                this->settings.mouse.enabled = false;
+                break;
+
             default:
                 sLog.out ("Default on path parsing: ", optarg);
                 break;
@@ -280,4 +289,5 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
     sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
+    sLog.out ("\t--disable-mouse\tDisables mouse interactions");
 }

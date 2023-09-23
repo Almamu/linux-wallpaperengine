@@ -20,5 +20,10 @@ namespace WallpaperEngine::Application
             bool enabled;
             int volume;
         } audio{};
+
+        struct
+        {
+            bool enabled;
+        } mouse{};
     };
 }
