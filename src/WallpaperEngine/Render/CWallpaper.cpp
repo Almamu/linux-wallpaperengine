@@ -219,64 +219,15 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip)
     uint32_t projectionHeight = this->getHeight ();
 
     float ustart = 0.0f;
-    float uend = 0.0f;
-    float vstart = 0.0f;
+    float uend = 1.0f;
+    float vstart = 1.0f;
     float vend = 0.0f;
 
-    if (
-        (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
-            (viewport.z > viewport.w && projectionHeight > projectionWidth)
-        )
+    if (vflip)
     {
-        if (vflip)
-        {
-            vstart = 0.0f;
-            vend = 1.0f;
-        }
-        else
-        {
-            vstart = 1.0f;
-            vend = 0.0f;
-        }
-
-        int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
-        float newCenter = newWidth / 2.0f;
-        float viewportCenter = viewport.z / 2.0;
-
-        float left = newCenter - viewportCenter;
-        float right = newCenter + viewportCenter;
-
-        ustart = left / newWidth;
-        uend = right / newWidth;
+        vstart = 0.0f;
+        vend = 1.0f;
     }
-
-    if (
-        (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
-            (viewport.w > viewport.z && projectionHeight > projectionWidth)
-        )
-    {
-        ustart = 0.0f;
-        uend = 1.0f;
-
-        int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
-        float newCenter = newHeight / 2.0f;
-        float viewportCenter = viewport.w / 2.0;
-
-        float down = newCenter - viewportCenter;
-        float up = newCenter + viewportCenter;
-
-        if (vflip)
-        {
-            vstart = down / newHeight;
-            vend = up / newHeight;
-        }
-        else
-        {
-            vstart = up / newHeight;
-            vend = down / newHeight;
-        }
-    }
-
     GLfloat texCoords [] = {
         ustart, vstart,
         uend, vstart,
