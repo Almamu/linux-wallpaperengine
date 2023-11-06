@@ -11,6 +11,8 @@
 
 #include "CApplicationState.h"
 
+#include "WallpaperEngine/Assets/ITexture.h"
+
 namespace WallpaperEngine::Application
 {
 	/**
@@ -68,6 +70,8 @@ namespace WallpaperEngine::Application
                 {
                     /** The window size used in explicit window */
                     glm::ivec4 geometry;
+                    WallpaperEngine::Assets::ITexture::TextureFlags clamp;
+                    bool scaleToFit;
                 } window;
             } render;
 

@@ -28,6 +28,7 @@ struct option long_options[] = {
     { "noautomute", no_argument,            nullptr, 'm' },
     { "no-fullscreen-pause", no_argument,   nullptr, 'n' },
     { "disable-mouse", no_argument,         nullptr, 'e' },
+    { "clamp-strategy", required_argument,  nullptr, 't' },
     { nullptr, 0,                           nullptr, 0 }
 };
 
@@ -65,7 +66,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
             .mode = NORMAL_WINDOW,
             .maximumFPS = 30,
             .pauseOnFullscreen = true,
-            .window = { .geometry = {}},
+            .window = { .geometry = {}, .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs, .scaleToFit=false },
         },
         .audio =
         {
@@ -89,7 +90,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mn", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mnt:", long_options, nullptr)) != -1)
     {
         switch (c)
         {
@@ -194,6 +195,29 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 this->settings.mouse.enabled = false;
                 break;
 
+            case 't':
+            {
+                char opt = optarg[0];
+                switch (opt)
+                {
+                case 's':/* stretch*/
+                    this->settings.render.window.scaleToFit=true;
+                    break;
+                case 'b':/* clamp border (crop black)*/
+                    this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVsBorder;//clampStrategy(optarg);
+                    break;
+                case 'c':/* clamp*/
+                    this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs;
+                    break;
+                case 'r':
+                    this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
+                    break;
+                default:
+                    sLog.error("Wrong argument provided for clamp-strategy");
+                    break;
+                }
+            }
+            break;
             default:
                 sLog.out ("Default on path parsing: ", optarg);
                 break;
@@ -290,4 +314,5 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
     sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
     sLog.out ("\t--disable-mouse\tDisables mouse interactions");
+    sLog.out ("\t--clamp-strategy <strategy>\t Clamp strategy if wallpaper doesn't fit screen. Can be stretch, border, repeat, clamp. Can be shortend to s, b, r, c. Default is clamp");
 }

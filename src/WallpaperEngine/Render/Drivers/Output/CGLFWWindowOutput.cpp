@@ -1,3 +1,4 @@
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "CGLFWWindowOutput.h"
 #include "WallpaperEngine/Logging/CLog.h"

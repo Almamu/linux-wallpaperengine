@@ -211,23 +211,70 @@ void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
     this->m_destFramebuffer = framebuffer;
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip)
-{
-    this->renderFrame (viewport);
-
-    uint32_t projectionWidth = this->getWidth ();
-    uint32_t projectionHeight = this->getHeight ();
-
-    float ustart = 0.0f;
-    float uend = 1.0f;
-    float vstart = 1.0f;
-    float vend = 0.0f;
-
-    if (vflip)
-    {
+void CWallpaper::setTextureUVs(const glm::ivec4& viewport, const bool vflip, const bool scale,
+    float& ustart, float& uend, float& vstart, float& vend){
+    
+    ustart = 0.0f;
+    uend = 1.0f;
+    vstart = 1.0f;
+    vend = 0.0f;
+    if (vflip){
         vstart = 0.0f;
         vend = 1.0f;
     }
+    if(!scale){
+        uint32_t projectionWidth = this->getWidth ();
+        uint32_t projectionHeight = this->getHeight ();
+
+        if (
+            (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
+                (viewport.z > viewport.w && projectionHeight > projectionWidth)
+            )
+        {
+            int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
+            float newCenter = newWidth / 2.0f;
+            float viewportCenter = viewport.z / 2.0;
+
+            float left = newCenter - viewportCenter;
+            float right = newCenter + viewportCenter;
+
+            ustart = left / newWidth;
+            uend = right / newWidth;
+        }
+
+        if (
+            (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
+                (viewport.w > viewport.z && projectionHeight > projectionWidth)
+            )
+        {
+            int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
+            float newCenter = newHeight / 2.0f;
+            float viewportCenter = viewport.w / 2.0;
+
+            float down = newCenter - viewportCenter;
+            float up = newCenter + viewportCenter;
+
+            if (vflip)
+            {
+                vstart = down / newHeight;
+                vend = up / newHeight;
+            }
+            else
+            {
+                vstart = up / newHeight;
+                vend = down / newHeight;
+            }
+        }
+    }
+}
+
+void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool scale)
+{
+    this->renderFrame (viewport);
+
+    float ustart,uend,vstart,vend;
+    setTextureUVs(viewport, vflip, scale, ustart, uend, vstart, vend);
+    
     GLfloat texCoords [] = {
         ustart, vstart,
         uend, vstart,
@@ -270,12 +317,13 @@ void CWallpaper::setupFramebuffers ()
 {
     uint32_t width = this->getWidth ();
     uint32_t height = this->getHeight ();
-
+    ITexture::TextureFlags clamp = this->getContext().getApp().getContext().settings.render.window.clamp;
+    
     // create framebuffer for the scene
     this->m_sceneFBO = this->createFBO (
         "_rt_FullFrameBuffer",
         ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::ClampUVs,
+        clamp,
         1.0,
         width, height,
         width, height

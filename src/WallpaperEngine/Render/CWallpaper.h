@@ -35,9 +35,14 @@ namespace WallpaperEngine::Render
         ~CWallpaper ();
 
         /**
+         * Get texture UV coordinates for render
+         */
+        void setTextureUVs(const glm::ivec4& viewport, const bool vflip, const bool scale, 
+            float& ustart, float& uend, float& vstart, float& vend);
+        /**
          * Performs a render pass of the wallpaper
          */
-        void render (glm::ivec4 viewport, bool vflip);
+        void render (glm::ivec4 viewport, bool vflip, bool scale);
 
         /**
          * @return The container to resolve files for this wallpaper
