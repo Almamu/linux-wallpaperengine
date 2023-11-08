@@ -225,11 +225,12 @@ void CWallpaper::setTextureUVs(const glm::ivec4& viewport, const bool vflip, con
     if(!scale){
         uint32_t projectionWidth = this->getWidth ();
         uint32_t projectionHeight = this->getHeight ();
-
-        if (
-            (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
-                (viewport.z > viewport.w && projectionHeight > projectionWidth)
-            )
+        const float m1 = float(viewport.z) / projectionWidth;
+        const float m2 = float(viewport.w) / projectionHeight;
+        const float m = std::max(m1,m2);
+        projectionWidth*=m;
+        projectionHeight*=m;
+        if (projectionWidth!=viewport.z)
         {
             int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
             float newCenter = newWidth / 2.0f;
@@ -242,10 +243,7 @@ void CWallpaper::setTextureUVs(const glm::ivec4& viewport, const bool vflip, con
             uend = right / newWidth;
         }
 
-        if (
-            (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
-                (viewport.w > viewport.z && projectionHeight > projectionWidth)
-            )
+        if (projectionHeight!=viewport.w)
         {
             int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
             float newCenter = newHeight / 2.0f;
