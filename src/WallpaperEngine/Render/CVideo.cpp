@@ -11,8 +11,8 @@ void* get_proc_address (void* ctx, const char* name)
     return static_cast<CVideo*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
-CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext) :
-    CWallpaper (video, Type, context, audioContext),
+CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+    CWallpaper (video, Type, context, audioContext, scalingMode),
     m_width (16),
     m_height (16),
     m_mpvGl (nullptr)

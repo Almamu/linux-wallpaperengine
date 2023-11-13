@@ -322,13 +322,13 @@ namespace WallpaperEngine::Application
         for (const auto& it : this->m_backgrounds)
             context->setWallpaper (
                 it.first,
-                WallpaperEngine::Render::CWallpaper::fromWallpaper (it.second->getWallpaper (), *context, *audioContext)
+                WallpaperEngine::Render::CWallpaper::fromWallpaper (it.second->getWallpaper (), *context, *audioContext, this->m_context.settings.general.screenScalings[it.first])
             );
 
         // set the default rendering wallpaper if available
         if (this->m_defaultBackground != nullptr)
             context->setDefaultWallpaper (WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                this->m_defaultBackground->getWallpaper (), *context, *audioContext
+                this->m_defaultBackground->getWallpaper (), *context, *audioContext, this->m_context.settings.render.window.scalingMode
             ));
 
         static time_t seconds;

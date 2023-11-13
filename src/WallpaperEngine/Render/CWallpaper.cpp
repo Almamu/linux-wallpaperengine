@@ -9,7 +9,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
     m_type (std::move(type)),
@@ -22,7 +22,8 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_Position (GL_NONE),
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
-    m_audioContext (audioContext)
+    m_audioContext (audioContext),
+    m_state(scalingMode)
 {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
@@ -201,78 +202,26 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::updateTexCoord (GLfloat* texCoords, GLsizeiptr size) const
-{
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, size, texCoords, GL_STATIC_DRAW);
-}
 void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
 {
     this->m_destFramebuffer = framebuffer;
 }
 
-void CWallpaper::setTextureUVs(const glm::ivec4& viewport, const bool vflip, const bool scale,
-    float& ustart, float& uend, float& vstart, float& vend){
-    
-    ustart = 0.0f;
-    uend = 1.0f;
-    vstart = 1.0f;
-    vend = 0.0f;
-    if (vflip){
-        vstart = 0.0f;
-        vend = 1.0f;
-    }
-    if(!scale){
-        uint32_t projectionWidth = this->getWidth ();
-        uint32_t projectionHeight = this->getHeight ();
-        const float m1 = float(viewport.z) / projectionWidth;
-        const float m2 = float(viewport.w) / projectionHeight;
-        const float m = std::max(m1,m2);
-        projectionWidth*=m;
-        projectionHeight*=m;
-        if (projectionWidth!=viewport.z)
-        {
-            int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
-            float newCenter = newWidth / 2.0f;
-            float viewportCenter = viewport.z / 2.0;
-
-            float left = newCenter - viewportCenter;
-            float right = newCenter + viewportCenter;
-
-            ustart = left / newWidth;
-            uend = right / newWidth;
-        }
-
-        if (projectionHeight!=viewport.w)
-        {
-            int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
-            float newCenter = newHeight / 2.0f;
-            float viewportCenter = viewport.w / 2.0;
-
-            float down = newCenter - viewportCenter;
-            float up = newCenter + viewportCenter;
-
-            if (vflip)
-            {
-                vstart = down / newHeight;
-                vend = up / newHeight;
-            }
-            else
-            {
-                vstart = up / newHeight;
-                vend = down / newHeight;
-            }
-        }
+void CWallpaper::updateUVs(const glm::ivec4& viewport, const bool vflip){
+    //update UVs if something has changed, otherwise use old values
+    if(this->m_state.hasChanged(viewport, vflip, this->getWidth(), this->getHeight())){
+        // Update wallpaper state
+        this->m_state.updateState(viewport, vflip, this->getWidth(), this->getHeight());
     }
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip, bool scale)
+void CWallpaper::render (glm::ivec4 viewport, bool vflip)
 {
     this->renderFrame (viewport);
+    //Update UVs coordinates according to scaling mode of this wallpaper
+    updateUVs(viewport,vflip);
+    auto [ ustart, uend, vstart, vend ] = this->m_state.getTextureUVs();
 
-    float ustart,uend,vstart,vend;
-    setTextureUVs(viewport, vflip, scale, ustart, uend, vstart, vend);
-    
     GLfloat texCoords [] = {
         ustart, vstart,
         uend, vstart,
@@ -363,12 +312,12 @@ CFBO* CWallpaper::getFBO () const
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext)
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode)
 {
     if (wallpaper->is <Core::CScene> ())
-        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext);
+        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext, scalingMode);
     else if (wallpaper->is <Core::CVideo> ())
-        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context, audioContext);
+        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context, audioContext, scalingMode);
     else
         sLog.exception ("Unsupported wallpaper type");
 }

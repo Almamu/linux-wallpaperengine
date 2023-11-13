@@ -6,6 +6,8 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 
+#include "WallpaperEngine/Render/CWallpaperState.h"
+
 #include "CScene.h"
 
 extern float g_Time;
@@ -14,8 +16,8 @@ extern float g_TimeLast;
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext) :
-    CWallpaper (scene, Type, context, audioContext),
+CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+    CWallpaper (scene, Type, context, audioContext, scalingMode),
     m_mousePosition (),
     m_mousePositionLast (),
     m_parallaxDisplacement ()

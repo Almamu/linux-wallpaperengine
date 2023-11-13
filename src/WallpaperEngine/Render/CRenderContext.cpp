@@ -36,9 +36,9 @@ namespace WallpaperEngine::Render
 
         // render the background
         if (ref != this->m_wallpapers.end ())
-            ref->second->render (viewport->viewport, this->getOutput ().renderVFlip (), this->getApp().getContext().settings.render.window.scaleToFit);
+            ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
         else
-            this->m_defaultWallpaper->render (viewport->viewport, this->getOutput ().renderVFlip (), this->getApp().getContext().settings.render.window.scaleToFit);
+            this->m_defaultWallpaper->render (viewport->viewport, this->getOutput ().renderVFlip ());
 
 #if !NDEBUG
         glPopDebugGroup ();
