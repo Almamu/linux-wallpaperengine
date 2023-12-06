@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
-
+#include "Drivers/CX11OpenGLDriver.h"
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
@@ -24,7 +24,10 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
-    m_state (scalingMode) {
+    m_state (scalingMode),
+    cef_window(1920,1080, "test title", reinterpret_cast<Drivers::CX11OpenGLDriver*>(const_cast<Drivers::CVideoDriver*>(&context.getDriver()))->getWindow())
+{
+    cef_window.setup();
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -194,41 +197,7 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
 
 void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     this->renderFrame (viewport);
-    // Update UVs coordinates according to scaling mode of this wallpaper
-    updateUVs (viewport, vflip);
-    auto [ustart, uend, vstart, vend] = this->m_state.getTextureUVs ();
-
-    const GLfloat texCoords [] = {
-        ustart, vstart, uend, vstart, ustart, vend, ustart, vend, uend, vstart, uend, vend,
-    };
-
-    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
-
-    glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
-
-    glBindVertexArray (this->m_vaoBuffer);
-
-    glDisable (GL_BLEND);
-    glDisable (GL_DEPTH_TEST);
-    // do not use any shader
-    glUseProgram (this->m_shader);
-    // activate scene texture
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
-    // set uniforms and attribs
-    glEnableVertexAttribArray (this->a_TexCoord);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
-    glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glEnableVertexAttribArray (this->a_Position);
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
-    glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    glUniform1i (this->g_Texture0, 0);
-    // write the framebuffer as is to the screen
-    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
-    glDrawArrays (GL_TRIANGLES, 0, 6);
+    cef_window.update();
 }
 
 void CWallpaper::setupFramebuffers () {

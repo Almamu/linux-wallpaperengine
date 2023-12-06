@@ -16,6 +16,8 @@
 
 #include "CWallpaperState.h"
 
+#include "cefsimple_opengl/CEFGLWindow.hpp"
+
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
 
@@ -183,5 +185,6 @@ class CWallpaper : public Helpers::CContextAware {
     CAudioContext& m_audioContext;
     /** Current Wallpaper state */
     CWallpaperState m_state;
+        CEFGLWindow cef_window;
 };
 } // namespace WallpaperEngine::Render
