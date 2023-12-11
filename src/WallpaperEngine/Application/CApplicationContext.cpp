@@ -3,6 +3,7 @@
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <getopt.h>
 
@@ -190,6 +191,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
             case 'h':
                 printHelp (argv[0]);
+		std::exit(0);
                 break;
 
             case 'f':
@@ -268,6 +270,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
         else
         {
             printHelp (argv[0]);
+	    std::exit(0);
         }
     }
 
