@@ -200,6 +200,8 @@ add_executable(
 
     src/WallpaperEngine/Render/CWallpaper.h
     src/WallpaperEngine/Render/CWallpaper.cpp
+    src/WallpaperEngine/Render/CWallpaperState.h
+    src/WallpaperEngine/Render/CWallpaperState.cpp
     src/WallpaperEngine/Render/CScene.h
     src/WallpaperEngine/Render/CScene.cpp
     src/WallpaperEngine/Render/CVideo.h

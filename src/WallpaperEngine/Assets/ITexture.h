@@ -69,6 +69,7 @@ namespace WallpaperEngine::Assets
             NoInterpolation = 1,
             ClampUVs = 2,
             IsGif = 4,
+            ClampUVsBorder = 8,
         };
 
         /**

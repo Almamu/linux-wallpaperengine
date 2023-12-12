@@ -29,8 +29,28 @@ struct option long_options[] = {
     { "noautomute", no_argument,            nullptr, 'm' },
     { "no-fullscreen-pause", no_argument,   nullptr, 'n' },
     { "disable-mouse", no_argument,         nullptr, 'e' },
+    { "scaling", required_argument,         nullptr, 't' },
+    { "clamping", required_argument,        nullptr, 't' },
     { nullptr, 0,                           nullptr, 0 }
 };
+
+/* std::hash::operator() isn't constexpr, so it can't be used to get hash values as compile-time constants
+ * So here is customHash. It skips all spaces, so hashes for " find " and "fi nd" are the same 
+ * Basicly got it from here: https://stackoverflow.com/questions/8317508/hash-function-for-a-string
+*/
+constexpr size_t customHash(const char* str) {
+    constexpr size_t A = 54059; /* a prime */
+    constexpr size_t B = 76963; /* another prime */
+    constexpr size_t C = 86969; /* yet another prime */
+    constexpr size_t FIRSTH = 37; /* also prime */
+    size_t hash = FIRSTH;
+    while (*str) {
+        if(*str != ' ') // Skip spaces
+            hash = (hash * A) ^ (*str * B);
+        ++str;
+    }
+    return hash % C;
+}
 
 std::string stringPathFixes (const std::string& s)
 {
@@ -66,7 +86,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
             .mode = NORMAL_WINDOW,
             .maximumFPS = 30,
             .pauseOnFullscreen = true,
-            .window = { .geometry = {}},
+            .window = { .geometry = {}, .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+            .scalingMode =  WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs, },
         },
         .audio =
         {
@@ -90,7 +111,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
 
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mn", long_options, nullptr)) != -1)
+    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mnt:", long_options, nullptr)) != -1)
     {
         switch (c)
         {
@@ -105,6 +126,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 // no need to check for previous screen being in the list, as it's the only way for this variable
                 // to have any value
                 this->settings.general.screenBackgrounds[lastScreen] = translateBackground (optarg);
+                this->settings.general.screenScalings[lastScreen] = this->settings.render.window.scalingMode;
                 break;
 
             case 'o':
@@ -133,6 +155,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 this->settings.render.mode = DESKTOP_BACKGROUND;
                 lastScreen = optarg;
                 this->settings.general.screenBackgrounds[lastScreen] = "";
+                this->settings.general.screenScalings[lastScreen] = this->settings.render.window.scalingMode;
                 break;
 
             case 'w':
@@ -196,6 +219,42 @@ CApplicationContext::CApplicationContext (int argc, char* argv[])
                 this->settings.mouse.enabled = false;
                 break;
 
+            case 't':
+            {   
+                size_t hash = customHash(optarg);
+                // Use a switch statement with the hash
+                switch (hash) {
+                    // --scale options
+                    case customHash("stretch"):
+                        this->settings.render.window.scalingMode =  WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::StretchUVs;
+                        break;
+                    case customHash("fit"):
+                        this->settings.render.window.scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFitUVs;
+                        break;
+                    case customHash("fill"):
+                        this->settings.render.window.scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFillUVs;
+                        break;
+                    case customHash("default"):
+                        this->settings.render.window.scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs;
+                        break;
+                    // --clamp options
+                    case customHash("clamp"):
+                        this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs;
+                        break;
+                    case customHash("border"):
+                        this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVsBorder;
+                        break;
+                    case customHash("repeat"):
+                        this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
+                        break;
+                    default:
+                        sLog.error("Wrong argument:");
+                        sLog.error(optarg);
+                        sLog.exception("Wrong argument provided for --scale or --clamp option.");
+                        break;
+                }
+            }
+            break;
             default:
                 sLog.out ("Default on path parsing: ", optarg);
                 break;
@@ -293,4 +352,8 @@ void CApplicationContext::printHelp (const char* route)
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
     sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
     sLog.out ("\t--disable-mouse\tDisables mouse interactions");
+    sLog.out ("\t--scaling <mode>\t Scaling mode for wallpaper. Can be stretch, fit, fill, default. Must be used before wallpaper provided.\n\
+                    \t\t For default wallpaper last specified value will be used.\n\
+                    \t\t Example: ./wallengine --scaling stretch --screen-root eDP-1 --bg 2667198601 --scaling fill --screen-root eDP-2 2667198602");
+    sLog.out ("\t--clamping <mode>\t Clamping mode for all wallpapers. Can be clamp, border, repeat. Enables GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_REPEAT accordingly. Default is clamp.");
 }

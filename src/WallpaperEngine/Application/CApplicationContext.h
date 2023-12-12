@@ -11,6 +11,9 @@
 
 #include "CApplicationState.h"
 
+#include "WallpaperEngine/Assets/ITexture.h"
+#include "WallpaperEngine/Render/CWallpaperState.h"
+
 namespace WallpaperEngine::Application
 {
 	/**
@@ -50,6 +53,8 @@ namespace WallpaperEngine::Application
                 std::map <std::string, std::filesystem::path> screenBackgrounds;
                 /** Properties to change values for */
                 std::map <std::string, std::string> properties;
+                /** The scaling mode for different screens */
+                std::map <std::string, WallpaperEngine::Render::CWallpaperState::TextureUVsScaling> screenScalings;
             } general;
 
             /**
@@ -68,6 +73,8 @@ namespace WallpaperEngine::Application
                 {
                     /** The window size used in explicit window */
                     glm::ivec4 geometry;
+                    WallpaperEngine::Assets::ITexture::TextureFlags clamp;
+                    WallpaperEngine::Render::CWallpaperState::TextureUVsScaling scalingMode;
                 } window;
             } render;
 

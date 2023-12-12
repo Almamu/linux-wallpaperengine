@@ -14,6 +14,8 @@
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
+#include "CWallpaperState.h"
+
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
 
@@ -83,9 +85,9 @@ namespace WallpaperEngine::Render
         [[nodiscard]] CFBO* getFBO () const;
 
         /**
-         * Updates the texcoord used for drawing to the used framebuffer
+         * Updates the UVs coordinates if window/screen/vflip/projection has changed 
          */
-        void updateTexCoord (GLfloat* texCoords, GLsizeiptr size) const;
+        void updateUVs (const glm::ivec4& viewport, const bool vflip);
 
         /**
          * Updates the destination framebuffer for this wallpaper
@@ -111,10 +113,10 @@ namespace WallpaperEngine::Render
          *
          * @return
          */
-        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext);
+        static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode);
 
     protected:
-        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext);
+        CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,  const CWallpaperState::TextureUVsScaling& scalingMode);
 
         /**
          * Renders a frame of the wallpaper
@@ -153,5 +155,7 @@ namespace WallpaperEngine::Render
         std::map<std::string, CFBO*> m_fbos;
         /** Audio context that is using this wallpaper */
         CAudioContext& m_audioContext;
+        /** Current Wallpaper state */
+        CWallpaperState m_state;
     };
 }
