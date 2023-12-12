@@ -98,29 +98,12 @@ void CPackage::validateHeader (FILE* fp)
 {
     char* pointer = this->readSizedString (fp);
 
-    // finally validate the header version
-    if (strcmp ("PKGV0001", pointer) != 0 &&
-        strcmp ("PKGV0002", pointer) != 0 &&
-        strcmp ("PKGV0003", pointer) != 0 &&
-        strcmp ("PKGV0004", pointer) != 0 &&
-        strcmp ("PKGV0005", pointer) != 0 &&
-        strcmp ("PKGV0006", pointer) != 0 &&
-        strcmp ("PKGV0007", pointer) != 0 &&
-        strcmp ("PKGV0008", pointer) != 0 &&
-        strcmp ("PKGV0009", pointer) != 0 &&
-        strcmp ("PKGV0010", pointer) != 0 &&
-        strcmp ("PKGV0012", pointer) != 0 &&
-        strcmp ("PKGV0013", pointer) != 0 &&
-        strcmp ("PKGV0014", pointer) != 0 &&
-        strcmp ("PKGV0015", pointer) != 0 &&
-        strcmp ("PKGV0016", pointer) != 0 &&
-        strcmp ("PKGV0017", pointer) != 0 &&
-        strcmp ("PKGV0018", pointer) != 0)
+    if (strncmp ("PKGV", pointer, 4) != 0)
     {
         std::stringstream msg;
-        msg << "Unsupported package version: " << pointer;
+        msg << "Expected PKGV indicator, found " << pointer;
         delete[] pointer;
-        throw std::runtime_error (msg.str ());
+        throw std::runtime_error(msg.str());
     }
 
     // free memory
