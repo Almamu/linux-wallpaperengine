@@ -9,12 +9,14 @@
 const char* assets_default_paths [] = {
     ".steam/steam/steamapps/common",
     ".local/share/Steam/steamapps/common",
+    ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common",
     nullptr
 };
 
 const char* workshop_content_default_paths [] = {
     ".local/share/Steam/steamapps/workshop/content",
     ".steam/steam/steamapps/workshop/content",
+    ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/workshop/content",
     nullptr
 };
 
