@@ -15,10 +15,10 @@ CDirectory::CDirectory (std::filesystem::path basepath) :
     struct stat buffer {};
 
     if (stat (this->m_basepath.c_str (), &buffer) != 0)
-        sLog.exception ("Cannot find ", this->m_basepath, ". This folder is required for wallpaper engine to work");
+        throw CAssetLoadException (this->m_basepath, "Cannot find directory");
 
     if (!S_ISDIR(buffer.st_mode))
-        sLog.exception ("Cannot find ", this->m_basepath, ". There's an assets file in it's place");
+        throw CAssetLoadException (this->m_basepath, "Expected directory but found a file");
 }
 
 CDirectory::~CDirectory ()

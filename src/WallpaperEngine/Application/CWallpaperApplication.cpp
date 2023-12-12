@@ -7,6 +7,7 @@
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
+#include "WallpaperEngine/Assets/CAssetLoadException.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
 #include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 
@@ -54,7 +55,7 @@ namespace WallpaperEngine::Application
         {
             container.add (new CDirectory ("../share/"));
         }
-        catch (std::runtime_error& ex)
+        catch (CAssetLoadException& ex)
         {
             relative = false;
         }
@@ -63,7 +64,7 @@ namespace WallpaperEngine::Application
         {
             container.add (new CDirectory (DATADIR));
         }
-        catch (std::runtime_error& ex)
+        catch (CAssetLoadException& ex)
         {
             absolute = false;
         }
