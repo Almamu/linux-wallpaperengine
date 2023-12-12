@@ -537,6 +537,8 @@ namespace WallpaperEngine::Render::Shaders
                           "// Shader combo parameter definitions\n"
                           "// ======================================================\n";
 
+            finalCode += "// found combos from current shader\n";
+
             // add combo values
             for (const auto& cur : *this->m_foundCombos)
             {
@@ -548,6 +550,9 @@ namespace WallpaperEngine::Render::Shaders
 
                 finalCode += "#define " + cur.first + " " + std::to_string ((*combo).second) + "\n";
             }
+
+            finalCode += "// combos from pass\n";
+
             // add base combos that come from the pass change that MUST be added
             for (const auto& cur : this->m_baseCombos)
             {
@@ -557,27 +562,6 @@ namespace WallpaperEngine::Render::Shaders
                     continue;
 
                 finalCode += "#define " + cur.first + " " + std::to_string (cur.second) + "\n";
-            }
-
-            // define to 0 everything else found in the code
-            std::regex ifs ("#if ([A-Za-z0-9_]+)");
-            auto words_begin = std::sregex_iterator (this->m_compiledContent.begin (), this->m_compiledContent.end (), ifs);
-            auto words_end = std::sregex_iterator ();
-            std::map <std::string, bool> inserted;
-
-            for (; words_begin != words_end; words_begin ++)
-            {
-                std::string define = (*words_begin).str ().substr (4);
-
-                if (
-                    this->m_foundCombos->find (define) != this->m_foundCombos->end () ||
-                        this->m_baseCombos.find (define) != this->m_baseCombos.end () ||
-                        inserted.find (define) != inserted.end ())
-                    continue;
-
-                finalCode += "#define " + define + " 0\n";
-
-                inserted.insert_or_assign (define, true);
             }
         }
 
