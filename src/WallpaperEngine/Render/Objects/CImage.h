@@ -2,11 +2,11 @@
 
 #include "WallpaperEngine/Core/Objects/CImage.h"
 
-#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
-#include "WallpaperEngine/Render/Objects/Effects/CPass.h"
-#include "WallpaperEngine/Render/Objects/CEffect.h"
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/CScene.h"
+#include "WallpaperEngine/Render/Objects/CEffect.h"
+#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
+#include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 
@@ -17,85 +17,84 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Assets;
 
-namespace WallpaperEngine::Render::Objects::Effects
-{
-    class CMaterial;
-    class CPass;
-}
+namespace WallpaperEngine::Render::Objects::Effects {
+class CMaterial;
+class CPass;
+} // namespace WallpaperEngine::Render::Objects::Effects
 
-namespace WallpaperEngine::Render::Objects
-{
-    class CEffect;
+namespace WallpaperEngine::Render::Objects {
+class CEffect;
 
-    class CImage : public CObject
-    {
-        friend CObject;
-    public:
-        CImage (CScene* scene, Core::Objects::CImage* image);
+class CImage final : public CObject {
+    friend CObject;
 
-        void setup ();
-        void render () override;
+  public:
+    CImage (CScene* scene, Core::Objects::CImage* image);
 
-        const Core::Objects::CImage* getImage () const;
-        const std::vector<CEffect*>& getEffects () const;
-        glm::vec2 getSize() const;
+    void setup ();
+    void render () override;
 
-        GLuint getSceneSpacePosition () const;
-        GLuint getCopySpacePosition () const;
-        GLuint getPassSpacePosition () const;
-        GLuint getTexCoordCopy () const;
-        GLuint getTexCoordPass () const;
-        const ITexture* getTexture () const;
-        double getAnimationTime () const;
+    const Core::Objects::CImage* getImage () const;
+    const std::vector<CEffect*>& getEffects () const;
+    glm::vec2 getSize () const;
 
-        /**
-         * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
-         *
-         * @param drawTo The framebuffer to use
-         * @param asInput The last texture used as output (if needed)
-         */
-        void pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput);
+    GLuint getSceneSpacePosition () const;
+    GLuint getCopySpacePosition () const;
+    GLuint getPassSpacePosition () const;
+    GLuint getTexCoordCopy () const;
+    GLuint getTexCoordPass () const;
+    const ITexture* getTexture () const;
+    double getAnimationTime () const;
 
-    protected:
-        static const std::string Type;
+    /**
+     * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
+     *
+     * @param drawTo The framebuffer to use
+     * @param asInput The last texture used as output (if needed)
+     */
+    void pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput);
 
-        void setupPasses ();
+  protected:
+    static const std::string Type;
 
-        void updateScreenSpacePosition ();
-    private:
-        const ITexture* m_texture;
-        GLuint m_sceneSpacePosition;
-        GLuint m_copySpacePosition;
-        GLuint m_passSpacePosition;
-        GLuint m_texcoordCopy;
-        GLuint m_texcoordPass;
+    void setupPasses ();
 
-        glm::mat4 m_modelViewProjectionScreen;
-        glm::mat4 m_modelViewProjectionPass;
-        glm::mat4 m_modelViewProjectionCopy;
-        glm::mat4 m_modelViewProjectionScreenInverse;
-        glm::mat4 m_modelViewProjectionPassInverse;
-        glm::mat4 m_modelViewProjectionCopyInverse;
+    void updateScreenSpacePosition ();
 
-        glm::mat4 m_modelMatrix;
-        glm::mat4 m_viewProjectionMatrix;
+  private:
+    const ITexture* m_texture;
+    GLuint m_sceneSpacePosition;
+    GLuint m_copySpacePosition;
+    GLuint m_passSpacePosition;
+    GLuint m_texcoordCopy;
+    GLuint m_texcoordPass;
 
-        CFBO* m_mainFBO;
-        CFBO* m_subFBO;
-        CFBO* m_currentMainFBO;
-        CFBO* m_currentSubFBO;
+    glm::mat4 m_modelViewProjectionScreen;
+    glm::mat4 m_modelViewProjectionPass;
+    glm::mat4 m_modelViewProjectionCopy;
+    glm::mat4 m_modelViewProjectionScreenInverse;
+    glm::mat4 m_modelViewProjectionPassInverse;
+    glm::mat4 m_modelViewProjectionCopyInverse;
 
-        Core::Objects::CImage* m_image;
+    glm::mat4 m_modelMatrix;
+    glm::mat4 m_viewProjectionMatrix;
 
-        std::vector<CEffect*> m_effects;
-        Effects::CMaterial* m_material;
-        Effects::CMaterial* m_colorBlendMaterial;
-        std::vector <Effects::CPass*> m_passes;
+    CFBO* m_mainFBO;
+    CFBO* m_subFBO;
+    CFBO* m_currentMainFBO;
+    CFBO* m_currentSubFBO;
 
-        glm::vec4 m_pos;
+    Core::Objects::CImage* m_image;
 
-        double m_animationTime;
+    std::vector<CEffect*> m_effects;
+    Effects::CMaterial* m_material;
+    Effects::CMaterial* m_colorBlendMaterial;
+    std::vector<Effects::CPass*> m_passes;
 
-        bool m_initialized;
-    };
-}
+    glm::vec4 m_pos;
+
+    double m_animationTime;
+
+    bool m_initialized;
+};
+} // namespace WallpaperEngine::Render::Objects

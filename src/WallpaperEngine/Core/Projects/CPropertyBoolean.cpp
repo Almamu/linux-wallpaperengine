@@ -5,40 +5,35 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyBoolean* CPropertyBoolean::fromJSON (json data, const std::string& name)
-{
-    json::const_iterator value = data.find ("value");
-    auto text = jsonFindDefault <std::string> (data, "text", "");
+CPropertyBoolean* CPropertyBoolean::fromJSON (json data, const std::string& name) {
+    const json::const_iterator value = data.find ("value");
+    const auto text = jsonFindDefault<std::string> (data, "text", "");
 
     return new CPropertyBoolean (*value, name, text);
 }
 
-bool CPropertyBoolean::getValue () const
-{
+bool CPropertyBoolean::getValue () const {
     return this->m_value;
 }
 
-void CPropertyBoolean::update (const std::string& value)
-{
+void CPropertyBoolean::update (const std::string& value) {
     this->m_value = value == "1" || value == "true";
 }
 
-std::string CPropertyBoolean::dump () const
-{
+std::string CPropertyBoolean::dump () const {
     std::stringstream ss;
 
-    ss
-        << this->m_name << " - boolean" << std::endl
-        << "\t" << "Description: " << this->m_text << std::endl
-        << "\t" << "Value: " << this->m_value;
+    ss << this->m_name << " - boolean" << std::endl
+       << "\t"
+       << "Description: " << this->m_text << std::endl
+       << "\t"
+       << "Value: " << this->m_value;
 
-    return ss.str();
+    return ss.str ();
 }
 
 CPropertyBoolean::CPropertyBoolean (bool value, const std::string& name, const std::string& text) :
     CProperty (name, Type, text),
-    m_value (value)
-{
-}
+    m_value (value) {}
 
 const std::string CPropertyBoolean::Type = "bool";

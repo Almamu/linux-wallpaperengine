@@ -4,18 +4,13 @@
 
 using namespace WallpaperEngine::Render::Objects;
 
-CSound::CSound (CScene* scene, Core::Objects::CSound* sound) :
-    CObject (scene, Type, sound),
-    m_sound (sound)
-{
+CSound::CSound (CScene* scene, Core::Objects::CSound* sound) : CObject (scene, Type, sound), m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled)
         this->load ();
 }
 
-void CSound::load ()
-{
-    for (const auto& cur : this->m_sound->getSounds ())
-    {
+void CSound::load () {
+    for (const auto& cur : this->m_sound->getSounds ()) {
         uint32_t filesize = 0;
         const void* filebuffer = this->getContainer ()->readFile (cur, &filesize);
 
@@ -31,8 +26,6 @@ void CSound::load ()
     }
 }
 
-void CSound::render ()
-{
-}
+void CSound::render () {}
 
 const std::string CSound::Type = "sound";

@@ -4,22 +4,20 @@
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
-namespace WallpaperEngine::Render::Shaders::Variables
-{
-    class CShaderVariableVector3 : public CShaderVariable
-    {
-    public:
-        explicit CShaderVariableVector3 (const glm::vec3& defaultValue);
-        CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name);
+namespace WallpaperEngine::Render::Shaders::Variables {
+class CShaderVariableVector3 final : public CShaderVariable {
+  public:
+    explicit CShaderVariableVector3 (const glm::vec3& defaultValue);
+    CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name);
 
-        const int getSize () const override;
+    const int getSize () const override;
 
-        void setValue (const glm::vec3& value);
+    void setValue (const glm::vec3& value);
 
-        static const std::string Type;
+    static const std::string Type;
 
-    private:
-        glm::vec3 m_defaultValue;
-        glm::vec3 m_value;
-    };
-}
+  private:
+    glm::vec3 m_defaultValue;
+    glm::vec3 m_value;
+};
+} // namespace WallpaperEngine::Render::Shaders::Variables

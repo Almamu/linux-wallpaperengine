@@ -4,7 +4,4 @@
 
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingValue::CUserSettingValue (std::string type) :
-    m_type (std::move(type))
-{
-}
+CUserSettingValue::CUserSettingValue (std::string type) : m_type (std::move (type)) {}

@@ -4,11 +4,8 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Drivers::Detectors;
 
 CFullScreenDetector::CFullScreenDetector (Application::CApplicationContext& appContext) :
-    m_applicationContext (appContext)
-{
-}
+    m_applicationContext (appContext) {}
 
-Application::CApplicationContext& CFullScreenDetector::getApplicationContext () const
-{
+Application::CApplicationContext& CFullScreenDetector::getApplicationContext () const {
     return this->m_applicationContext;
 }

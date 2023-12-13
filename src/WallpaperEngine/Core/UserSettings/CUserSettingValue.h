@@ -2,20 +2,27 @@
 
 #include <nlohmann/json.hpp>
 
-namespace WallpaperEngine::Core::UserSettings
-{
-    class CUserSettingValue
-    {
-    public:
-        template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
-        template<class T> T* as () { assert (is <T> ()); return (T*) this; }
+namespace WallpaperEngine::Core::UserSettings {
+class CUserSettingValue {
+  public:
+    template <class T> const T* as () const {
+        assert (is<T> ());
+        return reinterpret_cast<const T*> (this);
+    }
 
-        template<class T> bool is () { return this->m_type == T::Type; }
+    template <class T> T* as () {
+        assert (is<T> ());
+        return reinterpret_cast<T*> (this);
+    }
 
-    protected:
-        explicit CUserSettingValue (std::string type);
+    template <class T> bool is () {
+        return this->m_type == T::Type;
+    }
 
-    private:
-        std::string m_type;
-    };
-}
+  protected:
+    explicit CUserSettingValue (std::string type);
+
+  private:
+    std::string m_type;
+};
+} // namespace WallpaperEngine::Core::UserSettings

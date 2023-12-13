@@ -6,12 +6,9 @@ using namespace WallpaperEngine::Core;
 
 CVideo::CVideo (std::string filename, CProject& project) :
     CWallpaper (Type, project),
-    m_filename (std::move(filename))
-{
-}
+    m_filename (std::move (filename)) {}
 
-const std::string& CVideo::getFilename ()
-{
+const std::string& CVideo::getFilename () {
     return this->m_filename;
 }
 

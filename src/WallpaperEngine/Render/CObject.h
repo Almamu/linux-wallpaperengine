@@ -7,32 +7,39 @@
 
 #include "CScene.h"
 
-namespace WallpaperEngine::Render
-{
-    class CScene;
+namespace WallpaperEngine::Render {
+class CScene;
 
-    class CObject : public Helpers::CContextAware
-    {
-    public:
-        template<class T> const T* as () const { assert (is<T>()); return (const T*) this; }
-        template<class T> T* as () { assert (is<T>()); return (T*) this; }
+class CObject : public Helpers::CContextAware {
+  public:
+    template <class T> const T* as () const {
+        assert (is<T> ());
+        return reinterpret_cast<const T*> (this);
+    }
 
-        template<class T> bool is () { return this->m_type == T::Type; }
+    template <class T> T* as () {
+        assert (is<T> ());
+        return reinterpret_cast<T*> (this);
+    }
 
-        virtual void render () = 0;
+    template <class T> bool is () {
+        return this->m_type == T::Type;
+    }
 
-        CScene* getScene () const;
-        CContainer* getContainer () const;
-        int getId () const;
+    virtual void render () = 0;
 
-    protected:
-        CObject (CScene* scene, std::string type, Core::CObject *object);
-        ~CObject ();
+    CScene* getScene () const;
+    CContainer* getContainer () const;
+    int getId () const;
 
-    private:
-        std::string m_type;
+  protected:
+    CObject (CScene* scene, std::string type, Core::CObject* object);
+    ~CObject () override = default;
 
-        CScene* m_scene;
-        Core::CObject* m_object;
-    };
-}
+  private:
+    std::string m_type;
+
+    CScene* m_scene;
+    Core::CObject* m_object;
+};
+} // namespace WallpaperEngine::Render

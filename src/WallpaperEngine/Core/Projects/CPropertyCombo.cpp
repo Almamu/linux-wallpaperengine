@@ -3,28 +3,22 @@
 
 #include "CPropertyCombo.h"
 
-#include <utility>
 #include "WallpaperEngine/Core/Core.h"
+#include <utility>
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
-{
-    auto value = data.find ("value");
-    auto text = jsonFindDefault <std::string> (data, "text", "");
-    auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
+CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
+    const auto value = data.find ("value");
+    const auto text = jsonFindDefault<std::string> (data, "text", "");
+    const auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
 
-    auto* combo = new CPropertyCombo (
-        name,
-        text,
-        *value
-    );
+    auto* combo = new CPropertyCombo (name, text, *value);
 
     if (!options->is_array ())
         sLog.exception ("Property combo options should be an array");
 
-    for (auto& cur : (*options))
-    {
+    for (auto& cur : (*options)) {
         // TODO: PROPERLY REPORT THESE ISSUES
         if (!cur.is_object ())
             continue;
@@ -39,40 +33,41 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name)
     return combo;
 }
 
-CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text, std::string  defaultValue) :
+CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text, std::string defaultValue) :
     CProperty (name, Type, text),
-    m_defaultValue (std::move(defaultValue))
-{
+    m_defaultValue (std::move (defaultValue)) {}
+
+CPropertyCombo::~CPropertyCombo () {
+    for (const auto* value : this->m_values)
+        delete value;
 }
 
-const std::string& CPropertyCombo::getValue () const
-{
+const std::string& CPropertyCombo::getValue () const {
     return this->m_defaultValue;
 }
 
-std::string CPropertyCombo::dump () const
-{
+std::string CPropertyCombo::dump () const {
     std::stringstream ss;
 
-    ss
-        << this->m_name << " - combolist" << std::endl
-        << "\t" << "Description: " << this->m_text << std::endl
-        << "\t" << "Value: " << this->m_defaultValue << std::endl
-        << "\t\t" << "Posible values:" << std::endl;
+    ss << this->m_name << " - combolist" << std::endl
+       << "\t"
+       << "Description: " << this->m_text << std::endl
+       << "\t"
+       << "Value: " << this->m_defaultValue << std::endl
+       << "\t\t"
+       << "Posible values:" << std::endl;
 
-    for (auto cur : this->m_values)
+    for (const auto cur : this->m_values)
         ss << "\t\t" << cur->label << " -> " << cur->value << std::endl;
 
-    return ss.str();
+    return ss.str ();
 }
 
-void CPropertyCombo::update (const std::string& value)
-{
+void CPropertyCombo::update (const std::string& value) {
     bool found = false;
 
     // ensure the value is present somewhere in the value list
-    for (auto cur : this->m_values)
-    {
+    for (const auto cur : this->m_values) {
         if (cur->value != value)
             continue;
 
@@ -85,9 +80,7 @@ void CPropertyCombo::update (const std::string& value)
     this->m_defaultValue = value;
 }
 
-
-void CPropertyCombo::addValue (std::string label, std::string value)
-{
+void CPropertyCombo::addValue (std::string label, std::string value) {
     auto* prop = new CPropertyComboValue;
 
     prop->label = std::move (label);

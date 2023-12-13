@@ -1,18 +1,19 @@
-#include "common.h"
 #include "CWallpaper.h"
 #include "CScene.h"
 #include "CVideo.h"
+#include "common.h"
 
-#include <utility>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <utility>
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
+                        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
-    m_type (std::move(type)),
+    m_type (std::move (type)),
     m_destFramebuffer (GL_NONE),
     m_sceneFBO (nullptr),
     m_texCoordBuffer (GL_NONE),
@@ -23,32 +24,18 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
-    m_state(scalingMode)
-{
+    m_state (scalingMode) {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
 
     this->setupShaders ();
 
-    GLfloat texCoords [] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f
-    };
+    const GLfloat texCoords [] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
     // inverted positions so the final texture is rendered properly
-    GLfloat position [] = {
-        -1.0f, 1.0f, 0.0f,
-        1.0, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f
-    };
+    const GLfloat position [] = {-1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
+                                 -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f};
 
     glGenBuffers (1, &this->m_texCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
@@ -59,33 +46,27 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
 }
 
-CWallpaper::~CWallpaper ()
-= default;
+CWallpaper::~CWallpaper () = default;
 
-CContainer* CWallpaper::getContainer () const
-{
+CContainer* CWallpaper::getContainer () const {
     return this->m_wallpaperData->getProject ().getContainer ();
 }
 
-WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const
-{
+WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const {
     return this->m_wallpaperData;
 }
 
-GLuint CWallpaper::getWallpaperFramebuffer () const
-{
+GLuint CWallpaper::getWallpaperFramebuffer () const {
     return this->m_sceneFBO->getFramebuffer ();
 }
 
-GLuint CWallpaper::getWallpaperTexture () const
-{
-    return this->m_sceneFBO->getTextureID(0);
+GLuint CWallpaper::getWallpaperTexture () const {
+    return this->m_sceneFBO->getTextureID (0);
 }
 
-void CWallpaper::setupShaders ()
-{
+void CWallpaper::setupShaders () {
     // reserve shaders in OpenGL
-    GLuint vertexShaderID = glCreateShader (GL_VERTEX_SHADER);
+    const GLuint vertexShaderID = glCreateShader (GL_VERTEX_SHADER);
 
     // give shader's source code to OpenGL to be compiled
     const char* sourcePointer = "#version 330\n"
@@ -108,23 +89,22 @@ void CWallpaper::setupShaders ()
     glGetShaderiv (vertexShaderID, GL_COMPILE_STATUS, &result);
     glGetShaderiv (vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
-    if (infoLogLength > 0)
-    {
+    if (infoLogLength > 0) {
         char* logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
         glGetShaderInfoLog (vertexShaderID, infoLogLength, nullptr, logBuffer);
         // throw an exception about the issue
-        std::string message = logBuffer;
+        const std::string message = logBuffer;
         // free the buffer
-        delete[] logBuffer;
+        delete [] logBuffer;
         // throw an exception
         sLog.exception (message);
     }
 
     // reserve shaders in OpenGL
-    GLuint fragmentShaderID = glCreateShader (GL_FRAGMENT_SHADER);
+    const GLuint fragmentShaderID = glCreateShader (GL_FRAGMENT_SHADER);
 
     // give shader's source code to OpenGL to be compiled
     sourcePointer = "#version 330\n"
@@ -146,17 +126,16 @@ void CWallpaper::setupShaders ()
     glGetShaderiv (fragmentShaderID, GL_COMPILE_STATUS, &result);
     glGetShaderiv (fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
-    if (infoLogLength > 0)
-    {
+    if (infoLogLength > 0) {
         char* logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
         glGetShaderInfoLog (fragmentShaderID, infoLogLength, nullptr, logBuffer);
         // throw an exception about the issue
-        std::string message = logBuffer;
+        const std::string message = logBuffer;
         // free the buffer
-        delete[] logBuffer;
+        delete [] logBuffer;
         // throw an exception
         sLog.exception (message);
     }
@@ -174,17 +153,16 @@ void CWallpaper::setupShaders ()
     glGetProgramiv (this->m_shader, GL_LINK_STATUS, &result);
     glGetProgramiv (this->m_shader, GL_INFO_LOG_LENGTH, &infoLogLength);
 
-    if (infoLogLength > 0)
-    {
+    if (infoLogLength > 0) {
         char* logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
         glGetProgramInfoLog (this->m_shader, infoLogLength, nullptr, logBuffer);
         // throw an exception about the issue
-        std::string message = logBuffer;
+        const std::string message = logBuffer;
         // free the buffer
-        delete[] logBuffer;
+        delete [] logBuffer;
         // throw an exception
         sLog.exception (message);
     }
@@ -202,33 +180,26 @@ void CWallpaper::setupShaders ()
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::setDestinationFramebuffer (GLuint framebuffer)
-{
+void CWallpaper::setDestinationFramebuffer (GLuint framebuffer) {
     this->m_destFramebuffer = framebuffer;
 }
 
-void CWallpaper::updateUVs(const glm::ivec4& viewport, const bool vflip){
-    //update UVs if something has changed, otherwise use old values
-    if(this->m_state.hasChanged(viewport, vflip, this->getWidth(), this->getHeight())){
+void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
+    // update UVs if something has changed, otherwise use old values
+    if (this->m_state.hasChanged (viewport, vflip, this->getWidth (), this->getHeight ())) {
         // Update wallpaper state
-        this->m_state.updateState(viewport, vflip, this->getWidth(), this->getHeight());
+        this->m_state.updateState (viewport, vflip, this->getWidth (), this->getHeight ());
     }
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip)
-{
+void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     this->renderFrame (viewport);
-    //Update UVs coordinates according to scaling mode of this wallpaper
-    updateUVs(viewport,vflip);
-    auto [ ustart, uend, vstart, vend ] = this->m_state.getTextureUVs();
+    // Update UVs coordinates according to scaling mode of this wallpaper
+    updateUVs (viewport, vflip);
+    auto [ustart, uend, vstart, vend] = this->m_state.getTextureUVs ();
 
-    GLfloat texCoords [] = {
-        ustart, vstart,
-        uend, vstart,
-        ustart, vend,
-        ustart, vend,
-        uend, vstart,
-        uend, vend,
+    const GLfloat texCoords [] = {
+        ustart, vstart, uend, vstart, ustart, vend, ustart, vend, uend, vstart, uend, vend,
     };
 
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
@@ -260,30 +231,23 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip)
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
-void CWallpaper::setupFramebuffers ()
-{
-    uint32_t width = this->getWidth ();
-    uint32_t height = this->getHeight ();
-    ITexture::TextureFlags clamp = this->getContext().getApp().getContext().settings.render.window.clamp;
-    
+void CWallpaper::setupFramebuffers () {
+    const uint32_t width = this->getWidth ();
+    const uint32_t height = this->getHeight ();
+    const ITexture::TextureFlags clamp = this->getContext ().getApp ().getContext ().settings.render.window.clamp;
+
     // create framebuffer for the scene
-    this->m_sceneFBO = this->createFBO (
-        "_rt_FullFrameBuffer",
-        ITexture::TextureFormat::ARGB8888,
-        clamp,
-        1.0,
-        width, height,
-        width, height
-    );
+    this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
+                                        height, width, height);
 }
 
-CAudioContext& CWallpaper::getAudioContext ()
-{
+CAudioContext& CWallpaper::getAudioContext () {
     return this->m_audioContext;
 }
 
-CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight)
-{
+CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags,
+                             float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth,
+                             uint32_t textureHeight) {
     CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
     this->m_fbos.insert (std::make_pair (name, fbo));
@@ -291,15 +255,12 @@ CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat fo
     return fbo;
 }
 
-const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const
-{
+const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {
     return this->m_fbos;
 }
 
-
-CFBO* CWallpaper::findFBO (const std::string& name) const
-{
-    auto it = this->m_fbos.find (name);
+CFBO* CWallpaper::findFBO (const std::string& name) const {
+    const auto it = this->m_fbos.find (name);
 
     if (it == this->m_fbos.end ())
         sLog.exception ("Cannot find FBO ", name);
@@ -307,17 +268,17 @@ CFBO* CWallpaper::findFBO (const std::string& name) const
     return it->second;
 }
 
-CFBO* CWallpaper::getFBO () const
-{
+CFBO* CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode)
-{
-    if (wallpaper->is <Core::CScene> ())
-        return new WallpaperEngine::Render::CScene (wallpaper->as <Core::CScene> (), context, audioContext, scalingMode);
-    else if (wallpaper->is <Core::CVideo> ())
-        return new WallpaperEngine::Render::CVideo (wallpaper->as <Core::CVideo> (), context, audioContext, scalingMode);
-    else
-        sLog.exception ("Unsupported wallpaper type");
+CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context,
+                                       CAudioContext& audioContext,
+                                       const CWallpaperState::TextureUVsScaling& scalingMode) {
+    if (wallpaper->is<Core::CScene> ())
+        return new WallpaperEngine::Render::CScene (wallpaper->as<Core::CScene> (), context, audioContext, scalingMode);
+    if (wallpaper->is<Core::CVideo> ())
+        return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
+
+    sLog.exception ("Unsupported wallpaper type");
 }

@@ -2,23 +2,21 @@
 
 #include <glm/vec2.hpp>
 
-namespace WallpaperEngine::Input
-{
+namespace WallpaperEngine::Input {
+/**
+ * Handles mouse input for the background
+ */
+class CMouseInput {
+  public:
+    virtual ~CMouseInput () = default;
     /**
-     * Handles mouse input for the background
+     * Takes current mouse position and updates it
      */
-    class CMouseInput
-    {
-    public:
-        /**
-         * Takes current mouse position and updates it
-         */
-        virtual void update () = 0;
+    virtual void update () = 0;
 
-        /**
-         * The virtual pointer's position
-         */
-        [[nodiscard]] virtual glm::dvec2 position () const = 0;
-    };
-}
-
+    /**
+     * The virtual pointer's position
+     */
+    [[nodiscard]] virtual glm::dvec2 position () const = 0;
+};
+} // namespace WallpaperEngine::Input

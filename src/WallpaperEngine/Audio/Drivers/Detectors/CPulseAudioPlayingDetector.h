@@ -1,23 +1,22 @@
 #pragma once
 
+#include "CAudioPlayingDetector.h"
 #include <condition_variable>
 #include <mutex>
-#include "CAudioPlayingDetector.h"
 #include <pulse/pulseaudio.h>
 
-namespace WallpaperEngine::Audio::Drivers::Detectors
-{
-    class CPulseAudioPlayingDetector : public CAudioPlayingDetector
-    {
-    public:
-        explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext, const Render::Drivers::Detectors::CFullScreenDetector&);
-        ~CPulseAudioPlayingDetector ();
+namespace WallpaperEngine::Audio::Drivers::Detectors {
+class CPulseAudioPlayingDetector final : public CAudioPlayingDetector {
+  public:
+    explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext,
+                                         const Render::Drivers::Detectors::CFullScreenDetector&);
+    ~CPulseAudioPlayingDetector () override;
 
-        void update () override;
+    void update () override;
 
-    private:
-        pa_mainloop* m_mainloop;
-        pa_mainloop_api* m_mainloopApi;
-        pa_context* m_context;
-    };
-}
+  private:
+    pa_mainloop* m_mainloop;
+    pa_mainloop_api* m_mainloopApi;
+    pa_context* m_context;
+};
+} // namespace WallpaperEngine::Audio::Drivers::Detectors

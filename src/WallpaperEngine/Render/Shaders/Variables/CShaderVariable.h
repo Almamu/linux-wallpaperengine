@@ -2,37 +2,45 @@
 
 #include <string>
 
-namespace WallpaperEngine::Render::Shaders::Variables
-{
-    class CShaderVariable
-    {
-    public:
-        CShaderVariable (void* defaultValue, void* value, std::string type);
+namespace WallpaperEngine::Render::Shaders::Variables {
+class CShaderVariable {
+  public:
+    CShaderVariable (void* defaultValue, void* value, std::string type);
+    virtual ~CShaderVariable () = default;
 
-        template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
-        template<class T> T* as () { assert (is <T> ()); return (T*) this; }
+    template <class T> const T* as () const {
+        assert (is<T> ());
+        return reinterpret_cast<const T*> (this);
+    }
 
-        template<class T> bool is () { return this->m_type == T::Type; }
+    template <class T> T* as () {
+        assert (is<T> ());
+        return reinterpret_cast<T*> (this);
+    }
 
-        const std::string& getIdentifierName () const;
-        const std::string& getName () const;
-        const std::string& getType () const;
+    template <class T> bool is () {
+        return this->m_type == T::Type;
+    }
 
-        void setIdentifierName (std::string identifierName);
-        void setName (const std::string& name);
-        const void* getValue () const;
+    const std::string& getIdentifierName () const;
+    const std::string& getName () const;
+    const std::string& getType () const;
 
-        virtual const int getSize () const = 0;
+    void setIdentifierName (std::string identifierName);
+    void setName (const std::string& name);
+    const void* getValue () const;
 
-    protected:
-        void setValue (void* value);
+    virtual const int getSize () const = 0;
 
-    private:
-        std::string m_identifierName;
-        std::string m_name;
-        std::string m_type;
+  protected:
+    void setValue (void* value);
 
-        void* m_defaultValue;
-        void* m_value;
-    };
-}
+  private:
+    std::string m_identifierName;
+    std::string m_name;
+    std::string m_type;
+
+    void* m_defaultValue;
+    void* m_value;
+};
+} // namespace WallpaperEngine::Render::Shaders::Variables

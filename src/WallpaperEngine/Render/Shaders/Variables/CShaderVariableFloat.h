@@ -2,22 +2,20 @@
 
 #include "CShaderVariable.h"
 
-namespace WallpaperEngine::Render::Shaders::Variables
-{
-    class CShaderVariableFloat : public CShaderVariable
-    {
-    public:
-        explicit CShaderVariableFloat (float defaultValue);
-        CShaderVariableFloat (float defaultValue, const std::string& name);
+namespace WallpaperEngine::Render::Shaders::Variables {
+class CShaderVariableFloat final : public CShaderVariable {
+  public:
+    explicit CShaderVariableFloat (float defaultValue);
+    CShaderVariableFloat (float defaultValue, const std::string& name);
 
-        const int getSize () const override;
+    const int getSize () const override;
 
-        void setValue (float value);
+    void setValue (float value);
 
-        static const std::string Type;
+    static const std::string Type;
 
-    private:
-        float m_defaultValue;
-        float m_value;
-    };
-}
+  private:
+    float m_defaultValue;
+    float m_value;
+};
+} // namespace WallpaperEngine::Render::Shaders::Variables

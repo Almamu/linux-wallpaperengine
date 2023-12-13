@@ -1,53 +1,48 @@
-#include "common.h"
 #include "CPackage.h"
 #include "CAssetLoadException.h"
 #include "CPackageLoadException.h"
+#include "common.h"
 
-#include <utility>
 #include <sstream>
+#include <utility>
 
 using namespace WallpaperEngine::Assets;
 
-class CPackageEntry
-{
-public:
+class CPackageEntry {
+  public:
     CPackageEntry (std::string filename, uint32_t offset, uint32_t length) :
-        filename (std::move(filename)),
+        filename (std::move (filename)),
         offset (offset),
-        length (length) { }
+        length (length) {}
 
     std::string filename;
     uint32_t offset;
     uint32_t length;
 };
 
-CPackage::CPackage (std::filesystem::path  path) :
-    m_path (std::move(path)),
-    m_contents ()
-{
+CPackage::CPackage (std::filesystem::path path) : m_path (std::move (path)) {
     this->init ();
 }
 
-CPackage::~CPackage()
-= default;
-
-
-const void* CPackage::readFile (const std::string& filename, uint32_t* length) const
-{
-    auto it = this->m_contents.find (filename);
+const void* CPackage::readFile (const std::string& filename, uint32_t* length) const {
+    const auto it = this->m_contents.find (filename);
 
     if (it == this->m_contents.end ())
-        throw CAssetLoadException(filename, "Cannot find the file in the package");
+        throw CAssetLoadException (filename, "Cannot find the file in the package");
 
     // set file length if required
     if (length != nullptr)
-        *length = (*it).second.length;
+        *length = it->second->length;
 
-    return (*it).second.address;
+    // clone original first
+    auto* result = new char [it->second->length];
+
+    memcpy (result, it->second->address, it->second->length);
+
+    return result;
 }
 
-void CPackage::init ()
-{
+void CPackage::init () {
     FILE* fp = fopen (this->m_path.c_str (), "rb+");
 
     if (fp == nullptr)
@@ -61,21 +56,20 @@ void CPackage::init ()
     fclose (fp);
 }
 
-char* CPackage::readSizedString (FILE* fp)
-{
+char* CPackage::readSizedString (FILE* fp) {
     unsigned int length = 0;
 
     if (fread (&length, sizeof (unsigned int), 1, fp) != 1)
         sLog.exception ("Cannot read sized string length on file ", this->m_path);
 
     // account for 0 termination of the string
-    length ++;
+    length++;
 
     char* pointer = new char [length];
     memset (pointer, 0, length);
 
     // read only the string bytes so the last one in the memory is 0
-    length --;
+    length--;
 
     // read data from file
     if (fread (pointer, sizeof (char), length, fp) != length)
@@ -84,8 +78,7 @@ char* CPackage::readSizedString (FILE* fp)
     return pointer;
 }
 
-uint32_t CPackage::readInteger (FILE* fp)
-{
+uint32_t CPackage::readInteger (FILE* fp) {
     uint32_t output;
 
     if (fread (&output, sizeof (uint32_t), 1, fp) != 1)
@@ -94,46 +87,41 @@ uint32_t CPackage::readInteger (FILE* fp)
     return output;
 }
 
-void CPackage::validateHeader (FILE* fp)
-{
-    char* pointer = this->readSizedString (fp);
+void CPackage::validateHeader (FILE* fp) {
+    const char* pointer = this->readSizedString (fp);
 
-    if (strncmp ("PKGV", pointer, 4) != 0)
-    {
+    if (strncmp ("PKGV", pointer, 4) != 0) {
         std::stringstream msg;
         msg << "Expected PKGV indicator, found " << pointer;
-        delete[] pointer;
-        throw std::runtime_error(msg.str());
+        delete [] pointer;
+        throw std::runtime_error (msg.str ());
     }
 
     // free memory
-    delete[] pointer;
+    delete [] pointer;
 }
 
-void CPackage::loadFiles (FILE* fp)
-{
-    uint32_t count = this->readInteger (fp);
+void CPackage::loadFiles (FILE* fp) {
+    const uint32_t count = this->readInteger (fp);
     std::vector<CPackageEntry> list;
 
-    for (uint32_t index = 0; index < count; index ++)
-    {
+    for (uint32_t index = 0; index < count; index++) {
         // first read the filename
         char* filename = this->readSizedString (fp);
         uint32_t offset = this->readInteger (fp);
         uint32_t length = this->readInteger (fp);
 
         // add the file to the list
-        list.emplace_back(filename, offset, length);
+        list.emplace_back (filename, offset, length);
         // only free filename, the file's contents are stored in a map for a later use
-        delete[] filename;
+        delete [] filename;
     }
 
     // get current baseOffset, this is where the files start
-    long baseOffset = ftell (fp);
+    const long baseOffset = ftell (fp);
 
-    for (const auto& cur : list)
-    {
-        long offset = cur.offset + baseOffset;
+    for (const auto& cur : list) {
+        const long offset = cur.offset + baseOffset;
 
         // with all the data we can jump to the offset and read the content
         if (fseek (fp, offset, SEEK_SET) != 0)
@@ -142,14 +130,13 @@ void CPackage::loadFiles (FILE* fp)
         // allocate memory for the file's contents and read it from the file
         char* fileContents = new char [cur.length];
 
-        if (fread (fileContents, cur.length, 1, fp) != 1)
-        {
-            delete[] fileContents;
+        if (fread (fileContents, cur.length, 1, fp) != 1) {
+            delete [] fileContents;
 
             sLog.exception ("Cannot read file ", cur.filename, " contents from package ", this->m_path);
         }
 
         // add the file to the map
-        this->m_contents.insert_or_assign (cur.filename, CFileEntry (fileContents, cur.length));
+        this->m_contents.insert_or_assign (cur.filename, new CFileEntry (fileContents, cur.length));
     }
 }

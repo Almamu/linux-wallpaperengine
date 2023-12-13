@@ -16,25 +16,23 @@ extern float g_TimeLast;
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+                const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (scene, Type, context, audioContext, scalingMode),
     m_mousePosition (),
     m_mousePositionLast (),
-    m_parallaxDisplacement ()
-{
+    m_parallaxDisplacement () {
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
 
     // detect size if the orthogonal project is auto
-    if (scene->getOrthogonalProjection ()->isAuto ())
-    {
+    if (scene->getOrthogonalProjection ()->isAuto ()) {
         // calculate the size of the projection based on the size of everything
-        for (const auto& cur : scene->getObjects ())
-        {
-            if (!cur.second->is <Core::Objects::CImage> ())
+        for (const auto& [id, sceneObject] : scene->getObjects ()) {
+            if (!sceneObject->is<Core::Objects::CImage> ())
                 continue;
 
-            glm::vec2 size = cur.second->as <Core::Objects::CImage> ()->getSize ();
+            const glm::vec2 size = sceneObject->as<Core::Objects::CImage> ()->getSize ();
 
             scene->getOrthogonalProjection ()->setWidth (size.x);
             scene->getOrthogonalProjection ()->setHeight (size.y);
@@ -43,63 +41,44 @@ CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& aud
 
     this->m_parallaxDisplacement = {0, 0};
 
-    this->m_camera->setOrthogonalProjection (
-        scene->getOrthogonalProjection ()->getWidth (),
-        scene->getOrthogonalProjection ()->getHeight ()
-    );
+    this->m_camera->setOrthogonalProjection (scene->getOrthogonalProjection ()->getWidth (),
+                                             scene->getOrthogonalProjection ()->getHeight ());
 
     // setup framebuffers here as they're required for the scene setup
-    this->setupFramebuffers();
+    this->setupFramebuffers ();
 
     // set clear color
-    glm::vec3 clearColor = this->getScene ()->getClearColor ();
+    const glm::vec3 clearColor = this->getScene ()->getClearColor ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
 
     // create all objects based off their dependencies
-    for (const auto& cur : scene->getObjects ())
-        this->createObject (cur.second);
+    for (const auto& [id, sceneObject] : scene->getObjects ())
+        this->createObject (sceneObject);
 
     // copy over objects by render order
-    for (const auto& cur : scene->getObjectsByRenderOrder ())
-    {
+    for (const auto& cur : scene->getObjectsByRenderOrder ()) {
         auto obj = this->m_objects.find (cur->getId ());
 
         // ignores not created objects like particle systems
         if (obj == this->m_objects.end ())
             continue;
 
-        this->m_objectsByRenderOrder.emplace_back ((*obj).second);
+        this->m_objectsByRenderOrder.emplace_back (obj->second);
     }
 
-    uint32_t sceneWidth = scene->getOrthogonalProjection ()->getWidth ();
-    uint32_t sceneHeight = scene->getOrthogonalProjection ()->getHeight ();
+    const uint32_t sceneWidth = scene->getOrthogonalProjection ()->getWidth ();
+    const uint32_t sceneHeight = scene->getOrthogonalProjection ()->getHeight ();
 
     // create extra framebuffers for the bloom effect
-    this->_rt_4FrameBuffer = this->createFBO (
-        "_rt_4FrameBuffer",
-        ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::ClampUVs,
-        1.0,
-        sceneWidth / 4, sceneHeight / 4,
-        sceneWidth / 4, sceneHeight / 4
-    );
-    this->_rt_8FrameBuffer = this->createFBO (
-        "_rt_8FrameBuffer",
-        ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::ClampUVs,
-        1.0,
-        sceneWidth / 8, sceneHeight / 8,
-        sceneWidth / 8, sceneHeight / 8
-    );
-    this->_rt_Bloom = this->createFBO (
-        "_rt_Bloom",
-        ITexture::TextureFormat::ARGB8888,
-        ITexture::TextureFlags::ClampUVs,
-        1.0,
-        sceneWidth / 8, sceneHeight / 8,
-        sceneWidth / 8, sceneHeight / 8
-    );
+    this->_rt_4FrameBuffer =
+        this->createFBO ("_rt_4FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+                         sceneWidth / 4, sceneHeight / 4, sceneWidth / 4, sceneHeight / 4);
+    this->_rt_8FrameBuffer =
+        this->createFBO ("_rt_8FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+                         sceneWidth / 8, sceneHeight / 8, sceneWidth / 8, sceneHeight / 8);
+    this->_rt_Bloom = this->createFBO ("_rt_Bloom", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs,
+                                       1.0, sceneWidth / 8, sceneHeight / 8, sceneWidth / 8, sceneHeight / 8);
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -108,77 +87,85 @@ CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& aud
     // (it renders directly to the screen, whereas here we never do that from a scene)
     //
 
-    std::string imagejson =
-        "{"
-        "\t\"image\": \"models/wpenginelinux.json\","
-        "\t\"name\": \"bloomimagewpenginelinux\","
-        "\t\"visible\": true,"
-        "\t\"scale\": \"1.0 1.0 1.0\","
-        "\t\"angles\": \"0.0 0.0 0.0\","
-        "\t\"origin\": \"" + std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) + " 0.0\","
-        "\t\"id\": " + std::to_string (0xFFFFFFFF) + ","
-        "\t\"effects\":"
-        "\t["
-        "\t\t{"
-        "\t\t\t\"file\": \"effects/wpenginelinux/bloomeffect.json\","
-        "\t\t\t\"id\": 15242000,"
-        "\t\t\t\"name\": \"\","
-        "\t\t\t\"passes\":"
-        "\t\t\t["
-        "\t\t\t\t{"
-        "\t\t\t\t\t\"constantshadervalues\":"
-        "\t\t\t\t\t{"
-        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
-        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
-        "\t\t\t\t\t}"
-        "\t\t\t\t},"
-        "\t\t\t\t{"
-        "\t\t\t\t\t\"constantshadervalues\":"
-        "\t\t\t\t\t{"
-        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
-        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
-        "\t\t\t\t\t}"
-        "\t\t\t\t},"
-        "\t\t\t\t{"
-        "\t\t\t\t\t\"constantshadervalues\":"
-        "\t\t\t\t\t{"
-        "\t\t\t\t\t\t\"bloomstrength\": " + std::to_string (this->getScene ()->getBloomStrength ()) + ","
-        "\t\t\t\t\t\t\"bloomthreshold\": " + std::to_string (this->getScene ()->getBloomThreshold ()) +
-        "\t\t\t\t\t}"
-        "\t\t\t\t}"
-        "\t\t\t]"
-        "\t\t}"
-        "\t],"
-        "\t\"size\": \"" + std::to_string (sceneWidth) + " " + std::to_string (sceneHeight) + "\""
-        "}";
-    auto json = nlohmann::json::parse (imagejson);
+    const std::string imagejson = "{"
+                                  "\t\"image\": \"models/wpenginelinux.json\","
+                                  "\t\"name\": \"bloomimagewpenginelinux\","
+                                  "\t\"visible\": true,"
+                                  "\t\"scale\": \"1.0 1.0 1.0\","
+                                  "\t\"angles\": \"0.0 0.0 0.0\","
+                                  "\t\"origin\": \"" +
+                                  std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) +
+                                  " 0.0\","
+                                  "\t\"id\": " +
+                                  std::to_string (0xFFFFFFFF) +
+                                  ","
+                                  "\t\"effects\":"
+                                  "\t["
+                                  "\t\t{"
+                                  "\t\t\t\"file\": \"effects/wpenginelinux/bloomeffect.json\","
+                                  "\t\t\t\"id\": 15242000,"
+                                  "\t\t\t\"name\": \"\","
+                                  "\t\t\t\"passes\":"
+                                  "\t\t\t["
+                                  "\t\t\t\t{"
+                                  "\t\t\t\t\t\"constantshadervalues\":"
+                                  "\t\t\t\t\t{"
+                                  "\t\t\t\t\t\t\"bloomstrength\": " +
+                                  std::to_string (this->getScene ()->getBloomStrength ()) +
+                                  ","
+                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
+                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
+                                  "\t\t\t\t\t}"
+                                  "\t\t\t\t},"
+                                  "\t\t\t\t{"
+                                  "\t\t\t\t\t\"constantshadervalues\":"
+                                  "\t\t\t\t\t{"
+                                  "\t\t\t\t\t\t\"bloomstrength\": " +
+                                  std::to_string (this->getScene ()->getBloomStrength ()) +
+                                  ","
+                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
+                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
+                                  "\t\t\t\t\t}"
+                                  "\t\t\t\t},"
+                                  "\t\t\t\t{"
+                                  "\t\t\t\t\t\"constantshadervalues\":"
+                                  "\t\t\t\t\t{"
+                                  "\t\t\t\t\t\t\"bloomstrength\": " +
+                                  std::to_string (this->getScene ()->getBloomStrength ()) +
+                                  ","
+                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
+                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
+                                  "\t\t\t\t\t}"
+                                  "\t\t\t\t}"
+                                  "\t\t\t]"
+                                  "\t\t}"
+                                  "\t],"
+                                  "\t\"size\": \"" +
+                                  std::to_string (sceneWidth) + " " + std::to_string (sceneHeight) +
+                                  "\""
+                                  "}";
+    const auto json = nlohmann::json::parse (imagejson);
 
     // create image for bloom passes
-    if (this->getScene ()->isBloom ())
-    {
+    if (this->getScene ()->isBloom ()) {
         this->m_bloomObject = this->createObject (
-            WallpaperEngine::Core::CObject::fromJSON (
-                json, this->getScene (), this->getContainer ()
-            )
-        );
+            WallpaperEngine::Core::CObject::fromJSON (json, this->getScene (), this->getContainer ()));
 
         this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
     }
 }
 
-Render::CObject* CScene::createObject (Core::CObject* object)
-{
+Render::CObject* CScene::createObject (Core::CObject* object) {
     Render::CObject* renderObject = nullptr;
 
     // ensure the item is not loaded already
-    auto current = this->m_objects.find (object->getId ());
+    const auto current = this->m_objects.find (object->getId ());
 
     if (current != this->m_objects.end ())
-        return (*current).second;
+        return current->second;
 
     // check dependencies too!
-    for (const auto& cur : object->getDependencies ())
-    {
+    for (const auto& cur : object->getDependencies ()) {
         // self-dependency is a possibility...
         if (cur == object->getId ())
             continue;
@@ -186,28 +173,22 @@ Render::CObject* CScene::createObject (Core::CObject* object)
         auto dep = this->getScene ()->getObjects ().find (cur);
 
         if (dep != this->getScene ()->getObjects ().end ())
-            this->createObject ((*dep).second);
+            this->createObject (dep->second);
     }
 
-    if (object->is <Core::Objects::CImage> ())
-    {
-        auto* image = new Objects::CImage (this, object->as<Core::Objects::CImage>());
+    if (object->is<Core::Objects::CImage> ()) {
+        auto* image = new Objects::CImage (this, object->as<Core::Objects::CImage> ());
 
-        try
-        {
+        try {
             image->setup ();
-        }
-        catch (std::runtime_error& ex)
-        {
+        } catch (std::runtime_error&) {
             // this error message is already printed, so just show extra info about it
             sLog.error ("Cannot setup image ", image->getImage ()->getName ());
         }
 
         renderObject = image;
-    }
-    else if (object->is <Core::Objects::CSound> ())
-    {
-        renderObject = new Objects::CSound (this, object->as<Core::Objects::CSound>());
+    } else if (object->is<Core::Objects::CSound> ()) {
+        renderObject = new Objects::CSound (this, object->as<Core::Objects::CSound> ());
     }
 
     if (renderObject != nullptr)
@@ -216,28 +197,27 @@ Render::CObject* CScene::createObject (Core::CObject* object)
     return renderObject;
 }
 
-CCamera* CScene::getCamera () const
-{
+CCamera* CScene::getCamera () const {
     return this->m_camera;
 }
 
-void CScene::renderFrame (glm::ivec4 viewport)
-{
+void CScene::renderFrame (glm::ivec4 viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ()->isCameraParallax ())
-    {
-        float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
-        float amount = this->getScene ()->getCameraParallaxAmount ();
-        float delay = glm::min ((float) this->getScene ()->getCameraParallaxDelay (), g_Time - g_TimeLast);
+    if (this->getScene ()->isCameraParallax ()) {
+        const float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
+        const float amount = this->getScene ()->getCameraParallaxAmount ();
+        const float delay =
+            glm::min (static_cast<float> (this->getScene ()->getCameraParallaxDelay ()), g_Time - g_TimeLast);
 
-        this->m_parallaxDisplacement = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
+        this->m_parallaxDisplacement =
+            glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
     }
 
     // use the scene's framebuffer by default
-    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
+    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer ());
     // ensure we render over the whole framebuffer
     glViewport (0, 0, this->m_sceneFBO->getRealWidth (), this->m_sceneFBO->getRealHeight ());
 
@@ -247,10 +227,9 @@ void CScene::renderFrame (glm::ivec4 viewport)
         cur->render ();
 }
 
-void CScene::updateMouse (glm::ivec4 viewport)
-{
+void CScene::updateMouse (glm::ivec4 viewport) {
     // update virtual mouse position first
-    glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position();
+    const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
 
     // rollover the position to the last
@@ -263,33 +242,27 @@ void CScene::updateMouse (glm::ivec4 viewport)
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-Core::CScene* CScene::getScene () const
-{
+Core::CScene* CScene::getScene () const {
     return this->getWallpaperData ()->as<Core::CScene> ();
 }
 
-uint32_t CScene::getWidth () const
-{
-    return this->getScene ()->getOrthogonalProjection()->getWidth ();
+uint32_t CScene::getWidth () const {
+    return this->getScene ()->getOrthogonalProjection ()->getWidth ();
 }
 
-uint32_t CScene::getHeight () const
-{
-    return this->getScene ()->getOrthogonalProjection()->getHeight ();
+uint32_t CScene::getHeight () const {
+    return this->getScene ()->getOrthogonalProjection ()->getHeight ();
 }
 
-glm::vec2* CScene::getMousePosition ()
-{
+glm::vec2* CScene::getMousePosition () {
     return &this->m_mousePosition;
 }
 
-glm::vec2* CScene::getMousePositionLast ()
-{
+glm::vec2* CScene::getMousePositionLast () {
     return &this->m_mousePositionLast;
 }
 
-glm::vec2* CScene::getParallaxDisplacement ()
-{
+glm::vec2* CScene::getParallaxDisplacement () {
     return &this->m_parallaxDisplacement;
 }
 

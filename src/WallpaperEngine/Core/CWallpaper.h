@@ -4,28 +4,35 @@
 
 #include "CProject.h"
 
-namespace WallpaperEngine::Core
-{
-    class CProject;
+namespace WallpaperEngine::Core {
+class CProject;
 
-    class CWallpaper
-    {
-    public:
-        template<class T> const T* as () const { assert (is <T> ()); return (const T*) this; }
-        template<class T> T* as () { assert (is <T> ()); return (T*) this; }
+class CWallpaper {
+  public:
+    template <class T> const T* as () const {
+        assert (is<T> ());
+        return reinterpret_cast<const T*> (this);
+    }
 
-        template<class T> bool is () { return this->m_type == T::Type; }
+    template <class T> T* as () {
+        assert (is<T> ());
+        return reinterpret_cast<T*> (this);
+    }
 
-        CWallpaper (std::string type, CProject& project);
+    template <class T> bool is () {
+        return this->m_type == T::Type;
+    }
 
-        CProject& getProject () const;
+    CWallpaper (std::string type, CProject& project);
 
-    protected:
-        friend class CProject;
+    CProject& getProject () const;
 
-    private:
-        CProject& m_project;
+  protected:
+    friend class CProject;
 
-        std::string m_type;
-    };
-}
+  private:
+    CProject& m_project;
+
+    std::string m_type;
+};
+} // namespace WallpaperEngine::Core

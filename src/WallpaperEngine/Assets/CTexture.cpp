@@ -1,53 +1,37 @@
-#include "common.h"
 #include "CTexture.h"
+#include "common.h"
 
-#include <string>
 #include <cstring>
 #include <lz4.h>
+#include <string>
 
 using namespace WallpaperEngine::Assets;
 
-CTexture::CTexture (const void* fileData) :
-    m_resolution ()
-{
+CTexture::CTexture (const void* fileData) : m_resolution () {
     // ensure the header is parsed
-    this->m_header = parseHeader (static_cast <const char*> (fileData));
+    this->m_header = parseHeader (static_cast<const char*> (fileData));
 
     GLint internalFormat;
 
-    if (this->isAnimated ())
-    {
-        this->m_resolution = {
-            this->m_header->textureWidth, this->m_header->textureHeight,
-            this->m_header->gifWidth, this->m_header->gifHeight
-        };
-    }
-    else
-    {
-        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
-        {
+    if (this->isAnimated ()) {
+        this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->gifWidth,
+                              this->m_header->gifHeight};
+    } else {
+        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
             // wpengine-texture format always has one mipmap
             // get first image size
             auto element = this->m_header->images.find (0)->second.begin ();
 
             // set the texture resolution
-            this->m_resolution = {
-                (*element)->width, (*element)->height,
-                this->m_header->width, this->m_header->height
-            };
-        }
-        else
-        {
+            this->m_resolution = {(*element)->width, (*element)->height, this->m_header->width, this->m_header->height};
+        } else {
             // set the texture resolution
-            this->m_resolution = {
-                this->m_header->textureWidth, this->m_header->textureHeight,
-                this->m_header->width, this->m_header->height
-            };
+            this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->width,
+                                  this->m_header->height};
         }
     }
 
-    if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
-    {
+    if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
         internalFormat = GL_RGBA8;
         // set some extra information too as it's used for image sizing
         // this ensures that a_TexCoord uses the full image instead of just part of it
@@ -56,33 +40,16 @@ CTexture::CTexture (const void* fileData) :
         this->m_header->height = this->m_header->mipmaps [0]->height;
         this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
         this->m_header->textureHeight = this->m_header->mipmaps [0]->height;*/
-    }
-    else
-    {
+    } else {
         // detect the image format and hand it to openGL to be used
-        switch (this->m_header->format)
-        {
-        case TextureFormat::DXT5:
-            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-            break;
-        case TextureFormat::DXT3:
-            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-            break;
-        case TextureFormat::DXT1:
-            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-            break;
-        case TextureFormat::ARGB8888:
-            internalFormat = GL_RGBA8;
-            break;
-        case TextureFormat::R8:
-            internalFormat = GL_R8;
-            break;
-        case TextureFormat::RG88:
-            internalFormat = GL_RG8;
-            break;
-        default:
-            delete this->m_header;
-            sLog.exception ("Cannot determine texture format");
+        switch (this->m_header->format) {
+            case TextureFormat::DXT5: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+            case TextureFormat::DXT3: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+            case TextureFormat::DXT1: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+            case TextureFormat::ARGB8888: internalFormat = GL_RGBA8; break;
+            case TextureFormat::R8: internalFormat = GL_R8; break;
+            case TextureFormat::RG88: internalFormat = GL_RG8; break;
+            default: delete this->m_header; sLog.exception ("Cannot determine texture format");
         }
     }
 
@@ -94,8 +61,7 @@ CTexture::CTexture (const void* fileData) :
     auto imgCur = this->m_header->images.begin ();
     auto imgEnd = this->m_header->images.end ();
 
-    for (int index = 0; imgCur != imgEnd; imgCur ++, index ++)
-    {
+    for (int index = 0; imgCur != imgEnd; ++imgCur, index++) {
         // bind the texture to assign information to it
         glBindTexture (GL_TEXTURE_2D, this->m_textureID [index]);
 
@@ -104,35 +70,28 @@ CTexture::CTexture (const void* fileData) :
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
 
         // setup texture wrapping and filtering
-        if (this->m_header->flags & TextureFlags::ClampUVs)
-        {
+        if (this->m_header->flags & TextureFlags::ClampUVs) {
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        }
-        else
-        {
+        } else {
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         }
 
-        if (this->m_header->flags & TextureFlags::NoInterpolation)
-        {
+        if (this->m_header->flags & TextureFlags::NoInterpolation) {
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        }
-        else
-        {
+        } else {
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         }
 
         glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
 
-        auto cur = (*imgCur).second.begin ();
-        auto end = (*imgCur).second.end ();
+        auto cur = imgCur->second.begin ();
+        auto end = imgCur->second.end ();
 
-        for (int32_t level = 0; cur != end; cur ++, level ++)
-        {
+        for (int32_t level = 0; cur != end; ++cur, level++) {
             FIBITMAP* bitmap = nullptr;
             FIBITMAP* converted = nullptr;
             FIMEMORY* memory = nullptr;
@@ -142,9 +101,9 @@ CTexture::CTexture (const void* fileData) :
             uint32_t bufferSize = (*cur)->uncompressedSize;
             GLenum textureFormat = GL_RGBA;
 
-            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
-            {
-                memory = FreeImage_OpenMemory (reinterpret_cast <BYTE *> ((*cur)->uncompressedData), (*cur)->uncompressedSize);
+            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
+                memory =
+                    FreeImage_OpenMemory (reinterpret_cast<BYTE*> ((*cur)->uncompressedData), (*cur)->uncompressedSize);
 
                 // load the image and setup pointers so they can be used
                 bitmap = FreeImage_LoadFromMemory (this->m_header->freeImageFormat, memory);
@@ -158,47 +117,33 @@ CTexture::CTexture (const void* fileData) :
                 height = FreeImage_GetHeight (converted);
                 bufferSize = FreeImage_GetMemorySize (converted);
                 textureFormat = GL_BGRA;
-            }
-            else
-            {
-                if (this->m_header->format == TextureFormat::R8)
-                {
+            } else {
+                if (this->m_header->format == TextureFormat::R8) {
                     // red textures are 1-byte-per-pixel, so it's alignment has to be set manually
                     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
                     textureFormat = GL_RED;
-                }
-                else if (this->m_header->format == TextureFormat::RG88)
+                } else if (this->m_header->format == TextureFormat::RG88)
                     textureFormat = GL_RG;
             }
 
-            switch (internalFormat)
-            {
-            case GL_RGBA8:
-            case GL_RG8:
-            case GL_R8:
-                glTexImage2D (
-                    GL_TEXTURE_2D, level, internalFormat,
-                    width, height, 0,
-                    textureFormat, GL_UNSIGNED_BYTE,
-                    dataptr
-                );
-                break;
-            case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-            case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-            case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-                glCompressedTexImage2D (
-                    GL_TEXTURE_2D, level, internalFormat,
-                    width, height, 0,
-                    bufferSize, dataptr
-                );
-                break;
-            default:
-                sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
+            switch (internalFormat) {
+                case GL_RGBA8:
+                case GL_RG8:
+                case GL_R8:
+                    glTexImage2D (GL_TEXTURE_2D, level, internalFormat, width, height, 0, textureFormat,
+                                  GL_UNSIGNED_BYTE, dataptr);
+                    break;
+                case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+                case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+                case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+                    glCompressedTexImage2D (GL_TEXTURE_2D, level, internalFormat, width, height, 0, bufferSize,
+                                            dataptr);
+                    break;
+                default: sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
             }
 
             // freeimage buffer won't be used anymore, so free memory
-            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN)
-            {
+            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
                 FreeImage_Unload (bitmap);
                 FreeImage_Unload (converted);
                 FreeImage_CloseMemory (memory);
@@ -207,8 +152,7 @@ CTexture::CTexture (const void* fileData) :
     }
 }
 
-CTexture::~CTexture ()
-{
+CTexture::~CTexture () {
     if (this->getHeader () == nullptr)
         return;
 
@@ -216,8 +160,7 @@ CTexture::~CTexture ()
     delete this->getHeader ();
 }
 
-const GLuint CTexture::getTextureID (uint32_t imageIndex) const
-{
+const GLuint CTexture::getTextureID (uint32_t imageIndex) const {
     // ensure we do not go out of bounds
     if (imageIndex > this->m_header->imageCount)
         return this->m_textureID [0];
@@ -225,87 +168,73 @@ const GLuint CTexture::getTextureID (uint32_t imageIndex) const
     return this->m_textureID [imageIndex];
 }
 
-const uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const
-{
+const uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const {
     if (imageIndex > this->m_header->imageCount)
         return this->getHeader ()->textureWidth;
 
     return (*this->m_header->images [imageIndex].begin ())->width;
 }
 
-const uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const
-{
+const uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const {
     if (imageIndex > this->m_header->imageCount)
         return this->getHeader ()->textureHeight;
 
     return (*this->m_header->images [imageIndex].begin ())->height;
 }
 
-const uint32_t CTexture::getRealWidth () const
-{
+const uint32_t CTexture::getRealWidth () const {
     return this->isAnimated () ? this->getHeader ()->gifWidth : this->getHeader ()->width;
 }
 
-const uint32_t CTexture::getRealHeight () const
-{
+const uint32_t CTexture::getRealHeight () const {
     return this->isAnimated () ? this->getHeader ()->gifHeight : this->getHeader ()->height;
 }
 
-const ITexture::TextureFormat CTexture::getFormat () const
-{
+const ITexture::TextureFormat CTexture::getFormat () const {
     return this->getHeader ()->format;
 }
 
-const ITexture::TextureFlags CTexture::getFlags () const
-{
+const ITexture::TextureFlags CTexture::getFlags () const {
     return this->getHeader ()->flags;
 }
 
-const CTexture::TextureHeader* CTexture::getHeader () const
-{
+const CTexture::TextureHeader* CTexture::getHeader () const {
     return this->m_header;
 }
 
-const glm::vec4* CTexture::getResolution () const
-{
+const glm::vec4* CTexture::getResolution () const {
     return &this->m_resolution;
 }
 
-const std::vector<ITexture::TextureFrame*>& CTexture::getFrames () const
-{
+const std::vector<ITexture::TextureFrame*>& CTexture::getFrames () const {
     return this->getHeader ()->frames;
 }
 
-const bool CTexture::isAnimated () const
-{
+const bool CTexture::isAnimated () const {
     return this->getHeader ()->isAnimated ();
 }
 
-CTexture::TextureMipmap::TextureMipmap ()
-= default;
+CTexture::TextureMipmap::TextureMipmap () = default;
 
-CTexture::TextureMipmap::~TextureMipmap ()
-{
+CTexture::TextureMipmap::~TextureMipmap () {
     if (this->compression == 1)
         delete this->compressedData;
 
     delete this->uncompressedData;
 }
 
-void CTexture::TextureMipmap::decompressData ()
-{
-    if (this->compression == 1)
-    {
-        this->uncompressedData = new char [this->uncompressedSize];
-
-        int result = LZ4_decompress_safe (
-            this->compressedData, this->uncompressedData,
-            this->compressedSize, this->uncompressedSize
-        );
-
-        if (!result)
-            sLog.exception ("Cannot decompress texture data, LZ4_decompress_safe returned an error");
+void CTexture::TextureMipmap::decompressData () {
+    if (this->compression != 1) {
+        return;
     }
+
+    this->uncompressedData = new char [this->uncompressedSize];
+
+    const int result = LZ4_decompress_safe (this->compressedData, this->uncompressedData, this->compressedSize,
+                                            this->uncompressedSize);
+
+    if (!result)
+        sLog.exception ("Cannot decompress texture data, LZ4_decompress_safe returned an error");
 }
 
 CTexture::TextureFrame::TextureFrame () :
@@ -316,12 +245,7 @@ CTexture::TextureFrame::TextureFrame () :
     width1 (0),
     width2 (0),
     height1 (0),
-    height2 (0)
-{
-}
-
-CTexture::TextureFrame::~TextureFrame ()
-= default;
+    height2 (0) {}
 
 CTexture::TextureHeader::TextureHeader () :
     flags (NoFlags),
@@ -333,130 +257,109 @@ CTexture::TextureHeader::TextureHeader () :
     gifHeight (0),
     format (TextureFormat::UNKNOWN),
     imageCount (0),
-    mipmapCount (0)
-{
-}
+    mipmapCount (0) {}
 
-CTexture::TextureHeader::~TextureHeader ()
-{
-    for (const auto& imgCur : this->images)
-        for (auto cur : imgCur.second)
+CTexture::TextureHeader::~TextureHeader () {
+    for (const auto& [index, mipmaps] : this->images)
+        for (const auto cur : mipmaps)
             delete cur;
 }
 
-CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
-{
+CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     // check the magic value on the header first
-    if (memcmp (fileData, "TEXV0005", 9) != 0)
+    if (strncmp (fileData, "TEXV0005", 9) != 0)
         sLog.exception ("unexpected texture container type: ", std::string_view (fileData, 9));
     // jump to the next value
     fileData += 9;
     // check the sub-magic value on the header
-    if (memcmp (fileData, "TEXI0001", 9) != 0)
+    if (strncmp (fileData, "TEXI0001", 9) != 0)
         sLog.exception ("unexpected texture sub-container type: ", std::string_view (fileData, 9));
     // jump through the string again
     fileData += 9;
 
     auto* header = new TextureHeader;
 
-    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
-    header->format = static_cast <TextureFormat>(*pointer ++);
-    header->flags = static_cast <TextureFlags> (*pointer ++);
-    header->textureWidth = *pointer ++;
-    header->textureHeight = *pointer ++;
-    header->width = *pointer ++;
-    header->height = *pointer ++;
-    pointer ++; // ignore some more bytes
+    header->format = static_cast<TextureFormat> (*pointer++);
+    header->flags = static_cast<TextureFlags> (*pointer++);
+    header->textureWidth = *pointer++;
+    header->textureHeight = *pointer++;
+    header->width = *pointer++;
+    header->height = *pointer++;
+    pointer++; // ignore some more bytes
 
     // now we're going to parse some more data that is string
     // so get the current position back as string
-    fileData = reinterpret_cast <const char*> (pointer);
+    fileData = reinterpret_cast<const char*> (pointer);
     // get the position of what comes after the texture data
-    pointer = reinterpret_cast <const uint32_t*> (fileData + 9);
+    pointer = reinterpret_cast<const uint32_t*> (fileData + 9);
 
-    if (memcmp (fileData, "TEXB0003", 9) == 0)
-    {
+    if (strncmp (fileData, "TEXB0003", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0003;
-        header->imageCount = *pointer ++;
-        header->freeImageFormat = static_cast <FREE_IMAGE_FORMAT> (*pointer++);
-    }
-    else if(memcmp (fileData, "TEXB0002", 9) == 0)
-    {
+        header->imageCount = *pointer++;
+        header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
+    } else if (strncmp (fileData, "TEXB0002", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0002;
-        header->imageCount = *pointer ++;
-    }
-    else if (memcmp (fileData, "TEXB0001", 9) == 0)
-    {
+        header->imageCount = *pointer++;
+    } else if (strncmp (fileData, "TEXB0001", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0001;
-        header->imageCount = *pointer ++;
-    }
-    else
-    {
+        header->imageCount = *pointer++;
+    } else {
         delete header;
         sLog.exception ("unknown texture format type: ", std::string_view (fileData, 9));
     }
 
-    for (uint32_t image = 0; image < header->imageCount; image ++)
-    {
+    for (uint32_t image = 0; image < header->imageCount; image++) {
         // read the number of mipmaps available for this image
-        header->mipmapCount = *pointer ++;
-        std::vector <TextureMipmap*> mipmaps;
+        header->mipmapCount = *pointer++;
+        std::vector<TextureMipmap*> mipmaps;
 
-        fileData = reinterpret_cast <const char*> (pointer);
+        fileData = reinterpret_cast<const char*> (pointer);
 
-        for (uint32_t i = 0; i < header->mipmapCount; i ++)
+        for (uint32_t i = 0; i < header->mipmapCount; i++)
             mipmaps.emplace_back (parseMipmap (header, &fileData));
 
         // add the pixmaps back
-        header->images.insert (std::pair <uint32_t, std::vector <TextureMipmap*>> (image, mipmaps));
+        header->images.insert (std::pair (image, mipmaps));
 
-        pointer = reinterpret_cast <const uint32_t*> (fileData);
+        pointer = reinterpret_cast<const uint32_t*> (fileData);
     }
 
     // gifs have extra information after the mipmaps
-    if (header->isAnimated () == true)
-    {
-        if (memcmp (fileData, "TEXS0002", 9) == 0)
-        {
+    if (header->isAnimated () == true) {
+        if (strncmp (fileData, "TEXS0002", 9) == 0) {
             header->animatedVersion = AnimatedVersion::TEXS0002;
-        }
-        else if (memcmp (fileData, "TEXS0003", 9) == 0)
-        {
+        } else if (strncmp (fileData, "TEXS0003", 9) == 0) {
             header->animatedVersion = AnimatedVersion::TEXS0003;
-        }
-        else
-        {
+        } else {
             delete header;
             sLog.exception ("found animation information of unknown type: ", std::string_view (fileData, 9));
         }
 
         // get an integer pointer back to read the frame count
-        pointer = reinterpret_cast <const uint32_t*> (fileData + 9);
+        pointer = reinterpret_cast<const uint32_t*> (fileData + 9);
         uint32_t framecount = *pointer++;
 
-        if (header->animatedVersion == AnimatedVersion::TEXS0003)
-        {
+        if (header->animatedVersion == AnimatedVersion::TEXS0003) {
             // ignore two extra integers as those are width and height of the git
-            header->gifWidth = *pointer ++;
-            header->gifHeight = *pointer ++;
+            header->gifWidth = *pointer++;
+            header->gifHeight = *pointer++;
         }
 
         // get back the pointer into filedata
-        fileData = reinterpret_cast <const char*> (pointer);
+        fileData = reinterpret_cast<const char*> (pointer);
 
-        while (framecount > 0)
-        {
+        while (framecount > 0) {
             // add the frame to the list
             header->frames.push_back (parseAnimation (&fileData));
 
-            framecount --;
+            framecount--;
         }
 
         // ensure gif width and height is right for TEXS0002
-        if (header->animatedVersion == AnimatedVersion::TEXS0002)
-        {
-            TextureFrame* first = *header->frames.begin ();
+        if (header->animatedVersion == AnimatedVersion::TEXS0002) {
+            const TextureFrame* first = *header->frames.begin ();
 
             header->gifWidth = first->width1;
             header->gifHeight = first->height1;
@@ -466,50 +369,47 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData)
     return header;
 }
 
-CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData)
-{
+CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData) {
     const char* fileData = *originalFileData;
     // get back the pointer into integer
-    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
     // start reading frame information
-    auto* frame = new TextureFrame();
+    auto* frame = new TextureFrame ();
 
     frame->frameNumber = *pointer++;
 
     // reinterpret the pointer into float
-    const auto* fPointer = reinterpret_cast <const float*> (pointer);
+    const auto* fPointer = reinterpret_cast<const float*> (pointer);
 
-    frame->frametime = *fPointer ++;
-    frame->x = *fPointer ++;
-    frame->y = *fPointer ++;
-    frame->width1 = *fPointer ++;
-    frame->width2 = *fPointer ++;
-    frame->height2 = *fPointer ++;
-    frame->height1 = *fPointer ++;
+    frame->frametime = *fPointer++;
+    frame->x = *fPointer++;
+    frame->y = *fPointer++;
+    frame->width1 = *fPointer++;
+    frame->width2 = *fPointer++;
+    frame->height2 = *fPointer++;
+    frame->height1 = *fPointer++;
 
     // get back the pointer into fileData so it can be reused later
-    *originalFileData = reinterpret_cast <const char*> (fPointer);
+    *originalFileData = reinterpret_cast<const char*> (fPointer);
 
     return frame;
 }
 
-CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const char** originalFileData)
-{
+CTexture::TextureMipmap* CTexture::parseMipmap (const TextureHeader* header, const char** originalFileData) {
     auto* mipmap = new TextureMipmap ();
 
     // get the current position
     const char* fileData = *originalFileData;
 
     // get an integer pointer
-    const auto* pointer = reinterpret_cast <const uint32_t*> (fileData);
+    const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
     mipmap->width = *pointer++;
     mipmap->height = *pointer++;
 
     if (header->containerVersion == ContainerVersion::TEXB0002 ||
-        header->containerVersion == ContainerVersion::TEXB0003)
-    {
+        header->containerVersion == ContainerVersion::TEXB0003) {
         mipmap->compression = *pointer++;
         mipmap->uncompressedSize = *pointer++;
     }
@@ -517,10 +417,9 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const cha
     mipmap->compressedSize = *pointer++;
 
     // get back a normal char pointer
-    fileData = reinterpret_cast <const char*> (pointer);
+    fileData = reinterpret_cast<const char*> (pointer);
 
-    if (mipmap->compression == 0)
-    {
+    if (mipmap->compression == 0) {
         // this might be better named as mipmap_bytes_size instead of compressedSize
         // as in uncompressed files this variable actually holds the file length
         mipmap->uncompressedSize = mipmap->compressedSize;
@@ -528,8 +427,7 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const cha
 
     mipmap->uncompressedData = new char [mipmap->uncompressedSize];
 
-    if (mipmap->compression == 1)
-    {
+    if (mipmap->compression == 1) {
         mipmap->compressedData = new char [mipmap->compressedSize];
 
         memcpy (mipmap->compressedData, fileData, mipmap->compressedSize);
@@ -537,9 +435,7 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const cha
         mipmap->decompressData ();
         // advance to the end of the mipmap
         fileData += mipmap->compressedSize;
-    }
-    else
-    {
+    } else {
         memcpy (mipmap->uncompressedData, fileData, mipmap->uncompressedSize);
         // advance to the end of the mipmap
         fileData += mipmap->uncompressedSize;
@@ -551,7 +447,6 @@ CTexture::TextureMipmap* CTexture::parseMipmap (TextureHeader* header, const cha
     return mipmap;
 }
 
-bool CTexture::TextureHeader::isAnimated () const
-{
+bool CTexture::TextureHeader::isAnimated () const {
     return this->flags & TextureFlags::IsGif;
 }

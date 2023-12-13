@@ -5,8 +5,7 @@
 
 using namespace WallpaperEngine;
 
-std::string FileSystem::loadFullFile (const std::string& file, WallpaperEngine::Assets::CContainer* containers)
-{
+std::string FileSystem::loadFullFile (const std::string& file, const WallpaperEngine::Assets::CContainer* containers) {
     uint32_t length = 0;
     const void* contents = containers->readFile (file, &length);
 

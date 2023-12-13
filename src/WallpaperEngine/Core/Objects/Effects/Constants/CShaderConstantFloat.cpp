@@ -2,14 +2,9 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantFloat::CShaderConstantFloat (float value) :
-    CShaderConstant (Type),
-    m_value (value)
-{
-}
+CShaderConstantFloat::CShaderConstantFloat (float value) : CShaderConstant (Type), m_value (value) {}
 
-float* CShaderConstantFloat::getValue ()
-{
+float* CShaderConstantFloat::getValue () {
     return &this->m_value;
 }
 

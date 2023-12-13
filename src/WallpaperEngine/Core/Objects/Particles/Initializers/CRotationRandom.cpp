@@ -4,10 +4,9 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id)
-{
-    auto min_it = data.find ("minVector");
-    auto max_it = data.find ("max");
+CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id) {
+    const auto min_it = data.find ("minVector");
+    const auto max_it = data.find ("max");
 
     glm::vec3 minVector = glm::vec3 ();
     glm::vec3 maxVector = glm::vec3 ();
@@ -16,24 +15,18 @@ CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id)
     bool isMinVector = false;
     bool isMaxVector = false;
 
-    if (min_it != data.end () && min_it->is_string ())
-    {
+    if (min_it != data.end () && min_it->is_string ()) {
         minVector = WallpaperEngine::Core::aToVector3 (*min_it);
         isMinVector = true;
-    }
-    else if (min_it != data.end () && min_it->is_number ())
-    {
+    } else if (min_it != data.end () && min_it->is_number ()) {
         minNumber = *min_it;
         isMinVector = false;
     }
 
-    if (max_it != data.end () && max_it->is_string ())
-    {
+    if (max_it != data.end () && max_it->is_string ()) {
         maxVector = WallpaperEngine::Core::aToVector3 (*max_it);
         isMaxVector = true;
-    }
-    else if(max_it != data.end () && max_it->is_number ())
-    {
+    } else if (max_it != data.end () && max_it->is_number ()) {
         maxNumber = *max_it;
         isMaxVector = false;
     }
@@ -41,61 +34,44 @@ CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id)
     return new CRotationRandom (id, minVector, minNumber, isMinVector, maxVector, maxNumber, isMaxVector);
 }
 
-CRotationRandom::CRotationRandom (
-    uint32_t id,
-    glm::vec3 minVector,
-    double minNumber,
-    bool isMinimumVector,
-    glm::vec3 maxVector,
-    double maxNumber,
-    bool isMaximumVector
-) :
+CRotationRandom::CRotationRandom (uint32_t id, glm::vec3 minVector, double minNumber, bool isMinimumVector,
+                                  glm::vec3 maxVector, double maxNumber, bool isMaximumVector) :
     CInitializer (id, "rotationrandom"),
     m_minVector (minVector),
     m_maxVector (maxVector),
     m_minNumber (minNumber),
     m_maxNumber (maxNumber),
     m_isMinimumVector (isMinimumVector),
-    m_isMaximumVector (isMaximumVector)
-{
-}
+    m_isMaximumVector (isMaximumVector) {}
 
-glm::vec3 CRotationRandom::getMinimumVector () const
-{
+glm::vec3 CRotationRandom::getMinimumVector () const {
     return this->m_minVector;
 }
 
-glm::vec3 CRotationRandom::getMaximumVector () const
-{
+glm::vec3 CRotationRandom::getMaximumVector () const {
     return this->m_maxVector;
 }
 
-double CRotationRandom::getMinimumNumber () const
-{
+double CRotationRandom::getMinimumNumber () const {
     return this->m_minNumber;
 }
 
-double CRotationRandom::getMaximumNumber () const
-{
+double CRotationRandom::getMaximumNumber () const {
     return this->m_maxNumber;
 }
 
-bool CRotationRandom::isMinimumVector () const
-{
+bool CRotationRandom::isMinimumVector () const {
     return this->m_isMinimumVector;
 }
 
-bool CRotationRandom::isMinimumNumber () const
-{
+bool CRotationRandom::isMinimumNumber () const {
     return !this->m_isMinimumVector;
 }
 
-bool CRotationRandom::isMaximumVector () const
-{
+bool CRotationRandom::isMaximumVector () const {
     return this->m_isMaximumVector;
 }
 
-bool CRotationRandom::isMaximumNumber () const
-{
+bool CRotationRandom::isMaximumNumber () const {
     return !this->m_isMaximumVector;
 }

@@ -6,11 +6,7 @@ using namespace WallpaperEngine::Render::Drivers::Output;
 
 COutputViewport::COutputViewport (glm::ivec4 viewport, std::string name, bool single) :
     viewport (viewport),
-    name (std::move(name)),
-    single (single)
-{
-}
+    name (std::move (name)),
+    single (single) {}
 
-COutputViewport::~COutputViewport ()
-{
-}
+COutputViewport::~COutputViewport () {}

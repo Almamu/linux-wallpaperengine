@@ -2,32 +2,30 @@
 
 #include "CUserSettingValue.h"
 
-namespace WallpaperEngine::Core::Projects
-{
-    class CProperty;
+namespace WallpaperEngine::Core::Projects {
+class CProperty;
 }
 
-namespace WallpaperEngine::Core::UserSettings
-{
-    class CUserSettingBoolean : public CUserSettingValue
-    {
-    public:
-        typedef bool data_type;
+namespace WallpaperEngine::Core::UserSettings {
+class CUserSettingBoolean : public CUserSettingValue {
+  public:
+    typedef bool data_type;
 
-        static CUserSettingBoolean* fromJSON (nlohmann::json& data);
-        static CUserSettingBoolean* fromScalar (bool value);
-        static std::string Type;
+    static CUserSettingBoolean* fromJSON (nlohmann::json& data);
+    static CUserSettingBoolean* fromScalar (bool value);
+    static std::string Type;
 
-        bool processValue (const std::vector<Projects::CProperty*>& properties);
-        bool getDefaultValue () const;
+    bool processValue (const std::vector<Projects::CProperty*>& properties);
+    bool getDefaultValue () const;
 
-    private:
-        CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source, std::string expectedValue);
+  private:
+    CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source,
+                         std::string expectedValue);
 
-        bool m_default;
-        bool m_hasCondition;
-        bool m_hasSource;
-        std::string m_source;
-        std::string m_expectedValue;
-    };
-}
+    bool m_default;
+    bool m_hasCondition;
+    bool m_hasSource;
+    std::string m_source;
+    std::string m_expectedValue;
+};
+} // namespace WallpaperEngine::Core::UserSettings

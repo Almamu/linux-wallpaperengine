@@ -2,58 +2,39 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection (uint32_t width, uint32_t height) :
-    m_isAuto (false),
-    m_width (width),
-    m_height (height)
-{
-}
+CProjection::CProjection (uint32_t width, uint32_t height) : m_isAuto (false), m_width (width), m_height (height) {}
 
-CProjection::CProjection (bool isAuto) :
-    m_isAuto (isAuto),
-    m_width (0),
-    m_height (0)
-{
-}
+CProjection::CProjection (bool isAuto) : m_isAuto (isAuto), m_width (0), m_height (0) {}
 
-const uint32_t& CProjection::getWidth () const
-{
+const uint32_t& CProjection::getWidth () const {
     return this->m_width;
 }
 
-const uint32_t& CProjection::getHeight () const
-{
+const uint32_t& CProjection::getHeight () const {
     return this->m_height;
 }
 
-bool CProjection::isAuto () const
-{
+bool CProjection::isAuto () const {
     return this->m_isAuto;
 }
 
-void CProjection::setWidth (uint32_t width)
-{
+void CProjection::setWidth (uint32_t width) {
     this->m_width = width;
 }
 
-void CProjection::setHeight (uint32_t height)
-{
+void CProjection::setHeight (uint32_t height) {
     this->m_height = height;
 }
 
-CProjection* CProjection::fromJSON (json data)
-{
-    auto auto_it = jsonFindDefault <bool> (data, "auto", false);
+CProjection* CProjection::fromJSON (json data) {
+    const auto auto_it = jsonFindDefault<bool> (data, "auto", false);
 
-    auto width_it = jsonFindRequired (data, "width", "Projection must have width");
-    auto height_it = jsonFindRequired (data, "height", "Projection must have height");
+    const auto width_it = jsonFindRequired (data, "width", "Projection must have width");
+    const auto height_it = jsonFindRequired (data, "height", "Projection must have height");
 
     // TODO: PROPERLY SUPPORT AUTO-DETECTING SIZE
     if (auto_it)
         return new CProjection (true);
-    else
-        return new CProjection (
-            *width_it,
-            *height_it
-        );
+
+    return new CProjection (*width_it, *height_it);
 }

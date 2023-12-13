@@ -1,6 +1,6 @@
 #include "CX11OpenGLDriver.h"
-#include "common.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#include "common.h"
 #include <FreeImage.h>
 
 #define GLFW_EXPOSE_NATIVE_X11
@@ -10,8 +10,7 @@
 
 using namespace WallpaperEngine::Render::Drivers;
 
-void CustomGLFWErrorHandler (int errorCode, const char* reason)
-{
+void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
@@ -19,8 +18,7 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
     m_frameCounter (0),
     m_fullscreenDetector (context, *this),
     m_context (context),
-    CVideoDriver (app)
-{
+    CVideoDriver (app) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw
@@ -38,8 +36,7 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
     glfwWindowHintString (GLFW_X11_INSTANCE_NAME, "linux-wallpaperengine");
 
     // for forced window mode, we can set some hints that'll help position the window
-    if (context.settings.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW)
-    {
+    if (context.settings.render.mode == Application::CApplicationContext::EXPLICIT_WINDOW) {
         glfwWindowHint (GLFW_RESIZABLE, GLFW_FALSE);
         glfwWindowHint (GLFW_DECORATED, GLFW_FALSE);
         glfwWindowHint (GLFW_FLOATING, GLFW_TRUE);
@@ -59,75 +56,62 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
     glfwMakeContextCurrent (this->m_window);
 
     // initialize glew for rendering
-    GLenum result = glewInit ();
+    const GLenum result = glewInit ();
 
     if (result != GLEW_OK)
-        sLog.error("Failed to initialize GLEW: ", glewGetErrorString (result));
+        sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
 
     // initialize free image
     FreeImage_Initialise (TRUE);
 
     // setup output
     if (context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW ||
-        context.settings.render.mode == CApplicationContext::NORMAL_WINDOW)
-    {
+        context.settings.render.mode == CApplicationContext::NORMAL_WINDOW) {
         m_output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (context, *this);
-    }
-    else
-    {
+    } else {
         m_output = new WallpaperEngine::Render::Drivers::Output::CX11Output (context, *this);
     }
 }
 
-CX11OpenGLDriver::~CX11OpenGLDriver ()
-{
+CX11OpenGLDriver::~CX11OpenGLDriver () {
     glfwTerminate ();
-    FreeImage_DeInitialise();
+    FreeImage_DeInitialise ();
 }
 
-Detectors::CFullScreenDetector& CX11OpenGLDriver::getFullscreenDetector ()
-{
+Detectors::CFullScreenDetector& CX11OpenGLDriver::getFullscreenDetector () {
     return this->m_fullscreenDetector;
 }
 
-Output::COutput& CX11OpenGLDriver::getOutput ()
-{
+Output::COutput& CX11OpenGLDriver::getOutput () {
     return *this->m_output;
 }
 
-float CX11OpenGLDriver::getRenderTime () const
-{
-    return (float) glfwGetTime ();
+float CX11OpenGLDriver::getRenderTime () const {
+    return static_cast<float> (glfwGetTime ());
 }
 
-bool CX11OpenGLDriver::closeRequested ()
-{
+bool CX11OpenGLDriver::closeRequested () {
     return glfwWindowShouldClose (this->m_window);
 }
 
-void CX11OpenGLDriver::resizeWindow (glm::ivec2 size)
-{
+void CX11OpenGLDriver::resizeWindow (glm::ivec2 size) {
     glfwSetWindowSize (this->m_window, size.x, size.y);
 }
 
-void CX11OpenGLDriver::resizeWindow (glm::ivec4 sizeandpos)
-{
+void CX11OpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
-void CX11OpenGLDriver::showWindow ()
-{
+void CX11OpenGLDriver::showWindow () {
     glfwShowWindow (this->m_window);
 }
 
-void CX11OpenGLDriver::hideWindow ()
-{
+void CX11OpenGLDriver::hideWindow () {
     glfwHideWindow (this->m_window);
 }
 
-glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const
-{
+glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const {
     glm::ivec2 size;
 
     glfwGetFramebufferSize (this->m_window, &size.x, &size.y);
@@ -135,28 +119,24 @@ glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const
     return size;
 }
 
-uint32_t CX11OpenGLDriver::getFrameCounter () const
-{
+uint32_t CX11OpenGLDriver::getFrameCounter () const {
     return this->m_frameCounter;
 }
 
-void CX11OpenGLDriver::dispatchEventQueue()
-{
+void CX11OpenGLDriver::dispatchEventQueue () {
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
     startTime = this->getRenderTime ();
     // clear the screen
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto& viewport : this->m_output->getViewports ())
-        this->getApp ().update (viewport.second);
+    for (const auto& [screen, viewport] : this->m_output->getViewports ())
+        this->getApp ().update (viewport);
 
     // read the full texture into the image
     if (this->m_output->haveImageBuffer ())
-        glReadPixels (
-            0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
-            this->m_output->getImageBuffer ()
-        );
+        glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
+                      GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
 
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
@@ -167,7 +147,7 @@ void CX11OpenGLDriver::dispatchEventQueue()
     // poll for events
     glfwPollEvents ();
     // increase frame counter
-    this->m_frameCounter ++;
+    this->m_frameCounter++;
     // get the end time of the frame
     endTime = this->getRenderTime ();
 
@@ -176,12 +156,10 @@ void CX11OpenGLDriver::dispatchEventQueue()
         usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 }
 
-void* CX11OpenGLDriver::getProcAddress (const char* name) const
-{
-    return reinterpret_cast <void*> (glfwGetProcAddress (name));
+void* CX11OpenGLDriver::getProcAddress (const char* name) const {
+    return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-GLFWwindow* CX11OpenGLDriver::getWindow ()
-{
+GLFWwindow* CX11OpenGLDriver::getWindow () {
     return this->m_window;
 }

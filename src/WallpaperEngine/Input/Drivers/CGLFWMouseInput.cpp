@@ -1,5 +1,5 @@
-#include <glm/common.hpp>
 #include "CGLFWMouseInput.h"
+#include <glm/common.hpp>
 
 #include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
 
@@ -10,10 +10,8 @@ CGLFWMouseInput::CGLFWMouseInput (Render::Drivers::CX11OpenGLDriver* driver) :
     m_mousePosition (),
     m_driver (driver) {}
 
-void CGLFWMouseInput::update ()
-{
-    if (!this->m_driver->getApp ().getContext ().settings.mouse.enabled)
-    {
+void CGLFWMouseInput::update () {
+    if (!this->m_driver->getApp ().getContext ().settings.mouse.enabled) {
         this->m_reportedPosition = {0, 0};
         return;
     }
@@ -24,7 +22,6 @@ void CGLFWMouseInput::update ()
     this->m_reportedPosition = glm::mix (this->m_reportedPosition, this->m_mousePosition, 1.0);
 }
 
-glm::dvec2 CGLFWMouseInput::position() const
-{
+glm::dvec2 CGLFWMouseInput::position () const {
     return this->m_reportedPosition;
 }

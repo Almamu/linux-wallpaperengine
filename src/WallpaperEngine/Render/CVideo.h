@@ -7,32 +7,31 @@
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
 
-namespace WallpaperEngine::Render
-{
-    class CVideo : public CWallpaper
-    {
-    public:
-        CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode);
+namespace WallpaperEngine::Render {
+class CVideo final : public CWallpaper {
+  public:
+    CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+            const CWallpaperState::TextureUVsScaling& scalingMode);
 
-        Core::CVideo* getVideo ();
+    Core::CVideo* getVideo ();
 
-        uint32_t getWidth () const override;
-        uint32_t getHeight () const override;
+    uint32_t getWidth () const override;
+    uint32_t getHeight () const override;
 
-        void setSize (int64_t width, int64_t height);
+    void setSize (int64_t width, int64_t height);
 
-    protected:
-        void renderFrame (glm::ivec4 viewport) override;
+  protected:
+    void renderFrame (glm::ivec4 viewport) override;
 
-        friend class CWallpaper;
+    friend class CWallpaper;
 
-        static const std::string Type;
+    static const std::string Type;
 
-    private:
-        mpv_handle* m_mpv;
-        mpv_render_context* m_mpvGl;
+  private:
+    mpv_handle* m_mpv;
+    mpv_render_context* m_mpvGl;
 
-        int64_t m_width;
-        int64_t m_height;
-    };
-}
+    int64_t m_width;
+    int64_t m_height;
+};
+} // namespace WallpaperEngine::Render

@@ -6,37 +6,36 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 
-namespace WallpaperEngine::Core
-{
-    using json = nlohmann::json;
-    using namespace WallpaperEngine::Assets;
+namespace WallpaperEngine::Core {
+using json = nlohmann::json;
+using namespace WallpaperEngine::Assets;
 
-    class CWallpaper;
+class CWallpaper;
 
-    class CProject
-    {
-    public:
-        static CProject* fromFile (const std::string& filename, CContainer* container);
+class CProject {
+  public:
+    static CProject* fromFile (const std::string& filename, CContainer* container);
 
-        CWallpaper* getWallpaper () const;
+    CWallpaper* getWallpaper () const;
 
-        const std::string& getTitle () const;
-        const std::string& getType () const;
-        const std::vector<Projects::CProperty*>& getProperties () const;
+    const std::string& getTitle () const;
+    const std::string& getType () const;
+    const std::vector<Projects::CProperty*>& getProperties () const;
 
-        CContainer* getContainer ();
+    CContainer* getContainer ();
 
-    protected:
-        CProject (std::string title, std::string type, CContainer* container);
+  protected:
+    CProject (std::string title, std::string type, CContainer* container);
 
-        void setWallpaper (CWallpaper* wallpaper);
-        void insertProperty (Projects::CProperty* property);
-    private:
-        std::vector<Projects::CProperty*> m_properties;
+    void setWallpaper (CWallpaper* wallpaper);
+    void insertProperty (Projects::CProperty* property);
 
-        std::string m_title;
-        std::string m_type;
-        CWallpaper* m_wallpaper;
-        CContainer* m_container;
-    };
-}
+  private:
+    std::vector<Projects::CProperty*> m_properties;
+
+    std::string m_title;
+    std::string m_type;
+    CWallpaper* m_wallpaper;
+    CContainer* m_container;
+};
+} // namespace WallpaperEngine::Core

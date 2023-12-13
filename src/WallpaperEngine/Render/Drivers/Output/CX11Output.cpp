@@ -1,19 +1,18 @@
-#include "common.h"
 #include "CX11Output.h"
 #include "CX11OutputViewport.h"
+#include "common.h"
 
-#include <unistd.h>
-#include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
+#include <unistd.h>
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
-void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
-{
-    auto context = static_cast <CX11Output*> (userdata);
+void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
+    const auto context = static_cast<CX11Output*> (userdata);
 
     sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
 
@@ -21,23 +20,19 @@ void CustomXIOErrorExitHandler (Display* dsp, void* userdata)
     context->reset ();
 }
 
-int CustomXErrorHandler (Display* dpy, XErrorEvent* event)
-{
+int CustomXErrorHandler (Display* dpy, XErrorEvent* event) {
     sLog.debugerror ("Detected X error");
 
     return 0;
 }
 
-int CustomXIOErrorHandler (Display* dsp)
-{
+int CustomXIOErrorHandler (Display* dsp) {
     sLog.debugerror ("Detected X error");
 
     return 0;
 }
 
-CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) :
-    COutput (context, driver)
-{
+CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) : COutput (context, driver) {
     // do not use previous handler, it might stop the app under weird circumstances
     XSetErrorHandler (CustomXErrorHandler);
     XSetIOErrorHandler (CustomXIOErrorHandler);
@@ -45,13 +40,11 @@ CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) :
     this->loadScreenInfo ();
 }
 
-CX11Output::~CX11Output ()
-{
+CX11Output::~CX11Output () {
     this->free ();
 }
 
-void CX11Output::reset ()
-{
+void CX11Output::reset () {
     // first free whatever we have right now
     this->free ();
     // re-load screen info
@@ -60,11 +53,10 @@ void CX11Output::reset ()
     this->m_driver.getFullscreenDetector ().reset ();
 }
 
-void CX11Output::free ()
-{
+void CX11Output::free () {
     // go through all the viewports and free them
-    for(const auto& cur : this->m_viewports)
-        delete cur.second;
+    for (const auto& [screen, viewport] : this->m_viewports)
+        delete viewport;
 
     this->m_viewports.clear ();
 
@@ -76,28 +68,23 @@ void CX11Output::free ()
     XCloseDisplay (this->m_display);
 }
 
-void* CX11Output::getImageBuffer () const
-{
+void* CX11Output::getImageBuffer () const {
     return this->m_imageData;
 }
 
-bool CX11Output::renderVFlip () const
-{
+bool CX11Output::renderVFlip () const {
     return false;
 }
 
-bool CX11Output::renderMultiple () const
-{
+bool CX11Output::renderMultiple () const {
     return this->m_viewports.size () > 1;
 }
 
-bool CX11Output::haveImageBuffer () const
-{
+bool CX11Output::haveImageBuffer () const {
     return true;
 }
 
-void CX11Output::loadScreenInfo ()
-{
+void CX11Output::loadScreenInfo () {
     // reset the viewports
     this->m_viewports.clear ();
 
@@ -109,8 +96,7 @@ void CX11Output::loadScreenInfo ()
 
     int xrandr_result, xrandr_error;
 
-    if (!XRRQueryExtension (this->m_display, &xrandr_result, &xrandr_error))
-    {
+    if (!XRRQueryExtension (this->m_display, &xrandr_result, &xrandr_error)) {
         sLog.error ("XRandr is not present, cannot detect specified screens, running in window mode");
         return;
     }
@@ -120,15 +106,13 @@ void CX11Output::loadScreenInfo ()
     this->m_fullHeight = DisplayHeight (this->m_display, DefaultScreen (this->m_display));
     XRRScreenResources* screenResources = XRRGetScreenResources (this->m_display, DefaultRootWindow (this->m_display));
 
-    if (screenResources == nullptr)
-    {
+    if (screenResources == nullptr) {
         sLog.error ("Cannot detect screen sizes using xrandr, running in window mode");
         return;
     }
 
-    for (int i = 0; i < screenResources->noutput; i ++)
-    {
-        XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs [i]);
+    for (int i = 0; i < screenResources->noutput; i++) {
+        const XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs [i]);
 
         // screen not in use, ignore it
         if (info == nullptr || info->connection != RR_Connected)
@@ -136,30 +120,21 @@ void CX11Output::loadScreenInfo ()
 
         XRRCrtcInfo* crtc = XRRGetCrtcInfo (this->m_display, screenResources, info->crtc);
 
-	// screen not active, ignore it
-	if (crtc == nullptr)
-		continue;
+        // screen not active, ignore it
+        if (crtc == nullptr)
+            continue;
 
         // add the screen to the list of screens
-        this->m_screens.push_back (
-            new CX11OutputViewport
-            {
-                {crtc->x, crtc->y, crtc->width, crtc->height},
-                info->name
-            }
-        );
+        this->m_screens.push_back (new CX11OutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name});
 
         // only keep info of registered screens
-        if (this->m_context.settings.general.screenBackgrounds.find (info->name) != this->m_context.settings.general.screenBackgrounds.end ())
-        {
-            sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x", crtc->height);
+        if (this->m_context.settings.general.screenBackgrounds.find (info->name) !=
+            this->m_context.settings.general.screenBackgrounds.end ()) {
+            sLog.out ("Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x",
+                      crtc->height);
 
-            this->m_viewports[info->name] =
-                new CX11OutputViewport
-                {
-                    {crtc->x, crtc->y, crtc->width, crtc->height},
-                    info->name
-                };
+            this->m_viewports [info->name] =
+                new CX11OutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name};
         }
 
         XRRFreeCrtcInfo (crtc);
@@ -169,8 +144,7 @@ void CX11Output::loadScreenInfo ()
 
     bool any = false;
 
-    for (auto& o : this->m_screens)
-    {
+    for (const auto& o : this->m_screens) {
         const auto cur = this->m_context.settings.general.screenBackgrounds.find (o->name);
 
         if (cur == this->m_context.settings.general.screenBackgrounds.end ())
@@ -180,7 +154,7 @@ void CX11Output::loadScreenInfo ()
     }
 
     if (!any)
-        sLog.exception("No outputs could be initialized, please check the parameters and try again");
+        sLog.exception ("No outputs could be initialized, please check the parameters and try again");
 
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
@@ -192,26 +166,29 @@ void CX11Output::loadScreenInfo ()
     // allocate space for the image's data
     this->m_imageData = new char [this->m_fullWidth * this->m_fullHeight * 4];
     // create an image so we can copy it over
-    this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth, this->m_fullHeight, 32, 0);
+    this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth,
+                                  this->m_fullHeight, 32, 0);
     // setup driver's render changing the window's size
     this->m_driver.resizeWindow ({this->m_fullWidth, this->m_fullHeight});
 }
 
-void CX11Output::updateRender () const
-{
+void CX11Output::updateRender () const {
     // put the image back into the screen
-    XPutImage (this->m_display, this->m_pixmap, this->m_gc, this->m_image, 0, 0, 0, 0, this->m_fullWidth, this->m_fullHeight);
+    XPutImage (this->m_display, this->m_pixmap, this->m_gc, this->m_image, 0, 0, 0, 0, this->m_fullWidth,
+               this->m_fullHeight);
 
     // _XROOTPMAP_ID & ESETROOT_PMAP_ID allow other programs (compositors) to
     // edit the background. Without these, other programs will clear the screen.
     // it also forces the compositor to refresh the background (tested with picom)
-    Atom prop_root = XInternAtom(this->m_display, "_XROOTPMAP_ID", False);
-    Atom prop_esetroot = XInternAtom(this->m_display, "ESETROOT_PMAP_ID", False);
-    XChangeProperty(this->m_display, this->m_root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &this->m_pixmap, 1);
-    XChangeProperty(this->m_display, this->m_root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &this->m_pixmap, 1);
+    const Atom prop_root = XInternAtom (this->m_display, "_XROOTPMAP_ID", False);
+    const Atom prop_esetroot = XInternAtom (this->m_display, "ESETROOT_PMAP_ID", False);
+    XChangeProperty (this->m_display, this->m_root, prop_root, XA_PIXMAP, 32, PropModeReplace,
+                     (unsigned char*) &this->m_pixmap, 1);
+    XChangeProperty (this->m_display, this->m_root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace,
+                     (unsigned char*) &this->m_pixmap, 1);
 
-    XClearWindow(this->m_display, this->m_root);
-    XFlush(this->m_display);
+    XClearWindow (this->m_display, this->m_root);
+    XFlush (this->m_display);
 
     // check for fullscreen windows and wait until there's none fullscreen
     while (this->m_driver.getFullscreenDetector ().anythingFullscreen () && this->m_context.state.general.keepRunning)

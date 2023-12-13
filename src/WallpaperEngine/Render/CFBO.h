@@ -1,45 +1,45 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
-#include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Assets/ITexture.h"
+#include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
 
 using namespace WallpaperEngine::Assets;
 
-namespace WallpaperEngine::Render
-{
-    class CFBO : public ITexture
-    {
-    public:
-        CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
-		// TODO: ADD DESTRUCTOR TO FREE RESOURCES
+namespace WallpaperEngine::Render {
+class CFBO final : public ITexture {
+  public:
+    CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+          uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+    ~CFBO () override;
 
-        const std::string& getName () const;
-        const float& getScale () const;
-        const ITexture::TextureFormat getFormat () const override;
-        const ITexture::TextureFlags getFlags () const override;
-        GLuint getFramebuffer () const;
-        GLuint getDepthbuffer () const;
-        const GLuint getTextureID (uint32_t imageIndex = 0) const override;
-        const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
-        const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
-        const uint32_t getRealWidth () const override;
-        const uint32_t getRealHeight () const override;
-        const std::vector<TextureFrame*>& getFrames () const override;
-        const glm::vec4* getResolution () const override;
-        const bool isAnimated () const override;
+    // TODO: ADD DESTRUCTOR TO FREE RESOURCES
 
-    private:
+    const std::string& getName () const;
+    const float& getScale () const;
+    const ITexture::TextureFormat getFormat () const override;
+    const ITexture::TextureFlags getFlags () const override;
+    GLuint getFramebuffer () const;
+    GLuint getDepthbuffer () const;
+    const GLuint getTextureID (uint32_t imageIndex = 0) const override;
+    const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
+    const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
+    const uint32_t getRealWidth () const override;
+    const uint32_t getRealHeight () const override;
+    const std::vector<TextureFrame*>& getFrames () const override;
+    const glm::vec4* getResolution () const override;
+    const bool isAnimated () const override;
 
-        GLuint m_framebuffer;
-        GLuint m_depthbuffer;
-        GLuint m_texture;
-        glm::vec4 m_resolution;
-        float m_scale;
-        std::string m_name;
-        ITexture::TextureFormat m_format;
-        ITexture::TextureFlags m_flags;
-        /** Placeholder for frames, FBOs only have ONE */
-        std::vector<TextureFrame*> m_frames;
-    };
-}
+  private:
+    GLuint m_framebuffer;
+    GLuint m_depthbuffer;
+    GLuint m_texture;
+    glm::vec4 m_resolution;
+    float m_scale;
+    std::string m_name;
+    ITexture::TextureFormat m_format;
+    ITexture::TextureFlags m_flags;
+    /** Placeholder for frames, FBOs only have ONE */
+    std::vector<TextureFrame*> m_frames;
+};
+} // namespace WallpaperEngine::Render

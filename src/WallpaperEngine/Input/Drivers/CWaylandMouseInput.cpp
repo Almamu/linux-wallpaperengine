@@ -1,21 +1,16 @@
-#include <glm/common.hpp>
 #include "CWaylandMouseInput.h"
+#include <glm/common.hpp>
 
 using namespace WallpaperEngine::Input::Drivers;
 
-CWaylandMouseInput::CWaylandMouseInput(WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver) :
-    waylandDriver (driver)
-{
-}
+CWaylandMouseInput::CWaylandMouseInput (WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver) :
+    waylandDriver (driver),
+    pos () {}
 
-void CWaylandMouseInput::update ()
-{
-}
+void CWaylandMouseInput::update () {}
 
-glm::dvec2 CWaylandMouseInput::position() const
-{
-    if (!this->waylandDriver->getApp().getContext ().settings.mouse.enabled)
-    {
+glm::dvec2 CWaylandMouseInput::position () const {
+    if (!this->waylandDriver->getApp ().getContext ().settings.mouse.enabled) {
         return {0, 0};
     }
 

@@ -5,49 +5,47 @@
 #include "WallpaperEngine/Core/CScene.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include "WallpaperEngine/Render/CObject.h"
 
-namespace WallpaperEngine::Render
-{
-    class CCamera;
-    class CObject;
+namespace WallpaperEngine::Render {
+class CCamera;
+class CObject;
 
-    class CScene : public CWallpaper
-    {
-    public:
-        CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode);
+class CScene final : public CWallpaper {
+  public:
+    CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+            const CWallpaperState::TextureUVsScaling& scalingMode);
 
-        CCamera* getCamera () const;
+    CCamera* getCamera () const;
 
-        Core::CScene* getScene () const;
+    Core::CScene* getScene () const;
 
-        uint32_t getWidth () const override;
-        uint32_t getHeight () const override;
+    uint32_t getWidth () const override;
+    uint32_t getHeight () const override;
 
-        glm::vec2* getMousePosition ();
-        glm::vec2* getMousePositionLast ();
-        glm::vec2* getParallaxDisplacement ();
+    glm::vec2* getMousePosition ();
+    glm::vec2* getMousePositionLast ();
+    glm::vec2* getParallaxDisplacement ();
 
-    protected:
-        void renderFrame (glm::ivec4 viewport) override;
-        void updateMouse (glm::ivec4 viewport);
+  protected:
+    void renderFrame (glm::ivec4 viewport) override;
+    void updateMouse (glm::ivec4 viewport);
 
-        friend class CWallpaper;
+    friend class CWallpaper;
 
-        static const std::string Type;
+    static const std::string Type;
 
-    private:
-        Render::CObject* createObject (Core::CObject* object);
+  private:
+    Render::CObject* createObject (Core::CObject* object);
 
-        CCamera* m_camera;
-        CObject* m_bloomObject;
-        std::map<int, CObject*> m_objects;
-        std::vector<CObject*> m_objectsByRenderOrder;
-        glm::vec2 m_mousePosition;
-        glm::vec2 m_mousePositionLast;
-        glm::vec2 m_parallaxDisplacement;
-        CFBO* _rt_4FrameBuffer;
-        CFBO* _rt_8FrameBuffer;
-        CFBO* _rt_Bloom;
-    };
-}
+    CCamera* m_camera;
+    CObject* m_bloomObject;
+    std::map<int, CObject*> m_objects;
+    std::vector<CObject*> m_objectsByRenderOrder;
+    glm::vec2 m_mousePosition;
+    glm::vec2 m_mousePositionLast;
+    glm::vec2 m_parallaxDisplacement;
+    CFBO* _rt_4FrameBuffer;
+    CFBO* _rt_8FrameBuffer;
+    CFBO* _rt_Bloom;
+};
+} // namespace WallpaperEngine::Render

@@ -1,5 +1,5 @@
-#include <sstream>
 #include "CImage.h"
+#include <sstream>
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
@@ -23,13 +23,12 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     m_modelViewProjectionCopyInverse (),
     m_modelViewProjectionPass (glm::mat4 (1.0)),
     m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
-    m_pos ()
-{
+    m_pos () {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
     // get scene width and height to calculate positions
-    auto scene_width = static_cast <float> (projection->getWidth ());
-    auto scene_height = static_cast <float> (projection->getHeight ());
+    auto scene_width = static_cast<float> (projection->getWidth ());
+    auto scene_height = static_cast<float> (projection->getHeight ());
 
     glm::vec3 origin = this->getImage ()->getOrigin ();
     glm::vec2 size = this->getSize ();
@@ -37,10 +36,9 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
 
     // fullscreen layers should use the whole projection's size
     // TODO: WHAT SHOULD AUTOSIZE DO?
-    if (this->getImage ()->isFullscreen ())
-    {
-        size = { scene_width, scene_height };
-        origin = { scene_width / 2, scene_height / 2, 0 };
+    if (this->getImage ()->isFullscreen ()) {
+        size = {scene_width, scene_height};
+        origin = {scene_width / 2, scene_height / 2, 0};
 
         // TODO: CHANGE ALIGNMENT TOO?
     }
@@ -53,24 +51,18 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     this->m_pos.z = origin.x + (scaledSize.x / 2);
     this->m_pos.y = origin.y - (scaledSize.y / 2);
 
-    if (this->getImage ()->getAlignment ().find ("top") != std::string::npos)
-    {
+    if (this->getImage ()->getAlignment ().find ("top") != std::string::npos) {
         this->m_pos.y -= scaledSize.y / 2;
         this->m_pos.w -= scaledSize.y / 2;
-    }
-    else if (this->getImage ()->getAlignment ().find ("bottom") != std::string::npos)
-    {
+    } else if (this->getImage ()->getAlignment ().find ("bottom") != std::string::npos) {
         this->m_pos.y += scaledSize.y / 2;
         this->m_pos.w += scaledSize.y / 2;
     }
 
-    if (this->getImage ()->getAlignment ().find ("left") != std::string::npos)
-    {
+    if (this->getImage ()->getAlignment ().find ("left") != std::string::npos) {
         this->m_pos.x += scaledSize.x / 2;
         this->m_pos.z += scaledSize.x / 2;
-    }
-    else if (this->getImage ()->getAlignment ().find ("right") != std::string::npos)
-    {
+    } else if (this->getImage ()->getAlignment ().find ("right") != std::string::npos) {
         this->m_pos.x -= scaledSize.x / 2;
         this->m_pos.z -= scaledSize.x / 2;
     }
@@ -84,31 +76,20 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     // detect texture (if any)
     auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
 
-    if (!textures.empty())
-    {
+    if (!textures.empty ()) {
         std::string textureName = *textures.begin ();
 
-        if (textureName.find ("_rt_") == 0)
-        {
+        if (textureName.find ("_rt_") == 0) {
             this->m_texture = this->getScene ()->findFBO (textureName);
-        }
-        else
-        {
+        } else {
             // get the first texture on the first pass (this one represents the image assigned to this object)
             this->m_texture = this->getContext ().resolveTexture (textureName);
         }
-    }
-    else
-    {
-        // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly handled
-        this->m_texture = new CFBO (
-            "",
-            ITexture::TextureFormat::ARGB8888,
-            ITexture::TextureFlags::NoFlags,
-            1,
-            size.x, size.y,
-            size.x, size.y
-        );
+    } else {
+        // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
+        // handled
+        this->m_texture = new CFBO ("", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::NoFlags, 1, size.x,
+                                    size.y, size.x, size.y);
     }
 
     // register both FBOs into the scene
@@ -118,52 +99,41 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene->createFBO (
-        nameA.str (),
-        ITexture::TextureFormat::ARGB8888,
-        this->m_texture->getFlags (),
-        1,
-        this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
-        this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
-    );
-    this->m_currentSubFBO = this->m_subFBO = scene->createFBO (
-        nameB.str (),
-        ITexture::TextureFormat::ARGB8888,
-        this->m_texture->getFlags (),
-        1,
-        this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
-        this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()
-    );
+    this->m_currentMainFBO = this->m_mainFBO =
+        scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
+                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+    this->m_currentSubFBO = this->m_subFBO =
+        scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
+                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
-    GLfloat sceneSpacePosition [] = {
-        this->m_pos.x, this->m_pos.y, 0.0f,
-        this->m_pos.x, this->m_pos.w, 0.0f,
-        this->m_pos.z, this->m_pos.y, 0.0f,
-        this->m_pos.z, this->m_pos.y, 0.0f,
-        this->m_pos.x, this->m_pos.w, 0.0f,
-        this->m_pos.z, this->m_pos.w, 0.0f
-    };
+    GLfloat sceneSpacePosition [] = {this->m_pos.x, this->m_pos.y, 0.0f, this->m_pos.x, this->m_pos.w, 0.0f,
+                                     this->m_pos.z, this->m_pos.y, 0.0f, this->m_pos.z, this->m_pos.y, 0.0f,
+                                     this->m_pos.x, this->m_pos.w, 0.0f, this->m_pos.z, this->m_pos.w, 0.0f};
 
     float width = 1.0f;
     float height = 1.0f;
 
-    if (this->getTexture ()->isAnimated ())
-    {
+    if (this->getTexture ()->isAnimated ()) {
         // animated images use different coordinates as they're essentially a texture atlas
-        width = static_cast<float> (this->getTexture ()->getRealWidth ()) / static_cast<float> (this->getTexture ()->getTextureWidth ());
-        height = static_cast<float> (this->getTexture ()->getRealHeight ()) / static_cast<float> (this->getTexture ()->getTextureHeight ());
+        width = static_cast<float> (this->getTexture ()->getRealWidth ()) /
+                static_cast<float> (this->getTexture ()->getTextureWidth ());
+        height = static_cast<float> (this->getTexture ()->getRealHeight ()) /
+                 static_cast<float> (this->getTexture ()->getTextureHeight ());
     }
-        // calculate the correct texCoord limits for the texture based on the texture screen size and real size
+    // calculate the correct texCoord limits for the texture based on the texture screen size and real size
     else if (this->getTexture () != nullptr &&
-        (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
-        this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())
-    ) {
+             (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
+              this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())) {
         uint32_t x = 1;
         uint32_t y = 1;
 
-        while (x < size.x) x <<= 1;
-        while (y < size.y) y <<= 1;
+        while (x < size.x)
+            x <<= 1;
+        while (y < size.y)
+            y <<= 1;
 
         width = scaledSize.x / x;
         height = scaledSize.y / y;
@@ -173,8 +143,7 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     float x = 0.0f;
     float y = 0.0f;
 
-    if (this->getTexture ()->isAnimated ())
-    {
+    if (this->getTexture ()->isAnimated ()) {
         // animations should be copied completely
         x = 0.0f;
         y = 0.0f;
@@ -187,15 +156,13 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     GLfloat realX = 0.0;
     GLfloat realY = 0.0;
 
-    if (this->getImage ()->isPassthrough())
-    {
+    if (this->getImage ()->isPassthrough ()) {
         x = -((this->m_pos.x + (scene_width / 2)) / size.x);
         y = -((this->m_pos.w + (scene_height / 2)) / size.y);
         height = (this->m_pos.y + (scene_height / 2)) / size.y;
         width = (this->m_pos.z + (scene_width / 2)) / size.x;
 
-        if (this->getImage ()->isFullscreen ())
-        {
+        if (this->getImage ()->isFullscreen ()) {
             realX = -1.0;
             realY = -1.0;
             realWidth = 1.0;
@@ -203,41 +170,15 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
         }
     }
 
-    GLfloat texcoordCopy [] = {
-        x, height,
-        x, y,
-        width, height,
-        width, height,
-        x, y,
-        width, y
-    };
+    GLfloat texcoordCopy [] = {x, height, x, y, width, height, width, height, x, y, width, y};
 
-    GLfloat copySpacePosition [] = {
-        realX, realHeight, 0.0f,
-        realX, realY, 0.0f,
-        realWidth, realHeight, 0.0f,
-        realWidth, realHeight, 0.0f,
-        realX, realY, 0.0f,
-        realWidth, realY, 0.0f
-    };
+    GLfloat copySpacePosition [] = {realX,     realHeight, 0.0f, realX, realY, 0.0f, realWidth, realHeight, 0.0f,
+                                    realWidth, realHeight, 0.0f, realX, realY, 0.0f, realWidth, realY,      0.0f};
 
-    GLfloat texcoordPass [] = {
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 0.0f
-    };
+    GLfloat texcoordPass [] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
 
-    GLfloat passSpacePosition [] = {
-        -1.0, 1.0, 0.0f,
-        -1.0, -1.0, 0.0f,
-        1.0, 1.0, 0.0f,
-        1.0, 1.0, 0.0f,
-        -1.0, -1.0, 0.0f,
-        1.0, -1.0, 0.0f
-    };
+    GLfloat passSpacePosition [] = {-1.0, 1.0, 0.0f, -1.0, -1.0, 0.0f, 1.0, 1.0,  0.0f,
+                                    1.0,  1.0, 0.0f, -1.0, -1.0, 0.0f, 1.0, -1.0, 0.0f};
 
     // bind vertex list to the openGL buffers
     glGenBuffers (1, &this->m_sceneSpacePosition);
@@ -262,19 +203,17 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
     this->m_modelViewProjectionScreen =
-        this->getScene ()->getCamera ()->getProjection () *
-            this->getScene ()->getCamera ()->getLookAt ();
+        this->getScene ()->getCamera ()->getProjection () * this->getScene ()->getCamera ()->getLookAt ();
 
     this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 
-    this->m_modelViewProjectionCopy = glm::ortho <float> (0.0, size.x, 0.0, size.y);
+    this->m_modelViewProjectionCopy = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
-    this->m_modelMatrix = glm::ortho <float> (0.0, size.x, 0.0, size.y);
+    this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_viewProjectionMatrix = glm::mat4 (1.0);
 }
 
-void CImage::setup ()
-{
+void CImage::setup () {
     // do not double-init stuff, that's bad!
     if (this->m_initialized)
         return;
@@ -282,15 +221,15 @@ void CImage::setup ()
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
 
     // passthrough images without effects are bad, do not draw them
-    if (this->getImage ()->isPassthrough() && this->getImage ()->getEffects ().empty ())
+    if (this->getImage ()->isPassthrough () && this->getImage ()->getEffects ().empty ())
         return;
 
     {
         // generate the main material used to render the image
         this->m_material = new Effects::CMaterial (
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image, Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
-            this->m_image->getMaterial ()
-        );
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image,
+                                                           Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
+            this->m_image->getMaterial ());
 
         // add blendmode to the combos
         for (const auto& cur : this->m_material->getPasses ())
@@ -298,11 +237,9 @@ void CImage::setup ()
     }
 
     // prepare the passes list
-    if (!this->getImage ()->getEffects ().empty ())
-    {
+    if (!this->getImage ()->getEffects ().empty ()) {
         // generate the effects used by this material
-        for (const auto& cur : this->getImage ()->getEffects ())
-        {
+        for (const auto& cur : this->getImage ()->getEffects ()) {
             auto effect = new CEffect (this, cur);
 
             for (const auto& material : effect->getMaterials ())
@@ -313,18 +250,18 @@ void CImage::setup ()
         }
     }
 
-    if (this->m_image->getColorBlendMode () > 0)
-    {
-        auto material = Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer ());
+    if (this->m_image->getColorBlendMode () > 0) {
+        const auto material =
+            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer ());
 
         // effectpasshthrough only has one pass
         (*material->getPasses ().begin ())->insertCombo ("BLENDMODE", this->m_image->getColorBlendMode ());
 
         // generate the main material used to render the image
-        this->m_colorBlendMaterial = new Effects::CMaterial(
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image, Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
-            material
-        );
+        this->m_colorBlendMaterial = new Effects::CMaterial (
+            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image,
+                                                           Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
+            material);
 
         // add blendmode to the combos
         for (const auto& cur : this->m_colorBlendMaterial->getPasses ())
@@ -332,10 +269,9 @@ void CImage::setup ()
     }
 
     // if there's more than one pass the blendmode has to be moved from the beginning to the end
-    if (this->m_passes.size () > 1)
-    {
-        auto first = this->m_passes.begin ();
-        auto last = this->m_passes.rbegin ();
+    if (this->m_passes.size () > 1) {
+        const auto first = this->m_passes.begin ();
+        const auto last = this->m_passes.rbegin ();
 
         (*last)->getPass ()->setBlendingMode ((*first)->getPass ()->getBlendingMode ());
         (*first)->getPass ()->setBlendingMode ("normal");
@@ -351,8 +287,7 @@ void CImage::setup ()
     this->m_initialized = true;
 }
 
-void CImage::setupPasses ()
-{
+void CImage::setupPasses () {
     // do a pass on everything and setup proper inputs and values
     const CFBO* drawTo = this->m_currentMainFBO;
     const ITexture* asInput = this->getTexture ();
@@ -362,22 +297,21 @@ void CImage::setupPasses ()
     auto end = this->m_passes.end ();
     bool first = true;
 
-    for (; cur != end; cur ++)
-    {
+    for (; cur != end; ++cur) {
         // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         Effects::CPass* pass = *cur;
         const CFBO* prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
-        glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
-        glm::mat4* inverseProjection = (first) ? &this->m_modelViewProjectionCopyInverse : &this->m_modelViewProjectionPassInverse;
+        const glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
+        const glm::mat4* inverseProjection =
+            (first) ? &this->m_modelViewProjectionCopyInverse : &this->m_modelViewProjectionPassInverse;
         first = false;
 
         pass->setModelMatrix (&this->m_modelMatrix);
         pass->setViewProjectionMatrix (&this->m_viewProjectionMatrix);
 
         // set viewport and target texture if needed
-        if (pass->getMaterial ()->getMaterial ()->hasTarget ())
-        {
+        if (pass->getMaterial ()->getMaterial ()->hasTarget ()) {
             // setup target texture
             std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
             drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
@@ -388,9 +322,8 @@ void CImage::setupPasses ()
                 // this one throws if no fbo was found
                 drawTo = this->getScene ()->findFBO (target);
         }
-            // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end && this->getImage ()->isVisible ())
-        {
+        // determine if it's the last element in the list as this is a screen-copy-like process
+        else if (std::next (cur) == end && this->getImage ()->isVisible ()) {
             // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
             spacePosition = this->getSceneSpacePosition ();
             drawTo = this->getScene ()->getFBO ();
@@ -413,8 +346,7 @@ void CImage::setupPasses ()
     }
 }
 
-void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
-{
+void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput) {
     // temporarily store FBOs used
     CFBO* currentMainFBO = this->m_currentMainFBO;
     CFBO* currentSubFBO = this->m_currentSubFBO;
@@ -429,8 +361,7 @@ void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput)
     this->m_currentSubFBO = currentMainFBO;
 }
 
-void CImage::render ()
-{
+void CImage::render () {
     // do not try to render something that did not initialize successfully
     // non-visible materials do need to be rendered
     if (!this->m_initialized)
@@ -448,20 +379,18 @@ void CImage::render ()
 
     if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
         str += "bloom";
-    else
-    {
-        str += this->getImage ()->getName () +
-            " (" + std::to_string (this->getId ()) + ", " + this->getImage ()->getMaterial ()->getName () + ")";
+    else {
+        str += this->getImage ()->getName () + " (" + std::to_string (this->getId ()) + ", " +
+               this->getImage ()->getMaterial ()->getName () + ")";
     }
 
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
     auto cur = this->m_passes.begin ();
-    auto end = this->m_passes.end ();
+    const auto end = this->m_passes.end ();
 
-    for (; cur != end; cur ++)
-    {
+    for (; cur != end; ++cur) {
         // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         if (std::next (cur) == end)
             glColorMask (true, true, true, false);
@@ -474,73 +403,59 @@ void CImage::render ()
 #endif /* DEBUG */
 }
 
-void CImage::updateScreenSpacePosition ()
-{
-    double parallaxAmount = this->getScene ()->getScene ()->getCameraParallaxAmount ();
-    glm::vec2 depth = this->getImage ()->getParallaxDepth ();
-    glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();
+void CImage::updateScreenSpacePosition () {
+    const double parallaxAmount = this->getScene ()->getScene ()->getCameraParallaxAmount ();
+    const glm::vec2 depth = this->getImage ()->getParallaxDepth ();
+    const glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();
 
     float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
     float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
 
-    this->m_modelViewProjectionScreen =
-        glm::translate (
-            this->getScene ()->getCamera ()->getProjection () *
-                this->getScene ()->getCamera ()->getLookAt (),
-            {x, y, 0.0f}
-        );
+    this->m_modelViewProjectionScreen = glm::translate (this->getScene ()->getCamera ()->getProjection () *
+                                                            this->getScene ()->getCamera ()->getLookAt (),
+                                                        {x, y, 0.0f});
 }
 
-const ITexture* CImage::getTexture () const
-{
+const ITexture* CImage::getTexture () const {
     return this->m_texture;
 }
 
-double CImage::getAnimationTime () const
-{
+double CImage::getAnimationTime () const {
     return this->m_animationTime;
 }
 
-const Core::Objects::CImage* CImage::getImage () const
-{
+const Core::Objects::CImage* CImage::getImage () const {
     return this->m_image;
 }
 
-const std::vector<CEffect*>& CImage::getEffects () const
-{
+const std::vector<CEffect*>& CImage::getEffects () const {
     return this->m_effects;
 }
 
-glm::vec2 CImage::getSize() const
-{
+glm::vec2 CImage::getSize () const {
     if (this->m_texture == nullptr)
         return this->getImage ()->getSize ();
 
     return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }
 
-GLuint CImage::getSceneSpacePosition () const
-{
+GLuint CImage::getSceneSpacePosition () const {
     return this->m_sceneSpacePosition;
 }
 
-GLuint CImage::getCopySpacePosition () const
-{
+GLuint CImage::getCopySpacePosition () const {
     return this->m_copySpacePosition;
 }
 
-GLuint CImage::getPassSpacePosition () const
-{
+GLuint CImage::getPassSpacePosition () const {
     return this->m_passSpacePosition;
 }
 
-GLuint CImage::getTexCoordCopy () const
-{
+GLuint CImage::getTexCoordCopy () const {
     return this->m_texcoordCopy;
 }
 
-GLuint CImage::getTexCoordPass () const
-{
+GLuint CImage::getTexCoordPass () const {
     return this->m_texcoordPass;
 }
 
