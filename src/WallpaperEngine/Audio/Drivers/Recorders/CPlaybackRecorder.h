@@ -5,7 +5,7 @@ class CPlaybackRecorder {
   public:
     virtual ~CPlaybackRecorder () = default;
 
-    virtual void update () = 0;
+    virtual void update ();
 
     float audio16 [16] = {0};
     float audio32 [32] = {0};

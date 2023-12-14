@@ -12,25 +12,17 @@
 
 using namespace WallpaperEngine::Application;
 
-struct option long_options [] = {{"screen-root", required_argument, nullptr, 'r'},
-                                 {"bg", required_argument, nullptr, 'b'},
-                                 {"window", required_argument, nullptr, 'w'},
-                                 {"pkg", required_argument, nullptr, 'p'},
-                                 {"dir", required_argument, nullptr, 'd'},
-                                 {"silent", no_argument, nullptr, 's'},
-                                 {"volume", required_argument, nullptr, 'v'},
-                                 {"help", no_argument, nullptr, 'h'},
-                                 {"fps", required_argument, nullptr, 'f'},
-                                 {"assets-dir", required_argument, nullptr, 'a'},
-                                 {"screenshot", required_argument, nullptr, 'c'},
-                                 {"list-properties", no_argument, nullptr, 'l'},
-                                 {"set-property", required_argument, nullptr, 'o'},
-                                 {"noautomute", no_argument, nullptr, 'm'},
-                                 {"no-fullscreen-pause", no_argument, nullptr, 'n'},
-                                 {"disable-mouse", no_argument, nullptr, 'e'},
-                                 {"scaling", required_argument, nullptr, 't'},
-                                 {"clamping", required_argument, nullptr, 't'},
-                                 {nullptr, 0, nullptr, 0}};
+struct option long_options [] = {
+    {"screen-root", required_argument, nullptr, 'r'},   {"bg", required_argument, nullptr, 'b'},
+    {"window", required_argument, nullptr, 'w'},        {"pkg", required_argument, nullptr, 'p'},
+    {"dir", required_argument, nullptr, 'd'},           {"silent", no_argument, nullptr, 's'},
+    {"volume", required_argument, nullptr, 'v'},        {"help", no_argument, nullptr, 'h'},
+    {"fps", required_argument, nullptr, 'f'},           {"assets-dir", required_argument, nullptr, 'a'},
+    {"screenshot", required_argument, nullptr, 'c'},    {"list-properties", no_argument, nullptr, 'l'},
+    {"set-property", required_argument, nullptr, 'o'},  {"noautomute", no_argument, nullptr, 'm'},
+    {"no-audio-processing", no_argument, nullptr, 'g'}, {"no-fullscreen-pause", no_argument, nullptr, 'n'},
+    {"disable-mouse", no_argument, nullptr, 'e'},       {"scaling", required_argument, nullptr, 't'},
+    {"clamping", required_argument, nullptr, 't'},      {nullptr, 0, nullptr, 0}};
 
 /* std::hash::operator() isn't constexpr, so it can't be used to get hash values as compile-time constants
  * So here is customHash. It skips all spaces, so hashes for " find " and "fi nd" are the same
@@ -86,7 +78,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
                         .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
                     },
             },
-        .audio = {.enabled = true, .volume = 15, .automute = true},
+        .audio = {.enabled = true, .volume = 15, .automute = true, .audioprocessing = true},
         .mouse =
             {
                 .enabled = true,
@@ -188,6 +180,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
                 break;
 
             case 'm': this->settings.audio.automute = false; break;
+
+            case 'g': this->settings.audio.audioprocessing = false; break;
 
             case 'e': this->settings.mouse.enabled = false; break;
 
@@ -305,6 +299,7 @@ void CApplicationContext::printHelp (const char* route) {
     sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
     sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
     sLog.out ("\t--noautomute\t\t\t\tDisables the automute when an app is playing sound");
+    sLog.out ("\t--no-audio-processing\t\t\t\tDisables audio processing for backgrounds");
     sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
     sLog.out (
         "\t--window <geometry>\tRuns in window mode, geometry has to be XxYxWxH and sets the position and size of the window");

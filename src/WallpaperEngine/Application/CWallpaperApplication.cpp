@@ -274,13 +274,18 @@ void CWallpaperApplication::show () {
         videoDriver = x11Driver;
     }
 
-    // stereo mix recorder for audio processing
-    WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder audioRecorder;
+    if (this->m_context.settings.audio.audioprocessing) {
+        this->audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder ();
+    } else {
+        this->audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder ();
+    }
+
     // audio playing detector
     WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (
         this->m_context, videoDriver->getFullscreenDetector ());
     // initialize sdl audio driver
-    audioDriver = new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, audioDetector, audioRecorder);
+    audioDriver =
+        new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, audioDetector, *this->audioRecorder);
     // initialize audio context
     audioContext = new WallpaperEngine::Audio::CAudioContext (*audioDriver);
     // initialize render context

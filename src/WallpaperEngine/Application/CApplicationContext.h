@@ -81,6 +81,8 @@ class CApplicationContext {
             int volume;
             /** If the audio must be muted if something else is playing sound */
             bool automute;
+            /** If audio processing can be enabled or not */
+            bool audioprocessing;
         } audio;
 
         /**
