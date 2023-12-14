@@ -82,6 +82,13 @@ class CWallpaper : public Helpers::CContextAware {
                      uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
     /**
+     * Creates an alias of an existing fbo
+     * @param alias
+     * @param original
+     */
+    void aliasFBO (const std::string& alias, CFBO* original);
+
+    /**
      * @return The full FBO list to work with
      */
     [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;

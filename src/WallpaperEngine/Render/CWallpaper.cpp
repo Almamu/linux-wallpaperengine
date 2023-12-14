@@ -239,6 +239,8 @@ void CWallpaper::setupFramebuffers () {
     // create framebuffer for the scene
     this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
                                         height, width, height);
+
+    this->aliasFBO ("_rt_MipMappedFrameBuffer", this->m_sceneFBO);
 }
 
 CAudioContext& CWallpaper::getAudioContext () {
@@ -254,6 +256,12 @@ CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat fo
 
     return fbo;
 }
+
+void CWallpaper::aliasFBO(const std::string& alias, CFBO* original)
+{
+    this->m_fbos.insert (std::make_pair (alias, original));
+}
+
 
 const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {
     return this->m_fbos;
