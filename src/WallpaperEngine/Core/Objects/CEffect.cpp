@@ -76,7 +76,14 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* ob
                             if (textureNumber == 0) {
                                 auto* image = object->as<CImage> ();
 
-                                texture = (*(*image->getMaterial ()->getPasses ().begin ())->getTextures ().begin ());
+                                auto passTextures = (*image->getMaterial ()->getPasses ().begin ())->getTextures ();
+
+                                if (passTextures.empty ()) {
+                                    // TODO: SET CHECKERBOARD TEXTURE AS DEFAULT IN THESE SITUATIONS
+                                    texture = "";
+                                } else {
+                                    texture = *passTextures.begin ();
+                                }
                             } else {
                                 texture = "";
                             }

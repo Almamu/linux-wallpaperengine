@@ -257,11 +257,9 @@ CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat fo
     return fbo;
 }
 
-void CWallpaper::aliasFBO(const std::string& alias, CFBO* original)
-{
+void CWallpaper::aliasFBO (const std::string& alias, CFBO* original) {
     this->m_fbos.insert (std::make_pair (alias, original));
 }
-
 
 const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {
     return this->m_fbos;

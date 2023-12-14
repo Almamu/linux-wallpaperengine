@@ -519,7 +519,7 @@ void CPass::setupUniforms () {
     this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
     this->addUniform ("g_Alpha", this->m_material->getImage ()->getImage ()->getAlpha ());
     this->addUniform ("g_Color", this->m_material->getImage ()->getImage ()->getColor ());
-    this->addUniform ("g_Color4", glm::vec4(this->m_material->getImage ()->getImage ()->getColor (), 1));
+    this->addUniform ("g_Color4", glm::vec4 (this->m_material->getImage ()->getImage ()->getColor (), 1));
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
     this->addUniform ("g_CompositeColor", this->m_material->getImage ()->getImage ()->getColor ());
     // add some external variables
