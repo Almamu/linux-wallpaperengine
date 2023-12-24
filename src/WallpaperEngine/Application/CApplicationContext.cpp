@@ -231,9 +231,6 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
     if (this->settings.general.defaultBackground.empty ()) {
         if (optind < argc && strlen (argv [optind]) > 0) {
             this->settings.general.defaultBackground = translateBackground (argv [optind]);
-        } else {
-            printHelp (argv [0]);
-            std::exit (0);
         }
     }
 
@@ -310,6 +307,7 @@ void CApplicationContext::printHelp (const char* route) {
     sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
     sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
     sLog.out ("\t--disable-mouse\tDisables mouse interactions");
+    sLog.out ("\t--bg <background_path/background_id>\tAfter --screen-root uses the specified background only on that screen");
     sLog.out (
         "\t--scaling <mode>\t Scaling mode for wallpaper. Can be stretch, fit, fill, default. Must be used before wallpaper provided.\n\
                     \t\t For default wallpaper last specified value will be used.\n\
