@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(linux-wallpaperengine)
 
+set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
@@ -12,6 +13,7 @@ if(NOT ERRORONLY)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(ERRORONLY=${ERRORONLY})
@@ -30,6 +32,26 @@ find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
 find_package(PulseAudio REQUIRED)
 
+set(CEF_ROOT "/home/kermit/Projects/fun/linux-wallpaperengine/OffScreenCEF/thirdparty/cef_binary")
+find_package(CEF REQUIRED)
+
+set(
+    CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${CMAKE_HOME_DIRECTORY}/bin
+    )
+	
+set(
+    CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    ${CMAKE_HOME_DIRECTORY}/lib
+    )
+	
+set(
+    TARGET_OUTPUT_DIRECTORY
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>
+    )
+
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+
 include_directories(
     ${MPV_INCLUDE_DIR}
     ${X11_INCLUDE_DIR}
@@ -41,8 +63,34 @@ include_directories(
     ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
+    # /home/kermit/Projects/fun/linux-wallpaperengine/src/WallpaperEngine/Render/cefsimple_opengl
+    /home/kermit/Projects/fun/linux-wallpaperengine/cef-project/third_party/cef/cef_binary_106.0.26+ge105400+chromium-106.0.5249.91_linux64
     ${CMAKE_SOURCE_DIR}
     include)
+
+
+add_library(ceflib SHARED IMPORTED)
+set_target_properties(ceflib 
+    #PROPERTIES IMPORTED_LOCATION /home/kermit/Projects/fun/linux-wallpaperengine/OffScreenCEF/thirdparty/cef_binary/Debug/libcef.so)
+    # PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/libcef.so)
+    PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
+
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+SET_CEF_TARGET_OUT_DIR()
+include_directories(${_CEF_ROOT})
+message(CEF_ROOT="${_CEF_ROOT}")
+message(CEF_ROOT="${CMAKE_SOURCE_DIR}")
+
+# target_link_libraries(linux-wallpaperengine PUBLIC ceflib)
+# SET_LIBRARY_TARGET_PROPERTIES(linux-wallpaperengine)
+message(PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+
+target_include_directories(ceflib 
+    INTERFACE "/home/kermit/Projects/fun/linux-wallpaperengine/cef-project/third_party/cef/cef_binary_106.0.26+ge105400+chromium-106.0.5249.91_linux64/include")
+
+
+# target_link_libraries(linux-wallpaperengine "libcef" ${CEF_STANDARD_LIBS})    
+
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -198,6 +246,15 @@ add_executable(
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
 
+    # src/WallpaperEngine/Render/cefsimple_opengl/CEFGLWindow.hpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/CEFGLWindow.cpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/GLWindow.hpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/GLWindow.cpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/BrowserView.hpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/BrowserView.cpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/GLCore.hpp
+    # src/WallpaperEngine/Render/cefsimple_opengl/GLCore.cpp
+
     src/WallpaperEngine/Render/CWallpaper.h
     src/WallpaperEngine/Render/CWallpaper.cpp
     src/WallpaperEngine/Render/CWallpaperState.h
@@ -206,6 +263,8 @@ add_executable(
     src/WallpaperEngine/Render/CScene.cpp
     src/WallpaperEngine/Render/CVideo.h
     src/WallpaperEngine/Render/CVideo.cpp
+    src/WallpaperEngine/Render/CWeb.h
+    src/WallpaperEngine/Render/CWeb.cpp
     src/WallpaperEngine/Render/CCamera.h
     src/WallpaperEngine/Render/CCamera.cpp
     src/WallpaperEngine/Render/CObject.h
@@ -245,6 +304,8 @@ add_executable(
     src/WallpaperEngine/Core/CScene.h
     src/WallpaperEngine/Core/CVideo.cpp
     src/WallpaperEngine/Core/CVideo.h
+    src/WallpaperEngine/Core/CWeb.cpp
+    src/WallpaperEngine/Core/CWeb.h
     src/WallpaperEngine/Core/CObject.cpp
     src/WallpaperEngine/Core/CObject.h
 
@@ -324,7 +385,10 @@ add_executable(
     ${WAYLAND_SOURCES}
 )
 
-target_link_libraries(linux-wallpaperengine
+SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
+add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
+target_link_libraries (linux-wallpaperengine PUBLIC 
+    libcef_lib libcef_dll_wrapper
     ${X11_LIBRARIES}
     ${Xrandr_LIBRARIES}
     ${X11_Xxf86vm_LIB}
@@ -340,8 +404,27 @@ target_link_libraries(linux-wallpaperengine
     ${PULSEAUDIO_LIBRARY}
     glfw)
 
+COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+
+# target_link_libraries(linux-wallpaperengine PUBLIC
+#     ${X11_LIBRARIES}
+#     ${Xrandr_LIBRARIES}
+#     ${X11_Xxf86vm_LIB}
+#     ${OPENGL_LIBRARIES}
+#     ${GLEW_LIBRARIES}
+#     ${GLUT_LIBRARIES}
+#     ${ZLIB_LIBRARIES}
+#     ${LZ4_LIBRARY}
+#     ${SDL2_LIBRARIES}
+#     ${FFMPEG_LIBRARIES}
+#     ${FREEIMAGE_LIBRARIES}
+#     ${MPV_LIBRARY}
+#     ${PULSEAUDIO_LIBRARY}
+#     glfw)
+
 if (WAYLAND_SUPPORT_FOUND)
-    target_link_libraries(linux-wallpaperengine
+    target_link_libraries(linux-wallpaperengine PUBLIC
         pthread
         wayland-cursor
         wayland-client
