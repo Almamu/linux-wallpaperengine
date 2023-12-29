@@ -32,12 +32,12 @@ find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
 find_package(PulseAudio REQUIRED)
 
-set(CEF_ROOT "/home/kermit/Projects/fun/linux-wallpaperengine/OffScreenCEF/thirdparty/cef_binary")
+set(CEF_ROOT "/home/kermit/Projects/fun/linux-wallpaperengine/OffScreenCEF/thirdparty/cef_binary/")
 find_package(CEF REQUIRED)
 
 set(
     CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/bin
+    ${CMAKE_HOME_DIRECTORY}/build
     )
 	
 set(
@@ -47,7 +47,7 @@ set(
 	
 set(
     TARGET_OUTPUT_DIRECTORY
-    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>
+    ${CMAKE_HOME_DIRECTORY}/build
     )
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
@@ -63,8 +63,7 @@ include_directories(
     ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
-    # /home/kermit/Projects/fun/linux-wallpaperengine/src/WallpaperEngine/Render/cefsimple_opengl
-    /home/kermit/Projects/fun/linux-wallpaperengine/cef-project/third_party/cef/cef_binary_106.0.26+ge105400+chromium-106.0.5249.91_linux64
+    /home/kermit/Projects/fun/linux-wallpaperengine/OffScreenCEF/thirdparty/cef_binary
     ${CMAKE_SOURCE_DIR}
     include)
 
@@ -75,19 +74,18 @@ set_target_properties(ceflib
     # PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/libcef.so)
     PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
 
+
+
 ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
-SET_CEF_TARGET_OUT_DIR()
+# SET_CEF_TARGET_OUT_DIR()
 include_directories(${_CEF_ROOT})
 message(CEF_ROOT="${_CEF_ROOT}")
-message(CEF_ROOT="${CMAKE_SOURCE_DIR}")
 
 # target_link_libraries(linux-wallpaperengine PUBLIC ceflib)
 # SET_LIBRARY_TARGET_PROPERTIES(linux-wallpaperengine)
-message(PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
 target_include_directories(ceflib 
     INTERFACE "/home/kermit/Projects/fun/linux-wallpaperengine/cef-project/third_party/cef/cef_binary_106.0.26+ge105400+chromium-106.0.5249.91_linux64/include")
-
 
 # target_link_libraries(linux-wallpaperengine "libcef" ${CEF_STANDARD_LIBS})    
 
@@ -246,15 +244,6 @@ add_executable(
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
 
-    # src/WallpaperEngine/Render/cefsimple_opengl/CEFGLWindow.hpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/CEFGLWindow.cpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/GLWindow.hpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/GLWindow.cpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/BrowserView.hpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/BrowserView.cpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/GLCore.hpp
-    # src/WallpaperEngine/Render/cefsimple_opengl/GLCore.cpp
-
     src/WallpaperEngine/Render/CWallpaper.h
     src/WallpaperEngine/Render/CWallpaper.cpp
     src/WallpaperEngine/Render/CWallpaperState.h
@@ -385,6 +374,12 @@ add_executable(
     ${WAYLAND_SOURCES}
 )
 
+COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+
+message("${CEF_RESOURCE_FILES}")
+message("${TARGET_OUTPUT_DIRECTORY}")
+
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
 add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
 target_link_libraries (linux-wallpaperengine PUBLIC 
@@ -404,24 +399,6 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${PULSEAUDIO_LIBRARY}
     glfw)
 
-COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-
-# target_link_libraries(linux-wallpaperengine PUBLIC
-#     ${X11_LIBRARIES}
-#     ${Xrandr_LIBRARIES}
-#     ${X11_Xxf86vm_LIB}
-#     ${OPENGL_LIBRARIES}
-#     ${GLEW_LIBRARIES}
-#     ${GLUT_LIBRARIES}
-#     ${ZLIB_LIBRARIES}
-#     ${LZ4_LIBRARY}
-#     ${SDL2_LIBRARIES}
-#     ${FFMPEG_LIBRARIES}
-#     ${FREEIMAGE_LIBRARIES}
-#     ${MPV_LIBRARY}
-#     ${PULSEAUDIO_LIBRARY}
-#     glfw)
 
 if (WAYLAND_SUPPORT_FOUND)
     target_link_libraries(linux-wallpaperengine PUBLIC

@@ -185,6 +185,5 @@ class CWallpaper : public Helpers::CContextAware {
     CAudioContext& m_audioContext;
     /** Current Wallpaper state */
     CWallpaperState m_state;
-        CEFGLWindow cef_window;
 };
 } // namespace WallpaperEngine::Render

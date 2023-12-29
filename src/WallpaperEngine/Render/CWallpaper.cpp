@@ -2,11 +2,12 @@
 #include "CScene.h"
 #include "CVideo.h"
 #include "common.h"
+#include "CWeb.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
-#include "Drivers/CX11OpenGLDriver.h"
+
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
@@ -25,9 +26,7 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
     m_state (scalingMode),
-    cef_window(1920,1080, "test title", reinterpret_cast<Drivers::CX11OpenGLDriver*>(const_cast<Drivers::CVideoDriver*>(&context.getDriver()))->getWindow())
 {
-    cef_window.setup();
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -197,7 +196,105 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
 
 void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     this->renderFrame (viewport);
-    cef_window.update();
+
+    uint32_t projectionWidth = this->getWidth ();
+    uint32_t projectionHeight = this->getHeight ();
+
+    float ustart = 0.0f;
+    float uend = 0.0f;
+    float vstart = 0.0f;
+    float vend = 0.0f;
+
+    if (
+        (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
+            (viewport.z > viewport.w && projectionHeight > projectionWidth)
+        )
+    {
+        if (vflip)
+        {
+            vstart = 0.0f;
+            vend = 1.0f;
+        }
+        else
+        {
+            vstart = 1.0f;
+            vend = 0.0f;
+        }
+
+        int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
+        float newCenter = newWidth / 2.0f;
+        float viewportCenter = viewport.z / 2.0;
+
+        float left = newCenter - viewportCenter;
+        float right = newCenter + viewportCenter;
+
+        ustart = left / newWidth;
+        uend = right / newWidth;
+    }
+
+    if (
+        (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
+            (viewport.w > viewport.z && projectionHeight > projectionWidth)
+        )
+    {
+        ustart = 0.0f;
+        uend = 1.0f;
+
+        int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
+        float newCenter = newHeight / 2.0f;
+        float viewportCenter = viewport.w / 2.0;
+
+        float down = newCenter - viewportCenter;
+        float up = newCenter + viewportCenter;
+
+        if (vflip)
+        {
+            vstart = down / newHeight;
+            vend = up / newHeight;
+        }
+        else
+        {
+            vstart = up / newHeight;
+            vend = down / newHeight;
+        }
+    }
+
+    GLfloat texCoords [] = {
+        ustart, vstart,
+        uend, vstart,
+        ustart, vend,
+        ustart, vend,
+        uend, vstart,
+        uend, vend,
+    };
+
+    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
+
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
+
+    glBindVertexArray (this->m_vaoBuffer);
+
+    glDisable (GL_BLEND);
+    glDisable (GL_DEPTH_TEST);
+    // do not use any shader
+    glUseProgram (this->m_shader);
+    // activate scene texture
+    glActiveTexture (GL_TEXTURE0);
+    glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
+    // set uniforms and attribs
+    glEnableVertexAttribArray (this->a_TexCoord);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (texCoords), texCoords, GL_STATIC_DRAW);
+    glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glEnableVertexAttribArray (this->a_Position);
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
+    glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glUniform1i (this->g_Texture0, 0);
+    // write the framebuffer as is to the screen
+    glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+    glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
 void CWallpaper::setupFramebuffers () {
@@ -254,6 +351,8 @@ CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderConte
         return new WallpaperEngine::Render::CScene (wallpaper->as<Core::CScene> (), context, audioContext, scalingMode);
     if (wallpaper->is<Core::CVideo> ())
         return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
-
-    sLog.exception ("Unsupported wallpaper type");
+    else if (wallpaper->is <Core::CWeb> ())
+        return new WallpaperEngine::Render::CWeb (wallpaper->as <Core::CWeb> (), context, audioContext);
+    else
+        sLog.exception ("Unsupported wallpaper type");
 }

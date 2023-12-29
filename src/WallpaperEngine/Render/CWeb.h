@@ -1,187 +1,119 @@
-// This code is a modification of the original "cefsimple" example that can be found at
-// https://bitbucket.org/chromiumembedded/cef/wiki/GeneralUsage
-
-#ifndef BROWSERVIEW_HPP
-#  define BROWSERVIEW_HPP
-
-#  include <iostream>
-
-// OpenGL
-#  include <GL/glew.h>
-#  include <GLFW/glfw3.h>
+#pragma once
 
 // Matrices manipulation for OpenGL
-#  include <glm/glm.hpp>
-#  include <glm/ext.hpp>
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
 
-// Chromium Embedded Framework
-#  include <cef_render_handler.h>
-#  include <cef_client.h>
-#  include <cef_app.h>
+#include <string>
+#include <vector>
+#include <memory>
+#include <algorithm>
 
-#  include <string>
-#  include <vector>
-#  include <memory>
-#  include <algorithm>
+#include "common.h"
+#include "WallpaperEngine/Core/CWeb.h"
+#include "WallpaperEngine/Render/CWallpaper.h"
+#include "WallpaperEngine/Audio/CAudioStream.h"
 
-// ****************************************************************************
-//! \brief Interface class rendering a single web page.
-// ****************************************************************************
-class BrowserView
+namespace WallpaperEngine::Render
 {
-public:
-
-    //! \brief Default Constructor using a given URL.
-    BrowserView(const std::string &url);
-
-    //! \brief
-    ~BrowserView();
-
-    //! \brief Load the given web page.
-    void load(const std::string &url);
-
-    //! \brief Render the web page.
-    void draw();
-
-    //! \brief Set the windows size.
-    void reshape(int w, int h);
-
-    //! \brief Set the viewport: the rectangle on the window where to display
-    //! the web document.
-    //! \return false if arguments are incorrect.
-    bool viewport(float x, float y, float w, float h);
-
-    //! \brief Get the viewport.
-    inline glm::vec4 const& viewport() const
+    class CWeb : public CWallpaper
     {
-        return m_viewport;
-    }
+        public:
+            CWeb (Core::CWeb* scene, CRenderContext& context, CAudioContext& audioContext);
+            ~CWeb();
+            uint32_t getWidth  () const override { return this->m_width; }
 
-    //! \brief TODO
-    // void executeJS(const std::string &cmd);
+            uint32_t getHeight () const override { return this->m_height; }
 
-    //! \brief Set the new mouse position
-    void mouseMove(int x, int y);
+            void setSize (int64_t width, int64_t height);
 
-    //! \brief Set the new mouse state (clicked ...)
-    void mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up);
+        protected:
+            void renderFrame (glm::ivec4 viewport) override;
+            void updateMouse (glm::ivec4 viewport);
+            Core::CWeb* getWeb ()
+            {
+                return this->getWallpaperData ()->as<Core::CWeb> ();
+            }
 
-    //! \brief Set the new keyboard state (char typed ...)
-    void keyPress(int key, bool pressed);
+            friend class CWallpaper;
 
-private:
+            static const std::string Type;
 
-    // *************************************************************************
-    //! \brief Private implementation to handle CEF events to draw the web page.
-    // *************************************************************************
-    class RenderHandler: public CefRenderHandler
-    {
-    public:
+        private:
+            // *************************************************************************
+            //! \brief Private implementation to handle CEF events to draw the web page.
+            // *************************************************************************
+            class RenderHandler: public CefRenderHandler
+            {
+                public:
 
-        RenderHandler(glm::vec4 const& viewport);
+                    RenderHandler(CWeb* webdata);
 
-        //! \brief
-        ~RenderHandler();
+                    //! \brief
+                    ~RenderHandler();
 
-        //! \brief Compile OpenGL shaders and create OpenGL objects (VAO,
-        //! VBO, texture, locations ...)
-        bool init();
+                    //! \brief Compile OpenGL shaders and create OpenGL objects (VAO,
+                    //! VBO, texture, locations ...)
+                    bool init();
 
-        //! \brief Render OpenGL VAO (rotating a textured square)
-        void draw(glm::vec4 const& viewport, bool fixed);
+                    //! \brief CefRenderHandler interface
+                    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
 
-        //! \brief Resize the view
-        void reshape(int w, int h);
+                    //! \brief CefRenderHandler interface
+                    //! Update the OpenGL texture.
+                    virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
+                                        const RectList &dirtyRects, const void *buffer,
+                                        int width, int height) override;
 
-        //! \brief Return the OpenGL texture handle
-        GLuint texture() const
-        {
-            return m_tex;
-        }
+                    //! \brief CefBase interface
+                    IMPLEMENT_REFCOUNTING(RenderHandler);
 
-        //! \brief CefRenderHandler interface
-        virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
+                private:
+                    CWeb* m_webdata;
 
-        //! \brief CefRenderHandler interface
-        //! Update the OpenGL texture.
-        virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
-                             const RectList &dirtyRects, const void *buffer,
-                             int width, int height) override;
+                    uint32_t getWidth () const {
+                        return this->m_webdata->getWidth();
+                    };
+                    uint32_t getHeight () const {
+                        return this->m_webdata->getHeight();
+                    };
+                    //! \brief Return the OpenGL texture handle
+                    GLuint texture() const
+                    {
+                        return this->m_webdata->getWallpaperFramebuffer();
+                    }
+            };
 
-        //! \brief CefBase interface
-        IMPLEMENT_REFCOUNTING(RenderHandler);
+            // *************************************************************************
+            //! \brief Provide access to browser-instance-specific callbacks. A single
+            //! CefClient instance can be shared among any number of browsers.
+            // *************************************************************************
+            class BrowserClient: public CefClient
+            {
+                public:
 
-    private:
+                    BrowserClient(CefRefPtr<CefRenderHandler> ptr)
+                        : m_renderHandler(ptr)
+                    {}
 
-        //! \brief Dimension
-        int m_width;
-        int m_height;
+                    virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override
+                    {
+                        return m_renderHandler;
+                    }
 
-        //! \brief Where to draw on the OpenGL window
-        glm::vec4 const& m_viewport;
+                    CefRefPtr<CefRenderHandler> m_renderHandler;
 
-        //! \brief OpenGL shader program handle
-        GLuint m_prog = 0;
-        //! \brief OpenGL texture handle
-        GLuint m_tex = 0;
-        //! \brief OpenGL vertex array object handle
-        GLuint m_vao = 0;
-        //! \brief OpenGL vertex buffer obejct handle
-        GLuint m_vbo = 0;
+                    IMPLEMENT_REFCOUNTING(BrowserClient);
+            };
+            
+            CefRefPtr<CefBrowser> m_browser;
+            CefRefPtr<BrowserClient> m_client;
+            RenderHandler* m_render_handler = nullptr;
 
-        //! \brief OpenGL shader variable locations for vertices of the
-        //! rectangle
-        GLint m_pos_loc = -1;
-        //! \brief OpenGL shader variable locations for the texture
-        GLint m_tex_loc = -1;
-        //! \brief OpenGL shader variable locations for the Model View
-        //! Projection matrix.
-        GLint m_mvp_loc = -1;
+            int64_t m_width;
+            int64_t m_height;
+
+            glm::vec2 m_mousePosition;
+            glm::vec2 m_mousePositionLast;
     };
-
-    // *************************************************************************
-    //! \brief Provide access to browser-instance-specific callbacks. A single
-    //! CefClient instance can be shared among any number of browsers.
-    // *************************************************************************
-    class BrowserClient: public CefClient
-    {
-    public:
-
-        BrowserClient(CefRefPtr<CefRenderHandler> ptr)
-            : m_renderHandler(ptr)
-        {}
-
-        virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override
-        {
-            return m_renderHandler;
-        }
-
-        CefRefPtr<CefRenderHandler> m_renderHandler;
-
-        IMPLEMENT_REFCOUNTING(BrowserClient);
-    };
-
-private:
-
-    //! \brief Mouse cursor position on the OpenGL window
-    int m_mouse_x;
-    int m_mouse_y;
-
-    //! \brief Where to draw on the OpenGL window
-    glm::vec4 m_viewport;
-
-    //! \brief Chromium Embedded framework elements
-    CefRefPtr<CefBrowser> m_browser;
-    CefRefPtr<BrowserClient> m_client;
-    RenderHandler* m_render_handler = nullptr;
-
-    //! \brief OpenGL has created GPU elements with success
-    bool m_initialized = false;
-
-public:
-
-    //! \brief If set to false then the web page is turning.
-    bool m_fixed = true;
-};
-
-#endif // BROWSERVIEW_HPP
+}

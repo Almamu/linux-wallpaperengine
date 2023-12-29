@@ -1,249 +1,228 @@
 // This code is a modification of the original projects that can be found at
 // https://github.com/if1live/cef-gl-example
 // https://github.com/andmcgregor/cefgui
+#include "CWeb.h"
 
-#include "BrowserView.hpp"
-#include "GLCore.hpp"
+using namespace WallpaperEngine::Render;
 
-//------------------------------------------------------------------------------
-BrowserView::RenderHandler::RenderHandler(glm::vec4 const& viewport)
-    : m_viewport(viewport)
-{}
-
-//------------------------------------------------------------------------------
-BrowserView::RenderHandler::~RenderHandler()
+CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext) :
+    CWallpaper (web, Type, context, audioContext),
+    m_width (context.getOutput ().getFullWidth ()),
+    m_height (context.getOutput ().getFullHeight ()),
+    m_browser(),
+    m_client()
 {
-    // Free GPU memory
-    GLCore::deleteProgram(m_prog);
-    glDeleteBuffers(1, &m_vbo);
-    glDeleteVertexArrays(1, &m_vao);
-}
+    // setup framebuffers
+    this->setupFramebuffers();
 
-//------------------------------------------------------------------------------
-bool BrowserView::RenderHandler::init()
-{
-    // Dummy texture data
-    const unsigned char data[] = {
-        255, 0, 0, 255,
-        0, 255, 0, 255,
-        0, 0, 255, 255,
-        255, 255, 255, 255,
-    };
-
-    // Compile vertex and fragment shaders
-    m_prog = GLCore::createShaderProgram("shaders/tex.vert", "shaders/tex.frag");
-    if (m_prog == 0)
-    {
-        std::cerr << "shader compile failed" << std::endl;
-        return false;
-    }
-
-    // Get locations of shader variables (attributes and uniforms)
-    m_pos_loc = GLCHECK(glGetAttribLocation(m_prog, "position"));
-    m_tex_loc = GLCHECK(glGetUniformLocation(m_prog, "tex"));
-    m_mvp_loc = GLCHECK(glGetUniformLocation(m_prog, "mvp"))
-
-    // Square vertices (texture positions are computed directly inside the shader)
-    float coords[] = {-1.0,-1.0,-1.0,1.0,1.0,-1.0,1.0,-1.0,-1.0,1.0,1.0,1.0};
-
-    // See https://learnopengl.com/Getting-started/Textures
-    GLCHECK(glGenVertexArrays(1, &m_vao));
-    GLCHECK(glBindVertexArray(m_vao));
-    GLCHECK(glGenBuffers(1, &m_vbo));
-    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, m_vbo));
-    GLCHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_STATIC_DRAW));
-    GLCHECK(glEnableVertexAttribArray(m_pos_loc));
-    GLCHECK(glVertexAttribPointer(m_pos_loc, 2, GL_FLOAT, GL_FALSE, 0, 0));
-
-    // GLCHECK(glGenTextures(1, &m_tex));
-    // GLCHECK(glBindTexture(GL_TEXTURE_2D, m_tex));
-    // GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    // GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    // GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    // GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    // GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));
-    // GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
-
-    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
-    GLCHECK(glBindVertexArray(0));
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-void BrowserView::RenderHandler::draw(glm::vec4 const& viewport, bool fixed)
-{
-    // Where to paint on the OpenGL window
-    GLCHECK(glViewport(viewport[0],
-                       viewport[1],
-                       GLsizei(viewport[2] * m_width),
-                       GLsizei(viewport[3] * m_height)));
-
-    // // Apply a rotation
-    glm::mat4 trans = glm::mat4(1.0f); // Identity matrix
-    // if (!fixed)
-    // {
-    //     trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-    //     trans = glm::rotate(trans, (float)glfwGetTime() / 5.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-    // }
-
-    // See https://learnopengl.com/Getting-started/Textures
-    GLCHECK(glUseProgram(m_prog));
-    GLCHECK(glBindVertexArray(m_vao));
-
-    GLCHECK(glUniformMatrix4fv(m_mvp_loc, 1, GL_FALSE, glm::value_ptr(trans)));
-    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, m_vbo));
-    GLCHECK(glActiveTexture(GL_TEXTURE0));
-    GLCHECK(glBindTexture(GL_TEXTURE_2D, m_tex));
-    GLCHECK(glDrawArrays(GL_TRIANGLES, 0, 6));
-    GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
-    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
-
-    GLCHECK(glBindVertexArray(0));
-    GLCHECK(glUseProgram(0));
-}
-
-//------------------------------------------------------------------------------
-void BrowserView::RenderHandler::reshape(int w, int h)
-{
-    m_width = w;
-    m_height = h;
-}
-
-bool BrowserView::viewport(float x, float y, float w, float h)
-{
-    if (!(x >= 0.0f) && (x < 1.0f))
-        return false;
-
-    if (!(x >= 0.0f) && (y < 1.0f))
-        return false;
-
-    if (!(w > 0.0f) && (w <= 1.0f))
-        return false;
-
-    if (!(h > 0.0f) && (h <= 1.0f))
-        return false;
-
-    if (x + w > 1.0f)
-        return false;
-
-    if (y + h > 1.0f)
-        return false;
-
-    m_viewport[0] = x;
-    m_viewport[1] = y;
-    m_viewport[2] = w;
-    m_viewport[3] = h;
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-void BrowserView::RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
-{
-    rect = CefRect(m_viewport[0], m_viewport[1], m_viewport[2] * m_width, m_viewport[3] * m_height);
-}
-
-//------------------------------------------------------------------------------
-void BrowserView::RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
-                                         const RectList &dirtyRects, const void *buffer,
-                                         int width, int height)
-{
-    //std::cout << "BrowserView::RenderHandler::OnPaint" << std::endl;
-    GLCHECK(glActiveTexture(GL_TEXTURE0));
-    GLCHECK(glBindTexture(GL_TEXTURE_2D, m_tex));
-    GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT,
-                         GL_UNSIGNED_BYTE, (unsigned char*)buffer));
-    GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
-}
-
-//------------------------------------------------------------------------------
-BrowserView::BrowserView(const std::string &url)
-    : m_mouse_x(0), m_mouse_y(0), m_viewport(0.0f, 0.0f, 1.0f, 1.0f)
-{
     CefWindowInfo window_info;
     window_info.SetAsWindowless(0);
 
-    m_render_handler = new RenderHandler(m_viewport);
-    m_initialized = m_render_handler->init();
-    m_render_handler->reshape(128, 128); // initial size
+    this->m_render_handler = new RenderHandler(this);
 
     CefBrowserSettings browserSettings;
-    browserSettings.windowless_frame_rate = 60; // 30 is default
+    //Documentaion says said that 60 fps is maximum value
+    browserSettings.windowless_frame_rate = std::max(60,context.getApp().getContext().settings.render.maximumFPS);
 
     m_client = new BrowserClient(m_render_handler);
+    std::filesystem::path htmlpath = this->getWeb ()->getProject ().getContainer ()->resolveRealFile (this->getWeb ()->getFilename ());
+    //To open local file in browser URL must be "file:///path/to/file.html"
+    const std::string htmlURL = std::string("file:///") + htmlpath.c_str();
     m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_client.get(),
-                                                  url, browserSettings,
+                                                  htmlURL, browserSettings,
                                                   nullptr, nullptr);
 }
 
-//------------------------------------------------------------------------------
-BrowserView::~BrowserView()
+void CWeb::setSize (int64_t width, int64_t height)
 {
-    CefDoMessageLoopWork();
-    m_browser->GetHost()->CloseBrowser(true);
+    this->m_width = width > 0 ? width : this->m_width;
+    this->m_height = height > 0 ? height : this->m_height;
 
-    m_browser = nullptr;
-    m_client = nullptr;
-}
+    // do not refresh the texture if any of the sizes are invalid
+    if (this->m_width <= 0 || this->m_height <= 0)
+        return;
 
-//------------------------------------------------------------------------------
-void BrowserView::load(const std::string &url)
-{
-    assert(m_initialized);
-    m_browser->GetMainFrame()->LoadURL(url);
-}
+    // reconfigure the texture
+    glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture());
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->getWidth(), this->getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-//------------------------------------------------------------------------------
-void BrowserView::draw()
-{
-    CefDoMessageLoopWork();
-    m_render_handler->draw(m_viewport, m_fixed);
-}
-
-//------------------------------------------------------------------------------
-void BrowserView::reshape(int w, int h)
-{
-    m_render_handler->reshape(w, h);
-    GLCHECK(glViewport(m_viewport[0],
-                       m_viewport[1],
-                       GLsizei(m_viewport[2] * w),
-                       GLsizei(m_viewport[3] * h)));
+    // Notify cef that it was resized(maybe it's not even needed)
     m_browser->GetHost()->WasResized();
 }
 
-//------------------------------------------------------------------------------
-void BrowserView::mouseMove(int x, int y)
+void CWeb::renderFrame (glm::ivec4 viewport)
 {
-    m_mouse_x = x;
-    m_mouse_y = y;
+    // ensure the virtual mouse position is up to date
+    this->updateMouse (viewport);
+    // use the scene's framebuffer by default
+    glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer());
+    // ensure we render over the whole framebuffer
+    glViewport (0, 0, this->getWidth (), this->getHeight ());
+
+    //Cef processes all messages, including OnPaint, which renders frame
+    //If there is no OnPaint in message loop, we will not update(render) frame
+    // This means some frames will not have OnPaint call in cef messageLoop
+    // Because of that glClear will result in flickering on higher fps
+    // Do not use glClear until some method to control rendering with cef is supported
+    //We might actually try to use cef to execute javascript, and not using off-screen rendering at all
+    //But for now let it be like this
+    // glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    CefDoMessageLoopWork();
+}
+void CWeb::updateMouse (glm::ivec4 viewport)
+{
+    // update virtual mouse position first
+    glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position();
 
     CefMouseEvent evt;
-    evt.x = x;
-    evt.y = y;
-
-    bool mouse_leave = false; // TODO
-    m_browser->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
+    // Set mouse current position. Maybe clamps are not needed
+    evt.x = std::clamp(int(position.x - viewport.x),0,viewport.z);
+    evt.y = std::clamp(int(position.y - viewport.y),0,viewport.w);
+    // Send mouse position to cef
+    m_browser->GetHost()->SendMouseMoveEvent(evt, false);
 }
 
-//------------------------------------------------------------------------------
-void BrowserView::mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up)
+CWeb::~CWeb(){
+    CefDoMessageLoopWork();
+    m_browser->GetHost()->CloseBrowser(true);
+}
+
+//TODO Remove
+GLuint compileShaderFromCode(GLenum shader_type, const char *src)
 {
-    CefMouseEvent evt;
-    evt.x = m_mouse_x;
-    evt.y = m_mouse_y;
+    GLuint shader = glCreateShader(shader_type);
+    glShaderSource(shader, 1, &src, NULL);
+    glCompileShader(shader);
 
-    int click_count = 1; // TODO
-    m_browser->GetHost()->SendMouseClickEvent(evt, btn, mouse_up, click_count);
+    GLint status;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (status == GL_TRUE) {
+        return shader;
+    }
+
+    // shader compile fail!
+    fprintf(stderr, "SHADER COMPILE ERROR\n");
+
+    GLint info_len = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_len);
+    if (info_len > 1) {
+        char *info_log = (char*)malloc(sizeof(char) * info_len);
+        glGetShaderInfoLog(shader, info_len, NULL, info_log);
+        fprintf(stderr, "Error compiling shader: \n%s\n", info_log);
+        free(info_log);
+    }
+    glDeleteShader(shader);
+    return 0;
 }
 
-//------------------------------------------------------------------------------
-void BrowserView::keyPress(int key, bool pressed)
+GLuint createShaderProgram(GLuint vert, GLuint frag)
 {
-    CefKeyEvent evt;
-    evt.character = key;
-    evt.native_key_code = key;
-    evt.type = pressed ? KEYEVENT_CHAR : KEYEVENT_KEYUP;
+    GLuint program = glCreateProgram();
 
-    m_browser->GetHost()->SendKeyEvent(evt);
+    glAttachShader(program, vert);
+    glAttachShader(program, frag);
+    glLinkProgram(program);
+    glDetachShader(program, vert);
+    glDetachShader(program, frag);
+
+    GLint linked;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (linked) {
+        return program;
+    }
+
+    // fail...
+    GLint info_len = 0;
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_len);
+    if (info_len > 1) {
+        char *info_log = (char*)malloc(sizeof(char) * info_len);
+        glGetProgramInfoLog(program, info_len, NULL, info_log);
+        fprintf(stderr, "Error linking program: \n%s\n", info_log);
+        free(info_log);
+    }
+
+    glDeleteProgram(program);
+    return 0;
 }
+
+CWeb::RenderHandler::RenderHandler(CWeb* webdata):
+    m_webdata(webdata)
+{
+    // m_prog = GLCore::createShaderProgram("shaders/tex.vert", "shaders/tex.frag");
+
+    //GLuint vertShader = compileShaderFromFile(GL_VERTEX_SHADER, vert);
+
+
+    // const char *vertCode = R"(
+    //     #version 150
+
+    //     uniform mat4 mvp;
+    //     in vec2 position;
+    //     out vec2 Texcoord;
+
+    //     void main() {
+    //     Texcoord = (vec2(position.x + 1.0f, position.y - 1.0f) * 0.5);
+    //     Texcoord.y *= -1.0f;
+    //     gl_Position = mvp * vec4(position.x, position.y, 0.0f, 1.0f);
+    //     })";
+    // GLuint vertShader = compileShaderFromCode(GL_VERTEX_SHADER, vertCode);
+
+    // const char *fragCode = R"(
+    //     #version 150
+
+    //     in vec2 Texcoord;
+
+    //     out vec4 outputColor;
+
+    //     uniform sampler2D tex;
+
+    //     void main() {
+    //     outputColor = texture2D(tex, Texcoord);
+    //     if (outputColor.a < 0.1)
+    //     {
+    //         discard;
+    //     }
+    //     }
+    // )";
+    // GLuint fragShader = compileShaderFromCode(GL_FRAGMENT_SHADER, fragCode);
+
+    // if (vertShader == 0 || fragShader == 0) {
+    //     sLog.exception("Can't compile vert or frag shader in Web");
+    // }
+
+    // this->m_prog = createShaderProgram(vertShader, fragShader);
+    // if(this->m_prog==0){
+    //     sLog.exception("Can't create program from shaders in Web");
+    // }
+
+}
+CWeb::RenderHandler::~RenderHandler(){
+    // glDeleteProgram(this->m_prog);
+    // glDeleteBuffers(1, &this->m_vbo);
+    // glDeleteVertexArrays(1, &this->m_vao);
+}
+//Required by CEF
+void CWeb::RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
+{
+    rect = CefRect(0, 0, this->m_webdata->getWidth(), this->m_webdata->getHeight());
+}
+//Will be executed in CEF message loop
+void CWeb::RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
+                                         const RectList &dirtyRects, const void *buffer,
+                                         int width, int height)
+{
+    //sLog.debug("BrowserView::RenderHandler::OnPaint");
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, this->texture());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT,
+                         GL_UNSIGNED_BYTE, (unsigned char*)buffer);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    // GLCHECK(glActiveTexture(GL_TEXTURE0));
+    // GLCHECK(glBindTexture(GL_TEXTURE_2D, this->texture()));
+    // GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT,
+    //                      GL_UNSIGNED_BYTE, (unsigned char*)buffer));
+    // GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
+
+}
+
+const std::string CWeb::Type = "web";
