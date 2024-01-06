@@ -4,6 +4,7 @@ build/
 .vscode/
 debug/
 temp/
+third_party/
 
 *-protocol.o
 *-protocol.c
