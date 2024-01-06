@@ -98,7 +98,7 @@ if(OS_LINUX)
     )
   list(APPEND CEF_CXX_COMPILER_FLAGS
     # -fno-exceptions                 # Disable exceptions
-    -fno-rtti                       # Disable real-time type information
+    # -fno-rtti                       # Disable real-time type information
     -fno-threadsafe-statics         # Don't generate thread-safe statics
     -fvisibility-inlines-hidden     # Give hidden visibility to inlined class member functions
     -std=c++17                      # Use the C++17 language standard
