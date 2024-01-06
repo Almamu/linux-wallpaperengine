@@ -219,7 +219,7 @@ if(OS_LINUX)
     libEGL.so
     libGLESv2.so
     libvk_swiftshader.so
-    libvulkan.so.1
+    # libvulkan.so.1
     snapshot_blob.bin
     v8_context_snapshot.bin
     vk_swiftshader_icd.json
