@@ -25,7 +25,7 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
-    m_state (scalingMode),
+    m_state (scalingMode)
 {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
