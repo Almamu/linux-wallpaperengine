@@ -34,7 +34,7 @@ find_package(PulseAudio REQUIRED)
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
-set(CEF_VERSION "106.0.26+ge105400+chromium-106.0.5249.91")
+set(CEF_VERSION "120.1.10+g3ce3184+chromium-120.0.6099.129")
 # Determine the platform.
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   if("${PROJECT_ARCH}" STREQUAL "arm64")
@@ -112,9 +112,6 @@ set_target_properties(ceflib
 ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 # SET_CEF_TARGET_OUT_DIR()
 include_directories(${_CEF_ROOT})
-
-target_include_directories(ceflib 
-    INTERFACE "/home/kermit/Projects/fun/linux-wallpaperengine/cef-project/third_party/cef/cef_binary_106.0.26+ge105400+chromium-106.0.5249.91_linux64/include")
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -405,8 +402,11 @@ COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "
 
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
 add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
+
+# Need to remove libvulkan, otherwise will get error on  linking:
+# /usr/bin/ld: /usr/lib/libmpv.so: undefined reference to `vkCreateXlibSurfaceKHR'
+file(REMOVE "${CEF_BINARY_DIR_DEBUG}/libvulkan.so.1" "${CEF_BINARY_DIR_RELEASE}/libvulkan.so.1") 
 target_link_libraries (linux-wallpaperengine PUBLIC 
-    libcef_lib libcef_dll_wrapper
     ${X11_LIBRARIES}
     ${Xrandr_LIBRARIES}
     ${X11_Xxf86vm_LIB}
@@ -420,7 +420,8 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
-    glfw)
+    glfw
+    libcef_lib libcef_dll_wrapper)
 
 
 if (WAYLAND_SUPPORT_FOUND)
