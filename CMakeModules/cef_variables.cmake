@@ -267,8 +267,8 @@ if(OS_MAC)
     -std=c99                        # Use the C99 language standard
     )
   list(APPEND CEF_CXX_COMPILER_FLAGS
-    -fno-exceptions                 # Disable exceptions
-    -fno-rtti                       # Disable real-time type information
+    # -fno-exceptions                 # Disable exceptions
+    # -fno-rtti                       # Disable real-time type information
     -fno-threadsafe-statics         # Don't generate thread-safe statics
     -fobjc-call-cxx-cdtors          # Call the constructor/destructor of C++ instance variables in ObjC objects
     -fvisibility-inlines-hidden     # Give hidden visibility to inlined class member functions
