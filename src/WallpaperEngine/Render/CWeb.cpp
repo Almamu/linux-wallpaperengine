@@ -5,8 +5,8 @@
 
 using namespace WallpaperEngine::Render;
 
-CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext) :
-    CWallpaper (web, Type, context, audioContext),
+CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+    CWallpaper (web, Type, context, audioContext, scalingMode),
     m_width (context.getOutput ().getFullWidth ()),
     m_height (context.getOutput ().getFullHeight ()),
     m_browser(),
