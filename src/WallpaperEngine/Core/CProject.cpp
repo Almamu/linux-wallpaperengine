@@ -5,6 +5,7 @@
 #include "CProject.h"
 #include "CScene.h"
 #include "CVideo.h"
+#include "CWeb.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
@@ -18,41 +19,45 @@ CProject::CProject (std::string title, std::string type, CContainer* container) 
 CProject* CProject::fromFile (const std::string& filename, CContainer* container) {
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
-    const std::string title = *jsonFindRequired (content, "title", "Project title missing");
-    std::string type = *jsonFindRequired (content, "type", "Project type missing");
-    const std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
-    const auto general = content.find ("general");
-    CWallpaper* wallpaper;
+    std::string dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
+    if(dependency=="No dependency"){
+        std::string title = *jsonFindRequired (content, "title", "Project title missing");
+        std::string type = *jsonFindRequired (content, "type", "Project type missing");
+        std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
+        auto general = content.find ("general");
+        CWallpaper* wallpaper;
 
-    std::transform (type.begin (), type.end (), type.begin (), tolower);
+        std::transform (type.begin (), type.end (), type.begin (), tolower);
 
-    CProject* project = new CProject (title, type, container);
+        CProject* project = new CProject (title, type, container);
 
-    if (type == "scene")
-        wallpaper = CScene::fromFile (file, *project, container);
-    else if (type == "video")
-        wallpaper = new CVideo (file, *project);
-    else if (type == "web")
-        sLog.exception ("Web wallpapers are not supported yet");
-    else
-        sLog.exception ("Unsupported wallpaper type: ", type);
+        if (type == "scene")
+            wallpaper = CScene::fromFile (file, *project, container);
+        else if (type == "video")
+            wallpaper = new CVideo (file.c_str (), *project);
+        else if (type == "web")
+            wallpaper = new CWeb (file.c_str (), *project);
+        else
+            sLog.exception ("Unsupported wallpaper type: ", type);
 
-    project->setWallpaper (wallpaper);
+        project->setWallpaper (wallpaper);
 
-    if (general != content.end ()) {
-        const auto properties = general->find ("properties");
+        if (general != content.end ()) {
+            const auto properties = general->find ("properties");
 
-        if (properties != general->end ()) {
-            for (const auto& cur : properties->items ()) {
-                Projects::CProperty* property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
-
-                if (property != nullptr)
-                    project->insertProperty (property);
+            if (properties != general-> end ()) {
+                for (const auto& cur : properties->items ()) {
+                    Projects::CProperty* property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
+                    if (property != nullptr)
+                        project->insertProperty (property);
+                }
             }
         }
+        return project;
     }
-
-    return project;
+    else{
+        sLog.exception("Project have dependency. They are not supported, quiting");
+    }
 }
 
 void CProject::setWallpaper (CWallpaper* wallpaper) {
