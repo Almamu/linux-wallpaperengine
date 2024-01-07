@@ -16,8 +16,6 @@
 
 #include "CWallpaperState.h"
 
-#include "cefsimple_opengl/CEFGLWindow.hpp"
-
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
 

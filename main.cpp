@@ -10,12 +10,6 @@ WallpaperEngine::Application::CWallpaperApplication* appPointer;
 
 void signalhandler(int sig)
 {
-    sLog.debug("Hello");
-    if(g_CEFused){
-        sLog.debug("Shutting down CEF");
-        CefShutdown();
-    }
-
     if (appPointer == nullptr)
         return;
 
