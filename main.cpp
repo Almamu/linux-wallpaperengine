@@ -67,12 +67,10 @@ static void CEFsetUp(int argc, char** argv)
         std::cerr << "CefInitialize: failed" << std::endl;
         exit(-2);
     }
-
 }
 
 bool g_CEFused=false;//Will be set to true if wallpaper has "web" type 
-int main (int argc, char* argv[])
-{
+int main (int argc, char* argv[]) {
     //START of CEF init block(it will run 3 times)
     char** argv2 = new char*[argc]; //Cef modify argv on CefInit, copy it before that
 

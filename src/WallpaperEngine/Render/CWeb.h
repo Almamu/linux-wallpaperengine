@@ -46,7 +46,6 @@ namespace WallpaperEngine::Render
             class RenderHandler: public CefRenderHandler
             {
                 public:
-
                     RenderHandler(CWeb* webdata);
 
                     //! \brief
@@ -57,11 +56,11 @@ namespace WallpaperEngine::Render
                     bool init();
 
                     //! \brief CefRenderHandler interface
-                    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
+                    void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
 
                     //! \brief CefRenderHandler interface
                     //! Update the OpenGL texture.
-                    virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
+                    void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
                                         const RectList &dirtyRects, const void *buffer,
                                         int width, int height) override;
 
@@ -91,12 +90,11 @@ namespace WallpaperEngine::Render
             class BrowserClient: public CefClient
             {
                 public:
-
                     BrowserClient(CefRefPtr<CefRenderHandler> ptr)
                         : m_renderHandler(ptr)
                     {}
 
-                    virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override
+                    CefRefPtr<CefRenderHandler> GetRenderHandler() override
                     {
                         return m_renderHandler;
                     }
