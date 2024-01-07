@@ -54,7 +54,7 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
 
     // make context current, required for glew initialization
     glfwMakeContextCurrent (this->m_window);
-    
+
     // initialize glew for rendering
     const GLenum result = glewInit ();
 
