@@ -2,8 +2,6 @@ cmake-build-debug*
 .idea
 build/
 .vscode/
-debug/
-temp/
 third_party/
 
 *-protocol.o
