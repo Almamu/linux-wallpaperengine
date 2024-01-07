@@ -196,76 +196,12 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
 
 void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     this->renderFrame (viewport);
+    // Update UVs coordinates according to scaling mode of this wallpaper
+    updateUVs (viewport, vflip);
+    auto [ustart, uend, vstart, vend] = this->m_state.getTextureUVs ();
 
-    uint32_t projectionWidth = this->getWidth ();
-    uint32_t projectionHeight = this->getHeight ();
-
-    float ustart = 0.0f;
-    float uend = 0.0f;
-    float vstart = 0.0f;
-    float vend = 0.0f;
-
-    if (
-        (viewport.w > viewport.z && projectionWidth >= projectionHeight) ||
-            (viewport.z > viewport.w && projectionHeight > projectionWidth)
-        )
-    {
-        if (vflip)
-        {
-            vstart = 0.0f;
-            vend = 1.0f;
-        }
-        else
-        {
-            vstart = 1.0f;
-            vend = 0.0f;
-        }
-
-        int newWidth = viewport.w / (float) projectionHeight * projectionWidth;
-        float newCenter = newWidth / 2.0f;
-        float viewportCenter = viewport.z / 2.0;
-
-        float left = newCenter - viewportCenter;
-        float right = newCenter + viewportCenter;
-
-        ustart = left / newWidth;
-        uend = right / newWidth;
-    }
-
-    if (
-        (viewport.z > viewport.w && projectionWidth >= projectionHeight) ||
-            (viewport.w > viewport.z && projectionHeight > projectionWidth)
-        )
-    {
-        ustart = 0.0f;
-        uend = 1.0f;
-
-        int newHeight = viewport.z / (float) projectionWidth * projectionHeight;
-        float newCenter = newHeight / 2.0f;
-        float viewportCenter = viewport.w / 2.0;
-
-        float down = newCenter - viewportCenter;
-        float up = newCenter + viewportCenter;
-
-        if (vflip)
-        {
-            vstart = down / newHeight;
-            vend = up / newHeight;
-        }
-        else
-        {
-            vstart = up / newHeight;
-            vend = down / newHeight;
-        }
-    }
-
-    GLfloat texCoords [] = {
-        ustart, vstart,
-        uend, vstart,
-        ustart, vend,
-        ustart, vend,
-        uend, vstart,
-        uend, vend,
+    const GLfloat texCoords [] = {
+        ustart, vstart, uend, vstart, ustart, vend, ustart, vend, uend, vstart, uend, vend,
     };
 
     glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
