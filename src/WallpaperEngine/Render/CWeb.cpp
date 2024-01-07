@@ -21,7 +21,7 @@ CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContex
     this->m_render_handler = new RenderHandler(this);
 
     CefBrowserSettings browserSettings;
-    //Documentaion says said that 60 fps is maximum value
+    //Documentaion says that 60 fps is maximum value
     browserSettings.windowless_frame_rate = std::max(60,context.getApp().getContext().settings.render.maximumFPS);
 
     m_client = new BrowserClient(m_render_handler);
