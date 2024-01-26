@@ -81,7 +81,7 @@ cd build
 
 Once the folder is created and we're in it, CMake has to generate the actual Makefiles. This can be done this way:
 ```
-cmake ..
+cmake ../linux-wallpaperengine
 ```
 Take a closer look at the CMake output, if you miss any library, CMake will report the missing libraries so you can install them either trough your package manager or manually in your system.
 
