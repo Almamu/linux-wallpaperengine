@@ -1,8 +1,8 @@
 #include "CWallpaper.h"
 #include "CScene.h"
 #include "CVideo.h"
-#include "common.h"
 #include "CWeb.h"
+#include "common.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,8 +25,7 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
-    m_state (scalingMode)
-{
+    m_state (scalingMode) {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -287,8 +286,8 @@ CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderConte
         return new WallpaperEngine::Render::CScene (wallpaper->as<Core::CScene> (), context, audioContext, scalingMode);
     if (wallpaper->is<Core::CVideo> ())
         return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
-    else if (wallpaper->is <Core::CWeb> ())
-        return new WallpaperEngine::Render::CWeb (wallpaper->as <Core::CWeb> (), context, audioContext, scalingMode);
+    else if (wallpaper->is<Core::CWeb> ())
+        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, scalingMode);
     else
         sLog.exception ("Unsupported wallpaper type");
 }

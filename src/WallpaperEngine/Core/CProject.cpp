@@ -20,7 +20,7 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
     json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
 
     std::string dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
-    if(dependency=="No dependency"){
+    if (dependency == "No dependency") {
         std::string title = *jsonFindRequired (content, "title", "Project title missing");
         std::string type = *jsonFindRequired (content, "type", "Project type missing");
         std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
@@ -45,7 +45,7 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
         if (general != content.end ()) {
             const auto properties = general->find ("properties");
 
-            if (properties != general-> end ()) {
+            if (properties != general->end ()) {
                 for (const auto& cur : properties->items ()) {
                     Projects::CProperty* property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
                     if (property != nullptr)
@@ -54,9 +54,8 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
             }
         }
         return project;
-    }
-    else{
-        sLog.exception("Project have dependency. They are not supported, quiting");
+    } else {
+        sLog.exception ("Project have dependency. They are not supported, quiting");
     }
 }
 
