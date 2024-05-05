@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(linux-wallpaperengine)
 
+set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
@@ -30,6 +31,63 @@ find_package(FFMPEG REQUIRED)
 find_package(FreeImage REQUIRED)
 find_package(PulseAudio REQUIRED)
 
+# Download CEF of specified version for current platform
+# Specify the CEF distribution version.
+set(CEF_VERSION "120.1.10+g3ce3184+chromium-120.0.6099.129")
+# Determine the platform.
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  if("${PROJECT_ARCH}" STREQUAL "arm64")
+    set(CEF_PLATFORM "macosarm64")
+  elseif("${PROJECT_ARCH}" STREQUAL "x86_64")
+    set(CEF_PLATFORM "macosx64")
+  elseif("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "arm64")
+    set(PROJECT_ARCH "arm64")
+    set(CEF_PLATFORM "macosarm64")
+  else()
+    set(PROJECT_ARCH "x86_64")
+    set(CEF_PLATFORM "macosx64")
+  endif()
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm")
+    set(CEF_PLATFORM "linuxarm")
+  elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
+    set(CEF_PLATFORM "linuxarm64")
+  elseif(CMAKE_SIZEOF_VOID_P MATCHES 8)
+    set(CEF_PLATFORM "linux64")
+  else()
+    message(FATAL_ERROR "Linux x86 32-bit builds are discontinued.")
+  endif()
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  if("${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}" STREQUAL "ARM64")
+    set(CEF_PLATFORM "windowsarm64")
+  elseif(CMAKE_SIZEOF_VOID_P MATCHES 8)
+    set(CEF_PLATFORM "windows64")
+  else()
+    set(CEF_PLATFORM "windows32")
+  endif()
+endif()
+include(DownloadCEF)
+DownloadCEF("${CEF_PLATFORM}" "${CEF_VERSION}" "${CMAKE_SOURCE_DIR}/third_party/cef")
+
+find_package(CEF REQUIRED)
+
+set(
+    CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${CMAKE_HOME_DIRECTORY}/build
+    )
+	
+set(
+    CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    ${CMAKE_HOME_DIRECTORY}/lib
+    )
+	
+set(
+    TARGET_OUTPUT_DIRECTORY
+    ${CMAKE_HOME_DIRECTORY}/build
+    )
+
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+
 include_directories(
     ${MPV_INCLUDE_DIR}
     ${X11_INCLUDE_DIR}
@@ -41,8 +99,18 @@ include_directories(
     ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
+    ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
     include)
+
+
+add_library(ceflib SHARED IMPORTED)
+set_target_properties(ceflib 
+    PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
+
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+# SET_CEF_TARGET_OUT_DIR()
+include_directories(${_CEF_ROOT})
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -206,6 +274,8 @@ add_executable(
     src/WallpaperEngine/Render/CScene.cpp
     src/WallpaperEngine/Render/CVideo.h
     src/WallpaperEngine/Render/CVideo.cpp
+    src/WallpaperEngine/Render/CWeb.h
+    src/WallpaperEngine/Render/CWeb.cpp
     src/WallpaperEngine/Render/CCamera.h
     src/WallpaperEngine/Render/CCamera.cpp
     src/WallpaperEngine/Render/CObject.h
@@ -245,6 +315,8 @@ add_executable(
     src/WallpaperEngine/Core/CScene.h
     src/WallpaperEngine/Core/CVideo.cpp
     src/WallpaperEngine/Core/CVideo.h
+    src/WallpaperEngine/Core/CWeb.cpp
+    src/WallpaperEngine/Core/CWeb.h
     src/WallpaperEngine/Core/CObject.cpp
     src/WallpaperEngine/Core/CObject.h
 
@@ -324,7 +396,16 @@ add_executable(
     ${WAYLAND_SOURCES}
 )
 
-target_link_libraries(linux-wallpaperengine
+COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+
+SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
+add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
+
+# Need to remove libvulkan, otherwise will get error on  linking:
+# /usr/bin/ld: /usr/lib/libmpv.so: undefined reference to `vkCreateXlibSurfaceKHR'
+file(REMOVE "${CEF_BINARY_DIR_DEBUG}/libvulkan.so.1" "${CEF_BINARY_DIR_RELEASE}/libvulkan.so.1") 
+target_link_libraries (linux-wallpaperengine PUBLIC 
     ${X11_LIBRARIES}
     ${Xrandr_LIBRARIES}
     ${X11_Xxf86vm_LIB}
@@ -338,10 +419,12 @@ target_link_libraries(linux-wallpaperengine
     ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
-    glfw)
+    glfw
+    libcef_lib libcef_dll_wrapper)
+
 
 if (WAYLAND_SUPPORT_FOUND)
-    target_link_libraries(linux-wallpaperengine
+    target_link_libraries(linux-wallpaperengine PUBLIC
         pthread
         wayland-cursor
         wayland-client
