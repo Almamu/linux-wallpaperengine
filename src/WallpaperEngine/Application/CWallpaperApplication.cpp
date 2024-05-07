@@ -19,9 +19,10 @@ float g_TimeLast;
 float g_Daytime;
 
 namespace WallpaperEngine::Application {
-CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
+CWallpaperApplication::CWallpaperApplication (CApplicationContext& context, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
     m_context (context),
-    m_defaultBackground (nullptr) {
+    m_defaultBackground (nullptr),
+    browserContext (browserContext) {
     this->loadBackgrounds ();
     this->setupProperties ();
 }
@@ -294,14 +295,19 @@ void CWallpaperApplication::show () {
     // set all the specific wallpapers required
     for (const auto& [background, info] : this->m_backgrounds)
         context->setWallpaper (background, WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                                               info->getWallpaper (), *context, *audioContext,
+                                               info->getWallpaper (), *context, *audioContext, browserContext,
                                                this->m_context.settings.general.screenScalings [background]));
 
     // set the default rendering wallpaper if available
     if (this->m_defaultBackground != nullptr)
         context->setDefaultWallpaper (WallpaperEngine::Render::CWallpaper::fromWallpaper (
-            this->m_defaultBackground->getWallpaper (), *context, *audioContext,
+            this->m_defaultBackground->getWallpaper (), *context, *audioContext, browserContext,
             this->m_context.settings.render.window.scalingMode));
+
+    // wallpapers are setup, free browsesr context if possible
+    if (!this->browserContext.isUsed()) {
+        this->browserContext.stop();
+    }
 
     static time_t seconds;
     static struct tm* timeinfo;

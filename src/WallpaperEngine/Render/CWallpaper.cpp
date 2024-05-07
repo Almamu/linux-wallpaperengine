@@ -280,14 +280,14 @@ CFBO* CWallpaper::getFBO () const {
 }
 
 CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context,
-                                       CAudioContext& audioContext,
+                                       CAudioContext& audioContext, CWebBrowserContext& browserContext,
                                        const CWallpaperState::TextureUVsScaling& scalingMode) {
     if (wallpaper->is<Core::CScene> ())
         return new WallpaperEngine::Render::CScene (wallpaper->as<Core::CScene> (), context, audioContext, scalingMode);
     if (wallpaper->is<Core::CVideo> ())
         return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
     else if (wallpaper->is<Core::CWeb> ())
-        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, scalingMode);
+        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, browserContext, scalingMode);
     else
         sLog.exception ("Unsupported wallpaper type");
 }

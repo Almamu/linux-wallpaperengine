@@ -4,14 +4,18 @@
 #include "CWeb.h"
 
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::WebBrowser;
 
 CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext,
+            CWebBrowserContext& browserContext,
             const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (web, Type, context, audioContext, scalingMode),
     m_width (context.getOutput ().getFullWidth ()),
     m_height (context.getOutput ().getFullHeight ()),
+    m_browserContext (browserContext),
     m_browser (),
     m_client () {
+    this->m_browserContext.markAsUsed();
     // setup framebuffers
     this->setupFramebuffers ();
 

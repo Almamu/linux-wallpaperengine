@@ -27,6 +27,7 @@
 #include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
 
 #include "WallpaperEngine/Input/CInputContext.h"
+#include "WallpaperEngine/WebBrowsesr/CWebBrowserContext.h"
 
 namespace WallpaperEngine::Application {
 /**
@@ -36,7 +37,7 @@ namespace WallpaperEngine::Application {
  */
 class CWallpaperApplication {
   public:
-    explicit CWallpaperApplication (CApplicationContext& context);
+    explicit CWallpaperApplication (CApplicationContext& context, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext);
     ~CWallpaperApplication ();
 
     /**
@@ -122,5 +123,6 @@ class CWallpaperApplication {
     WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
     WallpaperEngine::Render::CRenderContext* context;
     WallpaperEngine::Audio::CAudioContext* audioContext;
+    WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext;
 };
 } // namespace WallpaperEngine::Application

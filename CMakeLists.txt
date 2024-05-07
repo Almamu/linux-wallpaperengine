@@ -152,7 +152,9 @@ if(WAYLAND_SUPPORT_FOUND)
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp"
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
             "xdg-shell-protocol.c"
-            "wlr-layer-shell-unstable-v1-protocol.c")
+            "wlr-layer-shell-unstable-v1-protocol.c"
+            src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.cpp
+            src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.h)
 endif()
 
 add_executable(

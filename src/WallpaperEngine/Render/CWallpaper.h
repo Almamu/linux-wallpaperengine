@@ -14,10 +14,13 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
+#include "WallpaperEngine/WebBrowsesr/CWebBrowserContext.h"
+
 #include "CWallpaperState.h"
 
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
+using namespace WallpaperEngine::WebBrowser;
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
@@ -138,7 +141,7 @@ class CWallpaper : public Helpers::CContextAware {
      * @return
      */
     static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
-                                      const CWallpaperState::TextureUVsScaling& scalingMode);
+                                      CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
 
   protected:
     CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,

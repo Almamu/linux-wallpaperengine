@@ -19,7 +19,7 @@ namespace WallpaperEngine::Render
     class CWeb : public CWallpaper
     {
         public:
-            CWeb (Core::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode);
+            CWeb (Core::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
             ~CWeb();
             uint32_t getWidth  () const override { return this->m_width; }
 
@@ -103,7 +103,8 @@ namespace WallpaperEngine::Render
 
                     IMPLEMENT_REFCOUNTING(BrowserClient);
             };
-            
+
+            WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
             CefRefPtr<CefBrowser> m_browser;
             CefRefPtr<BrowserClient> m_client;
             RenderHandler* m_render_handler = nullptr;
