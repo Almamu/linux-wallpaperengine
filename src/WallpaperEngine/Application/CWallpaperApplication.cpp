@@ -157,18 +157,19 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 }
 
 void CWallpaperApplication::loadBackgrounds () {
-    for (const auto& [background, path] : this->m_context.settings.general.screenBackgrounds) {
-        // ignore the screen settings if there was no background specified
-        // the default will be used
-        if (path.empty ())
-            continue;
-
-        this->m_backgrounds [background] = this->loadBackground (path);
+    // load default background if specified
+    if (!this->m_context.settings.general.defaultBackground.empty()) {
+        this->m_defaultBackground = this->loadBackground (this->m_context.settings.general.defaultBackground);
     }
 
-    // load the default project if required
-    if (!this->m_context.settings.general.defaultBackground.empty ())
-        this->m_defaultBackground = this->loadBackground (this->m_context.settings.general.defaultBackground);
+    for (const auto& [background, path] : this->m_context.settings.general.screenBackgrounds) {
+        // screens with no background should use the default
+        if (path.empty ()) {
+            this->m_backgrounds [background] = this->m_defaultBackground;
+        } else {
+            this->m_backgrounds [background] = this->loadBackground (path);
+        }
+    }
 }
 
 Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg) {
@@ -292,17 +293,14 @@ void CWallpaperApplication::show () {
     // initialize render context
     context = new WallpaperEngine::Render::CRenderContext (*videoDriver, *inputContext, *this);
 
+    // create a new background for each screen
+
     // set all the specific wallpapers required
-    for (const auto& [background, info] : this->m_backgrounds)
+    for (const auto& [background, info] : this->m_backgrounds) {
         context->setWallpaper (background, WallpaperEngine::Render::CWallpaper::fromWallpaper (
                                                info->getWallpaper (), *context, *audioContext, browserContext,
                                                this->m_context.settings.general.screenScalings [background]));
-
-    // set the default rendering wallpaper if available
-    if (this->m_defaultBackground != nullptr)
-        context->setDefaultWallpaper (WallpaperEngine::Render::CWallpaper::fromWallpaper (
-            this->m_defaultBackground->getWallpaper (), *context, *audioContext, browserContext,
-            this->m_context.settings.render.window.scalingMode));
+    }
 
     // wallpapers are setup, free browsesr context if possible
     if (!this->browserContext.isUsed()) {

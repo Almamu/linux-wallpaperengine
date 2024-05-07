@@ -34,7 +34,6 @@ class CRenderContext {
     CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
 
     void render (Drivers::Output::COutputViewport* viewport);
-    void setDefaultWallpaper (CWallpaper* wallpaper);
     void setWallpaper (const std::string& display, CWallpaper* wallpaper);
     [[nodiscard]] Input::CInputContext& getInputContext () const;
     [[nodiscard]] const CWallpaperApplication& getApp () const;
@@ -47,8 +46,6 @@ class CRenderContext {
     Drivers::CVideoDriver& m_driver;
     /** Maps screen -> wallpaper list */
     std::map<std::string, CWallpaper*> m_wallpapers;
-    /** Default wallpaper to use */
-    CWallpaper* m_defaultWallpaper;
     /** Input context for interactions */
     Input::CInputContext& m_input;
     /** App that holds the render context */

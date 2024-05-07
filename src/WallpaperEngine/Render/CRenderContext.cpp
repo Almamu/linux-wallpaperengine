@@ -10,7 +10,6 @@
 namespace WallpaperEngine::Render {
 CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input,
                                 CWallpaperApplication& app) :
-    m_defaultWallpaper (nullptr),
     m_driver (driver),
     m_app (app),
     m_input (input),
@@ -31,18 +30,12 @@ void CRenderContext::render (Drivers::Output::COutputViewport* viewport) {
     // render the background
     if (ref != this->m_wallpapers.end ())
         ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
-    else
-        this->m_defaultWallpaper->render (viewport->viewport, this->getOutput ().renderVFlip ());
 
 #if !NDEBUG
     glPopDebugGroup ();
 #endif /* DEBUG */
 
     viewport->swapOutput ();
-}
-
-void CRenderContext::setDefaultWallpaper (CWallpaper* wallpaper) {
-    this->m_defaultWallpaper = wallpaper;
 }
 
 void CRenderContext::setWallpaper (const std::string& display, CWallpaper* wallpaper) {
