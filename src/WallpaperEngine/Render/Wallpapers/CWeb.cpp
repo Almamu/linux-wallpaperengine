@@ -10,8 +10,8 @@ CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContex
             CWebBrowserContext& browserContext,
             const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (web, Type, context, audioContext, scalingMode),
-    m_width (context.getOutput ().getFullWidth ()),
-    m_height (context.getOutput ().getFullHeight ()),
+    m_width (16),
+    m_height (16),
     m_browserContext (browserContext),
     m_browser (),
     m_client () {
@@ -55,6 +55,11 @@ void CWeb::setSize (int64_t width, int64_t height) {
 }
 
 void CWeb::renderFrame (glm::ivec4 viewport) {
+    // ensure the viewport matches the window size, and resize if needed
+    if (viewport.z != this->getWidth() || viewport.w != this->getHeight()) {
+        this->setSize(viewport.z, viewport.w);
+    }
+
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
     // use the scene's framebuffer by default
