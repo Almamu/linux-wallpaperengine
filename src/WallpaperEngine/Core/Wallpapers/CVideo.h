@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CWallpaper.h"
-#include "Core.h"
+#include "WallpaperEngine/Core/CWallpaper.h"
+#include "WallpaperEngine/Core/Core.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

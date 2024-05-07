@@ -3,7 +3,7 @@
 
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "WallpaperEngine/Core/CWeb.h"
+#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "common.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;

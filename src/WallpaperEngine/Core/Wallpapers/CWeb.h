@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core.h"
-#include "CWallpaper.h"
+#include "WallpaperEngine/Core/CWallpaper.h"
+#include "WallpaperEngine/Core/Core.h"
 
 // Chromium Embedded Framework
 #include "include/cef_render_handler.h"

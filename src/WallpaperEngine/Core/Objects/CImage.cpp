@@ -1,10 +1,10 @@
 #include "CImage.h"
 
-#include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include <utility>
 
 #include "WallpaperEngine/FileSystem/FileSystem.h"

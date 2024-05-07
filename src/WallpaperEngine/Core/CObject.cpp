@@ -2,11 +2,11 @@
 #include "common.h"
 
 #include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CParticle.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include <utility>
 
 #include "WallpaperEngine/Assets/CContainer.h"

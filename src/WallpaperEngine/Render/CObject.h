@@ -5,7 +5,7 @@
 #include "WallpaperEngine/Core/CObject.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
-#include "CScene.h"
+#include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 namespace WallpaperEngine::Render {
 class CScene;

@@ -5,12 +5,12 @@
 #include <utility>
 
 #include "WallpaperEngine/Core/CProject.h"
-#include "WallpaperEngine/Core/CScene.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 

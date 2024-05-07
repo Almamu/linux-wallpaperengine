@@ -1,7 +1,7 @@
 #include "CWallpaper.h"
-#include "CScene.h"
-#include "CVideo.h"
-#include "CWeb.h"
+#include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "WallpaperEngine/Render/Wallpapers/CVideo.h"
+#include "WallpaperEngine/Render/Wallpapers/CWeb.h"
 #include "common.h"
 
 #include <glm/glm.hpp>

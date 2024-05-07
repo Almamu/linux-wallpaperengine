@@ -9,10 +9,10 @@
 #include <memory>
 #include <algorithm>
 
-#include "common.h"
-#include "WallpaperEngine/Core/CWeb.h"
-#include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Audio/CAudioStream.h"
+#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
+#include "WallpaperEngine/Render/CWallpaper.h"
+#include "common.h"
 
 namespace WallpaperEngine::Render
 {

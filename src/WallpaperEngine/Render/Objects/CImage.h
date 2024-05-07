@@ -3,10 +3,10 @@
 #include "WallpaperEngine/Core/Objects/CImage.h"
 
 #include "WallpaperEngine/Render/CObject.h"
-#include "WallpaperEngine/Render/CScene.h"
 #include "WallpaperEngine/Render/Objects/CEffect.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
+#include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 #include "WallpaperEngine/Render/Shaders/Compiler.h"
 

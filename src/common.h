@@ -1,7 +1,7 @@
 #pragma once
 
+#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Logging/CLog.h"
-#include "WallpaperEngine/Core/CWeb.h"
 
 //global variables are bad
 extern bool g_CEFused;

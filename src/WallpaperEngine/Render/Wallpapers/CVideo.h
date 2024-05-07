@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Core/CVideo.h"
+#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 
 #include "WallpaperEngine/Audio/CAudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"

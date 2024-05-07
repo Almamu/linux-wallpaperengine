@@ -6,7 +6,7 @@
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
-#include "WallpaperEngine/Core/CVideo.h"
+#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"

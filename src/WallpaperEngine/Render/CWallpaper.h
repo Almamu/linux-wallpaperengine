@@ -6,9 +6,9 @@
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Audio/CAudioContext.h"
 
-#include "WallpaperEngine/Core/CScene.h"
-#include "WallpaperEngine/Core/CVideo.h"
 #include "WallpaperEngine/Core/CWallpaper.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
+#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/CRenderContext.h"

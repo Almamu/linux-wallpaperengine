@@ -270,12 +270,12 @@ add_executable(
     src/WallpaperEngine/Render/CWallpaper.cpp
     src/WallpaperEngine/Render/CWallpaperState.h
     src/WallpaperEngine/Render/CWallpaperState.cpp
-    src/WallpaperEngine/Render/CScene.h
-    src/WallpaperEngine/Render/CScene.cpp
-    src/WallpaperEngine/Render/CVideo.h
-    src/WallpaperEngine/Render/CVideo.cpp
-    src/WallpaperEngine/Render/CWeb.h
-    src/WallpaperEngine/Render/CWeb.cpp
+        src/WallpaperEngine/Render/Wallpapers/CScene.h
+        src/WallpaperEngine/Render/Wallpapers/CScene.cpp
+        src/WallpaperEngine/Render/Wallpapers/CVideo.h
+        src/WallpaperEngine/Render/Wallpapers/CVideo.cpp
+        src/WallpaperEngine/Render/Wallpapers/CWeb.h
+        src/WallpaperEngine/Render/Wallpapers/CWeb.cpp
     src/WallpaperEngine/Render/CCamera.h
     src/WallpaperEngine/Render/CCamera.cpp
     src/WallpaperEngine/Render/CObject.h
@@ -311,12 +311,12 @@ add_executable(
     src/WallpaperEngine/Core/CProject.h
     src/WallpaperEngine/Core/CWallpaper.cpp
     src/WallpaperEngine/Core/CWallpaper.h
-    src/WallpaperEngine/Core/CScene.cpp
-    src/WallpaperEngine/Core/CScene.h
-    src/WallpaperEngine/Core/CVideo.cpp
-    src/WallpaperEngine/Core/CVideo.h
-    src/WallpaperEngine/Core/CWeb.cpp
-    src/WallpaperEngine/Core/CWeb.h
+        src/WallpaperEngine/Core/Wallpapers/CScene.cpp
+        src/WallpaperEngine/Core/Wallpapers/CScene.h
+        src/WallpaperEngine/Core/Wallpapers/CVideo.cpp
+        src/WallpaperEngine/Core/Wallpapers/CVideo.h
+        src/WallpaperEngine/Core/Wallpapers/CWeb.cpp
+        src/WallpaperEngine/Core/Wallpapers/CWeb.h
     src/WallpaperEngine/Core/CObject.cpp
     src/WallpaperEngine/Core/CObject.h
 

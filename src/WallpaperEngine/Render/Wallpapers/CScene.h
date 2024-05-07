@@ -1,8 +1,8 @@
 #pragma once
 
-#include "CCamera.h"
+#include "WallpaperEngine/Render/CCamera.h"
 
-#include "WallpaperEngine/Core/CScene.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 

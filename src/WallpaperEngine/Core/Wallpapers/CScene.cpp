@@ -1,5 +1,5 @@
 #include "CScene.h"
-#include "CProject.h"
+#include "WallpaperEngine/Core/CProject.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"

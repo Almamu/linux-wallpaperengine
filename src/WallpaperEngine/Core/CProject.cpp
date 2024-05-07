@@ -3,9 +3,9 @@
 #include <WallpaperEngine/FileSystem/FileSystem.h>
 
 #include "CProject.h"
-#include "CScene.h"
-#include "CVideo.h"
-#include "CWeb.h"
+#include "WallpaperEngine/Core/Wallpapers/CScene.h"
+#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
+#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "CObject.h"
-#include "CWallpaper.h"
+#include "WallpaperEngine/Core/CObject.h"
+#include "WallpaperEngine/Core/CWallpaper.h"
 
-#include "Core.h"
+#include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 #include "WallpaperEngine/Core/Scenes/CProjection.h"

@@ -4,8 +4,8 @@
 #include <GL/glew.h>
 
 #include "CRenderContext.h"
-#include "CVideo.h"
 #include "CWallpaper.h"
+#include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 
 namespace WallpaperEngine::Render {
 CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input,
