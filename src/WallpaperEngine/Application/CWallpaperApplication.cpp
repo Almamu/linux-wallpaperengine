@@ -19,7 +19,8 @@ float g_TimeLast;
 float g_Daytime;
 
 namespace WallpaperEngine::Application {
-CWallpaperApplication::CWallpaperApplication (CApplicationContext& context, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
+CWallpaperApplication::CWallpaperApplication (CApplicationContext& context,
+                                              WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
     m_context (context),
     m_defaultBackground (nullptr),
     browserContext (browserContext) {
@@ -158,7 +159,7 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 
 void CWallpaperApplication::loadBackgrounds () {
     // load default background if specified
-    if (!this->m_context.settings.general.defaultBackground.empty()) {
+    if (!this->m_context.settings.general.defaultBackground.empty ()) {
         this->m_defaultBackground = this->loadBackground (this->m_context.settings.general.defaultBackground);
     }
 
@@ -303,8 +304,8 @@ void CWallpaperApplication::show () {
     }
 
     // wallpapers are setup, free browsesr context if possible
-    if (!this->browserContext.isUsed()) {
-        this->browserContext.stop();
+    if (!this->browserContext.isUsed ()) {
+        this->browserContext.stop ();
     }
 
     static time_t seconds;

@@ -6,8 +6,7 @@
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::WebBrowser;
 
-CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext,
-            CWebBrowserContext& browserContext,
+CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext, CWebBrowserContext& browserContext,
             const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (web, Type, context, audioContext, scalingMode),
     m_width (16),
@@ -15,7 +14,7 @@ CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContex
     m_browserContext (browserContext),
     m_browser (),
     m_client () {
-    this->m_browserContext.markAsUsed();
+    this->m_browserContext.markAsUsed ();
     // setup framebuffers
     this->setupFramebuffers ();
 
@@ -56,8 +55,8 @@ void CWeb::setSize (int64_t width, int64_t height) {
 
 void CWeb::renderFrame (glm::ivec4 viewport) {
     // ensure the viewport matches the window size, and resize if needed
-    if (viewport.z != this->getWidth() || viewport.w != this->getHeight()) {
-        this->setSize(viewport.z, viewport.w);
+    if (viewport.z != this->getWidth () || viewport.w != this->getHeight ()) {
+        this->setSize (viewport.z, viewport.w);
     }
 
     // ensure the virtual mouse position is up to date

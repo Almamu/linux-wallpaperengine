@@ -287,7 +287,8 @@ CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderConte
     if (wallpaper->is<Core::CVideo> ())
         return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
     else if (wallpaper->is<Core::CWeb> ())
-        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, browserContext, scalingMode);
+        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, browserContext,
+                                                  scalingMode);
     else
         sLog.exception ("Unsupported wallpaper type");
 }
