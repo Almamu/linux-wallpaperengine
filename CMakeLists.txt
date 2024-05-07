@@ -152,9 +152,7 @@ if(WAYLAND_SUPPORT_FOUND)
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp"
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
             "xdg-shell-protocol.c"
-            "wlr-layer-shell-unstable-v1-protocol.c"
-            src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.cpp
-            src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.h)
+            "wlr-layer-shell-unstable-v1-protocol.c")
 endif()
 
 add_executable(
@@ -272,12 +270,12 @@ add_executable(
     src/WallpaperEngine/Render/CWallpaper.cpp
     src/WallpaperEngine/Render/CWallpaperState.h
     src/WallpaperEngine/Render/CWallpaperState.cpp
-        src/WallpaperEngine/Render/Wallpapers/CScene.h
-        src/WallpaperEngine/Render/Wallpapers/CScene.cpp
-        src/WallpaperEngine/Render/Wallpapers/CVideo.h
-        src/WallpaperEngine/Render/Wallpapers/CVideo.cpp
-        src/WallpaperEngine/Render/Wallpapers/CWeb.h
-        src/WallpaperEngine/Render/Wallpapers/CWeb.cpp
+    src/WallpaperEngine/Render/Wallpapers/CScene.h
+    src/WallpaperEngine/Render/Wallpapers/CScene.cpp
+    src/WallpaperEngine/Render/Wallpapers/CVideo.h
+    src/WallpaperEngine/Render/Wallpapers/CVideo.cpp
+    src/WallpaperEngine/Render/Wallpapers/CWeb.h
+    src/WallpaperEngine/Render/Wallpapers/CWeb.cpp
     src/WallpaperEngine/Render/CCamera.h
     src/WallpaperEngine/Render/CCamera.cpp
     src/WallpaperEngine/Render/CObject.h
@@ -297,6 +295,9 @@ add_executable(
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
+    src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.cpp
+    src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.h
+
     src/WallpaperEngine/FileSystem/FileSystem.cpp
     src/WallpaperEngine/FileSystem/FileSystem.h
 
@@ -313,12 +314,12 @@ add_executable(
     src/WallpaperEngine/Core/CProject.h
     src/WallpaperEngine/Core/CWallpaper.cpp
     src/WallpaperEngine/Core/CWallpaper.h
-        src/WallpaperEngine/Core/Wallpapers/CScene.cpp
-        src/WallpaperEngine/Core/Wallpapers/CScene.h
-        src/WallpaperEngine/Core/Wallpapers/CVideo.cpp
-        src/WallpaperEngine/Core/Wallpapers/CVideo.h
-        src/WallpaperEngine/Core/Wallpapers/CWeb.cpp
-        src/WallpaperEngine/Core/Wallpapers/CWeb.h
+    src/WallpaperEngine/Core/Wallpapers/CScene.cpp
+    src/WallpaperEngine/Core/Wallpapers/CScene.h
+    src/WallpaperEngine/Core/Wallpapers/CVideo.cpp
+    src/WallpaperEngine/Core/Wallpapers/CVideo.h
+    src/WallpaperEngine/Core/Wallpapers/CWeb.cpp
+    src/WallpaperEngine/Core/Wallpapers/CWeb.h
     src/WallpaperEngine/Core/CObject.cpp
     src/WallpaperEngine/Core/CObject.h
 
