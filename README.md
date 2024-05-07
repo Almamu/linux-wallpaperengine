@@ -122,13 +122,20 @@ By default the app will load the backgrounds in a window so you can preview them
 Where `/home/almamu/Development/backgrounds/1845706469/` is the background's path.
 
 ### 5.5.3. Running as a screen's background
+The app supports running as background in X11 and Wayland. Use the --screen-root switch and the screen name, like so:
+
+```
+./linux-wallpaperengine --screen-root HDMI-1 --screen-root DVI-D-1 1845706469
+```
+
+#### Wayland
+Has only been tested under wlroots but should work on any flavour as long as wlr-layer-shell-unstable is supported.
+
+#### X11
 Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, gnome, kde, nautilus, etc)**
 
-```
-./linux-wallpaperengine --screen-root HDMI-1 --screen-root DVI-D-1 /home/almamu/Development/backgrounds/1845706469/
-```
 
 ### 5.5.4. Limiting FPS
 To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
