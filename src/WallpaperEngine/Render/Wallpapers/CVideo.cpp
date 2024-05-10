@@ -30,6 +30,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option_string (this->m_mpv, "cursor-autohide", "no");
     mpv_set_option_string (this->m_mpv, "config", "no");
     mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
+    mpv_set_option_string (this->m_mpv, "vo", "libmpv");
 
     if (mpv_initialize (this->m_mpv) < 0)
         sLog.exception ("Could not initialize mpv context");
