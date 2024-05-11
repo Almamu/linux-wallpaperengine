@@ -70,7 +70,7 @@ std::string CContainer::readFileAsString (const std::string& filename) const {
     uint32_t length = 0;
 
     // read file contents and allocate a buffer for a string
-    const void* contents = this->readFile (std::move (filename), &length);
+    const uint8_t* contents = this->readFile (filename, &length);
     char* buffer = new char [length + 1];
 
     // ensure there's a 0 at the end

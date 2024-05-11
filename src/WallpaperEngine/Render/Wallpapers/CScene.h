@@ -19,8 +19,8 @@ class CScene final : public CWallpaper {
 
     Core::CScene* getScene () const;
 
-    uint32_t getWidth () const override;
-    uint32_t getHeight () const override;
+    int getWidth () const override;
+    int getHeight () const override;
 
     glm::vec2* getMousePosition ();
     glm::vec2* getMousePositionLast ();

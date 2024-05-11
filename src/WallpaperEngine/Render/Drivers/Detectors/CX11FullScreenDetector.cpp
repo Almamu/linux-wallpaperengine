@@ -74,7 +74,7 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
             XFree (children);
     }
 
-    for (int i = 0; i < nchildren; i++) {
+    for (unsigned int i = 0; i < nchildren; i++) {
         if (!XGetWindowAttributes (this->m_display, children [i], &attribs))
             continue;
 

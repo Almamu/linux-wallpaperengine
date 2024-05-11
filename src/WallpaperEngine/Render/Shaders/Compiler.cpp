@@ -701,7 +701,7 @@ void Compiler::parseParameterConfiguration (const std::string& type, const std::
         // extract the texture number from the name
         const char value = name.at (std::string ("g_Texture").length ());
         // now convert it to integer
-        int index = value - '0';
+        size_t index = value - '0';
 
         if (combo != data.end ()) {
             // if the texture exists (and is not null), add to the combo

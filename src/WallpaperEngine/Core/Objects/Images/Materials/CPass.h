@@ -88,7 +88,7 @@ class CPass {
      * @param index
      * @param texture
      */
-    void setTexture (int index, const std::string& texture);
+    void setTexture (std::vector<std::string>::size_type index, const std::string& texture);
 
   private:
     // TODO: CREATE ENUMERATIONS FOR THESE INSTEAD OF USING STRING VALUES!

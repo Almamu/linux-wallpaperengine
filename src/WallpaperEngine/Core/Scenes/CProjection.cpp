@@ -2,15 +2,15 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection (uint32_t width, uint32_t height) : m_isAuto (false), m_width (width), m_height (height) {}
+CProjection::CProjection (int width, int height) : m_isAuto (false), m_width (width), m_height (height) {}
 
 CProjection::CProjection (bool isAuto) : m_isAuto (isAuto), m_width (0), m_height (0) {}
 
-const uint32_t& CProjection::getWidth () const {
+const int& CProjection::getWidth () const {
     return this->m_width;
 }
 
-const uint32_t& CProjection::getHeight () const {
+const int& CProjection::getHeight () const {
     return this->m_height;
 }
 
@@ -18,11 +18,11 @@ bool CProjection::isAuto () const {
     return this->m_isAuto;
 }
 
-void CProjection::setWidth (uint32_t width) {
+void CProjection::setWidth (int width) {
     this->m_width = width;
 }
 
-void CProjection::setHeight (uint32_t height) {
+void CProjection::setHeight (int height) {
     this->m_height = height;
 }
 

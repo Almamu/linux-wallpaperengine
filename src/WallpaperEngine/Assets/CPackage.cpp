@@ -24,7 +24,7 @@ CPackage::CPackage (std::filesystem::path path) : m_path (std::move (path)) {
     this->init ();
 }
 
-const void* CPackage::readFile (const std::string& filename, uint32_t* length) const {
+const uint8_t* CPackage::readFile (const std::string& filename, uint32_t* length) const {
     const auto it = this->m_contents.find (filename);
 
     if (it == this->m_contents.end ())
@@ -35,7 +35,7 @@ const void* CPackage::readFile (const std::string& filename, uint32_t* length) c
         *length = it->second->length;
 
     // clone original first
-    auto* result = new char [it->second->length];
+    auto* result = new uint8_t [it->second->length];
 
     memcpy (result, it->second->address, it->second->length);
 
@@ -128,7 +128,7 @@ void CPackage::loadFiles (FILE* fp) {
             sLog.exception ("Cannot find file ", cur.filename, " from package ", this->m_path);
 
         // allocate memory for the file's contents and read it from the file
-        char* fileContents = new char [cur.length];
+        auto* fileContents = new uint8_t [cur.length];
 
         if (fread (fileContents, cur.length, 1, fp) != 1) {
             delete [] fileContents;

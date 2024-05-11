@@ -30,7 +30,7 @@ class CContainer {
      *
      * @return
      */
-    [[nodiscard]] virtual const void* readFile (const std::string& filename, uint32_t* length) const = 0;
+    [[nodiscard]] virtual const uint8_t* readFile (const std::string& filename, uint32_t* length) const = 0;
 
     /**
      * Wrapper for readFile, appends the texture extension at the end of the filename

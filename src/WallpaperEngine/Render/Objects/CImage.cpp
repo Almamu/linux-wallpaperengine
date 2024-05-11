@@ -377,7 +377,7 @@ void CImage::render () {
 #if !NDEBUG
     std::string str = "Rendering ";
 
-    if (this->getScene ()->getScene ()->isBloom () && this->getId () == 0xFFFFFFFF)
+    if (this->getScene ()->getScene ()->isBloom () && this->getId () == -1)
         str += "bloom";
     else {
         str += this->getImage ()->getName () + " (" + std::to_string (this->getId ()) + ", " +

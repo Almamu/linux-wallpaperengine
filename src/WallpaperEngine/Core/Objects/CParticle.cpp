@@ -6,8 +6,8 @@
 using namespace WallpaperEngine::Core::Objects;
 
 CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CContainer* container,
-                                CUserSettingBoolean* visible, uint32_t id, std::string name,
-                                CUserSettingVector3* origin, CUserSettingVector3* scale) {
+                                CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
+                                CUserSettingVector3* scale) {
     json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
     const auto controlpoint_it = data.find ("controlpoint");
     const auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
@@ -29,7 +29,7 @@ CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CCon
     return particle;
 }
 
-CParticle::CParticle (CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, uint32_t id,
+CParticle::CParticle (CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
                       std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale) :
     CObject (scene, visible, id, std::move (name), Type, origin, scale, glm::vec3 ()),
     m_starttime (starttime),

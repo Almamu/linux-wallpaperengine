@@ -23,7 +23,7 @@ std::filesystem::path CDirectory::resolveRealFile (const std::string& filename) 
     return std::filesystem::path (this->m_basepath) / filename;
 }
 
-const void* CDirectory::readFile (const std::string& filename, uint32_t* length) const {
+const uint8_t* CDirectory::readFile (const std::string& filename, uint32_t* length) const {
     const std::filesystem::path final = std::filesystem::path (this->m_basepath) / filename;
 
     // first check the cache, if the file is there already just return the data in there
@@ -47,7 +47,7 @@ const void* CDirectory::readFile (const std::string& filename, uint32_t* length)
     fseek (fp, 0, SEEK_SET);
 
     // now read the whole file
-    auto* contents = new char [size];
+    auto* contents = new uint8_t [size];
 
     if (fread (contents, size, 1, fp) != 1) {
         delete [] contents;

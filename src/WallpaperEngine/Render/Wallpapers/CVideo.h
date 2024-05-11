@@ -15,10 +15,10 @@ class CVideo final : public CWallpaper {
 
     Core::CVideo* getVideo ();
 
-    uint32_t getWidth () const override;
-    uint32_t getHeight () const override;
+    [[nodiscard]] int getWidth () const override;
+    [[nodiscard]] int getHeight () const override;
 
-    void setSize (int64_t width, int64_t height);
+    void setSize (int width, int height);
 
   protected:
     void renderFrame (glm::ivec4 viewport) override;

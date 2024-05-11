@@ -61,8 +61,8 @@ template <> void CWallpaperState::updateTextureUVs<CWallpaperState::TextureUVsSc
 
     const int viewportWidth = this->getViewportWidth ();
     const int viewportHeight = this->getViewportHeight ();
-    uint32_t projectionWidth = this->getProjectionWidth ();
-    uint32_t projectionHeight = this->getProjectionHeight ();
+    int projectionWidth = this->getProjectionWidth ();
+    int projectionHeight = this->getProjectionHeight ();
 
     const float m1 = static_cast<float> (viewportWidth) / projectionWidth;
     const float m2 = static_cast<float> (viewportHeight) / projectionHeight;
@@ -82,8 +82,8 @@ template <> void CWallpaperState::updateTextureUVs<CWallpaperState::TextureUVsSc
 
     const int viewportWidth = this->getViewportWidth ();
     const int viewportHeight = this->getViewportHeight ();
-    uint32_t projectionWidth = this->getProjectionWidth ();
-    uint32_t projectionHeight = this->getProjectionHeight ();
+    int projectionWidth = this->getProjectionWidth ();
+    int projectionHeight = this->getProjectionHeight ();
 
     const float m1 = static_cast<float> (viewportWidth) / projectionWidth;
     const float m2 = static_cast<float> (viewportHeight) / projectionHeight;
@@ -103,8 +103,8 @@ template <> void CWallpaperState::updateTextureUVs<CWallpaperState::TextureUVsSc
 
     const int viewportWidth = this->getViewportWidth ();
     const int viewportHeight = this->getViewportHeight ();
-    const uint32_t projectionWidth = this->getProjectionWidth ();
-    const uint32_t projectionHeight = this->getProjectionHeight ();
+    const int projectionWidth = this->getProjectionWidth ();
+    const int projectionHeight = this->getProjectionHeight ();
 
     if ((viewportHeight > viewportWidth && projectionWidth >= projectionHeight) ||
         (viewportWidth > viewportHeight && projectionHeight > projectionWidth)) {

@@ -25,9 +25,9 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 
     // Careful when to pa_stream_peek() and pa_stream_drop()!
     // c.f. https://www.freedesktop.org/software/pulseaudio/doxygen/stream_8h.html#ac2838c449cde56e169224d7fe3d00824
-    const void* data = nullptr;
+    const uint8_t* data = nullptr;
     size_t currentSize;
-    if (pa_stream_peek (stream, &data, &currentSize) != 0) {
+    if (pa_stream_peek (stream, reinterpret_cast<const void**> (&data), &currentSize) != 0) {
         sLog.error ("Failed to peek at stream data...");
         return;
     }

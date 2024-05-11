@@ -96,8 +96,7 @@ CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& aud
                                   "\t\"origin\": \"" +
                                   std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) +
                                   " 0.0\","
-                                  "\t\"id\": " +
-                                  std::to_string (0xFFFFFFFF) +
+                                  "\t\"id\": -1" +
                                   ","
                                   "\t\"effects\":"
                                   "\t["
@@ -246,11 +245,11 @@ Core::CScene* CScene::getScene () const {
     return this->getWallpaperData ()->as<Core::CScene> ();
 }
 
-uint32_t CScene::getWidth () const {
+int CScene::getWidth () const {
     return this->getScene ()->getOrthogonalProjection ()->getWidth ();
 }
 
-uint32_t CScene::getHeight () const {
+int CScene::getHeight () const {
     return this->getScene ()->getOrthogonalProjection ()->getHeight ();
 }
 

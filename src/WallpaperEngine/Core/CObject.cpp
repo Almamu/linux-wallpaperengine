@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CObject::CObject (CScene* scene, CUserSettingBoolean* visible, uint32_t id, std::string name, std::string type,
+CObject::CObject (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
                   CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles) :
     m_scene (scene),
     m_visible (visible),
@@ -108,7 +108,7 @@ const std::vector<Objects::CEffect*>& CObject::getEffects () const {
     return this->m_effects;
 }
 
-const std::vector<uint32_t>& CObject::getDependencies () const {
+const std::vector<int>& CObject::getDependencies () const {
     return this->m_dependencies;
 }
 
@@ -129,6 +129,6 @@ void CObject::insertEffect (Objects::CEffect* effect) {
     this->m_effects.push_back (effect);
 }
 
-void CObject::insertDependency (uint32_t dependency) {
+void CObject::insertDependency (int dependency) {
     this->m_dependencies.push_back (dependency);
 }

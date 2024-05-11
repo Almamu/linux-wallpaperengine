@@ -12,7 +12,7 @@
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CImage::CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, uint32_t id, std::string name,
+CImage::CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, int id, std::string name,
                 CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
                 std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
                 uint32_t colorBlendMode, const glm::vec2& parallaxDepth, bool fullscreen, bool passthrough,
@@ -31,7 +31,7 @@ CImage::CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean*
     m_autosize (autosize) {}
 
 WallpaperEngine::Core::CObject* CImage::fromJSON (CScene* scene, json data, CContainer* container,
-                                                  CUserSettingBoolean* visible, uint32_t id, std::string name,
+                                                  CUserSettingBoolean* visible, int id, std::string name,
                                                   CUserSettingVector3* origin, CUserSettingVector3* scale,
                                                   const glm::vec3& angles) {
     const auto image_it = data.find ("image");

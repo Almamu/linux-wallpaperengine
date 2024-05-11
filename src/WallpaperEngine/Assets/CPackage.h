@@ -20,7 +20,7 @@ class CPackage final : public CContainer {
   public:
     explicit CPackage (std::filesystem::path path);
 
-    [[nodiscard]] const void* readFile (const std::string& filename, uint32_t* length) const override;
+    [[nodiscard]] const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
 
   protected:
     /**

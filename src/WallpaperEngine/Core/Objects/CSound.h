@@ -15,7 +15,7 @@ class CSound : public CObject {
     friend class CObject;
 
   public:
-    static CObject* fromJSON (CScene* scene, json data, CUserSettingBoolean* visible, uint32_t id,
+    static CObject* fromJSON (CScene* scene, json data, CUserSettingBoolean* visible, int id,
                               const std::string& name, CUserSettingVector3* origin, CUserSettingVector3* scale,
                               const glm::vec3& angles);
 
@@ -29,7 +29,7 @@ class CSound : public CObject {
     [[nodiscard]] bool isRepeat () const;
 
   protected:
-    CSound (CScene* scene, CUserSettingBoolean* visible, uint32_t id, std::string name, CUserSettingVector3* origin,
+    CSound (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
             CUserSettingVector3* scale, const glm::vec3& angles, bool repeat);
 
     /**

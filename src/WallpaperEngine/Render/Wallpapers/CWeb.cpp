@@ -36,7 +36,7 @@ CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContex
         CefBrowserHost::CreateBrowserSync (window_info, m_client.get (), htmlURL, browserSettings, nullptr, nullptr);
 }
 
-void CWeb::setSize (int64_t width, int64_t height) {
+void CWeb::setSize (int width, int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;
 
@@ -95,8 +95,6 @@ CWeb::~CWeb () {
 }
 
 CWeb::RenderHandler::RenderHandler (CWeb* webdata) : m_webdata (webdata) {}
-
-CWeb::RenderHandler::~RenderHandler () {}
 
 // Required by CEF
 void CWeb::RenderHandler::GetViewRect (CefRefPtr<CefBrowser> browser, CefRect& rect) {

@@ -95,7 +95,7 @@ CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename)
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (CAudioContext& context, const void* buffer, int length) :
+CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length) :
     m_audioContext (context),
     m_swrctx (nullptr) {
     // setup a custom context first
@@ -142,13 +142,17 @@ void CAudioStream::loadCustomContent (const char* filename) {
     if (avformat_find_stream_info (this->m_formatContext, nullptr) < 0)
         sLog.exception ("Cannot determine file format: ", filename);
 
+    bool hasAudioStream = false;
+
     // find the audio stream
-    for (int i = 0; i < this->m_formatContext->nb_streams; i++) {
-        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && this->m_audioStream < 0)
+    for (unsigned int i = 0; i < this->m_formatContext->nb_streams; i++) {
+        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && hasAudioStream == false) {
+            hasAudioStream = true;
             this->m_audioStream = i;
+        }
     }
 
-    if (this->m_audioStream == -1)
+    if (!hasAudioStream)
         sLog.exception ("Cannot find an audio stream in file ", filename);
 
     // get the decoder for it and alloc the required context
@@ -308,11 +312,11 @@ AVFormatContext* CAudioStream::getFormatContext () {
     return this->m_formatContext;
 }
 
-int CAudioStream::getAudioStream () {
+unsigned int CAudioStream::getAudioStream () const {
     return this->m_audioStream;
 }
 
-bool CAudioStream::isInitialized () {
+bool CAudioStream::isInitialized () const {
     return this->m_initialized;
 }
 
@@ -320,23 +324,23 @@ void CAudioStream::setRepeat (bool newRepeat) {
     this->m_repeat = newRepeat;
 }
 
-bool CAudioStream::isRepeat () {
+bool CAudioStream::isRepeat () const {
     return this->m_repeat;
 }
 
-const void* CAudioStream::getBuffer () {
+const uint8_t* CAudioStream::getBuffer () {
     return this->m_buffer;
 }
 
-int CAudioStream::getLength () {
+uint32_t CAudioStream::getLength () const {
     return this->m_length;
 }
 
-int CAudioStream::getPosition () {
+uint32_t CAudioStream::getPosition () const {
     return this->m_position;
 }
 
-void CAudioStream::setPosition (int current) {
+void CAudioStream::setPosition (uint32_t current) {
     this->m_position = current;
 }
 

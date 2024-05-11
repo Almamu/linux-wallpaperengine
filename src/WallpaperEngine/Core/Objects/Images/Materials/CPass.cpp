@@ -52,7 +52,7 @@ void CPass::insertTexture (const std::string& texture) {
     this->m_textures.push_back (texture);
 }
 
-void CPass::setTexture (int index, const std::string& texture) {
+void CPass::setTexture (std::vector<std::string>::size_type index, const std::string& texture) {
     this->m_textures.at (index) = texture;
 }
 

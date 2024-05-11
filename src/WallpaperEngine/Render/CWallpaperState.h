@@ -70,12 +70,12 @@ class CWallpaperState {
     };
 
     // @return The width of viewport
-    uint32_t getProjectionWidth () const {
+    int getProjectionWidth () const {
         return projection.width;
     };
 
     // @return The height of viewport
-    uint32_t getProjectionHeight () const {
+    int getProjectionHeight () const {
         return projection.height;
     };
 
@@ -96,8 +96,8 @@ class CWallpaperState {
 
     // Wallpaper dimensions
     struct {
-        uint32_t width;
-        uint32_t height;
+        int width;
+        int height;
     } projection {};
 
     // Are Vs coordinates fliped

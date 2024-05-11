@@ -123,12 +123,12 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The width of this wallpaper
      */
-    [[nodiscard]] virtual uint32_t getWidth () const = 0;
+    [[nodiscard]] virtual int getWidth () const = 0;
 
     /**
      * @return The height of this wallpaper
      */
-    [[nodiscard]] virtual uint32_t getHeight () const = 0;
+    [[nodiscard]] virtual int getHeight () const = 0;
 
     /**
      * Creates a new instance of CWallpaper based on the information provided by the read backgrounds

@@ -203,7 +203,8 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
         wl_surface_destroy (viewport->surface);
 
     // remove the output from the list
-    std::remove (this->m_screens.begin (), this->m_screens.end (), viewport);
+    this->m_screens.erase (std::remove (this->m_screens.begin (), this->m_screens.end (), viewport),
+                           this->m_screens.end ());
 
     // reset the viewports
     this->getOutput ().reset ();

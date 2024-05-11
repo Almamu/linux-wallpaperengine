@@ -25,7 +25,7 @@ class CAudioContext;
 class CAudioStream {
   public:
     CAudioStream (CAudioContext& context, const std::string& filename);
-    CAudioStream (CAudioContext& context, const void* buffer, int length);
+    CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length);
     CAudioStream (CAudioContext& audioContext, AVCodecContext* context);
     ~CAudioStream ();
 
@@ -56,11 +56,11 @@ class CAudioStream {
     /**
      * @return The audio stream index of the given file
      */
-    int getAudioStream ();
+    [[nodiscard]] unsigned int getAudioStream () const;
     /**
      * @return If the audio stream can be played or not
      */
-    bool isInitialized ();
+    [[nodiscard]] bool isInitialized () const;
     /**
      * @param newRepeat true = repeat, false = no repeat
      */
@@ -68,7 +68,7 @@ class CAudioStream {
     /**
      * @return If the stream is to be repeated at the end or not
      */
-    bool isRepeat ();
+    [[nodiscard]] bool isRepeat () const;
     /**
      * Stops decoding and playbak of the stream
      */
@@ -76,21 +76,21 @@ class CAudioStream {
     /**
      * @return The file data buffer
      */
-    const void* getBuffer ();
+    [[nodiscard]] const uint8_t* getBuffer ();
     /**
      * @return The length of the file data buffer
      */
-    int getLength ();
+    [[nodiscard]] uint32_t getLength () const;
     /**
      * @return The read position of the data buffer
      */
-    int getPosition ();
+    [[nodiscard]] uint32_t getPosition () const;
     /**
      * Updates the read position of the data buffer
      *
      * @param current
      */
-    void setPosition (int current);
+    void setPosition (uint32_t current);
     /**
      * @return The SDL_cond used to signal waiting for data
      */
@@ -175,13 +175,13 @@ class CAudioStream {
     /** The format context that controls how data is read off the file */
     AVFormatContext* m_formatContext = nullptr;
     /** The stream index for the audio being played */
-    int m_audioStream = -1;
+    unsigned int m_audioStream;
     /** File data pointer */
-    const void* m_buffer {};
+    const uint8_t* m_buffer {};
     /** The length of the file data pointer */
-    int m_length {};
+    uint32_t m_length {};
     /** The read position on the file data pointer */
-    int m_position = 0;
+    uint32_t m_position = 0;
 
     struct MyAVPacketList {
         AVPacket* packet;

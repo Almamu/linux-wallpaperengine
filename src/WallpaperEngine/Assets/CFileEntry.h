@@ -8,14 +8,14 @@ namespace WallpaperEngine::Assets {
  */
 class CFileEntry {
   public:
-    CFileEntry (const char* address, uint32_t length) : address (address), length (length) {}
+    CFileEntry (const uint8_t* address, uint32_t length) : address (address), length (length) {}
 
     ~CFileEntry () {
         delete [] address;
     }
 
     /** File contents */
-    const char* address;
+    const uint8_t* address;
     /** File length */
     uint32_t length;
 };

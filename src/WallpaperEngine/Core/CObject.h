@@ -45,37 +45,37 @@ class CObject {
         return this->m_type == T::Type;
     }
 
-    const std::vector<Objects::CEffect*>& getEffects () const;
-    const std::vector<uint32_t>& getDependencies () const;
-    int getId () const;
+    [[nodiscard]] const std::vector<Objects::CEffect*>& getEffects () const;
+    [[nodiscard]] const std::vector<int>& getDependencies () const;
+    [[nodiscard]] int getId () const;
 
-    glm::vec3 getOrigin () const;
-    glm::vec3 getScale () const;
-    const glm::vec3& getAngles () const;
-    const std::string& getName () const;
+    [[nodiscard]] glm::vec3 getOrigin () const;
+    [[nodiscard]] glm::vec3 getScale () const;
+    [[nodiscard]] const glm::vec3& getAngles () const;
+    [[nodiscard]] const std::string& getName () const;
 
-    bool isVisible () const;
-    CScene* getScene () const;
+    [[nodiscard]] bool isVisible () const;
+    [[nodiscard]] CScene* getScene () const;
 
   protected:
-    CObject (CScene* scene, CUserSettingBoolean* visible, uint32_t id, std::string name, std::string type,
+    CObject (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
              CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles);
 
     void insertEffect (Objects::CEffect* effect);
-    void insertDependency (uint32_t dependency);
+    void insertDependency (int dependency);
 
   private:
     std::string m_type;
 
     CUserSettingBoolean* m_visible;
-    uint32_t m_id;
+    int m_id;
     std::string m_name;
     CUserSettingVector3* m_origin;
     CUserSettingVector3* m_scale;
     glm::vec3 m_angles;
 
     std::vector<Objects::CEffect*> m_effects;
-    std::vector<uint32_t> m_dependencies;
+    std::vector<int> m_dependencies;
 
     CScene* m_scene;
 };

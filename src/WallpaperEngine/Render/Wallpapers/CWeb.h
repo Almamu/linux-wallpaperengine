@@ -5,6 +5,7 @@
 #include <glm/ext.hpp>
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -20,12 +21,12 @@ namespace WallpaperEngine::Render
     {
         public:
             CWeb (Core::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
-            ~CWeb();
-            uint32_t getWidth  () const override { return this->m_width; }
+            ~CWeb() override;
+            [[nodiscard]] int getWidth  () const override { return this->m_width; }
 
-            uint32_t getHeight () const override { return this->m_height; }
+            [[nodiscard]] int getHeight () const override { return this->m_height; }
 
-            void setSize (int64_t width, int64_t height);
+            void setSize (int width, int height);
 
         protected:
             void renderFrame (glm::ivec4 viewport) override;
@@ -46,14 +47,10 @@ namespace WallpaperEngine::Render
             class RenderHandler: public CefRenderHandler
             {
                 public:
-                    RenderHandler(CWeb* webdata);
+                    explicit RenderHandler(CWeb* webdata);
 
                     //! \brief
-                    ~RenderHandler();
-
-                    //! \brief Compile OpenGL shaders and create OpenGL objects (VAO,
-                    //! VBO, texture, locations ...)
-                    bool init();
+                    ~RenderHandler() override = default;
 
                     //! \brief CefRenderHandler interface
                     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
@@ -70,10 +67,10 @@ namespace WallpaperEngine::Render
                 private:
                     CWeb* m_webdata;
 
-                    uint32_t getWidth () const {
+                    int getWidth () const {
                         return this->m_webdata->getWidth();
                     };
-                    uint32_t getHeight () const {
+                    int getHeight () const {
                         return this->m_webdata->getHeight();
                     };
                     //! \brief Return the OpenGL texture handle
@@ -90,8 +87,8 @@ namespace WallpaperEngine::Render
             class BrowserClient: public CefClient
             {
                 public:
-                    BrowserClient(CefRefPtr<CefRenderHandler> ptr)
-                        : m_renderHandler(ptr)
+                    explicit BrowserClient(CefRefPtr<CefRenderHandler> ptr)
+                        : m_renderHandler(std::move(ptr))
                     {}
 
                     CefRefPtr<CefRenderHandler> GetRenderHandler() override
@@ -109,8 +106,8 @@ namespace WallpaperEngine::Render
             CefRefPtr<BrowserClient> m_client;
             RenderHandler* m_render_handler = nullptr;
 
-            int64_t m_width;
-            int64_t m_height;
+            int m_width;
+            int m_height;
 
             glm::vec2 m_mousePosition;
             glm::vec2 m_mousePositionLast;

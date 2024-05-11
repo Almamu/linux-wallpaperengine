@@ -67,7 +67,7 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* ob
 
             for (const auto& passCur : material->getPasses ()) {
                 if (textures_it != cur->end ()) {
-                    int textureNumber = 0;
+                    std::vector<std::string>::size_type textureNumber = 0;
 
                     for (const auto& texturesCur : (*textures_it)) {
                         std::string texture;

@@ -67,7 +67,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     this->setupFramebuffers ();
 }
 
-void CVideo::setSize (int64_t width, int64_t height) {
+void CVideo::setSize (int width, int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;
 
@@ -117,11 +117,11 @@ Core::CVideo* CVideo::getVideo () {
     return this->getWallpaperData ()->as<Core::CVideo> ();
 }
 
-uint32_t CVideo::getWidth () const {
+int CVideo::getWidth () const {
     return this->m_width;
 }
 
-uint32_t CVideo::getHeight () const {
+int CVideo::getHeight () const {
     return this->m_height;
 }
 
