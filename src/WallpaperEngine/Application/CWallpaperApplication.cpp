@@ -15,6 +15,8 @@
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
 
+#include <unistd.h>
+
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
 float g_Time;
