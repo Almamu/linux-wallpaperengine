@@ -26,4 +26,4 @@ jobs:
           commit_message: Update AUR package
           force_push: 'true'
           test: true
-          test_flags: --clean --cleanbuild
+          test_flags: --clean --cleanbuild --syncdeps
