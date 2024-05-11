@@ -1,15 +1,19 @@
 name: Arch Linux AUR Package Update
 
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: [cmake]
+    branches: [main]
+    types: [completed]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout
         uses: actions/checkout@v2
+      - uses: ahmadnassri/action-workflow-run-wait@v1
 
       - name: Publish parallel-disk-usage to the AUR
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.1
