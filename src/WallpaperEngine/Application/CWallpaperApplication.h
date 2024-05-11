@@ -112,8 +112,7 @@ class CWallpaperApplication {
      * @param filename
      * @param format
      */
-    static void takeScreenshot (const Render::CRenderContext& context, const std::filesystem::path& filename,
-                                FREE_IMAGE_FORMAT format);
+    void takeScreenshot (const std::filesystem::path& filename, FREE_IMAGE_FORMAT format);
 
     /** The default background to display if no specific background was loaded */
     Core::CProject* m_defaultBackground;
@@ -122,13 +121,13 @@ class CWallpaperApplication {
     /** Maps screens to backgrounds */
     std::map<std::string, Core::CProject*> m_backgrounds;
 
-    WallpaperEngine::Audio::CAudioContext* audioContext;
-    WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
-    WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* audioRecorder;
-    WallpaperEngine::Input::CInputContext* inputContext;
-    WallpaperEngine::Render::CRenderContext* context;
-    WallpaperEngine::Render::Drivers::CVideoDriver* videoDriver;
-    WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector* fullScreenDetector;
-    WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext;
+    WallpaperEngine::Audio::CAudioContext* m_audioContext;
+    WallpaperEngine::Audio::Drivers::CSDLAudioDriver* m_audioDriver;
+    WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* m_audioRecorder;
+    WallpaperEngine::Input::CInputContext* m_inputContext;
+    WallpaperEngine::Render::CRenderContext* m_renderContext;
+    WallpaperEngine::Render::Drivers::CVideoDriver* m_videoDriver;
+    WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector* m_fullScreenDetector;
+    WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
 };
 } // namespace WallpaperEngine::Application
