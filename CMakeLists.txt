@@ -154,14 +154,16 @@ if(WAYLAND_SUPPORT_FOUND)
 endif()
 
 if(X11_FOUND)
+    set(X11_SUPPORT_FOUND TRUE)
+
     if(NOT X11_Xrandr_FOUND)
         message(WARNING "X11 support disabled. Xrandr package is missing")
+        set(X11_SUPPORT_FOUND FALSE)
     endif()
     if(NOT X11_xf86vmode_FOUND)
         message(WARNING "X11 support disabled. Xxf86vm package is missing")
+        set(X11_SUPPORT_FOUND FALSE)
     endif()
-
-    set(X11_SUPPORT_FOUND TRUE)
 endif()
 
 if(X11_SUPPORT_FOUND)
