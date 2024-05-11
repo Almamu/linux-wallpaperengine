@@ -15,7 +15,7 @@ class CWaylandOpenGLDriver;
 namespace Detectors {
 class CWaylandFullScreenDetector final : public CFullScreenDetector {
   public:
-    CWaylandFullScreenDetector (Application::CApplicationContext& appContext, CWaylandOpenGLDriver& driver);
+    CWaylandFullScreenDetector (Application::CApplicationContext& appContext);
     ~CWaylandFullScreenDetector () override = default;
 
     [[nodiscard]] bool anythingFullscreen () const override;

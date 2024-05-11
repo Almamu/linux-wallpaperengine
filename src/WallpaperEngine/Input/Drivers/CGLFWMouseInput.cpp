@@ -1,11 +1,11 @@
 #include "CGLFWMouseInput.h"
 #include <glm/common.hpp>
 
-#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
 
 using namespace WallpaperEngine::Input::Drivers;
 
-CGLFWMouseInput::CGLFWMouseInput (Render::Drivers::CX11OpenGLDriver* driver) :
+CGLFWMouseInput::CGLFWMouseInput (Render::Drivers::CGLFWOpenGLDriver* driver) :
     m_reportedPosition (),
     m_mousePosition (),
     m_driver (driver) {}

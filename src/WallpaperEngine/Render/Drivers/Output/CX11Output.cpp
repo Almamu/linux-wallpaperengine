@@ -1,13 +1,11 @@
 #include "CX11Output.h"
-#include "CX11OutputViewport.h"
+#include "CGLFWOutputViewport.h"
 #include "common.h"
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 #include <unistd.h>
-
-#define FULLSCREEN_CHECK_WAIT_TIME 250
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
@@ -50,7 +48,8 @@ void CX11Output::reset () {
     // re-load screen info
     this->loadScreenInfo ();
     // do the same for the detector
-    this->m_driver.getFullscreenDetector ().reset ();
+    // TODO: BRING BACK THIS FUNCTIONALITY
+    // this->m_driver.getFullscreenDetector ().reset ();
 }
 
 void CX11Output::free () {
@@ -125,7 +124,7 @@ void CX11Output::loadScreenInfo () {
             continue;
 
         // add the screen to the list of screens
-        this->m_screens.push_back (new CX11OutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name});
+        this->m_screens.push_back (new CGLFWOutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name});
 
         // only keep info of registered screens
         if (this->m_context.settings.general.screenBackgrounds.find (info->name) !=
@@ -134,7 +133,7 @@ void CX11Output::loadScreenInfo () {
                       crtc->height);
 
             this->m_viewports [info->name] =
-                new CX11OutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name};
+                new CGLFWOutputViewport {{crtc->x, crtc->y, crtc->width, crtc->height}, info->name};
         }
 
         XRRFreeCrtcInfo (crtc);
@@ -189,8 +188,4 @@ void CX11Output::updateRender () const {
 
     XClearWindow (this->m_display, this->m_root);
     XFlush (this->m_display);
-
-    // check for fullscreen windows and wait until there's none fullscreen
-    while (this->m_driver.getFullscreenDetector ().anythingFullscreen () && this->m_context.state.general.keepRunning)
-        usleep (FULLSCREEN_CHECK_WAIT_TIME);
 }

@@ -14,7 +14,7 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
-#include "WallpaperEngine/WebBrowsesr/CWebBrowserContext.h"
+#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 
 #include "CWallpaperState.h"
 

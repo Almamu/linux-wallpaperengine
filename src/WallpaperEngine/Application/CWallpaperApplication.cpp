@@ -13,6 +13,9 @@
 
 #include "WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+
+#define FULLSCREEN_CHECK_WAIT_TIME 250
 
 float g_Time;
 float g_TimeLast;
@@ -255,26 +258,67 @@ void CWallpaperApplication::takeScreenshot (const Render::CRenderContext& contex
 }
 
 void CWallpaperApplication::show () {
+    const char* XDG_SESSION_TYPE = getenv ("XDG_SESSION_TYPE");
+
+    if (!XDG_SESSION_TYPE) {
+        sLog.exception("Cannot read environment variable XDG_SESSION_TYPE, window server detection failed. Please ensure proper values are set");
+    }
+
+
 #ifdef ENABLE_WAYLAND
-    const bool WAYLAND_DISPLAY = getenv ("WAYLAND_DISPLAY");
+    bool isWayland = strncmp("wayland", XDG_SESSION_TYPE, strlen("wayland")) == 0;
+#endif // ENABLE_WAYLAND
+#ifdef ENABLE_X11
+    bool isX11 = strncmp("x11", XDG_SESSION_TYPE, strlen("x11")) == 0;
+#endif // ENABLE_X11
 
-    // setup the right video driver based on the environment and the startup mode requested
-    if (WAYLAND_DISPLAY && this->m_context.settings.render.mode == CApplicationContext::DESKTOP_BACKGROUND) {
-        const auto waylandDriver = new WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver (this->m_context, *this);
+    if (this->m_context.settings.render.mode == CApplicationContext::DESKTOP_BACKGROUND) {
+#ifdef ENABLE_WAYLAND
+        if (isWayland) {
+            videoDriver = new WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver (this->m_context, *this);
+            inputContext = new WallpaperEngine::Input::CInputContext (
+                new WallpaperEngine::Input::Drivers::CWaylandMouseInput (reinterpret_cast<WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*>(videoDriver)));
+            this->fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector(this->m_context);
+        }
+#endif // ENABLE_WAYLAND
+#ifdef ENABLE_X11
+#ifdef ENABLE_WAYLAND
+        else
+#endif // ENABLE_WAYLAND
+        if (isX11)
+        {
+            videoDriver = new WallpaperEngine::Render::Drivers::CGLFWOpenGLDriver ("wallpaperengine", this->m_context, *this);
+            inputContext = new WallpaperEngine::Input::CInputContext (
+                new WallpaperEngine::Input::Drivers::CGLFWMouseInput (reinterpret_cast <Render::Drivers::CGLFWOpenGLDriver*>(videoDriver)));
+            this->fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (this->m_context, *reinterpret_cast <Render::Drivers::CGLFWOpenGLDriver*>(videoDriver));
+        }
+#endif  // ENABLE_X11
+        else {
+            sLog.exception("Cannot run in background mode, window server could not be detected. XDG_SESSION_TYPE must be wayland or x11");
+        }
+    } else {
+        videoDriver = new WallpaperEngine::Render::Drivers::CGLFWOpenGLDriver ("wallpaperengine", this->m_context, *this);
+
+#ifdef ENABLE_WAYLAND
+        if (isWayland) {
+            this->fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector(this->m_context);
+        }
+#endif // ENABLE_WAYLAND
+#ifdef ENABLE_X11
+#ifdef ENABLE_WAYLAND
+        else
+#endif // ENABLE_WAYLAND
+        if(isX11)
+        {
+            this->fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (this->m_context, *reinterpret_cast <Render::Drivers::CGLFWOpenGLDriver*>(videoDriver));
+        }
+#endif // ENABLE_X11
+        else {
+            this->fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector (this->m_context);
+        }
+
         inputContext = new WallpaperEngine::Input::CInputContext (
-            new WallpaperEngine::Input::Drivers::CWaylandMouseInput (waylandDriver));
-
-        videoDriver = waylandDriver;
-    } else
-#endif
-    {
-        const auto x11Driver =
-            new WallpaperEngine::Render::Drivers::CX11OpenGLDriver ("wallpaperengine", this->m_context, *this);
-        // no wayland detected, try the old X11 method
-        inputContext = new WallpaperEngine::Input::CInputContext (
-            new WallpaperEngine::Input::Drivers::CGLFWMouseInput (x11Driver));
-
-        videoDriver = x11Driver;
+            new WallpaperEngine::Input::Drivers::CGLFWMouseInput (reinterpret_cast <Render::Drivers::CGLFWOpenGLDriver*>(videoDriver)));
     }
 
     if (this->m_context.settings.audio.audioprocessing) {
@@ -285,7 +329,7 @@ void CWallpaperApplication::show () {
 
     // audio playing detector
     WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (
-        this->m_context, videoDriver->getFullscreenDetector ());
+        this->m_context, *this->fullScreenDetector);
     // initialize sdl audio driver
     audioDriver =
         new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, audioDetector, *this->audioRecorder);
@@ -345,6 +389,10 @@ void CWallpaperApplication::show () {
 }
 
 void CWallpaperApplication::update (Render::Drivers::Output::COutputViewport* viewport) {
+    // check for fullscreen windows and wait until there's none fullscreen
+    while (this->fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
+        usleep (FULLSCREEN_CHECK_WAIT_TIME);
+
     // render the scene
     context->render (viewport);
 }

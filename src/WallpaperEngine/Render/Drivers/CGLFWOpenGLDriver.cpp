@@ -1,4 +1,4 @@
-#include "CX11OpenGLDriver.h"
+#include "CGLFWOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include "common.h"
 #include <FreeImage.h>
@@ -14,9 +14,8 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app) :
+CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app) :
     m_frameCounter (0),
-    m_fullscreenDetector (context, *this),
     m_context (context),
     CVideoDriver (app) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
@@ -68,50 +67,53 @@ CX11OpenGLDriver::CX11OpenGLDriver (const char* windowTitle, CApplicationContext
     if (context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW ||
         context.settings.render.mode == CApplicationContext::NORMAL_WINDOW) {
         m_output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (context, *this);
-    } else {
+    }
+#ifdef ENABLE_X11
+    else {
         m_output = new WallpaperEngine::Render::Drivers::Output::CX11Output (context, *this);
     }
+#else
+    else {
+        sLog.exception("Trying to start GLFW in background mode without X11 support installed. Bailing out");
+    }
+#endif
 }
 
-CX11OpenGLDriver::~CX11OpenGLDriver () {
+CGLFWOpenGLDriver::~CGLFWOpenGLDriver () {
     glfwTerminate ();
     FreeImage_DeInitialise ();
 }
 
-Detectors::CFullScreenDetector& CX11OpenGLDriver::getFullscreenDetector () {
-    return this->m_fullscreenDetector;
-}
-
-Output::COutput& CX11OpenGLDriver::getOutput () {
+Output::COutput& CGLFWOpenGLDriver::getOutput () {
     return *this->m_output;
 }
 
-float CX11OpenGLDriver::getRenderTime () const {
+float CGLFWOpenGLDriver::getRenderTime () const {
     return static_cast<float> (glfwGetTime ());
 }
 
-bool CX11OpenGLDriver::closeRequested () {
+bool CGLFWOpenGLDriver::closeRequested () {
     return glfwWindowShouldClose (this->m_window);
 }
 
-void CX11OpenGLDriver::resizeWindow (glm::ivec2 size) {
+void CGLFWOpenGLDriver::resizeWindow (glm::ivec2 size) {
     glfwSetWindowSize (this->m_window, size.x, size.y);
 }
 
-void CX11OpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
+void CGLFWOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
-void CX11OpenGLDriver::showWindow () {
+void CGLFWOpenGLDriver::showWindow () {
     glfwShowWindow (this->m_window);
 }
 
-void CX11OpenGLDriver::hideWindow () {
+void CGLFWOpenGLDriver::hideWindow () {
     glfwHideWindow (this->m_window);
 }
 
-glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const {
+glm::ivec2 CGLFWOpenGLDriver::getFramebufferSize () const {
     glm::ivec2 size;
 
     glfwGetFramebufferSize (this->m_window, &size.x, &size.y);
@@ -119,11 +121,11 @@ glm::ivec2 CX11OpenGLDriver::getFramebufferSize () const {
     return size;
 }
 
-uint32_t CX11OpenGLDriver::getFrameCounter () const {
+uint32_t CGLFWOpenGLDriver::getFrameCounter () const {
     return this->m_frameCounter;
 }
 
-void CX11OpenGLDriver::dispatchEventQueue () {
+void CGLFWOpenGLDriver::dispatchEventQueue () {
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
     startTime = this->getRenderTime ();
@@ -156,10 +158,10 @@ void CX11OpenGLDriver::dispatchEventQueue () {
         usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
 }
 
-void* CX11OpenGLDriver::getProcAddress (const char* name) const {
+void* CGLFWOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-GLFWwindow* CX11OpenGLDriver::getWindow () {
+GLFWwindow* CGLFWOpenGLDriver::getWindow () {
     return this->m_window;
 }

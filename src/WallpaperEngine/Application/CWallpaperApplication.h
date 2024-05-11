@@ -8,18 +8,23 @@
 
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h"
 #ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 #endif
 
+#ifdef ENABLE_X11
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#endif
 #ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
 #endif
 
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#ifdef ENABLE_X11
 #include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#endif
 #ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
 #endif
@@ -27,7 +32,7 @@
 #include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
 
 #include "WallpaperEngine/Input/CInputContext.h"
-#include "WallpaperEngine/WebBrowsesr/CWebBrowserContext.h"
+#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 
 namespace WallpaperEngine::Application {
 /**
@@ -117,12 +122,13 @@ class CWallpaperApplication {
     /** Maps screens to backgrounds */
     std::map<std::string, Core::CProject*> m_backgrounds;
 
-    WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* audioRecorder;
-    WallpaperEngine::Render::Drivers::CVideoDriver* videoDriver;
-    WallpaperEngine::Input::CInputContext* inputContext;
-    WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
-    WallpaperEngine::Render::CRenderContext* context;
     WallpaperEngine::Audio::CAudioContext* audioContext;
+    WallpaperEngine::Audio::Drivers::CSDLAudioDriver* audioDriver;
+    WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* audioRecorder;
+    WallpaperEngine::Input::CInputContext* inputContext;
+    WallpaperEngine::Render::CRenderContext* context;
+    WallpaperEngine::Render::Drivers::CVideoDriver* videoDriver;
+    WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector* fullScreenDetector;
     WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext;
 };
 } // namespace WallpaperEngine::Application

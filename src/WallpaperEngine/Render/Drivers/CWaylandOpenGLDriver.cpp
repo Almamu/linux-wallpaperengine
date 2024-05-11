@@ -214,7 +214,6 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
 
 CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app) :
     m_frameCounter (0),
-    m_fullscreenDetector (context, *this),
     m_output (context, *this),
     m_requestedExit (false),
     m_context (context),
@@ -303,10 +302,6 @@ void CWaylandOpenGLDriver::dispatchEventQueue () {
     // ensure the frame time is correct to not overrun FPS
     if ((endTime - startTime) < minimumTime)
         usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
-}
-
-Detectors::CFullScreenDetector& CWaylandOpenGLDriver::getFullscreenDetector () {
-    return this->m_fullscreenDetector;
 }
 
 Output::COutput& CWaylandOpenGLDriver::getOutput () {

@@ -4,8 +4,6 @@
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h"
-#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
-#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -17,12 +15,11 @@ class CWallpaperApplication;
 namespace WallpaperEngine::Render::Drivers {
 using namespace WallpaperEngine::Application;
 
-class CX11OpenGLDriver final : public CVideoDriver {
+class CGLFWOpenGLDriver final : public CVideoDriver {
   public:
-    explicit CX11OpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app);
-    ~CX11OpenGLDriver () override;
+    explicit CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app);
+    ~CGLFWOpenGLDriver () override;
 
-    [[nodiscard]] Detectors::CFullScreenDetector& getFullscreenDetector () override;
     [[nodiscard]] Output::COutput& getOutput () override;
     [[nodiscard]] float getRenderTime () const override;
     bool closeRequested () override;
@@ -38,7 +35,6 @@ class CX11OpenGLDriver final : public CVideoDriver {
     GLFWwindow* getWindow ();
 
   private:
-    Detectors::CX11FullScreenDetector m_fullscreenDetector;
     CApplicationContext& m_context;
     Output::COutput* m_output;
     GLFWwindow* m_window;

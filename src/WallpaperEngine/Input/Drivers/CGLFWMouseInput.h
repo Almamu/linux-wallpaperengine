@@ -5,7 +5,7 @@
 #include <glm/vec2.hpp>
 
 namespace WallpaperEngine::Render::Drivers {
-class CX11OpenGLDriver;
+class CGLFWOpenGLDriver;
 }
 
 namespace WallpaperEngine::Input::Drivers {
@@ -14,7 +14,7 @@ namespace WallpaperEngine::Input::Drivers {
  */
 class CGLFWMouseInput final : public CMouseInput {
   public:
-    explicit CGLFWMouseInput (Render::Drivers::CX11OpenGLDriver* driver);
+    explicit CGLFWMouseInput (Render::Drivers::CGLFWOpenGLDriver* driver);
 
     /**
      * Takes current mouse position and updates it
@@ -27,7 +27,7 @@ class CGLFWMouseInput final : public CMouseInput {
     [[nodiscard]] glm::dvec2 position () const override;
 
   private:
-    Render::Drivers::CX11OpenGLDriver* m_driver;
+    Render::Drivers::CGLFWOpenGLDriver* m_driver;
 
     /**
      * The current mouse position

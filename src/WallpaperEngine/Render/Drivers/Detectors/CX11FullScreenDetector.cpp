@@ -4,7 +4,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
-#include "WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
@@ -29,7 +29,7 @@ int CustomXIOErrorHandler (Display* dsp) {
 }
 
 CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext,
-                                                CX11OpenGLDriver& driver) :
+                                                CGLFWOpenGLDriver& driver) :
     CFullScreenDetector (appContext),
     m_driver (driver) {
     // do not use previous handler, it might stop the app under weird circumstances

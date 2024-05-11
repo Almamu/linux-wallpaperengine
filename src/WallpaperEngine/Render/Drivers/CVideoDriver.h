@@ -20,10 +20,6 @@ class CVideoDriver {
     virtual ~CVideoDriver ();
 
     /**
-     * @return The fullscreen detector this video driver uses
-     */
-    [[nodiscard]] virtual Detectors::CFullScreenDetector& getFullscreenDetector () = 0;
-    /**
      * @return The current output in use
      */
     [[nodiscard]] virtual Output::COutput& getOutput () = 0;

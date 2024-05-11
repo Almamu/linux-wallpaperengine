@@ -9,3 +9,9 @@ CFullScreenDetector::CFullScreenDetector (Application::CApplicationContext& appC
 Application::CApplicationContext& CFullScreenDetector::getApplicationContext () const {
     return this->m_applicationContext;
 }
+
+bool CFullScreenDetector::anythingFullscreen () const {
+    return false;
+}
+
+void CFullScreenDetector::reset () {}

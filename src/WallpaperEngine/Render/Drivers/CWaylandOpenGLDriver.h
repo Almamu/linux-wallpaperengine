@@ -62,7 +62,6 @@ class CWaylandOpenGLDriver final : public CVideoDriver {
     explicit CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app);
     ~CWaylandOpenGLDriver ();
 
-    [[nodiscard]] Detectors::CFullScreenDetector& getFullscreenDetector () override;
     [[nodiscard]] Output::COutput& getOutput () override;
     float getRenderTime () const override;
     bool closeRequested () override;
@@ -87,8 +86,6 @@ class CWaylandOpenGLDriver final : public CVideoDriver {
     std::vector<Output::CWaylandOutputViewport*> m_screens;
 
   private:
-    /** Fullscreen detection used by this driver */
-    Detectors::CWaylandFullScreenDetector m_fullscreenDetector;
     /** The output used by the driver */
     Output::CWaylandOutput m_output;
     /** The EGL context in use */

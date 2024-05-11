@@ -1,12 +1,10 @@
 #include "CGLFWWindowOutput.h"
-#include "CX11OutputViewport.h"
+#include "CGLFWOutputViewport.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <unistd.h>
-
-#define FULLSCREEN_CHECK_WAIT_TIME 250
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
@@ -29,7 +27,7 @@ CGLFWWindowOutput::CGLFWWindowOutput (CApplicationContext& context, CVideoDriver
     }
 
     // register the default viewport
-    this->m_viewports ["default"] = new CX11OutputViewport {{0, 0, this->m_fullWidth, this->m_fullHeight}, "default"};
+    this->m_viewports ["default"] = new CGLFWOutputViewport {{0, 0, this->m_fullWidth, this->m_fullHeight}, "default"};
 }
 
 void CGLFWWindowOutput::repositionWindow () {
@@ -68,8 +66,4 @@ void CGLFWWindowOutput::updateRender () const {
 
     // update the default viewport
     this->m_viewports ["default"]->viewport = {0, 0, this->m_fullWidth, this->m_fullHeight};
-
-    // check for fullscreen windows and wait until there's none fullscreen
-    while (this->m_driver.getFullscreenDetector ().anythingFullscreen () && this->m_context.state.general.keepRunning)
-        usleep (FULLSCREEN_CHECK_WAIT_TIME);
 }

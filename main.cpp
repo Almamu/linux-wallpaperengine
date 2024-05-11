@@ -4,7 +4,7 @@
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
-#include "WallpaperEngine/WebBrowsesr/CWebBrowserContext.h"
+#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 #include "common.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;

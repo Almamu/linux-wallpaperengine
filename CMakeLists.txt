@@ -18,8 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 add_compile_definitions(ERRORONLY=${ERRORONLY})
 add_compile_definitions(DATADIR="${DATADIR}")
 
-find_package(X11 REQUIRED)
-find_package(Xrandr REQUIRED)
+find_package(X11)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
@@ -90,7 +89,6 @@ add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 
 include_directories(
     ${MPV_INCLUDE_DIR}
-    ${X11_INCLUDE_DIR}
     ${XRANDR_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
@@ -153,6 +151,28 @@ if(WAYLAND_SUPPORT_FOUND)
             "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
             "xdg-shell-protocol.c"
             "wlr-layer-shell-unstable-v1-protocol.c")
+endif()
+
+if(X11_FOUND)
+    if(NOT X11_Xrandr_FOUND)
+        message(WARNING "X11 support disabled. Xrandr package is missing")
+    endif()
+    if(NOT X11_xf86vmode_FOUND)
+        message(WARNING "X11 support disabled. Xxf86vm package is missing")
+    endif()
+
+    set(X11_SUPPORT_FOUND TRUE)
+endif()
+
+if(X11_SUPPORT_FOUND)
+    include_directories(${X11_INCLUDE_DIR})
+    add_compile_definitions(ENABLE_X11)
+
+    set(X11_SOURCES
+            "src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp"
+            "src/WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp"
+            "src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h")
 endif()
 
 add_executable(
@@ -241,21 +261,17 @@ add_executable(
 
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.cpp
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
-    src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-    src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
 
     src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutput.h
-    src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
     src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/CGLFWOutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/CGLFWOutputViewport.h
     src/WallpaperEngine/Render/Drivers/Output/COutputViewport.cpp
     src/WallpaperEngine/Render/Drivers/Output/COutputViewport.h
-    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CX11OutputViewport.h
-    src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.h
-    src/WallpaperEngine/Render/Drivers/CX11OpenGLDriver.cpp
+    src/WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/CVideoDriver.h
     src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
     src/WallpaperEngine/Render/CRenderContext.h
@@ -295,8 +311,8 @@ add_executable(
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
-    src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.cpp
-    src/WallpaperEngine/WebBrowsesr/CWebBrowserContext.h
+    src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
+    src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 
     src/WallpaperEngine/FileSystem/FileSystem.cpp
     src/WallpaperEngine/FileSystem/FileSystem.h
@@ -397,6 +413,7 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 
     ${WAYLAND_SOURCES}
+    ${X11_SOURCES}
 )
 
 COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
@@ -408,10 +425,7 @@ add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
 # Need to remove libvulkan, otherwise will get error on  linking:
 # /usr/bin/ld: /usr/lib/libmpv.so: undefined reference to `vkCreateXlibSurfaceKHR'
 file(REMOVE "${CEF_BINARY_DIR_DEBUG}/libvulkan.so.1" "${CEF_BINARY_DIR_RELEASE}/libvulkan.so.1") 
-target_link_libraries (linux-wallpaperengine PUBLIC 
-    ${X11_LIBRARIES}
-    ${Xrandr_LIBRARIES}
-    ${X11_Xxf86vm_LIB}
+target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
     ${GLUT_LIBRARIES}
@@ -435,16 +449,22 @@ if (WAYLAND_SUPPORT_FOUND)
         ${OPENGL_egl_LIBRARY})
 endif()
 
-file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
+if(X11_SUPPORT_FOUND)
+    target_link_libraries (linux-wallpaperengine PUBLIC
+            ${X11_LIBRARIES} ${X11_Xrandr_LIB})
 
-set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
 
-# make sure some of the X11 functions we'll use are available
-check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+    set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
 
-if(HAVE_XSETIOERROREXITHANDLER)
-    add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
+    # make sure some of the X11 functions we'll use are available
+    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+    if(HAVE_XSETIOERROREXITHANDLER)
+        add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
+    endif()
 endif()
+
+file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
 
 # set some install parameters if not in debug mode
 install(TARGETS linux-wallpaperengine)
