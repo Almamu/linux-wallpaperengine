@@ -1,0 +1,23 @@
+name: Arch Linux AUR Package Update
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Publish parallel-disk-usage to the AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.1
+        with:
+          pkgname: linux-wallpaperengine-git
+          pkgbuild: ./packaging/archlinux/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          force_push: 'true'
