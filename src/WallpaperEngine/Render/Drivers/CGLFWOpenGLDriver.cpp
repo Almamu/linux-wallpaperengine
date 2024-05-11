@@ -14,7 +14,8 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app) :
+CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context,
+                                      CWallpaperApplication& app) :
     m_frameCounter (0),
     m_context (context),
     CVideoDriver (app) {
@@ -74,7 +75,7 @@ CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationConte
     }
 #else
     else {
-        sLog.exception("Trying to start GLFW in background mode without X11 support installed. Bailing out");
+        sLog.exception ("Trying to start GLFW in background mode without X11 support installed. Bailing out");
     }
 #endif
 }
