@@ -47,7 +47,12 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
     container.add (new CDirectory (basepath));
     container.addPkg (basepath / "scene.pkg");
     container.addPkg (basepath / "gifscene.pkg");
-    container.add (new CDirectory (this->m_context.settings.general.assets));
+
+    try {
+        container.add (new CDirectory (this->m_context.settings.general.assets));
+    } catch (CAssetLoadException&) {
+        sLog.exception("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
+    }
 
     // add two possible patches directories to the container
     // hopefully one sticks

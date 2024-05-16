@@ -22,7 +22,7 @@ void CCombinedContainer::addPkg (const std::filesystem::path& path) {
         sLog.out ("No ", path.filename (), " file found at ", path, ". Defaulting to normal folder storage");
     } catch (std::runtime_error& ex) {
         // the package was found but there was an error loading it (wrong header or something)
-        sLog.exception ("Failed to load scene.pkg file: ", ex.what ());
+        sLog.exception ("Failed to load ", path.filename(), " file: ", ex.what ());
     }
 }
 
