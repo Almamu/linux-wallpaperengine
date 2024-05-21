@@ -107,6 +107,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
                 // to have any value
                 this->settings.general.screenBackgrounds [lastScreen] = translateBackground (optarg);
                 this->settings.general.screenScalings [lastScreen] = this->settings.render.window.scalingMode;
+
+                // update default background if not set
+                if (this->settings.general.defaultBackground.empty()) {
+                    this->settings.general.defaultBackground = translateBackground (optarg);
+                }
                 break;
 
             case 'o': {

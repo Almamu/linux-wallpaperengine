@@ -27,7 +27,6 @@ namespace WallpaperEngine::Application {
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context,
                                               WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
     m_context (context),
-    m_defaultBackground (nullptr),
     m_browserContext (browserContext) {
     this->loadBackgrounds ();
     this->setupProperties ();
@@ -168,17 +167,12 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 }
 
 void CWallpaperApplication::loadBackgrounds () {
-    // load default background if specified
-    if (!this->m_context.settings.general.defaultBackground.empty ()) {
-        this->m_defaultBackground = this->loadBackground (this->m_context.settings.general.defaultBackground);
-    }
-
-    for (const auto& [background, path] : this->m_context.settings.general.screenBackgrounds) {
-        // screens with no background should use the default
+    for (const auto& [screen, path] : this->m_context.settings.general.screenBackgrounds) {
+        // screens with no screen should use the default
         if (path.empty ()) {
-            this->m_backgrounds [background] = this->m_defaultBackground;
+            this->m_backgrounds [screen] = this->loadBackground (this->m_context.settings.general.defaultBackground);
         } else {
-            this->m_backgrounds [background] = this->loadBackground (path);
+            this->m_backgrounds [screen] = this->loadBackground (path);
         }
     }
 }
@@ -211,9 +205,6 @@ void CWallpaperApplication::setupPropertiesForProject (const Core::CProject* pro
 void CWallpaperApplication::setupProperties () {
     for (const auto& [backgrounc, info] : this->m_backgrounds)
         this->setupPropertiesForProject (info);
-
-    if (this->m_defaultBackground != nullptr)
-        this->setupPropertiesForProject (this->m_defaultBackground);
 }
 
 void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filename, FREE_IMAGE_FORMAT format) {
@@ -417,10 +408,6 @@ void CWallpaperApplication::signal (int signal) {
 
 const std::map<std::string, Core::CProject*>& CWallpaperApplication::getBackgrounds () const {
     return this->m_backgrounds;
-}
-
-Core::CProject* CWallpaperApplication::getDefaultBackground () const {
-    return this->m_defaultBackground;
 }
 
 CApplicationContext& CWallpaperApplication::getContext () const {

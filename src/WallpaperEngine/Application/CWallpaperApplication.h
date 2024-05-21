@@ -60,10 +60,6 @@ class CWallpaperApplication {
      */
     [[nodiscard]] const std::map<std::string, Core::CProject*>& getBackgrounds () const;
     /**
-     * @return The default background to use if no specific project is loaded
-     */
-    [[nodiscard]] Core::CProject* getDefaultBackground () const;
-    /**
      * @return The current application context
      */
     [[nodiscard]] CApplicationContext& getContext () const;
@@ -114,8 +110,6 @@ class CWallpaperApplication {
      */
     void takeScreenshot (const std::filesystem::path& filename, FREE_IMAGE_FORMAT format);
 
-    /** The default background to display if no specific background was loaded */
-    Core::CProject* m_defaultBackground;
     /** The application context that contains the current app settings */
     CApplicationContext& m_context;
     /** Maps screens to backgrounds */
