@@ -167,6 +167,11 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 }
 
 void CWallpaperApplication::loadBackgrounds () {
+    if (this->m_context.settings.render.mode == CApplicationContext::NORMAL_WINDOW || this->m_context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW) {
+        this->m_backgrounds ["default"] = this->loadBackground(this->m_context.settings.general.defaultBackground);
+        return;
+    }
+
     for (const auto& [screen, path] : this->m_context.settings.general.screenBackgrounds) {
         // screens with no screen should use the default
         if (path.empty ()) {
