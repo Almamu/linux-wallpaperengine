@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 project(linux-wallpaperengine)
 
+# prevent installing to /usr by default so we don't bork anything
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "/opt/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+endif()
+
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
@@ -73,17 +78,17 @@ find_package(CEF REQUIRED)
 
 set(
     CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/build
+    ${CMAKE_CURRENT_BINARY_DIR}/build
     )
 	
 set(
     CMAKE_LIBRARY_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/lib
+    ${CMAKE_CURRENT_BINARY_DIR}/lib
     )
 	
 set(
     TARGET_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/build
+    ${CMAKE_CURRENT_BINARY_DIR}/build
     )
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
@@ -467,8 +472,12 @@ if(X11_SUPPORT_FOUND)
     endif()
 endif()
 
-file(CREATE_LINK linux-wallpaperengine wallengine SYMBOLIC)
+if(NOT WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
+    message(WARNING "No window server detected at build time. You will only be able to preview backgrounds")
+endif()
 
 # set some install parameters if not in debug mode
-install(TARGETS linux-wallpaperengine)
-install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)
+install(FILES ${TARGET_OUTPUT_DIRECTORY}/${PROJECT_NAME} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ DESTINATION .)
+install(DIRECTORY share/ DESTINATION ./share)
+

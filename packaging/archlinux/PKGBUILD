@@ -27,11 +27,13 @@ pkgver() {
 build() {
     cmake -B build -S "$pkgname" \
         -DCMAKE_BUILD_TYPE='Release' \
-        -DCMAKE_INSTALL_PREFIX='/usr' \
+        -DCMAKE_INSTALL_PREFIX='/opt/linux-wallpaperengine' \
         -Wno-dev
     cmake --build build
 }
 
 package() {
     DESTDIR="$pkgdir" cmake --install build
+    # create forwarding script
+    echo "cd /opt/linux-wallpaperengine; ./linux-wallpaperengine \$*" > /usr/bin/linux-wallpaperengine
 }

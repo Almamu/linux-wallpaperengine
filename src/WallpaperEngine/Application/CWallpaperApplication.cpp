@@ -267,6 +267,16 @@ void CWallpaperApplication::show () {
             "Cannot read environment variable XDG_SESSION_TYPE, window server detection failed. Please ensure proper values are set");
     }
 
+    sLog.debug("Checking for window servers: ");
+
+#ifdef ENABLE_WAYLAND
+        sLog.debug("\twayland");
+#endif // ENABLE_WAYLAND
+
+#ifdef ENABLE_X11
+        sLog.debug("\tx11");
+#endif // ENABLE_X11
+
 #ifdef ENABLE_WAYLAND
     bool isWayland = strncmp ("wayland", XDG_SESSION_TYPE, strlen ("wayland")) == 0;
 #endif // ENABLE_WAYLAND
@@ -299,7 +309,10 @@ void CWallpaperApplication::show () {
                     this->m_context, *reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver));
             }
 #endif // ENABLE_X11
-            else {
+#ifdef ENABLE_X11
+            else
+#endif // ENABLE_X11
+            {
                 sLog.exception (
                     "Cannot run in background mode, window server could not be detected. XDG_SESSION_TYPE must be wayland or x11");
             }
