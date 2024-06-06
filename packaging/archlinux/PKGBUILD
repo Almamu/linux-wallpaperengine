@@ -35,7 +35,7 @@ build() {
 package() {
     DESTDIR="$pkgdir" cmake --install build
     # create forwarding script
-    echo "#!/bin/bash" > /usr/bin/linux-wallpaperengine
-    echo "cd /opt/linux-wallpaperengine; ./linux-wallpaperengine \$*" >> /usr/bin/linux-wallpaperengine
-    chmod +x /usr/bin/linux-wallpaperengine
+    echo "#!/bin/bash" > $pkgdir/usr/bin/linux-wallpaperengine
+    echo "cd /opt/linux-wallpaperengine; ./linux-wallpaperengine \$*" >> $pkgdir/usr/bin/linux-wallpaperengine
+    chmod +x $pkgdir/usr/bin/linux-wallpaperengine
 }
