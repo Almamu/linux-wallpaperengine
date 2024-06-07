@@ -39,4 +39,5 @@ package() {
     echo "#!/bin/bash" > $pkgdir/usr/bin/linux-wallpaperengine
     echo "cd /opt/linux-wallpaperengine; ./linux-wallpaperengine \$*" >> $pkgdir/usr/bin/linux-wallpaperengine
     chmod +x $pkgdir/usr/bin/linux-wallpaperengine
+    chmod +x $pkgdir/opt/linux-wallpaperengine/linux-wallpaperengine
 }
