@@ -15,7 +15,7 @@ const ITexture* CTextureCache::resolve (const std::string& filename) {
         return found->second;
 
     // search for the texture in all the different containers just in case
-    for (const auto it : this->getContext ().getApp ().getBackgrounds ()) {
+    for (const auto& it : this->getContext ().getApp ().getBackgrounds ()) {
         try {
             const ITexture* texture = it.second->getContainer ()->readTexture (filename);
 

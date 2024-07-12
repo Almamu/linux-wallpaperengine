@@ -267,7 +267,7 @@ void CApplicationContext::validateAssets () {
         this->settings.general.assets = Steam::FileSystem::appDirectory (APP_DIRECTORY, "assets");
     } catch (std::runtime_error&) {
         // set current path as assets' folder
-        std::filesystem::path directory = std::filesystem::canonical ("/proc/self/exe").parent_path () / "assets";
+        this->settings.general.assets = std::filesystem::canonical ("/proc/self/exe").parent_path () / "assets";
     }
 }
 
