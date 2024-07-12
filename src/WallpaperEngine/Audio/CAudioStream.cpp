@@ -2,7 +2,7 @@
 #include "common.h"
 #include <cassert>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 // maximum size of the queue to prevent reading too much data
 #define MAX_QUEUE_SIZE (5 * 1024 * 1024)
@@ -183,13 +183,14 @@ void CAudioStream::loadCustomContent (const char* filename) {
 }
 
 void CAudioStream::initialize () {
+// allocate the FIFO buffer
 #if FF_API_FIFO_OLD_API
-    // allocate the FIFO buffer
-    this->m_queue->packetList = av_fifo_alloc2 (1, sizeof (MyAVPacketList), AV_FIFO_FLAG_AUTO_GROW);
-#else
     this->m_queue->packetList = av_fifo_alloc (sizeof (MyAVPacketList));
+#else
+    this->m_queue->packetList = av_fifo_alloc2 (1, sizeof (MyAVPacketList), AV_FIFO_FLAG_AUTO_GROW);
 #endif
 
+#if FF_API_OLD_CHANNEL_LAYOUT
     int64_t out_channel_layout;
 
     // set output audio channels based on the input audio channels
@@ -199,18 +200,29 @@ void CAudioStream::initialize () {
         default: out_channel_layout = AV_CH_LAYOUT_SURROUND; break;
     }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-    av_channel_layout_from_mask (&this->m_out_channel_layout, out_channel_layout);
-
-    swr_alloc_set_opts2 (&this->m_swrctx, &this->m_out_channel_layout, this->m_audioContext.getFormat (),
-                         this->m_audioContext.getSampleRate (), &this->m_context->ch_layout,
-                         this->m_context->sample_fmt, this->m_context->sample_rate, 0, nullptr);
-#else
     // initialize swrctx
     this->m_swrctx = swr_alloc_set_opts (nullptr, out_channel_layout, this->m_audioContext.getFormat (),
                                          this->m_audioContext.getSampleRate (), this->getContext ()->channel_layout,
                                          this->getContext ()->sample_fmt, this->getContext ()->sample_rate, 0, nullptr);
+#else
+    AVChannelLayout out_channel_layout;
+    int64_t out_channel_mask;
+
+    // set output audio channels based on the input audio channels
+    switch (this->m_audioContext.getChannels ()) {
+        case 1: out_channel_mask = AV_CH_LAYOUT_MONO; break;
+        case 2: out_channel_mask = AV_CH_LAYOUT_STEREO; break;
+        default: out_channel_mask = AV_CH_LAYOUT_SURROUND; break;
+    }
+
+    if (av_channel_layout_from_mask (&out_channel_layout, out_channel_mask) != 0)
+        sLog.exception ("Cannot get channel layout from mask");
+
+    swr_alloc_set_opts2 (&this->m_swrctx, &out_channel_layout, this->m_audioContext.getFormat (),
+                         this->m_audioContext.getSampleRate (), &this->m_context->ch_layout,
+                         this->m_context->sample_fmt, this->m_context->sample_rate, 0, nullptr);
 #endif
+
     if (this->m_swrctx == nullptr)
         sLog.exception ("Cannot initialize swrctx for audio resampling");
 
@@ -249,15 +261,15 @@ bool CAudioStream::doQueue (AVPacket* pkt) {
     MyAVPacketList entry {pkt};
 
 #if FF_API_FIFO_OLD_API
-    // write the entry if possible
-    if (av_fifo_write (this->m_queue->packetList, &entry, 1) < 0)
-        return false;
-#else
     if (av_fifo_space (this->m_queue->packetList) < sizeof (entry))
         if (av_fifo_grow (this->m_queue->packetList, sizeof (entry)) < 0)
             return false;
 
     av_fifo_generic_write (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
+#else
+    // write the entry if possible
+    if (av_fifo_write (this->m_queue->packetList, &entry, 1) < 0)
+        return false;
 #endif
 
     this->m_queue->nb_packets++;
@@ -277,12 +289,12 @@ void CAudioStream::dequeuePacket (AVPacket* output) {
     while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
 
 #if FF_API_FIFO_OLD_API
-        int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
-#else
         int ret = -1;
 
         if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
             ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
+#else
+        int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
 #endif
 
         // enough data available, read it
@@ -406,8 +418,6 @@ int CAudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* ou
 
     // get number of output audio channels
 #if FF_API_OLD_CHANNEL_LAYOUT
-    out_nb_channels = this->getContext ()->ch_layout.nb_channels;
-#else
     int64_t out_channel_layout;
 
     // set output audio channels based on the input audio channels
@@ -418,6 +428,8 @@ int CAudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* ou
     }
 
     out_nb_channels = av_get_channel_layout_nb_channels (out_channel_layout);
+#else
+    out_nb_channels = this->getContext ()->ch_layout.nb_channels;
 #endif
     ret = av_samples_alloc_array_and_samples (&resampled_data, &out_linesize, out_nb_channels, out_nb_samples,
                                               this->m_audioContext.getFormat (), 0);

@@ -192,9 +192,9 @@ class CAudioStream {
      */
     struct PacketQueue {
 #if FF_API_FIFO_OLD_API
-        AVFifo* packetList;
-#else
         AVFifoBuffer* packetList;
+#else
+        AVFifo* packetList;
 #endif
         int nb_packets;
         int size;
