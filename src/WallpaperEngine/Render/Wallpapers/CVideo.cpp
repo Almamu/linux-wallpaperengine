@@ -39,6 +39,10 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option_string (this->m_mpv, "loop", "inf");
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
+    if (!this->getContext ().getApp ().getContext ().settings.audio.enabled) {
+        mpv_set_option_string(this->m_mpv, "mute", "yes");
+    }
+
     // initialize gl context for mpv
     mpv_opengl_init_params gl_init_params {get_proc_address, this};
     mpv_render_param params [] {{MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL)},
