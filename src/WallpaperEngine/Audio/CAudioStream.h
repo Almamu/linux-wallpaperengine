@@ -20,6 +20,9 @@ extern "C" {
 #ifndef FF_API_FIFO_OLD_API
 #define 	FF_API_FIFO_OLD_API   (LIBAVUTIL_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_OLD_CHANNEL_LAYOUT
+#define 	FF_API_OLD_CHANNEL_LAYOUT   (LIBAVUTIL_VERSION_MAJOR < 59)
+#endif
 
 namespace WallpaperEngine::Audio {
 class CAudioContext;
