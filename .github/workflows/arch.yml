@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Publish parallel-disk-usage to the AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.1
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
           pkgname: linux-wallpaperengine-git
           pkgbuild: ./packaging/archlinux/PKGBUILD
