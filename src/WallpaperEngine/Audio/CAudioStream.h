@@ -166,10 +166,6 @@ class CAudioStream {
      */
     void initialize ();
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-    /** Chanel layout needed for old FFMPEG versions */
-    AVChannelLayout m_out_channel_layout {};
-#endif
     /** The SwrContext that handles resampling */
     SwrContext* m_swrctx;
     /** The audio context this stream will be played under */
