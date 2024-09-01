@@ -265,6 +265,15 @@ void Compiler::precompile () {
                     this->m_includesContent += this->lookupShaderFile (filename);
                     this->m_includesContent += "\r\n// end of included from file " + filename + "\r\n";
                 }
+            } else if (this->peekString ("#require ", it)) {
+                // TODO: PROPERLY IMPLEMENT #require
+                this->m_compiledContent += "// #require ";
+                // ignore whitespaces
+                this->ignoreSpaces (it);
+                BREAK_IF_ERROR
+                std::string name = this->extractName (it);
+                BREAK_IF_ERROR
+                this->m_compiledContent += name;
             } else {
                 this->m_compiledContent += '#';
                 ++it;
