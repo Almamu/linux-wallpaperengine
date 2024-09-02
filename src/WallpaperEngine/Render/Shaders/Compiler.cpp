@@ -265,6 +265,15 @@ void Compiler::precompile () {
                     this->m_includesContent += this->lookupShaderFile (filename);
                     this->m_includesContent += "\r\n// end of included from file " + filename + "\r\n";
                 }
+            } else if (this->peekString ("#require ", it)) {
+                // TODO: PROPERLY IMPLEMENT #require
+                this->m_compiledContent += "// #require ";
+                // ignore whitespaces
+                this->ignoreSpaces (it);
+                BREAK_IF_ERROR
+                std::string name = this->extractName (it);
+                BREAK_IF_ERROR
+                this->m_compiledContent += name;
             } else {
                 this->m_compiledContent += '#';
                 ++it;
@@ -694,7 +703,7 @@ void Compiler::parseParameterConfiguration (const std::string& type, const std::
             value = *constant->second->as<CShaderConstantInteger> ()->getValue ();
 
         parameter = new Variables::CShaderVariableInteger (value);
-    } else if (type == "sampler2D") {
+    } else if (type == "sampler2D" || type == "sampler2DComparison") {
         // samplers can have special requirements, check what sampler we're working with and create definitions
         // if needed
         const auto textureName = data.find ("default");
@@ -755,7 +764,8 @@ const std::map<int, std::string>& Compiler::getTextures () const {
     return this->m_textures;
 }
 
-std::vector<std::string> Compiler::sTypes = {
-    "vec4",  "uvec4", "ivec4", "dvec4", "bvec4", "vec3",      "uvec3",  "ivec3", "dvec3", "bvec3", "vec2",
-    "uvec2", "ivec2", "dvec2", "bvec2", "float", "sampler2D", "mat4x3", "mat4",  "mat3",  "uint4", "void"};
+std::vector<std::string> Compiler::sTypes = {"vec4",   "uvec4", "ivec4", "dvec4", "bvec4",     "vec3",
+                                             "uvec3",  "ivec3", "dvec3", "bvec3", "vec2",      "uvec2",
+                                             "ivec2",  "dvec2", "bvec2", "float", "sampler2D", "sampler2DComparison",
+                                             "mat4x3", "mat4",  "mat3",  "uint",  "uint4",     "void"};
 } // namespace WallpaperEngine::Render::Shaders

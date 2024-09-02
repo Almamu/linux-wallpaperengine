@@ -451,7 +451,7 @@ void CPass::setupUniforms () {
                     // resolve the texture first
                     const ITexture* textureRef;
 
-                    if (textureName.find ("_rt_") == 0) {
+                    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
                         textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
 
                         if (textureRef == nullptr)
