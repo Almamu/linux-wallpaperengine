@@ -23,11 +23,11 @@ class CEmitter {
     /**
      * @return The maximum distance a particle can travel before being dead
      */
-    [[nodiscard]] const uint32_t getDistanceMax () const;
+    [[nodiscard]] const glm::vec3& getDistanceMax () const;
     /**
      * @return The minimum distance a particle can travel before being dead
      */
-    [[nodiscard]] const uint32_t getDistanceMin () const;
+    [[nodiscard]] const glm::vec3& getDistanceMin () const;
     /**
      * @return The direction a particle should move to
      */
@@ -42,16 +42,16 @@ class CEmitter {
     [[nodiscard]] const double getRate () const;
 
   protected:
-    CEmitter (const glm::vec3& directions, uint32_t distancemax, uint32_t distancemin, uint32_t id, std::string name,
+    CEmitter (const glm::vec3& directions, const glm::vec3& distancemax, const glm::vec3& distancemin, uint32_t id, std::string name,
               const glm::vec3& origin, double rate);
 
   private:
     /** Direction the particles should move to */
     glm::vec3 m_directions;
     /** Maximum distance before the particle is dead */
-    uint32_t m_distancemax;
+    glm::vec3 m_distancemax;
     /** Minimum distance before the particle is dead */
-    uint32_t m_distancemin;
+    glm::vec3 m_distancemin;
     /** ID of the emitter */
     uint32_t m_id;
     /** Name of the emitter, indicates the type of emitter */

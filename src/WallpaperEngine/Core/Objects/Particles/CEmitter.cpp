@@ -11,12 +11,27 @@ CEmitter* CEmitter::fromJSON (json data) {
     const auto origin_it = jsonFindRequired (data, "origin", "Particle emitter must have an origin");
     const auto rate_it = jsonFindRequired (data, "rate", "Particle emitter must have a rate");
 
-    return new CEmitter (WallpaperEngine::Core::aToVector3 (*directions_it), *distancemax_it, *distancemin_it,
+    glm::vec3 distancemin = glm::vec3(0);
+    glm::vec3 distancemax = glm::vec3(0);
+
+    if (distancemin_it->is_number()) {
+        distancemin = glm::vec3(static_cast<uint32_t>(*distancemin_it));
+    } else {
+        distancemin = WallpaperEngine::Core::aToVector3(*distancemin_it);
+    }
+
+    if (distancemax_it->is_number()) {
+        distancemax = glm::vec3(static_cast<uint32_t>(*distancemax_it));
+    } else {
+        distancemax = WallpaperEngine::Core::aToVector3(*distancemax_it);
+    }
+
+    return new CEmitter (WallpaperEngine::Core::aToVector3 (*directions_it), distancemax, distancemin,
                          (id_it == data.end () ? 0 : static_cast<uint32_t> (*id_it)), *name_it,
                          WallpaperEngine::Core::aToVector3 (*origin_it), *rate_it);
 }
 
-CEmitter::CEmitter (const glm::vec3& directions, uint32_t distancemax, uint32_t distancemin, uint32_t id,
+CEmitter::CEmitter (const glm::vec3& directions, const glm::vec3& distancemax, const glm::vec3& distancemin, uint32_t id,
                     std::string name, const glm::vec3& origin, double rate) :
     m_directions (directions),
     m_distancemax (distancemax),
@@ -34,11 +49,11 @@ const std::string& CEmitter::getName () const {
     return this->m_name;
 }
 
-const uint32_t CEmitter::getDistanceMax () const {
+const glm::vec3& CEmitter::getDistanceMax () const {
     return this->m_distancemax;
 }
 
-const uint32_t CEmitter::getDistanceMin () const {
+const glm::vec3& CEmitter::getDistanceMin () const {
     return this->m_distancemin;
 }
 
