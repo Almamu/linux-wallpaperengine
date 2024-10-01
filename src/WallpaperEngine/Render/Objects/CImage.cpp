@@ -367,6 +367,9 @@ void CImage::render () {
     if (!this->m_initialized)
         return;
 
+    if (!this->getImage()->isVisible())
+        return;
+
     glColorMask (true, true, true, true);
 
     // update the position if required

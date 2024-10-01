@@ -30,7 +30,7 @@ CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container) {
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, "visible", false);
+    auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, "visible", true);
     auto origin = jsonFindUserConfig<CUserSettingVector3> (data, "origin", {0, 0, 0});
     auto scale = jsonFindUserConfig<CUserSettingVector3> (data, "scale", {1, 1, 1});
     auto angles_val = jsonFindDefault<std::string> (data, "angles", "0.0 0.0 0.0");
