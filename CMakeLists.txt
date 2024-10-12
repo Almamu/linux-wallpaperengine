@@ -33,7 +33,6 @@ find_package(SDL2 REQUIRED)
 find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
-find_package(FreeImage REQUIRED)
 find_package(PulseAudio REQUIRED)
 
 # Download CEF of specified version for current platform
@@ -100,7 +99,6 @@ include_directories(
     ${LZ4_INCLUDE_DIR}
     ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
-    ${FREEIMAGE_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
     src
     ${CEF_INCLUDE_PATH}
@@ -441,7 +439,6 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${LZ4_LIBRARY}
     ${SDL2_LIBRARIES}
     ${FFMPEG_LIBRARIES}
-    ${FREEIMAGE_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
     glfw

@@ -1,7 +1,6 @@
 #include "CGLFWOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 #include "common.h"
-#include <FreeImage.h>
 
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
@@ -61,9 +60,6 @@ CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationConte
     if (result != GLEW_OK)
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
 
-    // initialize free image
-    FreeImage_Initialise (TRUE);
-
     // setup output
     if (context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW ||
         context.settings.render.mode == CApplicationContext::NORMAL_WINDOW) {
@@ -82,7 +78,6 @@ CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationConte
 
 CGLFWOpenGLDriver::~CGLFWOpenGLDriver () {
     glfwTerminate ();
-    FreeImage_DeInitialise ();
 }
 
 Output::COutput& CGLFWOpenGLDriver::getOutput () {

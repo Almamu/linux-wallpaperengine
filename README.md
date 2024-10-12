@@ -32,14 +32,13 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - GLM
 - GLEW
 - GLUT
-- FreeImage
 - MPV
 - PulseAudio
 
 ## Commands
 ```
 sudo apt-get update
-sudo apt-get install build-essential cmake libxrandr-dev libfreeimage-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
 ```
 
 # 5. How to use

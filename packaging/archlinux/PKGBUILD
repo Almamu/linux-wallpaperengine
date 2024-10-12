@@ -7,7 +7,7 @@ pkgdesc="use steam's wallpaperengine on linux"
 arch=('x86_64')
 url="https://github.com/Almamu/linux-wallpaperengine"
 license=('GPL3')
-depends=('lz4' 'ffmpeg' 'mpv' 'freeimage' 'glfw' 'glew' 'freeglut' 'libpulse')
+depends=('lz4' 'ffmpeg' 'mpv' 'glfw' 'glew' 'freeglut' 'libpulse')
 makedepends=('git' 'cmake' 'sdl2' 'glm')
 provides=("linux-wallpaperengine")
 source=("${pkgname}::git+https://github.com/Almamu/linux-wallpaperengine.git#branch=main")

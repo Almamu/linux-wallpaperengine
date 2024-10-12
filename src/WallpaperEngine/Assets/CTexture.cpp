@@ -5,6 +5,9 @@
 #include <lz4.h>
 #include <string>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 using namespace WallpaperEngine::Assets;
 
 CTexture::CTexture (const void* fileData) : m_resolution () {
@@ -17,7 +20,7 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
         this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->gifWidth,
                               this->m_header->gifHeight};
     } else {
-        if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
+        if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
             // wpengine-texture format always has one mipmap
             // get first image size
             auto element = this->m_header->images.find (0)->second.begin ();
@@ -31,7 +34,7 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
         }
     }
 
-    if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
+    if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
         internalFormat = GL_RGBA8;
         // set some extra information too as it's used for image sizing
         // this ensures that a_TexCoord uses the full image instead of just part of it
@@ -92,38 +95,31 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
         auto end = imgCur->second.end ();
 
         for (int32_t level = 0; cur != end; ++cur, level++) {
-            FIBITMAP* bitmap = nullptr;
-            FIBITMAP* converted = nullptr;
-            FIMEMORY* memory = nullptr;
+            stbi_uc* handle = nullptr;
             void* dataptr = (*cur)->uncompressedData;
-            uint32_t width = (*cur)->width;
-            uint32_t height = (*cur)->height;
+            int width = (*cur)->width;
+            int height = (*cur)->height;
             uint32_t bufferSize = (*cur)->uncompressedSize;
             GLenum textureFormat = GL_RGBA;
 
-            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
-                memory =
-                    FreeImage_OpenMemory (reinterpret_cast<BYTE*> ((*cur)->uncompressedData), (*cur)->uncompressedSize);
+            if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
+                int fileChannels;
 
-                // load the image and setup pointers so they can be used
-                bitmap = FreeImage_LoadFromMemory (this->m_header->freeImageFormat, memory);
-                // flip the image vertically
-                FreeImage_FlipVertical (bitmap);
-                // convert to a 32bits bytearray
-                converted = FreeImage_ConvertTo32Bits (bitmap);
-
-                dataptr = FreeImage_GetBits (converted);
-                width = FreeImage_GetWidth (converted);
-                height = FreeImage_GetHeight (converted);
-                bufferSize = FreeImage_GetMemorySize (converted);
-                textureFormat = GL_BGRA;
+                dataptr = handle = stbi_load_from_memory (
+                    reinterpret_cast <unsigned char*> ((*cur)->uncompressedData),
+                    (*cur)->uncompressedSize,
+                    &width,
+                    &height,
+                    &fileChannels,
+                    4);
             } else {
                 if (this->m_header->format == TextureFormat::R8) {
                     // red textures are 1-byte-per-pixel, so it's alignment has to be set manually
                     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
                     textureFormat = GL_RED;
-                } else if (this->m_header->format == TextureFormat::RG88)
+                } else if (this->m_header->format == TextureFormat::RG88) {
                     textureFormat = GL_RG;
+                }
             }
 
             switch (internalFormat) {
@@ -142,11 +138,9 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
                 default: sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
             }
 
-            // freeimage buffer won't be used anymore, so free memory
-            if (this->m_header->freeImageFormat != FREE_IMAGE_FORMAT::FIF_UNKNOWN) {
-                FreeImage_Unload (bitmap);
-                FreeImage_Unload (converted);
-                FreeImage_CloseMemory (memory);
+            // stbi_image buffer won't be used anymore, so free memory
+            if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
+                stbi_image_free (handle);
             }
         }
     }
@@ -298,7 +292,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     if (strncmp (fileData, "TEXB0003", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0003;
         header->imageCount = *pointer++;
-        header->freeImageFormat = static_cast<FREE_IMAGE_FORMAT> (*pointer++);
+        header->freeImageFormat = static_cast<FreeImageFormat> (*pointer++);
     } else if (strncmp (fileData, "TEXB0002", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0002;
         header->imageCount = *pointer++;

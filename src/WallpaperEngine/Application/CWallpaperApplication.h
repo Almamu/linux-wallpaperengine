@@ -104,11 +104,9 @@ class CWallpaperApplication {
     /**
      * Takes an screenshot of the background and saves it to the specified path
      *
-     * @param context
      * @param filename
-     * @param format
      */
-    void takeScreenshot (const std::filesystem::path& filename, FREE_IMAGE_FORMAT format);
+    void takeScreenshot (const std::filesystem::path& filename);
 
     /** The application context that contains the current app settings */
     CApplicationContext& m_context;

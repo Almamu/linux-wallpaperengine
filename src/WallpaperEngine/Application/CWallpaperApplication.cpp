@@ -16,6 +16,8 @@
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
 
 #include <unistd.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
@@ -212,14 +214,13 @@ void CWallpaperApplication::setupProperties () {
         this->setupPropertiesForProject (info);
 }
 
-void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filename, FREE_IMAGE_FORMAT format) {
+void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filename) {
     // this should be getting called at the end of the frame, so the right thing should be bound already
     const int width = this->m_renderContext->getOutput ().getFullWidth ();
     const int height = this->m_renderContext->getOutput ().getFullHeight ();
 
-    // build the output file with FreeImage
-    static FIBITMAP* bitmap = FreeImage_Allocate (width, height, 24);
-    RGBQUAD color;
+    // build the output file with stbi_image_write
+    auto* bitmap = new uint8_t [width * height * sizeof (uint8_t) * 3] {0};
     int xoffset = 0;
 
     for (const auto& [screen, viewport] : this->m_renderContext->getOutput ().getViewports ()) {
@@ -236,13 +237,12 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
         // now get access to the pixels
         for (int y = viewport->viewport.w; y > 0; y--) {
             for (int x = 0; x < viewport->viewport.z; x++) {
-                color.rgbRed = *pixel++;
-                color.rgbGreen = *pixel++;
-                color.rgbBlue = *pixel++;
+                int finalx = x + xoffset;
+                int finaly = this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y;
 
-                // set the pixel in the destination
-                FreeImage_SetPixelColor (bitmap, x + xoffset,
-                                         this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y, &color);
+                bitmap[finaly * 3 + finalx] = *pixel++;
+                bitmap[finaly * 3 + finalx + 1] = *pixel++;
+                bitmap[finaly * 3 + finalx + 2] = *pixel++;
             }
         }
 
@@ -253,10 +253,15 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
         delete [] buffer;
     }
 
-    // finally save the file
-    FreeImage_Save (format, bitmap, filename.c_str (), 0);
+    auto extension = filename.extension();
 
-    FreeImage_Unload (bitmap);
+    if (extension == ".bmp") {
+        stbi_write_bmp (filename.c_str(), width, height, 3, bitmap);
+    } else if (extension == ".png") {
+        stbi_write_png (filename.c_str(), width, height, 3, bitmap, width * 3);
+    } else if (extension == ".jpg" || extension == ".jpeg") {
+        stbi_write_jpg (filename.c_str(), width, height, 3, bitmap, 100);
+    }
 }
 
 void CWallpaperApplication::show () {
@@ -398,8 +403,7 @@ void CWallpaperApplication::show () {
         if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < 5)
             continue;
 
-        this->takeScreenshot (this->m_context.settings.screenshot.path,
-                              this->m_context.settings.screenshot.format);
+        this->takeScreenshot (this->m_context.settings.screenshot.path);
         this->m_context.settings.screenshot.take = false;
     }
 

@@ -7,8 +7,6 @@
 
 #include <glm/vec4.hpp>
 
-#include <FreeImage.h>
-
 #include "CApplicationState.h"
 
 #include "WallpaperEngine/Assets/ITexture.h"
@@ -101,8 +99,6 @@ class CApplicationContext {
             bool take;
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
-            /** The image format */
-            FREE_IMAGE_FORMAT format;
         } screenshot;
     } settings;
 

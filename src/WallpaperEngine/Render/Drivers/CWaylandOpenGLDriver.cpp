@@ -1,8 +1,6 @@
 #include "CWaylandOpenGLDriver.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
 
-#include <FreeImage.h>
-
 #include "common.h"
 
 #define class _class
@@ -255,8 +253,6 @@ CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallp
 
     if (result != GLEW_OK)
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
-
-    FreeImage_Initialise (TRUE);
 }
 
 CWaylandOpenGLDriver::~CWaylandOpenGLDriver () {

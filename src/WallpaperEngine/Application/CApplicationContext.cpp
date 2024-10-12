@@ -87,7 +87,6 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
             {
                 .take = false,
                 .path = "",
-                .format = FIF_UNKNOWN,
             },
     };
 
@@ -280,13 +279,7 @@ void CApplicationContext::validateScreenshot () {
 
     const std::string extension = this->settings.screenshot.path.extension ();
 
-    if (extension == ".bmp")
-        this->settings.screenshot.format = FIF_BMP;
-    else if (extension == ".png")
-        this->settings.screenshot.format = FIF_PNG;
-    else if (extension == ".jpg" || extension == ".jpeg")
-        this->settings.screenshot.format = FIF_JPEG;
-    else
+    if (extension != ".bmp" && extension != ".png" && extension != ".jpeg" && extension != ".jpg")
         sLog.exception ("Cannot determine screenshot format, unknown extension ", extension);
 }
 
