@@ -27,7 +27,7 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - SDL2
 - FFmpeg
 - X11 (with libxxf86vm) or Wayland
-- Xrandr
+- Xrandr (for X11 support)
 - GLFW3
 - GLM
 - GLEW
