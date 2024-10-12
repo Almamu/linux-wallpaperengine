@@ -6,14 +6,18 @@
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
-#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 
+#ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
+#endif /* ENABLE_WAYLAND */
+
+#ifdef ENABLE_X11
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
+#endif /* ENABLE_X11 */
 
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION

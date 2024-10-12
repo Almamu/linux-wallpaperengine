@@ -20,13 +20,13 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 
 # 4. Compilation requirements
 ## linux-wallpaperengine
-- OpenGL 2.1 support
+- OpenGL 3.3 support
 - CMake
 - LZ4
 - ZLIB
-- SDL
+- SDL2
 - FFmpeg
-- X11 (with libxxf86vm)
+- X11 (with libxxf86vm) or Wayland
 - Xrandr
 - GLFW3
 - GLM

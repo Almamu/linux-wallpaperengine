@@ -94,7 +94,6 @@ add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 
 include_directories(
     ${MPV_INCLUDE_DIR}
-    ${XRANDR_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
     ${SDL2_INCLUDE_DIRS}
@@ -171,7 +170,7 @@ if(X11_FOUND)
 endif()
 
 if(X11_SUPPORT_FOUND)
-    include_directories(${X11_INCLUDE_DIR})
+    include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR})
     add_compile_definitions(ENABLE_X11)
 
     set(X11_SOURCES
