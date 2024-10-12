@@ -237,12 +237,12 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
         // now get access to the pixels
         for (int y = viewport->viewport.w; y > 0; y--) {
             for (int x = 0; x < viewport->viewport.z; x++) {
-                int finalx = x + xoffset;
-                int finaly = this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y;
+                int xfinal = x + xoffset;
+                int yfinal = this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y;
 
-                bitmap[finaly * 3 + finalx] = *pixel++;
-                bitmap[finaly * 3 + finalx + 1] = *pixel++;
-                bitmap[finaly * 3 + finalx + 2] = *pixel++;
+                bitmap[yfinal * width * 3 + xfinal * 3] = *pixel++;
+                bitmap[yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
+                bitmap[yfinal * width * 3 + xfinal * 3 + 2] = *pixel++;
             }
         }
 
