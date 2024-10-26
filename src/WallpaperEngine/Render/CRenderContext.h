@@ -35,6 +35,7 @@ class CRenderContext {
 
     void render (Drivers::Output::COutputViewport* viewport);
     void setWallpaper (const std::string& display, CWallpaper* wallpaper);
+    void setPause (bool newState);
     [[nodiscard]] Input::CInputContext& getInputContext () const;
     [[nodiscard]] const CWallpaperApplication& getApp () const;
     [[nodiscard]] const Drivers::CVideoDriver& getDriver () const;

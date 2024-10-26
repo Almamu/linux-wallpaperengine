@@ -42,6 +42,11 @@ void CRenderContext::setWallpaper (const std::string& display, CWallpaper* wallp
     this->m_wallpapers.insert_or_assign (display, wallpaper);
 }
 
+void CRenderContext::setPause (bool newState) {
+    for (auto&& wallpaper : this->m_wallpapers)
+        wallpaper.second->setPause (newState);
+}
+
 Input::CInputContext& CRenderContext::getInputContext () const {
     return this->m_input;
 }

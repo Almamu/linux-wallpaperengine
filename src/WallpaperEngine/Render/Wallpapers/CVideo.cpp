@@ -15,6 +15,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     CWallpaper (video, Type, context, audioContext, scalingMode),
     m_width (16),
     m_height (16),
+    m_paused (false),
     m_mpvGl (nullptr) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
@@ -40,7 +41,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     if (!this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-        mpv_set_option_string(this->m_mpv, "mute", "yes");
+        mpv_set_option_string (this->m_mpv, "mute", "yes");
     }
 
     // initialize gl context for mpv
@@ -119,6 +120,14 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
 
 Core::CVideo* CVideo::getVideo () {
     return this->getWallpaperData ()->as<Core::CVideo> ();
+}
+
+void CVideo::setPause (bool newState) {
+    if (m_paused == newState)
+        return;
+    m_paused = newState;
+    int pause = newState;
+    mpv_set_property (m_mpv, "pause", MPV_FORMAT_FLAG, &pause);
 }
 
 int CVideo::getWidth () const {

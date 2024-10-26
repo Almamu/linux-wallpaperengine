@@ -51,6 +51,11 @@ class CWallpaper : public Helpers::CContextAware {
     void render (glm::ivec4 viewport, bool vflip);
 
     /**
+     * Pause the renderer
+     */
+    virtual void setPause (bool newState);
+
+    /**
      * @return The container to resolve files for this wallpaper
      */
     [[nodiscard]] CContainer* getContainer () const;
@@ -141,7 +146,8 @@ class CWallpaper : public Helpers::CContextAware {
      * @return
      */
     static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
-                                      CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
+                                      CWebBrowserContext& browserContext,
+                                      const CWallpaperState::TextureUVsScaling& scalingMode);
 
   protected:
     CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
