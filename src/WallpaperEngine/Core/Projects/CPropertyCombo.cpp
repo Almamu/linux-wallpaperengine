@@ -13,7 +13,7 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
     const auto text = jsonFindDefault<std::string> (data, "text", "");
     const auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
 
-    auto* combo = new CPropertyCombo (name, text, *value);
+    auto* combo = new CPropertyCombo (name, text, value->dump ());
 
     if (!options->is_array ())
         sLog.exception ("Property combo options should be an array");
@@ -27,7 +27,7 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
         auto label = jsonFindRequired (cur, "label", "Label is required for a property combo option");
         auto propertyValue = jsonFindRequired (cur, "value", "Value is required for a property combo option");
 
-        combo->addValue (*label, *propertyValue);
+        combo->addValue (*label, propertyValue->dump());
     }
 
     return combo;
