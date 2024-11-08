@@ -56,7 +56,7 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
     try {
         container.add (new CDirectory (this->m_context.settings.general.assets));
     } catch (CAssetLoadException&) {
-        sLog.exception("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
+        sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
     // add two possible patches directories to the container
@@ -173,8 +173,9 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
 }
 
 void CWallpaperApplication::loadBackgrounds () {
-    if (this->m_context.settings.render.mode == CApplicationContext::NORMAL_WINDOW || this->m_context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW) {
-        this->m_backgrounds ["default"] = this->loadBackground(this->m_context.settings.general.defaultBackground);
+    if (this->m_context.settings.render.mode == CApplicationContext::NORMAL_WINDOW ||
+        this->m_context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW) {
+        this->m_backgrounds ["default"] = this->loadBackground (this->m_context.settings.general.defaultBackground);
         return;
     }
 
@@ -244,9 +245,9 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
                 int xfinal = x + xoffset;
                 int yfinal = this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y;
 
-                bitmap[yfinal * width * 3 + xfinal * 3] = *pixel++;
-                bitmap[yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
-                bitmap[yfinal * width * 3 + xfinal * 3 + 2] = *pixel++;
+                bitmap [yfinal * width * 3 + xfinal * 3] = *pixel++;
+                bitmap [yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
+                bitmap [yfinal * width * 3 + xfinal * 3 + 2] = *pixel++;
             }
         }
 
@@ -257,14 +258,14 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
         delete [] buffer;
     }
 
-    auto extension = filename.extension();
+    auto extension = filename.extension ();
 
     if (extension == ".bmp") {
-        stbi_write_bmp (filename.c_str(), width, height, 3, bitmap);
+        stbi_write_bmp (filename.c_str (), width, height, 3, bitmap);
     } else if (extension == ".png") {
-        stbi_write_png (filename.c_str(), width, height, 3, bitmap, width * 3);
+        stbi_write_png (filename.c_str (), width, height, 3, bitmap, width * 3);
     } else if (extension == ".jpg" || extension == ".jpeg") {
-        stbi_write_jpg (filename.c_str(), width, height, 3, bitmap, 100);
+        stbi_write_jpg (filename.c_str (), width, height, 3, bitmap, 100);
     }
 }
 
@@ -276,14 +277,14 @@ void CWallpaperApplication::show () {
             "Cannot read environment variable XDG_SESSION_TYPE, window server detection failed. Please ensure proper values are set");
     }
 
-    sLog.debug("Checking for window servers: ");
+    sLog.debug ("Checking for window servers: ");
 
 #ifdef ENABLE_WAYLAND
-        sLog.debug("\twayland");
+    sLog.debug ("\twayland");
 #endif // ENABLE_WAYLAND
 
 #ifdef ENABLE_X11
-        sLog.debug("\tx11");
+    sLog.debug ("\tx11");
 #endif // ENABLE_X11
 
 #ifdef ENABLE_WAYLAND
@@ -349,8 +350,9 @@ void CWallpaperApplication::show () {
                     new WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector (this->m_context);
             }
 
-        m_inputContext = new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
-            reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver)));
+        m_inputContext =
+            new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
+                reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver)));
     }
 
     if (this->m_context.settings.audio.audioprocessing) {
@@ -374,9 +376,10 @@ void CWallpaperApplication::show () {
 
     // set all the specific wallpapers required
     for (const auto& [background, info] : this->m_backgrounds) {
-        m_renderContext->setWallpaper (background, WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                                               info->getWallpaper (), *m_renderContext, *m_audioContext, m_browserContext,
-                                               this->m_context.settings.general.screenScalings [background]));
+        m_renderContext->setWallpaper (background,
+                                       WallpaperEngine::Render::CWallpaper::fromWallpaper (
+                                           info->getWallpaper (), *m_renderContext, *m_audioContext, m_browserContext,
+                                           this->m_context.settings.general.screenScalings [background]));
     }
 
     // wallpapers are setup, free browsesr context if possible
@@ -401,6 +404,13 @@ void CWallpaperApplication::show () {
         m_audioDriver->update ();
         // update input information
         m_inputContext->update ();
+        // check for fullscreen windows and wait until there's none fullscreen
+        if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+            m_renderContext->setPause (true);
+            while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
+                usleep (FULLSCREEN_CHECK_WAIT_TIME);
+            m_renderContext->setPause (false);
+        }
         // process driver events
         m_videoDriver->dispatchEventQueue ();
 
@@ -420,10 +430,6 @@ void CWallpaperApplication::show () {
 }
 
 void CWallpaperApplication::update (Render::Drivers::Output::COutputViewport* viewport) {
-    // check for fullscreen windows and wait until there's none fullscreen
-    while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
-        usleep (FULLSCREEN_CHECK_WAIT_TIME);
-
     // render the scene
     m_renderContext->render (viewport);
 }

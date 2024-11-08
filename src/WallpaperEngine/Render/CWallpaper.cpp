@@ -232,6 +232,8 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
+void CWallpaper::setPause (bool newState) {}
+
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();

@@ -18,6 +18,7 @@ class CVideo final : public CWallpaper {
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
 
+    void setPause (bool newState) override;
     void setSize (int width, int height);
 
   protected:
@@ -31,6 +32,7 @@ class CVideo final : public CWallpaper {
     mpv_handle* m_mpv;
     mpv_render_context* m_mpvGl;
 
+    bool m_paused;
     int64_t m_width;
     int64_t m_height;
 };
