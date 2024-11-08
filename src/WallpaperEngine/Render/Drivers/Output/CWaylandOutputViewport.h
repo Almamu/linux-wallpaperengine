@@ -45,8 +45,8 @@ class CWaylandOutputViewport final : public COutputViewport {
     zwlr_layer_surface_v1* layerSurface = nullptr;
     wl_callback* frameCallback = nullptr;
     glm::dvec2 mousePos = {0, 0};
-    WallpaperEngine::Input::MouseClickStatus leftClick = WallpaperEngine::Input::MouseClickStatus::Waiting;
-    WallpaperEngine::Input::MouseClickStatus rightClick = WallpaperEngine::Input::MouseClickStatus::Waiting;
+    WallpaperEngine::Input::MouseClickStatus leftClick = WallpaperEngine::Input::MouseClickStatus::Released;
+    WallpaperEngine::Input::MouseClickStatus rightClick = WallpaperEngine::Input::MouseClickStatus::Released;
     wl_cursor* pointer = nullptr;
     wl_surface* cursorSurface = nullptr;
     bool callbackInitialized = false;

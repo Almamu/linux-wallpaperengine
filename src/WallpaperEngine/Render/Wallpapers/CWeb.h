@@ -109,6 +109,9 @@ namespace WallpaperEngine::Render
             int m_width;
             int m_height;
 
+            WallpaperEngine::Input::MouseClickStatus m_leftClick;
+            WallpaperEngine::Input::MouseClickStatus m_rightClick;
+
             glm::vec2 m_mousePosition;
             glm::vec2 m_mousePositionLast;
     };

@@ -93,13 +93,16 @@ void CWeb::updateMouse (glm::ivec4 viewport) {
     m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
 
     // TODO: ANY OTHER MOUSE EVENTS TO SEND?
-    if (leftClick != WallpaperEngine::Input::MouseClickStatus::Waiting) {
+    if (leftClick != this->m_leftClick) {
         m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_LEFT, leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
     }
 
-    if (rightClick != WallpaperEngine::Input::MouseClickStatus::Waiting) {
+    if (rightClick != this->m_rightClick) {
         m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_RIGHT, rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
     }
+
+    this->m_leftClick = leftClick;
+    this->m_rightClick = rightClick;
 }
 
 CWeb::~CWeb () {

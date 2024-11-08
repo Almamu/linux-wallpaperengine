@@ -9,6 +9,7 @@
 extern "C" {
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
+#include <linux/input-event-codes.h>
 }
 #undef class
 #undef namespace
@@ -56,15 +57,13 @@ static void handlePointerButton (void* data, struct wl_pointer* wl_pointer, uint
     if (!driver->viewportInFocus)
         return;
 
-    sLog.debug("Button", button, " state ", button_state);
-
-    if (button == 272) {
+    if (button == BTN_LEFT) {
         if (button_state == WL_POINTER_BUTTON_STATE_PRESSED) {
             driver->viewportInFocus->leftClick = WallpaperEngine::Input::MouseClickStatus::Clicked;
         } else if (button_state == WL_POINTER_BUTTON_STATE_RELEASED) {
             driver->viewportInFocus->leftClick = WallpaperEngine::Input::MouseClickStatus::Released;
         }
-    } else if (button == 273) {
+    } else if (button == BTN_RIGHT) {
         if (button_state == WL_POINTER_BUTTON_STATE_PRESSED) {
             driver->viewportInFocus->rightClick = WallpaperEngine::Input::MouseClickStatus::Clicked;
         } else if (button_state == WL_POINTER_BUTTON_STATE_RELEASED) {

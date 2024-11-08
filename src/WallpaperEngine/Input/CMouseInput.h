@@ -4,9 +4,8 @@
 
 namespace WallpaperEngine::Input {
 enum MouseClickStatus : int {
-    Waiting = 0,
-    Released = 1,
-    Clicked = 2
+    Released = 0,
+    Clicked = 1
 };
 
 /**

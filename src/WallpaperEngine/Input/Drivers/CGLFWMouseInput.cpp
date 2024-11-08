@@ -19,29 +19,8 @@ void CGLFWMouseInput::update () {
     int leftClickState = glfwGetMouseButton (this->m_driver->getWindow (), GLFW_MOUSE_BUTTON_LEFT);
     int rightClickState = glfwGetMouseButton (this->m_driver->getWindow (), GLFW_MOUSE_BUTTON_RIGHT);
 
-    if (leftClickState == GLFW_RELEASE) {
-        if (this->m_leftClick == MouseClickStatus::Released) {
-            this->m_leftClick = MouseClickStatus::Waiting;
-        }
-
-        if (this->m_leftClick == MouseClickStatus::Clicked) {
-            this->m_leftClick = MouseClickStatus::Released;
-        }
-    } else {
-        this->m_leftClick = MouseClickStatus::Clicked;
-    }
-
-    if (rightClickState == GLFW_RELEASE) {
-        if (this->m_rightClick == MouseClickStatus::Released) {
-            this->m_rightClick = MouseClickStatus::Waiting;
-        }
-
-        if (this->m_rightClick == MouseClickStatus::Clicked) {
-            this->m_rightClick = MouseClickStatus::Released;
-        }
-    } else {
-        this->m_rightClick = MouseClickStatus::Clicked;
-    }
+    this->m_leftClick = leftClickState == GLFW_RELEASE ? MouseClickStatus::Released : MouseClickStatus::Clicked;
+    this->m_rightClick = rightClickState == GLFW_RELEASE ? MouseClickStatus::Released : MouseClickStatus::Clicked;
 
     // update current mouse position
     glfwGetCursorPos (this->m_driver->getWindow (), &this->m_mousePosition.x, &this->m_mousePosition.y);
