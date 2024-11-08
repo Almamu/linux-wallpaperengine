@@ -79,7 +79,11 @@ void CWeb::renderFrame (glm::ivec4 viewport) {
 
 void CWeb::updateMouse (glm::ivec4 viewport) {
     // update virtual mouse position first
-    glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
+    auto& input = this->getContext ().getInputContext ().getMouseInput ();
+
+    glm::dvec2 position = input.position ();
+    WallpaperEngine::Input::MouseClickStatus leftClick = input.leftClick();
+    WallpaperEngine::Input::MouseClickStatus rightClick = input.rightClick();
 
     CefMouseEvent evt;
     // Set mouse current position. Maybe clamps are not needed
@@ -87,6 +91,15 @@ void CWeb::updateMouse (glm::ivec4 viewport) {
     evt.y = std::clamp (int (position.y - viewport.y), 0, viewport.w);
     // Send mouse position to cef
     m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
+
+    // TODO: ANY OTHER MOUSE EVENTS TO SEND?
+    if (leftClick != WallpaperEngine::Input::MouseClickStatus::Waiting) {
+        m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_LEFT, leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+    }
+
+    if (rightClick != WallpaperEngine::Input::MouseClickStatus::Waiting) {
+        m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_RIGHT, rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+    }
 }
 
 CWeb::~CWeb () {

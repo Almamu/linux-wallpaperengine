@@ -26,13 +26,23 @@ class CWaylandMouseInput final : public CMouseInput {
      */
     [[nodiscard]] glm::dvec2 position () const override;
 
+    /**
+     * @return The status of the mouse's left click
+     */
+    [[nodiscard]] MouseClickStatus leftClick () const override;
+
+    /**
+     * @return The status of the mouse's right click
+     */
+    [[nodiscard]] MouseClickStatus rightClick () const override;
+
   private:
     /**
      * Wayland: Driver
      */
     WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* waylandDriver = nullptr;
 
-    glm::dvec2 pos;
+    glm::dvec2 m_pos;
 };
 } // namespace WallpaperEngine::Input::Drivers
 

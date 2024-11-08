@@ -26,6 +26,16 @@ class CGLFWMouseInput final : public CMouseInput {
      */
     [[nodiscard]] glm::dvec2 position () const override;
 
+    /**
+     * @return The status of the mouse's left click
+     */
+    [[nodiscard]] MouseClickStatus leftClick () const override;
+
+    /**
+     * @return The status of the mouse's right click
+     */
+    [[nodiscard]] MouseClickStatus rightClick () const override;
+
   private:
     Render::Drivers::CGLFWOpenGLDriver* m_driver;
 
@@ -34,5 +44,7 @@ class CGLFWMouseInput final : public CMouseInput {
      */
     glm::dvec2 m_mousePosition;
     glm::dvec2 m_reportedPosition;
+    MouseClickStatus m_leftClick;
+    MouseClickStatus m_rightClick;
 };
 } // namespace WallpaperEngine::Input::Drivers

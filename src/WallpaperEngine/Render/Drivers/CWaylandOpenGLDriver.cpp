@@ -50,7 +50,28 @@ static void handlePointerMotion (void* data, struct wl_pointer* wl_pointer, uint
 }
 
 static void handlePointerButton (void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time,
-                                 uint32_t button, uint32_t button_state) {}
+                                 uint32_t button, uint32_t button_state) {
+    const auto driver = static_cast<CWaylandOpenGLDriver*> (data);
+
+    if (!driver->viewportInFocus)
+        return;
+
+    sLog.debug("Button", button, " state ", button_state);
+
+    if (button == 272) {
+        if (button_state == WL_POINTER_BUTTON_STATE_PRESSED) {
+            driver->viewportInFocus->leftClick = WallpaperEngine::Input::MouseClickStatus::Clicked;
+        } else if (button_state == WL_POINTER_BUTTON_STATE_RELEASED) {
+            driver->viewportInFocus->leftClick = WallpaperEngine::Input::MouseClickStatus::Released;
+        }
+    } else if (button == 273) {
+        if (button_state == WL_POINTER_BUTTON_STATE_PRESSED) {
+            driver->viewportInFocus->rightClick = WallpaperEngine::Input::MouseClickStatus::Clicked;
+        } else if (button_state == WL_POINTER_BUTTON_STATE_RELEASED) {
+            driver->viewportInFocus->rightClick = WallpaperEngine::Input::MouseClickStatus::Released;
+        }
+    }
+}
 
 constexpr struct wl_pointer_listener pointerListener = {.enter = handlePointerEnter,
                                                         .leave = handlePointerLeave,
