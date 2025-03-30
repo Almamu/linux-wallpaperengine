@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
-#include "WallpaperEngine/Render/Shaders/Compiler.h"
+#include "WallpaperEngine/Render/Shaders/CCompiler.h"
 
 #include "WallpaperEngine/Assets/ITexture.h"
 
@@ -34,17 +34,17 @@ class CImage final : public CObject {
     void setup ();
     void render () override;
 
-    const Core::Objects::CImage* getImage () const;
-    const std::vector<CEffect*>& getEffects () const;
-    glm::vec2 getSize () const;
+    [[nodiscard]] const Core::Objects::CImage* getImage () const;
+    [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
+    [[nodiscard]] glm::vec2 getSize () const;
 
-    GLuint getSceneSpacePosition () const;
-    GLuint getCopySpacePosition () const;
-    GLuint getPassSpacePosition () const;
-    GLuint getTexCoordCopy () const;
-    GLuint getTexCoordPass () const;
-    const ITexture* getTexture () const;
-    double getAnimationTime () const;
+    [[nodiscard]] GLuint getSceneSpacePosition () const;
+    [[nodiscard]] GLuint getCopySpacePosition () const;
+    [[nodiscard]] GLuint getPassSpacePosition () const;
+    [[nodiscard]] GLuint getTexCoordCopy () const;
+    [[nodiscard]] GLuint getTexCoordPass () const;
+    [[nodiscard]] const ITexture* getTexture () const;
+    [[nodiscard]] double getAnimationTime () const;
 
     /**
      * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them

@@ -34,6 +34,10 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
+find_package(glslang REQUIRED)
+find_package(spirv_cross_core CONFIG REQUIRED)
+find_package(spirv_cross_glsl CONFIG REQUIRED)
+
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
@@ -118,6 +122,9 @@ include_directories(
     src
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
+    ${glslang_INCLUDE_DIRS}
+    ${spirv_cross_core_INCLUDE_DIRS}
+    ${spirv_cross_glsl_INCLUDE_DIRS}
     include)
 
 
@@ -281,8 +288,10 @@ add_executable(
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
 
-    src/WallpaperEngine/Render/Shaders/Compiler.h
-    src/WallpaperEngine/Render/Shaders/Compiler.cpp
+    src/WallpaperEngine/Render/Shaders/CCompiler.h
+    src/WallpaperEngine/Render/Shaders/CCompiler.cpp
+    src/WallpaperEngine/Render/Shaders/CGLSLContext.cpp
+    src/WallpaperEngine/Render/Shaders/CGLSLContext.h
 
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
@@ -463,6 +472,9 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${FFMPEG_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
+    glslang
+    spirv-cross-core
+    spirv-cross-glsl
     glfw
     libcef_lib libcef_dll_wrapper)
 

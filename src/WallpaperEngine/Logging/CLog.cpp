@@ -1,6 +1,7 @@
 #include "CLog.h"
 
 #include <cassert>
+#include <memory>
 
 using namespace WallpaperEngine::Logging;
 
@@ -10,7 +11,7 @@ CLog::CLog () {
 
 CLog& CLog::get () {
     if (sInstance == nullptr)
-        sInstance.reset (new CLog ());
+        sInstance = std::make_shared<CLog> ();
 
     return *sInstance;
 }

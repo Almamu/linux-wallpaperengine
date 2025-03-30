@@ -282,7 +282,7 @@ Core::Objects::Images::Materials::CPass* CPass::getPass () {
     return this->m_pass;
 }
 
-GLuint CPass::compileShader (Render::Shaders::Compiler* shader, GLuint type) {
+GLuint CPass::compileShader (Render::Shaders::CCompiler* shader, GLuint type) {
     // reserve shaders in OpenGL
     const GLuint shaderID = glCreateShader (type);
 
@@ -332,16 +332,18 @@ void CPass::setupShaders () {
     }
 
     // prepare the shaders
-    this->m_fragShader = new Render::Shaders::Compiler (
-        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::Compiler::Type_Pixel,
+    this->m_fragShader = new Render::Shaders::CCompiler (
+        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Pixel,
         this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
-    this->m_fragShader->precompile ();
-    this->m_vertShader = new Render::Shaders::Compiler (
-        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::Compiler::Type_Vertex,
+    this->m_fragShader->compile ();
+    this->m_vertShader = new Render::Shaders::CCompiler (
+        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Vertex,
         this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
-    this->m_vertShader->precompile ();
-    this->m_fragShader->precompile ();
-    this->m_vertShader->precompile ();
+    this->m_vertShader->compile ();
+
+    // they're re-compiled to ensure they are using the latest constants available
+    this->m_fragShader->compile ();
+    this->m_vertShader->compile ();
 
     // compile the shaders
     const GLuint vertexShaderID = compileShader (this->m_vertShader, GL_VERTEX_SHADER);

@@ -7,7 +7,7 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
-#include "WallpaperEngine/Render/Shaders/Compiler.h"
+#include "WallpaperEngine/Render/Shaders/CCompiler.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
@@ -34,7 +34,7 @@ class CPass final : public Helpers::CContextAware {
     void setModelMatrix (const glm::mat4* model);
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
 
-    const CMaterial* getMaterial () const;
+    [[nodiscard]] const CMaterial* getMaterial () const;
     Core::Objects::Images::Materials::CPass* getPass ();
 
   private:
@@ -95,7 +95,7 @@ class CPass final : public Helpers::CContextAware {
         const GLuint* value;
     };
 
-    static GLuint compileShader (Render::Shaders::Compiler* shader, GLuint type);
+    static GLuint compileShader (Render::Shaders::CCompiler* shader, GLuint type);
     void setupTextures ();
     void setupShaders ();
     void setupShaderVariables ();
@@ -152,8 +152,8 @@ class CPass final : public Helpers::CContextAware {
      */
     std::map<int, const ITexture*> m_finalTextures;
 
-    Render::Shaders::Compiler* m_fragShader;
-    Render::Shaders::Compiler* m_vertShader;
+    Render::Shaders::CCompiler* m_fragShader;
+    Render::Shaders::CCompiler* m_vertShader;
 
     const CFBO* m_drawTo;
     const ITexture* m_input;
