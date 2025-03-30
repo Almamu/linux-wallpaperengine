@@ -111,6 +111,10 @@ class CCompiler {
      */
     std::string m_compiledContent;
     /**
+     * The contents of all the included files
+     */
+    std::string m_includeContent;
+    /**
      * The type of shader
      */
     CGLSLContext::ShaderType m_type;

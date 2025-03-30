@@ -73,6 +73,8 @@ std::string& CCompiler::getCompiled () {
 }
 
 void CCompiler::compile () {
+    // reset include contents as the compilation requires this to be re-processed
+    this->m_includeContent = "";
     std::string precompile = "#version 330\n"
                              "// ======================================================\n"
                              "// Processed shader " +
@@ -168,22 +170,64 @@ void CCompiler::compile () {
 
     // then apply includes in-place
     while((start = precompile.find("#include", end)) != std::string::npos) {
-        size_t lineEnd = precompile.find_first_of ('\n', start);
         // TODO: CHECK FOR ERRORS HERE, MALFORMED INCLUDES WILL NOT BE PROPERLY HANDLED
         size_t quoteStart = precompile.find_first_of ('"', start) + 1;
         size_t quoteEnd = precompile.find_first_of('"', quoteStart);
         std::string filename = precompile.substr(quoteStart, quoteEnd - quoteStart);
         std::string content = this->lookupShaderFile (filename);
 
+        this->m_includeContent += "// begin of include from file " + filename + "\n" +
+            content +
+            "\n// end of included from file " + filename + "\n";
+
+        // replace the first two letters with a comment so the filelength doesn't change
+        precompile = precompile.replace (start, 2, "//");
+
+        // go to the end of the line
+        end = quoteEnd + 1;
+    }
+
+    // include content might have more includes, so also handle those
+    end = 0;
+
+    // then apply includes in-place
+    while((start = this->m_includeContent.find("#include", end)) != std::string::npos) {
+        size_t lineEnd = this->m_includeContent.find_first_of ('\n', start);
+        // TODO: CHECK FOR ERRORS HERE, MALFORMED INCLUDES WILL NOT BE PROPERLY HANDLED
+        size_t quoteStart = this->m_includeContent.find_first_of ('"', start) + 1;
+        size_t quoteEnd = this->m_includeContent.find_first_of('"', quoteStart);
+        std::string filename = this->m_includeContent.substr(quoteStart, quoteEnd - quoteStart);
+        std::string content = this->lookupShaderFile (filename);
+
         // file contents ready, replace things
-        precompile = precompile.replace (start, lineEnd - start,
-        "// begin of include from file " + filename + "\n" +
+        this->m_includeContent = this->m_includeContent.replace (start, lineEnd - start,
+            "// begin of include from file " + filename + "\n" +
             content +
             "\n// end of included from file " + filename + "\n"
         );
 
         // go back to the beginning of the line to properly continue detecting things
         end = start;
+    }
+
+    end = 0;
+
+    // finally, try to place the include contents before the main function
+    while ((start = precompile.find (" main", end)) != std::string::npos) {
+        char value = precompile.at(start + 5);
+
+        end = start + 5;
+
+        if (value != ' ' && value != '(') {
+            continue;
+        }
+
+        // find the beginning of the line, inject include content and call it a day
+        size_t previousLine = precompile.rfind ('\n', start);
+        // finally insert it there
+        precompile.insert (previousLine + 1, this->m_includeContent + '\n');
+        // keep the iterator after the found function to prevent a loop
+        end = end + this->m_includeContent.length () + 1;
     }
 
     // content should be ready, finally ask glslang to compile the shader
