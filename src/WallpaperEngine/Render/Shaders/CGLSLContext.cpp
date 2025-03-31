@@ -154,7 +154,7 @@ std::string CGLSLContext::toGlsl (const std::string& content, ShaderType type) {
     shader.setAutoMapBindings (true);
 
     if (!shader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
-        sLog.error ("GLSL Parsing Failed: %s", shader.getInfoLog());
+        sLog.error ("GLSL Parsing Failed: ", shader.getInfoLog());
         return "";
     }
 
@@ -162,7 +162,7 @@ std::string CGLSLContext::toGlsl (const std::string& content, ShaderType type) {
     program.addShader (&shader);
 
     if (!program.link (EShMsgDefault)) {
-        sLog.error ("Program Linking Failed: %s", program.getInfoLog());
+        sLog.error ("Program Linking Failed: ", program.getInfoLog());
         return "";
     }
 
@@ -171,7 +171,7 @@ std::string CGLSLContext::toGlsl (const std::string& content, ShaderType type) {
 
     spirv_cross::CompilerGLSL compiler(spirv);
     spirv_cross::CompilerGLSL::Options options;
-    options.version = 450; // OpenGL 4.5 / Vulkan GLSL TODO: MAYBE THIS CAN BE CHANGED?
+    options.version = 330; // OpenGL 4.5 / Vulkan GLSL TODO: MAYBE THIS CAN BE CHANGED?
     options.es = false;
     compiler.set_common_options(options);
 
