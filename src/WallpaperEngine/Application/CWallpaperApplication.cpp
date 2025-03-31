@@ -223,27 +223,38 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
     // this should be getting called at the end of the frame, so the right thing should be bound already
     const int width = this->m_renderContext->getOutput ().getFullWidth ();
     const int height = this->m_renderContext->getOutput ().getFullHeight ();
+    const bool vflip = this->m_renderContext->getOutput ().renderVFlip ();
 
     // build the output file with stbi_image_write
-    auto* bitmap = new uint8_t [width * height * sizeof (uint8_t) * 3] {0};
+    auto* bitmap = new uint8_t [width * height * 3] {0};
     int xoffset = 0;
 
     for (const auto& [screen, viewport] : this->m_renderContext->getOutput ().getViewports ()) {
         // activate opengl context so we can read from the framebuffer
         viewport->makeCurrent ();
         // make room for storing the pixel of this viewport
-        auto* buffer = new uint8_t [viewport->viewport.z * viewport->viewport.w * sizeof (uint8_t) * 3];
+        const auto bufferSize = (viewport->viewport.z - viewport->viewport.x) * (viewport->viewport.w - viewport->viewport.y) * 3;
+        auto* buffer = new uint8_t [bufferSize];
         const uint8_t* pixel = buffer;
 
         // read the viewport data into the pixel buffer
-        glReadPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w, GL_RGB,
-                      GL_UNSIGNED_BYTE, buffer);
+        glPixelStorei (GL_PACK_ALIGNMENT, 1);
+        glReadnPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w, GL_RGB,
+                      GL_UNSIGNED_BYTE, bufferSize, buffer);
+
+        GLenum error = glGetError();
+
+        if (error != GL_NO_ERROR) {
+            sLog.error ("Cannot obtain pixel data for screen ", screen, ". OpenGL error: ", error);
+            delete [] buffer;
+            continue;
+        }
 
         // now get access to the pixels
-        for (int y = viewport->viewport.w; y > 0; y--) {
+        for (int y = 0; y < viewport->viewport.w; y++) {
             for (int x = 0; x < viewport->viewport.z; x++) {
                 int xfinal = x + xoffset;
-                int yfinal = this->m_renderContext->getOutput ().renderVFlip () ? (viewport->viewport.w - y) : y;
+                int yfinal = vflip ? (viewport->viewport.w - y - 1) : y;
 
                 bitmap [yfinal * width * 3 + xfinal * 3] = *pixel++;
                 bitmap [yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
@@ -267,6 +278,8 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
     } else if (extension == ".jpg" || extension == ".jpeg") {
         stbi_write_jpg (filename.c_str (), width, height, 3, bitmap, 100);
     }
+
+    delete [] bitmap;
 }
 
 void CWallpaperApplication::show () {
