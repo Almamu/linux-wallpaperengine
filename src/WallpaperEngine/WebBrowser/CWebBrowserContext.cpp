@@ -6,16 +6,46 @@
 
 using namespace WallpaperEngine::WebBrowser;
 
-CWebBrowserContext::CWebBrowserContext (int argc, char** argv) : m_stopped (false) {
-    // clone original argc/argv as they'll be modified by cef
-    char** argv2 = new char*[argc];
+CWebBrowserContext::CWebBrowserContext (int argc, char** argv) : m_stopped (false), m_inUse (false), m_argc (argc), m_argv (argv) {}
 
-    for (int i = 0; i < argc; i++) {
-        argv2 [i] = new char [strlen (argv [i]) + 1];
-        strcpy (argv2 [i], argv [i]);
+CWebBrowserContext::~CWebBrowserContext () {
+    this->stop ();
+}
+
+void CWebBrowserContext::markAsUsed () {
+    if (!this->m_inUse) {
+        this->delayedInitialization();
     }
 
-    CefMainArgs args (argc, argv2);
+    this->m_inUse = true;
+}
+
+bool CWebBrowserContext::isUsed () const {
+    return this->m_inUse;
+}
+
+void CWebBrowserContext::stop () {
+    if (this->m_stopped) {
+        return;
+    }
+
+    sLog.out ("Shutting down CEF");
+
+    this->m_stopped = true;
+
+    CefShutdown ();
+}
+
+void CWebBrowserContext::delayedInitialization () {
+    // clone original argc/argv as they'll be modified by cef
+    char** argv2 = new char*[this->m_argc];
+
+    for (int i = 0; i < this->m_argc; i++) {
+        argv2 [i] = new char [strlen (this->m_argv [i]) + 1];
+        strcpy (argv2 [i], this->m_argv [i]);
+    }
+
+    CefMainArgs args (this->m_argc, argv2);
 
     int exit_code = CefExecuteProcess (
         args, nullptr, nullptr); // Spawned processes will terminate here(see CefIninitilize below). Maybe implementing
@@ -46,28 +76,4 @@ CWebBrowserContext::CWebBrowserContext (int argc, char** argv) : m_stopped (fals
     if (!result) {
         sLog.exception ("CefInitialize: failed");
     }
-}
-
-CWebBrowserContext::~CWebBrowserContext () {
-    this->stop ();
-}
-
-void CWebBrowserContext::markAsUsed () {
-    this->m_inUse = true;
-}
-
-bool CWebBrowserContext::isUsed () {
-    return this->m_inUse;
-}
-
-void CWebBrowserContext::stop () {
-    if (this->m_stopped) {
-        return;
-    }
-
-    sLog.out ("Shutting down CEF");
-
-    this->m_stopped = true;
-
-    CefShutdown ();
 }

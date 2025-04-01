@@ -395,11 +395,6 @@ void CWallpaperApplication::show () {
                                            this->m_context.settings.general.screenScalings [background]));
     }
 
-    // wallpapers are setup, free browsesr context if possible
-    if (!this->m_browserContext.isUsed ()) {
-        this->m_browserContext.stop ();
-    }
-
     static time_t seconds;
     static struct tm* timeinfo;
 
