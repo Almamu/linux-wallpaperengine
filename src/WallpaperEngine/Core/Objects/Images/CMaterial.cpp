@@ -3,8 +3,6 @@
 #include <nlohmann/json.hpp>
 #include <utility>
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
-
 using namespace WallpaperEngine::Assets;
 
 using namespace WallpaperEngine::Core::Objects;
@@ -13,11 +11,11 @@ using namespace WallpaperEngine::Core::Objects::Images;
 CMaterial::CMaterial (std::string name) : m_name (std::move (name)) {}
 
 CMaterial* CMaterial::fromFile (const std::string& filename, CContainer* container) {
-    return fromJSON (filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)));
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)));
 }
 
 CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, CContainer* container) {
-    return fromJSON (filename, json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container)), target);
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)), target);
 }
 
 CMaterial* CMaterial::fromJSON (const std::string& name, json data, const std::string& target) {

@@ -11,6 +11,7 @@ namespace WallpaperEngine::Render::Objects {
 class CSound final : public CObject {
   public:
     CSound (CScene* scene, Core::Objects::CSound* sound);
+    ~CSound ();
 
     void render () override;
 

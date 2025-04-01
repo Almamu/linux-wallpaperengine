@@ -4,7 +4,6 @@
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core;
 
@@ -36,8 +35,7 @@ CScene::CScene (CProject& project, CContainer* container, Scenes::CCamera* camer
     m_skylightColor (skylightColor) {}
 
 CScene* CScene::fromFile (const std::string& filename, CProject& project, CContainer* container) {
-    std::string stringContent = WallpaperEngine::FileSystem::loadFullFile (filename, container);
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
+    json content = json::parse (container->readFileAsString (filename));
 
     const auto camera_it = jsonFindRequired (content, "camera", "Scenes must have a defined camera");
     const auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");

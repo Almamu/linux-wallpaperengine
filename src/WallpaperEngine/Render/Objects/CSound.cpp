@@ -9,6 +9,17 @@ CSound::CSound (CScene* scene, Core::Objects::CSound* sound) : CObject (scene, T
         this->load ();
 }
 
+CSound::~CSound() {
+    // free all the sound buffers and streams
+    for (const auto& stream : this->m_audioStreams) {
+        delete stream;
+    }
+
+    for (const auto& buffer : this->m_soundBuffer) {
+        delete buffer;
+    }
+}
+
 void CSound::load () {
     for (const auto& cur : this->m_sound->getSounds ()) {
         uint32_t filesize = 0;

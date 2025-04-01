@@ -17,13 +17,15 @@ const ITexture* CContainer::readTexture (const std::string& filename) const {
     // get the texture's filename (usually .tex)
     const std::string texture = "materials/" + filename + ".tex";
 
-    const void* textureContents = this->readFile (texture, nullptr);
+    const uint8_t* textureContents = this->readFile (texture, nullptr);
 
     const ITexture* result = new CTexture (textureContents);
 
 #if !NDEBUG
     glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, texture.c_str ());
 #endif /* NDEBUG */
+
+    delete textureContents;
 
     return result;
 }
@@ -37,7 +39,7 @@ std::string CContainer::readShader (const std::string& filename) const {
         const std::filesystem::path workshopId = *it++;
 
         if (++it != shader.end ()) {
-            const std::filesystem::path shaderfile = *it;
+            const std::filesystem::path& shaderfile = *it;
 
             try {
                 shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
@@ -82,6 +84,7 @@ std::string CContainer::readFileAsString (const std::string& filename) const {
 
     // free the intermediate buffer used to generate the std::string
     delete [] buffer;
+    delete contents;
 
     return result;
 }

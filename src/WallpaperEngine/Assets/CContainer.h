@@ -25,6 +25,8 @@ class CContainer {
      * Reads the given file from the container and returns it's data
      * Additionally sets a length parameter to return back the file's length
      *
+     * The returned string must be freed by the called
+     *
      * @param filename The file to read
      * @param length The file's length after it's been read, null for not getting anything back
      *

@@ -1,6 +1,5 @@
 #include "common.h"
 #include <WallpaperEngine/Assets/CContainer.h>
-#include <WallpaperEngine/FileSystem/FileSystem.h>
 
 #include "CProject.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
@@ -17,7 +16,7 @@ CProject::CProject (std::string title, std::string type, CContainer* container) 
     m_container (container) {}
 
 CProject* CProject::fromFile (const std::string& filename, CContainer* container) {
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
+    json content = json::parse (container->readFileAsString (filename));
 
     std::string dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
     if (dependency == "No dependency") {

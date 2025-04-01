@@ -1,6 +1,5 @@
 #include "CParticle.h"
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 #include <utility>
 
 using namespace WallpaperEngine::Core::Objects;
@@ -8,7 +7,7 @@ using namespace WallpaperEngine::Core::Objects;
 CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CContainer* container,
                                 CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
                                 CUserSettingVector3* scale) {
-    json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
+    json data = json::parse (container->readFileAsString (filename));
     const auto controlpoint_it = data.find ("controlpoint");
     const auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
     const auto maxcount_it = jsonFindRequired (data, "maxcount", "Particles must have maximum count");

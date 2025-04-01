@@ -351,9 +351,6 @@ add_executable(
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 
-    src/WallpaperEngine/FileSystem/FileSystem.cpp
-    src/WallpaperEngine/FileSystem/FileSystem.h
-
     src/WallpaperEngine/Core/UserSettings/CUserSettingValue.cpp
     src/WallpaperEngine/Core/UserSettings/CUserSettingValue.h
     src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.cpp

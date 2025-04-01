@@ -4,9 +4,6 @@
 #include <string>
 #include <utility>
 
-// filesystem
-#include <WallpaperEngine/FileSystem/FileSystem.h>
-
 // shader compiler
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
 #include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>

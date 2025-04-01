@@ -14,8 +14,6 @@
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
-
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
@@ -33,7 +31,7 @@ CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* ob
     auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
     auto effectpasses_it = data.find ("passes");
 
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (file_it->get<std::string> (), container));
+    json content = json::parse (container->readFileAsString(file_it->get<std::string> ()));
 
     auto name_it = jsonFindRequired (content, "name", "Effect must have a name");
     auto description = jsonFindDefault<std::string> (content, "description", "");

@@ -7,8 +7,6 @@
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include <utility>
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
-
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
@@ -43,7 +41,7 @@ WallpaperEngine::Core::CObject* CImage::fromJSON (CScene* scene, json data, CCon
     const auto colorBlendMode_val = jsonFindDefault<uint32_t> (data, "colorBlendMode", 0);
     const auto parallaxDepth_val = jsonFindDefault<std::string> (data, "parallaxDepth", "0 0");
 
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (image_it->get<std::string> (), container));
+    json content = json::parse (container->readFileAsString (image_it->get<std::string> ()));
 
     const auto material_it = jsonFindRequired (content, "material", "Image must have a material");
     const auto fullscreen = jsonFindDefault<bool> (content, "fullscreen", false);

@@ -8,7 +8,6 @@
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 #include "CGLSLContext.h"
