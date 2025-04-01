@@ -6,14 +6,14 @@
 #include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 #include "common.h"
 
-WallpaperEngine::Application::CWallpaperApplication* appPointer;
+WallpaperEngine::Application::CWallpaperApplication* app;
 
 void signalhandler(int sig)
 {
-    if (appPointer == nullptr)
+    if (app == nullptr)
         return;
 
-    appPointer->signal (sig);
+    app->signal (sig);
 }
 
 void initLogging ()
@@ -31,17 +31,20 @@ int main (int argc, char* argv[]) {
     if (appContext.settings.general.onlyListProperties)
         return 0;
 
-    WallpaperEngine::Application::CWallpaperApplication app (appContext, webBrowserContext);
-
-    appPointer = &app;
+    app = new WallpaperEngine::Application::CWallpaperApplication (appContext, webBrowserContext);
 
     // attach signals to gracefully stop
     std::signal (SIGINT, signalhandler);
     std::signal (SIGTERM, signalhandler);
 
     // show the wallpaper application
-    app.show ();
+    app->show ();
 
-    appPointer = nullptr;
+    // remove signal handlers before destroying app
+    std::signal (SIGINT, SIG_DFL);
+    std::signal (SIGTERM, SIG_DFL);
+
+    delete app;
+
     return 0;
 }

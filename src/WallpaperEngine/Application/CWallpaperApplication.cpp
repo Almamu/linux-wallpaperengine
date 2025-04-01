@@ -33,7 +33,14 @@ namespace WallpaperEngine::Application {
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context,
                                               WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
     m_context (context),
-    m_browserContext (browserContext) {
+    m_browserContext (browserContext),
+    m_audioContext (nullptr),
+    m_audioDriver (nullptr),
+    m_audioRecorder (nullptr),
+    m_inputContext (nullptr),
+    m_renderContext (nullptr),
+    m_videoDriver (nullptr),
+    m_fullScreenDetector (nullptr) {
     this->loadBackgrounds ();
     this->setupProperties ();
 }
@@ -398,11 +405,11 @@ void CWallpaperApplication::show () {
     static time_t seconds;
     static struct tm* timeinfo;
 
-    while (this->m_context.state.general.keepRunning && !m_videoDriver->closeRequested ()) {
+    while (this->m_context.state.general.keepRunning) {
         // update g_Daytime
         time (&seconds);
         timeinfo = localtime (&seconds);
-        g_Daytime = ((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0 * 60.0);
+        g_Daytime = ((timeinfo->tm_hour * 60.0f) + timeinfo->tm_min) / (24.0f * 60.0f);
 
         // keep track of the previous frame's time
         g_TimeLast = g_Time;
@@ -422,6 +429,11 @@ void CWallpaperApplication::show () {
         // process driver events
         m_videoDriver->dispatchEventQueue ();
 
+        if (m_videoDriver->closeRequested()) {
+            sLog.out ("Stop requested by driver");
+            this->m_context.state.general.keepRunning = false;
+        }
+
         if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < 5)
             continue;
 
@@ -429,10 +441,7 @@ void CWallpaperApplication::show () {
         this->m_context.settings.screenshot.take = false;
     }
 
-    // ensure this is updated as sometimes it might not come from a signal
-    this->m_context.state.general.keepRunning = false;
-
-    sLog.out ("Stop requested");
+    sLog.out ("Stopping");
 
     SDL_Quit ();
 }
@@ -443,6 +452,7 @@ void CWallpaperApplication::update (Render::Drivers::Output::COutputViewport* vi
 }
 
 void CWallpaperApplication::signal (int signal) {
+    sLog.out ("Stop requested by signal ", signal);
     this->m_context.state.general.keepRunning = false;
 }
 

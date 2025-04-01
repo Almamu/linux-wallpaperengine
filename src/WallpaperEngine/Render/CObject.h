@@ -28,9 +28,9 @@ class CObject : public Helpers::CContextAware {
 
     virtual void render () = 0;
 
-    CScene* getScene () const;
-    CContainer* getContainer () const;
-    int getId () const;
+    [[nodiscard]] CScene* getScene () const;
+    [[nodiscard]] CContainer* getContainer () const;
+    [[nodiscard]] int getId () const;
 
   protected:
     CObject (CScene* scene, std::string type, Core::CObject* object);
