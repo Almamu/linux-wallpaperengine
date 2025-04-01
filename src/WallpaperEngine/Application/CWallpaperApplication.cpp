@@ -238,6 +238,7 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
         const uint8_t* pixel = buffer;
 
         // read the viewport data into the pixel buffer
+        glPixelStorei (GL_PACK_ALIGNMENT, 1);
         glReadnPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w, GL_RGB,
                       GL_UNSIGNED_BYTE, bufferSize, buffer);
 
