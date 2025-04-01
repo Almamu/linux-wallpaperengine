@@ -106,7 +106,7 @@ class CWallpaperApplication {
      *
      * @param filename
      */
-    void takeScreenshot (const std::filesystem::path& filename);
+    void takeScreenshot (const std::filesystem::path& filename) const;
 
     /** The application context that contains the current app settings */
     CApplicationContext& m_context;

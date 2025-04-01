@@ -83,6 +83,10 @@ bool CX11Output::haveImageBuffer () const {
     return true;
 }
 
+uint32_t CX11Output::getImageBufferSize () const {
+    return this->m_imageSize;
+}
+
 void CX11Output::loadScreenInfo () {
     // reset the viewports
     this->m_viewports.clear ();
@@ -163,6 +167,7 @@ void CX11Output::loadScreenInfo () {
     // set the window background as our pixmap
     XSetWindowBackgroundPixmap (this->m_display, this->m_root, this->m_pixmap);
     // allocate space for the image's data
+    this->m_imageSize = this->m_fullWidth * this->m_fullHeight * 4;
     this->m_imageData = new char [this->m_fullWidth * this->m_fullHeight * 4];
     // create an image so we can copy it over
     this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth,

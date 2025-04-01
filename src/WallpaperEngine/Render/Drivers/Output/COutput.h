@@ -38,6 +38,7 @@ class COutput {
     virtual bool haveImageBuffer () const = 0;
     const std::map<std::string, COutputViewport*>& getViewports () const;
     virtual void* getImageBuffer () const = 0;
+    virtual uint32_t getImageBufferSize () const = 0;
     virtual void updateRender () const = 0;
 
   protected:

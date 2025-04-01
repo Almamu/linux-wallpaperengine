@@ -132,9 +132,16 @@ void CGLFWOpenGLDriver::dispatchEventQueue () {
         this->getApp ().update (viewport);
 
     // read the full texture into the image
-    if (this->m_output->haveImageBuffer ())
-        glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
-                      GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
+    if (this->m_output->haveImageBuffer ()) {
+        glReadnPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
+                      GL_UNSIGNED_BYTE, this->m_output->getImageBufferSize(), this->m_output->getImageBuffer ());
+
+        GLenum error = glGetError();
+
+        if (error != GL_NO_ERROR) {
+            sLog.exception("OpenGL error when reading texture ", error);
+        }
+    }
 
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE

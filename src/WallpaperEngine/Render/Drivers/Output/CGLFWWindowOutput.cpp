@@ -56,6 +56,10 @@ void* CGLFWWindowOutput::getImageBuffer () const {
     return nullptr;
 }
 
+uint32_t CGLFWWindowOutput::getImageBufferSize () const {
+    return 0;
+}
+
 void CGLFWWindowOutput::updateRender () const {
     if (this->m_context.settings.render.mode != Application::CApplicationContext::NORMAL_WINDOW)
         return;

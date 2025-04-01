@@ -21,6 +21,7 @@ class CX11Output final : public COutput {
     bool renderMultiple () const override;
     bool haveImageBuffer () const override;
     void* getImageBuffer () const override;
+    uint32_t getImageBufferSize () const override;
     void updateRender () const override;
 
   private:
@@ -32,6 +33,7 @@ class CX11Output final : public COutput {
     Window m_root;
     GC m_gc;
     char* m_imageData;
+    uint32_t m_imageSize;
     XImage* m_image;
     std::vector<COutputViewport*> m_screens;
 };

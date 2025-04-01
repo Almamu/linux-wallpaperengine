@@ -51,4 +51,8 @@ void* CWaylandOutput::getImageBuffer () const {
     return nullptr;
 }
 
+uint32_t CWaylandOutput::getImageBufferSize () const {
+    return 0;
+}
+
 void CWaylandOutput::updateRender () const {}
