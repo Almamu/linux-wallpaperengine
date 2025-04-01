@@ -246,8 +246,15 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
 
         // read the viewport data into the pixel buffer
         glPixelStorei (GL_PACK_ALIGNMENT, 1);
-        glReadnPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w, GL_RGB,
-                      GL_UNSIGNED_BYTE, bufferSize, buffer);
+        // 4.5 supports glReadnPixels, anything older doesn't...
+        if (GLEW_VERSION_4_5) {
+            glReadnPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w,
+                           GL_RGB, GL_UNSIGNED_BYTE, bufferSize, buffer);
+        } else {
+            // fallback to old version
+            glReadPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w,
+                          GL_RGB, GL_UNSIGNED_BYTE, buffer);
+        }
 
         GLenum error = glGetError();
 

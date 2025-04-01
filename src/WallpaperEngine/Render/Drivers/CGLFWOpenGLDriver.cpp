@@ -133,8 +133,14 @@ void CGLFWOpenGLDriver::dispatchEventQueue () {
 
     // read the full texture into the image
     if (this->m_output->haveImageBuffer ()) {
-        glReadnPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
-                      GL_UNSIGNED_BYTE, this->m_output->getImageBufferSize(), this->m_output->getImageBuffer ());
+        // 4.5 supports glReadnPixels, anything older doesn't...
+        if (GLEW_VERSION_4_5) {
+            glReadnPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
+                           GL_UNSIGNED_BYTE, this->m_output->getImageBufferSize (), this->m_output->getImageBuffer ());
+        } else {
+            // fallback to old version
+            glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
+        }
 
         GLenum error = glGetError();
 
