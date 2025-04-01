@@ -66,27 +66,6 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
         sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
-    // add two possible patches directories to the container
-    // hopefully one sticks
-    bool relative = true;
-    bool absolute = true;
-
-    try {
-        container.add (new CDirectory ("../share/"));
-    } catch (CAssetLoadException&) {
-        relative = false;
-    }
-
-    try {
-        container.add (new CDirectory (DATADIR));
-    } catch (CAssetLoadException&) {
-        absolute = false;
-    }
-
-    if (!relative && !absolute)
-        sLog.error ("WARNING: Shader patches directory cannot be found, this might make some backgrounds not work "
-                    "properly");
-
     // TODO: move this somewhere else?
     auto* virtualContainer = new CVirtualContainer ();
 

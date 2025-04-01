@@ -10,8 +10,6 @@ set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
-set(DATADIR ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME})
-set(PATCHESDIR ${DATADIR}/patches/)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT ERRORONLY)
@@ -22,7 +20,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(ERRORONLY=${ERRORONLY})
-add_compile_definitions(DATADIR="${DATADIR}")
 
 find_package(X11)
 find_package(OpenGL REQUIRED)
@@ -507,4 +504,3 @@ endif()
 # set some install parameters if not in debug mode
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)
 install(FILES ${TARGET_OUTPUT_DIRECTORY}/${PROJECT_NAME} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ DESTINATION .)
-install(DIRECTORY share/ DESTINATION ./share)
