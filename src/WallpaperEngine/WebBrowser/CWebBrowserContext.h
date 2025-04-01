@@ -7,7 +7,6 @@ namespace WallpaperEngine::WebBrowser {
         ~CWebBrowserContext();
 
         void markAsUsed();
-        [[nodiscard]] bool isUsed() const;
         void stop();
 
       private:
@@ -19,6 +18,5 @@ namespace WallpaperEngine::WebBrowser {
         int m_argc;
         char** m_argv;
         bool m_stopped;
-        bool m_inUse;
     };
 } // namespace WallpaperEngine::WebBrowser

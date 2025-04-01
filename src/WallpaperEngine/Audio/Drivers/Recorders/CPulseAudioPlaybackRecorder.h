@@ -36,8 +36,8 @@ class CPulseAudioPlaybackRecorder final : public CPlaybackRecorder {
     pa_context* m_context;
     pa_stream* m_captureStream;
 
-    float fft_destination64 [64];
-    float fft_destination32 [32];
-    float fft_destination16 [16];
+    float fft_destination64 [64] = {0};
+    float fft_destination32 [32] = {0};
+    float fft_destination16 [16] = {0};
 };
 } // namespace WallpaperEngine::Audio::Drivers::Recorders

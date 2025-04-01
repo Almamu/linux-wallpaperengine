@@ -6,22 +6,16 @@
 
 using namespace WallpaperEngine::WebBrowser;
 
-CWebBrowserContext::CWebBrowserContext (int argc, char** argv) : m_stopped (false), m_inUse (false), m_argc (argc), m_argv (argv) {}
+CWebBrowserContext::CWebBrowserContext (int argc, char** argv) : m_stopped (true), m_argc (argc), m_argv (argv) {}
 
 CWebBrowserContext::~CWebBrowserContext () {
     this->stop ();
 }
 
 void CWebBrowserContext::markAsUsed () {
-    if (!this->m_inUse) {
+    if (this->m_stopped) {
         this->delayedInitialization();
     }
-
-    this->m_inUse = true;
-}
-
-bool CWebBrowserContext::isUsed () const {
-    return this->m_inUse;
 }
 
 void CWebBrowserContext::stop () {
@@ -37,6 +31,8 @@ void CWebBrowserContext::stop () {
 }
 
 void CWebBrowserContext::delayedInitialization () {
+    this->m_stopped = false;
+
     // clone original argc/argv as they'll be modified by cef
     char** argv2 = new char*[this->m_argc];
 
