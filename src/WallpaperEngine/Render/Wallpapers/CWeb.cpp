@@ -13,6 +13,10 @@ CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContex
     m_height (16),
     m_browserContext (browserContext),
     m_browser (),
+    m_leftClick (WallpaperEngine::Input::MouseClickStatus::Released),
+    m_rightClick (WallpaperEngine::Input::MouseClickStatus::Released),
+    m_mousePosition(),
+    m_mousePositionLast(),
     m_client () {
     this->m_browserContext.markAsUsed ();
     // setup framebuffers

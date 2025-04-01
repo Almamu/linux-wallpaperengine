@@ -30,7 +30,14 @@ int CustomXIOErrorHandler (Display* dsp) {
     return 0;
 }
 
-CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) : COutput (context, driver) {
+CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) : COutput (context, driver),
+    m_display (nullptr),
+    m_pixmap (None),
+    m_root (None),
+    m_gc (None),
+    m_imageData (nullptr),
+    m_imageSize (0),
+    m_image (nullptr) {
     // do not use previous handler, it might stop the app under weird circumstances
     XSetErrorHandler (CustomXErrorHandler);
     XSetIOErrorHandler (CustomXIOErrorHandler);
@@ -88,9 +95,6 @@ uint32_t CX11Output::getImageBufferSize () const {
 }
 
 void CX11Output::loadScreenInfo () {
-    // reset the viewports
-    this->m_viewports.clear ();
-
     this->m_display = XOpenDisplay (nullptr);
     // set the error handling to try and recover from X disconnections
 #ifdef HAVE_XSETIOERROREXITHANDLER

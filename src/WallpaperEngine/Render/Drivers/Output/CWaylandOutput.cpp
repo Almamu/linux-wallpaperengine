@@ -10,8 +10,6 @@ CWaylandOutput::CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriv
     updateViewports ();
 }
 
-CWaylandOutput::~CWaylandOutput () {}
-
 void CWaylandOutput::updateViewports () {
     m_viewports.clear ();
     const auto PDRIVER = dynamic_cast<CWaylandOpenGLDriver*> (&m_driver);

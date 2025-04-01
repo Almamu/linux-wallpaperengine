@@ -17,7 +17,7 @@ class CFullScreenDetector;
 class CVideoDriver {
   public:
     explicit CVideoDriver (CWallpaperApplication& app);
-    virtual ~CVideoDriver ();
+    virtual ~CVideoDriver () = default;
 
     /**
      * @return The current output in use

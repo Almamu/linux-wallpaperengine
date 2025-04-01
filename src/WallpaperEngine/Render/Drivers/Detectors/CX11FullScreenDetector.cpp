@@ -31,6 +31,8 @@ int CustomXIOErrorHandler (Display* dsp) {
 CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext,
                                                 CGLFWOpenGLDriver& driver) :
     CFullScreenDetector (appContext),
+    m_display (nullptr),
+    m_root (0),
     m_driver (driver) {
     // do not use previous handler, it might stop the app under weird circumstances
     // these handlers might be replaced by other X11-specific functionality, they
@@ -67,7 +69,7 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
         Window root, *schildren = nullptr;
         unsigned int num_children;
 
-        if (!XQueryTree (m_display, ourWindow, &root, &parentWindow, &schildren, &num_children))
+        if (!XQueryTree (this->m_display, ourWindow, &root, &parentWindow, &schildren, &num_children))
             return false;
 
         if (schildren)

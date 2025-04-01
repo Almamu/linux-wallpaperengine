@@ -9,11 +9,11 @@ CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue) :
     m_value (0),
     CShaderVariable (&this->m_defaultValue, nullptr, Type) {}
 
-CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue, std::string name) :
+CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue, const std::string& name) :
     m_defaultValue (defaultValue),
     m_value (0),
     CShaderVariable (&this->m_defaultValue, nullptr, Type) {
-    this->setName (std::move (name));
+    this->setName (name);
 }
 
 void CShaderVariableInteger::setValue (int32_t value) {

@@ -16,7 +16,7 @@ namespace Output {
 class CWaylandOutput final : public COutput {
   public:
     CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriver& driver);
-    ~CWaylandOutput () override;
+    ~CWaylandOutput () override = default;
 
     void reset () override;
 

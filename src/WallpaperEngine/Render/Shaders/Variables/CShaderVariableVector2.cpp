@@ -9,11 +9,11 @@ CShaderVariableVector2::CShaderVariableVector2 (const glm::vec2& defaultValue) :
     m_value (glm::vec2 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type) {}
 
-CShaderVariableVector2::CShaderVariableVector2 (const glm::vec2& defaultValue, std::string name) :
+CShaderVariableVector2::CShaderVariableVector2 (const glm::vec2& defaultValue, const std::string& name) :
     m_defaultValue (defaultValue),
     m_value (glm::vec2 ()),
     CShaderVariable (&this->m_defaultValue, nullptr, Type) {
-    this->setName (std::move (name));
+    this->setName (name);
 }
 
 void CShaderVariableVector2::setValue (const glm::vec2& value) {

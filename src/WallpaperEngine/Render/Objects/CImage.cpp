@@ -23,6 +23,8 @@ CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
     m_modelViewProjectionCopyInverse (),
     m_modelViewProjectionPass (glm::mat4 (1.0)),
     m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
+    m_modelMatrix(),
+    m_viewProjectionMatrix(),
     m_pos () {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 

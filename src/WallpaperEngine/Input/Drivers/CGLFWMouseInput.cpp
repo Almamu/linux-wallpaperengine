@@ -8,6 +8,8 @@ using namespace WallpaperEngine::Input::Drivers;
 CGLFWMouseInput::CGLFWMouseInput (Render::Drivers::CGLFWOpenGLDriver* driver) :
     m_reportedPosition (),
     m_mousePosition (),
+    m_leftClick (MouseClickStatus::Released),
+    m_rightClick (MouseClickStatus::Released),
     m_driver (driver) {}
 
 void CGLFWMouseInput::update () {

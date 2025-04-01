@@ -106,12 +106,11 @@ constexpr struct zwlr_layer_surface_v1_listener layerSurfaceListener = {
 CWaylandOutputViewport::CWaylandOutputViewport (CWaylandOpenGLDriver* driver, uint32_t waylandName,
                                                 struct wl_registry* registry) :
     m_driver (driver),
+    size ({0, 0}),
     waylandName (waylandName),
     COutputViewport ({0, 0, 0, 0}, "", true) {
     // setup output listener
     this->output = static_cast<wl_output*> (wl_registry_bind (registry, waylandName, &wl_output_interface, 4));
-    this->name = "";
-    this->size = {0, 0};
     wl_output_add_listener (output, &outputListener, this);
 }
 
