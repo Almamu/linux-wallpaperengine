@@ -90,6 +90,7 @@ void CCompiler::compile () {
                              "#define saturate(x) (clamp(x, 0.0, 1.0))\n"
                              "#define texSample2D texture\n"
                              "#define texSample2DLod textureLod\n"
+                             "#define log10(x) log2(x) * 0.301029995663981\n"
                              "#define atan2 atan\n"
                              "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"
                              "#define ddx dFdx\n"
