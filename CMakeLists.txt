@@ -32,7 +32,7 @@ find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
 
-set(ALLOW_EXTERNAL_SPIRV_TOOLS 1)
+set(ENABLE_OPT OFF)
 set(SPIRV_CROSS_FORCE_PIC ON)
 
 # Download CEF of specified version for current platform
