@@ -31,10 +31,9 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
-find_package(glslang REQUIRED)
-find_package(spirv_cross_core CONFIG REQUIRED)
-find_package(spirv_cross_glsl CONFIG REQUIRED)
 
+set(ALLOW_EXTERNAL_SPIRV_TOOLS 1)
+set(SPIRV_CROSS_FORCE_PIC ON)
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
@@ -108,8 +107,12 @@ set(
     )
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+add_subdirectory(src/External/glslang-WallpaperEngine glslang)
+add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 
 include_directories(
+    src/External/glslang-WallpaperEngine
+    src/External/SPIRV-Cross-WallpaperEngine
     ${MPV_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
@@ -119,9 +122,6 @@ include_directories(
     src
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
-    ${glslang_INCLUDE_DIRS}
-    ${spirv_cross_core_INCLUDE_DIRS}
-    ${spirv_cross_glsl_INCLUDE_DIRS}
     include)
 
 
@@ -451,7 +451,7 @@ COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TA
 COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
-add_dependencies(linux-wallpaperengine libcef_dll_wrapper)
+add_dependencies(linux-wallpaperengine libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
 
 # Need to remove libvulkan, otherwise will get error on  linking:
 # /usr/bin/ld: /usr/lib/libmpv.so: undefined reference to `vkCreateXlibSurfaceKHR'

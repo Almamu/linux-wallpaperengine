@@ -4,10 +4,10 @@
 #include <cassert>
 #include <memory>
 
-#include <glslang/Include/ResourceLimits.h>
-#include <glslang/Public/ShaderLang.h>
-#include <glslang/SPIRV/GlslangToSpv.h>
-#include <spirv_cross/spirv_glsl.hpp>
+#include "glslang/Include/ResourceLimits.h"
+#include "glslang/Public/ShaderLang.h"
+#include "glslang/SPIRV/GlslangToSpv.h"
+#include "spirv_glsl.hpp"
 
 using namespace WallpaperEngine::Render::Shaders;
 
