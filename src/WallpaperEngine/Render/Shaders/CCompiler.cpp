@@ -172,21 +172,26 @@ void CCompiler::compile () {
         size_t quoteStart = precompile.find_first_of ('"', start) + 1;
         size_t quoteEnd = precompile.find_first_of('"', quoteStart);
         std::string filename = precompile.substr(quoteStart, quoteEnd - quoteStart);
-        std::string content = this->lookupShaderFile (filename);
 
-        this->m_includeContent += "// begin of include from file " + filename + "\n" +
-            content +
-            "\n// end of included from file " + filename + "\n";
+        std::string content = "// begin of include from file ";
+        content += filename;
+        content += "\n";
+        content += this->lookupShaderFile (filename);
+        content += "\n// end of included from file ";
+        content += filename;
+        content += "\n";
 
         // replace the first two letters with a comment so the filelength doesn't change
-        precompile = precompile.replace (start, 2, "//");
+        precompile = precompile.replace (start, 1 + quoteEnd - start, content);
+        //precompile = precompile.replace(start, 2, "//");
+        //this->m_includeContent += content;
 
         // go to the end of the line
-        end = quoteEnd + 1;
+        end = start;
     }
 
     // include content might have more includes, so also handle those
-    end = 0;
+    /*end = 0;
 
     // then apply includes in-place
     while((start = this->m_includeContent.find("#include", end)) != std::string::npos) {
@@ -226,7 +231,7 @@ void CCompiler::compile () {
         precompile.insert (previousLine + 1, this->m_includeContent + '\n');
         // keep the iterator after the found function to prevent a loop
         end = end + this->m_includeContent.length () + 1;
-    }
+    }*/
 
     // content should be ready, finally ask glslang to compile the shader
     this->m_compiledContent = CGLSLContext::get().toGlsl (precompile, this->m_type);
