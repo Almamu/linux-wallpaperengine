@@ -7,16 +7,11 @@ namespace WallpaperEngine::WebBrowser {
         ~CWebBrowserContext();
 
         void markAsUsed();
+        bool isUsed();
         void stop();
 
       private:
-        /**
-         * Handles the actual initialization logic
-         */
-        void delayedInitialization();
-
-        int m_argc;
-        char** m_argv;
         bool m_stopped;
+        bool m_inUse;
     };
 } // namespace WallpaperEngine::WebBrowser
