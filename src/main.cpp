@@ -3,8 +3,7 @@
 
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 WallpaperEngine::Application::CWallpaperApplication* app;
 

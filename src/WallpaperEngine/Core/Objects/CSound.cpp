@@ -1,6 +1,6 @@
 #include "CSound.h"
 #include "WallpaperEngine/Core/CObject.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects;
 

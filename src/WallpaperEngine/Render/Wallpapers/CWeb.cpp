@@ -13,15 +13,15 @@ using namespace WallpaperEngine::WebBrowser::CEF;
 CWeb::CWeb (Core::Wallpapers::CWeb* web, CRenderContext& context, CAudioContext& audioContext, CWebBrowserContext& browserContext,
             const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (web, Type, context, audioContext, scalingMode),
-    m_width (16),
-    m_height (16),
     m_browserContext (browserContext),
     m_browser (),
+    m_client (),
+    m_width (16),
+    m_height (16),
     m_leftClick (WallpaperEngine::Input::MouseClickStatus::Released),
     m_rightClick (WallpaperEngine::Input::MouseClickStatus::Released),
     m_mousePosition(),
-    m_mousePositionLast(),
-    m_client () {
+    m_mousePositionLast() {
     // setup framebuffers
     this->setupFramebuffers ();
 
@@ -38,7 +38,7 @@ CWeb::CWeb (Core::Wallpapers::CWeb* web, CRenderContext& context, CAudioContext&
     // use the custom scheme for the wallpaper's files
     const std::string htmlURL =
         CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ()->getProject ().getWorkshopId ()) +
-        "://" +
+        "://root/" +
         this->getWeb()->getFilename ();
     this->m_browser =
         CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);

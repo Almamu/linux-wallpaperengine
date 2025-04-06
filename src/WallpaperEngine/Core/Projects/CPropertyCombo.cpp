@@ -1,9 +1,9 @@
-#include "common.h"
 #include <sstream>
 
 #include "CPropertyCombo.h"
 
 #include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <utility>
 
 using namespace WallpaperEngine::Core::Projects;

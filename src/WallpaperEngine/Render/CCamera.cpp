@@ -7,11 +7,11 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 CCamera::CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera) :
-    m_camera (camera),
-    m_scene (scene),
     m_isOrthogonal (false),
     m_projection (),
-    m_lookat () {
+    m_lookat (),
+    m_camera (camera),
+    m_scene (scene) {
     // get the lookat position
     // TODO: ENSURE THIS IS ONLY USED WHEN NOT DOING AN ORTOGRAPHIC CAMERA AS IT THROWS OFF POINTS
     this->m_lookat = glm::lookAt (this->getEye (), this->getCenter (), this->getUp ());

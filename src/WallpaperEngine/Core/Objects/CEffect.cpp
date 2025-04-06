@@ -1,5 +1,4 @@
 #include "CEffect.h"
-#include "common.h"
 
 #include <iostream>
 #include <utility>
@@ -13,6 +12,7 @@
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Objects;

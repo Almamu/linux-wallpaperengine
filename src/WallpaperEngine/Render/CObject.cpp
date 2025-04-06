@@ -8,9 +8,9 @@ using namespace WallpaperEngine::Render::Wallpapers;
 
 CObject::CObject (Wallpapers::CScene* scene, std::string type, Core::CObject* object) :
     Helpers::CContextAware (scene),
+    m_type (std::move (type)),
     m_scene (scene),
-    m_object (object),
-    m_type (std::move (type)) {}
+    m_object (object) {}
 
 Wallpapers::CScene* CObject::getScene () const {
     return this->m_scene;

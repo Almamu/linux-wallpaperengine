@@ -17,6 +17,7 @@ void pa_stream_notify_cb (pa_stream* stream, void* /*userdata*/) {
     switch (pa_stream_get_state (stream)) {
         case PA_STREAM_FAILED: sLog.error ("Cannot open stream for capture. Audio processing is disabled"); break;
         case PA_STREAM_READY: sLog.debug ("Capture stream ready"); break;
+        default: sLog.debug("pa_stream_get_state unknown result"); break;
     }
 }
 
@@ -130,6 +131,9 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
         }
         case PA_CONTEXT_FAILED:
             sLog.error ("PulseAudio context initialization failed. Audio processing is disabled");
+            break;
+        default:
+            sLog.debug ("pa_context_get_state unknown result");
             break;
     }
 }

@@ -1,7 +1,7 @@
 #include "CTurbulentVelocityRandom.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 

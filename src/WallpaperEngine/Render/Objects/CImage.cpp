@@ -6,26 +6,26 @@ using namespace WallpaperEngine::Render::Objects;
 
 CImage::CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
-    m_image (image),
-    m_animationTime (0.0),
-    m_material (nullptr),
-    m_colorBlendMaterial (nullptr),
     m_texture (nullptr),
-    m_initialized (false),
     m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE),
+    m_passSpacePosition (GL_NONE),
     m_texcoordCopy (GL_NONE),
     m_texcoordPass (GL_NONE),
-    m_passSpacePosition (GL_NONE),
     m_modelViewProjectionScreen (),
-    m_modelViewProjectionScreenInverse (),
-    m_modelViewProjectionCopy (),
-    m_modelViewProjectionCopyInverse (),
     m_modelViewProjectionPass (glm::mat4 (1.0)),
+    m_modelViewProjectionCopy (),
+    m_modelViewProjectionScreenInverse (),
     m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
+    m_modelViewProjectionCopyInverse (),
     m_modelMatrix(),
     m_viewProjectionMatrix(),
-    m_pos () {
+    m_image (image),
+    m_material (nullptr),
+    m_colorBlendMaterial (nullptr),
+    m_pos (),
+    m_animationTime (0.0),
+    m_initialized (false) {
     auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
     // get scene width and height to calculate positions

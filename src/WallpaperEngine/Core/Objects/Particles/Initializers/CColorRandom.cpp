@@ -12,8 +12,8 @@ CColorRandom* CColorRandom::fromJSON (json data, uint32_t id) {
 
 CColorRandom::CColorRandom (uint32_t id, glm::ivec3 min, glm::ivec3 max) :
     CInitializer (id, "colorrandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 const glm::ivec3& CColorRandom::getMinimum () const {
     return this->m_min;

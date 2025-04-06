@@ -1,6 +1,4 @@
-#include "common.h"
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <utility>
 
@@ -20,6 +18,7 @@
 
 #include "CGLSLContext.h"
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
@@ -28,11 +27,11 @@ namespace WallpaperEngine::Render::Shaders {
 CCompiler::CCompiler (CContainer* container, std::string filename, CGLSLContext::ShaderType type, std::map<std::string, int>* combos,
                     std::map<std::string, bool>* foundCombos, const std::vector<std::string>& textures,
                     const std::map<std::string, CShaderConstant*>& constants) :
+    m_file (std::move (filename)),
+    m_type (type),
     m_combos (combos),
     m_foundCombos (foundCombos),
     m_passTextures (textures),
-    m_type (type),
-    m_file (std::move (filename)),
     m_constants (constants),
     m_container (container) {
     if (type == CGLSLContext::ShaderType_Vertex)

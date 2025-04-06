@@ -1,5 +1,5 @@
 #include "CVideo.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <GL/glew.h>
 
@@ -14,10 +14,10 @@ void* get_proc_address (void* ctx, const char* name) {
 CVideo::CVideo (Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (video, Type, context, audioContext, scalingMode),
-    m_width (16),
-    m_height (16),
+    m_mpvGl (nullptr),
     m_paused (false),
-    m_mpvGl (nullptr) {
+    m_width (16),
+    m_height (16) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts

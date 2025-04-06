@@ -1,5 +1,5 @@
 #include "CPropertySlider.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <sstream>
 
 using namespace WallpaperEngine::Core::Projects;

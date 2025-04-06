@@ -1,7 +1,7 @@
 #include "CPackage.h"
 #include "CAssetLoadException.h"
 #include "CPackageLoadException.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <sstream>
 #include <utility>

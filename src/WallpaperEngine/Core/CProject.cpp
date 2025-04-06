@@ -1,4 +1,3 @@
-#include "common.h"
 #include <WallpaperEngine/Assets/CContainer.h>
 
 #include <utility>
@@ -7,6 +6,7 @@
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Wallpapers;
@@ -15,11 +15,11 @@ using namespace WallpaperEngine::Assets;
 static int backgroundId = -1;
 
 CProject::CProject (std::string title, std::string type, std::string  workshopid, CContainer* container) :
+    m_workshopid(std::move(workshopid)),
     m_title (std::move (title)),
     m_type (std::move (type)),
     m_wallpaper (nullptr),
-    m_container (container),
-    m_workshopid(std::move(workshopid))
+    m_container (container)
 {}
 
 CProject* CProject::fromFile (const std::string& filename, CContainer* container) {

@@ -33,14 +33,14 @@ float g_Daytime;
 namespace WallpaperEngine::Application {
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context),
-    m_browserContext (nullptr),
     m_audioContext (nullptr),
     m_audioDriver (nullptr),
     m_audioRecorder (nullptr),
     m_inputContext (nullptr),
     m_renderContext (nullptr),
     m_videoDriver (nullptr),
-    m_fullScreenDetector (nullptr) {
+    m_fullScreenDetector (nullptr),
+    m_browserContext (nullptr) {
     this->loadBackgrounds ();
     this->setupProperties ();
     this->setupBrowser();

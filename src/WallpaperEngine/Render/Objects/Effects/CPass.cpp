@@ -1,6 +1,5 @@
 #include "CPass.h"
 #include "WallpaperEngine/Render/CFBO.h"
-#include "common.h"
 #include <sstream>
 
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
@@ -14,6 +13,7 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 using namespace WallpaperEngine::Render::Shaders::Variables;

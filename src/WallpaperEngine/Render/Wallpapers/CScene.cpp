@@ -1,5 +1,3 @@
-#include "common.h"
-
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
@@ -9,6 +7,7 @@
 #include "WallpaperEngine/Render/CWallpaperState.h"
 
 #include "CScene.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 extern float g_Time;
 extern float g_TimeLast;

@@ -1,10 +1,9 @@
-#include "common.h"
-
 #include "Core.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::UserSettings;

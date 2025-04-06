@@ -5,9 +5,9 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 CShaderVariable::CShaderVariable (void* defaultValue, void* value, std::string type) :
+    m_type (std::move (type)),
     m_defaultValue (defaultValue),
-    m_value (value),
-    m_type (std::move (type)) {}
+    m_value (value) {}
 
 const void* CShaderVariable::getValue () const {
     if (this->m_value)

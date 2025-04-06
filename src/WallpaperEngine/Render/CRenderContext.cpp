@@ -1,18 +1,16 @@
-#include "common.h"
 #include <iostream>
 
 #include <GL/glew.h>
 
 #include "CRenderContext.h"
 #include "CWallpaper.h"
-#include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 
 namespace WallpaperEngine::Render {
 CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input,
                                 CWallpaperApplication& app) :
     m_driver (driver),
-    m_app (app),
     m_input (input),
+    m_app (app),
     m_textureCache (new CTextureCache (*this)) {}
 
 void CRenderContext::render (Drivers::Output::COutputViewport* viewport) {

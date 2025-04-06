@@ -1,12 +1,12 @@
 #include "CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/Core.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
 #include "WallpaperEngine/Core/Projects/CPropertyCombo.h"
 #include "WallpaperEngine/Core/Projects/CPropertySlider.h"
 #include "WallpaperEngine/Core/Projects/CPropertyText.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
@@ -15,9 +15,9 @@ using namespace WallpaperEngine::Core::UserSettings;
 CUserSettingBoolean::CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source,
                                           std::string expectedValue) :
     CUserSettingValue (Type),
+    m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_default (defaultValue),
     m_source (std::move (source)),
     m_expectedValue (std::move (expectedValue)) {}
 

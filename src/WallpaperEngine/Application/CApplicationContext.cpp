@@ -53,7 +53,7 @@ std::string stringPathFixes (const std::string& s) {
     if (str [0] == '\'' && str [str.size () - 1] == '\'')
         str.erase (str.size () - 1, 1).erase (0, 1);
 
-    return std::move (str);
+    return str;
 }
 
 CApplicationContext::CApplicationContext (int argc, char* argv []) :

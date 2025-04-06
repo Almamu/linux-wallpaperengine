@@ -37,7 +37,7 @@ set(SPIRV_CROSS_FORCE_PIC ON)
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
-set(CEF_VERSION "120.1.10+g3ce3184+chromium-120.0.6099.129")
+set(CEF_VERSION "135.0.17+gcbc1c5b+chromium-135.0.7049.52")
 # Determine the platform.
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     if("${PROJECT_ARCH}" STREQUAL "arm64")
@@ -87,52 +87,26 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 endif()
 message(STATUS "Using CEF for ${CMAKE_SYSTEM_NAME} - ${CEF_PLATFORM} (${CEF_ARCH_DETECTION})")
 include(DownloadCEF)
-DownloadCEF("${CEF_PLATFORM}" "${CEF_VERSION}" "${CMAKE_SOURCE_DIR}/third_party/cef")
+DownloadCEF("${CEF_PLATFORM}" "${CEF_VERSION}" "${CMAKE_CURRENT_BINARY_DIR}/cef")
+
+# add cef's cmake files to the lookup so we can use those directly
+list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
 
 find_package(CEF REQUIRED)
 
-set(
-    CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}/build
-    )
+# remove some switches that forbid us from using things that are commonplace in our codebase
+list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-exceptions)
+list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-rtti)
+# remove the vulkan library from the files to copy so it doesn't fail after removing it
+list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
 
-set(
-    CMAKE_LIBRARY_OUTPUT_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}/lib
-    )
-
-set(
-    TARGET_OUTPUT_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}/build
-    )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+set(TARGET_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
-
-include_directories(
-    src/External/glslang-WallpaperEngine
-    src/External/SPIRV-Cross-WallpaperEngine
-    src/External/MimeTypes
-    ${MPV_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIR}
-    ${LZ4_INCLUDE_DIR}
-    ${SDL2_INCLUDE_DIRS}
-    ${FFMPEG_INCLUDE_DIR}
-    ${PULSEAUDIO_INCLUDE_DIR}
-    src
-    ${CEF_INCLUDE_PATH}
-    ${CMAKE_SOURCE_DIR}
-    include)
-
-
-add_library(ceflib SHARED IMPORTED)
-set_target_properties(ceflib
-    PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
-
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
-# SET_CEF_TARGET_OUT_DIR()
-include_directories(${_CEF_ROOT})
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -146,54 +120,59 @@ if(WAYLAND_SUPPORT_FOUND)
         OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+    set(WAYLAND_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/wayland)
 
     message(STATUS "Building protocols...")
-    execute_process(
-        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-foreign-toplevel-management-unstable-v1.xml wlr-foreign-toplevel-management-unstable-v1-protocol.h
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-foreign-toplevel-management-unstable-v1.xml wlr-foreign-toplevel-management-unstable-v1-protocol.c
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.h
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.c
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-        COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.h
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-        COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h
+        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-foreign-toplevel-management-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.c
+        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-foreign-toplevel-management-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.c)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h
+        COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.c
+        COMMAND ${WaylandScanner} private-code ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.c)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.h
+        COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.h)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
+        COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
 
     add_compile_definitions(ENABLE_WAYLAND)
+    include_directories(${WAYLAND_OUTPUT_DIR})
+    set(WAYLAND_LIBRARIES
+        pthread
+        wayland-cursor
+        wayland-client
+        wayland-egl
+        ${OPENGL_egl_LIBRARY})
     set(WAYLAND_SOURCES
-            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
-            "src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp"
-            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp"
-            "src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
-            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp"
-            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
-            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.cpp"
-            "src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h"
-            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp"
-            "src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
-            "xdg-shell-protocol.c"
-            "wlr-foreign-toplevel-management-unstable-v1-protocol.c"
-            "wlr-layer-shell-unstable-v1-protocol.c")
+        src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h
+        src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h
+        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp
+        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h
+        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.cpp
+        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h
+        src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp
+        src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h
+        ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
+        ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.h
+        ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.c
+        ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h
+        ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.c
+        ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h)
 endif()
 
 if(X11_FOUND)
-    set(X11_SUPPORT_FOUND TRUE)
-
     if(NOT X11_Xrandr_FOUND)
         message(WARNING "X11 support disabled. Xrandr package is missing")
         set(X11_SUPPORT_FOUND FALSE)
-    endif()
-    if(NOT X11_xf86vmode_FOUND)
+    elseif(NOT X11_xf86vmode_FOUND)
         message(WARNING "X11 support disabled. Xxf86vm package is missing")
         set(X11_SUPPORT_FOUND FALSE)
+    else()
+        message("X11 support enabled")
+        set(X11_SUPPORT_FOUND TRUE)
     endif()
 endif()
 
@@ -201,16 +180,58 @@ if(X11_SUPPORT_FOUND)
     include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR})
     add_compile_definitions(ENABLE_X11)
 
+    set(X11_LIBRARIES
+        ${X11_LIBRARIES}
+        ${X11_Xrandr_LIB})
     set(X11_SOURCES
-            "src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp"
-            "src/WallpaperEngine/Render/Drivers/Output/CX11Output.h"
-            "src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp"
-            "src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h")
+        src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
+        src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
+    SET(X11_INCLUDES
+        ${X11_INCLUDE_DIR}
+        ${XRANDR_INCLUDE_DIR})
+    set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
+
+    # make sure some of the X11 functions we'll use are available
+    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+    if(HAVE_XSETIOERROREXITHANDLER)
+        add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
+    endif()
 endif()
+
+if(NOT WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
+    message(WARNING "No window server detected at build time. You will only be able to preview backgrounds")
+endif()
+
+add_library(ceflib SHARED IMPORTED)
+set_target_properties(ceflib
+        PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
+
+ADD_LOGICAL_TARGET(libcef_lib "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+PRINT_CEF_CONFIG()
+
+include_directories(
+    src
+    src/External/glslang-WallpaperEngine
+    src/External/SPIRV-Cross-WallpaperEngine
+    src/External/MimeTypes
+    src/External/json/include
+    src/External/stb
+    ${MPV_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIR}
+    ${LZ4_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIRS}
+    ${FFMPEG_INCLUDE_DIR}
+    ${PULSEAUDIO_INCLUDE_DIR}
+    ${CEF_INCLUDE_PATH}
+    ${CMAKE_SOURCE_DIR}
+    ${X11_INCLUDES})
 
 add_executable(
     linux-wallpaperengine
-    main.cpp
+    src/main.cpp
 
     src/External/Android/fft.cpp
     src/External/Android/fft.h
@@ -218,8 +239,8 @@ add_executable(
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h
 
-    src/Steam/FileSystem/FileSystem.h
     src/Steam/FileSystem/FileSystem.cpp
+    src/Steam/FileSystem/FileSystem.h
 
     src/WallpaperEngine/Logging/CLog.cpp
     src/WallpaperEngine/Logging/CLog.h
@@ -460,18 +481,8 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 
     ${WAYLAND_SOURCES}
-    ${X11_SOURCES}
-)
+    ${X11_SOURCES})
 
-COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-
-SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
-add_dependencies(linux-wallpaperengine libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
-
-# Need to remove libvulkan, otherwise will get error on  linking:
-# /usr/bin/ld: /usr/lib/libmpv.so: undefined reference to `vkCreateXlibSurfaceKHR'
-file(REMOVE "${CEF_BINARY_DIR_DEBUG}/libvulkan.so.1" "${CEF_BINARY_DIR_RELEASE}/libvulkan.so.1")
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
@@ -482,40 +493,23 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${FFMPEG_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
+    ${WAYLAND_LIBRARIES}
+    ${X11_LIBRARIES}
     glslang
     spirv-cross-core
     spirv-cross-glsl
     glfw
-    libcef_lib libcef_dll_wrapper)
+    libcef_lib
+    libcef_dll_wrapper)
 
+COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+# remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
+file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
 
-if (WAYLAND_SUPPORT_FOUND)
-    target_link_libraries(linux-wallpaperengine PUBLIC
-        pthread
-        wayland-cursor
-        wayland-client
-        wayland-egl
-        ${OPENGL_egl_LIBRARY})
-endif()
-
-if(X11_SUPPORT_FOUND)
-    target_link_libraries (linux-wallpaperengine PUBLIC
-            ${X11_LIBRARIES} ${X11_Xrandr_LIB})
-
-
-    set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
-
-    # make sure some of the X11 functions we'll use are available
-    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
-
-    if(HAVE_XSETIOERROREXITHANDLER)
-        add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
-    endif()
-endif()
-
-if(NOT WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
-    message(WARNING "No window server detected at build time. You will only be able to preview backgrounds")
-endif()
+add_dependencies(linux-wallpaperengine libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
+# custom version of cef's SET_EXECUTABLE_TARGET_PROPERTIES that fixes C files being compiled with the wrong parameters
+REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
 
 # set some install parameters if not in debug mode
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)

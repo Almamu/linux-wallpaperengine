@@ -4,7 +4,7 @@
 #include "CPropertyCombo.h"
 #include "CPropertySlider.h"
 #include "CPropertyText.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <iostream>
 
 using namespace WallpaperEngine::Core::Projects;
@@ -31,8 +31,8 @@ CProperty* CProperty::fromJSON (json data, const std::string& name) {
 }
 
 CProperty::CProperty (std::string name, std::string type, std::string text) :
-    m_name (std::move (name)),
     m_type (std::move (type)),
+    m_name (std::move (name)),
     m_text (std::move (text)) {}
 
 const std::string& CProperty::getName () const {

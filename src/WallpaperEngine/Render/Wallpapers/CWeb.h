@@ -15,7 +15,6 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/WebBrowser/CEF/CBrowserClient.h"
 #include "WallpaperEngine/WebBrowser/CEF/CRenderHandler.h"
-#include "common.h"
 
 namespace WallpaperEngine::WebBrowser::CEF {
 class CRenderHandler;

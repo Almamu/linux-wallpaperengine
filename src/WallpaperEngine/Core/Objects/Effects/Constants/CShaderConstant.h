@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cassert>
 
 namespace WallpaperEngine::Core::Objects::Effects::Constants {
 /**

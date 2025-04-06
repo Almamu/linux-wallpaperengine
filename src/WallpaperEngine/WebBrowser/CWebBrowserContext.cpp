@@ -45,8 +45,8 @@ std::string generate_uuid_v4() {
 }
 
 CWebBrowserContext::CWebBrowserContext (WallpaperEngine::Application::CWallpaperApplication& wallpaperApplication) :
-    m_wallpaperApplication (wallpaperApplication),
-    m_browserApplication (nullptr) {
+    m_browserApplication (nullptr),
+    m_wallpaperApplication (wallpaperApplication) {
     CefMainArgs main_args (this->m_wallpaperApplication.getContext ().getArgc (), this->m_wallpaperApplication.getContext ().getArgv ());
 
     // only care about app if the process is the main process

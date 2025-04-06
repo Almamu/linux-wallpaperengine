@@ -1,5 +1,5 @@
 #include "CPass.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <utility>
 

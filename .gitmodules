@@ -4,3 +4,12 @@
 [submodule "src/External/SPIRV-Cross-WallpaperEngine"]
 	path = src/External/SPIRV-Cross-WallpaperEngine
 	url = https://github.com/Almamu/SPIRV-Cross-WallpaperEngine.git
+[submodule "src/External/stb"]
+	path = src/External/stb
+	url = https://github.com/nothings/stb.git
+[submodule "src/External/json"]
+	path = src/External/json
+	url = https://github.com/nlohmann/json.git
+[submodule "src/External/MimeTypes"]
+    path = src/External/MimeTypes
+    url = https://github.com/lasselukkari/MimeTypes.git

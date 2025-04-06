@@ -1,11 +1,10 @@
 #include "CX11Output.h"
 #include "CGLFWOutputViewport.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
-#include <unistd.h>
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 

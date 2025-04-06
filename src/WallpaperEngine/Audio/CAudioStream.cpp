@@ -1,8 +1,8 @@
 #include "CAudioStream.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <cassert>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 // maximum size of the queue to prevent reading too much data
 #define MAX_QUEUE_SIZE (5 * 1024 * 1024)
@@ -90,14 +90,14 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
 }
 
 CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename) :
-    m_audioContext (context),
-    m_swrctx (nullptr) {
+    m_swrctx (nullptr),
+    m_audioContext (context) {
     this->loadCustomContent (filename.c_str ());
 }
 
 CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length) :
-    m_audioContext (context),
-    m_swrctx (nullptr) {
+    m_swrctx (nullptr),
+    m_audioContext (context) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
 
@@ -120,10 +120,10 @@ CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint3
 }
 
 CAudioStream::CAudioStream (CAudioContext& audioContext, AVCodecContext* context) :
-    m_context (context),
-    m_queue (new PacketQueue),
+    m_swrctx (nullptr),
     m_audioContext (audioContext),
-    m_swrctx (nullptr) {
+    m_context (context),
+    m_queue (new PacketQueue) {
     this->initialize ();
 }
 
@@ -146,7 +146,7 @@ void CAudioStream::loadCustomContent (const char* filename) {
 
     // find the audio stream
     for (unsigned int i = 0; i < this->m_formatContext->nb_streams; i++) {
-        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && hasAudioStream == false) {
+        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !hasAudioStream) {
             hasAudioStream = true;
             this->m_audioStream = i;
         }
@@ -324,7 +324,7 @@ AVFormatContext* CAudioStream::getFormatContext () {
     return this->m_formatContext;
 }
 
-unsigned int CAudioStream::getAudioStream () const {
+int CAudioStream::getAudioStream () const {
     return this->m_audioStream;
 }
 

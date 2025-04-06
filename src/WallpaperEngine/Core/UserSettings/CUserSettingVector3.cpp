@@ -1,10 +1,10 @@
 #include "CUserSettingVector3.h"
 #include "WallpaperEngine/Core/Core.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyColor.h"
 #include "WallpaperEngine/Core/Projects/CPropertySlider.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
@@ -13,9 +13,9 @@ using namespace WallpaperEngine::Core::UserSettings;
 CUserSettingVector3::CUserSettingVector3 (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source,
                                           std::string expectedValue) :
     CUserSettingValue (Type),
+    m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_default (defaultValue),
     m_source (std::move (source)),
     m_expectedValue (std::move (expectedValue)) {}
 

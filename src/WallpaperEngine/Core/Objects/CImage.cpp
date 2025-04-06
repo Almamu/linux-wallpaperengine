@@ -17,13 +17,13 @@ CImage::CImage (Wallpapers::CScene* scene, Images::CMaterial* material, CUserSet
                 bool autosize) :
     CObject (scene, visible, id, std::move (name), Type, origin, scale, angles),
     m_size (size),
+    m_parallaxDepth (parallaxDepth),
     m_material (material),
     m_alignment (std::move (alignment)),
-    m_color (color),
     m_alpha (alpha),
     m_brightness (brightness),
+    m_color (color),
     m_colorBlendMode (colorBlendMode),
-    m_parallaxDepth (parallaxDepth),
     m_fullscreen (fullscreen),
     m_passthrough (passthrough),
     m_autosize (autosize) {}

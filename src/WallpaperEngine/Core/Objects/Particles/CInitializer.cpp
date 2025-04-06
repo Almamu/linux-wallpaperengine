@@ -1,5 +1,4 @@
 #include "CInitializer.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h"
@@ -9,6 +8,7 @@
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects::Particles;
 

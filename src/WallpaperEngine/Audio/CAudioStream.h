@@ -64,7 +64,7 @@ class CAudioStream {
     /**
      * @return The audio stream index of the given file
      */
-    [[nodiscard]] unsigned int getAudioStream () const;
+    [[nodiscard]] int getAudioStream () const;
     /**
      * @return If the audio stream can be played or not
      */
@@ -179,7 +179,7 @@ class CAudioStream {
     /** The format context that controls how data is read off the file */
     AVFormatContext* m_formatContext = nullptr;
     /** The stream index for the audio being played */
-    unsigned int m_audioStream;
+    int m_audioStream;
     /** File data pointer */
     const uint8_t* m_buffer {};
     /** The length of the file data pointer */

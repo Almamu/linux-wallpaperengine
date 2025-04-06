@@ -11,8 +11,8 @@ CLifeTimeRandom* CLifeTimeRandom::fromJSON (json data, uint32_t id) {
 
 CLifeTimeRandom::CLifeTimeRandom (uint32_t id, uint32_t min, uint32_t max) :
     CInitializer (id, "lifetimerandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 uint32_t CLifeTimeRandom::getMinimum () const {
     return this->m_min;

@@ -1,18 +1,18 @@
 #include "CFBO.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Render;
 
 CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
             uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight) :
-    m_name (std::move (name)),
-    m_format (format),
-    m_scale (scale),
-    m_flags (flags),
     m_framebuffer (GL_NONE),
     m_depthbuffer (GL_NONE),
     m_texture (GL_NONE),
-    m_resolution () {
+    m_resolution (),
+    m_scale (scale),
+    m_name (std::move (name)),
+    m_format (format),
+    m_flags (flags) {
     // create an empty texture that'll be free'd so the FBO is transparent
     const GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer

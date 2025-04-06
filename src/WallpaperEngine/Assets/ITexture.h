@@ -32,9 +32,9 @@ class ITexture {
         /** The width of the frame in the texture */
         float width1;
         float width2;
-        float height2;
         /** The height of the frame in the texture */
         float height1;
+        float height2;
     };
 
     /**

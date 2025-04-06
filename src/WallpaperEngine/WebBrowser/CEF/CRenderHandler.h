@@ -2,7 +2,6 @@
 
 #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
 #include "include/cef_browser.h"
-#include "common.h"
 
 namespace WallpaperEngine::Render::Wallpapers {
 class CWeb;

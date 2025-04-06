@@ -18,8 +18,9 @@ class CWPSchemeHandler : public CefResourceHandler {
   public:
     explicit CWPSchemeHandler(const Core::CProject* project);
 
-    bool ProcessRequest(CefRefPtr<CefRequest> request,
-                         CefRefPtr<CefCallback> callback) override;
+    bool Open(CefRefPtr<CefRequest> request,
+               bool& handle_request,
+               CefRefPtr<CefCallback> callback) override;
 
     void GetResponseHeaders(CefRefPtr<CefResponse> response,
                              int64_t& response_length,
@@ -27,10 +28,8 @@ class CWPSchemeHandler : public CefResourceHandler {
 
     void Cancel() override;
 
-    bool ReadResponse(void* data_out,
-                       int bytes_to_read,
-                       int& bytes_read,
-                       CefRefPtr<CefCallback> callback) override;
+    bool Read(void* data_out, int bytes_to_read, int& bytes_read,
+               CefRefPtr<CefResourceReadCallback> callback) override;
 
   private:
     const Core::CProject* m_project;

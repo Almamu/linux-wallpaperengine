@@ -2,9 +2,9 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection (int width, int height) : m_isAuto (false), m_width (width), m_height (height) {}
+CProjection::CProjection (int width, int height) : m_width (width), m_height (height), m_isAuto (false) {}
 
-CProjection::CProjection (bool isAuto) : m_isAuto (isAuto), m_width (0), m_height (0) {}
+CProjection::CProjection (bool isAuto) : m_width (0), m_height (0), m_isAuto (isAuto) {}
 
 const int& CProjection::getWidth () const {
     return this->m_width;

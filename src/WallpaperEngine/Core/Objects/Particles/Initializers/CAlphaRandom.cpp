@@ -11,8 +11,8 @@ CAlphaRandom* CAlphaRandom::fromJSON (json data, uint32_t id) {
 
 CAlphaRandom::CAlphaRandom (uint32_t id, double min, double max) :
     CInitializer (id, "alpharandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 double CAlphaRandom::getMinimum () const {
     return this->m_min;

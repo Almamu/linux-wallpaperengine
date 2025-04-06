@@ -1,7 +1,6 @@
 #include "CWaylandOpenGLDriver.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #define class _class
 #define namespace _namespace
@@ -232,11 +231,11 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
 }
 
 CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app) :
-    m_frameCounter (0),
+    CVideoDriver (app),
     m_output (context, *this),
     m_requestedExit (false),
-    m_context (context),
-    CVideoDriver (app) {
+    m_frameCounter (0),
+    m_context (context) {
     m_waylandContext.display = wl_display_connect (nullptr);
 
     if (!m_waylandContext.display)

@@ -12,8 +12,8 @@ CAngularVelocityRandom* CAngularVelocityRandom::fromJSON (json data, uint32_t id
 
 CAngularVelocityRandom::CAngularVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max) :
     CInitializer (id, "angularvelocityrandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 const glm::vec3& CAngularVelocityRandom::getMinimum () const {
     return this->m_min;

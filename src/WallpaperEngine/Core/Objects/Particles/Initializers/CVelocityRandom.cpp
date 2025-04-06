@@ -12,8 +12,8 @@ CVelocityRandom* CVelocityRandom::fromJSON (json data, uint32_t id) {
 
 CVelocityRandom::CVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max) :
     CInitializer (id, "velocityrandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 const glm::vec3& CVelocityRandom::getMinimum () const {
     return this->m_min;

@@ -1,8 +1,8 @@
 #include "CWallpaper.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
-#include "common.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,8 +14,6 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
                         CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
-    m_type (std::move (type)),
-    m_destFramebuffer (GL_NONE),
     m_sceneFBO (nullptr),
     m_texCoordBuffer (GL_NONE),
     m_positionBuffer (GL_NONE),
@@ -24,6 +22,8 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
     a_Position (GL_NONE),
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
+    m_destFramebuffer (GL_NONE),
+    m_type (std::move (type)),
     m_audioContext (audioContext),
     m_state (scalingMode) {
     // generate the VAO to stop opengl from complaining

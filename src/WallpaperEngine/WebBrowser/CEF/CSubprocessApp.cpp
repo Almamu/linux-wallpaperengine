@@ -4,8 +4,8 @@
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CSubprocessApp::CSubprocessApp (WallpaperEngine::Application::CWallpaperApplication& application) :
-    m_application (application),
-    m_handlerFactories () {
+    m_handlerFactories (),
+    m_application (application) {
     for (const auto& [_, info] : this->m_application.getBackgrounds()) {
         this->m_handlerFactories [info->getWorkshopId ()] = new CWPSchemeHandlerFactory (info);
     }
@@ -16,7 +16,7 @@ void CSubprocessApp::OnRegisterCustomSchemes (CefRawPtr <CefSchemeRegistrar> reg
     for (const auto& [workshopId, _] : this->m_handlerFactories) {
         registrar->AddCustomScheme (
             CWPSchemeHandlerFactory::generateSchemeName (workshopId),
-            CEF_SCHEME_OPTION_LOCAL | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_FETCH_ENABLED
+            CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_FETCH_ENABLED
         );
     }
 }

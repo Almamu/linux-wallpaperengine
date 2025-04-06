@@ -1,6 +1,6 @@
 #include "CGLFWOpenGLDriver.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
-#include "common.h"
 
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
@@ -15,9 +15,9 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
 
 CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context,
                                       CWallpaperApplication& app) :
-    m_frameCounter (0),
+    CVideoDriver (app),
     m_context (context),
-    CVideoDriver (app) {
+    m_frameCounter (0) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw

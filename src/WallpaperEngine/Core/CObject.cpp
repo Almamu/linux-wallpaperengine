@@ -1,5 +1,4 @@
 #include "CObject.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
@@ -10,6 +9,7 @@
 #include <utility>
 
 #include "WallpaperEngine/Assets/CContainer.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
@@ -17,14 +17,14 @@ using namespace WallpaperEngine::Core::UserSettings;
 
 CObject::CObject (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
                   CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles) :
-    m_scene (scene),
+    m_type (std::move (type)),
     m_visible (visible),
     m_id (id),
     m_name (std::move (name)),
-    m_type (std::move (type)),
     m_origin (origin),
     m_scale (scale),
-    m_angles (angles) {}
+    m_angles (angles),
+    m_scene (scene) {}
 
 CObject* CObject::fromJSON (json data, Wallpapers::CScene* scene, CContainer* container) {
     std::string json = data.dump ();

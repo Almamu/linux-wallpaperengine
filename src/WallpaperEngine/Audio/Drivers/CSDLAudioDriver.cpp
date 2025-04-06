@@ -1,5 +1,5 @@
 #include "CSDLAudioDriver.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 4096
 #define MAX_AUDIO_FRAME_SIZE 192000

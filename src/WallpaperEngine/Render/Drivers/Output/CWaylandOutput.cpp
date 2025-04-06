@@ -1,7 +1,6 @@
 #include "CWaylandOutput.h"
 #include "../CWaylandOpenGLDriver.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "common.h"
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
