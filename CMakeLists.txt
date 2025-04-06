@@ -122,6 +122,8 @@ if(WAYLAND_SUPPORT_FOUND)
     message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
     set(WAYLAND_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/wayland)
 
+    file(MAKE_DIRECTORY ${WAYLAND_OUTPUT_DIR})
+
     message(STATUS "Building protocols...")
     add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h
         COMMAND ${WaylandScanner} client-header ${CMAKE_SOURCE_DIR}/protocols/wlr-foreign-toplevel-management-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h)
