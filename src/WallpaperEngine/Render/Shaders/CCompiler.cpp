@@ -64,11 +64,7 @@ std::string CCompiler::lookupShaderFile (const std::string& filename) {
     }
 }
 
-std::string& CCompiler::getCompiled () {
-    return this->m_compiledContent;
-}
-
-void CCompiler::compile () {
+void CCompiler::precompile () {
     // reset include contents as the compilation requires this to be re-processed
     this->m_includeContent = "";
     std::string precompile = "#version 330\n"
@@ -189,6 +185,20 @@ void CCompiler::compile () {
         end = start;
     }
 
+    // reset end so we start from the beginning
+    end = 0;
+
+    // comment out requires
+    while((start = precompile.find("#require", end)) != std::string::npos) {
+        // TODO: CHECK FOR ERRORS HERE
+        size_t lineEnd = precompile.find_first_of('\n', start);
+        sLog.out("Shader has a require block ", precompile.substr (start, lineEnd - start));
+        // replace the first two letters with a comment so the filelength doesn't change
+        precompile = precompile.replace(start, 2, "//");
+
+        // go to the end of the line
+        end = lineEnd;
+    }
     // include content might have more includes, so also handle those
     /*end = 0;
 
@@ -232,8 +242,12 @@ void CCompiler::compile () {
         end = end + this->m_includeContent.length () + 1;
     }*/
 
+    this->m_processedContent = precompile;
+}
+
+std::string CCompiler::compile () {
     // content should be ready, finally ask glslang to compile the shader
-    this->m_compiledContent = CGLSLContext::get().toGlsl (precompile, this->m_type);
+    return CGLSLContext::get().toGlsl (this->m_processedContent, this->m_type);
 }
 
 void CCompiler::parseComboConfiguration (const std::string& content, int defaultValue) {

@@ -282,14 +282,11 @@ Core::Objects::Images::Materials::CPass* CPass::getPass () {
     return this->m_pass;
 }
 
-GLuint CPass::compileShader (Render::Shaders::CCompiler* shader, GLuint type) {
+GLuint CPass::compileShader (const char* shader, GLuint type) {
     // reserve shaders in OpenGL
     const GLuint shaderID = glCreateShader (type);
 
-    // give shader's source code to OpenGL to be compiled
-    const char* sourcePointer = shader->getCompiled ().c_str ();
-
-    glShaderSource (shaderID, 1, &sourcePointer, nullptr);
+    glShaderSource (shaderID, 1, &shader, nullptr);
     glCompileShader (shaderID);
 
     GLint result = GL_FALSE;
@@ -307,7 +304,7 @@ GLuint CPass::compileShader (Render::Shaders::CCompiler* shader, GLuint type) {
         glGetShaderInfoLog (shaderID, infoLogLength, nullptr, logBuffer);
         // throw an exception about the issue
         std::stringstream buffer;
-        buffer << logBuffer << std::endl << "Compiled source code:" << std::endl << shader->getCompiled ();
+        buffer << logBuffer << std::endl << "Compiled source code:" << std::endl << shader;
         // free the buffer
         delete [] logBuffer;
         // throw an exception
@@ -335,19 +332,24 @@ void CPass::setupShaders () {
     this->m_fragShader = new Render::Shaders::CCompiler (
         this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Pixel,
         this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
-    this->m_fragShader->compile ();
     this->m_vertShader = new Render::Shaders::CCompiler (
         this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Vertex,
         this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
-    this->m_vertShader->compile ();
 
-    // they're re-compiled to ensure they are using the latest constants available
-    this->m_fragShader->compile ();
-    this->m_vertShader->compile ();
+    // precompile shaders once so all the data is discovered
+    this->m_fragShader->precompile ();
+    this->m_vertShader->precompile ();
+
+    // precompile them again once all the data is available
+    this->m_fragShader->precompile ();
+    this->m_vertShader->precompile ();
+
+    std::string fragmentCode = this->m_fragShader->compile ();
+    std::string vertexCode = this->m_vertShader->compile ();
 
     // compile the shaders
-    const GLuint vertexShaderID = compileShader (this->m_vertShader, GL_VERTEX_SHADER);
-    const GLuint fragmentShaderID = compileShader (this->m_fragShader, GL_FRAGMENT_SHADER);
+    const GLuint vertexShaderID = compileShader (vertexCode.c_str (), GL_VERTEX_SHADER);
+    const GLuint fragmentShaderID = compileShader (fragmentCode.c_str (), GL_FRAGMENT_SHADER);
     // create the final program
     this->m_programID = glCreateProgram ();
     // link the shaders together

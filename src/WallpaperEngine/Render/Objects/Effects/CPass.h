@@ -95,7 +95,7 @@ class CPass final : public Helpers::CContextAware {
         const GLuint* value;
     };
 
-    static GLuint compileShader (Render::Shaders::CCompiler* shader, GLuint type);
+    static GLuint compileShader (const char* shader, GLuint type);
     void setupTextures ();
     void setupShaders ();
     void setupShaderVariables ();

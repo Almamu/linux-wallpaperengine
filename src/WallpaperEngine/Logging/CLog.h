@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <sstream>
@@ -17,70 +18,49 @@ class CLog {
     void addError (std::ostream* stream);
 
     template <typename... Data> void out (Data... data) {
-        // buffer the string first
-        std::stringbuf buffer;
-        std::ostream bufferStream (&buffer);
-
-        ((bufferStream << std::forward<Data> (data)), ...);
+        std::string str = this->buildBuffer (data...);
 
         // then send it to all the outputs configured
         for (const auto cur : this->mOutputs)
-            *cur << buffer.str () << std::endl;
+            *cur << str << std::endl;
     }
 
     template <typename... Data> void debug (Data... data) {
 #if (!NDEBUG) && (!ERRORONLY)
-        // buffer the string first
-        std::stringbuf buffer;
-        std::ostream bufferStream (&buffer);
-
-        ((bufferStream << std::forward<Data> (data)), ...);
+        std::string str = this->buildBuffer (data...);
 
         // then send it to all the outputs configured
         for (const auto cur : this->mOutputs)
-            *cur << buffer.str () << std::endl;
+            *cur << str << std::endl;
 #endif /* DEBUG */
     }
 
     template <typename... Data> void debugerror (Data... data) {
 #if (!NDEBUG) && (ERRORONLY)
-        // buffer the string first
-        std::stringbuf buffer;
-        std::ostream bufferStream (&buffer);
-
-        ((bufferStream << std::forward<Data> (data)), ...);
+        std::string str = this->buildBuffer (data...);
 
         // then send it to all the outputs configured
         for (const auto cur : this->mOutputs)
-            *cur << buffer.str () << std::endl;
+            *cur << str << std::endl;
 #endif /* DEBUG */
     }
 
     template <typename... Data> void error (Data... data) {
-        // buffer the string first
-        std::stringbuf buffer;
-        std::ostream bufferStream (&buffer);
-
-        ((bufferStream << std::forward<Data> (data)), ...);
+        std::string str = this->buildBuffer (data...);
 
         // then send it to all the outputs configured
         for (const auto cur : this->mErrors)
-            *cur << buffer.str () << std::endl;
+            *cur << str << std::endl;
     }
 
     template <class EX, typename... Data> [[noreturn]] void exception (Data... data) {
-        // buffer the string first
-        std::stringbuf buffer;
-        std::ostream bufferStream (&buffer);
-
-        ((bufferStream << std::forward<Data> (data)), ...);
-
+        std::string str = this->buildBuffer (data...);
         // then send it to all the outputs configured
         for (const auto cur : this->mErrors)
-            *cur << buffer.str () << std::endl;
+            *cur << str << std::endl;
 
         // now throw the exception
-        throw EX (buffer.str ());
+        throw EX (str);
     }
 
     template <typename... Data> [[noreturn]] void exception (Data... data) {
@@ -90,6 +70,16 @@ class CLog {
     static CLog& get ();
 
   private:
+    template <typename... Data> std::string buildBuffer (Data... data) {
+        // buffer the string first
+        std::stringbuf buffer;
+        std::ostream bufferStream (&buffer);
+
+        ((bufferStream << std::forward<Data> (data)), ...);
+
+        return buffer.str ();
+    }
+
     std::vector<std::ostream*> mOutputs;
     std::vector<std::ostream*> mErrors;
     static std::shared_ptr<CLog> sInstance;

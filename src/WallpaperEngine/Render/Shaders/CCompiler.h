@@ -40,17 +40,14 @@ class CCompiler {
               std::map<std::string, bool>* foundCombos, const std::vector<std::string>& textures,
               const std::map<std::string, CShaderConstant*>& constants);
     /**
-     * Performs the actual pre-compilation/pre-processing over the shader files
-     * This step is kinda big, replaces variables names on sVariableReplacement,
-     * ensures #include directives are correctly handled
-     * and takes care of attribute comments for the wallpaper engine specifics
+     * Pre-processes the shader to detect variables, process includes and other small things WallpaperEngine
+     * does to shaders before actually using them
      */
-    void compile ();
+    void precompile ();
     /**
-     * @return The compiled shader's text (if available)
+     * Performs the final processing of the shader doing a few last transformations through glslang
      */
-    std::string& getCompiled ();
-
+    std::string compile ();
     /**
      * Searches the list of parameters available for the parameter with the given value
      *
@@ -58,7 +55,6 @@ class CCompiler {
      * @return The shader information
      */
     Variables::CShaderVariable* findParameter (const std::string& identifier);
-
     /**
      * @return The list of parameters available for this shader with their default values
      */
@@ -108,7 +104,7 @@ class CCompiler {
     /**
      * The final, compiled content ready to be used by OpenGL
      */
-    std::string m_compiledContent;
+    std::string m_processedContent;
     /**
      * The contents of all the included files
      */
