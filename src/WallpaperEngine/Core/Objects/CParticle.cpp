@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Core::Objects;
 
-CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CContainer* container,
+CParticle* CParticle::fromFile (Wallpapers::CScene* scene, const std::string& filename, CContainer* container,
                                 CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
                                 CUserSettingVector3* scale) {
     json data = json::parse (container->readFileAsString (filename));
@@ -28,7 +28,7 @@ CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CCon
     return particle;
 }
 
-CParticle::CParticle (CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
+CParticle::CParticle (Wallpapers::CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
                       std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale) :
     CObject (scene, visible, id, std::move (name), Type, origin, scale, glm::vec3 ()),
     m_starttime (starttime),

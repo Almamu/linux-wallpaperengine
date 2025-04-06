@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
-namespace WallpaperEngine::Core {
+namespace WallpaperEngine::Core::Wallpapers {
 class CScene;
 }
 
@@ -26,10 +26,10 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
 class CObject {
-    friend class CScene;
+    friend class Wallpapers::CScene;
 
   public:
-    static CObject* fromJSON (json data, CScene* scene, CContainer* container);
+    static CObject* fromJSON (json data, Wallpapers::CScene* scene, CContainer* container);
 
     template <class T> const T* as () const {
         assert (is<T> ());
@@ -55,10 +55,10 @@ class CObject {
     [[nodiscard]] const std::string& getName () const;
 
     [[nodiscard]] bool isVisible () const;
-    [[nodiscard]] CScene* getScene () const;
+    [[nodiscard]] Wallpapers::CScene* getScene () const;
 
   protected:
-    CObject (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
+    CObject (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
              CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles);
 
     void insertEffect (Objects::CEffect* effect);
@@ -77,6 +77,6 @@ class CObject {
     std::vector<Objects::CEffect*> m_effects;
     std::vector<int> m_dependencies;
 
-    CScene* m_scene;
+    Wallpapers::CScene* m_scene;
 };
 } // namespace WallpaperEngine::Core

@@ -4,6 +4,10 @@
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 
+namespace WallpaperEngine::Core::Wallpapers {
+class CScene;
+}
+
 namespace WallpaperEngine::Core::Objects {
 using json = nlohmann::json;
 using namespace WallpaperEngine::Core::UserSettings;
@@ -15,7 +19,7 @@ class CSound : public CObject {
     friend class CObject;
 
   public:
-    static CObject* fromJSON (CScene* scene, json data, CUserSettingBoolean* visible, int id,
+    static CObject* fromJSON (Wallpapers::CScene* scene, json data, CUserSettingBoolean* visible, int id,
                               const std::string& name, CUserSettingVector3* origin, CUserSettingVector3* scale,
                               const glm::vec3& angles);
 
@@ -29,7 +33,7 @@ class CSound : public CObject {
     [[nodiscard]] bool isRepeat () const;
 
   protected:
-    CSound (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
+    CSound (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
             CUserSettingVector3* scale, const glm::vec3& angles, bool repeat);
 
     /**

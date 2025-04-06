@@ -36,6 +36,8 @@ const uint8_t* CDirectory::readFile (const std::string& filename, uint32_t* leng
         return it->second.address;
     }
 
+    // TODO: PREVENT ESCAPING THE BASE PATH ON INITIALIZATION
+
     FILE* fp = fopen (final.c_str (), "rb");
 
     if (fp == nullptr)

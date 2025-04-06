@@ -11,7 +11,7 @@
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
-namespace WallpaperEngine::Core {
+namespace WallpaperEngine::Core::Wallpapers {
 class CScene;
 }
 
@@ -27,7 +27,7 @@ class CImage : public CObject {
     friend class CObject;
 
   public:
-    static CObject* fromJSON (CScene* scene, json data, CContainer* container, CUserSettingBoolean* visible,
+    static CObject* fromJSON (Wallpapers::CScene* scene, json data, CContainer* container, CUserSettingBoolean* visible,
                               int id, std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale,
                               const glm::vec3& angles);
 
@@ -77,7 +77,7 @@ class CImage : public CObject {
     [[nodiscard]] bool isAutosize () const;
 
   protected:
-    CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, int id, std::string name,
+    CImage (Wallpapers::CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, int id, std::string name,
             CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
             std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
             uint32_t colorBlendMode, const glm::vec2& parallaxDepth, bool fullscreen, bool passthrough, bool autosize);

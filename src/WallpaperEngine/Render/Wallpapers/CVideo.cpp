@@ -5,12 +5,13 @@
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Wallpapers;
 
 void* get_proc_address (void* ctx, const char* name) {
     return static_cast<CVideo*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
-CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+CVideo::CVideo (Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (video, Type, context, audioContext, scalingMode),
     m_width (16),
@@ -118,8 +119,8 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-Core::CVideo* CVideo::getVideo () {
-    return this->getWallpaperData ()->as<Core::CVideo> ();
+Core::Wallpapers::CVideo* CVideo::getVideo () {
+    return this->getWallpaperData ()->as<Core::Wallpapers::CVideo> ();
 }
 
 void CVideo::setPause (bool newState) {

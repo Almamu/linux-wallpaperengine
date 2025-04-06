@@ -7,13 +7,13 @@
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
 
-namespace WallpaperEngine::Render {
+namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
-    CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+    CVideo (Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
             const CWallpaperState::TextureUVsScaling& scalingMode);
 
-    Core::CVideo* getVideo ();
+    Core::Wallpapers::CVideo* getVideo ();
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
@@ -36,4 +36,4 @@ class CVideo final : public CWallpaper {
     int64_t m_width;
     int64_t m_height;
 };
-} // namespace WallpaperEngine::Render
+} // namespace WallpaperEngine::Render::Wallpapers

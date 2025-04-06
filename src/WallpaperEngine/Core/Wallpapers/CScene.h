@@ -9,9 +9,11 @@
 #include "WallpaperEngine/Core/Scenes/CProjection.h"
 
 namespace WallpaperEngine::Core {
-using json = nlohmann::json;
-
 class CObject;
+}
+
+namespace WallpaperEngine::Core::Wallpapers {
+using json = nlohmann::json;
 
 class CScene : public CWallpaper {
   public:

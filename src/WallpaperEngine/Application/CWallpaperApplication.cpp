@@ -16,6 +16,7 @@
 #endif /* ENABLE_WAYLAND */
 
 #ifdef ENABLE_X11
+#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
 #endif /* ENABLE_X11 */
 
@@ -30,10 +31,9 @@ float g_TimeLast;
 float g_Daytime;
 
 namespace WallpaperEngine::Application {
-CWallpaperApplication::CWallpaperApplication (CApplicationContext& context,
-                                              WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext) :
+CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context),
-    m_browserContext (browserContext),
+    m_browserContext (nullptr),
     m_audioContext (nullptr),
     m_audioDriver (nullptr),
     m_audioRecorder (nullptr),
@@ -43,6 +43,7 @@ CWallpaperApplication::CWallpaperApplication (CApplicationContext& context,
     m_fullScreenDetector (nullptr) {
     this->loadBackgrounds ();
     this->setupProperties ();
+    this->setupBrowser();
 }
 
 CWallpaperApplication::~CWallpaperApplication () {
@@ -51,6 +52,7 @@ CWallpaperApplication::~CWallpaperApplication () {
     delete m_audioContext;
     delete m_audioDriver;
     delete m_inputContext;
+    delete m_browserContext;
 }
 
 void CWallpaperApplication::setupContainer (CCombinedContainer& container, const std::string& bg) const {
@@ -201,8 +203,21 @@ void CWallpaperApplication::setupPropertiesForProject (const Core::CProject* pro
 }
 
 void CWallpaperApplication::setupProperties () {
-    for (const auto& [backgrounc, info] : this->m_backgrounds)
+    for (const auto& [background, info] : this->m_backgrounds)
         this->setupPropertiesForProject (info);
+}
+
+void CWallpaperApplication::setupBrowser () {
+    bool anyWebProject = std::any_of (this->m_backgrounds.begin (), this->m_backgrounds.end (), [](std::pair<const std::string, const Core::CProject*> pair) -> bool {
+        return pair.second->getWallpaper()->is<Core::Wallpapers::CWeb> ();
+    });
+
+    // do not perform any initialization if no web background is present
+    if (!anyWebProject) {
+        return;
+    }
+
+    this->m_browserContext = new WebBrowser::CWebBrowserContext (*this);
 }
 
 void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filename) const {
@@ -384,7 +399,7 @@ void CWallpaperApplication::show () {
     for (const auto& [background, info] : this->m_backgrounds) {
         m_renderContext->setWallpaper (background,
                                        WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                                           info->getWallpaper (), *m_renderContext, *m_audioContext, m_browserContext,
+                                           info->getWallpaper (), *m_renderContext, *m_audioContext, *m_browserContext,
                                            this->m_context.settings.general.screenScalings [background]));
     }
 

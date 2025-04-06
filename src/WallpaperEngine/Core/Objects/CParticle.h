@@ -17,7 +17,7 @@ class CParticle : public CObject {
     friend class CObject;
 
   public:
-    static CParticle* fromFile (CScene* scene, const std::string& filename, CContainer* container,
+    static CParticle* fromFile (Wallpapers::CScene* scene, const std::string& filename, CContainer* container,
                                 CUserSettingBoolean* visible, int id, std::string name,
                                 CUserSettingVector3* origin, CUserSettingVector3* scale);
 
@@ -35,7 +35,7 @@ class CParticle : public CObject {
     [[nodiscard]] const std::vector<Particles::CInitializer*>& getInitializers () const;
 
   protected:
-    CParticle (CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
+    CParticle (Wallpapers::CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
                std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale);
 
     /**

@@ -3,6 +3,7 @@
 #include <utility>
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 
 CVideo::CVideo (std::string filename, CProject& project) :
     CWallpaper (Type, project),

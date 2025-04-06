@@ -113,6 +113,7 @@ add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 include_directories(
     src/External/glslang-WallpaperEngine
     src/External/SPIRV-Cross-WallpaperEngine
+    src/External/MimeTypes
     ${MPV_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
@@ -213,6 +214,9 @@ add_executable(
 
     src/External/Android/fft.cpp
     src/External/Android/fft.h
+
+    src/External/MimeTypes/MimeTypes.cpp
+    src/External/MimeTypes/MimeTypes.h
 
     src/Steam/FileSystem/FileSystem.h
     src/Steam/FileSystem/FileSystem.cpp
@@ -345,6 +349,18 @@ add_executable(
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
     src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
+    src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.h
+    src/WallpaperEngine/WebBrowser/CEF/CBrowserClient.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CBrowserClient.h
+    src/WallpaperEngine/WebBrowser/CEF/CBrowserApp.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CBrowserApp.h
+    src/WallpaperEngine/WebBrowser/CEF/CSubprocessApp.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CSubprocessApp.h
+    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.h
+    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandler.cpp
+    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandler.h
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 

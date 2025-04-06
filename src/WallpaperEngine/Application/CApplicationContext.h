@@ -104,7 +104,15 @@ class CApplicationContext {
 
     CApplicationState state;
 
+    [[nodiscard]] int getArgc() const;
+    [[nodiscard]] char** getArgv() const;
+
   private:
+    /** Program argument count on startup */
+    int m_argc;
+    /** Program arguments on startup */
+    char** m_argv;
+
     /**
      * Validates the assets folder and ensures a valid one is present
      */

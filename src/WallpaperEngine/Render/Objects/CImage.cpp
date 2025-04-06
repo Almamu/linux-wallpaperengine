@@ -4,7 +4,7 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
 
-CImage::CImage (CScene* scene, Core::Objects::CImage* image) :
+CImage::CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_image (image),
     m_animationTime (0.0),

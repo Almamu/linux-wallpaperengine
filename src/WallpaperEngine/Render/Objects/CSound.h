@@ -7,10 +7,14 @@
 
 using namespace WallpaperEngine;
 
+namespace WallpaperEngine::Render::Wallpapers {
+class CScene;
+}
+
 namespace WallpaperEngine::Render::Objects {
 class CSound final : public CObject {
   public:
-    CSound (CScene* scene, Core::Objects::CSound* sound);
+    CSound (Wallpapers::CScene* scene, Core::Objects::CSound* sound);
     ~CSound () override;
 
     void render () override;

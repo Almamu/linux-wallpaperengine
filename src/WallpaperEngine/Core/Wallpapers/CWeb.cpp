@@ -4,6 +4,7 @@
 #include <utility>
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 
 const std::string& CWeb::getFilename () {
     return this->m_filename;

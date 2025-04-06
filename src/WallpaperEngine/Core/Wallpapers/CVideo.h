@@ -10,7 +10,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-namespace WallpaperEngine::Core {
+namespace WallpaperEngine::Core::Wallpapers {
 class CVideo : public CWallpaper {
   public:
     explicit CVideo (std::string filename, CProject& project);

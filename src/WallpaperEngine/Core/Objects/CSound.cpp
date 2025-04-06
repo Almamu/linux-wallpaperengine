@@ -4,12 +4,12 @@
 
 using namespace WallpaperEngine::Core::Objects;
 
-CSound::CSound (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
+CSound::CSound (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
                 CUserSettingVector3* scale, const glm::vec3& angles, bool repeat) :
     CObject (scene, visible, id, std::move (name), Type, origin, scale, angles),
     m_repeat (repeat) {}
 
-WallpaperEngine::Core::CObject* CSound::fromJSON (CScene* scene, json data, CUserSettingBoolean* visible, int id,
+WallpaperEngine::Core::CObject* CSound::fromJSON (Wallpapers::CScene* scene, json data, CUserSettingBoolean* visible, int id,
                                                   const std::string& name, CUserSettingVector3* origin,
                                                   CUserSettingVector3* scale, const glm::vec3& angles) {
     bool repeat = false;

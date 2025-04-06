@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CObject::CObject (CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
+CObject::CObject (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
                   CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles) :
     m_scene (scene),
     m_visible (visible),
@@ -26,7 +26,7 @@ CObject::CObject (CScene* scene, CUserSettingBoolean* visible, int id, std::stri
     m_scale (scale),
     m_angles (angles) {}
 
-CObject* CObject::fromJSON (json data, CScene* scene, CContainer* container) {
+CObject* CObject::fromJSON (json data, Wallpapers::CScene* scene, CContainer* container) {
     std::string json = data.dump ();
 
     auto id_it = jsonFindRequired (data, "id", "Objects must have id");
@@ -117,7 +117,7 @@ bool CObject::isVisible () const {
     return this->m_visible->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
-CScene* CObject::getScene () const {
+Wallpapers::CScene* CObject::getScene () const {
     return this->m_scene;
 }
 

@@ -1,25 +1,35 @@
 #include "common.h"
 #include <WallpaperEngine/Assets/CContainer.h>
 
+#include <utility>
+
 #include "CProject.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 using namespace WallpaperEngine::Assets;
 
-CProject::CProject (std::string title, std::string type, CContainer* container) :
+static int backgroundId = -1;
+
+CProject::CProject (std::string title, std::string type, std::string  workshopid, CContainer* container) :
     m_title (std::move (title)),
     m_type (std::move (type)),
     m_wallpaper (nullptr),
-    m_container (container) {}
+    m_container (container),
+    m_workshopid(std::move(workshopid))
+{}
 
 CProject* CProject::fromFile (const std::string& filename, CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
 
     std::string dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
     if (dependency == "No dependency") {
+        // workshopid is not required, but we have to use it for some identification stuff,
+        // so using a static, decreasing number should be enough
+        std::string workshopid = jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--));
         std::string title = *jsonFindRequired (content, "title", "Project title missing");
         std::string type = *jsonFindRequired (content, "type", "Project type missing");
         std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
@@ -28,7 +38,7 @@ CProject* CProject::fromFile (const std::string& filename, CContainer* container
 
         std::transform (type.begin (), type.end (), type.begin (), tolower);
 
-        CProject* project = new CProject (title, type, container);
+        CProject* project = new CProject (title, type, workshopid, container);
 
         if (type == "scene")
             wallpaper = CScene::fromFile (file, *project, container);
@@ -76,6 +86,10 @@ const std::string& CProject::getType () const {
 
 const std::vector<Projects::CProperty*>& CProject::getProperties () const {
     return this->m_properties;
+}
+
+const std::string& CProject::getWorkshopId () const {
+    return this->m_workshopid;
 }
 
 CContainer* CProject::getContainer () {

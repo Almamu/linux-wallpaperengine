@@ -29,7 +29,7 @@ class CImage final : public CObject {
     friend CObject;
 
   public:
-    CImage (CScene* scene, Core::Objects::CImage* image);
+    CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image);
 
     void setup ();
     void render () override;

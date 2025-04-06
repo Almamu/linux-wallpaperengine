@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <getopt.h>
+#include <iostream>
 
 #define WORKSHOP_APP_ID 431960
 #define APP_DIRECTORY "wallpaper_engine"
@@ -55,7 +56,9 @@ std::string stringPathFixes (const std::string& s) {
     return std::move (str);
 }
 
-CApplicationContext::CApplicationContext (int argc, char* argv []) {
+CApplicationContext::CApplicationContext (int argc, char* argv []) :
+    m_argc (argc),
+    m_argv (argv) {
     // setup structs with sane default values for now
     this->settings = {
         .general =
@@ -89,6 +92,19 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
                 .path = "",
             },
     };
+
+    // use std::out on this in case logging is disabled, this way it's easy to look at what is running
+    std::stringbuf buffer;
+    std::ostream bufferStream (&buffer);
+
+    bufferStream << "Running with: ";
+
+    for (int i = 0; i < argc; i ++) {
+        bufferStream << argv [i];
+        bufferStream << " ";
+    }
+
+    std::cout << buffer.str() << std::endl;
 
     int c;
 
@@ -246,6 +262,14 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
     this->state.general.keepRunning = true;
     this->state.audio.enabled = this->settings.audio.enabled;
     this->state.audio.volume = this->settings.audio.volume;
+}
+
+int CApplicationContext::getArgc () const {
+    return this->m_argc;
+}
+
+char** CApplicationContext::getArgv () const {
+    return this->m_argv;
 }
 
 std::filesystem::path CApplicationContext::translateBackground (const std::string& bgIdOrPath) {

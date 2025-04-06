@@ -15,8 +15,9 @@ extern float g_TimeLast;
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Wallpapers;
 
-CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+CScene::CScene (Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (scene, Type, context, audioContext, scalingMode),
     m_mousePosition (),
@@ -241,8 +242,8 @@ void CScene::updateMouse (glm::ivec4 viewport) {
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-Core::CScene* CScene::getScene () const {
-    return this->getWallpaperData ()->as<Core::CScene> ();
+Core::Wallpapers::CScene* CScene::getScene () const {
+    return this->getWallpaperData ()->as<Core::Wallpapers::CScene> ();
 }
 
 int CScene::getWidth () const {

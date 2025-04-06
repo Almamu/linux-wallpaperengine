@@ -6,7 +6,7 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CCamera::CCamera (CScene* scene, const Core::Scenes::CCamera* camera) :
+CCamera::CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera) :
     m_camera (camera),
     m_scene (scene),
     m_isOrthogonal (false),
@@ -43,7 +43,7 @@ bool CCamera::isOrthogonal () const {
     return this->m_isOrthogonal;
 }
 
-CScene* CCamera::getScene () const {
+Wallpapers::CScene* CCamera::getScene () const {
     return this->m_scene;
 }
 

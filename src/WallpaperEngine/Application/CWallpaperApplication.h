@@ -42,7 +42,7 @@ namespace WallpaperEngine::Application {
  */
 class CWallpaperApplication {
   public:
-    explicit CWallpaperApplication (CApplicationContext& context, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext);
+    explicit CWallpaperApplication (CApplicationContext& context);
     ~CWallpaperApplication ();
 
     /**
@@ -102,6 +102,10 @@ class CWallpaperApplication {
      */
     void setupPropertiesForProject (const Core::CProject* project);
     /**
+     * Prepares CEF browser to be used
+     */
+    void setupBrowser ();
+    /**
      * Takes an screenshot of the background and saves it to the specified path
      *
      * @param filename
@@ -120,6 +124,6 @@ class CWallpaperApplication {
     WallpaperEngine::Render::CRenderContext* m_renderContext;
     WallpaperEngine::Render::Drivers::CVideoDriver* m_videoDriver;
     WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector* m_fullScreenDetector;
-    WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
+    WallpaperEngine::WebBrowser::CWebBrowserContext* m_browserContext;
 };
 } // namespace WallpaperEngine::Application

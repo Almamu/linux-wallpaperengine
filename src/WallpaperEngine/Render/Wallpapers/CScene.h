@@ -9,15 +9,17 @@
 namespace WallpaperEngine::Render {
 class CCamera;
 class CObject;
+}
 
+namespace WallpaperEngine::Render::Wallpapers {
 class CScene final : public CWallpaper {
   public:
-    CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+    CScene (Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
             const CWallpaperState::TextureUVsScaling& scalingMode);
 
     CCamera* getCamera () const;
 
-    Core::CScene* getScene () const;
+    Core::Wallpapers::CScene* getScene () const;
 
     int getWidth () const override;
     int getHeight () const override;
@@ -48,4 +50,4 @@ class CScene final : public CWallpaper {
     CFBO* _rt_8FrameBuffer;
     CFBO* _rt_Bloom;
 };
-} // namespace WallpaperEngine::Render
+} // namespace WallpaperEngine::Render::Wallpaper

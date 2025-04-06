@@ -6,6 +6,7 @@
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 
 CScene::CScene (CProject& project, CContainer* container, Scenes::CCamera* camera, glm::vec3 ambientColor,
                 CUserSettingBoolean* bloom, CUserSettingFloat* bloomStrength, CUserSettingFloat* bloomThreshold,

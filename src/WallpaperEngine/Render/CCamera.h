@@ -7,12 +7,14 @@
 
 #include "WallpaperEngine/Core/Scenes/CCamera.h"
 
-namespace WallpaperEngine::Render {
+namespace WallpaperEngine::Render::Wallpapers {
 class CScene;
+}
 
+namespace WallpaperEngine::Render {
 class CCamera {
   public:
-    CCamera (CScene* scene, const Core::Scenes::CCamera* camera);
+    CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera);
     ~CCamera ();
 
     void setOrthogonalProjection (float width, float height);
@@ -22,7 +24,7 @@ class CCamera {
     const glm::vec3& getUp () const;
     const glm::mat4& getProjection () const;
     const glm::mat4& getLookAt () const;
-    CScene* getScene () const;
+    Wallpapers::CScene* getScene () const;
     bool isOrthogonal () const;
 
   private:
@@ -30,6 +32,6 @@ class CCamera {
     glm::mat4 m_projection;
     glm::mat4 m_lookat;
     const Core::Scenes::CCamera* m_camera;
-    CScene* m_scene;
+    Wallpapers::CScene* m_scene;
 };
 } // namespace WallpaperEngine::Render
