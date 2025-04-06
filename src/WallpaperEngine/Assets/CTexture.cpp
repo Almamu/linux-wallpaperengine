@@ -289,16 +289,28 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     // get the position of what comes after the texture data
     pointer = reinterpret_cast<const uint32_t*> (fileData + 9);
 
-    if (strncmp (fileData, "TEXB0003", 9) == 0) {
+    header->imageCount = *pointer++;
+
+    if (strncmp (fileData, "TEXB0004", 9) == 0) {
+        header->containerVersion = ContainerVersion::TEXB0004;
+        header->freeImageFormat = static_cast<FreeImageFormat> (*pointer++);
+        header->isVideoMp4 = *pointer++ == 1;
+
+        if (header->freeImageFormat == FIF_UNKNOWN) {
+            header->freeImageFormat = FIF_MP4;
+        }
+
+        // default to TEXB0003 behaviour if no mp4 video is there
+        if (header->freeImageFormat != FIF_MP4) {
+            header->containerVersion = ContainerVersion::TEXB0003;
+        }
+    } else if (strncmp (fileData, "TEXB0003", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0003;
-        header->imageCount = *pointer++;
         header->freeImageFormat = static_cast<FreeImageFormat> (*pointer++);
     } else if (strncmp (fileData, "TEXB0002", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0002;
-        header->imageCount = *pointer++;
     } else if (strncmp (fileData, "TEXB0001", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0001;
-        header->imageCount = *pointer++;
     } else {
         delete header;
         sLog.exception ("unknown texture format type: ", std::string_view (fileData, 9));
@@ -392,18 +404,34 @@ CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData)
 
 CTexture::TextureMipmap* CTexture::parseMipmap (const TextureHeader* header, const char** originalFileData) {
     auto* mipmap = new TextureMipmap ();
-
     // get the current position
     const char* fileData = *originalFileData;
 
     // get an integer pointer
     const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
+    // TEXB004 have some extra data (and even json) that we have to take into account
+    if (header->containerVersion == ContainerVersion::TEXB0004) {
+        // ignore various params, RePKG doesn't really use them
+        // and could be related to the editor really, so just ignore them
+        pointer++;
+        pointer++;
+
+        fileData = reinterpret_cast<const char*> (pointer);
+        while (*fileData != 0) {
+            mipmap->json += *fileData++;
+        }
+
+        pointer = reinterpret_cast<const uint32_t*> (fileData);
+        pointer ++;
+    }
+
     mipmap->width = *pointer++;
     mipmap->height = *pointer++;
 
     if (header->containerVersion == ContainerVersion::TEXB0002 ||
-        header->containerVersion == ContainerVersion::TEXB0003) {
+        header->containerVersion == ContainerVersion::TEXB0003 ||
+        header->containerVersion == ContainerVersion::TEXB0004) {
         mipmap->compression = *pointer++;
         mipmap->uncompressedSize = *pointer++;
     }

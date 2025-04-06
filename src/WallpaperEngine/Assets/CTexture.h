@@ -19,6 +19,7 @@ class CTexture final : public ITexture {
      */
     enum ContainerVersion : int {
         UNKNOWN = -1,
+        TEXB0004 = 4,
         TEXB0003 = 3,
         TEXB0002 = 2,
         TEXB0001 = 1
@@ -41,7 +42,7 @@ class CTexture final : public ITexture {
         FIF_JNG		= 3,
         FIF_KOALA	= 4,
         FIF_LBM		= 5,
-        FIF_IFF = FIF_LBM,
+        FIF_IFF         = FIF_LBM,
         FIF_MNG		= 6,
         FIF_PBM		= 7,
         FIF_PBMRAW	= 8,
@@ -61,7 +62,7 @@ class CTexture final : public ITexture {
         FIF_XBM		= 22,
         FIF_XPM		= 23,
         FIF_DDS		= 24,
-        FIF_GIF     = 25,
+        FIF_GIF         = 25,
         FIF_HDR		= 26,
         FIF_FAXG3	= 27,
         FIF_SGI		= 28,
@@ -72,6 +73,7 @@ class CTexture final : public ITexture {
         FIF_PICT	= 33,
         FIF_RAW		= 34,
         FIF_WEBP	= 35,
+        FIF_MP4         = FIF_WEBP,
         FIF_JXR		= 36
     };
 
@@ -97,6 +99,8 @@ class CTexture final : public ITexture {
         char* compressedData = nullptr;
         /** Pointer to the uncompressed data */
         char* uncompressedData = nullptr;
+        /** JSON data */
+        std::string json;
         /**
          * Performs actual decompression of the compressed data
          */
@@ -135,6 +139,8 @@ class CTexture final : public ITexture {
         TextureFormat format;
         /** Free Image format */
         FreeImageFormat freeImageFormat = FreeImageFormat::FIF_UNKNOWN;
+        /** Indicates if we have an MP4 video */
+        bool isVideoMp4;
         /** The amount of images in the texture file */
         uint32_t imageCount;
         /** Number of mipmap levels on the texture */
