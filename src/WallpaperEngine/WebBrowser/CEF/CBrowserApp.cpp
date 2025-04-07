@@ -46,29 +46,6 @@ if (process_type.empty()) {
   command_line->AppendSwitch("use-mock-keychain");
 #endif
 }*/
-    // TODO: ADD FLAGS
-    /*"--disable-features",
-    "IsolateOrigins,HardwareMediaKeyHandling,WebContentsOcclusion,RendererCodeIntegrityEnabled,site-per-process",
-    "--disable-gpu-shader-disk-cache",
-    "--disable-site-isolation-trials",
-    "--disable-web-security",
-    "--remote-allow-origins",
-    "*",
-    //"--force-device-scale-factor",
-    //"1", // this can also be 2
-    //"--high-dpi-support",
-    //"1",
-    "--autoplay-policy",
-    "no-user-gesture-required",
-    "--disable-background-timer-throttling",
-    "--disable-backgrounding-occluded-windows",
-    "--disable-background-media-suspend",
-    "--disable-renderer-backgrounding",
-    "--disable-test-root-certs",
-    "--disable-bundled-ppapi-flash",
-    "--disable-breakpad",
-    "--disable-field-trial-config",
-    "--no-experiments"*/
 }
 
 void CBrowserApp::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) {

@@ -14,7 +14,7 @@ namespace WallpaperEngine::Assets {
  */
 class CDirectory final : public CContainer {
   public:
-    explicit CDirectory (std::filesystem::path basepath);
+    explicit CDirectory (const std::filesystem::path& basepath);
 
     /** @inheritdoc */
     [[nodiscard]] std::filesystem::path resolveRealFile (const std::string& filename) const override;
