@@ -26,7 +26,7 @@ jobs:
         submodules: true
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+      run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -52,7 +52,7 @@ jobs:
           submodules: true
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 wayland-scanner++ wayland-protocols libwayland-dev
+        run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev wayland-scanner++ wayland-protocols libwayland-dev
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -78,7 +78,7 @@ jobs:
         submodules: true
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get -y install wayland-scanner++ wayland-protocols libwayland-dev libwayland-egl-backend-dev libglfw3-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+      run: sudo apt-get update && sudo apt-get -y install wayland-scanner++ wayland-protocols libwayland-dev libwayland-egl-backend-dev libglfw3-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
