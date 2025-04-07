@@ -13,3 +13,6 @@
 [submodule "src/External/MimeTypes"]
     path = src/External/MimeTypes
     url = https://github.com/lasselukkari/MimeTypes.git
+[submodule "src/External/kissfft"]
+	path = src/External/kissfft
+	url = https://github.com/mborgerding/kissfft.git

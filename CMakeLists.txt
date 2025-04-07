@@ -34,6 +34,8 @@ find_package(PulseAudio REQUIRED)
 
 set(ENABLE_OPT OFF)
 set(SPIRV_CROSS_FORCE_PIC ON)
+set(KISSFFT_TEST OFF)
+set(KISSFFT_TOOLS OFF)
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
@@ -107,6 +109,7 @@ set(TARGET_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
+add_subdirectory(src/External/kissfft kissfft)
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -221,6 +224,7 @@ include_directories(
     src/External/MimeTypes
     src/External/json/include
     src/External/stb
+    src/External/kissfft
     ${MPV_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
@@ -234,9 +238,6 @@ include_directories(
 add_executable(
     linux-wallpaperengine
     src/main.cpp
-
-    src/External/Android/fft.cpp
-    src/External/Android/fft.h
 
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h
@@ -497,6 +498,7 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${PULSEAUDIO_LIBRARY}
     ${WAYLAND_LIBRARIES}
     ${X11_LIBRARIES}
+    kissfft
     glslang
     spirv-cross-core
     spirv-cross-glsl

@@ -1,43 +1,44 @@
 #pragma once
 
+#include "kiss_fftr.h"
 #include "CPlaybackRecorder.h"
-#include "External/Android/fft.h"
 #include <pulse/pulseaudio.h>
+
+#define WAVE_BUFFER_SIZE 1024
 
 namespace WallpaperEngine::Audio::Drivers::Recorders {
 class CPlaybackRecorder;
 
 class CPulseAudioPlaybackRecorder final : public CPlaybackRecorder {
   public:
+    /**
+     * Struct that contains all the required data for the PulseAudio callbacks
+     */
+    struct SPulseAudioData {
+        kiss_fftr_cfg kisscfg;
+        uint8_t* audioBuffer;
+        uint8_t* audioBufferTmp;
+        size_t currentWritePointer;
+        bool fullFrameReady;
+        pa_stream* captureStream;
+    };
+
     CPulseAudioPlaybackRecorder ();
     ~CPulseAudioPlaybackRecorder () override;
 
     void update () override;
-
-    /**
-     * @return The current stream we're capturing from
-     */
-    [[nodiscard]] pa_stream* getCaptureStream ();
-
-    /**
-     * @param stream The new stream to be capturing off from
-     */
-    void setCaptureStream (pa_stream* stream);
-
-    uint8_t audio_buffer [WAVE_BUFFER_SIZE] = {0x80};
-    uint8_t audio_buffer_tmp [WAVE_BUFFER_SIZE] = {0x80};
-    uint8_t audio_fft [WAVE_BUFFER_SIZE] = {0};
-    size_t currentWritePointer = 0;
-    bool fullframeReady = false;
 
   private:
     pa_mainloop* m_mainloop;
     pa_mainloop_api* m_mainloopApi;
     pa_context* m_context;
     pa_stream* m_captureStream;
+    SPulseAudioData m_captureData;
 
-    float fft_destination64 [64] = {0};
-    float fft_destination32 [32] = {0};
-    float fft_destination16 [16] = {0};
+    float m_audioFFTbuffer [WAVE_BUFFER_SIZE];
+    kiss_fft_cpx m_FFTinfo [WAVE_BUFFER_SIZE / 2 + 1] = {0};
+    float m_FFTdestination64 [64] = {0};
+    float m_FFTdestination32 [32] = {0};
+    float m_FFTdestination16 [16] = {0};
 };
 } // namespace WallpaperEngine::Audio::Drivers::Recorders
