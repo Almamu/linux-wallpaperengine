@@ -435,7 +435,7 @@ void CWallpaperApplication::show () {
             this->m_context.state.general.keepRunning = false;
         }
 
-        if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < 5)
+        if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < this->m_context.settings.screenshot.delay)
             continue;
 
         this->takeScreenshot (this->m_context.settings.screenshot.path);

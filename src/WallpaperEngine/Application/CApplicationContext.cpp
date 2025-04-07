@@ -23,7 +23,8 @@ struct option long_options [] = {
     {"set-property", required_argument, nullptr, 'o'},  {"noautomute", no_argument, nullptr, 'm'},
     {"no-audio-processing", no_argument, nullptr, 'g'}, {"no-fullscreen-pause", no_argument, nullptr, 'n'},
     {"disable-mouse", no_argument, nullptr, 'e'},       {"scaling", required_argument, nullptr, 't'},
-    {"clamping", required_argument, nullptr, 't'},      {nullptr, 0, nullptr, 0}};
+    {"clamping", required_argument, nullptr, 't'},      {"screenshot-delay", required_argument, nullptr, 'y'},
+    {nullptr, 0, nullptr, 0}};
 
 /* std::hash::operator() isn't constexpr, so it can't be used to get hash values as compile-time constants
  * So here is customHash. It skips all spaces, so hashes for " find " and "fi nd" are the same
@@ -198,6 +199,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
                 this->settings.screenshot.take = true;
                 this->settings.screenshot.path = stringPathFixes (optarg);
                 break;
+            case 'y': this->settings.screenshot.delay = std::min (atoi (optarg), 5); break;
 
             case 'm': this->settings.audio.automute = false; break;
 

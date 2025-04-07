@@ -97,6 +97,8 @@ class CApplicationContext {
         struct {
             /** If an screenshot should be taken */
             bool take;
+            /** The frames to wait until the screenshot is taken */
+            uint32_t delay;
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
         } screenshot;
