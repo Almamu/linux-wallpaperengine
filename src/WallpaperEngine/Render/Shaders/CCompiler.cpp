@@ -260,7 +260,7 @@ void CCompiler::parseComboConfiguration (const std::string& content, int default
     const auto entry = this->m_combos->find (combo->get<std::string> ());
 
     // add the combo to the found list
-    this->m_foundCombos->insert (std::make_pair<std::string, int> (*combo, true));
+    this->m_foundCombos->insert (std::make_pair (*combo, true));
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
@@ -271,11 +271,11 @@ void CCompiler::parseComboConfiguration (const std::string& content, int default
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_combos->insert (std::make_pair<std::string, int> (*combo, (int) defaultValue));
+            this->m_combos->insert (std::make_pair (*combo, (int) defaultValue));
         } else if (defvalue->is_number_float ()) {
             sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
         } else if (defvalue->is_number_integer ()) {
-            this->m_combos->insert (std::make_pair<std::string, int> (*combo, defvalue->get<int> ()));
+            this->m_combos->insert (std::make_pair (*combo, defvalue->get<int> ()));
         } else if (defvalue->is_string ()) {
             sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
         } else {
@@ -352,11 +352,11 @@ void CCompiler::parseParameterConfiguration (const std::string& type, const std:
             if (this->m_passTextures.size () > index &&
                 (!this->m_passTextures.at (index).empty () || textureName != data.end ())) {
                 // add the new combo to the list
-                this->m_combos->insert (std::make_pair<std::string, int> (*combo, 1));
+                this->m_combos->insert (std::make_pair (*combo, 1));
 
                 // textures linked to combos need to be tracked too
                 if (this->m_foundCombos->find (*combo) == this->m_foundCombos->end ())
-                    this->m_foundCombos->insert (std::make_pair<std::string, bool> (*combo, true));
+                    this->m_foundCombos->insert (std::make_pair (*combo, true));
             }
         }
 

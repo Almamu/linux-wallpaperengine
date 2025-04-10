@@ -45,7 +45,6 @@ namespace WallpaperEngine::Render::Wallpapers {
             static const std::string Type;
 
         private:
-
             WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
             CefRefPtr<CefBrowser> m_browser;
             CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client;

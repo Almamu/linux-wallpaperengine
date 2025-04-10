@@ -60,7 +60,7 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
     return fbo;
 }
 
-void CPass::render () {
+void CPass::setupRenderFramebuffer () {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_drawTo->getFramebuffer ());
 
@@ -99,7 +99,9 @@ void CPass::render () {
     } else {
         glDepthMask (true);
     }
+}
 
+void CPass::setupRenderTexture () {
     // use the shader we have registered
     glUseProgram (this->m_programID);
 
@@ -148,6 +150,44 @@ void CPass::render () {
         }
     }
 
+    // used in animations when one of the frames is vertical instead of horizontal
+    // rotation with translation = origin and end of the image to display
+    if (this->g_Texture0Rotation != -1)
+        glUniform4f (this->g_Texture0Rotation, rotation.x, rotation.y, rotation.z, rotation.w);
+    // this actually picks the origin point of the image from the atlast
+    if (this->g_Texture0Translation != -1)
+        glUniform2f (this->g_Texture0Translation, translation.x, translation.y);
+}
+
+void CPass::setupRenderReferenceUniforms () {
+    // add reference uniforms
+    for (const auto& [name, value] : this->m_referenceUniforms) {
+        switch (value->type) {
+            case Double: glUniform1d (value->id, *static_cast<const double*> (*value->value)); break;
+            case Float: glUniform1f (value->id, *static_cast<const float*> (*value->value)); break;
+            case Integer: glUniform1i (value->id, *static_cast<const int*> (*value->value)); break;
+            case Vector4:
+                glUniform4fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec4*> (*value->value)));
+                break;
+            case Vector3:
+                glUniform3fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec3*> (*value->value)));
+                break;
+            case Vector2:
+                glUniform2fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec2*> (*value->value)));
+                break;
+            case Matrix4:
+                glUniformMatrix4fv (value->id, 1, GL_FALSE,
+                                    glm::value_ptr (*static_cast<const glm::mat4*> (*value->value)));
+                break;
+            case Matrix3:
+                glUniformMatrix3fv (value->id, 1, GL_FALSE,
+                                    glm::value_ptr (*static_cast<const glm::mat3*> (*value->value)));
+                break;
+        }
+    }
+}
+
+void CPass::setupRenderUniforms () {
     // add uniforms
     for (const auto& [name, value] : this->m_uniforms) {
         switch (value->type) {
@@ -174,40 +214,9 @@ void CPass::render () {
                 break;
         }
     }
-    // add reference uniforms
-    for (const auto& [name, value] : this->m_referenceUniforms) {
-        switch (value->type) {
-            case Double: glUniform1d (value->id, *static_cast<const double*> (*value->value)); break;
-            case Float: glUniform1f (value->id, *static_cast<const float*> (*value->value)); break;
-            case Integer: glUniform1i (value->id, *static_cast<const int*> (*value->value)); break;
-            case Vector4:
-                glUniform4fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec4*> (*value->value)));
-                break;
-            case Vector3:
-                glUniform3fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec3*> (*value->value)));
-                break;
-            case Vector2:
-                glUniform2fv (value->id, 1, glm::value_ptr (*static_cast<const glm::vec2*> (*value->value)));
-                break;
-            case Matrix4:
-                glUniformMatrix4fv (value->id, 1, GL_FALSE,
-                                    glm::value_ptr (*static_cast<const glm::mat4*> (*value->value)));
-                break;
-            case Matrix3:
-                glUniformMatrix3fv (value->id, 1, GL_FALSE,
-                                    glm::value_ptr (*static_cast<const glm::mat3*> (*value->value)));
-                break;
-        }
-    }
+}
 
-    // used in animations when one of the frames is vertical instead of horizontal
-    // rotation with translation = origin and end of the image to display
-    if (this->g_Texture0Rotation != -1)
-        glUniform4f (this->g_Texture0Rotation, rotation.x, rotation.y, rotation.z, rotation.w);
-    // this actually picks the origin point of the image from the atlast
-    if (this->g_Texture0Translation != -1)
-        glUniform2f (this->g_Texture0Translation, translation.x, translation.y);
-
+void CPass::setupRenderAttributes () {
     for (const auto& cur : this->m_attribs) {
         glEnableVertexAttribArray (cur->id);
         glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
@@ -220,11 +229,15 @@ void CPass::render () {
                            .c_str ());
 #endif /* DEBUG */
     }
+}
 
+void CPass::renderGeometry () const {
     // start actual rendering now
     glBindBuffer (GL_ARRAY_BUFFER, this->a_Position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
+}
 
+void CPass::cleanupRenderSetup () {
     // disable vertex attribs array and textures
     for (const auto& cur : this->m_attribs)
         glDisableVertexAttribArray (cur->id);
@@ -240,6 +253,16 @@ void CPass::render () {
             glBindTexture (GL_TEXTURE_2D, 0);
         }
     }
+}
+
+void CPass::render () {
+    this->setupRenderFramebuffer ();
+    this->setupRenderTexture ();
+    this->setupRenderUniforms ();
+    this->setupRenderReferenceUniforms ();
+    this->setupRenderAttributes ();
+    this->renderGeometry ();
+    this->cleanupRenderSetup ();
 }
 
 const CMaterial* CPass::getMaterial () const {
@@ -405,7 +428,7 @@ void CPass::setupAttributes () {
     this->addAttribute ("a_Position", GL_FLOAT, 3, &this->a_Position);
 }
 
-void CPass::setupUniforms () {
+void CPass::setupTextureUniforms () {
     // resolve the main texture
     const ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
     // register all the texture uniforms with correct values
@@ -420,96 +443,98 @@ void CPass::setupUniforms () {
     this->addUniform ("g_Texture0Resolution", texture->getResolution ());
 
     // do the real, final texture setup for the whole process
-    {
-        auto cur = this->m_textures.begin ();
-        const auto end = this->m_textures.end ();
-        auto fragCur = this->m_fragShader->getTextures ().begin ();
-        const auto fragEnd = this->m_fragShader->getTextures ().end ();
-        auto vertCur = this->m_vertShader->getTextures ().begin ();
-        const auto vertEnd = this->m_vertShader->getTextures ().end ();
-        auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
-        const auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
+    auto cur = this->m_textures.begin ();
+    const auto end = this->m_textures.end ();
+    auto fragCur = this->m_fragShader->getTextures ().begin ();
+    const auto fragEnd = this->m_fragShader->getTextures ().end ();
+    auto vertCur = this->m_vertShader->getTextures ().begin ();
+    const auto vertEnd = this->m_vertShader->getTextures ().end ();
+    auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
+    const auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
 
-        int index = 1;
+    int index = 1;
 
-        // technically m_textures should have the right amount of textures
-        // but better be safe than sorry
-        while (bindCur != bindEnd || cur != end || fragCur != fragEnd || vertCur != vertEnd) {
-            if (bindCur != bindEnd) {
-                this->m_finalTextures [bindCur->first] = nullptr;
-                ++bindCur;
+    // technically m_textures should have the right amount of textures
+    // but better be safe than sorry
+    while (bindCur != bindEnd || cur != end || fragCur != fragEnd || vertCur != vertEnd) {
+        if (bindCur != bindEnd) {
+            this->m_finalTextures [bindCur->first] = nullptr;
+            ++bindCur;
+        }
+
+        if (cur != end) {
+            if ((*cur) != nullptr)
+                this->m_finalTextures [index] = *cur;
+
+            index++;
+            ++cur;
+        }
+
+        if (fragCur != fragEnd) {
+            std::string textureName = fragCur->second;
+
+            try {
+                // resolve the texture first
+                const ITexture* textureRef;
+
+                if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                    textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+
+                    if (textureRef == nullptr)
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+                } else
+                    textureRef = this->getContext ().resolveTexture (textureName);
+
+                // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
+                // there
+                if (this->m_finalTextures.find (fragCur->first) == this->m_finalTextures.end ())
+                    this->m_finalTextures [fragCur->first] = textureRef;
+            } catch (std::runtime_error& ex) {
+                sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
             }
 
-            if (cur != end) {
-                if ((*cur) != nullptr)
-                    this->m_finalTextures [index] = *cur;
+            ++fragCur;
+        }
 
-                index++;
-                ++cur;
+        if (vertCur != vertEnd) {
+            std::string textureName = vertCur->second;
+
+            try {
+                // resolve the texture first
+                const ITexture* textureRef;
+
+                if (textureName.find ("_rt_") == 0) {
+                    textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+
+                    if (textureRef == nullptr)
+                        textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+                } else
+                    textureRef = this->getContext ().resolveTexture (textureName);
+
+                // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
+                // there
+                if (this->m_finalTextures.find (vertCur->first) == this->m_finalTextures.end ())
+                    this->m_finalTextures [vertCur->first] = textureRef;
+            } catch (std::runtime_error& ex) {
+                sLog.error ("Cannot resolve texture ", textureName, " for vertex shader ", ex.what ());
             }
 
-            if (fragCur != fragEnd) {
-                std::string textureName = fragCur->second;
-
-                try {
-                    // resolve the texture first
-                    const ITexture* textureRef;
-
-                    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                        textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
-
-                        if (textureRef == nullptr)
-                            textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-                    } else
-                        textureRef = this->getContext ().resolveTexture (textureName);
-
-                    // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-                    // there
-                    if (this->m_finalTextures.find (fragCur->first) == this->m_finalTextures.end ())
-                        this->m_finalTextures [fragCur->first] = textureRef;
-                } catch (std::runtime_error& ex) {
-                    sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
-                }
-
-                ++fragCur;
-            }
-
-            if (vertCur != vertEnd) {
-                std::string textureName = vertCur->second;
-
-                try {
-                    // resolve the texture first
-                    const ITexture* textureRef;
-
-                    if (textureName.find ("_rt_") == 0) {
-                        textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
-
-                        if (textureRef == nullptr)
-                            textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-                    } else
-                        textureRef = this->getContext ().resolveTexture (textureName);
-
-                    // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-                    // there
-                    if (this->m_finalTextures.find (vertCur->first) == this->m_finalTextures.end ())
-                        this->m_finalTextures [vertCur->first] = textureRef;
-                } catch (std::runtime_error& ex) {
-                    sLog.error ("Cannot resolve texture ", textureName, " for vertex shader ", ex.what ());
-                }
-
-                ++vertCur;
-            }
+            ++vertCur;
         }
     }
 
-    for (const auto& [index, expectedTexture] : this->m_finalTextures) {
+    for (const auto& [textureIndex, expectedTexture] : this->m_finalTextures) {
         std::ostringstream namestream;
 
-        namestream << "g_Texture" << index << "Resolution";
+        namestream << "g_Texture" << textureIndex << "Resolution";
 
-        texture = this->resolveTexture (expectedTexture, index, texture);
+        texture = this->resolveTexture (expectedTexture, textureIndex, texture);
         this->addUniform (namestream.str (), texture->getResolution ());
     }
+}
+
+void CPass::setupUniforms () {
+    this->setupTextureUniforms ();
 
     const auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
 

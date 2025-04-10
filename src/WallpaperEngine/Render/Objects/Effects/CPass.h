@@ -100,6 +100,7 @@ class CPass final : public Helpers::CContextAware {
     void setupShaders ();
     void setupShaderVariables ();
     void setupUniforms ();
+    void setupTextureUniforms ();
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (CShaderVariable* value);
@@ -131,6 +132,14 @@ class CPass final : public Helpers::CContextAware {
     template <typename T> void addUniform (const std::string& name, UniformType type, T value);
     template <typename T> void addUniform (const std::string& name, UniformType type, T* value, int count = 1);
     template <typename T> void addUniform (const std::string& name, UniformType type, T** value);
+
+    void setupRenderFramebuffer ();
+    void setupRenderTexture ();
+    void setupRenderUniforms ();
+    void setupRenderReferenceUniforms ();
+    void setupRenderAttributes ();
+    void renderGeometry () const;
+    void cleanupRenderSetup ();
 
     const ITexture* resolveTexture (const ITexture* expected, int index, const ITexture* previous = nullptr);
 

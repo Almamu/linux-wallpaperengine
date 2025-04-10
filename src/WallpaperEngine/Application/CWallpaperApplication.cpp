@@ -290,7 +290,7 @@ void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filenam
     delete [] bitmap;
 }
 
-void CWallpaperApplication::show () {
+void CWallpaperApplication::setupOutput () {
     const char* XDG_SESSION_TYPE = getenv ("XDG_SESSION_TYPE");
 
     if (!XDG_SESSION_TYPE) {
@@ -381,7 +381,11 @@ void CWallpaperApplication::show () {
     } else {
         this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder ();
     }
+    // initialize render context
+    m_renderContext = new WallpaperEngine::Render::CRenderContext (*m_videoDriver, *m_inputContext, *this);
+}
 
+void CWallpaperApplication::setupAudio () {
     // audio playing detector
     WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context,
                                                                                           *this->m_fullScreenDetector);
@@ -390,9 +394,9 @@ void CWallpaperApplication::show () {
         new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, audioDetector, *this->m_audioRecorder);
     // initialize audio context
     m_audioContext = new WallpaperEngine::Audio::CAudioContext (*m_audioDriver);
-    // initialize render context
-    m_renderContext = new WallpaperEngine::Render::CRenderContext (*m_videoDriver, *m_inputContext, *this);
+}
 
+void CWallpaperApplication::prepareOutputs () {
     // create a new background for each screen
 
     // set all the specific wallpapers required
@@ -402,6 +406,12 @@ void CWallpaperApplication::show () {
                                            info->getWallpaper (), *m_renderContext, *m_audioContext, *m_browserContext,
                                            this->m_context.settings.general.screenScalings [background]));
     }
+}
+
+void CWallpaperApplication::show () {
+    this->setupOutput ();
+    this->setupAudio ();
+    this->prepareOutputs ();
 
     static time_t seconds;
     static struct tm* timeinfo;

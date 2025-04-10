@@ -287,7 +287,6 @@ void CAudioStream::dequeuePacket (AVPacket* output) {
     SDL_LockMutex (this->m_queue->mutex);
 
     while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
-
 #if FF_API_FIFO_OLD_API
         int ret = -1;
 

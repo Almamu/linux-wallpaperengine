@@ -106,6 +106,18 @@ class CWallpaperApplication {
      */
     void setupBrowser ();
     /**
+     * Prepares desktop environment-related things (like render, window, fullscreen detector, etc)
+     */
+    void setupOutput ();
+    /**
+     * Prepares all audio-related things (like detector, output, etc)
+     */
+    void setupAudio ();
+    /**
+     * Prepares the render-context of all the backgrounds so they can be displayed on the screen
+     */
+    void prepareOutputs ();
+    /**
      * Takes an screenshot of the background and saves it to the specified path
      *
      * @param filename
