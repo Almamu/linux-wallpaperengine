@@ -129,6 +129,7 @@ class CWallpaperApplication {
     /** Maps screens to backgrounds */
     std::map<std::string, Core::CProject*> m_backgrounds;
 
+    WallpaperEngine::Audio::Drivers::Detectors::CAudioPlayingDetector* m_audioDetector;
     WallpaperEngine::Audio::CAudioContext* m_audioContext;
     WallpaperEngine::Audio::Drivers::CSDLAudioDriver* m_audioDriver;
     WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* m_audioRecorder;

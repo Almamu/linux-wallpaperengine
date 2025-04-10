@@ -375,28 +375,27 @@ void CWallpaperApplication::setupOutput () {
             new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
                 reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver)));
     }
+}
 
+void CWallpaperApplication::setupAudio () {
     if (this->m_context.settings.audio.audioprocessing) {
         this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder ();
     } else {
         this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder ();
     }
-    // initialize render context
-    m_renderContext = new WallpaperEngine::Render::CRenderContext (*m_videoDriver, *m_inputContext, *this);
-}
 
-void CWallpaperApplication::setupAudio () {
     // audio playing detector
-    WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector audioDetector (this->m_context,
-                                                                                          *this->m_fullScreenDetector);
+    m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector (this->m_context, *this->m_fullScreenDetector);
     // initialize sdl audio driver
     m_audioDriver =
-        new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, audioDetector, *this->m_audioRecorder);
+        new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, *this->m_audioDetector, *this->m_audioRecorder);
     // initialize audio context
     m_audioContext = new WallpaperEngine::Audio::CAudioContext (*m_audioDriver);
 }
 
 void CWallpaperApplication::prepareOutputs () {
+    // initialize render context
+    m_renderContext = new WallpaperEngine::Render::CRenderContext (*m_videoDriver, *m_inputContext, *this);
     // create a new background for each screen
 
     // set all the specific wallpapers required
