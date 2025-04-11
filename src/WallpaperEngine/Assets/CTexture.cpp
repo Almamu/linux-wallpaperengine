@@ -13,48 +13,8 @@ using namespace WallpaperEngine::Assets;
 CTexture::CTexture (const void* fileData) : m_resolution () {
     // ensure the header is parsed
     this->m_header = parseHeader (static_cast<const char*> (fileData));
-
-    GLint internalFormat;
-
-    if (this->isAnimated ()) {
-        this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->gifWidth,
-                              this->m_header->gifHeight};
-    } else {
-        if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
-            // wpengine-texture format always has one mipmap
-            // get first image size
-            auto element = this->m_header->images.find (0)->second.begin ();
-
-            // set the texture resolution
-            this->m_resolution = {(*element)->width, (*element)->height, this->m_header->width, this->m_header->height};
-        } else {
-            // set the texture resolution
-            this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->width,
-                                  this->m_header->height};
-        }
-    }
-
-    if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
-        internalFormat = GL_RGBA8;
-        // set some extra information too as it's used for image sizing
-        // this ensures that a_TexCoord uses the full image instead of just part of it
-        // TODO: MAYBE IT'S BETTER TO CREATE A TEXTURE OF THE GIVEN SIZE AND COPY OVER WHAT WE READ FROM THE FILE?
-        /*this->m_header->width = this->m_header->mipmaps [0]->width;
-        this->m_header->height = this->m_header->mipmaps [0]->height;
-        this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
-        this->m_header->textureHeight = this->m_header->mipmaps [0]->height;*/
-    } else {
-        // detect the image format and hand it to openGL to be used
-        switch (this->m_header->format) {
-            case TextureFormat::DXT5: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
-            case TextureFormat::DXT3: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-            case TextureFormat::DXT1: internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-            case TextureFormat::ARGB8888: internalFormat = GL_RGBA8; break;
-            case TextureFormat::R8: internalFormat = GL_R8; break;
-            case TextureFormat::RG88: internalFormat = GL_RG8; break;
-            default: delete this->m_header; sLog.exception ("Cannot determine texture format");
-        }
-    }
+    this->setupResolution ();
+    GLint internalFormat = this->setupInternalFormat();
 
     // allocate texture ids list
     this->m_textureID = new GLuint [this->m_header->imageCount];
@@ -65,31 +25,7 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
     auto imgEnd = this->m_header->images.end ();
 
     for (int index = 0; imgCur != imgEnd; ++imgCur, index++) {
-        // bind the texture to assign information to it
-        glBindTexture (GL_TEXTURE_2D, this->m_textureID [index]);
-
-        // set mipmap levels
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
-
-        // setup texture wrapping and filtering
-        if (this->m_header->flags & TextureFlags::ClampUVs) {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        } else {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
-
-        if (this->m_header->flags & TextureFlags::NoInterpolation) {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        } else {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        }
-
-        glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
+        this->setupOpenGLParameters (index);
 
         auto cur = imgCur->second.begin ();
         auto end = imgCur->second.end ();
@@ -146,6 +82,78 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
     }
 }
 
+void CTexture::setupResolution () {
+    if (this->isAnimated ()) {
+        this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->gifWidth,
+                              this->m_header->gifHeight};
+    } else {
+        if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
+            // wpengine-texture format always has one mipmap
+            // get first image size
+            auto element = this->m_header->images.find (0)->second.begin ();
+
+            // set the texture resolution
+            this->m_resolution = {(*element)->width, (*element)->height, this->m_header->width, this->m_header->height};
+        } else {
+            // set the texture resolution
+            this->m_resolution = {this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->width,
+                                  this->m_header->height};
+        }
+    }
+}
+
+GLint CTexture::setupInternalFormat () {
+    if (this->m_header->freeImageFormat != FreeImageFormat::FIF_UNKNOWN) {
+        return GL_RGBA8;
+        // set some extra information too as it's used for image sizing
+        // this ensures that a_TexCoord uses the full image instead of just part of it
+        // TODO: MAYBE IT'S BETTER TO CREATE A TEXTURE OF THE GIVEN SIZE AND COPY OVER WHAT WE READ FROM THE FILE?
+        /*this->m_header->width = this->m_header->mipmaps [0]->width;
+        this->m_header->height = this->m_header->mipmaps [0]->height;
+        this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
+        this->m_header->textureHeight = this->m_header->mipmaps [0]->height;*/
+    } else {
+        // detect the image format and hand it to openGL to be used
+        switch (this->m_header->format) {
+            case TextureFormat::DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+            case TextureFormat::DXT3: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+            case TextureFormat::DXT1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+            case TextureFormat::ARGB8888: return GL_RGBA8; break;
+            case TextureFormat::R8: return GL_R8; break;
+            case TextureFormat::RG88: return GL_RG8; break;
+            default: delete this->m_header; sLog.exception ("Cannot determine texture format");
+        }
+    }
+}
+
+void CTexture::setupOpenGLParameters (uint32_t textureID) {
+        // bind the texture to assign information to it
+        glBindTexture (GL_TEXTURE_2D, this->m_textureID [textureID]);
+
+        // set mipmap levels
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
+
+        // setup texture wrapping and filtering
+        if (this->m_header->flags & TextureFlags::ClampUVs) {
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        } else {
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        }
+
+        if (this->m_header->flags & TextureFlags::NoInterpolation) {
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        } else {
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        }
+
+        glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
+}
+
 CTexture::~CTexture () {
     if (this->getHeader () == nullptr)
         return;
@@ -154,7 +162,7 @@ CTexture::~CTexture () {
     delete this->getHeader ();
 }
 
-const GLuint CTexture::getTextureID (uint32_t imageIndex) const {
+GLuint CTexture::getTextureID (uint32_t imageIndex) const {
     // ensure we do not go out of bounds
     if (imageIndex > this->m_header->imageCount)
         return this->m_textureID [0];
@@ -162,33 +170,33 @@ const GLuint CTexture::getTextureID (uint32_t imageIndex) const {
     return this->m_textureID [imageIndex];
 }
 
-const uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const {
+uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const {
     if (imageIndex > this->m_header->imageCount)
         return this->getHeader ()->textureWidth;
 
     return (*this->m_header->images [imageIndex].begin ())->width;
 }
 
-const uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const {
+uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const {
     if (imageIndex > this->m_header->imageCount)
         return this->getHeader ()->textureHeight;
 
     return (*this->m_header->images [imageIndex].begin ())->height;
 }
 
-const uint32_t CTexture::getRealWidth () const {
+uint32_t CTexture::getRealWidth () const {
     return this->isAnimated () ? this->getHeader ()->gifWidth : this->getHeader ()->width;
 }
 
-const uint32_t CTexture::getRealHeight () const {
+uint32_t CTexture::getRealHeight () const {
     return this->isAnimated () ? this->getHeader ()->gifHeight : this->getHeader ()->height;
 }
 
-const ITexture::TextureFormat CTexture::getFormat () const {
+ITexture::TextureFormat CTexture::getFormat () const {
     return this->getHeader ()->format;
 }
 
-const ITexture::TextureFlags CTexture::getFlags () const {
+ITexture::TextureFlags CTexture::getFlags () const {
     return this->getHeader ()->flags;
 }
 
@@ -204,7 +212,7 @@ const std::vector<ITexture::TextureFrame*>& CTexture::getFrames () const {
     return this->getHeader ()->frames;
 }
 
-const bool CTexture::isAnimated () const {
+bool CTexture::isAnimated () const {
     return this->getHeader ()->isAnimated ();
 }
 
@@ -257,6 +265,9 @@ CTexture::TextureHeader::~TextureHeader () {
     for (const auto& [index, mipmaps] : this->images)
         for (const auto cur : mipmaps)
             delete cur;
+
+    for (const auto& frame : this->frames)
+        delete frame;
 }
 
 CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {

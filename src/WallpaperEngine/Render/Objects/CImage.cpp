@@ -121,14 +121,14 @@ CImage::CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image) :
     if (this->getTexture ()->isAnimated ()) {
         // animated images use different coordinates as they're essentially a texture atlas
         width = static_cast<float> (this->getTexture ()->getRealWidth ()) /
-                static_cast<float> (this->getTexture ()->getTextureWidth ());
+                static_cast<float> (this->getTexture ()->getTextureWidth (0));
         height = static_cast<float> (this->getTexture ()->getRealHeight ()) /
-                 static_cast<float> (this->getTexture ()->getTextureHeight ());
+                 static_cast<float> (this->getTexture ()->getTextureHeight (0));
     }
     // calculate the correct texCoord limits for the texture based on the texture screen size and real size
     else if (this->getTexture () != nullptr &&
-             (this->getTexture ()->getTextureWidth () != this->getTexture ()->getRealWidth () ||
-              this->getTexture ()->getTextureHeight () != this->getTexture ()->getRealHeight ())) {
+             (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth () ||
+              this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())) {
         uint32_t x = 1;
         uint32_t y = 1;
 

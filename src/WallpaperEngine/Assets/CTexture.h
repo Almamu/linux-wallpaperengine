@@ -156,25 +156,25 @@ class CTexture final : public ITexture {
     ~CTexture () override;
 
     /** @inheritdoc */
-    [[nodiscard]] const GLuint getTextureID (uint32_t imageIndex = 0) const override;
+    [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
     /** @inheritdoc */
-    [[nodiscard]] const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
+    [[nodiscard]] uint32_t getTextureWidth (uint32_t imageIndex) const override;
     /** @inheritdoc */
-    [[nodiscard]] const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
+    [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
     /** @inheritdoc */
-    [[nodiscard]] const uint32_t getRealWidth () const override;
+    [[nodiscard]] uint32_t getRealWidth () const override;
     /** @inheritdoc */
-    [[nodiscard]] const uint32_t getRealHeight () const override;
+    [[nodiscard]] uint32_t getRealHeight () const override;
     /** @inheritdoc */
-    [[nodiscard]] const TextureFormat getFormat () const override;
+    [[nodiscard]] TextureFormat getFormat () const override;
     /** @inheritdoc */
-    [[nodiscard]] const TextureFlags getFlags () const override;
+    [[nodiscard]] TextureFlags getFlags () const override;
     /** @inheritdoc */
     [[nodiscard]] const glm::vec4* getResolution () const override;
     /** @inheritdoc */
     [[nodiscard]] const std::vector<TextureFrame*>& getFrames () const override;
     /** @inheritdoc */
-    [[nodiscard]] const bool isAnimated () const override;
+    [[nodiscard]] bool isAnimated () const override;
 
   private:
     /**
@@ -204,6 +204,19 @@ class CTexture final : public ITexture {
      * @return
      */
     static TextureMipmap* parseMipmap (const TextureHeader* header, const char** fileData);
+
+    /**
+     * Calculate's texture's resolution vec4
+     */
+    void setupResolution ();
+    /**
+     * Determines the texture's internal storage format
+     */
+    GLint setupInternalFormat ();
+    /**
+     * Prepares openGL parameters for loading texture data
+     */
+    void setupOpenGLParameters (uint32_t textureID);
 
     /** The texture header */
     TextureHeader* m_header;

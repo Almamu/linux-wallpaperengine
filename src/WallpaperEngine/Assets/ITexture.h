@@ -73,33 +73,33 @@ class ITexture {
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The OpenGL texture to use when rendering
      */
-    [[nodiscard]] virtual const GLuint getTextureID (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual GLuint getTextureID (uint32_t imageIndex) const = 0;
     /**
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The texture's width
      */
-    [[nodiscard]] virtual const uint32_t getTextureWidth (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual uint32_t getTextureWidth (uint32_t imageIndex) const = 0;
     /**
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The texture's height
      */
-    [[nodiscard]] virtual const uint32_t getTextureHeight (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual uint32_t getTextureHeight (uint32_t imageIndex) const = 0;
     /**
      * @return The textures real width
      */
-    [[nodiscard]] virtual const uint32_t getRealWidth () const = 0;
+    [[nodiscard]] virtual uint32_t getRealWidth () const = 0;
     /**
      * @return The textures real height
      */
-    [[nodiscard]] virtual const uint32_t getRealHeight () const = 0;
+    [[nodiscard]] virtual uint32_t getRealHeight () const = 0;
     /**
      * @return The texture's memory format
      */
-    [[nodiscard]] virtual const TextureFormat getFormat () const = 0;
+    [[nodiscard]] virtual TextureFormat getFormat () const = 0;
     /**
      * @return The texture's settings
      */
-    [[nodiscard]] virtual const TextureFlags getFlags () const = 0;
+    [[nodiscard]] virtual TextureFlags getFlags () const = 0;
     /**
      * @return The list of frames this texture has
      */
@@ -111,6 +111,6 @@ class ITexture {
     /**
      * @return If the texture is animated or not
      */
-    [[nodiscard]] virtual const bool isAnimated () const = 0;
+    [[nodiscard]] virtual bool isAnimated () const = 0;
 };
 } // namespace WallpaperEngine::Assets

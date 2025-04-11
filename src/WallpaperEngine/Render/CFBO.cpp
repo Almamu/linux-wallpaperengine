@@ -97,11 +97,11 @@ const float& CFBO::getScale () const {
     return this->m_scale;
 }
 
-const ITexture::TextureFormat CFBO::getFormat () const {
+ITexture::TextureFormat CFBO::getFormat () const {
     return this->m_format;
 }
 
-const ITexture::TextureFlags CFBO::getFlags () const {
+ITexture::TextureFlags CFBO::getFlags () const {
     return this->m_flags;
 }
 
@@ -113,23 +113,23 @@ GLuint CFBO::getDepthbuffer () const {
     return this->m_depthbuffer;
 }
 
-const GLuint CFBO::getTextureID (uint32_t imageIndex) const {
+GLuint CFBO::getTextureID (uint32_t imageIndex) const {
     return this->m_texture;
 }
 
-const uint32_t CFBO::getTextureWidth (uint32_t imageIndex) const {
+uint32_t CFBO::getTextureWidth (uint32_t imageIndex) const {
     return this->m_resolution.x;
 }
 
-const uint32_t CFBO::getTextureHeight (uint32_t imageIndex) const {
+uint32_t CFBO::getTextureHeight (uint32_t imageIndex) const {
     return this->m_resolution.y;
 }
 
-const uint32_t CFBO::getRealWidth () const {
+uint32_t CFBO::getRealWidth () const {
     return this->m_resolution.z;
 }
 
-const uint32_t CFBO::getRealHeight () const {
+uint32_t CFBO::getRealHeight () const {
     return this->m_resolution.w;
 }
 
@@ -141,6 +141,6 @@ const glm::vec4* CFBO::getResolution () const {
     return &this->m_resolution;
 }
 
-const bool CFBO::isAnimated () const {
+bool CFBO::isAnimated () const {
     return false;
 }

@@ -22,7 +22,7 @@ const ITexture* CContainer::readTexture (const std::string& filename) const {
     const ITexture* result = new CTexture (textureContents);
 
 #if !NDEBUG
-    glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, texture.c_str ());
+    glObjectLabel (GL_TEXTURE, result->getTextureID (0), -1, texture.c_str ());
 #endif /* NDEBUG */
 
     delete textureContents;
