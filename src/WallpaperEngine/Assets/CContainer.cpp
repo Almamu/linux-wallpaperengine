@@ -9,13 +9,14 @@
 
 using namespace WallpaperEngine::Assets;
 
-std::filesystem::path CContainer::resolveRealFile (const std::string& filename) const {
+std::filesystem::path CContainer::resolveRealFile (const std::filesystem::path& filename) const {
     throw CAssetLoadException (filename, "Cannot resolve physical file in this container");
 }
 
-const ITexture* CContainer::readTexture (const std::string& filename) const {
+const ITexture* CContainer::readTexture (const std::filesystem::path& filename) const {
     // get the texture's filename (usually .tex)
-    const std::string texture = "materials/" + filename + ".tex";
+    std::filesystem::path texture = "materials" / filename;
+    texture.replace_extension (".tex");
 
     const uint8_t* textureContents = this->readFile (texture, nullptr);
 
@@ -30,7 +31,7 @@ const ITexture* CContainer::readTexture (const std::string& filename) const {
     return result;
 }
 
-std::string CContainer::readShader (const std::string& filename) const {
+std::string CContainer::readShader (const std::filesystem::path& filename) const {
     std::filesystem::path shader = filename;
     auto it = shader.begin ();
 
@@ -53,22 +54,26 @@ std::string CContainer::readShader (const std::string& filename) const {
         }
     }
 
-    return this->readFileAsString ("shaders/" + filename);
+    return this->readFileAsString ("shaders" / filename);
 }
 
-std::string CContainer::readVertexShader (const std::string& filename) const {
-    return this->readShader (filename + ".vert");
+std::string CContainer::readVertexShader (const std::filesystem::path& filename) const {
+    std::filesystem::path shader = filename;
+    shader.replace_extension (".vert");
+    return this->readShader (shader);
 }
 
-std::string CContainer::readFragmentShader (const std::string& filename) const {
-    return this->readShader (filename + ".frag");
+std::string CContainer::readFragmentShader (const std::filesystem::path& filename) const {
+    std::filesystem::path shader = filename;
+    shader.replace_extension (".frag");
+    return this->readShader (shader);
 }
 
-std::string CContainer::readIncludeShader (const std::string& filename) const {
-    return this->readFileAsString ("shaders/" + filename);
+std::string CContainer::readIncludeShader (const std::filesystem::path& filename) const {
+    return this->readFileAsString ("shaders" / filename);
 }
 
-std::string CContainer::readFileAsString (const std::string& filename) const {
+std::string CContainer::readFileAsString (const std::filesystem::path& filename) const {
     uint32_t length = 0;
 
     // read file contents and allocate a buffer for a string

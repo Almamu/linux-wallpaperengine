@@ -28,9 +28,9 @@ class CCombinedContainer final : public CContainer {
     void addPkg (const std::filesystem::path& path);
 
     /** @inheritdoc */
-    [[nodiscard]] std::filesystem::path resolveRealFile (const std::string& filename) const override;
+    [[nodiscard]] std::filesystem::path resolveRealFile (const std::filesystem::path& filename) const override;
     /** @inheritdoc */
-    [[nodiscard]] const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
+    [[nodiscard]] const uint8_t* readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:
     /** The list of containers to search files off from */

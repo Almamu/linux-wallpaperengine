@@ -36,6 +36,7 @@ CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_audioContext (nullptr),
     m_audioDriver (nullptr),
     m_audioRecorder (nullptr),
+    m_audioDetector (nullptr),
     m_inputContext (nullptr),
     m_renderContext (nullptr),
     m_videoDriver (nullptr),
@@ -51,6 +52,8 @@ CWallpaperApplication::~CWallpaperApplication () {
     delete m_videoDriver;
     delete m_audioContext;
     delete m_audioDriver;
+    delete m_audioDetector;
+    delete m_audioRecorder;
     delete m_inputContext;
     delete m_browserContext;
 }

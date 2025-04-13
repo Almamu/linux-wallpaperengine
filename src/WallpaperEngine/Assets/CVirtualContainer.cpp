@@ -5,11 +5,11 @@
 
 using namespace WallpaperEngine::Assets;
 
-void CVirtualContainer::add (const std::string& filename, const uint8_t* contents, uint32_t length) {
+void CVirtualContainer::add (const std::filesystem::path& filename, const uint8_t* contents, uint32_t length) {
     this->m_virtualFiles.insert (std::make_pair (filename, new CFileEntry (contents, length)));
 }
 
-void CVirtualContainer::add (const std::string& filename, const std::string& contents) {
+void CVirtualContainer::add (const std::filesystem::path& filename, const std::string& contents) {
     auto* copy = new uint8_t [contents.length () + 1];
 
     // copy the text AND the \0
@@ -19,7 +19,7 @@ void CVirtualContainer::add (const std::string& filename, const std::string& con
     this->add (filename, copy, contents.length () + 1);
 }
 
-const uint8_t* CVirtualContainer::readFile (const std::string& filename, uint32_t* length) const {
+const uint8_t* CVirtualContainer::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     const auto cur = this->m_virtualFiles.find (filename);
 
     if (cur == this->m_virtualFiles.end ())

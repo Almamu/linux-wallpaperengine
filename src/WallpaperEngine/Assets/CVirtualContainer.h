@@ -19,7 +19,7 @@ class CVirtualContainer final : public CContainer {
      * @param contents
      * @param length
      */
-    void add (const std::string& filename, const uint8_t* contents, uint32_t length);
+    void add (const std::filesystem::path& filename, const uint8_t* contents, uint32_t length);
 
     /**
      * Adds a new file to the virtual container
@@ -27,9 +27,9 @@ class CVirtualContainer final : public CContainer {
      * @param filename
      * @param contents
      */
-    void add (const std::string& filename, const std::string& contents);
+    void add (const std::filesystem::path& filename, const std::string& contents);
     /** @inheritdoc */
-    const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
+    const uint8_t* readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:
     /** The recorded files in this virtual container */

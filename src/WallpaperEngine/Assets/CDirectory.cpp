@@ -25,13 +25,12 @@ CDirectory::CDirectory (const std::filesystem::path& basepath) {
     }
 }
 
-std::filesystem::path CDirectory::resolveRealFile (const std::string& filename) const {
+std::filesystem::path CDirectory::resolveRealFile (const std::filesystem::path& filename) const {
     try {
-        std::filesystem::path path = this->m_basepath / filename;
-        std::filesystem::path final = std::filesystem::canonical (path);
+        std::filesystem::path final = std::filesystem::canonical (this->m_basepath / filename);
 
         // first validate the path, so the message doesn't reflect if the file exists or not unless it's under the actual directory
-        if (this->m_basepath.string ().find (final.string ()) != 0) {
+        if (final.string ().find (this->m_basepath.string ()) != 0) {
             throw CAssetLoadException (filename, "File is not a child of the given directory");
         }
 
@@ -51,7 +50,7 @@ std::filesystem::path CDirectory::resolveRealFile (const std::string& filename) 
     }
 }
 
-const uint8_t* CDirectory::readFile (const std::string& filename, uint32_t* length) const {
+const uint8_t* CDirectory::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     try {
         std::filesystem::path final = this->resolveRealFile (filename);
 

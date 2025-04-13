@@ -24,7 +24,7 @@ CPackage::CPackage (std::filesystem::path path) : m_path (std::move (path)) {
     this->init ();
 }
 
-const uint8_t* CPackage::readFile (const std::string& filename, uint32_t* length) const {
+const uint8_t* CPackage::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     const auto it = this->m_contents.find (filename);
 
     if (it == this->m_contents.end ())
