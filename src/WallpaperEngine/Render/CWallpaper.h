@@ -59,7 +59,7 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] CContainer* getContainer () const;
+    [[nodiscard]] const CContainer* getContainer () const;
 
     /**
      * @return The current audio context for this wallpaper
@@ -146,12 +146,12 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    static CWallpaper* fromWallpaper (const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
                                       WebBrowser::CWebBrowserContext& browserContext,
                                       const CWallpaperState::TextureUVsScaling& scalingMode);
 
   protected:
-    CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
+    CWallpaper (const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode);
 
     /**
@@ -164,9 +164,9 @@ class CWallpaper : public Helpers::CContextAware {
      */
     void setupFramebuffers ();
 
-    Core::CWallpaper* m_wallpaperData;
+    const Core::CWallpaper* m_wallpaperData;
 
-    [[nodiscard]] Core::CWallpaper* getWallpaperData () const;
+    [[nodiscard]] const Core::CWallpaper* getWallpaperData () const;
 
     /** The FBO used for scene output */
     CFBO* m_sceneFBO;

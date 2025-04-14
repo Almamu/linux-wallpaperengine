@@ -15,7 +15,7 @@ class CUserSettingValue {
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () {
+    template <class T> bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -23,6 +23,6 @@ class CUserSettingValue {
     explicit CUserSettingValue (std::string type);
 
   private:
-    std::string m_type;
+    const std::string m_type;
 };
 } // namespace WallpaperEngine::Core::UserSettings

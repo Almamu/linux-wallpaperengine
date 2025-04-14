@@ -5,18 +5,19 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyBoolean* CPropertyBoolean::fromJSON (json data, const std::string& name) {
-    const json::const_iterator value = data.find ("value");
-    const auto text = jsonFindDefault<std::string> (data, "text", "");
-
-    return new CPropertyBoolean (*value, name, text);
+const CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::string name) {
+    return new CPropertyBoolean (
+        jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
+        name,
+        jsonFindDefault<std::string> (data, "text", "")
+    );
 }
 
 bool CPropertyBoolean::getValue () const {
     return this->m_value;
 }
 
-void CPropertyBoolean::update (const std::string& value) {
+void CPropertyBoolean::update (const std::string& value) const {
     this->m_value = value == "1" || value == "true";
 }
 
@@ -32,7 +33,7 @@ std::string CPropertyBoolean::dump () const {
     return ss.str ();
 }
 
-CPropertyBoolean::CPropertyBoolean (bool value, const std::string& name, const std::string& text) :
+CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
     CProperty (name, Type, text),
     m_value (value) {}
 

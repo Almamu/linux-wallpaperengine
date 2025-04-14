@@ -4,16 +4,12 @@
 
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Logging/CLog.h"
-#include <utility>
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
-    const auto value = data.find ("value");
-    const auto text = jsonFindDefault<std::string> (data, "text", "");
+const CPropertyCombo* CPropertyCombo::fromJSON (const json& data, std::string name) {
+    std::vector<const CPropertyComboValue*> values;
     const auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
-
-    auto* combo = new CPropertyCombo (name, text, value->dump ());
 
     if (!options->is_array ())
         sLog.exception ("Property combo options should be an array");
@@ -24,18 +20,27 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
             continue;
 
         // check for label and value to ensure they're there
-        auto label = jsonFindRequired (cur, "label", "Label is required for a property combo option");
-        auto propertyValue = jsonFindRequired (cur, "value", "Value is required for a property combo option");
+        auto prop = new CPropertyComboValue {
+            .label = jsonFindRequired <std::string> (cur, "label", "Label is required for a property combo option"),
+            .value = jsonFindRequired <std::string> (cur, "value", "Value is required for a property combo option")
+        };
 
-        combo->addValue (*label, propertyValue->dump());
+        values.push_back (prop);
     }
 
-    return combo;
+    return new CPropertyCombo (
+        name,
+        jsonFindDefault<std::string> (data, "text", ""),
+        jsonFindRequired (data, "value", "Value is required for a property combo")->dump (),
+        values
+    );
 }
 
-CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text, std::string defaultValue) :
+CPropertyCombo::CPropertyCombo (
+    std::string name, std::string text, std::string defaultValue, std::vector<const CPropertyComboValue*> values
+) :
     CProperty (name, Type, text),
-    m_defaultValue (std::move (defaultValue)) {}
+    m_defaultValue (defaultValue) {}
 
 CPropertyCombo::~CPropertyCombo () {
     for (const auto* value : this->m_values)
@@ -63,7 +68,7 @@ std::string CPropertyCombo::dump () const {
     return ss.str ();
 }
 
-void CPropertyCombo::update (const std::string& value) {
+void CPropertyCombo::update (const std::string& value) const {
     bool found = false;
 
     // ensure the value is present somewhere in the value list
@@ -78,15 +83,6 @@ void CPropertyCombo::update (const std::string& value) {
         sLog.exception ("Assigning invalid value to property ", this->m_name);
 
     this->m_defaultValue = value;
-}
-
-void CPropertyCombo::addValue (std::string label, std::string value) {
-    auto* prop = new CPropertyComboValue;
-
-    prop->label = std::move (label);
-    prop->value = std::move (value);
-
-    this->m_values.push_back (prop);
 }
 
 const std::string CPropertyCombo::Type = "combo";

@@ -4,7 +4,7 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
 
-CImage::CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image) :
+CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     Render::CObject (scene, Type, image),
     m_texture (nullptr),
     m_sceneSpacePosition (GL_NONE),
@@ -79,7 +79,7 @@ CImage::CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image) :
     auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
 
     if (!textures.empty ()) {
-        std::string textureName = *textures.begin ();
+        std::string textureName = textures.begin ()->second;
 
         if (textureName.find ("_rt_") == 0) {
             this->m_texture = this->getScene ()->findFBO (textureName);
@@ -226,17 +226,20 @@ void CImage::setup () {
     if (this->getImage ()->isPassthrough () && this->getImage ()->getEffects ().empty ())
         return;
 
-    {
-        // generate the main material used to render the image
-        this->m_material = new Effects::CMaterial (
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image,
-                                                           Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
-            this->m_image->getMaterial ());
+    // generate the main material used to render the image
+    this->m_material = new Effects::CMaterial (
+        new CEffect (
+            this,
+            new Core::Objects::CEffect (
+                "", "", "", "", this->m_image->getScene ()->getProject (),
+                Core::UserSettings::CUserSettingBoolean::fromScalar (true),
+                {}, {}, {})),
+        this->m_image->getMaterial ()
+    );
 
-        // add blendmode to the combos
-        for (const auto& cur : this->m_material->getPasses ())
-            this->m_passes.push_back (cur);
-    }
+    // add blendmode to the combos
+    for (const auto& cur : this->m_material->getPasses ())
+        this->m_passes.push_back (cur);
 
     // prepare the passes list
     if (!this->getImage ()->getEffects ().empty ()) {
@@ -253,17 +256,23 @@ void CImage::setup () {
     }
 
     if (this->m_image->getColorBlendMode () > 0) {
-        const auto material =
-            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer ());
+        Core::Objects::Images::CMaterial::OverrideInfo overrides;
 
-        // effectpasshthrough only has one pass
-        (*material->getPasses ().begin ())->insertCombo ("BLENDMODE", this->m_image->getColorBlendMode ());
+        overrides.combos.insert (std::pair ("BLENDMODE", this->m_image->getColorBlendMode ()));
+        const auto material =
+            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer (), {}, &overrides);
 
         // generate the main material used to render the image
         this->m_colorBlendMaterial = new Effects::CMaterial (
-            new CEffect (this, new Core::Objects::CEffect ("", "", "", "", this->m_image,
-                                                           Core::UserSettings::CUserSettingBoolean::fromScalar (true))),
-            material);
+            new CEffect (
+                this,
+                new Core::Objects::CEffect (
+                    "", "", "", "", this->m_image->getScene ()->getProject (),
+                    Core::UserSettings::CUserSettingBoolean::fromScalar (true), {}, {}, {}
+                )
+            ),
+            material
+        );
 
         // add blendmode to the combos
         for (const auto& cur : this->m_colorBlendMaterial->getPasses ())
@@ -275,8 +284,8 @@ void CImage::setup () {
         const auto first = this->m_passes.begin ();
         const auto last = this->m_passes.rbegin ();
 
-        (*last)->getPass ()->setBlendingMode ((*first)->getPass ()->getBlendingMode ());
-        (*first)->getPass ()->setBlendingMode ("normal");
+        (*last)->setBlendingMode ((*first)->getBlendingMode ());
+        (*first)->setBlendingMode ("normal");
     }
 
     // calculate full animation time (if any)

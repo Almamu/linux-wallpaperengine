@@ -9,16 +9,17 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingFloat::CUserSettingFloat (bool hasCondition, bool hasSource, double defaultValue, std::string source,
-                                      std::string expectedValue) :
+CUserSettingFloat::CUserSettingFloat (
+    bool hasCondition, bool hasSource, double defaultValue, std::string source, std::string expectedValue
+) :
     CUserSettingValue (Type),
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_source (std::move (source)),
-    m_expectedValue (std::move (expectedValue)) {}
+    m_source (source),
+    m_expectedValue (expectedValue) {}
 
-CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data) {
+const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data) {
     double defaultValue;
     std::string source;
     std::string expectedValue;
@@ -35,9 +36,9 @@ CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data) {
                 source = *userIt;
             } else {
                 hasCondition = true;
-                source = *jsonFindRequired (userIt, "name", "Name for conditional setting must be present");
+                source = jsonFindRequired <std::string> (userIt, "name", "Name for conditional setting must be present");
                 expectedValue =
-                    *jsonFindRequired (userIt, "condition", "Condition for conditional setting must be present");
+                    jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
         } else {
             sLog.error ("Float property doesn't have user member, this could mean an scripted value");
@@ -52,7 +53,7 @@ CUserSettingFloat* CUserSettingFloat::fromJSON (nlohmann::json& data) {
     return new CUserSettingFloat (hasCondition, hasSource, defaultValue, source, expectedValue);
 }
 
-CUserSettingFloat* CUserSettingFloat::fromScalar (double value) {
+const CUserSettingFloat* CUserSettingFloat::fromScalar (const double value) {
     return new CUserSettingFloat (false, false, value, "", "");
 }
 
@@ -60,7 +61,7 @@ double CUserSettingFloat::getDefaultValue () const {
     return this->m_default;
 }
 
-double CUserSettingFloat::processValue (const std::vector<Projects::CProperty*>& properties) {
+double CUserSettingFloat::processValue (const std::vector<const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 

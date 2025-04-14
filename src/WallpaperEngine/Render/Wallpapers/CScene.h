@@ -14,12 +14,12 @@ class CObject;
 namespace WallpaperEngine::Render::Wallpapers {
 class CScene final : public CWallpaper {
   public:
-    CScene (Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+    CScene (const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
             const CWallpaperState::TextureUVsScaling& scalingMode);
 
     CCamera* getCamera () const;
 
-    Core::Wallpapers::CScene* getScene () const;
+    const Core::Wallpapers::CScene* getScene () const;
 
     int getWidth () const override;
     int getHeight () const override;
@@ -37,7 +37,7 @@ class CScene final : public CWallpaper {
     static const std::string Type;
 
   private:
-    Render::CObject* createObject (Core::CObject* object);
+    Render::CObject* createObject (const Core::CObject* object);
 
     CCamera* m_camera;
     CObject* m_bloomObject;

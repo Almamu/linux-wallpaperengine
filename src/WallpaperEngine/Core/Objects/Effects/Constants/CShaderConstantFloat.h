@@ -15,7 +15,7 @@ class CShaderConstantFloat : public CShaderConstant {
     /**
      * @return A pointer to the actual value of the constant
      */
-    float* getValue ();
+    [[nodiscard]] const float* getValue () const;
 
     /**
      * Type string indicator
@@ -24,6 +24,6 @@ class CShaderConstantFloat : public CShaderConstant {
 
   protected:
     /** The constant's value */
-    float m_value;
+    const float m_value;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

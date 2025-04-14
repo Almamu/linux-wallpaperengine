@@ -12,40 +12,41 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles;
 
-CInitializer* CInitializer::fromJSON (json data) {
-    const auto id_it = data.find ("id");
-    const auto name_it = jsonFindRequired (data, "name", "Particle's initializer must have a name");
-    const uint32_t id = ((id_it == data.end ()) ? 0 : static_cast<uint32_t> (*id_it));
+const CInitializer* CInitializer::fromJSON (const json& data) {
+    const auto name = jsonFindRequired <std::string> (data, "name", "Particle's initializer must have a name");
+    const auto id = jsonFindDefault (data, "id", 0);
 
-    if (*name_it == "lifetimerandom") {
+    if (name == "lifetimerandom") {
         return Initializers::CLifeTimeRandom::fromJSON (data, id);
     }
-    if (*name_it == "sizerandom") {
+    if (name == "sizerandom") {
         return Initializers::CSizeRandom::fromJSON (data, id);
     }
-    if (*name_it == "rotationrandom") {
+    if (name == "rotationrandom") {
         return Initializers::CRotationRandom::fromJSON (data, id);
     }
-    if (*name_it == "velocityrandom") {
+    if (name == "velocityrandom") {
         return Initializers::CVelocityRandom::fromJSON (data, id);
     }
-    if (*name_it == "colorrandom") {
+    if (name == "colorrandom") {
         return Initializers::CColorRandom::fromJSON (data, id);
     }
-    if (*name_it == "alpharandom") {
+    if (name == "alpharandom") {
         return Initializers::CAlphaRandom::fromJSON (data, id);
     }
-    if (*name_it == "angularvelocityrandom") {
+    if (name == "angularvelocityrandom") {
         return Initializers::CAngularVelocityRandom::fromJSON (data, id);
     }
-    if (*name_it == "turbulentvelocityrandom") {
+    if (name == "turbulentvelocityrandom") {
         return Initializers::CTurbulentVelocityRandom::fromJSON (data, id);
     }
 
-    sLog.exception ("Found unknown initializer for particles: ", *name_it);
+    sLog.exception ("Found unknown initializer for particles: ", name);
 }
 
-CInitializer::CInitializer (uint32_t id, std::string name) : m_id (id), m_name (std::move (name)) {}
+CInitializer::CInitializer (uint32_t id, std::string name) :
+    m_id (id),
+    m_name (name) {}
 
 const std::string& CInitializer::getName () const {
     return this->m_name;

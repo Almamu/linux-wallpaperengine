@@ -11,21 +11,21 @@ class CUserSettingBoolean : public CUserSettingValue {
   public:
     typedef bool data_type;
 
-    static CUserSettingBoolean* fromJSON (nlohmann::json& data);
-    static CUserSettingBoolean* fromScalar (bool value);
+    static const CUserSettingBoolean* fromJSON (const nlohmann::json& data);
+    static const CUserSettingBoolean* fromScalar (const bool value);
     static std::string Type;
 
-    bool processValue (const std::vector<Projects::CProperty*>& properties);
-    bool getDefaultValue () const;
+    [[nodiscard]] bool processValue (const std::vector<const Projects::CProperty*>& properties) const;
+    [[nodiscard]] bool getDefaultValue () const;
 
   private:
-    CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source,
-                         std::string expectedValue);
+    CUserSettingBoolean (
+        bool hasCondition, bool hasSource, bool defaultValue, std::string source, std::string expectedValue);
 
-    bool m_default;
-    bool m_hasCondition;
-    bool m_hasSource;
-    std::string m_source;
-    std::string m_expectedValue;
+    const bool m_default;
+    const bool m_hasCondition;
+    const bool m_hasSource;
+    const std::string m_source;
+    const std::string m_expectedValue;
 };
 } // namespace WallpaperEngine::Core::UserSettings

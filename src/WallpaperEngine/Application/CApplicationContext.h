@@ -123,7 +123,7 @@ class CApplicationContext {
     /**
      * Validates the screenshot settings
      */
-    void validateScreenshot ();
+    void validateScreenshot () const;
 
     /**
      * Validates a background parameter and returns the real bgIdOrPath to it

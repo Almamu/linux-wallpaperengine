@@ -21,7 +21,7 @@ class CShaderConstant {
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () {
+    template <class T> bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -31,6 +31,6 @@ class CShaderConstant {
     [[nodiscard]] const std::string& getType () const;
 
   private:
-    std::string m_type;
+    const std::string m_type;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

@@ -2,9 +2,11 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantInteger::CShaderConstantInteger (int32_t value) : CShaderConstant (Type), m_value (value) {}
+CShaderConstantInteger::CShaderConstantInteger (int32_t value) :
+    CShaderConstant (Type),
+    m_value (value) {}
 
-int32_t* CShaderConstantInteger::getValue () {
+const int32_t* CShaderConstantInteger::getValue () const {
     return &this->m_value;
 }
 

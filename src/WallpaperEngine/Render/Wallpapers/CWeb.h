@@ -24,7 +24,7 @@ namespace WallpaperEngine::Render::Wallpapers {
     class CWeb : public CWallpaper
     {
         public:
-            CWeb (Core::Wallpapers::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
+            CWeb (const Core::Wallpapers::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
             ~CWeb() override;
             [[nodiscard]] int getWidth  () const override { return this->m_width; }
 
@@ -35,8 +35,7 @@ namespace WallpaperEngine::Render::Wallpapers {
         protected:
             void renderFrame (glm::ivec4 viewport) override;
             void updateMouse (glm::ivec4 viewport);
-            Core::Wallpapers::CWeb* getWeb ()
-            {
+            const Core::Wallpapers::CWeb* getWeb () const {
                 return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
             }
 

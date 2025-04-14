@@ -5,6 +5,7 @@
 
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
+#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/CCompiler.h"
@@ -21,7 +22,7 @@ class CMaterial;
 
 class CPass final : public Helpers::CContextAware {
   public:
-    CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass);
+    CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass);
 
     void render ();
 
@@ -33,9 +34,11 @@ class CPass final : public Helpers::CContextAware {
     void setModelViewProjectionMatrixInverse (const glm::mat4* projection);
     void setModelMatrix (const glm::mat4* model);
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
+    void setBlendingMode (std::string blendingmode);
+    const std::string& getBlendingMode () const;
 
     [[nodiscard]] const CMaterial* getMaterial () const;
-    Core::Objects::Images::Materials::CPass* getPass ();
+    const Core::Objects::Images::Materials::CPass* getPass ();
 
   private:
     enum UniformType {
@@ -105,6 +108,7 @@ class CPass final : public Helpers::CContextAware {
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (CShaderVariable* value);
     void addUniform (const std::string& name, CShaderConstant* value);
+    void addUniform (const std::string& name, const CShaderConstant* value);
     void addUniform (const std::string& name, int value);
     void addUniform (const std::string& name, double value);
     void addUniform (const std::string& name, float value);
@@ -144,13 +148,14 @@ class CPass final : public Helpers::CContextAware {
     const ITexture* resolveTexture (const ITexture* expected, int index, const ITexture* previous = nullptr);
 
     CMaterial* m_material;
-    Core::Objects::Images::Materials::CPass* m_pass;
+    const Core::Objects::Images::Materials::CPass* m_pass;
     std::vector<const ITexture*> m_textures;
     std::map<int, const CFBO*> m_fbos;
     std::map<std::string, bool> m_foundCombos;
     std::vector<AttribEntry*> m_attribs;
     std::map<std::string, UniformEntry*> m_uniforms;
     std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms;
+    std::string m_blendingmode;
     const glm::mat4* m_modelViewProjectionMatrix;
     const glm::mat4* m_modelViewProjectionMatrixInverse;
     const glm::mat4* m_modelMatrix;

@@ -19,7 +19,7 @@ glm::vec3 ParseColor (std::string value) {
     return WallpaperEngine::Core::aToColorf (value);
 }
 
-CPropertyColor* CPropertyColor::fromJSON (json data, const std::string& name) {
+const CPropertyColor* CPropertyColor::fromJSON (const json& data, std::string name) {
     const std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
 
@@ -30,7 +30,7 @@ const glm::vec3& CPropertyColor::getValue () const {
     return this->m_color;
 }
 
-void CPropertyColor::update (const std::string& value) {
+void CPropertyColor::update (const std::string& value) const {
     this->m_color = ParseColor (std::string (value));
 }
 
@@ -46,7 +46,7 @@ std::string CPropertyColor::dump () const {
     return ss.str ();
 }
 
-CPropertyColor::CPropertyColor (glm::vec3 color, const std::string& name, const std::string& text) :
+CPropertyColor::CPropertyColor (glm::vec3 color, std::string name, std::string text) :
     CProperty (name, Type, text),
     m_color (color) {}
 

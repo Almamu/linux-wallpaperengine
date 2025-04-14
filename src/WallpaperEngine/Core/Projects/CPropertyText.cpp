@@ -4,8 +4,8 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyText* CPropertyText::fromJSON (json data, const std::string& name) {
-    const json::const_iterator text = data.find ("type");
+const CPropertyText* CPropertyText::fromJSON (const json& data, std::string name) {
+    const auto text = data.find ("type");
 
     return new CPropertyText (name, *text);
 }
@@ -20,10 +20,10 @@ std::string CPropertyText::dump () const {
     return ss.str ();
 }
 
-void CPropertyText::update (const std::string& value) {
+void CPropertyText::update (const std::string& value) const {
     this->m_text = value;
 }
 
-CPropertyText::CPropertyText (const std::string& name, const std::string& text) : CProperty (name, Type, text) {}
+CPropertyText::CPropertyText (std::string name, std::string text) : CProperty (name, Type, text) {}
 
 const std::string CPropertyText::Type = "text";

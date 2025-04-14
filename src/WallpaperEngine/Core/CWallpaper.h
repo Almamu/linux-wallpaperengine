@@ -20,20 +20,20 @@ class CWallpaper {
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () {
+    template <class T> bool is () const {
         return this->m_type == T::Type;
     }
 
-    CWallpaper (std::string type, CProject& project);
+    CWallpaper (std::string type, const CProject& project);
 
-    CProject& getProject () const;
+    const CProject& getProject () const;
 
   protected:
     friend class CProject;
 
   private:
-    CProject& m_project;
+    const CProject& m_project;
 
-    std::string m_type;
+    const std::string m_type;
 };
 } // namespace WallpaperEngine::Core

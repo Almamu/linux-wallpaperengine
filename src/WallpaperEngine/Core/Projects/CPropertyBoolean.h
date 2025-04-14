@@ -10,7 +10,7 @@ using json = nlohmann::json;
  */
 class CPropertyBoolean final : public CProperty {
   public:
-    static CPropertyBoolean* fromJSON (json data, const std::string& name);
+    static const CPropertyBoolean* fromJSON (const json& data, std::string name);
 
     /**
      * @return The value of the property
@@ -19,14 +19,14 @@ class CPropertyBoolean final : public CProperty {
     /** @inheritdoc */
     [[nodiscard]] std::string dump () const override;
     /** @inheritdoc */
-    void update (const std::string& value) override;
+    void update (const std::string& value) const override;
 
     static const std::string Type;
 
   private:
-    CPropertyBoolean (bool value, const std::string& name, const std::string& text);
+    CPropertyBoolean (bool value, std::string name, std::string text);
 
     /** Property's value */
-    bool m_value;
+    mutable bool m_value;
 };
 } // namespace WallpaperEngine::Core::Projects

@@ -15,9 +15,7 @@ using json = nlohmann::json;
  */
 class CFBO {
   public:
-    CFBO (std::string name, float scale, std::string format);
-
-    static CFBO* fromJSON (json data);
+    static const CFBO* fromJSON (const json& data);
 
     /**
      * @return The FBO name used to identify it in the background's files
@@ -32,12 +30,15 @@ class CFBO {
      */
     [[nodiscard]] const std::string& getFormat () const;
 
+  protected:
+    CFBO (std::string name, float scale, std::string format);
+
   private:
     /** The name of the FBO */
-    std::string m_name;
+    const std::string m_name;
     /** The scale factor of the FBO */
-    float m_scale;
+    const float m_scale;
     /** The FBO's format for the render */
-    std::string m_format;
+    const std::string m_format;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects

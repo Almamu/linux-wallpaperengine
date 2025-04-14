@@ -14,7 +14,7 @@ class CImage;
 
 class CEffect {
   public:
-    CEffect (CImage* image, Core::Objects::CEffect* effect);
+    CEffect (CImage* image, const Core::Objects::CEffect* effect);
 
     CImage* getImage () const;
 
@@ -28,7 +28,7 @@ class CEffect {
     void generateFBOs ();
 
     CImage* m_image;
-    Core::Objects::CEffect* m_effect;
+    const Core::Objects::CEffect* m_effect;
 
     std::vector<CFBO*> m_fbos;
     std::vector<Effects::CMaterial*> m_materials;

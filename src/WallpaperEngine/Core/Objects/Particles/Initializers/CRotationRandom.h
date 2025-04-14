@@ -47,24 +47,24 @@ class CRotationRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CRotationRandom* fromJSON (json data, uint32_t id);
+    static const CRotationRandom* fromJSON (const json& data, uint32_t id);
 
     CRotationRandom (uint32_t id, glm::vec3 minVector, double minNumber, bool isMinimumVector, glm::vec3 maxVector,
                      double maxNumber, bool isMaximumVector);
 
   private:
     /** Maximum rotation vector */
-    glm::vec3 m_maxVector;
+    const glm::vec3 m_maxVector;
     /** Maximum rotation angle */
-    double m_maxNumber;
+    const double m_maxNumber;
     /** Minimum rotation vector */
-    glm::vec3 m_minVector;
+    const glm::vec3 m_minVector;
     /** Minimum rotation angle */
-    double m_minNumber;
+    const double m_minNumber;
 
     /** If minimum is a vector */
-    bool m_isMinimumVector;
+    const bool m_isMinimumVector;
     /** If maximum is a vector */
-    bool m_isMaximumVector;
+    const bool m_isMaximumVector;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

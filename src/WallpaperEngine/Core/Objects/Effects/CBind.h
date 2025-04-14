@@ -20,9 +20,7 @@ class CBind {
      * @param data
      * @return
      */
-    static CBind* fromJSON (json data);
-
-    CBind (std::string name, uint32_t index);
+    static const CBind* fromJSON (const json& data);
 
     /**
      * @return The texture name, previous to use the one already specified by the object's passes
@@ -33,10 +31,13 @@ class CBind {
      */
     [[nodiscard]] const uint32_t& getIndex () const;
 
+  protected:
+    CBind (std::string name, uint32_t index);
+
   private:
     /** The texture's name */
-    std::string m_name;
+    const std::string m_name;
     /** The texture index to replace */
-    uint32_t m_index;
+    const uint32_t m_index;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects

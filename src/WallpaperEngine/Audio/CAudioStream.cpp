@@ -6,7 +6,8 @@
 
 // maximum size of the queue to prevent reading too much data
 #define MAX_QUEUE_SIZE (5 * 1024 * 1024)
-#define MIN_FRAMES 25
+#define MIN_FRAMES (25)
+#define NO_AUDIO_STREAM (-1)
 
 using namespace WallpaperEngine::Audio;
 
@@ -82,7 +83,6 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
 
     switch (whence) {
         case SEEK_CUR: stream->setPosition (stream->getPosition () + offset); break;
-
         case SEEK_SET: stream->setPosition (offset); break;
     }
 
@@ -91,12 +91,14 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
 
 CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename) :
     m_swrctx (nullptr),
+    m_audioStream(NO_AUDIO_STREAM),
     m_audioContext (context) {
     this->loadCustomContent (filename.c_str ());
 }
 
 CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length) :
     m_swrctx (nullptr),
+    m_audioStream(NO_AUDIO_STREAM),
     m_audioContext (context) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
@@ -122,6 +124,7 @@ CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint3
 CAudioStream::CAudioStream (CAudioContext& audioContext, AVCodecContext* context) :
     m_swrctx (nullptr),
     m_audioContext (audioContext),
+    m_audioStream(NO_AUDIO_STREAM),
     m_context (context),
     m_queue (new PacketQueue) {
     this->initialize ();
@@ -142,17 +145,14 @@ void CAudioStream::loadCustomContent (const char* filename) {
     if (avformat_find_stream_info (this->m_formatContext, nullptr) < 0)
         sLog.exception ("Cannot determine file format: ", filename);
 
-    bool hasAudioStream = false;
-
     // find the audio stream
     for (unsigned int i = 0; i < this->m_formatContext->nb_streams; i++) {
-        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !hasAudioStream) {
-            hasAudioStream = true;
+        if (this->m_formatContext->streams [i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && this->m_audioStream == NO_AUDIO_STREAM) {
             this->m_audioStream = i;
         }
     }
 
-    if (!hasAudioStream)
+    if (this->m_audioStream == NO_AUDIO_STREAM)
         sLog.exception ("Cannot find an audio stream in file ", filename);
 
     // get the decoder for it and alloc the required context
@@ -282,7 +282,7 @@ bool CAudioStream::doQueue (AVPacket* pkt) {
 }
 
 void CAudioStream::dequeuePacket (AVPacket* output) {
-    MyAVPacketList entry;
+    MyAVPacketList entry{};
 
     SDL_LockMutex (this->m_queue->mutex);
 
@@ -368,6 +368,10 @@ int CAudioStream::getQueuePacketCount () {
 }
 
 AVRational CAudioStream::getTimeBase () {
+    if (this->m_audioStream == NO_AUDIO_STREAM) {
+        return {0, 0};
+    }
+
     return this->m_formatContext->streams [this->m_audioStream]->time_base;
 }
 

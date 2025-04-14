@@ -211,7 +211,9 @@ void CWallpaperApplication::setupProperties () {
 }
 
 void CWallpaperApplication::setupBrowser () {
-    bool anyWebProject = std::any_of (this->m_backgrounds.begin (), this->m_backgrounds.end (), [](std::pair<const std::string, const Core::CProject*> pair) -> bool {
+    bool anyWebProject = std::any_of (
+        this->m_backgrounds.begin (), this->m_backgrounds.end (),
+        [](const std::pair<const std::string, const Core::CProject*>& pair) -> bool {
         return pair.second->getWallpaper()->is<Core::Wallpapers::CWeb> ();
     });
 
@@ -403,10 +405,13 @@ void CWallpaperApplication::prepareOutputs () {
 
     // set all the specific wallpapers required
     for (const auto& [background, info] : this->m_backgrounds) {
-        m_renderContext->setWallpaper (background,
-                                       WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                                           info->getWallpaper (), *m_renderContext, *m_audioContext, *m_browserContext,
-                                           this->m_context.settings.general.screenScalings [background]));
+        m_renderContext->setWallpaper (
+            background,
+            WallpaperEngine::Render::CWallpaper::fromWallpaper (
+                info->getWallpaper (), *m_renderContext, *m_audioContext, *m_browserContext,
+                this->m_context.settings.general.screenScalings [background]
+            )
+        );
     }
 }
 

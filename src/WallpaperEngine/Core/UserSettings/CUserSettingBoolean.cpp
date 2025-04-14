@@ -12,16 +12,17 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingBoolean::CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source,
-                                          std::string expectedValue) :
+CUserSettingBoolean::CUserSettingBoolean (
+    bool hasCondition,bool hasSource, bool defaultValue, std::string source, std::string expectedValue
+) :
     CUserSettingValue (Type),
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_source (std::move (source)),
-    m_expectedValue (std::move (expectedValue)) {}
+    m_source (source),
+    m_expectedValue (expectedValue) {}
 
-CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data) {
+const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data) {
     bool hasCondition = false;
     bool hasSource = false;
     bool defaultValue;
@@ -38,9 +39,9 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data) {
                 source = *userIt;
             } else {
                 hasCondition = true;
-                source = *jsonFindRequired (userIt, "name", "Name for conditional setting must be present");
+                source = jsonFindRequired <std::string> (userIt, "name", "Name for conditional setting must be present");
                 expectedValue =
-                    *jsonFindRequired (userIt, "condition", "Condition for conditional setting must be present");
+                    jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
         } else {
             sLog.error ("Boolean property doesn't have user member, this could mean an scripted value");
@@ -55,7 +56,7 @@ CUserSettingBoolean* CUserSettingBoolean::fromJSON (nlohmann::json& data) {
     return new CUserSettingBoolean (hasCondition, hasSource, defaultValue, source, expectedValue);
 }
 
-CUserSettingBoolean* CUserSettingBoolean::fromScalar (bool value) {
+const CUserSettingBoolean* CUserSettingBoolean::fromScalar (const bool value) {
     return new CUserSettingBoolean (false, false, value, "", "");
 }
 
@@ -63,7 +64,7 @@ bool CUserSettingBoolean::getDefaultValue () const {
     return this->m_default;
 }
 
-bool CUserSettingBoolean::processValue (const std::vector<Projects::CProperty*>& properties) {
+bool CUserSettingBoolean::processValue (const std::vector<const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 

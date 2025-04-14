@@ -2,17 +2,12 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles;
 
-CEmitter* CEmitter::fromJSON (json data) {
-    const auto directions_it = jsonFindRequired (data, "directions", "Particle emitter must have direction specified");
+const CEmitter* CEmitter::fromJSON (const json& data) {
     const auto distancemax_it = jsonFindRequired (data, "distancemax", "Particle emitter must have maximum distance");
     const auto distancemin_it = jsonFindRequired (data, "distancemin", "Particle emitter must have minimum distance");
-    const auto id_it = data.find ("id");
-    const auto name_it = jsonFindRequired (data, "name", "Particle emitter must have a name");
-    const auto origin_it = jsonFindRequired (data, "origin", "Particle emitter must have an origin");
-    const auto rate_it = jsonFindRequired (data, "rate", "Particle emitter must have a rate");
 
-    glm::vec3 distancemin = glm::vec3(0);
-    glm::vec3 distancemax = glm::vec3(0);
+    auto distancemin = glm::vec3(0);
+    auto distancemax = glm::vec3(0);
 
     if (distancemin_it->is_number()) {
         distancemin = glm::vec3(static_cast<uint32_t>(*distancemin_it));
@@ -26,18 +21,26 @@ CEmitter* CEmitter::fromJSON (json data) {
         distancemax = WallpaperEngine::Core::aToVector3(*distancemax_it);
     }
 
-    return new CEmitter (WallpaperEngine::Core::aToVector3 (*directions_it), distancemax, distancemin,
-                         (id_it == data.end () ? 0 : static_cast<uint32_t> (*id_it)), *name_it,
-                         WallpaperEngine::Core::aToVector3 (*origin_it), *rate_it);
+    return new CEmitter (
+        jsonFindRequired <glm::vec3> (data, "directions", "Particle emitter must have direction specified"),
+        distancemax,
+        distancemin,
+        jsonFindDefault (data, "id", 0),
+        jsonFindRequired <std::string> (data, "name", "Particle emitter must have a name"),
+        jsonFindRequired <glm::vec3> (data, "origin", "Particle emitter must have an origin"),
+        jsonFindRequired <double> (data, "rate", "Particle emitter must have a rate")
+    );
 }
 
-CEmitter::CEmitter (const glm::vec3& directions, const glm::vec3& distancemax, const glm::vec3& distancemin, uint32_t id,
-                    std::string name, const glm::vec3& origin, double rate) :
+CEmitter::CEmitter (
+    glm::vec3 directions, glm::vec3 distancemax, glm::vec3 distancemin, uint32_t id, std::string name, glm::vec3 origin,
+    double rate
+) :
     m_directions (directions),
     m_distancemax (distancemax),
     m_distancemin (distancemin),
     m_id (id),
-    m_name (std::move (name)),
+    m_name (name),
     m_origin (origin),
     m_rate (rate) {}
 
@@ -65,6 +68,6 @@ const glm::vec3& CEmitter::getOrigin () const {
     return this->m_origin;
 }
 
-const double CEmitter::getRate () const {
+double CEmitter::getRate () const {
     return this->m_rate;
 }

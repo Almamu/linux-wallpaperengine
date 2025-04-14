@@ -11,7 +11,7 @@ using namespace WallpaperEngine::Assets;
 class CPackageEntry {
   public:
     CPackageEntry (std::string filename, uint32_t offset, uint32_t length) :
-        filename (std::move (filename)),
+        filename (filename),
         offset (offset),
         length (length) {}
 

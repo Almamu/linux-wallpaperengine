@@ -18,12 +18,11 @@ extern "C"
 
 namespace WallpaperEngine::Core::Wallpapers
 {
-    class CWeb : public CWallpaper
-    {
+    class CWeb : public CWallpaper {
     public:
-        explicit CWeb (std::string filename, CProject& project);
+        CWeb (std::string filename, const CProject& project);
 
-        const std::string& getFilename ();
+        const std::string& getFilename () const;
 
     protected:
         friend class CWallpaper;

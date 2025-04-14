@@ -12,7 +12,7 @@ using json = nlohmann::json;
  */
 class CPropertySlider final : public CProperty {
   public:
-    static CPropertySlider* fromJSON (json data, const std::string& name);
+    static const CPropertySlider* fromJSON (const json& data, const std::string& name);
 
     /**
      * @return The slider's value
@@ -31,21 +31,20 @@ class CPropertySlider final : public CProperty {
      */
     [[nodiscard]] const double& getStep () const;
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) override;
+    void update (const std::string& value) const override;
 
     static const std::string Type;
 
   private:
-    CPropertySlider (double value, const std::string& name, const std::string& text, double min, double max,
-                     double step);
+    CPropertySlider (double value, const std::string& name, const std::string& text, double min, double max, double step);
 
     /** Actual slider value */
-    double m_value;
+    mutable double m_value;
     /** Minimum value */
-    double m_min;
+    const double m_min;
     /** Maximum value */
-    double m_max;
+    const double m_max;
     /** Increment steps for the slider in the UI */
-    double m_step;
+    const double m_step;
 };
 } // namespace WallpaperEngine::Core::Projects

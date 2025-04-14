@@ -23,10 +23,11 @@ using namespace WallpaperEngine::Render::Objects::Effects;
 extern float g_Time;
 extern float g_Daytime;
 
-CPass::CPass (CMaterial* material, Core::Objects::Images::Materials::CPass* pass) :
+CPass::CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass) :
     Helpers::CContextAware (material),
     m_material (material),
-    m_pass (pass) {
+    m_pass (pass),
+    m_blendingmode (pass->getBlendingMode ()) {
     this->setupTextures ();
     this->setupShaders ();
     this->setupShaderVariables ();
@@ -293,6 +294,14 @@ void CPass::setViewProjectionMatrix (const glm::mat4* viewProjection) {
     this->m_viewProjectionMatrix = viewProjection;
 }
 
+void CPass::setBlendingMode (std::string blendingmode) {
+    this->m_blendingmode = blendingmode;
+}
+
+const std::string& CPass::getBlendingMode () const {
+    return this->m_blendingmode;
+}
+
 void CPass::setTexCoord (GLuint texcoord) {
     this->a_TexCoord = texcoord;
 }
@@ -301,7 +310,7 @@ void CPass::setPosition (GLuint position) {
     this->a_Position = position;
 }
 
-Core::Objects::Images::Materials::CPass* CPass::getPass () {
+const Core::Objects::Images::Materials::CPass* CPass::getPass () {
     return this->m_pass;
 }
 
@@ -345,9 +354,9 @@ void CPass::setupShaders () {
     // ELEMENTS?
     if (texture0 != nullptr) {
         if (texture0->getFormat () == ITexture::TextureFormat::RG88) {
-            this->m_pass->insertCombo ("TEX0FORMAT", 8);
+            this->m_foundCombos.insert(std::pair("TEX0FORMAT", 8));
         } else if (texture0->getFormat () == ITexture::TextureFormat::R8) {
-            this->m_pass->insertCombo ("TEX0FORMAT", 9);
+            this->m_foundCombos.insert (std::pair("TEX0FORMAT", 9));
         }
     }
 
@@ -637,11 +646,11 @@ void CPass::setupTextures () {
         if (index == 0)
             continue;
 
-        if (cur->find ("_rt_") == 0) {
-            const CFBO* fbo = this->m_material->m_effect->findFBO ((*cur));
+        if (cur->second.find ("_rt_") == 0) {
+            const CFBO* fbo = this->m_material->m_effect->findFBO (cur->second);
 
             if (fbo == nullptr)
-                fbo = this->m_material->getImage ()->getScene ()->findFBO ((*cur));
+                fbo = this->m_material->getImage ()->getScene ()->findFBO (cur->second);
 
             if (fbo != nullptr) {
                 this->m_fbos.insert (std::make_pair (index, fbo));
@@ -649,10 +658,10 @@ void CPass::setupTextures () {
             }
             // _rt_texture
         } else {
-            if (cur->empty ()) {
+            if (cur->second.empty ()) {
                 this->m_textures.emplace_back (nullptr);
             } else {
-                this->m_textures.emplace_back (this->m_material->getImage ()->getContext ().resolveTexture ((*cur)));
+                this->m_textures.emplace_back (this->m_material->getImage ()->getContext ().resolveTexture (cur->second));
             }
         }
     }
@@ -741,6 +750,15 @@ void CPass::addUniform (const std::string& name, CShaderConstant* value) {
         this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
 }
 
+void CPass::addUniform (const std::string& name, const CShaderConstant* value) {
+    // now determine the constant's type and register the correct uniform for it
+    if (value->is<CShaderConstantFloat> ())
+        this->addUniform (name, value->as<CShaderConstantFloat> ()->getValue ());
+    else if (value->is<CShaderConstantInteger> ())
+        this->addUniform (name, value->as<CShaderConstantInteger> ()->getValue ());
+    else if (value->is<CShaderConstantVector4> ())
+        this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
+}
 void CPass::addUniform (const std::string& name, int value) {
     this->addUniform (name, UniformType::Integer, value);
 }

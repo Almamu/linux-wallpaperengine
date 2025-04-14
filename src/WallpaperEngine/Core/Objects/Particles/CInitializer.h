@@ -11,7 +11,7 @@ using json = nlohmann::json;
  */
 class CInitializer {
   public:
-    static CInitializer* fromJSON (json data);
+    static const CInitializer* fromJSON (const json& data);
 
     /**
      * @return The name of the particle initializer, indicates what type of initialization to do
@@ -27,8 +27,8 @@ class CInitializer {
 
   private:
     /** ID for ordering purposes */
-    uint32_t m_id;
+    const uint32_t m_id;
     /** The name of the initializer, indicates what type of initialization to do */
-    std::string m_name;
+    const std::string m_name;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles

@@ -3,7 +3,9 @@
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Objects;
 
-CEffect::CEffect (CImage* image, Core::Objects::CEffect* effect) : m_image (image), m_effect (effect) {
+CEffect::CEffect (CImage* image, const Core::Objects::CEffect* effect) :
+    m_image (image),
+    m_effect (effect) {
     this->generateFBOs ();
     this->generatePasses ();
 }

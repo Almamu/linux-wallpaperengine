@@ -1,10 +1,10 @@
 #include "CEffect.h"
 
-#include <iostream>
 #include <utility>
 
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
+#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
@@ -18,109 +18,72 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CEffect::CEffect (std::string name, std::string description, std::string group, std::string preview, CObject* object,
-                  CUserSettingBoolean* visible) :
-    m_name (std::move (name)),
-    m_description (std::move (description)),
-    m_group (std::move (group)),
-    m_preview (std::move (preview)),
-    m_object (object),
-    m_visible (visible) {}
+CEffect::CEffect (
+    std::string name, std::string description, std::string group, std::string preview, const CProject& project,
+    const CUserSettingBoolean* visible, std::vector<std::string> dependencies, std::vector<const Effects::CFBO*> fbos,
+    std::vector<const Images::CMaterial*> materials
+) :
+    m_name (name),
+    m_description (description),
+    m_group (group),
+    m_preview (preview),
+    m_visible (visible),
+    m_dependencies (dependencies),
+    m_fbos (fbos),
+    m_project (project),
+    m_materials (materials) {}
 
-CEffect* CEffect::fromJSON (json data, CUserSettingBoolean* visible, CObject* object, CContainer* container) {
-    auto file_it = jsonFindRequired (data, "file", "Object effect must have a file");
-    auto effectpasses_it = data.find ("passes");
+const CEffect* CEffect::fromJSON (
+    const json& data, const CUserSettingBoolean* visible, const CProject& project, const Images::CMaterial* material,
+    const CContainer* container
+) {
+    const auto file = jsonFindRequired <std::string> (data, "file", "Object effect must have a file");
+    const auto effectpasses_it = data.find ("passes");
 
-    json content = json::parse (container->readFileAsString(file_it->get<std::string> ()));
+    json content = json::parse (container->readFileAsString(file));
 
-    auto name_it = jsonFindRequired (content, "name", "Effect must have a name");
-    auto description = jsonFindDefault<std::string> (content, "description", "");
-    auto group_it = jsonFindRequired (content, "group", "Effect must have a group");
-    auto preview = jsonFindDefault<std::string> (content, "preview", "");
-    auto passes_it = jsonFindRequired (content, "passes", "Effect must have a pass list");
-    auto dependencies_it = jsonFindRequired (content, "dependencies", "");
-    auto fbos_it = content.find ("fbos");
+    const auto effectName = jsonFindRequired <std::string> (content, "name", "Effect must have a name");
+    const auto passes_it = jsonFindRequired (content, "passes", "Effect must have a pass list");
+    const auto fbos_it = content.find ("fbos");
 
-    auto* effect = new CEffect (*name_it, description, *group_it, preview, object, visible);
-
-    CEffect::materialsFromJSON (passes_it, effect, container);
-    CEffect::dependencyFromJSON (dependencies_it, effect);
+    // info to override in the pass information, used by material generation
+    std::map<int, Images::CMaterial::OverrideInfo> overrides;
+    std::vector<const Effects::CFBO*> fbos;
 
     if (fbos_it != content.end ())
-        CEffect::fbosFromJSON (fbos_it, effect);
+        fbos = CEffect::fbosFromJSON (fbos_it);
 
     if (effectpasses_it != data.end ()) {
-        auto cur = effectpasses_it->begin ();
-        auto end = effectpasses_it->end ();
-
-        for (int passNumber = 0; cur != end; ++cur, passNumber++) {
-            auto constants_it = cur->find ("constantshadervalues");
-            auto combos_it = cur->find ("combos");
-            auto textures_it = cur->find ("textures");
-
-            if (constants_it == cur->end () && combos_it == cur->end () && textures_it == cur->end ())
-                continue;
-
-            Images::CMaterial* material = effect->getMaterials ().at (passNumber);
-
-            for (const auto& passCur : material->getPasses ()) {
-                if (textures_it != cur->end ()) {
-                    std::vector<std::string>::size_type textureNumber = 0;
-
-                    for (const auto& texturesCur : (*textures_it)) {
-                        std::string texture;
-
-                        if (texturesCur.is_null ()) {
-                            if (textureNumber == 0) {
-                                auto* image = object->as<CImage> ();
-
-                                auto passTextures = (*image->getMaterial ()->getPasses ().begin ())->getTextures ();
-
-                                if (passTextures.empty ()) {
-                                    // TODO: SET CHECKERBOARD TEXTURE AS DEFAULT IN THESE SITUATIONS
-                                    texture = "";
-                                } else {
-                                    texture = *passTextures.begin ();
-                                }
-                            } else {
-                                texture = "";
-                            }
-                        } else {
-                            texture = texturesCur;
-                        }
-
-                        const auto& passTextures = passCur->getTextures ();
-
-                        if (textureNumber < passTextures.size ())
-                            passCur->setTexture (textureNumber, texture);
-                        else
-                            passCur->insertTexture (texture);
-
-                        textureNumber++;
-                    }
-                }
-
-                if (combos_it != cur->end ()) {
-                    CEffect::combosFromJSON (combos_it, passCur);
-                }
-
-                if (constants_it != cur->end ()) {
-                    CEffect::constantsFromJSON (constants_it, passCur);
-                }
-            }
-        }
+        overrides = overridesFromJSON (effectpasses_it, material);
     }
 
-    return effect;
+    return new CEffect (
+        effectName,
+        jsonFindDefault<std::string> (content, "description", ""),
+        jsonFindRequired <std::string> (content, "group", "Effect must have a group"),
+        jsonFindDefault<std::string> (content, "preview", ""),
+        project,
+        visible,
+        dependenciesFromJSON (jsonFindRequired (content, "dependencies", "")),
+        fbos,
+        materialsFromJSON (passes_it, effectName, container, overrides)
+    );
 }
 
-void CEffect::combosFromJSON (const json::const_iterator& combos_it, Core::Objects::Images::Materials::CPass* pass) {
+std::map<std::string, int> CEffect::combosFromJSON (const json::const_iterator& combos_it) {
+    std::map<std::string, int> combos;
+
     for (const auto& cur : combos_it->items ())
-        pass->insertCombo (cur.key (), cur.value ());
+        combos.insert (std::pair (cur.key (), cur.value ()));
+
+    return combos;
 }
 
-void CEffect::constantsFromJSON (const json::const_iterator& constants_it,
-                                 Core::Objects::Images::Materials::CPass* pass) {
+std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> CEffect::constantsFromJSON (
+    const json::const_iterator& constants_it
+) {
+    std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constants;
+
     for (auto& cur : constants_it->items ()) {
         auto val = cur.value ();
 
@@ -152,77 +115,154 @@ void CEffect::constantsFromJSON (const json::const_iterator& constants_it,
             sLog.exception ("unknown shader constant type ", val);
         }
 
-        pass->insertConstant (cur.key (), constant);
+        constants.insert (std::pair (cur.key (), constant));
     }
+
+    return constants;
 }
 
-void CEffect::fbosFromJSON (const json::const_iterator& fbos_it, CEffect* effect) {
+std::vector<const Effects::CFBO*> CEffect::fbosFromJSON (const json::const_iterator& fbos_it) {
+    std::vector<const Effects::CFBO*> fbos;
+
     for (const auto& cur : (*fbos_it))
-        effect->insertFBO (Effects::CFBO::fromJSON (cur));
+        fbos.push_back (Effects::CFBO::fromJSON (cur));
+
+    return fbos;
 }
 
-void CEffect::dependencyFromJSON (const json::const_iterator& dependencies_it, CEffect* effect) {
+std::vector<std::string> CEffect::dependenciesFromJSON (const json::const_iterator& dependencies_it) {
+    std::vector<std::string> dependencies;
+
     for (const auto& cur : (*dependencies_it))
-        effect->insertDependency (cur);
+        dependencies.push_back (cur);
+
+    return dependencies;
 }
 
-void CEffect::materialsFromJSON (const json::const_iterator& passes_it, CEffect* effect, CContainer* container) {
+std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
+    const json::const_iterator& passes_it, std::string name, const CContainer* container,
+    std::map<int, Images::CMaterial::OverrideInfo> overrides
+) {
+    std::vector<const Images::CMaterial*> materials;
+
+    int materialNumber = -1;
     for (const auto& cur : (*passes_it)) {
-        auto materialfile = cur.find ("material");
-        auto target = cur.find ("target");
-        auto bind = cur.find ("bind");
+        ++materialNumber;
+        const auto materialfile = cur.find ("material");
+        const auto target = cur.find ("target");
+        const auto bind_it = cur.find ("bind");
 
         if (materialfile == cur.end ())
-            sLog.exception ("Found an effect ", effect->m_name, " without material");
+            sLog.exception ("Found an effect ", name, " without material");
 
-        Images::CMaterial* material;
+        std::map<int, const Effects::CBind*> textureBindings;
 
-        if (target == cur.end ())
-            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), container);
-        else
-            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), *target, container);
-
-        if (bind != cur.end ()) {
-            for (const auto& bindCur : (*bind))
-                material->insertTextureBind (Effects::CBind::fromJSON (bindCur));
+        if (bind_it != cur.end ()) {
+            for (const auto& bindCur : (*bind_it)) {
+                const auto* bind = Effects::CBind::fromJSON (bindCur);
+                textureBindings.insert (std::pair (bind->getIndex (), bind));
+            }
         }
 
-        effect->insertMaterial (material);
+        const Images::CMaterial* material;
+        const Images::CMaterial::OverrideInfo* overrideInfo;
+        const auto overrideIt = overrides.find (materialNumber);
+
+        if (overrideIt != overrides.end ()) {
+            overrideInfo = &overrideIt->second;
+        }
+
+        if (target == cur.end ())
+            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), container, textureBindings, overrideInfo);
+        else
+            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), *target, container, textureBindings, overrideInfo);
+
+        materials.push_back (material);
     }
+
+    return materials;
+}
+
+std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
+    const json::const_iterator& passes_it, const Images::CMaterial* material
+) {
+    std::map<int, Images::CMaterial::OverrideInfo> result;
+
+    int materialNumber = -1;
+    for (const auto& cur : (*passes_it)) {
+        ++materialNumber;
+        auto constants_it = cur.find ("constantshadervalues");
+        auto combos_it = cur.find ("combos");
+        auto textures_it = cur.find ("textures");
+        Images::CMaterial::OverrideInfo override;
+        int textureNumber = -1;
+
+        if (combos_it != cur.end ()) {
+            override.combos = CEffect::combosFromJSON (combos_it);
+        }
+
+        if (constants_it != cur.end ()) {
+            override.constants = CEffect::constantsFromJSON (constants_it);
+        }
+
+        if (textures_it != cur.end ()) {
+            // TODO: MAYBE CHANGE THIS TO BE SOMEWHERE ELSE? THIS IS REALLY MODIFYING THE DATA
+            //  BUT IT'S USEFUL TO HAVE TO SIMPLIFY RENDERING CODE
+            for (const auto& texture : (*textures_it)) {
+                ++textureNumber;
+                std::string name;
+
+                if (texture.is_null ()) {
+                    if (textureNumber == 0) {
+                        auto passTextures = (*material->getPasses ().begin ())->getTextures ();
+
+                        if (passTextures.empty ()) {
+                            // TODO: SET CHECKERBOARD TEXTURE AS DEFAULT IN THESE SITUATIONS
+                            name = "";
+                        } else {
+                            name = passTextures.begin ()->second;
+                        }
+                    } else {
+                        name = "";
+                    }
+                } else {
+                    name = texture;
+                }
+
+                override.textures.insert (std::pair (textureNumber, name));
+            }
+        }
+
+        result.insert (std::pair (materialNumber, override));
+    }
+
+    return result;
 }
 
 const std::vector<std::string>& CEffect::getDependencies () const {
     return this->m_dependencies;
 }
 
-const std::vector<Images::CMaterial*>& CEffect::getMaterials () const {
+const std::vector<const Images::CMaterial*>& CEffect::getMaterials () const {
     return this->m_materials;
 }
 
-const std::vector<Effects::CFBO*>& CEffect::getFbos () const {
+const std::vector<const Effects::CFBO*>& CEffect::getFbos () const {
     return this->m_fbos;
 }
 
-bool CEffect::isVisible () const {
-    return this->m_visible->processValue (this->m_object->getScene ()->getProject ().getProperties ());
+const Core::CProject& CEffect::getProject () const {
+    return this->m_project;
 }
 
-Effects::CFBO* CEffect::findFBO (const std::string& name) {
+bool CEffect::isVisible () const {
+    return this->m_visible->processValue (this->getProject ().getProperties ());
+}
+
+const Effects::CFBO* CEffect::findFBO (const std::string& name) {
     for (const auto& cur : this->m_fbos)
         if (cur->getName () == name)
             return cur;
 
     sLog.exception ("cannot find fbo ", name);
-}
-
-void CEffect::insertDependency (const std::string& dep) {
-    this->m_dependencies.push_back (dep);
-}
-
-void CEffect::insertMaterial (Images::CMaterial* material) {
-    this->m_materials.push_back (material);
-}
-
-void CEffect::insertFBO (Effects::CFBO* fbo) {
-    this->m_fbos.push_back (fbo);
 }

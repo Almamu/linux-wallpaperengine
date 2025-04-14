@@ -6,7 +6,6 @@
 #include "WallpaperEngine/Core/Objects/CSound.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
-#include <utility>
 
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Logging/CLog.h"
@@ -15,48 +14,57 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CObject::CObject (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, std::string type,
-                  CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles) :
-    m_type (std::move (type)),
+CObject::CObject (
+    const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
+    const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, std::vector<int> dependencies
+) :
+    m_type (type),
     m_visible (visible),
     m_id (id),
-    m_name (std::move (name)),
+    m_name (name),
     m_origin (origin),
     m_scale (scale),
     m_angles (angles),
-    m_scene (scene) {}
+    m_scene (scene),
+    m_dependencies (dependencies) {}
 
-CObject* CObject::fromJSON (json data, Wallpapers::CScene* scene, CContainer* container) {
-    std::string json = data.dump ();
+const CObject* CObject::fromJSON (
+    const json& data, const Wallpapers::CScene* scene, const CContainer* container
+) {
+    const auto id = jsonFindRequired <int> (data, "id", "Objects must have id");
+    const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, "visible", true);
+    const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, "origin", {0, 0, 0});
+    const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, "scale", {1, 1, 1});
+    const auto angles_val = jsonFindDefault<glm::vec3> (data, "angles", glm::vec3 (0, 0, 0));
+    const auto name = jsonFindRequired <std::string> (data, "name", "Objects must have name");
+    const auto effects_it = data.find ("effects");
+    const auto dependencies_it = data.find ("dependencies");
 
-    auto id_it = jsonFindRequired (data, "id", "Objects must have id");
-    auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, "visible", true);
-    auto origin = jsonFindUserConfig<CUserSettingVector3> (data, "origin", {0, 0, 0});
-    auto scale = jsonFindUserConfig<CUserSettingVector3> (data, "scale", {1, 1, 1});
-    auto angles_val = jsonFindDefault<std::string> (data, "angles", "0.0 0.0 0.0");
-    auto name_it = jsonFindRequired (data, "name", "Objects must have name");
-    auto effects_it = data.find ("effects");
-    auto dependencies_it = data.find ("dependencies");
+    const auto image_it = data.find ("image");
+    const auto sound_it = data.find ("sound");
+    const auto particle_it = data.find ("particle");
+    const auto text_it = data.find ("text");
+    const auto light_it = data.find ("light");
 
-    auto image_it = data.find ("image");
-    auto sound_it = data.find ("sound");
-    auto particle_it = data.find ("particle");
-    auto text_it = data.find ("text");
-    auto light_it = data.find ("light");
+    std::vector<int> dependencies;
+    std::vector<const Objects::CEffect*> effects;
 
-    CObject* object;
+    const CObject* object;
+
+    if (dependencies_it != data.end () && dependencies_it->is_array ())
+        for (const auto& cur : *dependencies_it)
+            dependencies.push_back (cur);
 
     if (image_it != data.end () && !image_it->is_null ()) {
-        object = Objects::CImage::fromJSON (scene, data, container, visible, *id_it, *name_it, origin, scale,
-                                            WallpaperEngine::Core::aToVector3 (angles_val));
+        object = Objects::CImage::fromJSON (
+            scene, data, container, visible, id, name, origin, scale, angles_val, effects_it, dependencies);
     } else if (sound_it != data.end () && !sound_it->is_null ()) {
-        object = Objects::CSound::fromJSON (scene, data, visible, *id_it, *name_it, origin, scale,
-                                            WallpaperEngine::Core::aToVector3 (angles_val));
+        object = Objects::CSound::fromJSON (scene, data, visible, id, name, origin, scale, angles_val, dependencies);
     } else if (particle_it != data.end () && !particle_it->is_null ()) {
         /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
         try {
-            object = Objects::CParticle::fromFile (scene, particle_it->get<std::string> (), container, visible, *id_it,
-                                                   *name_it, origin, scale);
+            object = Objects::CParticle::fromFile (
+                scene, particle_it->get<std::string> (), container, visible, id, name, origin, scale, dependencies);
         } catch (std::runtime_error&) {
             return nullptr;
         }
@@ -67,32 +75,17 @@ CObject* CObject::fromJSON (json data, Wallpapers::CScene* scene, CContainer* co
         /// TODO: XXXHACK -- TO REMOVE WHEN LIGHT SUPPORT IS IMPLEMENTED
         return nullptr;
     } else {
-        sLog.exception ("Unknown object type detected: ", *name_it);
+        sLog.exception ("Unknown object type detected: ", name);
     }
-
-    if (effects_it != data.end () && effects_it->is_array ()) {
-        for (auto& cur : *effects_it) {
-            auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, "visible", true);
-
-            if (!effectVisible->processValue (scene->getProject ().getProperties ()))
-                continue;
-
-            object->insertEffect (Objects::CEffect::fromJSON (cur, effectVisible, object, container));
-        }
-    }
-
-    if (dependencies_it != data.end () && dependencies_it->is_array ())
-        for (const auto& cur : *dependencies_it)
-            object->insertDependency (cur);
 
     return object;
 }
 
-glm::vec3 CObject::getOrigin () const {
+const glm::vec3& CObject::getOrigin () const {
     return this->m_origin->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
-glm::vec3 CObject::getScale () const {
+const glm::vec3& CObject::getScale () const {
     return this->m_scale->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
@@ -104,10 +97,6 @@ const std::string& CObject::getName () const {
     return this->m_name;
 }
 
-const std::vector<Objects::CEffect*>& CObject::getEffects () const {
-    return this->m_effects;
-}
-
 const std::vector<int>& CObject::getDependencies () const {
     return this->m_dependencies;
 }
@@ -117,18 +106,10 @@ bool CObject::isVisible () const {
     return this->m_visible->processValue (this->getScene ()->getProject ().getProperties ());
 }
 
-Wallpapers::CScene* CObject::getScene () const {
+const Wallpapers::CScene* CObject::getScene () const {
     return this->m_scene;
 }
 
 int CObject::getId () const {
     return this->m_id;
-}
-
-void CObject::insertEffect (Objects::CEffect* effect) {
-    this->m_effects.push_back (effect);
-}
-
-void CObject::insertDependency (int dependency) {
-    this->m_dependencies.push_back (dependency);
 }

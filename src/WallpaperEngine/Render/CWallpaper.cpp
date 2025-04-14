@@ -10,7 +10,7 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
+CWallpaper::CWallpaper (const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
                         CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
@@ -49,11 +49,11 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
 
 CWallpaper::~CWallpaper () = default;
 
-CContainer* CWallpaper::getContainer () const {
+const CContainer* CWallpaper::getContainer () const {
     return this->m_wallpaperData->getProject ().getContainer ();
 }
 
-WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const {
+const WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const {
     return this->m_wallpaperData;
 }
 
@@ -281,7 +281,7 @@ CFBO* CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context,
+CWallpaper* CWallpaper::fromWallpaper (const Core::CWallpaper* wallpaper, CRenderContext& context,
                                        CAudioContext& audioContext, WebBrowser::CWebBrowserContext& browserContext,
                                        const CWallpaperState::TextureUVsScaling& scalingMode) {
     if (wallpaper->is<Core::Wallpapers::CScene> ())

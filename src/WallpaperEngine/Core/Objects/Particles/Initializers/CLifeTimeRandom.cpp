@@ -2,11 +2,12 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CLifeTimeRandom* CLifeTimeRandom::fromJSON (json data, uint32_t id) {
-    const auto min_it = jsonFindRequired (data, "min", "Lifetimerandom initializer must have a minimum value");
-    const auto max_it = jsonFindRequired (data, "max", "Lifetimerandom initializer must have a maximum value");
-
-    return new CLifeTimeRandom (id, *min_it, *max_it);
+const CLifeTimeRandom* CLifeTimeRandom::fromJSON (const json& data, uint32_t id) {
+    return new CLifeTimeRandom (
+        id,
+        jsonFindRequired <uint32_t> (data, "min", "Lifetimerandom initializer must have a minimum value"),
+        jsonFindRequired <uint32_t> (data, "max", "Lifetimerandom initializer must have a maximum value")
+    );
 }
 
 CLifeTimeRandom::CLifeTimeRandom (uint32_t id, uint32_t min, uint32_t max) :

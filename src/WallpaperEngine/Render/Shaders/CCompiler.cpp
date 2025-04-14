@@ -24,9 +24,11 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders {
-CCompiler::CCompiler (CContainer* container, std::string filename, CGLSLContext::ShaderType type, std::map<std::string, int>* combos,
-                    std::map<std::string, bool>* foundCombos, const std::vector<std::string>& textures,
-                    const std::map<std::string, CShaderConstant*>& constants) :
+CCompiler::CCompiler (
+    const CContainer* container, std::string filename, CGLSLContext::ShaderType type,
+    std::map<std::string, int> combos, std::map<std::string, bool>* foundCombos,
+    const std::map<int, std::string>& textures, const std::map<std::string, const CShaderConstant*>& constants
+) :
     m_file (std::move (filename)),
     m_type (type),
     m_combos (combos),
@@ -42,7 +44,7 @@ CCompiler::CCompiler (CContainer* container, std::string filename, CGLSLContext:
         sLog.exception ("Include shaders should never be compiled, they're part of a bigger shader: ", this->m_file);
 
     // clone the combos into the baseCombos to keep track of values that must be embedded no matter what
-    for (const auto& [name, value] : *this->m_combos)
+    for (const auto& [name, value] : this->m_combos)
         this->m_baseCombos.insert (std::make_pair (name, value));
 }
 
@@ -138,9 +140,9 @@ void CCompiler::precompile () {
     // add all the defines we have for now
     for (const auto& [name, value] : *this->m_foundCombos) {
         // find the right value for the combo in the combos map
-        auto combo = this->m_combos->find (name);
+        auto combo = this->m_combos.find (name);
 
-        if (combo == this->m_combos->end ())
+        if (combo == this->m_combos.end ())
             continue;
 
         precompile += "#define " + name + " " + std::to_string (combo->second) + "\n";
@@ -257,25 +259,25 @@ void CCompiler::parseComboConfiguration (const std::string& content, int default
     const auto defvalue = data.find ("default");
 
     // check the combos
-    const auto entry = this->m_combos->find (combo->get<std::string> ());
+    const auto entry = this->m_combos.find (combo->get<std::string> ());
 
     // add the combo to the found list
     this->m_foundCombos->insert (std::make_pair (*combo, true));
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
-    if (entry == this->m_combos->end ()) {
+    if (entry == this->m_combos.end ()) {
         if (type != data.end ())
             sLog.error ("Resorting to default value as type ", *type, " is unknown");
 
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_combos->insert (std::make_pair (*combo, (int) defaultValue));
+            this->m_combos.insert (std::make_pair (*combo, (int) defaultValue));
         } else if (defvalue->is_number_float ()) {
             sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
         } else if (defvalue->is_number_integer ()) {
-            this->m_combos->insert (std::make_pair (*combo, defvalue->get<int> ()));
+            this->m_combos.insert (std::make_pair (*combo, defvalue->get<int> ()));
         } else if (defvalue->is_string ()) {
             sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
         } else {
@@ -349,10 +351,11 @@ void CCompiler::parseParameterConfiguration (const std::string& type, const std:
 
         if (combo != data.end ()) {
             // if the texture exists (and is not null), add to the combo
-            if (this->m_passTextures.size () > index &&
-                (!this->m_passTextures.at (index).empty () || textureName != data.end ())) {
+            auto texture = this->m_textures.find (index);
+
+            if (texture != this->m_textures.end () && (texture->second.empty () || textureName != data.end ())) {
                 // add the new combo to the list
-                this->m_combos->insert (std::make_pair (*combo, 1));
+                this->m_combos.insert (std::make_pair (*combo, 1));
 
                 // textures linked to combos need to be tracked too
                 if (this->m_foundCombos->find (*combo) == this->m_foundCombos->end ())
@@ -390,7 +393,7 @@ const std::vector<Variables::CShaderVariable*>& CCompiler::getParameters () cons
     return this->m_parameters;
 }
 
-std::map<std::string, int>* CCompiler::getCombos () const {
+const std::map<std::string, int>& CCompiler::getCombos () const {
     return this->m_combos;
 }
 

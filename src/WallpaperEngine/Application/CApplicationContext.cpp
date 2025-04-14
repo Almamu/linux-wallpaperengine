@@ -296,7 +296,7 @@ void CApplicationContext::validateAssets () {
     }
 }
 
-void CApplicationContext::validateScreenshot () {
+void CApplicationContext::validateScreenshot () const {
     if (!this->settings.screenshot.take)
         return;
 

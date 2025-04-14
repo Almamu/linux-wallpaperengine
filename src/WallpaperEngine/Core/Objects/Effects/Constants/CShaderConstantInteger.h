@@ -15,7 +15,7 @@ class CShaderConstantInteger : public CShaderConstant {
     /**
      * @return A pointer to the actual value of the constant
      */
-    int32_t* getValue ();
+    [[nodiscard]] const int32_t* getValue () const;
 
     /**
      * Type string indicator
@@ -24,6 +24,6 @@ class CShaderConstantInteger : public CShaderConstant {
 
   protected:
     /** The constant's value */
-    int32_t m_value;
+    const int32_t m_value;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

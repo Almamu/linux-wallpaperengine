@@ -10,10 +10,10 @@
 namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
-    CVideo (Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+    CVideo (const Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
             const CWallpaperState::TextureUVsScaling& scalingMode);
 
-    Core::Wallpapers::CVideo* getVideo ();
+    const Core::Wallpapers::CVideo* getVideo () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;

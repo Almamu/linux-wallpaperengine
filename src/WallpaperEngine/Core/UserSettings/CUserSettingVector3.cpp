@@ -10,16 +10,17 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingVector3::CUserSettingVector3 (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source,
-                                          std::string expectedValue) :
+CUserSettingVector3::CUserSettingVector3 (
+    bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source, std::string expectedValue
+) :
     CUserSettingValue (Type),
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_source (std::move (source)),
-    m_expectedValue (std::move (expectedValue)) {}
+    m_source (source),
+    m_expectedValue (expectedValue) {}
 
-CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data) {
+const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& data) {
     bool hasCondition = false;
     bool hasSource = false;
     glm::vec3 defaultValue;
@@ -29,17 +30,16 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data) {
     if (data.is_object ()) {
         hasSource = true;
         auto userIt = data.find ("user");
-        defaultValue = WallpaperEngine::Core::aToColorf (
-            jsonFindDefault<std::string> (data, "value", "").c_str ()); // is this default value right?
+        defaultValue = jsonFindDefault (data, "value", glm::vec3()); // is this default value right?
 
         if (userIt != data.end ()) {
             if (userIt->is_string ()) {
                 source = *userIt;
             } else {
                 hasCondition = true;
-                source = *jsonFindRequired (userIt, "name", "Name for conditional setting must be present");
+                source = jsonFindRequired <std::string> (userIt, "name", "Name for conditional setting must be present");
                 expectedValue =
-                    *jsonFindRequired (userIt, "condition", "Condition for conditional setting must be present");
+                    jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
         } else {
             sLog.error ("Vector property doesn't have user member, this could mean an scripted value");
@@ -54,15 +54,15 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data) {
     return new CUserSettingVector3 (hasCondition, hasSource, defaultValue, source, expectedValue);
 }
 
-CUserSettingVector3* CUserSettingVector3::fromScalar (glm::vec3 value) {
+const CUserSettingVector3* CUserSettingVector3::fromScalar (const glm::vec3 value) {
     return new CUserSettingVector3 (false, false, value, "", "");
 }
 
-glm::vec3 CUserSettingVector3::getDefaultValue () const {
+const glm::vec3& CUserSettingVector3::getDefaultValue () const {
     return this->m_default;
 }
 
-glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProperty*>& properties) {
+const glm::vec3& CUserSettingVector3::processValue (const std::vector<const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 

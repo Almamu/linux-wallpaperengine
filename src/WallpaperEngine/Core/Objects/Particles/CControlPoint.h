@@ -10,7 +10,7 @@ using json = nlohmann::json;
  */
 class CControlPoint {
   public:
-    static CControlPoint* fromJSON (json data);
+    static const CControlPoint* fromJSON (const json& data);
 
     /**
      * @return The id of the controlpoint used for ordering purposes
@@ -26,23 +26,14 @@ class CControlPoint {
     [[nodiscard]] uint32_t getFlags () const;
 
   protected:
-    explicit CControlPoint (uint32_t id, uint32_t flags = 0);
-
-    /**
-     * @param offset The new offset
-     */
-    void setOffset (const glm::vec3& offset);
-    /**
-     * @param flags The new flags
-     */
-    void setFlags (uint32_t flags);
+    explicit CControlPoint (uint32_t id, uint32_t flags, glm::vec3 offset);
 
   private:
     /** ID used for ordering purposes */
-    uint32_t m_id;
+    const uint32_t m_id;
     /** Flags that control how it behaves */
-    uint32_t m_flags;
+    const uint32_t m_flags;
     /** The offset from starting position */
-    glm::vec3 m_offset;
+    const glm::vec3 m_offset;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles

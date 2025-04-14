@@ -16,7 +16,7 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
 
-CScene::CScene (Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+CScene::CScene (const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (scene, Type, context, audioContext, scalingMode),
     m_mousePosition (),
@@ -154,7 +154,7 @@ CScene::CScene (Core::Wallpapers::CScene* scene, CRenderContext& context, CAudio
     }
 }
 
-Render::CObject* CScene::createObject (Core::CObject* object) {
+Render::CObject* CScene::createObject (const Core::CObject* object) {
     Render::CObject* renderObject = nullptr;
 
     // ensure the item is not loaded already
@@ -241,7 +241,7 @@ void CScene::updateMouse (glm::ivec4 viewport) {
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-Core::Wallpapers::CScene* CScene::getScene () const {
+const Core::Wallpapers::CScene* CScene::getScene () const {
     return this->getWallpaperData ()->as<Core::Wallpapers::CScene> ();
 }
 

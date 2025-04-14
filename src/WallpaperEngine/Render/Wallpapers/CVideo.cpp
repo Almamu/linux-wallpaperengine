@@ -11,7 +11,7 @@ void* get_proc_address (void* ctx, const char* name) {
     return static_cast<CVideo*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
-CVideo::CVideo (Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+CVideo::CVideo (const Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
                 const CWallpaperState::TextureUVsScaling& scalingMode) :
     CWallpaper (video, Type, context, audioContext, scalingMode),
     m_mpvGl (nullptr),
@@ -119,7 +119,7 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-Core::Wallpapers::CVideo* CVideo::getVideo () {
+const Core::Wallpapers::CVideo* CVideo::getVideo () const {
     return this->getWallpaperData ()->as<Core::Wallpapers::CVideo> ();
 }
 

@@ -2,9 +2,11 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantVector4::CShaderConstantVector4 (glm::vec4 value) : CShaderConstant (Type), m_value (value) {}
+CShaderConstantVector4::CShaderConstantVector4 (glm::vec4 value) :
+    CShaderConstant (Type),
+    m_value (value) {}
 
-glm::vec4* CShaderConstantVector4::getValue () {
+const glm::vec4* CShaderConstantVector4::getValue () const {
     return &this->m_value;
 }
 

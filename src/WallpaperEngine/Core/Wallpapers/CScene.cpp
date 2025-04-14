@@ -8,12 +8,14 @@
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Wallpapers;
 
-CScene::CScene (CProject& project, CContainer* container, Scenes::CCamera* camera, glm::vec3 ambientColor,
-                CUserSettingBoolean* bloom, CUserSettingFloat* bloomStrength, CUserSettingFloat* bloomThreshold,
-                bool cameraFade, bool cameraParallax, double cameraParallaxAmount, double cameraParallaxDelay,
-                double cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, double cameraShakeAmplitude,
-                double cameraShakeRoughness, double cameraShakeSpeed, CUserSettingVector3* clearColor,
-                Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor) :
+CScene::CScene (
+    const CProject& project, const CContainer* container, const Scenes::CCamera* camera, glm::vec3 ambientColor,
+    const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold,
+    bool cameraFade, bool cameraParallax, double cameraParallaxAmount, double cameraParallaxDelay,
+    double cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, double cameraShakeAmplitude,
+    double cameraShakeRoughness, double cameraShakeSpeed, const CUserSettingVector3* clearColor,
+    const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor
+) :
     CWallpaper (Type, project),
     m_container (container),
     m_camera (camera),
@@ -35,41 +37,36 @@ CScene::CScene (CProject& project, CContainer* container, Scenes::CCamera* camer
     m_orthogonalProjection (orthogonalProjection),
     m_skylightColor (skylightColor) {}
 
-CScene* CScene::fromFile (const std::string& filename, CProject& project, CContainer* container) {
+const CScene* CScene::fromFile (std::string filename, const CProject& project, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
 
-    const auto camera_it = jsonFindRequired (content, "camera", "Scenes must have a defined camera");
     const auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
     const auto objects_it = jsonFindRequired (content, "objects", "Scenes must have a list of objects to display");
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA
     // PARALLAX ARE PRESENT
-    const auto ambientcolor = jsonFindDefault<std::string> (*general_it, "ambientcolor", "0 0 0");
-    const auto bloom = jsonFindUserConfig<CUserSettingBoolean> (*general_it, "bloom", false);
-    const auto bloomstrength = jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomstrength", 0.0);
-    const auto bloomthreshold = jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomthreshold", 0.0);
-    const auto camerafade = jsonFindDefault<bool> (*general_it, "camerafade", false);
-    const auto cameraparallax = jsonFindDefault<bool> (*general_it, "cameraparallax", true);
-    const auto cameraparallaxamount = jsonFindDefault<double> (*general_it, "cameraparallaxamount", 1.0f);
-    const auto cameraparallaxdelay = jsonFindDefault<double> (*general_it, "cameraparallaxdelay", 0.0f);
-    const auto cameraparallaxmouseinfluence =
-        jsonFindDefault<double> (*general_it, "cameraparallaxmouseinfluence", 1.0f);
-    const auto camerapreview = jsonFindDefault<bool> (*general_it, "camerapreview", false);
-    const auto camerashake = jsonFindDefault<bool> (*general_it, "camerashake", false);
-    const auto camerashakeamplitude = jsonFindDefault<double> (*general_it, "camerashakeamplitude", 0.0f);
-    const auto camerashakeroughness = jsonFindDefault<double> (*general_it, "camerashakeroughness", 0.0f);
-    const auto camerashakespeed = jsonFindDefault<double> (*general_it, "camerashakespeed", 0.0f);
-    const auto clearcolor = jsonFindUserConfig<CUserSettingVector3> (*general_it, "clearcolor", {1, 1, 1});
-    const auto orthogonalprojection_it =
-        jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info");
-    const auto skylightcolor = jsonFindDefault<std::string> (*general_it, "skylightcolor", "0 0 0");
 
     auto* scene = new CScene (
-        project, container, Scenes::CCamera::fromJSON (*camera_it), WallpaperEngine::Core::aToColorf (ambientcolor),
-        bloom, bloomstrength, bloomthreshold, camerafade, cameraparallax, cameraparallaxamount, cameraparallaxdelay,
-        cameraparallaxmouseinfluence, camerapreview, camerashake, camerashakeamplitude, camerashakeroughness,
-        camerashakespeed, clearcolor, Scenes::CProjection::fromJSON (*orthogonalprojection_it),
-        WallpaperEngine::Core::aToColorf (skylightcolor));
+        project, container,
+        Scenes::CCamera::fromJSON (jsonFindRequired (content, "camera", "Scenes must have a defined camera")),
+        jsonFindDefault<glm::vec3> (*general_it, "ambientcolor", glm::vec3 (0, 0, 0)),
+        jsonFindUserConfig<CUserSettingBoolean> (*general_it, "bloom", false),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomstrength", 0.0),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomthreshold", 0.0),
+        jsonFindDefault<bool> (*general_it, "camerafade", false),
+        jsonFindDefault<bool> (*general_it, "cameraparallax", true),
+        jsonFindDefault<double> (*general_it, "cameraparallaxamount", 1.0f),
+        jsonFindDefault<double> (*general_it, "cameraparallaxdelay", 0.0f),
+        jsonFindDefault<double> (*general_it, "cameraparallaxmouseinfluence", 1.0f),
+        jsonFindDefault<bool> (*general_it, "camerapreview", false),
+        jsonFindDefault<bool> (*general_it, "camerashake", false),
+        jsonFindDefault<double> (*general_it, "camerashakeamplitude", 0.0f),
+        jsonFindDefault<double> (*general_it, "camerashakeroughness", 0.0f),
+        jsonFindDefault<double> (*general_it, "camerashakespeed", 0.0f),
+        jsonFindUserConfig<CUserSettingVector3> (*general_it, "clearcolor", {1, 1, 1}),
+        Scenes::CProjection::fromJSON (jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info")),
+        jsonFindDefault<glm::vec3> (*general_it, "skylightcolor", glm::vec3 (0, 0, 0))
+    );
 
     for (const auto& cur : *objects_it)
         scene->insertObject (CObject::fromJSON (cur, scene, container));
@@ -77,23 +74,23 @@ CScene* CScene::fromFile (const std::string& filename, CProject& project, CConta
     return scene;
 }
 
-const std::map<uint32_t, CObject*>& CScene::getObjects () const {
+const std::map<uint32_t, const CObject*>& CScene::getObjects () const {
     return this->m_objects;
 }
 
-const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const {
+const std::vector<const CObject*>& CScene::getObjectsByRenderOrder () const {
     return this->m_objectsByRenderOrder;
 }
 
-void CScene::insertObject (CObject* object) {
+void CScene::insertObject (const CObject* object) {
     /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
     if (object != nullptr) {
-        this->m_objects.insert (std::make_pair (object->getId (), object));
+        this->m_objects.insert (std::pair (object->getId (), object));
         this->m_objectsByRenderOrder.emplace_back (object);
     }
 }
 
-CContainer* CScene::getContainer () {
+const CContainer* CScene::getContainer () const {
     return this->m_container;
 }
 
@@ -105,7 +102,7 @@ const glm::vec3& CScene::getAmbientColor () const {
     return this->m_ambientColor;
 }
 
-const bool CScene::isBloom () const {
+bool CScene::isBloom () const {
     return this->m_bloom->processValue (this->getProject ().getProperties ());
 }
 
@@ -117,51 +114,51 @@ double CScene::getBloomThreshold () const {
     return this->m_bloomThreshold->processValue (this->getProject ().getProperties ());
 }
 
-const bool CScene::isCameraFade () const {
+bool CScene::isCameraFade () const {
     return this->m_cameraFade;
 }
 
-const bool CScene::isCameraParallax () const {
+bool CScene::isCameraParallax () const {
     return this->m_cameraParallax;
 }
 
-const double CScene::getCameraParallaxAmount () const {
+double CScene::getCameraParallaxAmount () const {
     return this->m_cameraParallaxAmount;
 }
 
-const double CScene::getCameraParallaxDelay () const {
+double CScene::getCameraParallaxDelay () const {
     return this->m_cameraParallaxDelay;
 }
 
-const double CScene::getCameraParallaxMouseInfluence () const {
+double CScene::getCameraParallaxMouseInfluence () const {
     return this->m_cameraParallaxMouseInfluence;
 }
 
-const bool CScene::isCameraPreview () const {
+bool CScene::isCameraPreview () const {
     return this->m_cameraPreview;
 }
 
-const bool CScene::isCameraShake () const {
+bool CScene::isCameraShake () const {
     return this->m_cameraShake;
 }
 
-const double CScene::getCameraShakeAmplitude () const {
+double CScene::getCameraShakeAmplitude () const {
     return this->m_cameraShakeAmplitude;
 }
 
-const double CScene::getCameraShakeRoughness () const {
+double CScene::getCameraShakeRoughness () const {
     return this->m_cameraShakeRoughness;
 }
 
-const double CScene::getCameraShakeSpeed () const {
+double CScene::getCameraShakeSpeed () const {
     return this->m_cameraShakeSpeed;
 }
 
-glm::vec3 CScene::getClearColor () const {
+const glm::vec3& CScene::getClearColor () const {
     return this->m_clearColor->processValue (this->getProject ().getProperties ());
 }
 
-Scenes::CProjection* CScene::getOrthogonalProjection () const {
+const Scenes::CProjection* CScene::getOrthogonalProjection () const {
     return this->m_orthogonalProjection;
 }
 

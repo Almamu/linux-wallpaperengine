@@ -19,9 +19,10 @@ class CSound : public CObject {
     friend class CObject;
 
   public:
-    static CObject* fromJSON (Wallpapers::CScene* scene, json data, CUserSettingBoolean* visible, int id,
-                              const std::string& name, CUserSettingVector3* origin, CUserSettingVector3* scale,
-                              const glm::vec3& angles);
+    static const CObject* fromJSON (
+        const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible,
+        int id, std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
+        std::vector<int> dependencies);
 
     /**
      * @return The list of sounds to play
@@ -33,13 +34,10 @@ class CSound : public CObject {
     [[nodiscard]] bool isRepeat () const;
 
   protected:
-    CSound (Wallpapers::CScene* scene, CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
-            CUserSettingVector3* scale, const glm::vec3& angles, bool repeat);
-
-    /**
-     * @param filename The sound to add
-     */
-    void insertSound (const std::string& filename);
+    CSound (
+        const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
+        const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, bool repeat,
+        std::vector<std::string> sounds, std::vector<int> dependencies);
 
     /**
      * Type value used to differentiate the different types of objects in a background

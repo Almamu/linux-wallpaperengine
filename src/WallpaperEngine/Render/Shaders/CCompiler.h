@@ -36,9 +36,10 @@ class CCompiler {
      * @param constants Default values for shader variables
      * @param recursive Whether the compiler should add base definitions or not
      */
-    CCompiler (CContainer* container, std::string filename, CGLSLContext::ShaderType type, std::map<std::string, int>* combos,
-              std::map<std::string, bool>* foundCombos, const std::vector<std::string>& textures,
-              const std::map<std::string, CShaderConstant*>& constants);
+    CCompiler (
+        const CContainer* container, std::string filename, CGLSLContext::ShaderType type,
+        std::map<std::string, int> combos, std::map<std::string, bool>* foundCombos,
+        const std::map<int, std::string>& textures, const std::map<std::string, const CShaderConstant*>& constants);
     /**
      * Pre-processes the shader to detect variables, process includes and other small things WallpaperEngine
      * does to shaders before actually using them
@@ -62,7 +63,7 @@ class CCompiler {
     /**
      * @return The list of combos available for this shader after compilation
      */
-    [[nodiscard]] std::map<std::string, int>* getCombos () const;
+    [[nodiscard]] const std::map<std::string, int>& getCombos () const;
     /**
      * @return The list of textures inferred from the shader's code
      */
@@ -120,7 +121,7 @@ class CCompiler {
     /**
      * The combos the shader should be generated with
      */
-    std::map<std::string, int>* m_combos;
+    std::map<std::string, int> m_combos;
 
     /**
      * Combos that come from the pass' chain that should be added
@@ -135,15 +136,15 @@ class CCompiler {
     /**
      * The list of textures the pass knows about
      */
-    const std::vector<std::string> m_passTextures;
+    const std::map<int, std::string> m_passTextures;
     /**
      * The shader constants with values for variables inside the shader
      */
-    const std::map<std::string, CShaderConstant*>& m_constants;
+    const std::map<std::string, const CShaderConstant*>& m_constants;
     /**
      * The container to load files from
      */
-    CContainer* m_container;
+    const CContainer* m_container;
     /**
      * List of textures that the shader expects (inferred from sampler2D and it's JSON data)
      */

@@ -13,9 +13,9 @@ extern "C" {
 namespace WallpaperEngine::Core::Wallpapers {
 class CVideo : public CWallpaper {
   public:
-    explicit CVideo (std::string filename, CProject& project);
+    CVideo (std::string filename, const CProject& project);
 
-    const std::string& getFilename ();
+    const std::string& getFilename () const;
 
   protected:
     friend class CWallpaper;

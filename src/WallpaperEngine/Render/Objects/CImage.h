@@ -29,7 +29,7 @@ class CImage final : public CObject {
     friend CObject;
 
   public:
-    CImage (Wallpapers::CScene* scene, Core::Objects::CImage* image);
+    CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image);
 
     void setup ();
     void render () override;
@@ -84,7 +84,7 @@ class CImage final : public CObject {
     CFBO* m_currentMainFBO;
     CFBO* m_currentSubFBO;
 
-    Core::Objects::CImage* m_image;
+    const Core::Objects::CImage* m_image;
 
     std::vector<CEffect*> m_effects;
     Effects::CMaterial* m_material;

@@ -16,7 +16,7 @@ class CShaderConstantVector4 : public CShaderConstant {
     /**
      * @return A pointer to the actual value of the constant
      */
-    glm::vec4* getValue ();
+    [[nodiscard]] const glm::vec4* getValue () const;
 
     /**
      * Type string indicator
@@ -25,6 +25,6 @@ class CShaderConstantVector4 : public CShaderConstant {
 
   protected:
     /** The constant's value */
-    glm::vec4 m_value;
+    const glm::vec4 m_value;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

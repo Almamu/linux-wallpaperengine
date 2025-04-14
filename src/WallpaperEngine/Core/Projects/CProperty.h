@@ -16,7 +16,7 @@ class CPropertyColor;
 class CProperty {
   public:
     virtual ~CProperty () = default;
-    static CProperty* fromJSON (json data, const std::string& name);
+    static const CProperty* fromJSON (const json& data, const std::string& name);
 
     template <class T> const T* as () const {
         assert (is<T> ());
@@ -28,7 +28,7 @@ class CProperty {
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () {
+    template <class T> bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -41,7 +41,7 @@ class CProperty {
      *
      * @param value New value for the property
      */
-    virtual void update (const std::string& value) = 0;
+    virtual void update (const std::string& value) const = 0;
 
     /**
      * @return Name of the property
@@ -60,10 +60,10 @@ class CProperty {
     CProperty (std::string name, std::string type, std::string text);
 
     /** Type of property */
-    std::string m_type;
+    const std::string m_type;
     /** Name of the property */
-    std::string m_name;
+    const std::string m_name;
     /** Description of the property for the user */
-    std::string m_text;
+    mutable std::string m_text;
 };
 } // namespace WallpaperEngine::Core::Projects

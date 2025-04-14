@@ -1,59 +1,74 @@
 #include "CMaterial.h"
 
+#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include <nlohmann/json.hpp>
-#include <utility>
 
 using namespace WallpaperEngine::Assets;
 
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::Objects::Images;
 
-CMaterial::CMaterial (std::string name) : m_name (std::move (name)) {}
+CMaterial::CMaterial (
+    std::string name, std::map<int, const Effects::CBind*> textureBindings,
+    std::vector<const Materials::CPass*> passes
+) :
+    m_name (name),
+    m_textureBindings (textureBindings),
+    m_passes (passes) {}
+CMaterial::CMaterial (
+    std::string name, std::string target,
+    std::map<int, const Effects::CBind*> textureBindings, std::vector<const Materials::CPass*> passes
+) :
+    m_name (name),
+    m_target (target),
+    m_textureBindings (textureBindings),
+    m_passes (passes) {}
 
-CMaterial* CMaterial::fromFile (const std::string& filename, CContainer* container) {
-    return fromJSON (filename, json::parse (container->readFileAsString (filename)));
+const CMaterial* CMaterial::fromFile (
+    const std::filesystem::path& filename, const CContainer* container,
+    std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
+) {
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)), textureBindings, overrides);
 }
 
-CMaterial* CMaterial::fromFile (const std::string& filename, const std::string& target, CContainer* container) {
-    return fromJSON (filename, json::parse (container->readFileAsString (filename)), target);
+const CMaterial* CMaterial::fromFile (
+    const std::filesystem::path& filename, const std::string& target,
+    const CContainer* container, std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
+) {
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)), target, textureBindings, overrides);
 }
 
-CMaterial* CMaterial::fromJSON (const std::string& name, json data, const std::string& target) {
-    CMaterial* material = fromJSON (name, std::move (data));
-
-    material->setTarget (target);
-
-    return material;
-}
-
-CMaterial* CMaterial::fromJSON (const std::string& name, json data) {
+const CMaterial* CMaterial::fromJSON (
+    const std::string& name, const json& data, const std::string& target,
+    std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
+) {
     const auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
-
-    auto* material = new CMaterial (name);
+    std::vector<const Materials::CPass*> passes;
 
     for (const auto& cur : (*passes_it))
-        material->insertPass (Materials::CPass::fromJSON (cur));
+        passes.push_back (Materials::CPass::fromJSON (cur, overrides));
 
-    return material;
+    return new CMaterial (name, target, textureBindings, passes);
 }
 
-void CMaterial::insertPass (Materials::CPass* pass) {
-    this->m_passes.push_back (pass);
+const CMaterial* CMaterial::fromJSON (
+    const std::string& name, const json& data, std::map<int, const Effects::CBind*> textureBindings,
+    const OverrideInfo* overrides
+) {
+    const auto passes_it = jsonFindRequired (data, "passes", "Material must have at least one pass");
+    std::vector<const Materials::CPass*> passes;
+
+    for (const auto& cur : (*passes_it))
+        passes.push_back (Materials::CPass::fromJSON (cur, overrides));
+
+    return new CMaterial (name, textureBindings, passes);
 }
 
-void CMaterial::insertTextureBind (Effects::CBind* bind) {
-    this->m_textureBindings.insert (std::make_pair (bind->getIndex (), bind));
-}
-
-void CMaterial::setTarget (const std::string& target) {
-    this->m_target = target;
-}
-
-const std::vector<Materials::CPass*>& CMaterial::getPasses () const {
+const std::vector<const Materials::CPass*>& CMaterial::getPasses () const {
     return this->m_passes;
 }
 
-const std::map<int, Effects::CBind*>& CMaterial::getTextureBinds () const {
+const std::map<int, const Effects::CBind*>& CMaterial::getTextureBinds () const {
     return this->m_textureBindings;
 }
 

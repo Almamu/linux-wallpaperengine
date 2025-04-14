@@ -4,7 +4,9 @@
 
 using namespace WallpaperEngine::Render::Objects;
 
-CSound::CSound (Wallpapers::CScene* scene, Core::Objects::CSound* sound) : CObject (scene, Type, sound), m_sound (sound) {
+CSound::CSound (Wallpapers::CScene* scene, const Core::Objects::CSound* sound) :
+    CObject (scene, Type, sound),
+    m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled)
         this->load ();
 }

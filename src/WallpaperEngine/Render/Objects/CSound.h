@@ -14,7 +14,7 @@ class CScene;
 namespace WallpaperEngine::Render::Objects {
 class CSound final : public CObject {
   public:
-    CSound (Wallpapers::CScene* scene, Core::Objects::CSound* sound);
+    CSound (Wallpapers::CScene* scene, const Core::Objects::CSound* sound);
     ~CSound () override;
 
     void render () override;
@@ -28,6 +28,6 @@ class CSound final : public CObject {
     std::vector<const uint8_t*> m_soundBuffer;
     std::vector<Audio::CAudioStream*> m_audioStreams;
 
-    Core::Objects::CSound* m_sound;
+    const Core::Objects::CSound* m_sound;
 };
 } // namespace WallpaperEngine::Render::Objects
