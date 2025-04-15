@@ -6,9 +6,9 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Objects::Effects;
 
 CFBO::CFBO (std::string name, float scale, std::string format) :
-    m_name (name),
+    m_name (std::move(name)),
     m_scale (scale),
-    m_format (format) {}
+    m_format (std::move(format)) {}
 
 const CFBO* CFBO::fromJSON (const json& data) {
     return new CFBO (

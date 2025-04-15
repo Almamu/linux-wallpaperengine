@@ -1,5 +1,7 @@
 #include "CImage.h"
 
+#include <utility>
+
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
@@ -16,11 +18,11 @@ CImage::CImage (
     float brightness, uint32_t colorBlendMode, glm::vec2 parallaxDepth, bool fullscreen, bool passthrough,
     bool autosize, std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, name, Type, origin, scale, angles, dependencies),
+    CObject (scene, visible, id, std::move(name), Type, origin, scale, angles, std::move(dependencies)),
     m_size (size),
     m_parallaxDepth (parallaxDepth),
     m_material (material),
-    m_alignment (alignment),
+    m_alignment (std::move(alignment)),
     m_alpha (alpha),
     m_brightness (brightness),
     m_color (color),
@@ -28,7 +30,7 @@ CImage::CImage (
     m_fullscreen (fullscreen),
     m_passthrough (passthrough),
     m_autosize (autosize),
-    m_effects (effects) {}
+    m_effects (std::move(effects)) {}
 
 const WallpaperEngine::Core::CObject* CImage::fromJSON (
     const Wallpapers::CScene* scene, const json& data, const CContainer* container,
@@ -65,7 +67,7 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
         material,
         visible,
         id,
-        name,
+        std::move(name),
         origin,
         scale,
         angles,
@@ -80,7 +82,7 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
         jsonFindDefault<bool> (content, "passthrough", false),
         jsonFindDefault<bool> (content, "autosize", false),
         effects,
-        dependencies
+        std::move(dependencies)
     );
 }
 

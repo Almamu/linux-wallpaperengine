@@ -37,7 +37,7 @@ CScene::CScene (
     m_orthogonalProjection (orthogonalProjection),
     m_skylightColor (skylightColor) {}
 
-const CScene* CScene::fromFile (std::string filename, const CProject& project, const CContainer* container) {
+const CScene* CScene::fromFile (const std::string& filename, const CProject& project, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");

@@ -1,4 +1,6 @@
 #include "CSound.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/CObject.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
@@ -9,13 +11,13 @@ CSound::CSound (
     const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, bool repeat,
     std::vector<std::string> sounds, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, name, Type, origin, scale, angles, dependencies),
+    CObject (scene, visible, id, std::move(name), Type, origin, scale, angles, std::move(dependencies)),
     m_repeat (repeat),
-    m_sounds (sounds) {}
+    m_sounds (std::move(sounds)) {}
 
 const WallpaperEngine::Core::CObject* CSound::fromJSON (
     const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible, int id,
-    std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
+    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
     std::vector<int> dependencies
 ) {
     // TODO: PARSE AUDIO VOLUME
@@ -38,7 +40,7 @@ const WallpaperEngine::Core::CObject* CSound::fromJSON (
         angles,
         jsonFindDefault<std::string> (data, "playbackmode", "") == "loop",
         sounds,
-        dependencies
+        std::move(dependencies)
     );
 }
 

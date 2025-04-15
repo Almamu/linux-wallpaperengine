@@ -1,4 +1,5 @@
 #include <sstream>
+#include <utility>
 
 #include "CPropertyCombo.h"
 
@@ -29,7 +30,7 @@ const CPropertyCombo* CPropertyCombo::fromJSON (const json& data, std::string na
     }
 
     return new CPropertyCombo (
-        name,
+        std::move(name),
         jsonFindDefault<std::string> (data, "text", ""),
         jsonFindRequired (data, "value", "Value is required for a property combo")->dump (),
         values
@@ -39,8 +40,9 @@ const CPropertyCombo* CPropertyCombo::fromJSON (const json& data, std::string na
 CPropertyCombo::CPropertyCombo (
     std::string name, std::string text, std::string defaultValue, std::vector<const CPropertyComboValue*> values
 ) :
-    CProperty (name, Type, text),
-    m_defaultValue (defaultValue) {}
+    CProperty (std::move(name), Type, std::move(text)),
+    m_defaultValue (std::move(defaultValue)),
+    m_values (std::move(values)) {}
 
 CPropertyCombo::~CPropertyCombo () {
     for (const auto* value : this->m_values)

@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include <nlohmann/json.hpp>
+#include <utility>
 
 using namespace WallpaperEngine::Assets;
 
@@ -12,30 +13,30 @@ CMaterial::CMaterial (
     std::string name, std::map<int, const Effects::CBind*> textureBindings,
     std::vector<const Materials::CPass*> passes
 ) :
-    m_name (name),
-    m_textureBindings (textureBindings),
-    m_passes (passes) {}
+    m_name (std::move(name)),
+    m_textureBindings (std::move(textureBindings)),
+    m_passes (std::move(passes)) {}
 CMaterial::CMaterial (
     std::string name, std::string target,
     std::map<int, const Effects::CBind*> textureBindings, std::vector<const Materials::CPass*> passes
 ) :
-    m_name (name),
-    m_target (target),
-    m_textureBindings (textureBindings),
-    m_passes (passes) {}
+    m_name (std::move(name)),
+    m_target (std::move(target)),
+    m_textureBindings (std::move(textureBindings)),
+    m_passes (std::move(passes)) {}
 
 const CMaterial* CMaterial::fromFile (
     const std::filesystem::path& filename, const CContainer* container,
     std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
 ) {
-    return fromJSON (filename, json::parse (container->readFileAsString (filename)), textureBindings, overrides);
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)), std::move(textureBindings), overrides);
 }
 
 const CMaterial* CMaterial::fromFile (
     const std::filesystem::path& filename, const std::string& target,
     const CContainer* container, std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
 ) {
-    return fromJSON (filename, json::parse (container->readFileAsString (filename)), target, textureBindings, overrides);
+    return fromJSON (filename, json::parse (container->readFileAsString (filename)), target, std::move(textureBindings), overrides);
 }
 
 const CMaterial* CMaterial::fromJSON (
@@ -48,7 +49,7 @@ const CMaterial* CMaterial::fromJSON (
     for (const auto& cur : (*passes_it))
         passes.push_back (Materials::CPass::fromJSON (cur, overrides));
 
-    return new CMaterial (name, target, textureBindings, passes);
+    return new CMaterial (name, target, std::move(textureBindings), passes);
 }
 
 const CMaterial* CMaterial::fromJSON (
@@ -61,7 +62,7 @@ const CMaterial* CMaterial::fromJSON (
     for (const auto& cur : (*passes_it))
         passes.push_back (Materials::CPass::fromJSON (cur, overrides));
 
-    return new CMaterial (name, textureBindings, passes);
+    return new CMaterial (name, std::move(textureBindings), passes);
 }
 
 const std::vector<const Materials::CPass*>& CMaterial::getPasses () const {

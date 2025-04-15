@@ -1,5 +1,7 @@
 #include "CObject.h"
 
+#include <utility>
+
 #include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CParticle.h"
@@ -18,15 +20,15 @@ CObject::CObject (
     const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
     const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, std::vector<int> dependencies
 ) :
-    m_type (type),
+    m_type (std::move(type)),
     m_visible (visible),
     m_id (id),
-    m_name (name),
+    m_name (std::move(name)),
     m_origin (origin),
     m_scale (scale),
     m_angles (angles),
     m_scene (scene),
-    m_dependencies (dependencies) {}
+    m_dependencies (std::move(dependencies)) {}
 
 const CObject* CObject::fromJSON (
     const json& data, const Wallpapers::CScene* scene, const CContainer* container

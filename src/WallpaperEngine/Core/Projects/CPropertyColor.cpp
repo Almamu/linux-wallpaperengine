@@ -1,4 +1,5 @@
 #include <sstream>
+#include <utility>
 
 #include "CPropertyColor.h"
 
@@ -23,7 +24,7 @@ const CPropertyColor* CPropertyColor::fromJSON (const json& data, std::string na
     const std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
 
-    return new CPropertyColor (ParseColor (value), name, text);
+    return new CPropertyColor (ParseColor (value), std::move(name), text);
 }
 
 const glm::vec3& CPropertyColor::getValue () const {
@@ -47,7 +48,7 @@ std::string CPropertyColor::dump () const {
 }
 
 CPropertyColor::CPropertyColor (glm::vec3 color, std::string name, std::string text) :
-    CProperty (name, Type, text),
+    CProperty (std::move(name), Type, std::move(text)),
     m_color (color) {}
 
 const std::string CPropertyColor::Type = "color";

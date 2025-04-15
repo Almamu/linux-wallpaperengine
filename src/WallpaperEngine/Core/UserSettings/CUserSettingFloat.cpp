@@ -1,4 +1,6 @@
 #include "CUserSettingFloat.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
@@ -16,8 +18,8 @@ CUserSettingFloat::CUserSettingFloat (
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_source (source),
-    m_expectedValue (expectedValue) {}
+    m_source (std::move(source)),
+    m_expectedValue (std::move(expectedValue)) {}
 
 const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data) {
     double defaultValue;

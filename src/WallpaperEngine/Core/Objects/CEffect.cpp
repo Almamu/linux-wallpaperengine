@@ -9,7 +9,6 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
-#include "WallpaperEngine/Core/Wallpapers/CScene.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Logging/CLog.h"
@@ -23,15 +22,15 @@ CEffect::CEffect (
     const CUserSettingBoolean* visible, std::vector<std::string> dependencies, std::vector<const Effects::CFBO*> fbos,
     std::vector<const Images::CMaterial*> materials
 ) :
-    m_name (name),
-    m_description (description),
-    m_group (group),
-    m_preview (preview),
+    m_name (std::move(name)),
+    m_description (std::move(description)),
+    m_group (std::move(group)),
+    m_preview (std::move(preview)),
     m_visible (visible),
-    m_dependencies (dependencies),
-    m_fbos (fbos),
+    m_dependencies (std::move(dependencies)),
+    m_fbos (std::move(fbos)),
     m_project (project),
-    m_materials (materials) {}
+    m_materials (std::move(materials)) {}
 
 const CEffect* CEffect::fromJSON (
     const json& data, const CUserSettingBoolean* visible, const CProject& project, const Images::CMaterial* material,
@@ -140,7 +139,7 @@ std::vector<std::string> CEffect::dependenciesFromJSON (const json::const_iterat
 }
 
 std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
-    const json::const_iterator& passes_it, std::string name, const CContainer* container,
+    const json::const_iterator& passes_it, const std::string& name, const CContainer* container,
     std::map<int, Images::CMaterial::OverrideInfo> overrides
 ) {
     std::vector<const Images::CMaterial*> materials;

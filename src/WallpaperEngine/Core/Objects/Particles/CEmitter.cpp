@@ -1,5 +1,7 @@
 #include "CEmitter.h"
 
+#include <utility>
+
 using namespace WallpaperEngine::Core::Objects::Particles;
 
 const CEmitter* CEmitter::fromJSON (const json& data) {
@@ -40,7 +42,7 @@ CEmitter::CEmitter (
     m_distancemax (distancemax),
     m_distancemin (distancemin),
     m_id (id),
-    m_name (name),
+    m_name (std::move(name)),
     m_origin (origin),
     m_rate (rate) {}
 

@@ -1,5 +1,7 @@
 #include "CInitializer.h"
 
+#include <utility>
+
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h"
 #include "WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h"
@@ -46,7 +48,7 @@ const CInitializer* CInitializer::fromJSON (const json& data) {
 
 CInitializer::CInitializer (uint32_t id, std::string name) :
     m_id (id),
-    m_name (name) {}
+    m_name (std::move(name)) {}
 
 const std::string& CInitializer::getName () const {
     return this->m_name;

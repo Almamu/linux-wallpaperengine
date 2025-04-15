@@ -9,14 +9,14 @@ using namespace WallpaperEngine::Core::Objects::Images::Materials;
 CPass::CPass (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite,
               std::string shader, std::map<int, std::string> textures, std::map<std::string, int> combos,
               std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constants) :
-    m_blending (blending),
-    m_cullmode (cullmode),
-    m_depthtest (depthtest),
-    m_depthwrite (depthwrite),
-    m_shader (shader),
-    m_textures (textures),
-    m_combos (combos),
-    m_constants (constants)
+    m_blending (std::move(blending)),
+    m_cullmode (std::move(cullmode)),
+    m_depthtest (std::move(depthtest)),
+    m_depthwrite (std::move(depthwrite)),
+    m_shader (std::move(shader)),
+    m_textures (std::move(textures)),
+    m_combos (std::move(combos)),
+    m_constants (std::move(constants))
 {}
 
 const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* overrides) {

@@ -14,7 +14,7 @@ class CWallpaper;
 
 class CProject {
   public:
-    static CProject* fromFile (std::string filename, const CContainer* container);
+    static CProject* fromFile (const std::string& filename, const CContainer* container);
 
     [[nodiscard]] const CWallpaper* getWallpaper () const;
 

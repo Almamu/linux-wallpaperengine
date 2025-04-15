@@ -1,5 +1,7 @@
 #include <WallpaperEngine/Assets/CContainer.h>
 
+#include <utility>
+
 #include "CProject.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include "WallpaperEngine/Core/Wallpapers/CVideo.h"
@@ -13,13 +15,13 @@ using namespace WallpaperEngine::Assets;
 static int backgroundId = -1;
 
 CProject::CProject (std::string title, std::string type, std::string workshopid, const CContainer* container) :
-    m_workshopid(workshopid),
-    m_title (title),
-    m_type (type),
+    m_workshopid(std::move(workshopid)),
+    m_title (std::move(title)),
+    m_type (std::move(type)),
     m_wallpaper (nullptr),
     m_container (container) {}
 
-CProject* CProject::fromFile (std::string filename, const CContainer* container) {
+CProject* CProject::fromFile (const std::string& filename, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
@@ -37,7 +39,7 @@ CProject* CProject::fromFile (std::string filename, const CContainer* container)
 
     std::transform (type.begin (), type.end (), type.begin (), tolower);
 
-    CProject* project = new CProject (
+    auto* project = new CProject (
         jsonFindRequired <std::string> (content, "title", "Project title missing"),
         type,
         jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--)),

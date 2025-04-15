@@ -17,7 +17,7 @@ using json = nlohmann::json;
 
 class CScene : public CWallpaper {
   public:
-    static const CScene* fromFile (std::string filename, const CProject& project, const CContainer* container);
+    static const CScene* fromFile (const std::string& filename, const CProject& project, const CContainer* container);
 
     [[nodiscard]] const std::map<uint32_t, const CObject*>& getObjects () const;
     [[nodiscard]] const std::vector<const CObject*>& getObjectsByRenderOrder () const;

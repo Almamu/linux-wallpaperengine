@@ -5,7 +5,7 @@
 using namespace WallpaperEngine::Core::Objects::Effects;
 
 CBind::CBind (std::string name, uint32_t index) :
-    m_name (name),
+    m_name (std::move(name)),
     m_index (index) {}
 
 const CBind* CBind::fromJSON (const json& data) {

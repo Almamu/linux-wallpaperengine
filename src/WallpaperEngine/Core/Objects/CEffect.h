@@ -71,7 +71,7 @@ class CEffect {
     static std::vector<const Effects::CFBO*> fbosFromJSON (const json::const_iterator& fbos_it);
     static std::vector<std::string> dependenciesFromJSON (const json::const_iterator& dependencies_it);
     static std::vector<const Images::CMaterial*> materialsFromJSON (
-        const json::const_iterator& passes_it, std::string name, const CContainer* container,
+        const json::const_iterator& passes_it, const std::string& name, const CContainer* container,
         std::map<int, Images::CMaterial::OverrideInfo>);
     static std::map<int, Images::CMaterial::OverrideInfo> overridesFromJSON (
         const json::const_iterator& passes_it, const Images::CMaterial* material);

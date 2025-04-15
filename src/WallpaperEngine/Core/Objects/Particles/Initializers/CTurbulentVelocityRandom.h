@@ -13,23 +13,23 @@ class CTurbulentVelocityRandom : CInitializer {
     /**
      * @return The phase to use
      */
-    double getPhaseMax ();
+    double getPhaseMax () const;
     /**
      * @return The scale to use
      */
-    double getScale ();
+    double getScale () const;
     /**
      * @return How time affects to the scale
      */
-    double getTimeScale ();
+    double getTimeScale () const;
     /**
      * @return The minimum speed
      */
-    uint32_t getMinimumSpeed ();
+    uint32_t getMinimumSpeed () const;
     /**
      * @return The maximum speed
      */
-    uint32_t getMaximumSpeed ();
+    uint32_t getMaximumSpeed () const;
 
   protected:
     friend class CInitializer;

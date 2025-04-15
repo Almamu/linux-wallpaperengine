@@ -25,22 +25,22 @@ CTurbulentVelocityRandom::CTurbulentVelocityRandom (uint32_t id, double phasemax
     m_speedmin (speedmin),
     m_speedmax (speedmax) {}
 
-double CTurbulentVelocityRandom::getPhaseMax () {
+double CTurbulentVelocityRandom::getPhaseMax () const {
     return this->m_phasemax;
 }
 
-double CTurbulentVelocityRandom::getScale () {
+double CTurbulentVelocityRandom::getScale () const {
     return this->m_scale;
 }
 
-double CTurbulentVelocityRandom::getTimeScale () {
+double CTurbulentVelocityRandom::getTimeScale () const {
     return this->m_timescale;
 }
 
-uint32_t CTurbulentVelocityRandom::getMinimumSpeed () {
+uint32_t CTurbulentVelocityRandom::getMinimumSpeed () const {
     return this->m_speedmin;
 }
 
-uint32_t CTurbulentVelocityRandom::getMaximumSpeed () {
+uint32_t CTurbulentVelocityRandom::getMaximumSpeed () const {
     return this->m_speedmax;
 }

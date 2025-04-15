@@ -21,7 +21,7 @@ class CSound : public CObject {
   public:
     static const CObject* fromJSON (
         const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible,
-        int id, std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
+        int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
         std::vector<int> dependencies);
 
     /**

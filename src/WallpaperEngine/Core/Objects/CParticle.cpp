@@ -1,10 +1,12 @@
 #include "CParticle.h"
 
+#include <utility>
+
 using namespace WallpaperEngine::Core::Objects;
 
 const CParticle* CParticle::fromFile (
-    const Wallpapers::CScene* scene, std::string filename, const CContainer* container,
-    const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+    const Wallpapers::CScene* scene, const std::string& filename, const CContainer* container,
+    const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
     const CUserSettingVector3* scale, std::vector<int> dependencies
 ) {
     json data = json::parse (container->readFileAsString (filename));
@@ -37,7 +39,7 @@ const CParticle* CParticle::fromFile (
         controlpoints,
         emitters,
         initializers,
-        dependencies
+        std::move(dependencies)
     );
 }
 
@@ -48,7 +50,7 @@ CParticle::CParticle (
     const std::vector<const Particles::CEmitter*>& emitters,
     const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, name, Type, origin, scale, glm::vec3 (), dependencies),
+    CObject (scene, visible, id, name, Type, origin, scale, glm::vec3 (), std::move(dependencies)),
     m_starttime (starttime),
     m_maxcount (maxcount),
     m_controlpoints (controlpoints),

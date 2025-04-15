@@ -1,4 +1,6 @@
 #include "CUserSettingBoolean.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
@@ -19,8 +21,8 @@ CUserSettingBoolean::CUserSettingBoolean (
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_hasSource (hasSource),
-    m_source (source),
-    m_expectedValue (expectedValue) {}
+    m_source (std::move(source)),
+    m_expectedValue (std::move(expectedValue)) {}
 
 const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data) {
     bool hasCondition = false;

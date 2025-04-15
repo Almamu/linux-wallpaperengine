@@ -18,8 +18,8 @@ class CParticle : public CObject {
 
   public:
     static const CParticle* fromFile (
-        const Wallpapers::CScene* scene, std::string filename, const CContainer* container,
-        const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+        const Wallpapers::CScene* scene, const std::string& filename, const CContainer* container,
+        const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
         const CUserSettingVector3* scale, std::vector<int> dependencies);
 
     /**

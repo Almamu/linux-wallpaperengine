@@ -1,13 +1,14 @@
 #include "CPropertyText.h"
 #include "WallpaperEngine/Core/Core.h"
 #include <sstream>
+#include <utility>
 
 using namespace WallpaperEngine::Core::Projects;
 
 const CPropertyText* CPropertyText::fromJSON (const json& data, std::string name) {
     const auto text = data.find ("type");
 
-    return new CPropertyText (name, *text);
+    return new CPropertyText (std::move(name), *text);
 }
 
 std::string CPropertyText::dump () const {
@@ -24,6 +25,6 @@ void CPropertyText::update (const std::string& value) const {
     this->m_text = value;
 }
 
-CPropertyText::CPropertyText (std::string name, std::string text) : CProperty (name, Type, text) {}
+CPropertyText::CPropertyText (std::string name, std::string text) : CProperty (std::move(name), Type, std::move(text)) {}
 
 const std::string CPropertyText::Type = "text";

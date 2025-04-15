@@ -1,4 +1,5 @@
 #include <sstream>
+#include <utility>
 
 #include "CPropertyBoolean.h"
 #include "WallpaperEngine/Core/Core.h"
@@ -8,7 +9,7 @@ using namespace WallpaperEngine::Core::Projects;
 const CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::string name) {
     return new CPropertyBoolean (
         jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
-        name,
+        std::move(name),
         jsonFindDefault<std::string> (data, "text", "")
     );
 }
@@ -34,7 +35,7 @@ std::string CPropertyBoolean::dump () const {
 }
 
 CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
-    CProperty (name, Type, text),
+    CProperty (std::move(name), Type, std::move(text)),
     m_value (value) {}
 
 const std::string CPropertyBoolean::Type = "bool";
