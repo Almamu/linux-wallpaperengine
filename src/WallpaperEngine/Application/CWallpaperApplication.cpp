@@ -9,6 +9,7 @@
 #include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
+#include "WallpaperEngine/PrettyPrinter/CPrettyPrinter.h"
 
 #ifdef ENABLE_WAYLAND
 #include "WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
@@ -422,6 +423,16 @@ void CWallpaperApplication::show () {
 
     static time_t seconds;
     static struct tm* timeinfo;
+
+    auto* prettyPrinter = new PrettyPrinter::CPrettyPrinter ();
+
+    for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
+        prettyPrinter->printWallpaper (*info);
+    }
+
+    std::cout << prettyPrinter->str () << std::endl;
+
+    delete prettyPrinter;
 
     while (this->m_context.state.general.keepRunning) {
         // update g_Daytime

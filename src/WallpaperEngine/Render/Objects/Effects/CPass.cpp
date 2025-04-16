@@ -310,7 +310,7 @@ void CPass::setPosition (GLuint position) {
     this->a_Position = position;
 }
 
-const Core::Objects::Images::Materials::CPass* CPass::getPass () {
+const Core::Objects::Images::Materials::CPass* CPass::getPass () const {
     return this->m_pass;
 }
 

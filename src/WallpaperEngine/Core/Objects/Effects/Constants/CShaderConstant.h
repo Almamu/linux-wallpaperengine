@@ -30,6 +30,11 @@ class CShaderConstant {
      */
     [[nodiscard]] const std::string& getType () const;
 
+    /**
+     * @return String representation of the constant's value
+     */
+    [[nodiscard]] virtual std::string toString () const = 0;
+
   private:
     const std::string m_type;
 };

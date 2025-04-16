@@ -22,6 +22,7 @@ class CShaderConstantInteger : public CShaderConstant {
      */
     static const std::string Type;
 
+    [[nodiscard]] std::string toString () const override;
   protected:
     /** The constant's value */
     const int32_t m_value;

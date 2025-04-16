@@ -248,6 +248,9 @@ add_executable(
     src/WallpaperEngine/Logging/CLog.cpp
     src/WallpaperEngine/Logging/CLog.h
 
+    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.cpp
+    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.h
+
     src/WallpaperEngine/Application/CApplicationContext.cpp
     src/WallpaperEngine/Application/CApplicationContext.h
     src/WallpaperEngine/Application/CWallpaperApplication.cpp

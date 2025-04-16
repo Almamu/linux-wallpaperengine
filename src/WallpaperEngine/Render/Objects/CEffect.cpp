@@ -44,6 +44,10 @@ void CEffect::generateFBOs () {
     }
 }
 
+const std::vector<CFBO*>& CEffect::getFBOs () const {
+    return this->m_fbos;
+}
+
 bool CEffect::isVisible () const {
     return this->m_effect->isVisible ();
 }

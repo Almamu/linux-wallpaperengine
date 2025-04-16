@@ -10,4 +10,8 @@ const float* CShaderConstantFloat::getValue () const {
     return &this->m_value;
 }
 
+std::string CShaderConstantFloat::toString () const {
+    return std::to_string (this->m_value);
+}
+
 const std::string CShaderConstantFloat::Type = "float";

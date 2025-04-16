@@ -64,4 +64,8 @@ const Drivers::Output::COutput& CRenderContext::getOutput () const {
 const ITexture* CRenderContext::resolveTexture (const std::string& name) {
     return this->m_textureCache->resolve (name);
 }
+
+const std::map<std::string, CWallpaper*>& CRenderContext::getWallpapers () const {
+    return this->m_wallpapers;
+}
 } // namespace WallpaperEngine::Render

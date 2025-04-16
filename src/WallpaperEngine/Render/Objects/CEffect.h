@@ -5,6 +5,12 @@
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 
+#include "WallpaperEngine/PrettyPrinter/CPrettyPrinter.h"
+
+namespace WallpaperEngine::PrettyPrinter {
+class CPrettyPrinter;
+}
+
 namespace WallpaperEngine::Render::Objects::Effects {
 class CMaterial;
 }
@@ -22,6 +28,11 @@ class CEffect {
 
     const CFBO* findFBO (const std::string& name) const;
     bool isVisible () const;
+
+  protected:
+    friend class WallpaperEngine::PrettyPrinter::CPrettyPrinter;
+
+    const std::vector<CFBO*>& getFBOs () const;
 
   private:
     void generatePasses ();

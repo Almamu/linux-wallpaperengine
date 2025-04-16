@@ -28,6 +28,8 @@ class CScene final : public CWallpaper {
     glm::vec2* getMousePositionLast ();
     glm::vec2* getParallaxDisplacement ();
 
+    const std::vector<CObject*>& getObjectsByRenderOrder () const;
+
   protected:
     void renderFrame (glm::ivec4 viewport) override;
     void updateMouse (glm::ivec4 viewport);

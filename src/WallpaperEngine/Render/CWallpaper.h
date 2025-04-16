@@ -40,7 +40,7 @@ class CWallpaper : public Helpers::CContextAware {
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () {
+    template <class T> bool is () const {
         return this->m_type == T::Type;
     }
 

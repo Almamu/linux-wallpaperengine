@@ -446,6 +446,10 @@ const std::vector<CEffect*>& CImage::getEffects () const {
     return this->m_effects;
 }
 
+const Effects::CMaterial* CImage::getMaterial () const {
+    return this->m_material;
+}
+
 glm::vec2 CImage::getSize () const {
     if (this->m_texture == nullptr)
         return this->getImage ()->getSize ();

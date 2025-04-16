@@ -38,7 +38,7 @@ class CPass final : public Helpers::CContextAware {
     const std::string& getBlendingMode () const;
 
     [[nodiscard]] const CMaterial* getMaterial () const;
-    const Core::Objects::Images::Materials::CPass* getPass ();
+    const Core::Objects::Images::Materials::CPass* getPass () const;
 
   private:
     enum UniformType {

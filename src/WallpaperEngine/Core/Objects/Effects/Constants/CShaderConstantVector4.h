@@ -23,6 +23,7 @@ class CShaderConstantVector4 : public CShaderConstant {
      */
     static const std::string Type;
 
+    [[nodiscard]] std::string toString () const override;
   protected:
     /** The constant's value */
     const glm::vec4 m_value;

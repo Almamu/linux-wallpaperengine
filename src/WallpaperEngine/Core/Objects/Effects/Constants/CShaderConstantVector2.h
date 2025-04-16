@@ -24,6 +24,7 @@ class CShaderConstantVector2 : public CShaderConstant {
      */
     static const std::string Type;
 
+    [[nodiscard]] std::string toString () const override;
   protected:
     /** The constant's value */
     const glm::vec2 m_value;

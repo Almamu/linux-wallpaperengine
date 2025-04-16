@@ -36,6 +36,7 @@ class CImage final : public CObject {
 
     [[nodiscard]] const Core::Objects::CImage* getImage () const;
     [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
+    [[nodiscard]] const Effects::CMaterial* getMaterial () const;
     [[nodiscard]] glm::vec2 getSize () const;
 
     [[nodiscard]] GLuint getSceneSpacePosition () const;

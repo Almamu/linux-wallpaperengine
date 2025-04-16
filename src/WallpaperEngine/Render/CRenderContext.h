@@ -41,6 +41,7 @@ class CRenderContext {
     [[nodiscard]] const Drivers::CVideoDriver& getDriver () const;
     [[nodiscard]] const Drivers::Output::COutput& getOutput () const;
     const ITexture* resolveTexture (const std::string& name);
+    [[nodiscard]] const std::map<std::string, CWallpaper*>& getWallpapers () const;
 
   private:
     /** Video driver in use */

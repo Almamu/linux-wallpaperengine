@@ -22,6 +22,7 @@ class CShaderConstantFloat : public CShaderConstant {
      */
     static const std::string Type;
 
+    [[nodiscard]] std::string toString () const override;
   protected:
     /** The constant's value */
     const float m_value;

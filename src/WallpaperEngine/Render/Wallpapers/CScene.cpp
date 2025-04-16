@@ -265,4 +265,8 @@ glm::vec2* CScene::getParallaxDisplacement () {
     return &this->m_parallaxDisplacement;
 }
 
+const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const {
+    return this->m_objectsByRenderOrder;
+}
+
 const std::string CScene::Type = "scene";
