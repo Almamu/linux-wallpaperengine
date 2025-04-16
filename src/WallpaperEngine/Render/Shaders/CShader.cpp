@@ -41,20 +41,12 @@ const std::string& CShader::fragment () {
     return this->m_fragment.compile ();
 }
 
-const std::vector<Variables::CShaderVariable*>& CShader::getVertexParameters () const {
-    return this->m_vertex.getParameters ();
+const CShaderUnit& CShader::getVertex () const {
+    return this->m_vertex;
 }
 
-const std::vector<Variables::CShaderVariable*>& CShader::getFragmentParameters () const {
-    return this->m_fragment.getParameters ();
-}
-
-const std::map<int, std::string>& CShader::getVertexTextures () const {
-    return this->m_fragment.getTextures ();
-}
-
-const std::map<int, std::string>& CShader::getFragmentTextures () const {
-    return this->m_fragment.getTextures ();
+const CShaderUnit& CShader::getFragment () const {
+    return this->m_fragment;
 }
 
 const std::map<std::string, int>& CShader::getCombos () const {

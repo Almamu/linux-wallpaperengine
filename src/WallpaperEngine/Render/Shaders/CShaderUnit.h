@@ -49,15 +49,6 @@ class CShaderUnit {
      * @return The textures this shader unit requires
      */
     [[nodiscard]] const std::map<int, std::string>& getTextures () const;
-
-  protected:
-    /**
-     * Extracts any and all possible shader combo configurations
-     * available in this shader unit, prepares includes
-     * and lays the ground for the actual code to be ready
-     */
-    void preprocess ();
-
     /**
      * @return The combos set for this shader unit by the configuration
      */
@@ -66,6 +57,14 @@ class CShaderUnit {
      * @return Other combos detected by this shader unit during the preprocess
      */
     [[nodiscard]] const std::map<std::string, int>& getDiscoveredCombos () const;
+
+  protected:
+    /**
+     * Extracts any and all possible shader combo configurations
+     * available in this shader unit, prepares includes
+     * and lays the ground for the actual code to be ready
+     */
+    void preprocess ();
 
   private:
     /**

@@ -215,18 +215,17 @@ std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
                 ++textureNumber;
                 std::string name;
 
-                if (texture.is_null ()) {
-                    if (textureNumber == 0) {
-                        auto passTextures = (*material->getPasses ().begin ())->getTextures ();
+                if (texture.is_null () && textureNumber > 0) {
+                    continue;
+                }
 
-                        if (passTextures.empty ()) {
-                            // TODO: SET CHECKERBOARD TEXTURE AS DEFAULT IN THESE SITUATIONS
-                            name = "";
-                        } else {
-                            name = passTextures.begin ()->second;
-                        }
+                if (textureNumber == 0) {
+                    auto passTextures = (*material->getPasses ().begin ())->getTextures ();
+
+                    if (passTextures.empty()) {
+                        continue;
                     } else {
-                        name = "";
+                        name = passTextures.begin ()->second;
                     }
                 } else {
                     name = texture;

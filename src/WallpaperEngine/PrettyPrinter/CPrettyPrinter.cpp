@@ -219,7 +219,7 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto fragmentTextures = pass.getShader ()->getFragmentTextures();
+    const auto fragmentTextures = pass.getShader ()->getFragment ().getTextures ();
 
     if (fragmentTextures.size () > 0) {
         this->m_out << "Fragment textures " << fragmentTextures.size () << ":";
@@ -233,7 +233,7 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto vertexTextures = pass.getShader ()->getVertexTextures ();
+    const auto vertexTextures = pass.getShader ()->getFragment ().getTextures ();
 
     if (vertexTextures.size () > 0) {
         this->m_out << "Vertex textures " << textures.size () << ":";
@@ -254,6 +254,34 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->increaseIndentation ();
 
         for (const auto combo : combos) {
+            this->m_out << combo.first << " = " << combo.second;
+            this->lineEnd ();
+        }
+
+        this->decreaseIndentation ();
+    }
+
+    const auto vertexCombos = pass.getShader ()->getVertex ().getDiscoveredCombos ();
+
+    if (vertexCombos.size () > 0) {
+        this->m_out << "Vertex combos " << vertexCombos.size () << ":";
+        this->increaseIndentation ();
+
+        for (const auto& combo : vertexCombos) {
+            this->m_out << combo.first << " = " << combo.second;
+            this->lineEnd ();
+        }
+
+        this->decreaseIndentation ();
+    }
+
+    const auto fragmentCombos = pass.getShader ()->getFragment ().getDiscoveredCombos ();
+
+    if (fragmentCombos.size () > 0) {
+        this->m_out << "Vertex combos " << fragmentCombos.size () << ":";
+        this->increaseIndentation ();
+
+        for (const auto& combo : fragmentCombos) {
             this->m_out << combo.first << " = " << combo.second;
             this->lineEnd ();
         }

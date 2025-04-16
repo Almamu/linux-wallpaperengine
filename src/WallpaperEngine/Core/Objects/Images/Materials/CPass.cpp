@@ -58,7 +58,7 @@ const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* o
         for (const auto& [name, value] : overrides->constants)
             constants[name] = value;
         for (const auto& [id, value] : overrides->textures)
-            textures.insert(std::pair(id, value));
+            textures[id] = value;
     }
 
     return new CPass (

@@ -54,21 +54,13 @@ class CShader {
      */
     const std::string& fragment ();
     /**
-     * @return The parameters the vertex shader needs
+     * @return The vertex shader unit
      */
-    [[nodiscaard]]const std::vector<Variables::CShaderVariable*>& getVertexParameters () const;
+    [[nodiscard]] const CShaderUnit& getVertex () const;
     /**
-     * @return The parameters the fragment shader needs
+     * @return The fragment shader unit
      */
-    [[nodiscard]] const std::vector<Variables::CShaderVariable*>& getFragmentParameters () const;
-    /**
-     * @return The textures required for the vertex shader
-     */
-    [[nodiscard]] const std::map<int, std::string>& getVertexTextures () const;
-    /**
-     * @return The textures required for the fragment shader
-     */
-    [[nodiscard]] const std::map<int, std::string>& getFragmentTextures () const;
+    [[nodiscard]] const CShaderUnit& getFragment () const;
     /**
      * @return The list of combos available for this shader after compilation
      */
@@ -94,22 +86,6 @@ class CShader {
      * The shader file this instance is loading
      */
     std::string m_file;
-    /**
-     * The original file content
-     */
-    std::string m_content;
-    /**
-     * The final, compiled content ready to be used by OpenGL
-     */
-    std::string m_processedContent;
-    /**
-     * The contents of all the included files
-     */
-    std::string m_includeContent;
-    /**
-     * The type of shader
-     */
-    CGLSLContext::UnitType m_type;
     /**
      * The parameters the shader needs
      */

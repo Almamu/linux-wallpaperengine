@@ -447,10 +447,10 @@ void CPass::setupTextureUniforms () {
     // do the real, final texture setup for the whole process
     auto cur = this->m_textures.begin ();
     const auto end = this->m_textures.end ();
-    auto fragCur = this->m_shader->getFragmentTextures ().begin ();
-    const auto fragEnd = this->m_shader->getFragmentTextures ().end ();
-    auto vertCur = this->m_shader->getVertexTextures ().begin ();
-    const auto vertEnd = this->m_shader->getVertexTextures ().end ();
+    auto fragCur = this->m_shader->getFragment ().getTextures ().begin ();
+    const auto fragEnd = this->m_shader->getFragment ().getTextures ().end ();
+    auto vertCur = this->m_shader->getVertex ().getTextures ().begin ();
+    const auto vertEnd = this->m_shader->getVertex ().getTextures ().end ();
     auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
     const auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
 
@@ -704,11 +704,11 @@ void CPass::setupShaderVariables () {
         }
     }
 
-    for (const auto& cur : this->m_shader->getVertexParameters ())
+    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 
-    for (const auto& cur : this->m_shader->getFragmentParameters ())
+    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 }
