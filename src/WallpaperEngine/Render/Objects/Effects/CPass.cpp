@@ -360,24 +360,13 @@ void CPass::setupShaders () {
         }
     }
 
-    // prepare the shaders
-    this->m_fragShader = new Render::Shaders::CCompiler (
-        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Pixel,
-        this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
-    this->m_vertShader = new Render::Shaders::CCompiler (
-        this->m_material->getImage ()->getContainer (), this->m_pass->getShader (), Shaders::CGLSLContext::ShaderType_Vertex,
-        this->m_pass->getCombos (), &m_foundCombos, this->m_pass->getTextures (), this->m_pass->getConstants ());
+    this->m_shader = new Render::Shaders::CShader (
+        this->getMaterial ()->getImage ()->getContainer (), this->m_pass->getShader (), this->m_pass->getCombos (),
+        this->m_pass->getTextures (), this->m_pass->getConstants ()
+    );
 
-    // precompile shaders once so all the data is discovered
-    this->m_fragShader->precompile ();
-    this->m_vertShader->precompile ();
-
-    // precompile them again once all the data is available
-    this->m_fragShader->precompile ();
-    this->m_vertShader->precompile ();
-
-    std::string fragmentCode = this->m_fragShader->compile ();
-    std::string vertexCode = this->m_vertShader->compile ();
+    std::string fragmentCode = this->m_shader->fragment ();
+    std::string vertexCode = this->m_shader->vertex ();
 
     // compile the shaders
     const GLuint vertexShaderID = compileShader (vertexCode.c_str (), GL_VERTEX_SHADER);
@@ -454,10 +443,10 @@ void CPass::setupTextureUniforms () {
     // do the real, final texture setup for the whole process
     auto cur = this->m_textures.begin ();
     const auto end = this->m_textures.end ();
-    auto fragCur = this->m_fragShader->getTextures ().begin ();
-    const auto fragEnd = this->m_fragShader->getTextures ().end ();
-    auto vertCur = this->m_vertShader->getTextures ().begin ();
-    const auto vertEnd = this->m_vertShader->getTextures ().end ();
+    auto fragCur = this->m_shader->getFragmentTextures ().begin ();
+    const auto fragEnd = this->m_shader->getFragmentTextures ().end ();
+    auto vertCur = this->m_shader->getVertexTextures ().begin ();
+    const auto vertEnd = this->m_shader->getVertexTextures ().end ();
     auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
     const auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
 
@@ -670,15 +659,14 @@ void CPass::setupTextures () {
 void CPass::setupShaderVariables () {
     // find variables in the shaders and set the value with the constants if possible
     for (const auto& [name, value] : this->m_pass->getConstants ()) {
-        CShaderVariable* vertexVar = this->m_vertShader->findParameter (name);
-        CShaderVariable* pixelVar = this->m_fragShader->findParameter (name);
+        const auto parameters = this->m_shader->findParameter (name);
 
         // variable not found, can be ignored
-        if (vertexVar == nullptr && pixelVar == nullptr)
+        if (parameters.vertex == nullptr && parameters.fragment == nullptr)
             continue;
 
         // get one instance of it
-        CShaderVariable* var = vertexVar == nullptr ? pixelVar : vertexVar;
+        CShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
 
         // ensure the shader's and the constant are of the same type
         if (value->getType () == var->getType ()) {
@@ -712,11 +700,11 @@ void CPass::setupShaderVariables () {
         }
     }
 
-    for (const auto& cur : this->m_vertShader->getParameters ())
+    for (const auto& cur : this->m_shader->getVertexParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 
-    for (const auto& cur : this->m_fragShader->getParameters ())
+    for (const auto& cur : this->m_shader->getFragmentParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 }

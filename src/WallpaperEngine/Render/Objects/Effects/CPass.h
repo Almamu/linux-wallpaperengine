@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
-#include "WallpaperEngine/Render/Shaders/CCompiler.h"
+#include "WallpaperEngine/Render/Shaders/CShader.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
@@ -166,8 +166,7 @@ class CPass final : public Helpers::CContextAware {
      */
     std::map<int, const ITexture*> m_finalTextures;
 
-    Render::Shaders::CCompiler* m_fragShader;
-    Render::Shaders::CCompiler* m_vertShader;
+    Render::Shaders::CShader* m_shader;
 
     const CFBO* m_drawTo;
     const ITexture* m_input;

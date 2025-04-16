@@ -12,16 +12,15 @@ class CGLSLContext {
     /**
      * Types of shaders
      */
-    enum ShaderType {
-        ShaderType_Vertex = 0,
-        ShaderType_Pixel = 1,
-        ShaderType_Include = 2
+    enum UnitType {
+        UnitType_Vertex = 0,
+        UnitType_Fragment = 1
     };
 
     CGLSLContext ();
     ~CGLSLContext ();
 
-    [[nodiscard]] std::string toGlsl (const std::string& content, ShaderType type);
+    [[nodiscard]] std::string toGlsl (const std::string& content, UnitType type);
 
     [[nodiscard]] static CGLSLContext& get ();
 

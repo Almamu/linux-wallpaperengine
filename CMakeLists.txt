@@ -192,7 +192,9 @@ if(X11_SUPPORT_FOUND)
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
         src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
+            src/WallpaperEngine/Render/Shaders/CShaderUnit.cpp
+            src/WallpaperEngine/Render/Shaders/CShaderUnit.h)
     SET(X11_INCLUDES
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
@@ -316,8 +318,8 @@ add_executable(
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
 
-    src/WallpaperEngine/Render/Shaders/CCompiler.h
-    src/WallpaperEngine/Render/Shaders/CCompiler.cpp
+        src/WallpaperEngine/Render/Shaders/CShader.h
+        src/WallpaperEngine/Render/Shaders/CShader.cpp
     src/WallpaperEngine/Render/Shaders/CGLSLContext.cpp
     src/WallpaperEngine/Render/Shaders/CGLSLContext.h
 

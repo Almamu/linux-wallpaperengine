@@ -134,13 +134,8 @@ CGLSLContext& CGLSLContext::get () {
     return *sInstance;
 }
 
-std::string CGLSLContext::toGlsl (const std::string& content, ShaderType type) {
-    if (type == ShaderType_Include) {
-        sLog.error ("Include shaders cannot be converted as they should be part of a bigger shader");
-        return "";
-    }
-
-    EShLanguage shaderType = type == ShaderType_Vertex ? EShLangVertex : EShLangFragment;
+std::string CGLSLContext::toGlsl (const std::string& content, UnitType type) {
+    EShLanguage shaderType = type == UnitType_Vertex ? EShLangVertex : EShLangFragment;
     glslang::TShader shader (shaderType);
 
     const char* shaderSource = content.c_str();

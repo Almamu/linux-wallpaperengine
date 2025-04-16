@@ -44,7 +44,7 @@ const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* o
                 std::string uppercase = std::string (cur.key ());
 
                 std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
-                combos.insert (std::pair (cur.key (), cur.value ()));
+                combos.insert (std::pair (uppercase, cur.value ()));
             } else {
                 sLog.exception ("unexpected non-integer combo on pass");
             }

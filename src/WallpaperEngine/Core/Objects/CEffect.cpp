@@ -72,8 +72,12 @@ const CEffect* CEffect::fromJSON (
 std::map<std::string, int> CEffect::combosFromJSON (const json::const_iterator& combos_it) {
     std::map<std::string, int> combos;
 
-    for (const auto& cur : combos_it->items ())
-        combos.insert (std::pair (cur.key (), cur.value ()));
+    for (const auto& cur : combos_it->items ()) {
+        std::string uppercase = std::string (cur.key ());
+
+        std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
+        combos.insert (std::pair (uppercase, cur.value ()));
+    }
 
     return combos;
 }

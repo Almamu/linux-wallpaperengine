@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
-#include "WallpaperEngine/Render/Shaders/CCompiler.h"
+#include "WallpaperEngine/Render/Shaders/CShader.h"
 
 #include "WallpaperEngine/Assets/ITexture.h"
 
