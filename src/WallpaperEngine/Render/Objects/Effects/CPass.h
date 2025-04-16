@@ -35,10 +35,11 @@ class CPass final : public Helpers::CContextAware {
     void setModelMatrix (const glm::mat4* model);
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
     void setBlendingMode (std::string blendingmode);
-    const std::string& getBlendingMode () const;
+    [[nodiscard]] const std::string& getBlendingMode () const;
 
     [[nodiscard]] const CMaterial* getMaterial () const;
-    const Core::Objects::Images::Materials::CPass* getPass () const;
+    [[nodiscard]] const Core::Objects::Images::Materials::CPass* getPass () const;
+    [[nodiscard]] Render::Shaders::CShader* getShader () const;
 
   private:
     enum UniformType {

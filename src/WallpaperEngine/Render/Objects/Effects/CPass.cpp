@@ -314,6 +314,10 @@ const Core::Objects::Images::Materials::CPass* CPass::getPass () const {
     return this->m_pass;
 }
 
+Render::Shaders::CShader* CPass::getShader () const {
+    return this->m_shader;
+}
+
 GLuint CPass::compileShader (const char* shader, GLuint type) {
     // reserve shaders in OpenGL
     const GLuint shaderID = glCreateShader (type);

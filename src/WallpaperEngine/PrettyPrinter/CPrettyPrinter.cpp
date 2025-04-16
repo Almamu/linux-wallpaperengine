@@ -219,6 +219,34 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
+    const auto fragmentTextures = pass.getShader ()->getFragmentTextures();
+
+    if (fragmentTextures.size () > 0) {
+        this->m_out << "Fragment textures " << fragmentTextures.size () << ":";
+        this->increaseIndentation ();
+
+        for (const auto& texture : fragmentTextures) {
+            this->m_out << texture.first << ": " << texture.second;
+            this->lineEnd ();
+        }
+
+        this->decreaseIndentation ();
+    }
+
+    const auto vertexTextures = pass.getShader ()->getVertexTextures ();
+
+    if (vertexTextures.size () > 0) {
+        this->m_out << "Vertex textures " << textures.size () << ":";
+        this->increaseIndentation ();
+
+        for (const auto& texture : vertexTextures) {
+            this->m_out << texture.first << ": " << texture.second;
+            this->lineEnd ();
+        }
+
+        this->decreaseIndentation ();
+    }
+
     const auto combos = base->getCombos();
 
     if (combos.size () > 0) {
