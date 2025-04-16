@@ -343,8 +343,14 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
         buffer << logBuffer << std::endl << "Compiled source code:" << std::endl << shader;
         // free the buffer
         delete [] logBuffer;
-        // throw an exception
-        sLog.exception (buffer.str ());
+
+        if (result == GL_FALSE) {
+            // shader compilation failed completely, throw an exception
+            sLog.exception (buffer.str ());
+        } else {
+            // some warning was emitted, log the error and keep chuging along
+            sLog.error (buffer.str ());
+        }
     }
 
     return shaderID;
@@ -398,8 +404,13 @@ void CPass::setupShaders () {
         const std::string message = logBuffer;
         // free the buffer
         delete [] logBuffer;
-        // throw an exception
-        sLog.exception (message);
+        if (result == GL_FALSE) {
+            // shader compilation failed completely, throw an exception
+            sLog.exception (message);
+        } else {
+            // some warning was emitted, log the error and keep chuging along
+            sLog.error (message);
+        }
     }
 
 #if !NDEBUG

@@ -410,50 +410,51 @@ void CShaderUnit::parseParameterConfiguration (const std::string& type, const st
         if (combo != data.end ()) {
             // if the texture exists (and is not null), add to the combo
             auto texture = this->m_textures.find (index);
+            bool comboValue = true;
 
             if (textureName == data.end () && texture == this->m_textures.end ()) {
                 // is this required?
                 if (require == data.end ()) {
                     // if no require information we assume this one is always required, so signal it as such
-                    sLog.exception ("Shader ", this->m_file, " requires a texture that is not present");
+                    //sLog.exception ("Shader ", this->m_file, " requires a texture that is not present");
+                    comboValue = false;
                 }
 
                 // some require conditions are set, validate these
-                if (requireany == data.end ()) {
+                if (requireany == data.end () || !requireany->get<bool> ()) {
                     // all values have to exist for this to be required
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
 
                         // these can not exist and that'd be fine, we just care about the values
-                        if (it == this->m_combos.end ()) {
-                            return;
+                        if (it != this->m_combos.end () && it->second == item.value ()) {
+                            continue;
                         }
-                        if (it->second != item.value ()) {
-                            return;
-                        }
-                    }
 
-                    sLog.exception ("Shader ", this->m_file, " requires a texture that is not present, activated by condition");
+                        comboValue = false;
+                        break;
+                    }
                 } else {
+                    comboValue = false;
+
                     // any of the values set are valid, check for them
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
 
                         // these can not exist and that'd be fine, we just care about the values
-                        if (it == this->m_combos.end ()) {
+                        if (it == this->m_combos.end () || it->second != item.value ()) {
                             continue;
                         }
-                        if (it->second == item.value ()) {
-                            sLog.exception ("Shader ", this->m_file, " requires a texture that is not present, activated by condition ", macro);
-                        }
+
+                        comboValue = true;
                     }
                 }
             }
 
             // add the new combo to the list
-            this->m_discoveredCombos.insert (std::make_pair (*combo, 1));
+            this->m_discoveredCombos.insert (std::make_pair (*combo, comboValue));
 
             // textures linked to combos need to be tracked too
             if (this->m_usedCombos.find (*combo) == this->m_usedCombos.end ())
