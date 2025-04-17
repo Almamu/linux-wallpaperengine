@@ -5,6 +5,7 @@
 #include <qcursor.h>
 #include <qlabel.h>
 #include <qlineedit.h>
+#include <qprocess.h>
 #include <qwidget.h>
 #include <vector>
 
@@ -12,6 +13,7 @@ UIWindow::UIWindow(QWidget* parent, QApplication* qapp) {
   this->qapp = qapp; 
   this->screenSelector = new QComboBox(this);
   this->extraFlagsInput = new QLineEdit(this);
+  this->wallpaperEngine = new QProcess(this);
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
@@ -34,7 +36,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   int cols = 5; 
 
   // Wallpaper Process
-  auto* wallpaperEngine = new QProcess(this);
+  // auto* wallpaperEngine = new QProcess(this);
   
   for (size_t i = 0; i < wallpaperPaths.size(); i++) {
     QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
@@ -50,21 +52,14 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     button->setProperty("path", QString::fromStdString(wallpaperPaths[i]));
 
     
-    QAbstractButton::connect(button, &QPushButton::clicked, [button, this, wallpaperEngine]() {
+    QAbstractButton::connect(button, &QPushButton::clicked, [button, this]() {
       QString clickedPath = button->property("path").toString();
       button->setEnabled(false);
 
-      if (wallpaperEngine->state() == QProcess::Running) {
-        // Stop WallpaperProcess
-        wallpaperEngine->terminate();
-        if (!wallpaperEngine->waitForFinished(3000)) {
-          wallpaperEngine->kill();
-          wallpaperEngine->waitForFinished();
-        }
-      }
-      // start Wallpaper Process
-      wallpaperEngine->start(QCoreApplication::applicationFilePath(), {"--screen-root", this->screenSelector->currentText(), "--bg", clickedPath});
-      
+      this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
+
+      startNewWallpaperEngine();
+
       QObject::connect(wallpaperEngine, &QProcess::started, button, [=]() {
         button->setEnabled(true);
       });
@@ -76,7 +71,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     layout->addWidget(button, row, col);
   }
 
-  QObject::connect(this->qapp, &QCoreApplication::aboutToQuit, this, [wallpaperEngine]() {
+  QObject::connect(this->qapp, &QCoreApplication::aboutToQuit, this, [this]() {
     wallpaperEngine->terminate(); 
     wallpaperEngine->waitForFinished(3000);
   });
@@ -107,3 +102,27 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   mainlayout->addWidget(extraFlagsInput);
   this->setLayout(mainlayout);
 }
+
+void UIWindow::startNewWallpaperEngine() {
+  if (wallpaperEngine->state() == QProcess::Running) {
+    // Stop WallpaperProcess
+    wallpaperEngine->terminate();
+    if (!wallpaperEngine->waitForFinished(3000)) {
+      wallpaperEngine->kill();
+      wallpaperEngine->waitForFinished();
+    }
+  }
+  // create args
+  QStringList args;
+
+  for (auto wallpaper : this->selectedWallpapers) {
+    args.push_back("--screen-root");
+    args.push_back(QString::fromStdString(wallpaper.first));
+    args.push_back("--bg");
+    args.push_back(QString::fromStdString(wallpaper.second));
+  }
+
+  // start Wallpaper Process
+  wallpaperEngine->start(QCoreApplication::applicationFilePath(), args);
+}
+

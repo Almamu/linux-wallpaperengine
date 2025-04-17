@@ -1,10 +1,12 @@
 #pragma once
 
+#include <map>
 #include <qapplication.h>
 #include <qcombobox.h>
 #include <qgridlayout.h>
 #include <qlineedit.h>
 #include <qobjectdefs.h>
+#include <qprocess.h>
 #include <qwidget.h>
 #include <QScrollArea>
 #include <QProcess>
@@ -30,4 +32,8 @@ class UIWindow : public QWidget {
     QApplication* qapp;
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
+    std::map<std::string, std::string> selectedWallpapers;
+    QProcess* wallpaperEngine;
+
+    void startNewWallpaperEngine();
 };

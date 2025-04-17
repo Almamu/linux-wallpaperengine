@@ -82,90 +82,9 @@ int main (int argc, char* argv[]) {
       uiWindow->show();
 
       return qapp.exec();
-
-
-      /*
-
-      auto* window = new QWidget();
-      window->setWindowTitle("Wallpapers :3");
-     
-      auto* scrollArea = new QScrollArea(window); 
-      scrollArea->setWidgetResizable(true);
-
-      auto* container = new QWidget();
-
-      auto* layout = new QGridLayout(container);
-      
-      int cols = 3; 
-
-      // Wallpaper Process
-      auto* wallpaperEngine = new QProcess(window);
-      
-      for (size_t i = 0; i < wallpaperPaths.size(); i++) {
-        QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
-        if (pixmap.isNull()) {
-          pixmap = QPixmap(256, 256);
-          pixmap.fill(Qt::black);
-        }
-        
-        auto* button = new QPushButton();
-        button->setIcon(pixmap.scaled(256, 256, Qt::KeepAspectRatio));
-        button->setText("Hii :3");
-        button->setIconSize(QSize(256, 256));
-        button->setFixedSize(384, 364);
-        button->setProperty("path", QString::fromStdString(wallpaperPaths[i]));
-
-        
-        QAbstractButton::connect(button, &QPushButton::clicked, [button, &qapp, argc, argv, window, wallpaperEngine]() {
-          QString clickedPath = button->property("path").toString();
-          button->setEnabled(false);
-
-          if (wallpaperEngine->state() == QProcess::Running) {
-            // Stop WallpaperProcess
-            wallpaperEngine->terminate();
-            if (!wallpaperEngine->waitForFinished(3000)) {
-              wallpaperEngine->kill();
-              wallpaperEngine->waitForFinished();
-            }
-          }
-          // start Wallpaper Process
-          wallpaperEngine->start(QCoreApplication::applicationFilePath(), {"--screen-root", "DP-2", clickedPath});
-          
-          QObject::connect(wallpaperEngine, &QProcess::started, button, [=]() {
-            button->setEnabled(true);
-          });
-
-          QObject::connect(wallpaperEngine, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), window, [](int exitcode, QProcess::ExitStatus status) {
-            std::cout << exitcode << "\r\n";
-          });
-          // qapp.exit();
-        });
-
-        int row = i / cols;
-        int col = i % cols;
-        layout->addWidget(button, row, col);
-      }
-
-      QObject::connect(&qapp, &QCoreApplication::aboutToQuit, window, [&qapp, wallpaperEngine]() {
-        wallpaperEngine->terminate(); 
-        wallpaperEngine->waitForFinished(3000);
-      });
-
-      container->setLayout(layout);
-      scrollArea->setWidget(container);
-
-      auto* mainlayout = new QVBoxLayout(window);
-      mainlayout->addWidget(scrollArea);
-      window->setLayout(mainlayout);
-
-      window->show();
-      return qapp.exec();
-      */
     }
 
     WallpaperEngine::WebBrowser::CWebBrowserContext webBrowserContext(argc, argv);
-    std::string wallpaperPath = "/home/delia/.local/share/Steam/steamapps/workshop/content/431960/1838246129"; 
-    std::string display = "DP-2";
     WallpaperEngine::Application::CApplicationContext appContext (argc, argv);
     
     // halt if the list-properties option was specified
