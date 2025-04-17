@@ -103,12 +103,10 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
 
     this->m_currentMainFBO = this->m_mainFBO =
         scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
-                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
-                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+                          size.x, size.y, size.x, size.y);
     this->m_currentSubFBO = this->m_subFBO =
         scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
-                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight (),
-                          this->m_texture->getRealWidth (), this->m_texture->getRealHeight ());
+                          size.x, size.y, size.x, size.y);
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {this->m_pos.x, this->m_pos.y, 0.0f, this->m_pos.x, this->m_pos.w, 0.0f,

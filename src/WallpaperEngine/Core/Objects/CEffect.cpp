@@ -8,7 +8,10 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Logging/CLog.h"
@@ -53,7 +56,7 @@ const CEffect* CEffect::fromJSON (
         fbos = CEffect::fbosFromJSON (fbos_it);
 
     if (effectpasses_it != data.end ()) {
-        overrides = overridesFromJSON (effectpasses_it, material);
+        overrides = overridesFromJSON (effectpasses_it, material, project);
     }
 
     return new CEffect (
@@ -83,39 +86,70 @@ std::map<std::string, int> CEffect::combosFromJSON (const json::const_iterator& 
 }
 
 std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> CEffect::constantsFromJSON (
-    const json::const_iterator& constants_it
+    const json::const_iterator& constants_it, const CProject& project
 ) {
     std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constants;
 
     for (auto& cur : constants_it->items ()) {
         auto val = cur.value ();
 
-        Effects::Constants::CShaderConstant* constant;
+        Effects::Constants::CShaderConstant* constant = nullptr;
 
         // if the constant is an object, that means the constant has some extra information
         // for the UI, take the value, which is what we need
 
-        // TODO: SUPPORT USER SETTINGS HERE
         if (cur.value ().is_object ()) {
+            auto user = cur.value ().find ("user");
             auto it = cur.value ().find ("value");
 
-            if (it == cur.value ().end ()) {
-                sLog.error ("Found object for shader constant without \"value\" member");
+            if (user == cur.value ().end () && it == cur.value ().end ()) {
+                sLog.error (R"(Found object for shader constant without "value" and "user" setting)");
                 continue;
             }
 
-            val = it.value ();
+            if (user != cur.value ().end ()) {
+                // look for a property with the correct name
+                const auto& properties = project.getProperties ();
+                const auto property = properties.find (*user);
+
+                if (property == properties.end ()) {
+                    sLog.exception ("Shader constant pointing to non-existant project property: ", user->get <std::string> ());
+                }
+
+                constant = new Effects::Constants::CShaderConstantProperty (property->second);
+            } else {
+                val = it.value ();
+            }
         }
 
-        if (val.is_number_float ()) {
-            constant = new Effects::Constants::CShaderConstantFloat (val.get<float> ());
-        } else if (val.is_number_integer ()) {
-            constant = new Effects::Constants::CShaderConstantInteger (val.get<int> ());
-        } else if (val.is_string ()) {
-            // try a vector 4 first, then a vector3 and then a vector 2
-            constant = new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (val));
-        } else {
-            sLog.exception ("unknown shader constant type ", val);
+        // TODO: REFACTOR THIS SO IT'S NOT SO DEEP INTO THE FUNCTION
+        if (constant == nullptr) {
+            if (val.is_number_float ()) {
+                constant = new Effects::Constants::CShaderConstantFloat (val.get<float> ());
+            } else if (val.is_number_integer ()) {
+                constant = new Effects::Constants::CShaderConstantInteger (val.get<int> ());
+            } else if (val.is_string ()) {
+                // count the amount of spaces to determine which type of vector we have
+                std::string value = val;
+
+                size_t spaces =
+                    std::count_if (value.begin (), value.end (), [&] (const auto& item) { return item == ' '; });
+
+                if (spaces == 1) {
+                    constant =
+                        new Effects::Constants::CShaderConstantVector2 (WallpaperEngine::Core::aToVector2 (value));
+                } else if (spaces == 2) {
+                    constant =
+                        new Effects::Constants::CShaderConstantVector3 (WallpaperEngine::Core::aToVector3 (value));
+                } else if (spaces == 3) {
+                    constant =
+                        new Effects::Constants::CShaderConstantVector4 (WallpaperEngine::Core::aToVector4 (value));
+                } else {
+                    sLog.exception ("unknown shader constant type ", value);
+                }
+            } else {
+                sLog.exception ("unknown shader constant type ", val);
+            }
         }
 
         constants.insert (std::pair (cur.key (), constant));
@@ -187,7 +221,7 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
 }
 
 std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
-    const json::const_iterator& passes_it, const Images::CMaterial* material
+    const json::const_iterator& passes_it, const Images::CMaterial* material, const CProject& project
 ) {
     std::map<int, Images::CMaterial::OverrideInfo> result;
 
@@ -205,7 +239,7 @@ std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
         }
 
         if (constants_it != cur.end ()) {
-            override.constants = CEffect::constantsFromJSON (constants_it);
+            override.constants = CEffect::constantsFromJSON (constants_it, project);
         }
 
         if (textures_it != cur.end ()) {

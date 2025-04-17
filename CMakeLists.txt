@@ -192,9 +192,7 @@ if(X11_SUPPORT_FOUND)
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
         src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
-            src/WallpaperEngine/Render/Shaders/CShaderUnit.cpp
-            src/WallpaperEngine/Render/Shaders/CShaderUnit.h)
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
     SET(X11_INCLUDES
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
@@ -318,8 +316,10 @@ add_executable(
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
     src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
 
-        src/WallpaperEngine/Render/Shaders/CShader.h
-        src/WallpaperEngine/Render/Shaders/CShader.cpp
+    src/WallpaperEngine/Render/Shaders/CShader.h
+    src/WallpaperEngine/Render/Shaders/CShader.cpp
+    src/WallpaperEngine/Render/Shaders/CShaderUnit.cpp
+    src/WallpaperEngine/Render/Shaders/CShaderUnit.h
     src/WallpaperEngine/Render/Shaders/CGLSLContext.cpp
     src/WallpaperEngine/Render/Shaders/CGLSLContext.h
 
@@ -451,12 +451,16 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
+    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h
+    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.cpp
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.cpp
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
+    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h
+    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.cpp
 
     src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
     src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h

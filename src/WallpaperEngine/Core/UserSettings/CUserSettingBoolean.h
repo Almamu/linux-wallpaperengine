@@ -15,7 +15,7 @@ class CUserSettingBoolean : public CUserSettingValue {
     static const CUserSettingBoolean* fromScalar (const bool value);
     static std::string Type;
 
-    [[nodiscard]] bool processValue (const std::vector<const Projects::CProperty*>& properties) const;
+    [[nodiscard]] bool processValue (const std::map<std::string, const Projects::CProperty*>& properties) const;
     [[nodiscard]] bool getDefaultValue () const;
 
   private:

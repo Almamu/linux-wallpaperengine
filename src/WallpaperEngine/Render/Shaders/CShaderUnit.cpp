@@ -79,6 +79,16 @@ void CShaderUnit::preprocess () {
     this->preprocessVariables ();
     this->preprocessIncludes ();
     this->preprocessRequires ();
+
+    // replace gl_FragColor with the equivalent
+    std::string from = "gl_FragColor";
+    std::string to = "out_FragColor";
+
+    size_t start_pos = 0;
+    while ((start_pos = this->m_preprocessed.find (from, start_pos)) != std::string::npos) {
+        this->m_preprocessed.replace (start_pos, from.length (), to);
+        start_pos += to.length (); // Handles case where 'to' is a substring of 'from'
+    }
 }
 
 void CShaderUnit::preprocessVariables () {
@@ -344,6 +354,9 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
 
 void CShaderUnit::parseParameterConfiguration (const std::string& type, const std::string& name,
                                             const std::string& content) {
+    if (name == "g_Speed") {
+        sLog.out("speed!");
+    }
     json data = json::parse (content);
     const auto material = data.find ("material");
     const auto defvalue = data.find ("default");
@@ -365,37 +378,23 @@ void CShaderUnit::parseParameterConfiguration (const std::string& type, const st
 
     // TODO: SUPPORT VALUES FOR ALL THESE TYPES
     if (type == "vec4") {
-        parameter = new Variables::CShaderVariableVector4 (
-            constant == this->m_constants.end () ? WallpaperEngine::Core::aToVector4 (*defvalue)
-                                                 : *constant->second->as<CShaderConstantVector4> ()->getValue ());
+        parameter = new Variables::CShaderVariableVector4(WallpaperEngine::Core::aToVector4 (*defvalue));
     } else if (type == "vec3") {
-        parameter = new Variables::CShaderVariableVector3 (
-            constant == this->m_constants.end () ? WallpaperEngine::Core::aToVector3 (*defvalue)
-                                                 : *constant->second->as<CShaderConstantVector4> ()->getValue ());
+        parameter = new Variables::CShaderVariableVector3 (WallpaperEngine::Core::aToVector3 (*defvalue));
     } else if (type == "vec2") {
         parameter = new Variables::CShaderVariableVector2 (WallpaperEngine::Core::aToVector2 (*defvalue));
     } else if (type == "float") {
-        float value = 0;
-
-        if (constant == this->m_constants.end ())
-            value = defvalue->get<float> ();
-        else if (constant->second->is<CShaderConstantFloat> ())
-            value = *constant->second->as<CShaderConstantFloat> ()->getValue ();
-        else if (constant->second->is<CShaderConstantInteger> ())
-            value = *constant->second->as<CShaderConstantInteger> ()->getValue ();
-
-        parameter = new Variables::CShaderVariableFloat (value);
+        if (defvalue->is_string ()) {
+            parameter = new Variables::CShaderVariableFloat (strtof32 ((defvalue->get<std::string> ()).c_str (), nullptr));
+        } else {
+            parameter = new Variables::CShaderVariableFloat (*defvalue);
+        }
     } else if (type == "int") {
-        int value = 0;
-
-        if (constant == this->m_constants.end ())
-            value = defvalue->get<int> ();
-        else if (constant->second->is<CShaderConstantFloat> ())
-            value = *constant->second->as<CShaderConstantFloat> ()->getValue ();
-        else if (constant->second->is<CShaderConstantInteger> ())
-            value = *constant->second->as<CShaderConstantInteger> ()->getValue ();
-
-        parameter = new Variables::CShaderVariableInteger (value);
+        if (defvalue->is_string ()) {
+            parameter = new Variables::CShaderVariableInteger (strtol((defvalue->get<std::string> ()).c_str (), nullptr, 10));
+        } else {
+            parameter = new Variables::CShaderVariableInteger (*defvalue);
+        }
     } else if (type == "sampler2D" || type == "sampler2DComparison") {
         // samplers can have special requirements, check what sampler we're working with and create definitions
         // if needed
@@ -410,55 +409,75 @@ void CShaderUnit::parseParameterConfiguration (const std::string& type, const st
         if (combo != data.end ()) {
             // if the texture exists (and is not null), add to the combo
             auto texture = this->m_textures.find (index);
-            bool comboValue = true;
+            bool isRequired = false;
+            int comboValue = 1;
 
-            if (textureName == data.end () && texture == this->m_textures.end ()) {
-                // is this required?
-                if (require == data.end ()) {
-                    // if no require information we assume this one is always required, so signal it as such
-                    //sLog.exception ("Shader ", this->m_file, " requires a texture that is not present");
-                    comboValue = false;
-                }
-
-                // some require conditions are set, validate these
-                if (requireany == data.end () || !requireany->get<bool> ()) {
-                    // all values have to exist for this to be required
-                    for (const auto& item : require->items ()) {
-                        const std::string& macro = item.key ();
-                        const auto it = this->m_combos.find (macro);
-
-                        // these can not exist and that'd be fine, we just care about the values
-                        if (it != this->m_combos.end () && it->second == item.value ()) {
-                            continue;
-                        }
-
-                        comboValue = false;
-                        break;
-                    }
-                } else {
-                    comboValue = false;
+            if (texture != this->m_textures.end ()) {
+                // nothing extra to do, the texture exists, the combo must be set
+                // these tend to not have default value
+                isRequired = true;
+            } else if (require != data.end ()) {
+                // this is required based on certain conditions
+                if (requireany != data.end () && requireany->get <bool> ()) {
 
                     // any of the values set are valid, check for them
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
 
-                        // these can not exist and that'd be fine, we just care about the values
+                        // if any of the values matched, this option is required
                         if (it == this->m_combos.end () || it->second != item.value ()) {
-                            continue;
+                            isRequired = true;
+                            break;
                         }
+                    }
+                } else {
+                    isRequired = true;
 
-                        comboValue = true;
+                    // all values must match for it to be required
+                    for (const auto& item : require->items ()) {
+                        const std::string& macro = item.key ();
+                        const auto it = this->m_combos.find (macro);
+
+                        // these can not exist and that'd be fine, we just care about the values
+                        if (it != this->m_combos.end () && it->second == item.value ()) {
+                            isRequired = false;
+                            break;
+                        }
                     }
                 }
             }
 
-            // add the new combo to the list
-            this->m_discoveredCombos.insert (std::make_pair (*combo, comboValue));
+            if (isRequired && texture == this->m_textures.end ()) {
+                if (defvalue == data.end ()) {
+                    isRequired = false;
+                } else {
+                    // is the combo registered already?
+                    // if not, add it with the default value
+                    const auto combo_it = this->m_combos.find (*combo);
 
-            // textures linked to combos need to be tracked too
-            if (this->m_usedCombos.find (*combo) == this->m_usedCombos.end ())
-                this->m_usedCombos.insert (std::make_pair (*combo, true));
+                    // there's already a combo providing this value, so it doesn't need to be added
+                    if (combo_it != this->m_combos.end ()) {
+                        isRequired = false;
+                        // otherwise a default value must be used
+                    } else if (defvalue->is_string ()) {
+                        comboValue = strtol (defvalue->get <std::string> ().c_str (), nullptr, 10);
+                    } else if (defvalue->is_number()) {
+                        comboValue = *defvalue;
+                    } else {
+                        sLog.exception ("Cannot determine default value for combo ", combo->get <std::string> (), " because it's not specified by the shader and is not given a default value: ", this->m_file);
+                    }
+                }
+            }
+
+            if (isRequired) {
+                // add the new combo to the list
+                this->m_discoveredCombos.insert (std::make_pair (*combo, comboValue));
+
+                // textures linked to combos need to be tracked too
+                if (this->m_usedCombos.find (*combo) == this->m_usedCombos.end ())
+                    this->m_usedCombos.insert (std::make_pair (*combo, true));
+            }
         }
 
         if (textureName != data.end ())
@@ -471,7 +490,7 @@ void CShaderUnit::parseParameterConfiguration (const std::string& type, const st
         return;
     }
 
-    if (material != data.end ()) {
+    if (material != data.end () && parameter != nullptr) {
         parameter->setIdentifierName (*material);
         parameter->setName (name);
 

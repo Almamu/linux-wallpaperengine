@@ -66,7 +66,7 @@ class CEffect {
 
   protected:
     static std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constantsFromJSON (
-        const json::const_iterator& constants_it);
+        const json::const_iterator& constants_it, const CProject& project);
     static std::map<std::string, int> combosFromJSON (const json::const_iterator& combos_it);
     static std::vector<const Effects::CFBO*> fbosFromJSON (const json::const_iterator& fbos_it);
     static std::vector<std::string> dependenciesFromJSON (const json::const_iterator& dependencies_it);
@@ -74,7 +74,7 @@ class CEffect {
         const json::const_iterator& passes_it, const std::string& name, const CContainer* container,
         std::map<int, Images::CMaterial::OverrideInfo>);
     static std::map<int, Images::CMaterial::OverrideInfo> overridesFromJSON (
-        const json::const_iterator& passes_it, const Images::CMaterial* material);
+        const json::const_iterator& passes_it, const Images::CMaterial* material, const CProject& project);
 
   private:
     /** Effect's name */

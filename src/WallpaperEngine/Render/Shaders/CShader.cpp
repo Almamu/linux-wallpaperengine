@@ -18,11 +18,11 @@ using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders {
 CShader::CShader (
-    const CContainer* container, std::string filename, std::map<std::string, int> combos,
+    const CContainer* container, std::string filename, const std::map<std::string, int>& combos,
     const std::map<int, std::string>& textures, const std::map<std::string, const CShaderConstant*>& constants
 ) :
     m_file (std::move (filename)),
-    m_combos (std::move(combos)),
+    m_combos (combos),
     m_passTextures (textures),
     m_vertex (
         CGLSLContext::UnitType_Vertex, filename, container->readVertexShader (filename),
@@ -30,6 +30,9 @@ CShader::CShader (
     m_fragment (
         CGLSLContext::UnitType_Fragment, filename, container->readFragmentShader (filename),
         container, constants, textures, combos) {
+    // link shaders between them
+    this->m_vertex.linkToUnit (&this->m_fragment);
+    this->m_fragment.linkToUnit (&this->m_vertex);
 }
 
 

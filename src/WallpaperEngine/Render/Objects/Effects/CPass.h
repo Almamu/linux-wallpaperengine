@@ -10,12 +10,13 @@
 #include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Shaders/CShader.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
-
+#include "WallpaperEngine/Core/UserSettings/CUserSettingValue.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 namespace WallpaperEngine::Render::Objects::Effects {
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Render::Shaders::Variables;
+using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 class CMaterial;
@@ -108,6 +109,7 @@ class CPass final : public Helpers::CContextAware {
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (CShaderVariable* value);
+    void addUniform (CShaderVariable* value, CProperty* setting);
     void addUniform (const std::string& name, CShaderConstant* value);
     void addUniform (const std::string& name, const CShaderConstant* value);
     void addUniform (const std::string& name, int value);

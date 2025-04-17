@@ -20,19 +20,20 @@ class CProject {
 
     [[nodiscard]] const std::string& getTitle () const;
     [[nodiscard]] const std::string& getType () const;
-    [[nodiscard]] const std::vector<const Projects::CProperty*>& getProperties () const;
+    [[nodiscard]] const std::map<std::string, const Projects::CProperty*>& getProperties () const;
     [[nodiscard]] const std::string& getWorkshopId () const;
 
     const CContainer* getContainer () const;
 
   protected:
-    CProject (std::string title, std::string type, std::string workshopid, const CContainer* container);
+    CProject (
+        std::string title, std::string type, std::string workshopid, const CContainer* container,
+        std::map<std::string, const Projects::CProperty*> properties);
 
     void setWallpaper (const CWallpaper* wallpaper);
-    void insertProperty (const Projects::CProperty* property);
 
   private:
-    std::vector<const Projects::CProperty*> m_properties;
+    std::map<std::string, const Projects::CProperty*> m_properties;
 
     const std::string m_workshopid;
     const std::string m_title;

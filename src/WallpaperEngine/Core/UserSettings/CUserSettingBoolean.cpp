@@ -66,24 +66,21 @@ bool CUserSettingBoolean::getDefaultValue () const {
     return this->m_default;
 }
 
-bool CUserSettingBoolean::processValue (const std::vector<const Projects::CProperty*>& properties) const {
+bool CUserSettingBoolean::processValue (const std::map<std::string, const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
-    for (const auto cur : properties) {
-        if (cur->getName () != this->m_source)
-            continue;
+    const auto property = properties.find (this->m_source);
 
+    if (property != properties.end ()) {
         if (!this->m_hasCondition) {
-            if (cur->is<CPropertyBoolean> ())
-                return cur->as<CPropertyBoolean> ()->getValue ();
-
-            sLog.exception ("Property without condition must match type boolean");
+            if (property->second->is<CPropertyBoolean> ())
+                return property->second->as<CPropertyBoolean> ()->getValue ();
         }
 
         // TODO: properly validate this as the combos might be more than just strings?
-        if (cur->is<CPropertyCombo> ())
-            return cur->as<CPropertyCombo> ()->getValue () == this->m_expectedValue;
+        if (property->second->is<CPropertyCombo> ())
+            return property->second->as<CPropertyCombo> ()->getValue () == this->m_expectedValue;
 
         sLog.exception ("Boolean property with condition doesn't match against combo value");
     }

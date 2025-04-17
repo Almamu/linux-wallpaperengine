@@ -63,17 +63,16 @@ double CUserSettingFloat::getDefaultValue () const {
     return this->m_default;
 }
 
-double CUserSettingFloat::processValue (const std::vector<const Projects::CProperty*>& properties) const {
+double CUserSettingFloat::processValue (const std::map<std::string, const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
-    for (const auto cur : properties) {
-        if (cur->getName () != this->m_source)
-            continue;
+    const auto property = properties.find (this->m_source);
 
+    if (property != properties.end ()) {
         if (!this->m_hasCondition) {
-            if (cur->is<CPropertySlider> ())
-                return cur->as<CPropertySlider> ()->getValue ();
+            if (property->second->is<CPropertySlider> ())
+                return property->second->as<CPropertySlider> ()->getValue ();
 
             sLog.exception ("Property without condition must match type (slider)");
         }

@@ -14,12 +14,16 @@ using namespace WallpaperEngine::Assets;
 
 static int backgroundId = -1;
 
-CProject::CProject (std::string title, std::string type, std::string workshopid, const CContainer* container) :
+CProject::CProject (
+    std::string title, std::string type, std::string workshopid, const CContainer* container,
+    const std::map<std::string, const Projects::CProperty*> properties
+) :
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),
     m_type (std::move(type)),
     m_wallpaper (nullptr),
-    m_container (container) {}
+    m_container (container),
+    m_properties (properties) {}
 
 CProject* CProject::fromFile (const std::string& filename, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
@@ -36,14 +40,32 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
     const auto file = jsonFindRequired <std::string> (content, "file", "Project's main file missing");
     auto general = content.find ("general");
     const CWallpaper* wallpaper;
+    std::map<std::string, const Projects::CProperty*> properties;
 
     std::transform (type.begin (), type.end (), type.begin (), tolower);
+
+    if (general != content.end ()) {
+        const auto properties_it = general->find ("properties");
+
+        if (properties_it != general->end ()) {
+            for (const auto& cur : properties_it->items ()) {
+                const auto property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
+
+                if (property == nullptr) {
+                    continue;
+                }
+
+                properties.insert (std::pair (property->getName (), property));
+            }
+        }
+    }
 
     auto* project = new CProject (
         jsonFindRequired <std::string> (content, "title", "Project title missing"),
         type,
         jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--)),
-        container
+        container,
+        properties
     );
 
     if (type == "scene")
@@ -57,17 +79,6 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
 
     project->setWallpaper (wallpaper);
 
-    if (general != content.end ()) {
-        const auto properties = general->find ("properties");
-
-        if (properties != general->end ()) {
-            for (const auto& cur : properties->items ()) {
-                const auto property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
-                if (property != nullptr)
-                    project->insertProperty (property);
-            }
-        }
-    }
     return project;
 }
 
@@ -87,7 +98,7 @@ const std::string& CProject::getType () const {
     return this->m_type;
 }
 
-const std::vector<const Projects::CProperty*>& CProject::getProperties () const {
+const std::map<std::string, const Projects::CProperty*>& CProject::getProperties () const {
     return this->m_properties;
 }
 
@@ -97,8 +108,4 @@ const std::string& CProject::getWorkshopId () const {
 
 const CContainer* CProject::getContainer () const {
     return this->m_container;
-}
-
-void CProject::insertProperty (const Projects::CProperty* property) {
-    this->m_properties.push_back (property);
 }

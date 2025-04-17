@@ -17,7 +17,7 @@ class CUserSettingVector3 : public CUserSettingValue {
     static const CUserSettingVector3* fromScalar (const glm::vec3 value);
     static std::string Type;
 
-    [[nodiscard]] const glm::vec3& processValue (const std::vector<const Projects::CProperty*>& properties) const;
+    [[nodiscard]] const glm::vec3& processValue (const std::map<std::string, const Projects::CProperty*>& properties) const;
     [[nodiscard]] const glm::vec3& getDefaultValue () const;
 
   private:

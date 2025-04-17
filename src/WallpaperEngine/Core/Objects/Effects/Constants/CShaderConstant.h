@@ -11,17 +11,17 @@ class CShaderConstant {
   public:
     explicit CShaderConstant (std::string type);
 
-    template <class T> const T* as () const {
+    template <class T> [[nodiscard]] const T* as () const {
         assert (is<T> ());
         return reinterpret_cast<const T*> (this);
     }
 
-    template <class T> T* as () {
+    template <class T> [[nodiscard]] T* as () {
         assert (is<T> ());
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () const {
+    template <class T> [[nodiscard]] bool is () const {
         return this->m_type == T::Type;
     }
 

@@ -64,20 +64,19 @@ const glm::vec3& CUserSettingVector3::getDefaultValue () const {
     return this->m_default;
 }
 
-const glm::vec3& CUserSettingVector3::processValue (const std::vector<const Projects::CProperty*>& properties) const {
+const glm::vec3& CUserSettingVector3::processValue (const std::map<std::string, const Projects::CProperty*>& properties) const {
     if (!this->m_hasSource && !this->m_hasCondition)
         return this->getDefaultValue ();
 
-    for (const auto cur : properties) {
-        if (cur->getName () != this->m_source)
-            continue;
+    const auto property = properties.find (this->m_source);
 
+    if (property != properties.end ()) {
         if (!this->m_hasCondition) {
-            if (cur->is<CPropertyColor> ())
-                return cur->as<CPropertyColor> ()->getValue ();
-            if (cur->is<CPropertySlider> ())
-                return {cur->as<CPropertySlider> ()->getValue (), cur->as<CPropertySlider> ()->getValue (),
-                        cur->as<CPropertySlider> ()->getValue ()};
+            if (property->second->is<CPropertyColor> ())
+                return property->second->as<CPropertyColor> ()->getValue ();
+            if (property->second->is<CPropertySlider> ())
+                return {property->second->as<CPropertySlider> ()->getValue (), property->second->as<CPropertySlider> ()->getValue (),
+                        property->second->as<CPropertySlider> ()->getValue ()};
 
             sLog.exception ("Property without condition must match type (vector3)");
         }

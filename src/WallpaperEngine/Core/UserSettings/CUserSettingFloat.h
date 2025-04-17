@@ -15,7 +15,7 @@ class CUserSettingFloat : public CUserSettingValue {
     static const CUserSettingFloat* fromScalar (const double value);
     static std::string Type;
 
-    [[nodiscard]] double processValue (const std::vector<const Projects::CProperty*>& properties) const;
+    [[nodiscard]] double processValue (const std::map<std::string, const Projects::CProperty*>& properties) const;
     [[nodiscard]] double getDefaultValue () const;
 
   private:

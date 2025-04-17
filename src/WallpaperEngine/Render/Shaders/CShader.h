@@ -43,7 +43,7 @@ class CShader {
      */
     CShader (
         const CContainer* container, std::string filename,
-        std::map<std::string, int> combos,const std::map<int, std::string>& textures,
+        const std::map<std::string, int>& combos,const std::map<int, std::string>& textures,
         const std::map<std::string, const CShaderConstant*>& constants);
     /**
      * @return The vertex's shader coude for OpenGL to use
@@ -93,7 +93,7 @@ class CShader {
     /**
      * The combos the shader should be generated with
      */
-    std::map<std::string, int> m_combos;
+    const std::map<std::string, int>& m_combos;
     /**
      * The list of textures the pass knows about
      */

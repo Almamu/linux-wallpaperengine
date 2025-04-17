@@ -2,6 +2,12 @@
 #include "WallpaperEngine/Render/CFBO.h"
 #include <sstream>
 
+#include "WallpaperEngine/Core/Projects/CProperty.h"
+#include "WallpaperEngine/Core/Projects/CPropertyColor.h"
+#include "WallpaperEngine/Core/Projects/CPropertyCombo.h"
+#include "WallpaperEngine/Core/Projects/CPropertySlider.h"
+#include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
+
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
@@ -12,7 +18,10 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
+#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
@@ -613,7 +622,7 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
     T* newValue = new T (value);
 
     // uniform found, add it to the list
-    this->m_uniforms.insert (std::make_pair (name, new UniformEntry (id, name, type, newValue, 1)));
+    this->m_uniforms.insert_or_assign (name, new UniformEntry (id, name, type, newValue, 1));
 }
 
 template <typename T> void CPass::addUniform (const std::string& name, UniformType type, T* value, int count) {
@@ -625,7 +634,7 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // uniform found, add it to the list
-    this->m_uniforms.insert (std::make_pair (name, new UniformEntry (id, name, type, value, count)));
+    this->m_uniforms.insert_or_assign (name, new UniformEntry (id, name, type, value, count));
 }
 
 template <typename T> void CPass::addUniform (const std::string& name, UniformType type, T** value) {
@@ -637,8 +646,8 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // uniform found, add it to the list
-    this->m_referenceUniforms.insert (
-        std::make_pair (name, new ReferenceUniformEntry (id, name, type, reinterpret_cast<const void**> (value))));
+    this->m_referenceUniforms.insert_or_assign (
+        name, new ReferenceUniformEntry (id, name, type, reinterpret_cast<const void**> (value)));
 }
 
 void CPass::setupTextures () {
@@ -672,6 +681,18 @@ void CPass::setupTextures () {
 }
 
 void CPass::setupShaderVariables () {
+    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
+        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+            this->addUniform (cur);
+
+    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
+        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+            this->addUniform (cur);
+
+    if (this->getMaterial ()->getImage ()->getImage ()->getName ()== "Blur") {
+        sLog.out("girl!");
+    }
+
     // find variables in the shaders and set the value with the constants if possible
     for (const auto& [name, value] : this->m_pass->getConstants ()) {
         const auto parameters = this->m_shader->findParameter (name);
@@ -708,20 +729,25 @@ void CPass::setupShaderVariables () {
             auto* val = value->as<CShaderConstantVector4> ();
 
             this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
+        } else if (value->is<CShaderConstantVector3> () && var->is<CShaderVariableVector2> ()) {
+            auto* val = value->as<CShaderConstantVector3> ();
+
+            this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
+        } else if (value->is<CShaderConstantProperty> ()) {
+            const auto property = value->as<CShaderConstantProperty> ();
+
+            // resolve the property to a current setting
+
+
+            // resolve property to a user setting and store that value instead
+            // properties have different kinds of values
+            sLog.out("property!");
         } else {
             sLog.exception ("Constant ", name,
                             " type does not match pixel/vertex shader variable and cannot be converted (",
                             value->getType (), " to ", var->getType ());
         }
     }
-
-    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
-            this->addUniform (cur);
-
-    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
-            this->addUniform (cur);
 }
 
 // define some basic methods for the template
@@ -741,6 +767,65 @@ void CPass::addUniform (CShaderVariable* value) {
     else if (value->is<CShaderVariableVector4> ())
         this->addUniform (value->getName (),
                           static_cast<const glm::vec4*> (value->as<CShaderVariableVector4> ()->getValue ()));
+    else
+        sLog.exception ("Trying to add an uniform from an unknown type: ", value->getName ());
+}
+
+void CPass::addUniform (CShaderVariable* value, CProperty* setting) {
+    // TODO: CHECK THIS? CAN WE KEEP A REF SO THE VALUES ARE AUTOMATICALLY UPDATED?
+    // TODO: MAYBE PROVIDE PUBLIC CASTS FOR EVERYTHING INSTEAD OF MANUALLY DOING IT EVERYWHERE
+    if (value->is<CShaderVariableVector2> ()) {
+        if (setting->is<CPropertySlider> ()) {
+            const auto slider = setting->as<CPropertySlider> ();
+            // sliders have to be converted to vector2
+            this->addUniform (value->getName (), {slider->getValue (), slider->getValue ()});
+        } else if (setting->is<CPropertyColor> ()) {
+            const auto color = setting->as<CPropertyColor> ();
+            // colors are vec3, we just need vec2
+            this->addUniform (value->getName (), {color->getValue ().x, color->getValue ().y});
+        } else {
+            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
+            this->addUniform (value);
+        }
+    } else if (value->is<CShaderVariableFloat> ()) {
+        if (setting->is<CPropertySlider> ()) {
+            const auto slider = setting->as<CPropertySlider> ();
+
+            this->addUniform (value->getName (), slider->getValue ());
+        } else if (setting->is<CPropertyColor>()) {
+            const auto color = setting->as<CPropertyColor> ();
+
+            this->addUniform (value->getName (), &color->getValue ().x);
+        } else {
+            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
+            this->addUniform (value);
+        }
+    } else if (value->is<CShaderVariableVector3> ()) {
+        if (setting->is<CPropertySlider> ()) {
+            const auto slider = setting->as<CPropertySlider> ();
+
+            this->addUniform (value->getName (), {slider->getValue (), slider->getValue (), slider->getValue ()});
+        } else if (setting->is<CPropertyColor>()) {
+            const auto color = setting->as<CPropertyColor> ();
+
+            this->addUniform (value->getName (), color->getValue ());
+        } else {
+            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
+            this->addUniform (value);
+        }
+    } else if (value->is<CShaderVariableVector4> ()) {
+        if (setting->is<CPropertySlider> ()) {
+            const auto slider = setting->as<CPropertySlider> ();
+
+            this->addUniform (value->getName (), {slider->getValue (), slider->getValue (), slider->getValue (), slider->getValue ()});
+        } else {
+            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
+            this->addUniform (value);
+        }
+    } else {
+        sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
+        this->addUniform (value);
+    }
 }
 
 void CPass::addUniform (const std::string& name, CShaderConstant* value) {
@@ -749,8 +834,14 @@ void CPass::addUniform (const std::string& name, CShaderConstant* value) {
         this->addUniform (name, value->as<CShaderConstantFloat> ()->getValue ());
     else if (value->is<CShaderConstantInteger> ())
         this->addUniform (name, value->as<CShaderConstantInteger> ()->getValue ());
+    else if (value->is<CShaderConstantVector2> ())
+        this->addUniform (name, value->as<CShaderConstantVector2> ()->getValue ());
+    else if (value->is<CShaderConstantVector3> ())
+        this->addUniform (name, value->as<CShaderConstantVector3> ()->getValue ());
     else if (value->is<CShaderConstantVector4> ())
         this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
+    else
+        sLog.exception ("Trying to add an uniform from an unknown type: ", name);
 }
 
 void CPass::addUniform (const std::string& name, const CShaderConstant* value) {
@@ -759,8 +850,14 @@ void CPass::addUniform (const std::string& name, const CShaderConstant* value) {
         this->addUniform (name, value->as<CShaderConstantFloat> ()->getValue ());
     else if (value->is<CShaderConstantInteger> ())
         this->addUniform (name, value->as<CShaderConstantInteger> ()->getValue ());
+    else if (value->is<CShaderConstantVector2> ())
+        this->addUniform (name, value->as<CShaderConstantVector2> ()->getValue ());
+    else if (value->is<CShaderConstantVector3> ())
+        this->addUniform (name, value->as<CShaderConstantVector3> ()->getValue ());
     else if (value->is<CShaderConstantVector4> ())
         this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
+    else
+        sLog.exception ("Trying to add an uniform from an unknown type: ", name);
 }
 void CPass::addUniform (const std::string& name, int value) {
     this->addUniform (name, UniformType::Integer, value);
