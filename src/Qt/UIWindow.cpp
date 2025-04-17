@@ -1,4 +1,5 @@
 #include "UIWindow.h"
+#include <iostream>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qcombobox.h>
@@ -7,6 +8,7 @@
 #include <qlineedit.h>
 #include <qprocess.h>
 #include <qwidget.h>
+#include <string>
 #include <vector>
 
 UIWindow::UIWindow(QWidget* parent, QApplication* qapp) {
@@ -35,9 +37,6 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   
   int cols = 5; 
 
-  // Wallpaper Process
-  // auto* wallpaperEngine = new QProcess(this);
-  
   for (size_t i = 0; i < wallpaperPaths.size(); i++) {
     QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
     if (pixmap.isNull()) {
@@ -57,6 +56,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
       button->setEnabled(false);
 
       this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
+      this->extraFlags[this->screenSelector->currentText().toStdString()] = split(this->extraFlagsInput->text().toStdString(), ' ');
 
       startNewWallpaperEngine();
 
@@ -85,9 +85,19 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     this->screenSelector->addItem(screen->name());
   }
   this->screenSelector->setCurrentIndex(0);
-  auto* screenSelectorLayout = new QVBoxLayout(this);
-  QLabel label("Screen Selector:");
-  screenSelectorLayout->addWidget(&label);
+  this->screenSelector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  this->screenSelector->setFixedHeight(48);
+
+  auto font = screenSelector->font();
+  font.setPointSize(18);
+  this->screenSelector->setFont(font);
+
+  this->screenSelector->setPalette(*pal);
+
+  auto* screenSelectorLayout = new QVBoxLayout();
+  auto* label = new QLabel("Screen Selector:");
+  label->setFont(font);
+  screenSelectorLayout->addWidget(label);
   screenSelectorLayout->addWidget(screenSelector);
 
   auto* screenSelectContainer = new QWidget();
@@ -118,11 +128,30 @@ void UIWindow::startNewWallpaperEngine() {
   for (auto wallpaper : this->selectedWallpapers) {
     args.push_back("--screen-root");
     args.push_back(QString::fromStdString(wallpaper.first));
+    if (!extraFlags[wallpaper.first].empty()) {
+      for (std::string a : extraFlags[wallpaper.first]) args.push_back(QString::fromStdString(a));
+    }
     args.push_back("--bg");
     args.push_back(QString::fromStdString(wallpaper.second));
+
+    for (QString s : args) {
+      std::cout << s.toStdString();
+    }
+    std::cout << "\r\n";
   }
 
   // start Wallpaper Process
   wallpaperEngine->start(QCoreApplication::applicationFilePath(), args);
+}
+
+std::vector<std::string> UIWindow::split(std::string str, char delimiter) {
+  // Using str in a string stream
+    std::stringstream ss(str);
+    std::vector<std::string> res;
+    std::string token;
+    while (getline(ss, token, delimiter)) {
+        res.push_back(token);
+    }
+    return res;
 }
 

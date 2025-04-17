@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <string>
 #include <vector>
+#include <bits/stdc++.h>
 #include <iostream>
 
 class UIWindow : public QWidget {
@@ -33,7 +34,9 @@ class UIWindow : public QWidget {
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     std::map<std::string, std::string> selectedWallpapers;
+    std::map<std::string, std::vector<std::string>> extraFlags;
     QProcess* wallpaperEngine;
 
     void startNewWallpaperEngine();
+    static std::vector<std::string> split(std::string str, char r);
 };
