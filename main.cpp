@@ -12,6 +12,7 @@
 #include <QObject>
 #include <iterator>
 #include <qboxlayout.h>
+#include <qcoreapplication.h>
 #include <qglobal.h>
 #include <qgridlayout.h>
 #include <qlabel.h>
@@ -32,12 +33,17 @@
 #include "common.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;
+QCoreApplication* globalApp = nullptr;
+
 class UIWindow;
 
 void signalhandler(int sig)
 {
-    if (appPointer == nullptr)
-        return;
+    if (appPointer == nullptr) {
+      if(globalApp != nullptr) {
+        globalApp->quit();
+      } else return;
+    }
 
     appPointer->signal (sig);
 }
@@ -68,12 +74,12 @@ int main (int argc, char* argv[]) {
         wallpaperPaths.push_back(entry.path());
       }
 
-      for (const std::string s : wallpaperPaths) {
-        std::cout << s << "\r\n";
-      }
-      
-
       QApplication qapp(argc, argv);
+      globalApp = &qapp;
+
+      // Signal for properly close the app 
+      std::signal (SIGINT, signalhandler);
+      std::signal (SIGTERM, signalhandler);
 
       auto* uiWindow = new UIWindow(nullptr, &qapp);
 
