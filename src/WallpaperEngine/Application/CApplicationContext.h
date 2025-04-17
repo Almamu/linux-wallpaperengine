@@ -19,6 +19,7 @@ namespace WallpaperEngine::Application {
 class CApplicationContext {
   public:
     CApplicationContext (int argc, char* argv []);
+    CApplicationContext (std::string& wallpaperPath, std::string& display);
 
     enum WINDOW_MODE {
         /** Default window mode */

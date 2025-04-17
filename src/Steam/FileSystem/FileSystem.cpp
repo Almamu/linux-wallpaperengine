@@ -44,6 +44,21 @@ std::filesystem::path Steam::FileSystem::workshopDirectory (int appID, const std
     sLog.exception ("Cannot find workshop directory for steam app ", appID, " and content ", contentID);
 }
 
+std::filesystem::path Steam::FileSystem::workshopDirectory (int appID) {
+    auto homepath = detectHomepath ();
+
+    for (const char** current = workshop_content_default_paths; *current != nullptr; current++) {
+        auto currentpath = std::filesystem::path (homepath) / *current / std::to_string (appID);
+
+        if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
+            continue;
+
+        return currentpath;
+    }
+
+    sLog.exception ("Cannot find workshop directory for steam app ", appID, " and content ");
+}
+
 std::filesystem::path Steam::FileSystem::appDirectory (const std::string& appDirectory, const std::string& path) {
     auto homepath = detectHomepath ();
 

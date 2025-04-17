@@ -55,6 +55,70 @@ std::string stringPathFixes (const std::string& s) {
     return std::move (str);
 }
 
+CApplicationContext::CApplicationContext (std::string& path, std::string& display) {
+    // setup structs with sane default values for now
+    this->settings = {
+        .general =
+            {
+                .onlyListProperties = false,
+                .assets = "",
+                .defaultBackground = "",
+                .screenBackgrounds = {},
+                .properties = {},
+            },
+        .render =
+            {
+                .mode = NORMAL_WINDOW,
+                .maximumFPS = 30,
+                .pauseOnFullscreen = true,
+                .window =
+                    {
+                        .geometry = {},
+                        .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+                        .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
+                    },
+            },
+        .audio = {.enabled = true, .volume = 15, .automute = true, .audioprocessing = true},
+        .mouse =
+            {
+                .enabled = true,
+            },
+        .screenshot =
+            {
+                .take = false,
+                .path = "",
+            },
+    };
+
+    int c;
+
+    std::string lastScreen;
+
+    // handle screen screen-root
+    if (this->settings.general.screenBackgrounds.find (display) !=
+      this->settings.general.screenBackgrounds.end ()) sLog.exception ("Cannot specify the same screen more than once: ", optarg);
+    if (this->settings.render.mode == EXPLICIT_WINDOW)
+      sLog.exception ("Cannot run in both background and window mode");
+
+    this->settings.render.mode = DESKTOP_BACKGROUND;
+    lastScreen = display;
+    this->settings.general.screenBackgrounds [lastScreen] = "";
+    this->settings.general.screenScalings [lastScreen] = this->settings.render.window.scalingMode;
+     
+    this->settings.general.defaultBackground = translateBackground (path);
+
+    // perform some extra validation on the inputs
+    this->validateAssets ();
+    this->validateScreenshot ();
+
+    // setup application state
+    this->state.general.keepRunning = true;
+    this->state.audio.enabled = this->settings.audio.enabled;
+    this->state.audio.volume = this->settings.audio.volume;
+
+
+} 
+
 CApplicationContext::CApplicationContext (int argc, char* argv []) {
     // setup structs with sane default values for now
     this->settings = {
@@ -95,7 +159,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
     std::string lastScreen;
 
     while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mnt:", long_options, nullptr)) != -1) {
+        if (!lastScreen.empty()) {
+          sLog.out(lastScreen + "\n"); 
+        }
         switch (c) {
+
             case 'n': this->settings.render.pauseOnFullscreen = false; break;
 
             case 'b':

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/delia/.development/c++/linux-wallpaperengine/cmake/cmake_install.cmake",
+		"/home/delia/.development/c++/linux-wallpaperengine/cmake/libcef_dll_wrapper/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

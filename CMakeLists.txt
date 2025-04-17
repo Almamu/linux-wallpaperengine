@@ -34,6 +34,11 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
@@ -206,6 +211,9 @@ endif()
 add_executable(
     linux-wallpaperengine
     main.cpp
+    
+    src/Qt/UIWindow.h
+    src/Qt/UIWindow.cpp
 
     src/External/Android/fft.cpp
     src/External/Android/fft.h
@@ -442,6 +450,7 @@ add_executable(
 
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
+
 )
 
 COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
@@ -464,7 +473,8 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
     glfw
-    libcef_lib libcef_dll_wrapper)
+    libcef_lib libcef_dll_wrapper
+    Qt5::Widgets)
 
 
 if (WAYLAND_SUPPORT_FOUND)
