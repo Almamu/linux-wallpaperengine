@@ -109,7 +109,7 @@ class CPass final : public Helpers::CContextAware {
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (CShaderVariable* value);
-    void addUniform (CShaderVariable* value, CProperty* setting);
+    void addUniform (CShaderVariable* value, const CProperty* setting);
     void addUniform (const std::string& name, CShaderConstant* value);
     void addUniform (const std::string& name, const CShaderConstant* value);
     void addUniform (const std::string& name, int value);
@@ -154,7 +154,7 @@ class CPass final : public Helpers::CContextAware {
     const Core::Objects::Images::Materials::CPass* m_pass;
     std::vector<const ITexture*> m_textures;
     std::map<int, const CFBO*> m_fbos;
-    std::map<std::string, bool> m_foundCombos;
+    std::map<std::string, int> m_combos;
     std::vector<AttribEntry*> m_attribs;
     std::map<std::string, UniformEntry*> m_uniforms;
     std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms;

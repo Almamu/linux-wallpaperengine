@@ -78,13 +78,13 @@ void CPass::setupRenderFramebuffer () {
     glViewport (0, 0, this->m_drawTo->getRealWidth (), this->m_drawTo->getRealHeight ());
 
     // set texture blending
-    if (this->m_pass->getBlendingMode () == "translucent") {
+    if (this->getBlendingMode () == "translucent") {
         glEnable (GL_BLEND);
         glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else if (this->m_pass->getBlendingMode () == "additive") {
+    } else if (this->getBlendingMode () == "additive") {
         glEnable (GL_BLEND);
         glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
-    } else if (this->m_pass->getBlendingMode () == "normal") {
+    } else if (this->getBlendingMode () == "normal") {
         glEnable (GL_BLEND);
         glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
     } else {
@@ -369,18 +369,24 @@ void CPass::setupShaders () {
     // ensure the constants are defined
     const ITexture* texture0 = this->m_material->getImage ()->getTexture ();
 
+    // copy the combos from the pass
+    this->m_combos.insert (this->m_pass->getCombos ().begin (), this->m_pass->getCombos ().end ());
+
     // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL
     // ELEMENTS?
     if (texture0 != nullptr) {
         if (texture0->getFormat () == ITexture::TextureFormat::RG88) {
-            this->m_foundCombos.insert(std::pair("TEX0FORMAT", 8));
+            this->m_combos.insert_or_assign ("TEX0FORMAT", 8);
         } else if (texture0->getFormat () == ITexture::TextureFormat::R8) {
-            this->m_foundCombos.insert (std::pair("TEX0FORMAT", 9));
+            this->m_combos.insert_or_assign ("TEX0FORMAT", 9);
         }
     }
 
+    // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
+    // TODO: USED TO BUILD THE TEXTURES LATER
+    // use the combos copied from the pass so it includes the texture format
     this->m_shader = new Render::Shaders::CShader (
-        this->getMaterial ()->getImage ()->getContainer (), this->m_pass->getShader (), this->m_pass->getCombos (),
+        this->getMaterial ()->getImage ()->getContainer (), this->m_pass->getShader (), this->m_combos,
         this->m_pass->getTextures (), this->m_pass->getConstants ()
     );
 
@@ -464,84 +470,86 @@ void CPass::setupTextureUniforms () {
     this->addUniform ("g_Texture7", 7);
     this->addUniform ("g_Texture0Resolution", texture->getResolution ());
 
-    // do the real, final texture setup for the whole process
-    auto cur = this->m_textures.begin ();
-    const auto end = this->m_textures.end ();
-    auto fragCur = this->m_shader->getFragment ().getTextures ().begin ();
-    const auto fragEnd = this->m_shader->getFragment ().getTextures ().end ();
-    auto vertCur = this->m_shader->getVertex ().getTextures ().begin ();
-    const auto vertEnd = this->m_shader->getVertex ().getTextures ().end ();
-    auto bindCur = this->m_material->getMaterial ()->getTextureBinds ().begin ();
-    const auto bindEnd = this->m_material->getMaterial ()->getTextureBinds ().end ();
+    // TODO: SHOULDN'T THIS POINT TO THE BIND DIRECTLY? WHAT GIVES?
+    for (const auto& bind : this->m_material->getMaterial ()->getTextureBinds ()) {
+        this->m_finalTextures [bind.first] = nullptr;
+    }
 
-    int index = 1;
+    int index = 0;
 
-    // technically m_textures should have the right amount of textures
-    // but better be safe than sorry
-    while (bindCur != bindEnd || cur != end || fragCur != fragEnd || vertCur != vertEnd) {
-        if (bindCur != bindEnd) {
-            this->m_finalTextures [bindCur->first] = nullptr;
-            ++bindCur;
+    for (const auto& texture : this->m_textures) {
+        ++index;
+
+        if (texture == nullptr) {
+            continue;
         }
 
-        if (cur != end) {
-            if ((*cur) != nullptr)
-                this->m_finalTextures [index] = *cur;
+        this->m_finalTextures [index] = texture;
+    }
 
-            index++;
-            ++cur;
+    for (const auto& texture : this->m_shader->getFragment ().getTextures ()) {
+        // do not need to add a texture if there's one already
+        if (this->m_finalTextures.find (texture.first) != this->m_finalTextures.end ()) {
+            continue;
         }
 
-        if (fragCur != fragEnd) {
-            std::string textureName = fragCur->second;
-
-            try {
-                // resolve the texture first
-                const ITexture* textureRef;
-
-                if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                    textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
-
-                    if (textureRef == nullptr)
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-                } else
-                    textureRef = this->getContext ().resolveTexture (textureName);
-
-                // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-                // there
-                if (this->m_finalTextures.find (fragCur->first) == this->m_finalTextures.end ())
-                    this->m_finalTextures [fragCur->first] = textureRef;
-            } catch (std::runtime_error& ex) {
-                sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
-            }
-
-            ++fragCur;
+        if (texture.first == 0) {
+            continue;
         }
 
-        if (vertCur != vertEnd) {
-            std::string textureName = vertCur->second;
+        std::string textureName = texture.second;
 
-            try {
-                // resolve the texture first
-                const ITexture* textureRef;
+        try {
+            // resolve the texture first
+            const ITexture* textureRef;
 
-                if (textureName.find ("_rt_") == 0) {
-                    textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
 
-                    if (textureRef == nullptr)
-                        textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-                } else
-                    textureRef = this->getContext ().resolveTexture (textureName);
+                if (textureRef == nullptr)
+                    textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+            } else
+                textureRef = this->getContext ().resolveTexture (textureName);
 
-                // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-                // there
-                if (this->m_finalTextures.find (vertCur->first) == this->m_finalTextures.end ())
-                    this->m_finalTextures [vertCur->first] = textureRef;
-            } catch (std::runtime_error& ex) {
-                sLog.error ("Cannot resolve texture ", textureName, " for vertex shader ", ex.what ());
-            }
+            // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
+            // there
+            if (this->m_finalTextures.find (texture.first) == this->m_finalTextures.end ())
+                this->m_finalTextures [texture.first] = textureRef;
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
+        }
+    }
 
-            ++vertCur;
+    for (const auto& texture : this->m_shader->getVertex ().getTextures ()) {
+        // do not need to add a texture if there's one already
+        if (this->m_finalTextures.find (texture.first) != this->m_finalTextures.end ()) {
+            continue;
+        }
+
+        if (texture.first == 0) {
+            continue;
+        }
+
+        std::string textureName = texture.second;
+
+        try {
+            // resolve the texture first
+            const ITexture* textureRef;
+
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
+
+                if (textureRef == nullptr)
+                    textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
+            } else
+                textureRef = this->getContext ().resolveTexture (textureName);
+
+            // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
+            // there
+            if (this->m_finalTextures.find (texture.first) == this->m_finalTextures.end ())
+                this->m_finalTextures [texture.first] = textureRef;
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
     }
 
@@ -689,10 +697,6 @@ void CPass::setupShaderVariables () {
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 
-    if (this->getMaterial ()->getImage ()->getImage ()->getName ()== "Blur") {
-        sLog.out("girl!");
-    }
-
     // find variables in the shaders and set the value with the constants if possible
     for (const auto& [name, value] : this->m_pass->getConstants ()) {
         const auto parameters = this->m_shader->findParameter (name);
@@ -736,12 +740,7 @@ void CPass::setupShaderVariables () {
         } else if (value->is<CShaderConstantProperty> ()) {
             const auto property = value->as<CShaderConstantProperty> ();
 
-            // resolve the property to a current setting
-
-
-            // resolve property to a user setting and store that value instead
-            // properties have different kinds of values
-            sLog.out("property!");
+            this->addUniform (var, property->getProperty ());
         } else {
             sLog.exception ("Constant ", name,
                             " type does not match pixel/vertex shader variable and cannot be converted (",
@@ -771,7 +770,7 @@ void CPass::addUniform (CShaderVariable* value) {
         sLog.exception ("Trying to add an uniform from an unknown type: ", value->getName ());
 }
 
-void CPass::addUniform (CShaderVariable* value, CProperty* setting) {
+void CPass::addUniform (CShaderVariable* value, const CProperty* setting) {
     // TODO: CHECK THIS? CAN WE KEEP A REF SO THE VALUES ARE AUTOMATICALLY UPDATED?
     // TODO: MAYBE PROVIDE PUBLIC CASTS FOR EVERYTHING INSTEAD OF MANUALLY DOING IT EVERYWHERE
     if (value->is<CShaderVariableVector2> ()) {

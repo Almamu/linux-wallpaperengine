@@ -43,7 +43,7 @@ class CShader {
      */
     CShader (
         const CContainer* container, std::string filename,
-        const std::map<std::string, int>& combos,const std::map<int, std::string>& textures,
+        const std::map<std::string, int>& combos, const std::map<int, std::string>& textures,
         const std::map<std::string, const CShaderConstant*>& constants);
     /**
      * @return The vertex's shader coude for OpenGL to use
