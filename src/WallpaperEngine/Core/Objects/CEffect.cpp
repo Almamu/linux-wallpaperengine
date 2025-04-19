@@ -107,7 +107,7 @@ std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*>
                 continue;
             }
 
-            if (user != cur.value ().end ()) {
+            if (user != cur.value ().end () && user->is_string ()) {
                 // look for a property with the correct name
                 const auto& properties = project.getProperties ();
                 const auto property = properties.find (*user);
