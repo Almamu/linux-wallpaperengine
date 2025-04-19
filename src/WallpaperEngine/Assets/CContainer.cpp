@@ -15,8 +15,7 @@ std::filesystem::path CContainer::resolveRealFile (const std::filesystem::path& 
 
 const ITexture* CContainer::readTexture (const std::filesystem::path& filename) const {
     // get the texture's filename (usually .tex)
-    std::filesystem::path texture = "materials" / filename;
-    texture.replace_extension (".tex");
+    std::filesystem::path texture = "materials" / std::filesystem::path (filename.string ().append (".tex"));
 
     const uint8_t* textureContents = this->readFile (texture, nullptr);
 
