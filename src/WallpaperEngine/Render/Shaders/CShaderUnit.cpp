@@ -224,10 +224,9 @@ void CShaderUnit::preprocessIncludes () {
         }
 
         // main located, search for uniforms and find the latest one available
-        size_t lastAttribute = this->m_preprocessed.find_last_of ("attribute", start);
-        size_t lastVarying = this->m_preprocessed.find_last_of ("varying", start);
-        size_t lastUniform = this->m_preprocessed.find_last_of ("uniform", start);
-
+        size_t lastAttribute = this->m_preprocessed.rfind ("attribute", start);
+        size_t lastVarying = this->m_preprocessed.rfind ("varying", start);
+        size_t lastUniform = this->m_preprocessed.rfind ("uniform", start);
         size_t latest = lastAttribute;
 
         if (latest == std::string::npos) {
