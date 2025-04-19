@@ -112,11 +112,12 @@ std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*>
                 const auto& properties = project.getProperties ();
                 const auto property = properties.find (*user);
 
-                if (property == properties.end ()) {
-                    sLog.exception ("Shader constant pointing to non-existant project property: ", user->get <std::string> ());
+                if (property != properties.end ()) {
+                    constant = new Effects::Constants::CShaderConstantProperty (property->second);
+                } else {
+                    sLog.error ("Shader constant pointing to non-existant project property: ", user->get <std::string> ());
+                    val = it.value ();
                 }
-
-                constant = new Effects::Constants::CShaderConstantProperty (property->second);
             } else {
                 val = it.value ();
             }
