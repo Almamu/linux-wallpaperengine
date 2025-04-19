@@ -31,17 +31,17 @@ class CObject {
   public:
     static const CObject* fromJSON (const json& data, const Wallpapers::CScene* scene, const CContainer* container);
 
-    template <class T> const T* as () const {
+    template <class T> [[nodiscard]] const T* as () const {
         assert (is<T> ());
         return reinterpret_cast<const T*> (this);
     }
 
-    template <class T> T* as () {
+    template <class T> [[nodiscard]] T* as () {
         assert (is<T> ());
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () const {
+    template <class T> [[nodiscard]] bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -59,7 +59,7 @@ class CObject {
   protected:
     CObject (
         const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
-        const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
+        const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
         std::vector<int> dependencies);
 
   private:
@@ -70,7 +70,7 @@ class CObject {
     const std::string m_name;
     const CUserSettingVector3* m_origin;
     const CUserSettingVector3* m_scale;
-    const glm::vec3 m_angles;
+    const CUserSettingVector3* m_angles;
 
     const std::vector<int> m_dependencies;
 

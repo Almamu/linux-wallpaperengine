@@ -18,7 +18,8 @@ using namespace WallpaperEngine::Core::UserSettings;
 
 CObject::CObject (
     const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
-    const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, std::vector<int> dependencies
+    const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
+    std::vector<int> dependencies
 ) :
     m_type (std::move(type)),
     m_visible (visible),
@@ -37,7 +38,7 @@ const CObject* CObject::fromJSON (
     const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, scene->getProject(), "visible", true);
     const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "origin", {0, 0, 0});
     const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "scale", {1, 1, 1});
-    const auto angles_val = jsonFindDefault<glm::vec3> (data, "angles", glm::vec3 (0, 0, 0));
+    const auto angles_val = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "angles", glm::vec3 (0, 0, 0));
     const auto name = jsonFindRequired <std::string> (data, "name", "Objects must have name");
     const auto effects_it = data.find ("effects");
     const auto dependencies_it = data.find ("dependencies");
@@ -66,7 +67,7 @@ const CObject* CObject::fromJSON (
         /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
         try {
             object = Objects::CParticle::fromFile (
-                scene, particle_it->get<std::string> (), container, visible, id, name, origin, scale, dependencies);
+                scene, particle_it->get<std::string> (), container, visible, id, name, origin, angles_val, scale, dependencies);
         } catch (std::runtime_error&) {
             return nullptr;
         }
@@ -92,7 +93,7 @@ const glm::vec3& CObject::getScale () const {
 }
 
 const glm::vec3& CObject::getAngles () const {
-    return this->m_angles;
+    return this->m_angles->getVec3 ();
 }
 
 const std::string& CObject::getName () const {

@@ -21,8 +21,8 @@ class CSound : public CObject {
   public:
     static const CObject* fromJSON (
         const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible,
-        int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
-        std::vector<int> dependencies);
+        int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
+        const CUserSettingVector3* angles, std::vector<int> dependencies);
 
     /**
      * @return The list of sounds to play
@@ -36,8 +36,8 @@ class CSound : public CObject {
   protected:
     CSound (
         const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
-        const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, bool repeat,
-        std::vector<std::string> sounds, std::vector<int> dependencies);
+        const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
+        bool repeat, std::vector<std::string> sounds, std::vector<int> dependencies);
 
     /**
      * Type value used to differentiate the different types of objects in a background

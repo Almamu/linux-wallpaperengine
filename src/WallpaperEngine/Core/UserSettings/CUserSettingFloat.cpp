@@ -41,6 +41,7 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
     const Projects::CProperty* sourceProperty = nullptr;
 
     if (data.is_object ()) {
+        auto animation = data.find ("animation");
         auto userIt = data.find ("user");
         defaultValue = jsonFindDefault (data, "value", 1.0f); // is this default value right?
 
@@ -64,6 +65,10 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
             if (sourceProperty == nullptr) {
                 sLog.error ("Cannot find property ", source, " to get value from for user setting value, using default value: ", defaultValue);
             }
+
+        if (animation != data.end ()) {
+            sLog.error ("Detected a setting with animation data, which is not supported yet!");
+        }
         } else {
             sLog.error ("Float property doesn't have user member, this could mean an scripted value");
         }

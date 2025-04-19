@@ -20,7 +20,7 @@ class CParticle : public CObject {
     static const CParticle* fromFile (
         const Wallpapers::CScene* scene, const std::string& filename, const CContainer* container,
         const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
-        const CUserSettingVector3* scale, std::vector<int> dependencies);
+        const CUserSettingVector3* angles, const CUserSettingVector3* scale, std::vector<int> dependencies);
 
     /**
      * @return The list of emitters for the particle system
@@ -39,7 +39,7 @@ class CParticle : public CObject {
     CParticle (
         const Wallpapers::CScene* scene, uint32_t starttime, uint32_t maxcount, const CUserSettingBoolean* visible,
         int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
-        const std::vector<const Particles::CControlPoint*>& controlpoints,
+        const CUserSettingVector3* angles, const std::vector<const Particles::CControlPoint*>& controlpoints,
         const std::vector<const Particles::CEmitter*>& emitters,
         const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies);
 

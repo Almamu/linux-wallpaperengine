@@ -8,7 +8,7 @@ using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
     const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
-    const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles, bool repeat,
+    const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles, bool repeat,
     std::vector<std::string> sounds, std::vector<int> dependencies
 ) :
     CObject (scene, visible, id, std::move(name), Type, origin, scale, angles, std::move(dependencies)),
@@ -17,8 +17,8 @@ CSound::CSound (
 
 const WallpaperEngine::Core::CObject* CSound::fromJSON (
     const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible, int id,
-    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
-    std::vector<int> dependencies
+    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
+    const CUserSettingVector3* angles, std::vector<int> dependencies
 ) {
     // TODO: PARSE AUDIO VOLUME
     std::vector<std::string> sounds;

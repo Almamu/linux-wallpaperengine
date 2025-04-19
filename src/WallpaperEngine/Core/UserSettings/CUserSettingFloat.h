@@ -13,7 +13,7 @@ class CUserSettingFloat : public CUserSettingValue {
     typedef float data_type;
 
     static const CUserSettingFloat* fromJSON (const nlohmann::json& data, const CProject& project);
-    static const CUserSettingFloat* fromScalar (const float value);
+    static const CUserSettingFloat* fromScalar (float value);
     static std::string Type;
 
   private:

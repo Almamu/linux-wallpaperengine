@@ -41,6 +41,7 @@ const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& 
     std::string expectedValue;
 
     if (data.is_object ()) {
+        auto animation = data.find ("animation");
         auto userIt = data.find ("user");
         defaultValue = jsonFindDefault (data, "value", glm::vec3()); // is this default value right?
 
@@ -66,6 +67,10 @@ const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& 
             }
         } else {
             sLog.error ("Vector property doesn't have user member, this could mean an scripted value");
+        }
+
+        if (animation != data.end ()) {
+            sLog.error ("Detected a setting with animation data, which is not supported yet!");
         }
     } else {
         if (!data.is_string ())

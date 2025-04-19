@@ -30,7 +30,7 @@ class CImage : public CObject {
     static const CObject* fromJSON (
         const Wallpapers::CScene* scene, const json& data, const CContainer* container,
         const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
-        const CUserSettingVector3* scale, glm::vec3 angles, const json::const_iterator& effects_it,
+        const CUserSettingVector3* scale, const CUserSettingVector3* angles, const json::const_iterator& effects_it,
         std::vector<int> dependencies);
 
     /**
@@ -85,10 +85,11 @@ class CImage : public CObject {
   protected:
     CImage (
         const Wallpapers::CScene* scene, const Images::CMaterial* material, const CUserSettingBoolean* visible, int id,
-        std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale, glm::vec3 angles,
-        glm::vec2 size, std::string alignment, const CUserSettingVector3* color, const CUserSettingFloat* alpha,
-        float brightness, uint32_t colorBlendMode, glm::vec2 parallaxDepth, bool fullscreen, bool passthrough,
-        bool autosize, std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies);
+        std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
+        const CUserSettingVector3* angles, glm::vec2 size, std::string alignment, const CUserSettingVector3* color,
+        const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode, glm::vec2 parallaxDepth,
+        bool fullscreen, bool passthrough, bool autosize, std::vector<const Objects::CEffect*> effects,
+        std::vector<int> dependencies);
 
     /**
      * Type value used to differentiate the different types of objects in a background
