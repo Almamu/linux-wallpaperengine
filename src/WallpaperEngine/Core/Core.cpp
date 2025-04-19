@@ -166,42 +166,40 @@ template <typename T> const T Core::jsonFindRequired (
 ) {
     const auto iterator = jsonFindRequired (data, key, notFoundMsg);
 
-#define GET_TEMPLATE_NAME(T) (#T)
-
     // vector types need of special handling
     if  constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector4 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::vec3>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector3 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::vec2>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector2 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec4>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector4i (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec3>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector3i (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec2>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector2i (*iterator);
@@ -209,8 +207,7 @@ template <typename T> const T Core::jsonFindRequired (
         return *iterator;
     }
 
-    sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected ", GET_TEMPLATE_NAME (T));
-#undef GET_TEMPLATE_NAME
+    sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), ": ", notFoundMsg);
 }
 
 template const bool Core::jsonFindRequired (const nlohmann::json::const_iterator& data, const char* key, const char* notFoundMsg);
@@ -235,42 +232,40 @@ template <typename T> const T Core::jsonFindRequired (
 ) {
     const auto iterator = jsonFindRequired (data, key, notFoundMsg);
 
-#define GET_TEMPLATE_NAME(T) (#T)
-
     // vector types need of special handling
     if  constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector4 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::vec3>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector3 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::vec2>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector2 (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec4>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector4i (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec3>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector3i (*iterator);
     } else if constexpr (std::is_same_v<T, glm::ivec2>) {
         if (!typeCheck<T> (iterator)) {
-            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string");
+            sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
 
         return aToVector2i (*iterator);
@@ -278,8 +273,7 @@ template <typename T> const T Core::jsonFindRequired (
         return *iterator;
     }
 
-    sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected ", GET_TEMPLATE_NAME (T));
-#undef GET_TEMPLATE_NAME
+    sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), ": ", notFoundMsg);
 }
 
 template const bool Core::jsonFindRequired (const nlohmann::json& data, const char* key, const char* notFoundMsg);
@@ -329,9 +323,6 @@ template <typename T> const T Core::jsonFindDefault (
     if (value == data->end () || value->type () == nlohmann::detail::value_t::null)
         return defaultValue;
 
-
-#define GET_TEMPLATE_NAME(T) (#T)
-
     // vector types need of special handling
     if constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (value)) {
@@ -374,7 +365,6 @@ template <typename T> const T Core::jsonFindDefault (
     }
 
     return defaultValue;
-#undef GET_TEMPLATE_NAME
 }
 
 template const bool Core::jsonFindDefault (const nlohmann::json::const_iterator& data, const char* key, const bool defaultValue);
@@ -402,9 +392,6 @@ template <typename T> const T Core::jsonFindDefault (
     if (value == data.end () || value->type () == nlohmann::detail::value_t::null)
         return defaultValue;
 
-
-#define GET_TEMPLATE_NAME(T) (#T)
-
     // vector types need of special handling
     if constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (value)) {
@@ -447,7 +434,6 @@ template <typename T> const T Core::jsonFindDefault (
     }
 
     return defaultValue;
-#undef GET_TEMPLATE_NAME
 }
 
 template const bool Core::jsonFindDefault (const nlohmann::json& data, const char* key, const bool defaultValue);
