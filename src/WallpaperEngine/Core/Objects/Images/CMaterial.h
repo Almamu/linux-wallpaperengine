@@ -66,7 +66,7 @@ class CMaterial {
         std::vector<const Materials::CPass*> passes);
     CMaterial (
         std::string name, std::string target, std::map<int, const Effects::CBind*> textureBindings,
-        const std::vector<const Materials::CPass*> passes);
+        std::vector<const Materials::CPass*> passes);
 
   private:
     /** All the shader passes required to render this material */

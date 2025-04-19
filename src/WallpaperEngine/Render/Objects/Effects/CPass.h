@@ -150,7 +150,6 @@ class CPass final : public Helpers::CContextAware {
 
     CMaterial* m_material;
     const Core::Objects::Images::Materials::CPass* m_pass;
-    std::map<int, const ITexture*> m_textures;
     std::map<int, const CFBO*> m_fbos;
     std::map<std::string, int> m_combos;
     std::vector<AttribEntry*> m_attribs;
@@ -165,7 +164,7 @@ class CPass final : public Helpers::CContextAware {
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, const ITexture*> m_finalTextures;
+    std::map<int, const ITexture*> m_textures;
 
     Render::Shaders::CShader* m_shader;
 

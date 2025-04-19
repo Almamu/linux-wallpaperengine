@@ -65,13 +65,17 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
 }
 
 const CFBO* CPass::resolveFBO (const std::string& name) const {
-    const auto fbo = this->m_material->getEffect()->findFBO (name);
+    auto fbo = this->m_material->getEffect()->findFBO (name);
 
     if (fbo == nullptr) {
-        return this->m_material->getImage ()->getScene ()->findFBO (name);
+        fbo = this->m_material->getImage ()->getScene ()->findFBO (name);
     }
 
-    sLog.exception ("Tried to resolve and FBO without any luck: ", name);
+    if (fbo == nullptr) {
+        sLog.exception ("Tried to resolve and FBO without any luck: ", name);
+    }
+
+    return fbo;
 }
 
 void CPass::setupRenderFramebuffer () {
@@ -155,8 +159,8 @@ void CPass::setupRenderTexture () {
     glBindTexture (GL_TEXTURE_2D, texture->getTextureID (currentTexture));
 
     // continue on the map from the second texture
-    if (!this->m_finalTextures.empty ()) {
-        for (const auto& [index, expectedTexture] : this->m_finalTextures) {
+    if (!this->m_textures.empty ()) {
+        for (const auto& [index, expectedTexture] : this->m_textures) {
             if (expectedTexture == nullptr) {
                 texture = this->m_input;
             } else {
@@ -265,8 +269,8 @@ void CPass::cleanupRenderSetup () {
     glBindTexture (GL_TEXTURE_2D, 0);
 
     // continue on the map from the second texture
-    if (!this->m_finalTextures.empty ()) {
-        for (const auto& [index, _] : this->m_finalTextures) {
+    if (!this->m_textures.empty ()) {
+        for (const auto& [index, _] : this->m_textures) {
             glActiveTexture (GL_TEXTURE0 + index);
             glBindTexture (GL_TEXTURE_2D, 0);
         }
@@ -480,7 +484,7 @@ void CPass::setupTextureUniforms () {
                 textureRef = this->getContext ().resolveTexture (textureName);
             }
 
-            this->m_finalTextures [index] = textureRef;
+            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
@@ -497,7 +501,7 @@ void CPass::setupTextureUniforms () {
                 textureRef = this->getContext ().resolveTexture (textureName);
             }
 
-            this->m_finalTextures [index] = textureRef;
+            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
@@ -510,9 +514,9 @@ void CPass::setupTextureUniforms () {
         }
 
         if (textureName.find ("_rt_") == 0) {
-            this->m_finalTextures[index] = this->resolveFBO (textureName);
+            this->m_textures[index] = this->resolveFBO (textureName);
         } else if (!textureName.empty ()) {
-            this->m_finalTextures[index] = this->m_material->getImage ()->getContext ().resolveTexture (textureName);
+            this->m_textures[index] = this->m_material->getImage ()->getContext ().resolveTexture (textureName);
         }
     }
 
@@ -520,10 +524,10 @@ void CPass::setupTextureUniforms () {
     for (const auto& [index, bind] : this->m_material->getMaterial ()->getTextureBinds ()) {
         if (bind->getName () == "previous") {
             // use nullptr as indication for "previous" texture
-            this->m_finalTextures [index] = nullptr;
+            this->m_textures [index] = nullptr;
         } else {
             // a normal bind, search for the corresponding FBO and set it
-            this->m_finalTextures [index] = this->resolveFBO (bind->getName ());
+            this->m_textures [index] = this->resolveFBO (bind->getName ());
         }
     }
 
@@ -540,7 +544,7 @@ void CPass::setupTextureUniforms () {
     this->addUniform ("g_Texture7", 7);
     this->addUniform ("g_Texture0Resolution", texture->getResolution ());
 
-    for (const auto& [textureIndex, expectedTexture] : this->m_finalTextures) {
+    for (const auto& [textureIndex, expectedTexture] : this->m_textures) {
         std::ostringstream namestream;
 
         namestream << "g_Texture" << textureIndex << "Resolution";

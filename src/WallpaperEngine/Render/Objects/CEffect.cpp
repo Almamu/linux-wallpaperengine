@@ -19,11 +19,13 @@ const std::vector<Effects::CMaterial*>& CEffect::getMaterials () const {
 }
 
 const CFBO* CEffect::findFBO (const std::string& name) const {
-    for (const auto& cur : this->m_fbos)
-        if (cur->getName () == name)
-            return cur;
+    const auto fbo = this->m_fbos.find (name);
 
-    return nullptr;
+    if (fbo == this->m_fbos.end ()) {
+        return nullptr;
+    }
+
+    return fbo->second;
 }
 
 void CEffect::generatePasses () {
@@ -34,17 +36,22 @@ void CEffect::generatePasses () {
 void CEffect::generateFBOs () {
     for (const auto& cur : this->m_effect->getFbos ()) {
         // TODO: IS THAT DIVISION OKAY? SHOULDN'T IT BE A MULTIPLICATION? WTF?
-        this->m_fbos.push_back (new CFBO (cur->getName (),
-                                          ITexture::TextureFormat::ARGB8888,         // TODO: CHANGE
-                                          this->m_image->getTexture ()->getFlags (), // TODO: CHANGE
-                                          cur->getScale (), this->m_image->getSize ().x / cur->getScale (),
-                                          this->m_image->getSize ().y / cur->getScale (),
-                                          this->m_image->getSize ().x / cur->getScale (),
-                                          this->m_image->getSize ().y / cur->getScale ()));
+        this->m_fbos.insert (std::pair (
+            cur->getName(),
+            new CFBO (
+                // TODO: SET PROPER FLAGS AND FORMAT
+                cur->getName (), ITexture::TextureFormat::ARGB8888,
+                this->m_image->getTexture ()->getFlags (), cur->getScale (),
+                this->m_image->getSize ().x / cur->getScale (),
+                this->m_image->getSize ().y / cur->getScale (),
+                this->m_image->getSize ().x / cur->getScale (),
+                this->m_image->getSize ().y / cur->getScale ()
+            )
+        ));
     }
 }
 
-const std::vector<CFBO*>& CEffect::getFBOs () const {
+const std::map<std::string, CFBO*>& CEffect::getFBOs () const {
     return this->m_fbos;
 }
 

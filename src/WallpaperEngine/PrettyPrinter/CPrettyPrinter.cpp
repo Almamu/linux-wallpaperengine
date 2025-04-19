@@ -28,10 +28,10 @@ void CPrettyPrinter::printWallpaper (const CWallpaper& wallpaper) {
 
         this->m_out << "FBOs count: " << fbos.size ();
 
-        if (fbos.size () > 0) {
+        if (!fbos.empty()) {
             this->increaseIndentation ();
 
-            for (const auto fbo : fbos) {
+            for (const auto& fbo : fbos) {
                 this->printFBO (*fbo.second);
             }
 
@@ -42,7 +42,7 @@ void CPrettyPrinter::printWallpaper (const CWallpaper& wallpaper) {
 
         const auto objects = scene->getObjectsByRenderOrder ();
 
-        if (objects.size () > 0) {
+        if (!objects.empty()) {
             this->m_out << "Objects count: " << objects.size ();
             this->increaseIndentation ();
 
@@ -101,14 +101,14 @@ void CPrettyPrinter::printEffect (const CEffect& effect, int effectId) {
     this->m_out << "Visibility status: " << effect.isVisible ();
     this->lineEnd ();
 
-    const auto fbos = effect.getFBOs();
+    const auto& fbos = effect.getFBOs();
 
     this->m_out << "FBOs count: " << fbos.size();
 
-    if (fbos.size() > 0) {
+    if (!fbos.empty()) {
         this->increaseIndentation ();
 
-        for (const auto fbo : fbos) {
+        for (const auto& [name, fbo] : fbos) {
             this->printFBO (*fbo);
         }
 
@@ -117,7 +117,7 @@ void CPrettyPrinter::printEffect (const CEffect& effect, int effectId) {
         this->lineEnd ();
     }
 
-    const auto materials = effect.getMaterials ();
+    const auto& materials = effect.getMaterials ();
 
     for (const auto material : materials) {
         this->printMaterial (*material);
@@ -148,11 +148,11 @@ void CPrettyPrinter::printMaterial (const CMaterial& material) {
         this->lineEnd ();
     }
 
-    const auto passes = material.getPasses ();
+    const auto& passes = material.getPasses ();
 
     this->m_out << "Passes count: " << passes.size ();
 
-    if (passes.size () > 0) {
+    if (!passes.empty()) {
         this->increaseIndentation ();
 
         int passId = 0;
@@ -166,7 +166,7 @@ void CPrettyPrinter::printMaterial (const CMaterial& material) {
 
     const auto textureBinds = base->getTextureBinds ();
 
-    if (textureBinds.size () > 0) {
+    if (!textureBinds.empty()) {
         this->m_out << "Texture binds count: " << textureBinds.size ();
         this->increaseIndentation ();
 
@@ -187,7 +187,7 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
     this->m_out << "Pass " << passId << ":";
     this->increaseIndentation ();
 
-    if (pass.getBlendingMode ().compare (base->getBlendingMode ()) != 0) {
+    if (pass.getBlendingMode () != base->getBlendingMode ()) {
         this->m_out << "Render blending mode: " << pass.getBlendingMode ();
         this->lineEnd ();
         this->m_out << "Blending mode: " << base->getBlendingMode ();
@@ -207,11 +207,11 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
     this->lineEnd ();
     const auto textures = base->getTextures ();
 
-    if (textures.size () > 0) {
+    if (!textures.empty()) {
         this->m_out << "Textures " << textures.size () << ":";
         this->increaseIndentation ();
 
-        for (const auto texture : textures) {
+        for (const auto& texture : textures) {
             this->m_out << texture.first << ": " << texture.second;
             this->lineEnd ();
         }
@@ -219,9 +219,9 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto fragmentTextures = pass.getShader ()->getFragment ().getTextures ();
+    const auto& fragmentTextures = pass.getShader ()->getFragment ().getTextures ();
 
-    if (fragmentTextures.size () > 0) {
+    if (!fragmentTextures.empty()) {
         this->m_out << "Fragment textures " << fragmentTextures.size () << ":";
         this->increaseIndentation ();
 
@@ -233,9 +233,9 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto vertexTextures = pass.getShader ()->getFragment ().getTextures ();
+    const auto& vertexTextures = pass.getShader ()->getFragment ().getTextures ();
 
-    if (vertexTextures.size () > 0) {
+    if (!vertexTextures.empty()) {
         this->m_out << "Vertex textures " << textures.size () << ":";
         this->increaseIndentation ();
 
@@ -247,13 +247,13 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto combos = base->getCombos();
+    const auto& combos = base->getCombos();
 
-    if (combos.size () > 0) {
+    if (!combos.empty()) {
         this->m_out << "Combos " << combos.size () << ":";
         this->increaseIndentation ();
 
-        for (const auto combo : combos) {
+        for (const auto& combo : combos) {
             this->m_out << combo.first << " = " << combo.second;
             this->lineEnd ();
         }
@@ -261,9 +261,9 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto vertexCombos = pass.getShader ()->getVertex ().getDiscoveredCombos ();
+    const auto& vertexCombos = pass.getShader ()->getVertex ().getDiscoveredCombos ();
 
-    if (vertexCombos.size () > 0) {
+    if (!vertexCombos.empty()) {
         this->m_out << "Vertex combos " << vertexCombos.size () << ":";
         this->increaseIndentation ();
 
@@ -275,9 +275,9 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto fragmentCombos = pass.getShader ()->getFragment ().getDiscoveredCombos ();
+    const auto& fragmentCombos = pass.getShader ()->getFragment ().getDiscoveredCombos ();
 
-    if (fragmentCombos.size () > 0) {
+    if (!fragmentCombos.empty()) {
         this->m_out << "Vertex combos " << fragmentCombos.size () << ":";
         this->increaseIndentation ();
 
@@ -289,13 +289,13 @@ void CPrettyPrinter::printPass (const CPass& pass, int passId) {
         this->decreaseIndentation ();
     }
 
-    const auto constants = base->getConstants ();
+    const auto& constants = base->getConstants ();
 
-    if (constants.size () > 0) {
+    if (!constants.empty()) {
         this->m_out << "Constants " << constants.size () << ":";
         this->increaseIndentation ();
 
-        for (const auto constant : constants) {
+        for (const auto& constant : constants) {
             this->m_out << constant.first << " = " << constant.second->toString ();
             this->lineEnd ();
         }
@@ -320,7 +320,7 @@ void CPrettyPrinter::printTextureInfo (const ITexture& texture) {
     this->m_out << "Is animated: " << texture.isAnimated ();
     this->lineEnd ();
 
-    const auto frames = texture.getFrames ();
+    const auto& frames = texture.getFrames ();
 
     if (frames.size () > 1) {
         this->m_out << frames.size () << " frames: ";

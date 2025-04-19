@@ -22,17 +22,17 @@ class CEffect {
   public:
     CEffect (CImage* image, const Core::Objects::CEffect* effect);
 
-    CImage* getImage () const;
+    [[nodiscard]] CImage* getImage () const;
 
-    const std::vector<Effects::CMaterial*>& getMaterials () const;
+    [[nodiscard]] const std::vector<Effects::CMaterial*>& getMaterials () const;
 
-    const CFBO* findFBO (const std::string& name) const;
-    bool isVisible () const;
+    [[nodiscard]] const CFBO* findFBO (const std::string& name) const;
+    [[nodiscard]] bool isVisible () const;
 
   protected:
     friend class WallpaperEngine::PrettyPrinter::CPrettyPrinter;
 
-    const std::vector<CFBO*>& getFBOs () const;
+    [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;
 
   private:
     void generatePasses ();
@@ -41,7 +41,7 @@ class CEffect {
     CImage* m_image;
     const Core::Objects::CEffect* m_effect;
 
-    std::vector<CFBO*> m_fbos;
+    std::map<std::string, CFBO*> m_fbos;
     std::vector<Effects::CMaterial*> m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects
