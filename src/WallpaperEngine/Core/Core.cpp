@@ -167,7 +167,21 @@ template <typename T> const T Core::jsonFindRequired (
     const auto iterator = jsonFindRequired (data, key, notFoundMsg);
 
     // vector types need of special handling
-    if  constexpr (std::is_same_v<T, glm::vec4>) {
+    if constexpr (std::is_same_v<T, std::string>) {
+        // std::strings are special, type checking doesn't need to happen, we just want the string representation
+        // of whatever is in there
+        if (iterator->is_number_integer ()) {
+            return std::to_string (iterator->get <int> ());
+        } else if (iterator->is_number_float ()) {
+            return std::to_string (iterator->get <float> ());
+        } else if (iterator->is_boolean()) {
+            return std::to_string (iterator->get <bool> ());
+        } else if (iterator->is_null ()) {
+            return "null";
+        } else if (iterator->is_string ()) {
+            return *iterator;
+        }
+    } else if  constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (iterator)) {
             sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
@@ -233,7 +247,21 @@ template <typename T> const T Core::jsonFindRequired (
     const auto iterator = jsonFindRequired (data, key, notFoundMsg);
 
     // vector types need of special handling
-    if  constexpr (std::is_same_v<T, glm::vec4>) {
+    if constexpr (std::is_same_v<T, std::string>) {
+        // std::strings are special, type checking doesn't need to happen, we just want the string representation
+        // of whatever is in there
+        if (iterator->is_number_integer ()) {
+            return std::to_string (iterator->get <int> ());
+        } else if (iterator->is_number_float ()) {
+            return std::to_string (iterator->get <float> ());
+        } else if (iterator->is_boolean()) {
+            return std::to_string (iterator->get <bool> ());
+        } else if (iterator->is_null ()) {
+            return "null";
+        } else if (iterator->is_string ()) {
+            return *iterator;
+        }
+    } else if constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (iterator)) {
             sLog.exception ("key value doesn't match expected type. Got ", iterator->type_name(), " expected vector-like-string", ": ", notFoundMsg);
         }
@@ -324,7 +352,21 @@ template <typename T> const T Core::jsonFindDefault (
         return defaultValue;
 
     // vector types need of special handling
-    if constexpr (std::is_same_v<T, glm::vec4>) {
+    if constexpr (std::is_same_v<T, std::string>) {
+        // std::strings are special, type checking doesn't need to happen, we just want the string representation
+        // of whatever is in there
+        if (value->is_number_integer ()) {
+            return std::to_string (value->get <int> ());
+        } else if (value->is_number_float ()) {
+            return std::to_string (value->get <float> ());
+        } else if (value->is_boolean()) {
+            return std::to_string (value->get <bool> ());
+        } else if (value->is_null ()) {
+            return "null";
+        } else if (value->is_string ()) {
+            return *value;
+        }
+    } else if constexpr (std::is_same_v<T, glm::vec4>) {
         if (!typeCheck<T> (value)) {
             return defaultValue;
         }
