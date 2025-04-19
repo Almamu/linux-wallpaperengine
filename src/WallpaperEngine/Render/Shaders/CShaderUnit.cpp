@@ -106,7 +106,13 @@ void CShaderUnit::preprocessVariables () {
 
         if (combo != std::string::npos) {
             this->parseComboConfiguration (line.substr(combo + strlen("// [COMBO] ")), 0);
-        } else if (uniform != std::string::npos && comment != std::string::npos && semicolon != std::string::npos) {
+        } else if (
+            uniform != std::string::npos &&
+            comment != std::string::npos &&
+            semicolon != std::string::npos &&
+            // this check ensures that the comment is after the semicolon (so it's not a commented-out line)
+            // this needs further refining as it's not taking into account block comments
+            semicolon < comment) {
             // uniforms with comments should never have a value assigned, use this fact to detect the required parts
             size_t last_space = line.find_last_of (' ', semicolon);
 
