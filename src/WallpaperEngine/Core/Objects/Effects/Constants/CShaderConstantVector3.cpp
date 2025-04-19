@@ -3,21 +3,18 @@
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 CShaderConstantVector3::CShaderConstantVector3 (glm::vec3 value) :
-    CShaderConstant (Type),
-    m_value (value) {}
-
-const glm::vec3* CShaderConstantVector3::getValue () const {
-    return &this->m_value;
+    CShaderConstant (Type) {
+    this->update (value);
 }
 
 std::string CShaderConstantVector3::toString () const {
     std::string result = "(";
 
-    result.append (std::to_string (this->m_value.x));
+    result.append (std::to_string (this->getVec3 ().x));
     result.append (",");
-    result.append (std::to_string (this->m_value.y));
+    result.append (std::to_string (this->getVec3 ().y));
     result.append (",");
-    result.append (std::to_string (this->m_value.z));
+    result.append (std::to_string (this->getVec3 ().z));
     result.append (")");
 
     return result;

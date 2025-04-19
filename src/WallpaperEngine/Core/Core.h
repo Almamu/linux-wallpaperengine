@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CProject.h"
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -7,6 +8,8 @@
 #include <string>
 
 namespace WallpaperEngine::Core {
+class CProject;
+
 glm::vec4 aToVector4 (const char* str);
 glm::vec3 aToVector3 (const char* str);
 glm::vec2 aToVector2 (const char* str);
@@ -42,7 +45,7 @@ template <typename T> const T jsonFindDefault (
 template <typename T> const T jsonFindDefault (
     const nlohmann::json& data, const char* key, const T defaultValue);
 template <typename T> const T* jsonFindUserConfig (
-    const nlohmann::json::const_iterator& data, const char* key, typename T::data_type defaultValue);
+    const nlohmann::json::const_iterator& data, const CProject& project, const char* key, typename T::data_type defaultValue);
 template <typename T> const T* jsonFindUserConfig (
-    const nlohmann::json& data, const char* key, typename T::data_type defaultValue);
+    const nlohmann::json& data, const CProject& project, const char* key, typename T::data_type defaultValue);
 } // namespace WallpaperEngine::Core

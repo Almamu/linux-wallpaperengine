@@ -13,18 +13,10 @@ class CShaderConstantFloat : public CShaderConstant {
     explicit CShaderConstantFloat (float value);
 
     /**
-     * @return A pointer to the actual value of the constant
-     */
-    [[nodiscard]] const float* getValue () const;
-
-    /**
      * Type string indicator
      */
     static const std::string Type;
 
     [[nodiscard]] std::string toString () const override;
-  protected:
-    /** The constant's value */
-    const float m_value;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

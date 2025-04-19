@@ -12,20 +12,14 @@ using json = nlohmann::json;
  */
 class CPropertyColor final : public CProperty {
   public:
-    static const CPropertyColor* fromJSON (const json& data, std::string name);
+    static CPropertyColor* fromJSON (const json& data, std::string name);
 
-    /**
-     * @return The RGB color value in the 0-1 range
-     */
-    [[nodiscard]] const glm::vec3& getValue () const;
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) const override;
+    void set (const std::string& value) override;
 
     static const std::string Type;
 
   private:
-    CPropertyColor (glm::vec3 color, std::string name, std::string text);
-
-    mutable glm::vec3 m_color;
+    CPropertyColor (const std::string& color, std::string name, std::string text);
 };
 } // namespace WallpaperEngine::Core::Projects

@@ -352,11 +352,9 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
     }
 }
 
-void CShaderUnit::parseParameterConfiguration (const std::string& type, const std::string& name,
-                                            const std::string& content) {
-    if (name == "g_Speed") {
-        sLog.out("speed!");
-    }
+void CShaderUnit::parseParameterConfiguration (
+    const std::string& type, const std::string& name, const std::string& content
+) {
     json data = json::parse (content);
     const auto material = data.find ("material");
     const auto defvalue = data.find ("default");
@@ -377,6 +375,7 @@ void CShaderUnit::parseParameterConfiguration (const std::string& type, const st
     Variables::CShaderVariable* parameter = nullptr;
 
     // TODO: SUPPORT VALUES FOR ALL THESE TYPES
+    // TODO: MAYBE EVEN CONNECT THESE TO THE CORRESPONDING PROPERTY SO THINGS ARE UPDATED AS THE ORIGIN VALUES CHANGE?
     if (type == "vec4") {
         parameter = new Variables::CShaderVariableVector4(WallpaperEngine::Core::aToVector4 (*defvalue));
     } else if (type == "vec3") {

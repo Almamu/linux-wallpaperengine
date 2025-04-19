@@ -24,18 +24,18 @@ class CScene : public CWallpaper {
 
     [[nodiscard]] const glm::vec3& getAmbientColor () const;
     [[nodiscard]] bool isBloom () const;
-    [[nodiscard]] double getBloomStrength () const;
-    [[nodiscard]] double getBloomThreshold () const;
+    [[nodiscard]] float getBloomStrength () const;
+    [[nodiscard]] float getBloomThreshold () const;
     [[nodiscard]] bool isCameraFade () const;
     [[nodiscard]] bool isCameraParallax () const;
-    [[nodiscard]] double getCameraParallaxAmount () const;
-    [[nodiscard]] double getCameraParallaxDelay () const;
-    [[nodiscard]] double getCameraParallaxMouseInfluence () const;
+    [[nodiscard]] float getCameraParallaxAmount () const;
+    [[nodiscard]] float getCameraParallaxDelay () const;
+    [[nodiscard]] float getCameraParallaxMouseInfluence () const;
     [[nodiscard]] bool isCameraPreview () const;
     [[nodiscard]] bool isCameraShake () const;
-    [[nodiscard]] double getCameraShakeAmplitude () const;
-    [[nodiscard]] double getCameraShakeRoughness () const;
-    [[nodiscard]] double getCameraShakeSpeed () const;
+    [[nodiscard]] float getCameraShakeAmplitude () const;
+    [[nodiscard]] float getCameraShakeRoughness () const;
+    [[nodiscard]] float getCameraShakeSpeed () const;
     [[nodiscard]] const glm::vec3& getClearColor () const;
     [[nodiscard]] const Scenes::CProjection* getOrthogonalProjection () const;
     [[nodiscard]] const glm::vec3& getSkylightColor () const;
@@ -47,9 +47,9 @@ class CScene : public CWallpaper {
     CScene (
         const CProject& project, const CContainer* container, const Scenes::CCamera* camera, glm::vec3 ambientColor,
         const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold,
-        bool cameraFade, bool cameraParallax, double cameraParallaxAmount, double cameraParallaxDelay,
-        double cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, double cameraShakeAmplitude,
-        double cameraShakeRoughness, double cameraShakeSpeed, const CUserSettingVector3* clearColor,
+        bool cameraFade, bool cameraParallax, float cameraParallaxAmount, float cameraParallaxDelay,
+        float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, float cameraShakeAmplitude,
+        float cameraShakeRoughness, float cameraShakeSpeed, const CUserSettingVector3* clearColor,
         const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor);
 
     static const std::string Type;
@@ -69,14 +69,14 @@ class CScene : public CWallpaper {
     const CUserSettingFloat* m_bloomThreshold;
     const bool m_cameraFade;
     const bool m_cameraParallax;
-    const double m_cameraParallaxAmount;
-    const double m_cameraParallaxDelay;
-    const double m_cameraParallaxMouseInfluence;
+    const float m_cameraParallaxAmount;
+    const float m_cameraParallaxDelay;
+    const float m_cameraParallaxMouseInfluence;
     const bool m_cameraPreview;
     const bool m_cameraShake;
-    const double m_cameraShakeAmplitude;
-    const double m_cameraShakeRoughness;
-    const double m_cameraShakeSpeed;
+    const float m_cameraShakeAmplitude;
+    const float m_cameraShakeRoughness;
+    const float m_cameraShakeSpeed;
     const CUserSettingVector3* m_clearColor;
     const Scenes::CProjection* m_orthogonalProjection;
     const glm::vec3 m_skylightColor;

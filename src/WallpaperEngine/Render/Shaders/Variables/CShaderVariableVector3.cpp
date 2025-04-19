@@ -3,24 +3,14 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 CShaderVariableVector3::CShaderVariableVector3 (const glm::vec3& defaultValue) :
-    CShaderVariable (&this->m_defaultValue, nullptr, Type),
-    m_defaultValue (defaultValue),
-    m_value (glm::vec3 ()) {}
+    CShaderVariable (Type) {
+    this->update (defaultValue);
+}
 
 CShaderVariableVector3::CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name) :
-    CShaderVariable (&this->m_defaultValue, nullptr, Type),
-    m_defaultValue (defaultValue),
-    m_value (glm::vec3 ()) {
+    CShaderVariable (Type) {
     this->setName (name);
-}
-
-void CShaderVariableVector3::setValue (const glm::vec3& value) {
-    this->m_value = value;
-    CShaderVariable::setValue (&this->m_value);
-}
-
-const int CShaderVariableVector3::getSize () const {
-    return 3;
+    this->update (defaultValue);
 }
 
 const std::string CShaderVariableVector3::Type = "vec3";

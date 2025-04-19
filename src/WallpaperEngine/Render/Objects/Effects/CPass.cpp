@@ -708,156 +708,35 @@ void CPass::setupShaderVariables () {
         // get one instance of it
         CShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
 
-        // ensure the shader's and the constant are of the same type
-        if (value->getType () == var->getType ()) {
-            this->addUniform (var->getName (), value);
-            continue;
-        }
-
-        // there's situations where this type mismatch is actually expected
-        // integers and floats are equivalent, this could be detected at load time
-        // but that'd mean to compile the shader in the load, and not on the render stage
-        // so take into account these conversions here
-        if (value->is<CShaderConstantFloat> () && var->is<CShaderVariableInteger> ()) {
-            // create an integer value from a float
-            this->addUniform (var->getName (), static_cast<int> (*value->as<CShaderConstantFloat> ()->getValue ()));
-        } else if (value->is<CShaderConstantInteger> () && var->is<CShaderVariableFloat> ()) {
-            // create a float value from an integer
-            this->addUniform (var->getName (), static_cast<float> (*value->as<CShaderConstantInteger> ()->getValue ()));
-        } else if (value->is<CShaderConstantVector4> () && var->is<CShaderVariableVector2> ()) {
-            auto* val = value->as<CShaderConstantVector4> ();
-
-            // create a new vector2 with the first two values
-            this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
-        } else if (value->is<CShaderConstantVector4> () && var->is<CShaderVariableVector3> ()) {
-            auto* val = value->as<CShaderConstantVector4> ();
-
-            this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y, val->getValue ()->z});
-        } else if (value->is<CShaderConstantVector3> () && var->is<CShaderVariableVector2> ()) {
-            auto* val = value->as<CShaderConstantVector3> ();
-
-            this->addUniform (var->getName (), {val->getValue ()->x, val->getValue ()->y});
-        } else if (value->is<CShaderConstantProperty> ()) {
-            const auto property = value->as<CShaderConstantProperty> ();
-
-            this->addUniform (var, property->getProperty ());
-        } else {
-            sLog.exception ("Constant ", name,
-                            " type does not match pixel/vertex shader variable and cannot be converted (",
-                            value->getType (), " to ", var->getType ());
-        }
+        // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
+        // of the underlying CDynamicValue used for the value
+        this->addUniform (var, value);
     }
 }
 
 // define some basic methods for the template
 void CPass::addUniform (CShaderVariable* value) {
-    if (value->is<CShaderVariableFloat> ())
-        this->addUniform (value->getName (),
-                          static_cast<const float*> (value->as<CShaderVariableFloat> ()->getValue ()));
-    else if (value->is<CShaderVariableInteger> ())
-        this->addUniform (value->getName (),
-                          static_cast<const int*> (value->as<CShaderVariableInteger> ()->getValue ()));
-    else if (value->is<CShaderVariableVector2> ())
-        this->addUniform (value->getName (),
-                          static_cast<const glm::vec2*> (value->as<CShaderVariableVector2> ()->getValue ()));
-    else if (value->is<CShaderVariableVector3> ())
-        this->addUniform (value->getName (),
-                          static_cast<const glm::vec3*> (value->as<CShaderVariableVector3> ()->getValue ()));
-    else if (value->is<CShaderVariableVector4> ())
-        this->addUniform (value->getName (),
-                          static_cast<const glm::vec4*> (value->as<CShaderVariableVector4> ()->getValue ()));
-    else
-        sLog.exception ("Trying to add an uniform from an unknown type: ", value->getName ());
+    // no need to re-implement this, call the version that takes a CDynamicValue as second parameter
+    // and that handles casting and everything
+    this->addUniform (value, value);
 }
 
-void CPass::addUniform (CShaderVariable* value, const CProperty* setting) {
-    // TODO: CHECK THIS? CAN WE KEEP A REF SO THE VALUES ARE AUTOMATICALLY UPDATED?
-    // TODO: MAYBE PROVIDE PUBLIC CASTS FOR EVERYTHING INSTEAD OF MANUALLY DOING IT EVERYWHERE
-    if (value->is<CShaderVariableVector2> ()) {
-        if (setting->is<CPropertySlider> ()) {
-            const auto slider = setting->as<CPropertySlider> ();
-            // sliders have to be converted to vector2
-            this->addUniform (value->getName (), {slider->getValue (), slider->getValue ()});
-        } else if (setting->is<CPropertyColor> ()) {
-            const auto color = setting->as<CPropertyColor> ();
-            // colors are vec3, we just need vec2
-            this->addUniform (value->getName (), {color->getValue ().x, color->getValue ().y});
-        } else {
-            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
-            this->addUniform (value);
-        }
-    } else if (value->is<CShaderVariableFloat> ()) {
-        if (setting->is<CPropertySlider> ()) {
-            const auto slider = setting->as<CPropertySlider> ();
-
-            this->addUniform (value->getName (), slider->getValue ());
-        } else if (setting->is<CPropertyColor>()) {
-            const auto color = setting->as<CPropertyColor> ();
-
-            this->addUniform (value->getName (), &color->getValue ().x);
-        } else {
-            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
-            this->addUniform (value);
-        }
+void CPass::addUniform (CShaderVariable* value, const CDynamicValue* setting) {
+    if (value->is<CShaderVariableFloat> ()) {
+        this->addUniform (value->getName (), setting->getFloat ());
+    } else if (value->is<CShaderVariableInteger> ()) {
+        this->addUniform (value->getName (), setting->getInt ());
+    } else if (value->is<CShaderVariableVector2> ()) {
+        this->addUniform (value->getName (), setting->getVec2 ());
     } else if (value->is<CShaderVariableVector3> ()) {
-        if (setting->is<CPropertySlider> ()) {
-            const auto slider = setting->as<CPropertySlider> ();
-
-            this->addUniform (value->getName (), {slider->getValue (), slider->getValue (), slider->getValue ()});
-        } else if (setting->is<CPropertyColor>()) {
-            const auto color = setting->as<CPropertyColor> ();
-
-            this->addUniform (value->getName (), color->getValue ());
-        } else {
-            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
-            this->addUniform (value);
-        }
+        this->addUniform (value->getName (), setting->getVec3 ());
     } else if (value->is<CShaderVariableVector4> ()) {
-        if (setting->is<CPropertySlider> ()) {
-            const auto slider = setting->as<CPropertySlider> ();
-
-            this->addUniform (value->getName (), {slider->getValue (), slider->getValue (), slider->getValue (), slider->getValue ()});
-        } else {
-            sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
-            this->addUniform (value);
-        }
+        this->addUniform (value->getName (), setting->getVec4 ());
     } else {
-        sLog.error ("Cannot convert setting ", setting->getName (), " to ", value->getName (), ". Using default value");
-        this->addUniform (value);
+        sLog.error ("Cannot convert setting dynamic value  to ", value->getName (), ". Using default value");
     }
 }
 
-void CPass::addUniform (const std::string& name, CShaderConstant* value) {
-    // now determine the constant's type and register the correct uniform for it
-    if (value->is<CShaderConstantFloat> ())
-        this->addUniform (name, value->as<CShaderConstantFloat> ()->getValue ());
-    else if (value->is<CShaderConstantInteger> ())
-        this->addUniform (name, value->as<CShaderConstantInteger> ()->getValue ());
-    else if (value->is<CShaderConstantVector2> ())
-        this->addUniform (name, value->as<CShaderConstantVector2> ()->getValue ());
-    else if (value->is<CShaderConstantVector3> ())
-        this->addUniform (name, value->as<CShaderConstantVector3> ()->getValue ());
-    else if (value->is<CShaderConstantVector4> ())
-        this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
-    else
-        sLog.exception ("Trying to add an uniform from an unknown type: ", name);
-}
-
-void CPass::addUniform (const std::string& name, const CShaderConstant* value) {
-    // now determine the constant's type and register the correct uniform for it
-    if (value->is<CShaderConstantFloat> ())
-        this->addUniform (name, value->as<CShaderConstantFloat> ()->getValue ());
-    else if (value->is<CShaderConstantInteger> ())
-        this->addUniform (name, value->as<CShaderConstantInteger> ()->getValue ());
-    else if (value->is<CShaderConstantVector2> ())
-        this->addUniform (name, value->as<CShaderConstantVector2> ()->getValue ());
-    else if (value->is<CShaderConstantVector3> ())
-        this->addUniform (name, value->as<CShaderConstantVector3> ()->getValue ());
-    else if (value->is<CShaderConstantVector4> ())
-        this->addUniform (name, value->as<CShaderConstantVector4> ()->getValue ());
-    else
-        sLog.exception ("Trying to add an uniform from an unknown type: ", name);
-}
 void CPass::addUniform (const std::string& name, int value) {
     this->addUniform (name, UniformType::Integer, value);
 }

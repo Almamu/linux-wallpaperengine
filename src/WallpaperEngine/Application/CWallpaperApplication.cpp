@@ -191,14 +191,14 @@ Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg) {
 
 void CWallpaperApplication::setupPropertiesForProject (const Core::CProject* project) {
     // show properties if required
-    for (const auto [key, cur] : project->getProperties ()) {
+    for (const auto& [key, cur] : project->getProperties ()) {
         // update the value of the property
         auto override = this->m_context.settings.general.properties.find (key);
 
         if (override != this->m_context.settings.general.properties.end ()) {
             sLog.out ("Applying override value for ", key);
 
-            cur->update (override->second);
+            cur->set (override->second);
         }
 
         if (this->m_context.settings.general.onlyListProperties)

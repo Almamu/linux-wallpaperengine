@@ -1,34 +1,34 @@
 #pragma once
 
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Projects {
 using json = nlohmann::json;
-
+using namespace WallpaperEngine::Core::DynamicValues;
 /**
  * Represents a property in a background
  *
  * Properties are settings that alter how the background looks or works
  * and are configurable by the user so they can customize it to their likings
  */
-class CPropertyColor;
-
-class CProperty {
+class CProperty : public CDynamicValue {
   public:
+    typedef std::function<void(const CProperty*)> function_type;
     virtual ~CProperty () = default;
-    static const CProperty* fromJSON (const json& data, const std::string& name);
+    static CProperty* fromJSON (const json& data, const std::string& name);
 
-    template <class T> const T* as () const {
+    template <class T> [[nodiscard]] const T* as () const {
         assert (is<T> ());
         return reinterpret_cast<const T*> (this);
     }
 
-    template <class T> T* as () {
+    template <class T> [[nodiscard]] T* as () {
         assert (is<T> ());
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () const {
+    template <class T> [[nodiscard]] bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -41,8 +41,7 @@ class CProperty {
      *
      * @param value New value for the property
      */
-    virtual void update (const std::string& value) const = 0;
-
+    virtual void set (const std::string& value) = 0;
     /**
      * @return Name of the property
      */
@@ -55,10 +54,20 @@ class CProperty {
      * @return Text of the property
      */
     [[nodiscard]] const std::string& getText () const;
+    /**
+     * Registers a function to be called when this instance's value changes
+     *
+     * @param callback
+     */
+    void subscribe (const function_type& callback) const;
 
   protected:
+    void propagate () const override;
+
     CProperty (std::string name, std::string type, std::string text);
 
+    /** Functions to call when this property's value changes */
+    mutable std::vector<function_type> m_subscriptions;
     /** Type of property */
     const std::string m_type;
     /** Name of the property */

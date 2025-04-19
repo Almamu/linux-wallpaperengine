@@ -6,6 +6,7 @@
 using namespace WallpaperEngine::Core::Projects;
 
 glm::vec3 ParseColor (std::string value) {
+    // TODO: ENSURE THIS PARSING IS ACTUALLY ACCURATE
     if (value.find (',') != std::string::npos) {
         // replace commas with dots so it can be parsed
         std::replace (value.begin (), value.end (), ',', ' ');
@@ -20,35 +21,33 @@ glm::vec3 ParseColor (std::string value) {
     return WallpaperEngine::Core::aToColorf (value);
 }
 
-const CPropertyColor* CPropertyColor::fromJSON (const json& data, std::string name) {
-    const std::string value = *jsonFindRequired (data, "value", "Color property must have a value");
+CPropertyColor* CPropertyColor::fromJSON (const json& data, std::string name) {
+    const auto value = jsonFindRequired <std::string> (data, "value", "Color property must have a value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
 
-    return new CPropertyColor (ParseColor (value), std::move(name), text);
+    return new CPropertyColor (value, std::move(name), text);
 }
 
-const glm::vec3& CPropertyColor::getValue () const {
-    return this->m_color;
-}
-
-void CPropertyColor::update (const std::string& value) const {
-    this->m_color = ParseColor (std::string (value));
+void CPropertyColor::set (const std::string& value) {
+    this->update (ParseColor (std::string (value)));
 }
 
 std::string CPropertyColor::dump () const {
+    const auto color = this->getVec3 ();
     std::stringstream ss;
 
     ss << this->m_name << " - color" << std::endl
        << "\t"
        << "Description: " << this->m_text << std::endl
        << "\t"
-       << "R: " << this->m_color.r << " G: " << this->m_color.g << " B: " << this->m_color.b;
+       << "R: " << color.r << " G: " << color.g << " B: " << color.b;
 
     return ss.str ();
 }
 
-CPropertyColor::CPropertyColor (glm::vec3 color, std::string name, std::string text) :
-    CProperty (std::move(name), Type, std::move(text)),
-    m_color (color) {}
+CPropertyColor::CPropertyColor (const std::string& color, std::string name, std::string text) :
+    CProperty (std::move(name), Type, std::move(text)) {
+    this->set (color);
+}
 
 const std::string CPropertyColor::Type = "color";

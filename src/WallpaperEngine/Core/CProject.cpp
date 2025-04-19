@@ -16,7 +16,7 @@ static int backgroundId = -1;
 
 CProject::CProject (
     std::string title, std::string type, std::string workshopid, const CContainer* container,
-    const std::map<std::string, const Projects::CProperty*> properties
+    const std::map<std::string, Projects::CProperty*> properties
 ) :
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),
@@ -40,7 +40,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
     const auto file = jsonFindRequired <std::string> (content, "file", "Project's main file missing");
     auto general = content.find ("general");
     const CWallpaper* wallpaper;
-    std::map<std::string, const Projects::CProperty*> properties;
+    std::map<std::string, Projects::CProperty*> properties;
 
     std::transform (type.begin (), type.end (), type.begin (), tolower);
 
@@ -49,7 +49,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
 
         if (properties_it != general->end ()) {
             for (const auto& cur : properties_it->items ()) {
-                const auto property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
+                auto property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
 
                 if (property == nullptr) {
                     continue;
@@ -98,7 +98,7 @@ const std::string& CProject::getType () const {
     return this->m_type;
 }
 
-const std::map<std::string, const Projects::CProperty*>& CProject::getProperties () const {
+const std::map<std::string, Projects::CProperty*>& CProject::getProperties () const {
     return this->m_properties;
 }
 

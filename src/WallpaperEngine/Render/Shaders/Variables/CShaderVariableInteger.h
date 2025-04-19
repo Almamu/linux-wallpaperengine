@@ -8,14 +8,6 @@ class CShaderVariableInteger final : public CShaderVariable {
     explicit CShaderVariableInteger (int32_t defaultValue);
     CShaderVariableInteger (int32_t defaultValue, const std::string& name);
 
-    const int getSize () const override;
-
     static const std::string Type;
-
-    void setValue (int32_t value);
-
-  private:
-    int32_t m_defaultValue;
-    int32_t m_value;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

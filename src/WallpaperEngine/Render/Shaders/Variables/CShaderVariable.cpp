@@ -4,21 +4,8 @@
 
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
-CShaderVariable::CShaderVariable (void* defaultValue, void* value, std::string type) :
-    m_type (std::move (type)),
-    m_defaultValue (defaultValue),
-    m_value (value) {}
-
-const void* CShaderVariable::getValue () const {
-    if (this->m_value)
-        return this->m_value;
-
-    return this->m_defaultValue;
-}
-
-void CShaderVariable::setValue (void* value) {
-    this->m_value = value;
-}
+CShaderVariable::CShaderVariable (std::string type) :
+    m_type (std::move (type)) {}
 
 const std::string& CShaderVariable::getIdentifierName () const {
     return this->m_identifierName;

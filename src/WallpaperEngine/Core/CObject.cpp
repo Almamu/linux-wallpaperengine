@@ -34,9 +34,9 @@ const CObject* CObject::fromJSON (
     const json& data, const Wallpapers::CScene* scene, const CContainer* container
 ) {
     const auto id = jsonFindRequired <int> (data, "id", "Objects must have id");
-    const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, "visible", true);
-    const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, "origin", {0, 0, 0});
-    const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, "scale", {1, 1, 1});
+    const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, scene->getProject(), "visible", true);
+    const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "origin", {0, 0, 0});
+    const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "scale", {1, 1, 1});
     const auto angles_val = jsonFindDefault<glm::vec3> (data, "angles", glm::vec3 (0, 0, 0));
     const auto name = jsonFindRequired <std::string> (data, "name", "Objects must have name");
     const auto effects_it = data.find ("effects");
@@ -84,11 +84,11 @@ const CObject* CObject::fromJSON (
 }
 
 const glm::vec3& CObject::getOrigin () const {
-    return this->m_origin->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_origin->getVec3 ();
 }
 
 const glm::vec3& CObject::getScale () const {
-    return this->m_scale->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_scale->getVec3 ();
 }
 
 const glm::vec3& CObject::getAngles () const {
@@ -104,8 +104,7 @@ const std::vector<int>& CObject::getDependencies () const {
 }
 
 bool CObject::isVisible () const {
-    // TODO: cache this
-    return this->m_visible->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_visible->getBool ();
 }
 
 const Wallpapers::CScene* CObject::getScene () const {

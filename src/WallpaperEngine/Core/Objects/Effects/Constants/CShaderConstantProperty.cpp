@@ -1,13 +1,11 @@
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 #include "CShaderConstantProperty.h"
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 CShaderConstantProperty::CShaderConstantProperty (const CProperty* property) :
-    CShaderConstant (Type),
-    m_property (property) {}
-
-const CProperty* CShaderConstantProperty::getProperty () const {
-    return this->m_property;
+    CShaderConstant (Type) {
+    property->connectOutgoing (this);
 }
 
 std::string CShaderConstantProperty::toString () const {

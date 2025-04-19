@@ -3,6 +3,7 @@
 #include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
+#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertySlider.h"
 #include "WallpaperEngine/Logging/CLog.h"
@@ -12,26 +13,36 @@ using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CUserSettingFloat::CUserSettingFloat (
-    bool hasCondition, bool hasSource, double defaultValue, std::string source, std::string expectedValue
+    bool hasCondition, float defaultValue, const Projects::CProperty* source, std::string expectedValue
 ) :
     CUserSettingValue (Type),
     m_default (defaultValue),
     m_hasCondition (hasCondition),
-    m_hasSource (hasSource),
-    m_source (std::move(source)),
-    m_expectedValue (std::move(expectedValue)) {}
+    m_source (source),
+    m_expectedValue (std::move(expectedValue)) {
+    this->update (defaultValue);
 
-const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data) {
-    double defaultValue;
+    if (this->m_source != nullptr) {
+        this->m_source->subscribe ([this](const Projects::CProperty* property) -> void {
+            if (!this->m_hasCondition) {
+                this->update (property->getFloat ());
+            } else {
+                sLog.error ("Don't know how to check for condition on a float property... Expected value: ", this->m_expectedValue);
+            }
+        });
+    }
+}
+
+const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data, const CProject& project) {
+    float defaultValue;
     std::string source;
     std::string expectedValue;
     bool hasCondition = false;
-    bool hasSource = false;
+    const Projects::CProperty* sourceProperty = nullptr;
 
     if (data.is_object ()) {
-        hasSource = true;
         auto userIt = data.find ("user");
-        defaultValue = jsonFindDefault (data, "value", 1.0); // is this default value right?
+        defaultValue = jsonFindDefault (data, "value", 1.0f); // is this default value right?
 
         if (userIt != data.end ()) {
             if (userIt->is_string ()) {
@@ -42,6 +53,17 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
                 expectedValue =
                     jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
+
+            for (const auto& [key, property] : project.getProperties ()) {
+                if (key == source) {
+                    sourceProperty = property;
+                    break;
+                }
+            }
+
+            if (sourceProperty == nullptr) {
+                sLog.error ("Cannot find property ", source, " to get value from for user setting value, using default value: ", defaultValue);
+            }
         } else {
             sLog.error ("Float property doesn't have user member, this could mean an scripted value");
         }
@@ -49,38 +71,14 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
         if (!data.is_number ())
             sLog.exception ("Expected numeric value on user settings");
 
-        defaultValue = data.get<double> ();
+        defaultValue = data.get<float> ();
     }
 
-    return new CUserSettingFloat (hasCondition, hasSource, defaultValue, source, expectedValue);
+    return new CUserSettingFloat (hasCondition, defaultValue, sourceProperty, expectedValue);
 }
 
-const CUserSettingFloat* CUserSettingFloat::fromScalar (const double value) {
-    return new CUserSettingFloat (false, false, value, "", "");
-}
-
-double CUserSettingFloat::getDefaultValue () const {
-    return this->m_default;
-}
-
-double CUserSettingFloat::processValue (const std::map<std::string, const Projects::CProperty*>& properties) const {
-    if (!this->m_hasSource && !this->m_hasCondition)
-        return this->getDefaultValue ();
-
-    const auto property = properties.find (this->m_source);
-
-    if (property != properties.end ()) {
-        if (!this->m_hasCondition) {
-            if (property->second->is<CPropertySlider> ())
-                return property->second->as<CPropertySlider> ()->getValue ();
-
-            sLog.exception ("Property without condition must match type (slider)");
-        }
-
-        sLog.exception ("Float property with condition doesn't match against combo value");
-    }
-
-    return this->m_default;
+const CUserSettingFloat* CUserSettingFloat::fromScalar (const float value) {
+    return new CUserSettingFloat (false, value, nullptr, "");
 }
 
 std::string CUserSettingFloat::Type = "float";

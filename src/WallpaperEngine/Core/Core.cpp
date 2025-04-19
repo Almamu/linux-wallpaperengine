@@ -468,37 +468,40 @@ template const glm::ivec3 Core::jsonFindDefault (const nlohmann::json& data, con
 template const glm::ivec4 Core::jsonFindDefault (const nlohmann::json& data, const char* key, const glm::ivec4 defaultValue);
 
 template <typename T> const T* Core::jsonFindUserConfig (
-    const nlohmann::json::const_iterator& data, const char* key, typename T::data_type defaultValue
+    const nlohmann::json::const_iterator& data, const CProject& project, const char* key, typename T::data_type defaultValue
 ) {
     const auto it = data->find (key);
 
     if (it == data->end () || it->type () == nlohmann::detail::value_t::null)
         return T::fromScalar (defaultValue);
 
-    return T::fromJSON (*it);
+    return T::fromJSON (*it, project);
 }
 
-template const CUserSettingBoolean* Core::jsonFindUserConfig (const nlohmann::json::const_iterator& data, const char* key,
-                                                        CUserSettingBoolean::data_type defaultValue);
-template const CUserSettingVector3* Core::jsonFindUserConfig (const nlohmann::json::const_iterator& data, const char* key,
-                                                        CUserSettingVector3::data_type defaultValue);
-template const CUserSettingFloat* Core::jsonFindUserConfig (const nlohmann::json::const_iterator& data, const char* key,
-                                                      CUserSettingFloat::data_type defaultValue);
+template const CUserSettingBoolean* Core::jsonFindUserConfig (
+    const nlohmann::json::const_iterator& data, const CProject& project, const char* key,
+    CUserSettingBoolean::data_type defaultValue);
+template const CUserSettingVector3* Core::jsonFindUserConfig (
+    const nlohmann::json::const_iterator& data, const CProject& project, const char* key,
+    CUserSettingVector3::data_type defaultValue);
+template const CUserSettingFloat* Core::jsonFindUserConfig (
+    const nlohmann::json::const_iterator& data, const CProject& project, const char* key,
+    CUserSettingFloat::data_type defaultValue);
 
 template <typename T> const T* Core::jsonFindUserConfig (
-    const nlohmann::json& data, const char* key, typename T::data_type defaultValue
+    const nlohmann::json& data, const CProject& project, const char* key, typename T::data_type defaultValue
 ) {
     const auto it = data.find (key);
 
     if (it == data.end () || it->type () == nlohmann::detail::value_t::null)
         return T::fromScalar (defaultValue);
 
-    return T::fromJSON (*it);
+    return T::fromJSON (*it, project);
 }
 
-template const CUserSettingBoolean* Core::jsonFindUserConfig (const nlohmann::json& data, const char* key,
-                                                        CUserSettingBoolean::data_type defaultValue);
-template const CUserSettingVector3* Core::jsonFindUserConfig (const nlohmann::json& data, const char* key,
-                                                        CUserSettingVector3::data_type defaultValue);
-template const CUserSettingFloat* Core::jsonFindUserConfig (const nlohmann::json& data, const char* key,
-                                                      CUserSettingFloat::data_type defaultValue);
+template const CUserSettingBoolean* Core::jsonFindUserConfig (
+    const nlohmann::json& data, const CProject& project, const char* key, CUserSettingBoolean::data_type defaultValue);
+template const CUserSettingVector3* Core::jsonFindUserConfig (
+    const nlohmann::json& data, const CProject& project, const char* key, CUserSettingVector3::data_type defaultValue);
+template const CUserSettingFloat* Core::jsonFindUserConfig (
+    const nlohmann::json& data, const CProject& project, const char* key, CUserSettingFloat::data_type defaultValue);

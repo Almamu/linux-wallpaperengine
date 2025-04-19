@@ -1,10 +1,17 @@
 #pragma once
 
+#include <map>
+#include <nlohmann/json.hpp>
+
 #include "CWallpaper.h"
 #include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 
 #include "WallpaperEngine/Assets/CContainer.h"
+
+namespace WallpaperEngine::Core::Projects {
+class CProperty;
+}
 
 namespace WallpaperEngine::Core {
 using json = nlohmann::json;
@@ -20,7 +27,7 @@ class CProject {
 
     [[nodiscard]] const std::string& getTitle () const;
     [[nodiscard]] const std::string& getType () const;
-    [[nodiscard]] const std::map<std::string, const Projects::CProperty*>& getProperties () const;
+    [[nodiscard]] const std::map<std::string, Projects::CProperty*>& getProperties () const;
     [[nodiscard]] const std::string& getWorkshopId () const;
 
     const CContainer* getContainer () const;
@@ -28,12 +35,12 @@ class CProject {
   protected:
     CProject (
         std::string title, std::string type, std::string workshopid, const CContainer* container,
-        std::map<std::string, const Projects::CProperty*> properties);
+        std::map<std::string, Projects::CProperty*> properties);
 
     void setWallpaper (const CWallpaper* wallpaper);
 
   private:
-    std::map<std::string, const Projects::CProperty*> m_properties;
+    std::map<std::string, Projects::CProperty*> m_properties;
 
     const std::string m_workshopid;
     const std::string m_title;

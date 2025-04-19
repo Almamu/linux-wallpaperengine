@@ -11,9 +11,9 @@ using namespace WallpaperEngine::Core::Wallpapers;
 CScene::CScene (
     const CProject& project, const CContainer* container, const Scenes::CCamera* camera, glm::vec3 ambientColor,
     const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold,
-    bool cameraFade, bool cameraParallax, double cameraParallaxAmount, double cameraParallaxDelay,
-    double cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, double cameraShakeAmplitude,
-    double cameraShakeRoughness, double cameraShakeSpeed, const CUserSettingVector3* clearColor,
+    bool cameraFade, bool cameraParallax, float cameraParallaxAmount, float cameraParallaxDelay,
+    float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, float cameraShakeAmplitude,
+    float cameraShakeRoughness, float cameraShakeSpeed, const CUserSettingVector3* clearColor,
     const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor
 ) :
     CWallpaper (Type, project),
@@ -50,20 +50,20 @@ const CScene* CScene::fromFile (const std::string& filename, const CProject& pro
         project, container,
         Scenes::CCamera::fromJSON (jsonFindRequired (content, "camera", "Scenes must have a defined camera")),
         jsonFindDefault<glm::vec3> (*general_it, "ambientcolor", glm::vec3 (0, 0, 0)),
-        jsonFindUserConfig<CUserSettingBoolean> (*general_it, "bloom", false),
-        jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomstrength", 0.0),
-        jsonFindUserConfig<CUserSettingFloat> (*general_it, "bloomthreshold", 0.0),
+        jsonFindUserConfig<CUserSettingBoolean> (*general_it, project, "bloom", false),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, project, "bloomstrength", 0.0),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, project, "bloomthreshold", 0.0),
         jsonFindDefault<bool> (*general_it, "camerafade", false),
         jsonFindDefault<bool> (*general_it, "cameraparallax", true),
-        jsonFindDefault<double> (*general_it, "cameraparallaxamount", 1.0f),
-        jsonFindDefault<double> (*general_it, "cameraparallaxdelay", 0.0f),
-        jsonFindDefault<double> (*general_it, "cameraparallaxmouseinfluence", 1.0f),
+        jsonFindDefault<float> (*general_it, "cameraparallaxamount", 1.0f),
+        jsonFindDefault<float> (*general_it, "cameraparallaxdelay", 0.0f),
+        jsonFindDefault<float> (*general_it, "cameraparallaxmouseinfluence", 1.0f),
         jsonFindDefault<bool> (*general_it, "camerapreview", false),
         jsonFindDefault<bool> (*general_it, "camerashake", false),
-        jsonFindDefault<double> (*general_it, "camerashakeamplitude", 0.0f),
-        jsonFindDefault<double> (*general_it, "camerashakeroughness", 0.0f),
-        jsonFindDefault<double> (*general_it, "camerashakespeed", 0.0f),
-        jsonFindUserConfig<CUserSettingVector3> (*general_it, "clearcolor", {1, 1, 1}),
+        jsonFindDefault<float> (*general_it, "camerashakeamplitude", 0.0f),
+        jsonFindDefault<float> (*general_it, "camerashakeroughness", 0.0f),
+        jsonFindDefault<float> (*general_it, "camerashakespeed", 0.0f),
+        jsonFindUserConfig<CUserSettingVector3> (*general_it, project, "clearcolor", {1, 1, 1}),
         Scenes::CProjection::fromJSON (jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info")),
         jsonFindDefault<glm::vec3> (*general_it, "skylightcolor", glm::vec3 (0, 0, 0))
     );
@@ -103,15 +103,15 @@ const glm::vec3& CScene::getAmbientColor () const {
 }
 
 bool CScene::isBloom () const {
-    return this->m_bloom->processValue (this->getProject ().getProperties ());
+    return this->m_bloom->getBool ();
 }
 
-double CScene::getBloomStrength () const {
-    return this->m_bloomStrength->processValue (this->getProject ().getProperties ());
+float CScene::getBloomStrength () const {
+    return this->m_bloomStrength->getFloat ();
 }
 
-double CScene::getBloomThreshold () const {
-    return this->m_bloomThreshold->processValue (this->getProject ().getProperties ());
+float CScene::getBloomThreshold () const {
+    return this->m_bloomThreshold->getFloat ();
 }
 
 bool CScene::isCameraFade () const {
@@ -122,15 +122,15 @@ bool CScene::isCameraParallax () const {
     return this->m_cameraParallax;
 }
 
-double CScene::getCameraParallaxAmount () const {
+float CScene::getCameraParallaxAmount () const {
     return this->m_cameraParallaxAmount;
 }
 
-double CScene::getCameraParallaxDelay () const {
+float CScene::getCameraParallaxDelay () const {
     return this->m_cameraParallaxDelay;
 }
 
-double CScene::getCameraParallaxMouseInfluence () const {
+float CScene::getCameraParallaxMouseInfluence () const {
     return this->m_cameraParallaxMouseInfluence;
 }
 
@@ -142,20 +142,20 @@ bool CScene::isCameraShake () const {
     return this->m_cameraShake;
 }
 
-double CScene::getCameraShakeAmplitude () const {
+float CScene::getCameraShakeAmplitude () const {
     return this->m_cameraShakeAmplitude;
 }
 
-double CScene::getCameraShakeRoughness () const {
+float CScene::getCameraShakeRoughness () const {
     return this->m_cameraShakeRoughness;
 }
 
-double CScene::getCameraShakeSpeed () const {
+float CScene::getCameraShakeSpeed () const {
     return this->m_cameraShakeSpeed;
 }
 
 const glm::vec3& CScene::getClearColor () const {
-    return this->m_clearColor->processValue (this->getProject ().getProperties ());
+    return this->m_clearColor->getVec3 ();
 }
 
 const Scenes::CProjection* CScene::getOrthogonalProjection () const {

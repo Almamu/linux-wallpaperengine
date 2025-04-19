@@ -49,9 +49,14 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
 
     if (effects_it != data.end () && effects_it->is_array ()) {
         for (auto& cur : *effects_it) {
-            const auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, "visible", true);
+            const auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, scene->getProject(), "visible", true);
 
-            if (!effectVisible->processValue (scene->getProject ().getProperties ()))
+            // TODO: USER CANNOT MODIFY VALUES ON THE FLY, BUT IT MIGHT BE INTERESTING TO SUPPORT THAT AT SOME POINT?
+            // TODO: AT LEAST THE ORIGINAL SOFTWARE ALLOWS YOU TO DO THAT IN THE PREVIEW WINDOW
+            // TODO: THAT MIGHT INCREASE COMPLEXITY THO...
+            // TODO: ESPECIALLY IF THAT CHANGES RENDERING OF PASSES/IMAGES
+            // TODO: DECISIONS, DECISIONS, DECISIONS...
+            if (!effectVisible->getBool ())
                 continue;
 
             effects.push_back (
@@ -73,8 +78,8 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
         angles,
         jsonFindDefault<glm::vec2> (data, "size", glm::vec2 (0.0, 0.0)),
         jsonFindDefault<std::string> (data, "alignment", "center"),
-        jsonFindUserConfig<CUserSettingVector3> (data, "color", {1, 1, 1}),
-        jsonFindUserConfig<CUserSettingFloat> (data, "alpha", 1.0),
+        jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "color", {1, 1, 1}),
+        jsonFindUserConfig<CUserSettingFloat> (data, scene->getProject(), "alpha", 1.0),
         jsonFindDefault<float> (data, "brightness", 1.0),
         jsonFindDefault<uint32_t> (data, "colorBlendMode", 0),
         jsonFindDefault<glm::vec2> (data, "parallaxDepth", glm::vec2 (0.0, 0.0)),
@@ -99,11 +104,11 @@ const std::string& CImage::getAlignment () const {
 }
 
 float CImage::getAlpha () const {
-    return this->m_alpha->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_alpha->getFloat ();
 }
 
 const glm::vec3& CImage::getColor () const {
-    return this->m_color->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_color->getVec3 ();
 }
 
 float CImage::getBrightness () const {

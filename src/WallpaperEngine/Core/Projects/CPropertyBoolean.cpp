@@ -6,7 +6,7 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-const CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::string name) {
+CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::string name) {
     return new CPropertyBoolean (
         jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
         std::move(name),
@@ -14,12 +14,9 @@ const CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::strin
     );
 }
 
-bool CPropertyBoolean::getValue () const {
-    return this->m_value;
-}
 
-void CPropertyBoolean::update (const std::string& value) const {
-    this->m_value = value == "1" || value == "true";
+void CPropertyBoolean::set (const std::string& value) {
+    this->update (value == "1" || value == "true" || value == "on");
 }
 
 std::string CPropertyBoolean::dump () const {
@@ -29,13 +26,12 @@ std::string CPropertyBoolean::dump () const {
        << "\t"
        << "Description: " << this->m_text << std::endl
        << "\t"
-       << "Value: " << this->m_value;
+       << "Value: " << &this->getBool ();
 
     return ss.str ();
 }
 
 CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
-    CProperty (std::move(name), Type, std::move(text)),
-    m_value (value) {}
+    CProperty (std::move(name), Type, std::move(text)) {}
 
 const std::string CPropertyBoolean::Type = "bool";

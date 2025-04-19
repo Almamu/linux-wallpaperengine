@@ -5,25 +5,14 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 CShaderVariableFloat::CShaderVariableFloat (float defaultValue) :
-    CShaderVariable (&this->m_defaultValue, nullptr, Type),
-    m_defaultValue (defaultValue),
-    m_value (0) {}
+    CShaderVariable (Type) {
+    this->update (defaultValue);
+}
 
 CShaderVariableFloat::CShaderVariableFloat (float defaultValue, const std::string& name) :
-    CShaderVariable (&this->m_defaultValue, nullptr, Type),
-    m_defaultValue (defaultValue),
-    m_value (0) {
+    CShaderVariable (Type) {
     this->setName (name);
-}
-
-void CShaderVariableFloat::setValue (float value) {
-    this->m_value = value;
-
-    CShaderVariable::setValue (&this->m_value);
-}
-
-const int CShaderVariableFloat::getSize () const {
-    return 1;
+    this->update (defaultValue);
 }
 
 const std::string CShaderVariableFloat::Type = "float";

@@ -12,39 +12,33 @@ using json = nlohmann::json;
  */
 class CPropertySlider final : public CProperty {
   public:
-    static const CPropertySlider* fromJSON (const json& data, const std::string& name);
+    static CPropertySlider* fromJSON (const json& data, const std::string& name);
 
-    /**
-     * @return The slider's value
-     */
-    [[nodiscard]] const double& getValue () const;
     /**
      * @return The slider's minimum value
      */
-    [[nodiscard]] const double& getMinValue () const;
+    [[nodiscard]] const float& getMinValue () const;
     /**
      * @return The slider's maximum value
      */
-    [[nodiscard]] const double& getMaxValue () const;
+    [[nodiscard]] const float& getMaxValue () const;
     /**
      * @return The slider's value increment steps, only really used in the UI
      */
-    [[nodiscard]] const double& getStep () const;
+    [[nodiscard]] const float& getStep () const;
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) const override;
+    void set (const std::string& value) override;
 
     static const std::string Type;
 
   private:
-    CPropertySlider (double value, const std::string& name, const std::string& text, double min, double max, double step);
+    CPropertySlider (float value, const std::string& name, const std::string& text, float min, float max, float step);
 
-    /** Actual slider value */
-    mutable double m_value;
     /** Minimum value */
-    const double m_min;
+    const float m_min;
     /** Maximum value */
-    const double m_max;
+    const float m_max;
     /** Increment steps for the slider in the UI */
-    const double m_step;
+    const float m_step;
 };
 } // namespace WallpaperEngine::Core::Projects

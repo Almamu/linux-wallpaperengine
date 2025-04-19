@@ -3,6 +3,7 @@
 #include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
+#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
 #include "WallpaperEngine/Core/Projects/CPropertyCombo.h"
@@ -15,24 +16,37 @@ using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CUserSettingBoolean::CUserSettingBoolean (
-    bool hasCondition,bool hasSource, bool defaultValue, std::string source, std::string expectedValue
+    bool hasCondition, bool defaultValue, const Projects::CProperty* source, std::string expectedValue
 ) :
     CUserSettingValue (Type),
-    m_default (defaultValue),
     m_hasCondition (hasCondition),
-    m_hasSource (hasSource),
-    m_source (std::move(source)),
-    m_expectedValue (std::move(expectedValue)) {}
+    m_source (source),
+    m_expectedValue (std::move(expectedValue)) {
+    this->update (defaultValue);
 
-const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data) {
+    if (this->m_source != nullptr) {
+        this->m_source->subscribe ([this](const Projects::CProperty* property) -> void {
+            if (!this->m_hasCondition) {
+                this->update (property->getBool ());
+            } else if (property->is <CPropertyCombo> ()) {
+                this->update (
+                    property->as <CPropertyCombo> ()->translateValueToIndex (this->m_expectedValue) == property->getInt ()
+                );
+            } else {
+                sLog.error ("Cannot update boolean user setting for an unknown property type ", property->getType ());
+            }
+        });
+    }
+}
+
+const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data, const CProject& project) {
     bool hasCondition = false;
-    bool hasSource = false;
+    const Projects::CProperty* sourceProperty = nullptr;
     bool defaultValue;
     std::string source;
     std::string expectedValue;
 
     if (data.is_object ()) {
-        hasSource = true;
         auto userIt = data.find ("user");
         defaultValue = jsonFindDefault (data, "value", true); // is this default value right?
 
@@ -45,6 +59,17 @@ const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& 
                 expectedValue =
                     jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
+
+            for (const auto& [key, property] : project.getProperties ()) {
+                if (key == source) {
+                    sourceProperty = property;
+                    break;
+                }
+            }
+
+            if (sourceProperty == nullptr) {
+                sLog.error ("Cannot find property ", source, " to get value from for user setting value, using default value: ", defaultValue);
+            }
         } else {
             sLog.error ("Boolean property doesn't have user member, this could mean an scripted value");
         }
@@ -55,37 +80,11 @@ const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& 
         defaultValue = data.get<bool> ();
     }
 
-    return new CUserSettingBoolean (hasCondition, hasSource, defaultValue, source, expectedValue);
+    return new CUserSettingBoolean (hasCondition, defaultValue, sourceProperty, expectedValue);
 }
 
 const CUserSettingBoolean* CUserSettingBoolean::fromScalar (const bool value) {
-    return new CUserSettingBoolean (false, false, value, "", "");
-}
-
-bool CUserSettingBoolean::getDefaultValue () const {
-    return this->m_default;
-}
-
-bool CUserSettingBoolean::processValue (const std::map<std::string, const Projects::CProperty*>& properties) const {
-    if (!this->m_hasSource && !this->m_hasCondition)
-        return this->getDefaultValue ();
-
-    const auto property = properties.find (this->m_source);
-
-    if (property != properties.end ()) {
-        if (!this->m_hasCondition) {
-            if (property->second->is<CPropertyBoolean> ())
-                return property->second->as<CPropertyBoolean> ()->getValue ();
-        }
-
-        // TODO: properly validate this as the combos might be more than just strings?
-        if (property->second->is<CPropertyCombo> ())
-            return property->second->as<CPropertyCombo> ()->getValue () == this->m_expectedValue;
-
-        sLog.exception ("Boolean property with condition doesn't match against combo value");
-    }
-
-    return this->m_default;
+    return new CUserSettingBoolean (false, value, nullptr, "");
 }
 
 std::string CUserSettingBoolean::Type = "boolean";

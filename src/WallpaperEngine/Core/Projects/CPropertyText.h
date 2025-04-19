@@ -10,9 +10,9 @@ using json = nlohmann::json;
  */
 class CPropertyText final : public CProperty {
   public:
-    static const CPropertyText* fromJSON (const json& data, std::string name);
+    static CPropertyText* fromJSON (const json& data, std::string name);
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) const override;
+    void set (const std::string& value) override;
 
     static const std::string Type;
 

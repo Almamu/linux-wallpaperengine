@@ -3,15 +3,12 @@
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 CShaderConstantInteger::CShaderConstantInteger (int32_t value) :
-    CShaderConstant (Type),
-    m_value (value) {}
-
-const int32_t* CShaderConstantInteger::getValue () const {
-    return &this->m_value;
+    CShaderConstant (Type) {
+    this->update (value);
 }
 
 std::string CShaderConstantInteger::toString () const {
-    return std::to_string (this->m_value);
+    return std::to_string (this->getInt ());
 }
 
 const std::string CShaderConstantInteger::Type = "int";

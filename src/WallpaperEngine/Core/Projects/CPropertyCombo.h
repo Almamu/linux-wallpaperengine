@@ -23,26 +23,21 @@ class CPropertyComboValue {
  */
 class CPropertyCombo final : public CProperty {
   public:
-    static const CPropertyCombo* fromJSON (const json& data, std::string name);
+    static CPropertyCombo* fromJSON (const json& data, std::string name);
 
     ~CPropertyCombo () override;
 
-    /**
-     * @return The selected value
-     */
-    [[nodiscard]] const std::string& getValue () const;
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) const override;
+    void set (const std::string& value) override;
+    int translateValueToIndex (const std::string& value) const;
 
     static const std::string Type;
 
   private:
     CPropertyCombo (
-        std::string name, std::string text, std::string defaultValue, std::vector<const CPropertyComboValue*> values);
+        std::string name, std::string text, const std::string& defaultValue, std::vector<const CPropertyComboValue*> values);
 
     /** List of values available to select */
     const std::vector<const CPropertyComboValue*> m_values;
-    /** The default value */
-    mutable std::string m_defaultValue;
 };
 } // namespace WallpaperEngine::Core::Projects

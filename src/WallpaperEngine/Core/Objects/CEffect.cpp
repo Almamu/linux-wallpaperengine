@@ -292,7 +292,7 @@ const Core::CProject& CEffect::getProject () const {
 }
 
 bool CEffect::isVisible () const {
-    return this->m_visible->processValue (this->getProject ().getProperties ());
+    return this->m_visible->getBool ();
 }
 
 const Effects::CFBO* CEffect::findFBO (const std::string& name) {

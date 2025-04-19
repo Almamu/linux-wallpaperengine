@@ -2,20 +2,24 @@
 
 #include <nlohmann/json.hpp>
 
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
+
 namespace WallpaperEngine::Core::UserSettings {
-class CUserSettingValue {
+using namespace WallpaperEngine::Core::DynamicValues;
+
+class CUserSettingValue : public CDynamicValue {
   public:
-    template <class T> const T* as () const {
+    template <class T> [[nodiscard]] const T* as () const {
         assert (is<T> ());
         return reinterpret_cast<const T*> (this);
     }
 
-    template <class T> T* as () {
+    template <class T> [[nodiscard]] T* as () {
         assert (is<T> ());
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () const {
+    template <class T> [[nodiscard]] bool is () const {
         return this->m_type == T::Type;
     }
 

@@ -1,13 +1,14 @@
 #pragma once
 
-#include <string>
 #include <cassert>
+#include <string>
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 
 namespace WallpaperEngine::Core::Objects::Effects::Constants {
 /**
  * Shader constants base class
  */
-class CShaderConstant {
+class CShaderConstant : public DynamicValues::CDynamicValue {
   public:
     explicit CShaderConstant (std::string type);
 

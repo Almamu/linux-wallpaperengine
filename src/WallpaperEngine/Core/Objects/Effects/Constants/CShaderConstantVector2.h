@@ -15,18 +15,10 @@ class CShaderConstantVector2 : public CShaderConstant {
     explicit CShaderConstantVector2 (glm::vec2 value);
 
     /**
-     * @return A pointer to the actual value of the constant
-     */
-    [[nodiscard]] const glm::vec2* getValue () const;
-
-    /**
      * Type string indicator
      */
     static const std::string Type;
 
     [[nodiscard]] std::string toString () const override;
-  protected:
-    /** The constant's value */
-    const glm::vec2 m_value;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

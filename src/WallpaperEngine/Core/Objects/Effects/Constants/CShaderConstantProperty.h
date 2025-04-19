@@ -13,13 +13,7 @@ using namespace WallpaperEngine::Core::Projects;
  */
 class CShaderConstantProperty : public CShaderConstant {
   public:
-    // TODO: SUPPORT DEFAULT VALUE?
     explicit CShaderConstantProperty (const CProperty* property);
-
-    /**
-     * @return The property this points to
-     */
-    [[nodiscard]] const CProperty* getProperty () const;
 
     /**
      * Type string indicator
@@ -27,11 +21,5 @@ class CShaderConstantProperty : public CShaderConstant {
     static const std::string Type;
 
     [[nodiscard]] std::string toString () const override;
-
-  protected:
-    /**
-     * The backing property
-     */
-    const CProperty* m_property;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants
