@@ -141,7 +141,6 @@ std::string CGLSLContext::toGlsl (const std::string& content, UnitType type) {
     const char* shaderSource = content.c_str();
     shader.setStrings(&shaderSource, 1);
     shader.setEntryPoint("main");
-    // TODO: USE HLSL IF GLSL-TO-GLSL DOESN'T WORK
     shader.setEnvInput(glslang::EShSourceGlsl, shaderType, glslang::EShClientOpenGL, 330);
     shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
     shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
@@ -166,7 +165,7 @@ std::string CGLSLContext::toGlsl (const std::string& content, UnitType type) {
 
     spirv_cross::CompilerGLSL compiler(spirv);
     spirv_cross::CompilerGLSL::Options options;
-    options.version = 330; // OpenGL 4.5 / Vulkan GLSL TODO: MAYBE THIS CAN BE CHANGED?
+    options.version = 330;
     options.es = false;
     compiler.set_common_options(options);
 
