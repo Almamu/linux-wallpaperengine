@@ -1,6 +1,7 @@
 #include "CPass.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include <sstream>
+#include <utility>
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyColor.h"
@@ -37,7 +38,6 @@ CPass::CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass
     m_material (material),
     m_pass (pass),
     m_blendingmode (pass->getBlendingMode ()) {
-    this->setupTextures ();
     this->setupShaders ();
     this->setupShaderVariables ();
 }
@@ -61,13 +61,17 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
         return previous ?: expected;
 
     // the bind actually has a name, search the FBO in the effect and return it
-    const auto fbo = this->m_material->m_effect->findFBO (it->second->getName ());
+    return this->resolveFBO (it->second->getName ());
+}
 
-    // try scene FBOs, these are our last resort, i guess the exception is better than a nullpo
-    if (fbo == nullptr)
-        return this->m_material->getImage ()->getScene ()->findFBO (it->second->getName ());
+const CFBO* CPass::resolveFBO (const std::string& name) const {
+    const auto fbo = this->m_material->getEffect()->findFBO (name);
 
-    return fbo;
+    if (fbo == nullptr) {
+        return this->m_material->getImage ()->getScene ()->findFBO (name);
+    }
+
+    sLog.exception ("Tried to resolve and FBO without any luck: ", name);
 }
 
 void CPass::setupRenderFramebuffer () {
@@ -153,7 +157,11 @@ void CPass::setupRenderTexture () {
     // continue on the map from the second texture
     if (!this->m_finalTextures.empty ()) {
         for (const auto& [index, expectedTexture] : this->m_finalTextures) {
-            texture = this->resolveTexture (expectedTexture, index, this->m_input);
+            if (expectedTexture == nullptr) {
+                texture = this->m_input;
+            } else {
+                texture = expectedTexture;
+            }
 
             glActiveTexture (GL_TEXTURE0 + index);
             glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
@@ -304,7 +312,7 @@ void CPass::setViewProjectionMatrix (const glm::mat4* viewProjection) {
 }
 
 void CPass::setBlendingMode (std::string blendingmode) {
-    this->m_blendingmode = blendingmode;
+    this->m_blendingmode = std::move(blendingmode);
 }
 
 const std::string& CPass::getBlendingMode () const {
@@ -457,6 +465,68 @@ void CPass::setupAttributes () {
 }
 
 void CPass::setupTextureUniforms () {
+    // first set default textures extracted from the shader
+    // vertex shader doesn't seem to have texture info
+    // but for now just set first vertex's textures
+    // and then try with fragment's and override any existing
+    for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
+        try {
+            // resolve the texture first
+            const ITexture* textureRef;
+
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                textureRef = this->resolveFBO (textureName);
+            } else {
+                textureRef = this->getContext ().resolveTexture (textureName);
+            }
+
+            this->m_finalTextures [index] = textureRef;
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
+        }
+    }
+
+    for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
+        try {
+            // resolve the texture first
+            const ITexture* textureRef;
+
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                textureRef = this->resolveFBO (textureName);
+            } else {
+                textureRef = this->getContext ().resolveTexture (textureName);
+            }
+
+            this->m_finalTextures [index] = textureRef;
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
+        }
+    }
+
+    for (const auto& [index, textureName] : this->m_pass->getTextures ()) {
+        // ignore first texture as that'll be the input of the previous pass (or the image if it's the first pass)
+        if (index == 0) {
+            continue;
+        }
+
+        if (textureName.find ("_rt_") == 0) {
+            this->m_finalTextures[index] = this->resolveFBO (textureName);
+        } else if (!textureName.empty ()) {
+            this->m_finalTextures[index] = this->m_material->getImage ()->getContext ().resolveTexture (textureName);
+        }
+    }
+
+    // binds are set last as they're the most important to be set
+    for (const auto& [index, bind] : this->m_material->getMaterial ()->getTextureBinds ()) {
+        if (bind->getName () == "previous") {
+            // use nullptr as indication for "previous" texture
+            this->m_finalTextures [index] = nullptr;
+        } else {
+            // a normal bind, search for the corresponding FBO and set it
+            this->m_finalTextures [index] = this->resolveFBO (bind->getName ());
+        }
+    }
+
     // resolve the main texture
     const ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
     // register all the texture uniforms with correct values
@@ -469,89 +539,6 @@ void CPass::setupTextureUniforms () {
     this->addUniform ("g_Texture6", 6);
     this->addUniform ("g_Texture7", 7);
     this->addUniform ("g_Texture0Resolution", texture->getResolution ());
-
-    // TODO: SHOULDN'T THIS POINT TO THE BIND DIRECTLY? WHAT GIVES?
-    for (const auto& bind : this->m_material->getMaterial ()->getTextureBinds ()) {
-        this->m_finalTextures [bind.first] = nullptr;
-    }
-
-    int index = 0;
-
-    for (const auto& texture : this->m_textures) {
-        ++index;
-
-        if (texture == nullptr) {
-            continue;
-        }
-
-        this->m_finalTextures [index] = texture;
-    }
-
-    for (const auto& texture : this->m_shader->getFragment ().getTextures ()) {
-        // do not need to add a texture if there's one already
-        if (this->m_finalTextures.find (texture.first) != this->m_finalTextures.end ()) {
-            continue;
-        }
-
-        if (texture.first == 0) {
-            continue;
-        }
-
-        std::string textureName = texture.second;
-
-        try {
-            // resolve the texture first
-            const ITexture* textureRef;
-
-            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
-
-                if (textureRef == nullptr)
-                    textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-            } else
-                textureRef = this->getContext ().resolveTexture (textureName);
-
-            // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-            // there
-            if (this->m_finalTextures.find (texture.first) == this->m_finalTextures.end ())
-                this->m_finalTextures [texture.first] = textureRef;
-        } catch (std::runtime_error& ex) {
-            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
-        }
-    }
-
-    for (const auto& texture : this->m_shader->getVertex ().getTextures ()) {
-        // do not need to add a texture if there's one already
-        if (this->m_finalTextures.find (texture.first) != this->m_finalTextures.end ()) {
-            continue;
-        }
-
-        if (texture.first == 0) {
-            continue;
-        }
-
-        std::string textureName = texture.second;
-
-        try {
-            // resolve the texture first
-            const ITexture* textureRef;
-
-            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->getMaterial ()->getEffect ()->findFBO (textureName);
-
-                if (textureRef == nullptr)
-                    textureRef = this->getMaterial ()->getImage ()->getScene ()->findFBO (textureName);
-            } else
-                textureRef = this->getContext ().resolveTexture (textureName);
-
-            // ensure there's no texture in that slot already, shader textures are defaults in case nothing is
-            // there
-            if (this->m_finalTextures.find (texture.first) == this->m_finalTextures.end ())
-                this->m_finalTextures [texture.first] = textureRef;
-        } catch (std::runtime_error& ex) {
-            sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
-        }
-    }
 
     for (const auto& [textureIndex, expectedTexture] : this->m_finalTextures) {
         std::ostringstream namestream;
@@ -656,36 +643,6 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
     // uniform found, add it to the list
     this->m_referenceUniforms.insert_or_assign (
         name, new ReferenceUniformEntry (id, name, type, reinterpret_cast<const void**> (value)));
-}
-
-void CPass::setupTextures () {
-    auto cur = this->m_pass->getTextures ().begin ();
-    const auto end = this->m_pass->getTextures ().end ();
-
-    for (int index = 0; cur != end; ++cur, index++) {
-        // ignore first texture as that'll be the input of the last pass/image (unless the image is an FBO)
-        if (index == 0)
-            continue;
-
-        if (cur->second.find ("_rt_") == 0) {
-            const CFBO* fbo = this->m_material->m_effect->findFBO (cur->second);
-
-            if (fbo == nullptr)
-                fbo = this->m_material->getImage ()->getScene ()->findFBO (cur->second);
-
-            if (fbo != nullptr) {
-                this->m_fbos.insert (std::make_pair (index, fbo));
-                this->m_textures.emplace_back (fbo);
-            }
-            // _rt_texture
-        } else {
-            if (cur->second.empty ()) {
-                this->m_textures.emplace_back (nullptr);
-            } else {
-                this->m_textures.emplace_back (this->m_material->getImage ()->getContext ().resolveTexture (cur->second));
-            }
-        }
-    }
 }
 
 void CPass::setupShaderVariables () {

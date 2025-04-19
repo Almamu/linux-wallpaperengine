@@ -21,7 +21,7 @@ using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 class CShaderUnit {
   public:
     CShaderUnit (CGLSLContext::UnitType type, std::string file, std::string content, const CContainer* container,
-        const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& textures,
+        const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& passTextures,
         const std::map<std::string, int>& combos);
     ~CShaderUnit () = default;
 
@@ -139,10 +139,10 @@ class CShaderUnit {
      * The constants defined for this unit
      */
     const std::map<std::string, const CShaderConstant*>& m_constants;
-    /**
-     * The textures assigned to this unit
-     */
-    std::map<int, std::string> m_textures;
+    /** The textures that are already applied to this shader */
+    const std::map<int, std::string> m_passTextures;
+    /** The default textures to use when a texture is not applied in a given slot */
+    std::map<int, std::string> m_defaultTextures;
     /**
      * The shader unit this unit is linked to
      */

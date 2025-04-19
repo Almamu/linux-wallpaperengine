@@ -57,14 +57,14 @@ using namespace WallpaperEngine::Render::Shaders;
 
 CShaderUnit::CShaderUnit (CGLSLContext::UnitType type, std::string file, std::string content,
     const CContainer* container, const std::map<std::string, const CShaderConstant*>& constants,
-    const std::map<int, std::string>& textures, const std::map<std::string, int>& combos) :
+    const std::map<int, std::string>& passTextures, const std::map<std::string, int>& combos) :
     m_type (type),
     m_link (nullptr),
     m_container (container),
     m_file (std::move (file)),
     m_constants (constants),
     m_content (std::move(content)),
-    m_textures (textures),
+    m_passTextures (passTextures),
     m_combos (combos),
     m_discoveredCombos (),
     m_usedCombos () {
@@ -407,11 +407,11 @@ void CShaderUnit::parseParameterConfiguration (
 
         if (combo != data.end ()) {
             // if the texture exists (and is not null), add to the combo
-            auto texture = this->m_textures.find (index);
+            auto texture = this->m_passTextures.find (index);
             bool isRequired = false;
             int comboValue = 1;
 
-            if (texture != this->m_textures.end ()) {
+            if (texture != this->m_passTextures.end ()) {
                 // nothing extra to do, the texture exists, the combo must be set
                 // these tend to not have default value
                 isRequired = true;
@@ -447,7 +447,7 @@ void CShaderUnit::parseParameterConfiguration (
                 }
             }
 
-            if (isRequired && texture == this->m_textures.end ()) {
+            if (isRequired && texture == this->m_passTextures.end ()) {
                 if (defvalue == data.end ()) {
                     isRequired = false;
                 } else {
@@ -480,7 +480,7 @@ void CShaderUnit::parseParameterConfiguration (
         }
 
         if (textureName != data.end ())
-            this->m_textures.insert (std::make_pair (index, *textureName));
+            this->m_defaultTextures.insert (std::pair (index, *textureName));
 
         // samplers are not saved, we can ignore them for now
         return;
@@ -565,5 +565,5 @@ const std::vector<Variables::CShaderVariable*>& CShaderUnit::getParameters () co
     return this->m_parameters;
 }
 const std::map<int, std::string>& CShaderUnit::getTextures () const {
-    return this->m_textures;
+    return this->m_defaultTextures;
 }

@@ -37,6 +37,7 @@ class CPass final : public Helpers::CContextAware {
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
     void setBlendingMode (std::string blendingmode);
     [[nodiscard]] const std::string& getBlendingMode () const;
+    [[nodiscard]] const CFBO* resolveFBO (const std::string& name) const;
 
     [[nodiscard]] const CMaterial* getMaterial () const;
     [[nodiscard]] const Core::Objects::Images::Materials::CPass* getPass () const;
@@ -101,7 +102,6 @@ class CPass final : public Helpers::CContextAware {
     };
 
     static GLuint compileShader (const char* shader, GLuint type);
-    void setupTextures ();
     void setupShaders ();
     void setupShaderVariables ();
     void setupUniforms ();
@@ -150,7 +150,7 @@ class CPass final : public Helpers::CContextAware {
 
     CMaterial* m_material;
     const Core::Objects::Images::Materials::CPass* m_pass;
-    std::vector<const ITexture*> m_textures;
+    std::map<int, const ITexture*> m_textures;
     std::map<int, const CFBO*> m_fbos;
     std::map<std::string, int> m_combos;
     std::vector<AttribEntry*> m_attribs;
