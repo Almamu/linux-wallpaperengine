@@ -16,7 +16,7 @@ static int backgroundId = -1;
 
 CProject::CProject (
     std::string title, std::string type, std::string workshopid, const CContainer* container,
-    const std::map<std::string, Projects::CProperty*> properties
+    const std::map<std::string, Projects::CProperty*>& properties
 ) :
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),

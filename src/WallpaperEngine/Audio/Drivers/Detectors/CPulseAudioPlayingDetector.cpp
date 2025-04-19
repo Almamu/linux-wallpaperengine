@@ -16,7 +16,7 @@ void sinkInputInfoCallback (pa_context* context, const pa_sink_input_info* info,
     // get processid
     const char* value = pa_proplist_gets (info->proplist, PA_PROP_APPLICATION_PROCESS_ID);
 
-    if (value && atoi (value) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
+    if (value && strtol (value, nullptr, 10) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
         detector->setIsPlaying (true);
 }
 

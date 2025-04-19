@@ -36,9 +36,9 @@ template <typename T> const T jsonFindRequired (
     const nlohmann::json::const_iterator& data, const char* key, const char* notFoundMsg);
 template <typename T> const T jsonFindRequired (
     const nlohmann::json& data, const char* key, const char* notFoundMsg);
-const nlohmann::json::const_iterator jsonFindRequired (
+nlohmann::json::const_iterator jsonFindRequired (
     const nlohmann::json::const_iterator& data, const char* key, const char* notFoundMsg);
-const nlohmann::json::const_iterator jsonFindRequired (
+nlohmann::json::const_iterator jsonFindRequired (
     const nlohmann::json& data, const char* key, const char* notFoundMsg);
 template <typename T> const T jsonFindDefault (
     const nlohmann::json::const_iterator& data, const char* key, const T defaultValue);

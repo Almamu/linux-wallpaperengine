@@ -149,7 +149,7 @@ void CWaylandOpenGLDriver::initEGL () {
         sLog.exception ("eglInitialize failed!");
     }
 
-    const std::string CLIENTEXTENSIONSPOSTINIT = std::string (eglQueryString (m_eglContext.display, EGL_EXTENSIONS));
+    const auto CLIENTEXTENSIONSPOSTINIT = std::string (eglQueryString (m_eglContext.display, EGL_EXTENSIONS));
 
     if (CLIENTEXTENSIONSPOSTINIT.find ("EGL_KHR_create_context") == std::string::npos) {
         this->finishEGL ();

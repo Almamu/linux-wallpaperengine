@@ -321,7 +321,7 @@ template const glm::ivec4 Core::jsonFindRequired (const nlohmann::json& data, co
 template const glm::ivec3 Core::jsonFindRequired (const nlohmann::json& data, const char* key, const char* notFoundMsg);
 template const glm::ivec2 Core::jsonFindRequired (const nlohmann::json& data, const char* key, const char* notFoundMsg);
 
-const nlohmann::json::const_iterator Core::jsonFindRequired (
+nlohmann::json::const_iterator Core::jsonFindRequired (
     const nlohmann::json::const_iterator& data, const char* key, const char* notFoundMsg
 ) {
     auto value = data->find (key);
@@ -332,7 +332,7 @@ const nlohmann::json::const_iterator Core::jsonFindRequired (
     return value;
 }
 
-const nlohmann::json::const_iterator Core::jsonFindRequired (
+nlohmann::json::const_iterator Core::jsonFindRequired (
     const nlohmann::json& data, const char* key, const char* notFoundMsg
 ) {
     auto value = data.find (key);

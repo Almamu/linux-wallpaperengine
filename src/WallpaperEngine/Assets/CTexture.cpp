@@ -62,14 +62,16 @@ CTexture::CTexture (const void* fileData) : m_resolution () {
                 case GL_RGBA8:
                 case GL_RG8:
                 case GL_R8:
-                    glTexImage2D (GL_TEXTURE_2D, level, internalFormat, width, height, 0, textureFormat,
-                                  GL_UNSIGNED_BYTE, dataptr);
+                    glTexImage2D (
+                        GL_TEXTURE_2D, level, internalFormat, width, height, 0, textureFormat,
+                        GL_UNSIGNED_BYTE, dataptr);
                     break;
                 case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
                 case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
                 case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-                    glCompressedTexImage2D (GL_TEXTURE_2D, level, internalFormat, width, height, 0, bufferSize,
-                                            dataptr);
+                    glCompressedTexImage2D (
+                        GL_TEXTURE_2D, level, internalFormat, width, height, 0, bufferSize,
+                        dataptr);
                     break;
                 default: sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
             }
@@ -259,7 +261,8 @@ CTexture::TextureHeader::TextureHeader () :
     gifHeight (0),
     format (TextureFormat::UNKNOWN),
     imageCount (0),
-    mipmapCount (0) {}
+    mipmapCount (0),
+    isVideoMp4 (false) {}
 
 CTexture::TextureHeader::~TextureHeader () {
     for (const auto& [index, mipmaps] : this->images)
@@ -311,7 +314,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
             header->freeImageFormat = FIF_MP4;
         }
 
-        // default to TEXB0003 behaviour if no mp4 video is there
+        // default to TEXB0003 behavior if no mp4 video is there
         if (header->freeImageFormat != FIF_MP4) {
             header->containerVersion = ContainerVersion::TEXB0003;
         }
@@ -344,7 +347,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     }
 
     // gifs have extra information after the mipmaps
-    if (header->isAnimated () == true) {
+    if (header->isAnimated ()) {
         if (strncmp (fileData, "TEXS0002", 9) == 0) {
             header->animatedVersion = AnimatedVersion::TEXS0002;
         } else if (strncmp (fileData, "TEXS0003", 9) == 0) {

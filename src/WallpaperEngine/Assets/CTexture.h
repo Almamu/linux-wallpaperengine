@@ -140,7 +140,7 @@ class CTexture final : public ITexture {
         /** Free Image format */
         FreeImageFormat freeImageFormat = FreeImageFormat::FIF_UNKNOWN;
         /** Indicates if we have an MP4 video */
-        bool isVideoMp4;
+        bool isVideoMp4{};
         /** The amount of images in the texture file */
         uint32_t imageCount;
         /** Number of mipmap levels on the texture */

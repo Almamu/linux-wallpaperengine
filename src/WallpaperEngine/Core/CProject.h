@@ -35,7 +35,7 @@ class CProject {
   protected:
     CProject (
         std::string title, std::string type, std::string workshopid, const CContainer* container,
-        std::map<std::string, Projects::CProperty*> properties);
+        const std::map<std::string, Projects::CProperty*>& properties);
 
     void setWallpaper (const CWallpaper* wallpaper);
 

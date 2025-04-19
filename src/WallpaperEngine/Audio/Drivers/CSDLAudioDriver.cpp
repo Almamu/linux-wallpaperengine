@@ -53,8 +53,9 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
                 len1 = streamLength;
 
             // mix the audio
-            SDL_MixAudioFormat (streamDataPointer, &buffer->audio_buf [buffer->audio_buf_index],
-                                driver->getSpec ().format, len1, driver->getApplicationContext ().state.audio.volume);
+            SDL_MixAudioFormat (
+                streamDataPointer, &buffer->audio_buf [buffer->audio_buf_index], driver->getSpec ().format,
+                len1, driver->getApplicationContext ().state.audio.volume);
 
             streamLength -= len1;
             streamDataPointer += len1;
@@ -75,12 +76,14 @@ CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationC
         return;
     }
 
-    const SDL_AudioSpec requestedSpec = {.freq = 48000,
-                                         .format = AUDIO_F32,
-                                         .channels = 2,
-                                         .samples = SDL_AUDIO_BUFFER_SIZE,
-                                         .callback = audio_callback,
-                                         .userdata = this};
+    const SDL_AudioSpec requestedSpec = {
+        .freq = 48000,
+        .format = AUDIO_F32,
+        .channels = 2,
+        .samples = SDL_AUDIO_BUFFER_SIZE,
+        .callback = audio_callback,
+        .userdata = this
+    };
 
     this->m_deviceID =
         SDL_OpenAudioDevice (nullptr, false, &requestedSpec, &this->m_audioSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);

@@ -17,9 +17,8 @@ const ITexture* CContainer::readTexture (const std::filesystem::path& filename) 
     // get the texture's filename (usually .tex)
     std::filesystem::path texture = "materials" / std::filesystem::path (filename.string ().append (".tex"));
 
-    const uint8_t* textureContents = this->readFile (texture, nullptr);
-
-    const ITexture* result = new CTexture (textureContents);
+    const auto* textureContents = this->readFile (texture, nullptr);
+    const auto* result = new CTexture (textureContents);
 
 #if !NDEBUG
     glObjectLabel (GL_TEXTURE, result->getTextureID (0), -1, texture.c_str ());
@@ -76,8 +75,8 @@ std::string CContainer::readFileAsString (const std::filesystem::path& filename)
     uint32_t length = 0;
 
     // read file contents and allocate a buffer for a string
-    const uint8_t* contents = this->readFile (filename, &length);
-    char* buffer = new char [length + 1];
+    const auto* contents = this->readFile (filename, &length);
+    auto* buffer = new char [length + 1];
 
     // ensure there's a 0 at the end
     memset (buffer, 0, length + 1);

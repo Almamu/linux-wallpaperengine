@@ -13,8 +13,9 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context,
-                                      CWallpaperApplication& app) :
+CGLFWOpenGLDriver::CGLFWOpenGLDriver (
+    const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app
+) :
     CVideoDriver (app),
     m_context (context),
     m_frameCounter (0) {
