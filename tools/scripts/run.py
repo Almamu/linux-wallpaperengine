@@ -21,11 +21,18 @@ def run_and_monitor(program, program_args=None, output_file="output.png", wait_t
         start_time = time.time()
 
         while time.time() - start_time < timeout:
-            print("Polling for file {output_file}".format(output_file=output_file))
-            # Check if the file is created
-            if os.path.exists(output_file):
+            # wait for the process to die, if it did, stop the waiting already
+            try:
+                process.wait(wait_time)
                 break
-            time.sleep(wait_time)
+            except subprocess.TimeoutExpired:
+                # otherwise check for the file, if it exists stop waiting
+                print("Polling for file {output_file}".format(output_file=output_file))
+                # Check if the file is created
+                if os.path.exists(output_file):
+                    # give the screenshot some time to be written properly, just in case
+                    time.sleep(wait_time)
+                    break
         else:
             print("Timeout reached. File not found.")
         
