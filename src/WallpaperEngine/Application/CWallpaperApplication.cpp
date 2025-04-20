@@ -424,15 +424,17 @@ void CWallpaperApplication::show () {
     static time_t seconds;
     static struct tm* timeinfo;
 
-    auto* prettyPrinter = new PrettyPrinter::CPrettyPrinter ();
+    if (this->m_context.settings.general.dumpStructure) {
+        auto* prettyPrinter = new PrettyPrinter::CPrettyPrinter ();
 
-    for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
-        prettyPrinter->printWallpaper (*info);
+        for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
+            prettyPrinter->printWallpaper (*info);
+        }
+
+        std::cout << prettyPrinter->str () << std::endl;
+
+        delete prettyPrinter;
     }
-
-    std::cout << prettyPrinter->str () << std::endl;
-
-    delete prettyPrinter;
 
     while (this->m_context.state.general.keepRunning) {
         // update g_Daytime

@@ -24,7 +24,8 @@ struct option long_options [] = {
     {"no-audio-processing", no_argument, nullptr, 'g'}, {"no-fullscreen-pause", no_argument, nullptr, 'n'},
     {"disable-mouse", no_argument, nullptr, 'e'},       {"scaling", required_argument, nullptr, 't'},
     {"clamping", required_argument, nullptr, 't'},      {"screenshot-delay", required_argument, nullptr, 'y'},
-    {nullptr, 0, nullptr, 0}};
+    {"dump-structure", no_argument, nullptr, 'z'},      {nullptr, 0, nullptr, 0}
+};
 
 /* std::hash::operator() isn't constexpr, so it can't be used to get hash values as compile-time constants
  * So here is customHash. It skips all spaces, so hashes for " find " and "fi nd" are the same
@@ -65,6 +66,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
         .general =
             {
                 .onlyListProperties = false,
+                .dumpStructure = false,
                 .assets = "",
                 .defaultBackground = "",
                 .screenBackgrounds = {},
@@ -113,6 +115,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
     while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mnt:", long_options, nullptr)) != -1) {
         switch (c) {
+            case 'z': this->settings.general.dumpStructure = true; break;
             case 'n': this->settings.render.pauseOnFullscreen = false; break;
 
             case 'b':
@@ -339,4 +342,7 @@ void CApplicationContext::printHelp (const char* route) {
                     \t\t Example: ./wallengine --scaling stretch --screen-root eDP-1 --bg 2667198601 --scaling fill --screen-root eDP-2 2667198602");
     sLog.out (
         "\t--clamping <mode>\t Clamping mode for all wallpapers. Can be clamp, border, repeat. Enables GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_REPEAT accordingly. Default is clamp.");
+    sLog.out ("\t--screenshot-delay <seconds>\t\tFrames to wait until the screenshot is taken");
+    sLog.out ("\t--dump-structure\t\t\tDumps the structure of the wallpaper");
+    sLog.out ("\t--help\t\t\t\t\tPrints this help");
 }

@@ -36,12 +36,12 @@ class CApplicationContext {
         struct {
             /** If the user requested a list of properties for the given background */
             bool onlyListProperties;
-
+            /** If the user requested a dump of the background structure */
+            bool dumpStructure;
             /** The path to the assets folder */
             std::filesystem::path assets;
             /** Background to load (provided as the final argument) as fallback for multi-screen setups */
             std::filesystem::path defaultBackground;
-
             /** The backgrounds specified for different screens */
             std::map<std::string, std::filesystem::path> screenBackgrounds;
             /** Properties to change values for */
