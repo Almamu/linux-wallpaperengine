@@ -20,7 +20,7 @@ class CGLSLContext {
     CGLSLContext ();
     ~CGLSLContext ();
 
-    [[nodiscard]] std::string toGlsl (const std::string& content, UnitType type);
+    [[nodiscard]] std::pair<std::string, std::string> toGlsl (const std::string& vertex, const std::string& fragment);
 
     [[nodiscard]] static CGLSLContext& get ();
 

@@ -560,9 +560,7 @@ const std::string& CShaderUnit::compile () {
     // this should be the rest of the shader
     this->m_final += this->m_preprocessed;
 
-    // finally build the shader's content
-    this->m_final = CGLSLContext::get().toGlsl (this->m_final, this->m_type);
-
+    // shader compilation is handled by the pass itself, the unit doesn't have enough information for this step
     return this->m_final;
 }
 

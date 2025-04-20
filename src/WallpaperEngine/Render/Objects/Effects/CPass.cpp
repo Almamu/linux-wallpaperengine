@@ -402,12 +402,12 @@ void CPass::setupShaders () {
         this->m_pass->getTextures (), this->m_pass->getConstants ()
     );
 
-    std::string fragmentCode = this->m_shader->fragment ();
-    std::string vertexCode = this->m_shader->vertex ();
+    const auto shaders = Shaders::CGLSLContext::get ().toGlsl (
+        this->m_shader->vertex (), this->m_shader->fragment ());
 
     // compile the shaders
-    const GLuint vertexShaderID = compileShader (vertexCode.c_str (), GL_VERTEX_SHADER);
-    const GLuint fragmentShaderID = compileShader (fragmentCode.c_str (), GL_FRAGMENT_SHADER);
+    const GLuint vertexShaderID = compileShader (shaders.first.c_str (), GL_VERTEX_SHADER);
+    const GLuint fragmentShaderID = compileShader (shaders.second.c_str (), GL_FRAGMENT_SHADER);
     // create the final program
     this->m_programID = glCreateProgram ();
     // link the shaders together

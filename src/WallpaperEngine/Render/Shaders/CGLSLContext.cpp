@@ -134,42 +134,65 @@ CGLSLContext& CGLSLContext::get () {
     return *sInstance;
 }
 
-std::string CGLSLContext::toGlsl (const std::string& content, UnitType type) {
-    EShLanguage shaderType = type == UnitType_Vertex ? EShLangVertex : EShLangFragment;
-    glslang::TShader shader (shaderType);
+std::pair<std::string, std::string> CGLSLContext::toGlsl (const std::string& vertex, const std::string& fragment) {
+    glslang::TShader vertexShader (EShLangVertex);
 
-    const char* shaderSource = content.c_str();
-    shader.setStrings(&shaderSource, 1);
-    shader.setEntryPoint("main");
-    shader.setEnvInput(glslang::EShSourceGlsl, shaderType, glslang::EShClientOpenGL, 330);
-    shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
-    shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
-    shader.setAutoMapLocations (true);
-    shader.setAutoMapBindings (true);
+    const char* vertexSource = vertex.c_str();
+    vertexShader.setStrings(&vertexSource, 1);
+    vertexShader.setEntryPoint("main");
+    vertexShader.setEnvInput(glslang::EShSourceGlsl, EShLangVertex, glslang::EShClientOpenGL, 330);
+    vertexShader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+    vertexShader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+    vertexShader.setAutoMapLocations (true);
+    vertexShader.setAutoMapBindings (true);
 
-    if (!shader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
-        sLog.error ("GLSL Parsing Failed: ", shader.getInfoLog());
-        return "";
+    if (!vertexShader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
+        sLog.error ("GLSL vertex unit parsing Failed: ", vertexShader.getInfoLog());
+        return {"", ""};
     }
+    glslang::TShader fragmentShader (EShLangFragment);
 
+    const char* fragmentSource = fragment.c_str();
+    fragmentShader.setStrings(&fragmentSource, 1);
+    fragmentShader.setEntryPoint("main");
+    fragmentShader.setEnvInput(glslang::EShSourceGlsl, EShLangFragment, glslang::EShClientOpenGL, 330);
+    fragmentShader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+    fragmentShader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+    fragmentShader.setAutoMapLocations (true);
+    fragmentShader.setAutoMapBindings (true);
+
+    if (!fragmentShader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
+        sLog.error ("GLSL fragment unit parsing Failed: ", fragmentShader.getInfoLog());
+        return {"", ""};
+    }
     glslang::TProgram program;
-    program.addShader (&shader);
+    program.addShader (&vertexShader);
+    program.addShader (&fragmentShader);
 
     if (!program.link (EShMsgDefault)) {
         sLog.error ("Program Linking Failed: ", program.getInfoLog());
-        return "";
+        return {"", ""};
     }
 
     std::vector<uint32_t> spirv;
-    glslang::GlslangToSpv (*program.getIntermediate (shaderType), spirv);
+    glslang::GlslangToSpv (*program.getIntermediate (EShLangVertex), spirv);
 
-    spirv_cross::CompilerGLSL compiler(spirv);
+    spirv_cross::CompilerGLSL vertexCompiler (spirv);
     spirv_cross::CompilerGLSL::Options options;
     options.version = 330;
     options.es = false;
-    compiler.set_common_options(options);
+    vertexCompiler.set_common_options(options);
 
-    return compiler.compile();
+    spirv.clear ();
+    glslang::GlslangToSpv (*program.getIntermediate (EShLangFragment), spirv);
+
+    spirv_cross::CompilerGLSL fragmentCompiler (spirv);
+    options.version = 330;
+    options.es = false;
+    fragmentCompiler .set_common_options(options);
+
+    return {vertexCompiler.compile(), fragmentCompiler.compile()};
 }
+
 
 std::shared_ptr<CGLSLContext> CGLSLContext::sInstance = nullptr;
