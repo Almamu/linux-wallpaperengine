@@ -19,6 +19,10 @@ void CVirtualContainer::add (const std::filesystem::path& filename, const std::s
     this->add (filename, copy, contents.length () + 1);
 }
 
+void CVirtualContainer::add (const std::filesystem::path& filename, const json& contents) {
+    this->add (filename, contents.dump ());
+}
+
 const uint8_t* CVirtualContainer::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     const auto cur = this->m_virtualFiles.find (filename);
 

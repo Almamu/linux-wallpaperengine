@@ -5,8 +5,11 @@
 
 #include "CContainer.h"
 #include "CFileEntry.h"
+#include <nlohmann/json.hpp>
+
 
 namespace WallpaperEngine::Assets {
+using json = nlohmann::json;
 /**
  * Virtual container implementation, provides virtual files for the backgrounds to use
  */
@@ -28,6 +31,13 @@ class CVirtualContainer final : public CContainer {
      * @param contents
      */
     void add (const std::filesystem::path& filename, const std::string& contents);
+    /**
+     * Adds a new file to the virtual container from a json object
+     * @param filename
+     * @param contents
+     */
+    void add (const std::filesystem::path& filename, const json& contents);
+
     /** @inheritdoc */
     const uint8_t* readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 

@@ -84,82 +84,108 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
     // add the effect file for screen bloom
 
     // add some model for the image element even if it's going to waste rendering cycles
-    virtualContainer->add ("effects/wpenginelinux/bloomeffect.json",
-                           "{"
-                           "\t\"name\":\"camerabloom_wpengine_linux\","
-                           "\t\"group\":\"wpengine_linux_camera\","
-                           "\t\"dependencies\":[],"
-                           "\t\"passes\":"
-                           "\t["
-                           "\t\t{"
-                           "\t\t\t\"material\": \"materials/util/downsample_quarter_bloom.json\","
-                           "\t\t\t\"target\": \"_rt_4FrameBuffer\","
-                           "\t\t\t\"bind\":"
-                           "\t\t\t["
-                           "\t\t\t\t{"
-                           "\t\t\t\t\t\"name\": \"_rt_FullFrameBuffer\","
-                           "\t\t\t\t\t\"index\": 0"
-                           "\t\t\t\t}"
-                           "\t\t\t]"
-                           "\t\t},"
-                           "\t\t{"
-                           "\t\t\t\"material\": \"materials/util/downsample_eighth_blur_v.json\","
-                           "\t\t\t\"target\": \"_rt_8FrameBuffer\","
-                           "\t\t\t\"bind\":"
-                           "\t\t\t["
-                           "\t\t\t\t{"
-                           "\t\t\t\t\t\"name\": \"_rt_4FrameBuffer\","
-                           "\t\t\t\t\t\"index\": 0"
-                           "\t\t\t\t}"
-                           "\t\t\t]"
-                           "\t\t},"
-                           "\t\t{"
-                           "\t\t\t\"material\": \"materials/util/blur_h_bloom.json\","
-                           "\t\t\t\"target\": \"_rt_Bloom\","
-                           "\t\t\t\"bind\":"
-                           "\t\t\t["
-                           "\t\t\t\t{"
-                           "\t\t\t\t\t\"name\": \"_rt_8FrameBuffer\","
-                           "\t\t\t\t\t\"index\": 0"
-                           "\t\t\t\t}"
-                           "\t\t\t]"
-                           "\t\t},"
-                           "\t\t{"
-                           "\t\t\t\"material\": \"materials/util/combine.json\","
-                           "\t\t\t\"target\": \"_rt_FullFrameBuffer\","
-                           "\t\t\t\"bind\":"
-                           "\t\t\t["
-                           "\t\t\t\t{"
-                           "\t\t\t\t\t\"name\": \"_rt_imageLayerComposite_-1_a\","
-                           "\t\t\t\t\t\"index\": 0"
-                           "\t\t\t\t},"
-                           "\t\t\t\t{"
-                           "\t\t\t\t\t\"name\": \"_rt_Bloom\","
-                           "\t\t\t\t\t\"index\": 1"
-                           "\t\t\t\t}"
-                           "\t\t\t]"
-                           "\t\t}"
-                           "\t]"
-                           "}");
+    virtualContainer->add (
+        "effects/wpenginelinux/bloomeffect.json",
+        {
+            {"name", "camerabloom_wpengine_linux"},
+            {"group", "wpengine_linux_camera"},
+            {"dependencies", json::array ()},
+            {"passes",
+                json::array (
+                    {
+                        {
+                            {"material", "materials/util/downsample_quarter_bloom.json"},
+                            {"target", "_rt_4FrameBuffer"},
+                            {
+                                "bind",
+                                json::array (
+                                    {
+                                        {
+                                            {"name", "_rt_FullFrameBuffer"},
+                                            {"index", 0}
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        {
+                            {"material", "materials/util/downsample_eighth_blur_v.json"},
+                            {"target", "_rt_8FrameBuffer"},
+                            {
+                                "bind",
+                                json::array (
+                                    {
+                                        {
+                                            {"name", "_rt_4FrameBuffer"},
+                                            {"index", 0}
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        {
+                            {"material", "materials/util/blur_h_bloom.json"},
+                            {"target", "_rt_Bloom"},
+                            {
+                                "bind",
+                                json::array (
+                                    {
+                                        {
+                                            {"name", "_rt_8FrameBuffer"},
+                                            {"index", 0}
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        {
+                            {"material", "materials/util/combine.json"},
+                            {"target", "_rt_FullFrameBuffer"},
+                            {
+                                "bind",
+                                json::array (
+                                    {
+                                        {
+                                            {"name", "_rt_imageLayerComposite_-1_a"},
+                                            {"index", 0}
+                                        },
+                                        {
+                                            {"name", "_rt_Bloom"},
+                                            {"index", 1}
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+               ),
+            }
+        }
+    );
 
-    virtualContainer->add ("models/wpenginelinux.json", "{"
-                                                        "\t\"material\":\"materials/wpenginelinux.json\""
-                                                        "}");
+    virtualContainer->add (
+        "models/wpenginelinux.json",
+        {
+            {"material","materials/wpenginelinux.json"}
+        }
+    );
 
-    // models require materials, so add that too
-    virtualContainer->add ("materials/wpenginelinux.json", "{"
-                                                           "\t\"passes\":"
-                                                           "\t\t["
-                                                           "\t\t\t{"
-                                                           "\t\t\t\t\"blending\": \"normal\","
-                                                           "\t\t\t\t\"cullmode\": \"nocull\","
-                                                           "\t\t\t\t\"depthtest\": \"disabled\","
-                                                           "\t\t\t\t\"depthwrite\": \"disabled\","
-                                                           "\t\t\t\t\"shader\": \"genericimage2\","
-                                                           "\t\t\t\t\"textures\": [\"_rt_FullFrameBuffer\"]"
-                                                           "\t\t\t}"
-                                                           "\t\t]"
-                                                           "}");
+    virtualContainer->add(
+        "materials/wpenginelinux.json",
+        {
+            {"passes", json::array (
+                {
+                    {
+                        {"blending", "normal"},
+                        {"cullmode", "nocull"},
+                        {"depthtest", "disabled"},
+                        {"depthwrite", "disabled"},
+                        {"shader", "genericimage2"},
+                        {"textures", json::array ({"_rt_FullFrameBuffer"})}
+                    }
+                }
+            )}}
+    );
 
     container.add (virtualContainer);
 }
