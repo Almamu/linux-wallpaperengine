@@ -281,7 +281,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
             "    Runs the background 2317494988 on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
     );
 
-    program.parse_args (argc, argv);
+    program.parse_known_args (argc, argv);
 
     this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
     this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
