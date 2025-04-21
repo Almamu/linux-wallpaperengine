@@ -187,6 +187,25 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
             )}}
     );
 
+    virtualContainer->add(
+        "shaders/commands/copy.frag",
+        "uniform sampler2D g_Texture0;\n"
+        "in vec2 v_TexCoord;\n"
+        "void main () {\n"
+        "out_FragColor = texture (g_Texture0, v_TexCoord);\n"
+        "}"
+    );
+    virtualContainer->add(
+        "shaders/commands/copy.vert",
+        "in vec3 a_Position;\n"
+        "in vec2 a_TexCoord;\n"
+        "out vec2 v_TexCoord;\n"
+        "void main () {\n"
+        "gl_Position = vec4 (a_Position, 1.0);\n"
+        "v_TexCoord = a_TexCoord;\n"
+        "}"
+    );
+
     container.add (virtualContainer);
 }
 

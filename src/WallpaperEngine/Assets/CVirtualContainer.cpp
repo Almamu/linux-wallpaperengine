@@ -19,6 +19,10 @@ void CVirtualContainer::add (const std::filesystem::path& filename, const std::s
     this->add (filename, copy, contents.length () + 1);
 }
 
+void CVirtualContainer::add (const std::filesystem::path& filename, const char* contents) {
+    this->add (filename, std::string (contents));
+}
+
 void CVirtualContainer::add (const std::filesystem::path& filename, const json& contents) {
     this->add (filename, contents.dump ());
 }

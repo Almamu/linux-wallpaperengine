@@ -88,10 +88,17 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
             this->m_texture = this->getContext ().resolveTexture (textureName);
         }
     } else {
+        if (this->m_image->getMaterial ()->isSolidLayer()) {
+            size.x = scene_width;
+            size.y = scene_height;
+        }
+        // if (this->m_image->isSolid ()) // layer receives cursor events: https://docs.wallpaperengine.io/en/scene/scenescript/reference/event/cursor.html
+        // same applies to effects
         // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
         // handled
-        this->m_texture = new CFBO ("", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::NoFlags, 1, size.x,
-                                    size.y, size.x, size.y);
+        this->m_texture = new CFBO (
+            "", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::NoFlags, 1, size.x,
+                  size.y, size.x, size.y);
     }
 
     // register both FBOs into the scene
@@ -258,7 +265,7 @@ void CImage::setup () {
 
         overrides.combos.insert (std::pair ("BLENDMODE", this->m_image->getColorBlendMode ()));
         const auto material =
-            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer (), {}, &overrides);
+            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer (), false, {}, &overrides);
 
         // generate the main material used to render the image
         this->m_colorBlendMaterial = new Effects::CMaterial (

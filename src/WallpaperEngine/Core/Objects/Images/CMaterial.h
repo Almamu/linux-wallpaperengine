@@ -26,18 +26,20 @@ class CMaterial {
     };
 
     static const CMaterial* fromFile (
-        const std::filesystem::path& filename, const Assets::CContainer* container,
+        const std::filesystem::path& filename, const Assets::CContainer* container, bool solidlayer = false,
         std::map<int, const Effects::CBind*> textureBindings = {}, const OverrideInfo* overrides = nullptr);
     static const CMaterial* fromFile (
-        const std::filesystem::path& filename, const std::string& target,
-        const Assets::CContainer* container, std::map<int, const Effects::CBind*> textureBindings = {},
+        const std::filesystem::path& filename, const std::string& target, const Assets::CContainer* container,
+        bool solidlayer = false, std::map<int, const Effects::CBind*> textureBindings = {},
         const OverrideInfo* overrides = nullptr);
     static const CMaterial* fromJSON (
-        const std::string& name, const json& data,
+        const std::string& name, const json& data, bool solidlayer = false,
         std::map<int, const Effects::CBind*> textureBindings = {}, const OverrideInfo* overrides = nullptr);
     static const CMaterial* fromJSON (
-        const std::string& name, const json& data, const std::string& target,
+        const std::string& name, const json& data, const std::string& target, bool solidlayer = false,
         std::map<int, const Effects::CBind*> textureBindings = {}, const OverrideInfo* overrides = nullptr);
+    static const CMaterial* fromCommand (const json& data);
+
     /**
      * @return All the rendering passes that happen for this material
      */
@@ -59,13 +61,17 @@ class CMaterial {
      * @return The name of the material
      */
     [[nodiscard]] const std::string& getName () const;
+    /**
+     * @return If this material is a solidlayer or not
+     */
+    [[nodiscard]] bool isSolidLayer () const;
 
   protected:
     CMaterial (
-        std::string name, std::map<int, const Effects::CBind*> textureBindings,
+        std::string name, bool solidlayer, std::map<int, const Effects::CBind*> textureBindings,
         std::vector<const Materials::CPass*> passes);
     CMaterial (
-        std::string name, std::string target, std::map<int, const Effects::CBind*> textureBindings,
+        std::string name, std::string target, bool solidlayer, std::map<int, const Effects::CBind*> textureBindings,
         std::vector<const Materials::CPass*> passes);
 
   private:
@@ -77,5 +83,7 @@ class CMaterial {
     const std::string m_target;
     /** The material's name */
     const std::string m_name;
+    /** If this material is a solid layer or not */
+    const bool m_solidlayer;
 };
 } // namespace WallpaperEngine::Core::Objects::Images

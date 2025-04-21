@@ -31,6 +31,14 @@ class CVirtualContainer final : public CContainer {
      * @param contents
      */
     void add (const std::filesystem::path& filename, const std::string& contents);
+
+    /**
+     * Adds a new file to the virtual container
+     *
+     * @param filename
+     * @param contents
+     */
+    void add (const std::filesystem::path& filename, const char* contents);
     /**
      * Adds a new file to the virtual container from a json object
      * @param filename

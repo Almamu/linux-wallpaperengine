@@ -44,7 +44,8 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
 
     const auto material = Images::CMaterial::fromFile (
         jsonFindRequired<std::string> (content, "material", "Image must have a material"),
-        container
+        container,
+        jsonFindDefault (content, "solidlayer", false)
     );
 
     if (effects_it != data.end () && effects_it->is_array ()) {

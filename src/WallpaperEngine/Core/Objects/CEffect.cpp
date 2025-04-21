@@ -187,33 +187,45 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
     for (const auto& cur : (*passes_it)) {
         ++materialNumber;
         const auto materialfile = cur.find ("material");
-        const auto target = cur.find ("target");
+        const auto target_it = cur.find ("target");
         const auto bind_it = cur.find ("bind");
-
-        if (materialfile == cur.end ())
-            sLog.exception ("Found an effect ", name, " without material");
-
-        std::map<int, const Effects::CBind*> textureBindings;
-
-        if (bind_it != cur.end ()) {
-            for (const auto& bindCur : (*bind_it)) {
-                const auto* bind = Effects::CBind::fromJSON (bindCur);
-                textureBindings.insert (std::pair (bind->getIndex (), bind));
-            }
-        }
-
+        const auto command_it = cur.find ("command");
+        const auto compose_it = cur.find ("compose");
         const Images::CMaterial* material;
-        const Images::CMaterial::OverrideInfo* overrideInfo;
-        const auto overrideIt = overrides.find (materialNumber);
 
-        if (overrideIt != overrides.end ()) {
-            overrideInfo = &overrideIt->second;
+        if (compose_it != cur.end ()) {
+            sLog.error ("Composing materials is not supported yet...");
         }
 
-        if (target == cur.end ())
-            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), container, textureBindings, overrideInfo);
-        else
-            material = Images::CMaterial::fromFile (materialfile->get<std::string> (), *target, container, textureBindings, overrideInfo);
+        if (materialfile != cur.end ()) {
+            std::map<int, const Effects::CBind*> textureBindings;
+
+            if (bind_it != cur.end ()) {
+                for (const auto& bindCur : (*bind_it)) {
+                    const auto* bind = Effects::CBind::fromJSON (bindCur);
+                    textureBindings.insert (std::pair (bind->getIndex (), bind));
+                }
+            }
+
+            const Images::CMaterial::OverrideInfo* overrideInfo;
+            const auto overrideIt = overrides.find (materialNumber);
+
+            if (overrideIt != overrides.end ()) {
+                overrideInfo = &overrideIt->second;
+            }
+
+            if (target_it == cur.end ()) {
+                material = Images::CMaterial::fromFile (
+                    materialfile->get<std::string> (), container, false, textureBindings, overrideInfo);
+            } else {
+                material = Images::CMaterial::fromFile (
+                    materialfile->get<std::string> (), *target_it, container, false, textureBindings, overrideInfo);
+            }
+        } else if (command_it != cur.end ()) {
+            material = Images::CMaterial::fromCommand (cur);
+        } else {
+            sLog.exception ("Material without command nor material file: ", name, " (", materialNumber,")");
+        }
 
         materials.push_back (material);
     }
