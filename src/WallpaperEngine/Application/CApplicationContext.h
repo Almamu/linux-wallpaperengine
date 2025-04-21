@@ -48,6 +48,8 @@ class CApplicationContext {
             std::map<std::string, std::string> properties;
             /** The scaling mode for different screens */
             std::map<std::string, WallpaperEngine::Render::CWallpaperState::TextureUVsScaling> screenScalings;
+            /** The clamping mode for different screens */
+            std::map<std::string, WallpaperEngine::Assets::ITexture::TextureFlags> screenClamps;
         } general;
 
         /**
@@ -98,7 +100,7 @@ class CApplicationContext {
             /** If an screenshot should be taken */
             bool take;
             /** The frames to wait until the screenshot is taken */
-            uint32_t delay;
+            int delay;
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
         } screenshot;
@@ -132,10 +134,5 @@ class CApplicationContext {
      * @return
      */
     static std::filesystem::path translateBackground (const std::string& bgIdOrPath);
-
-    /**
-     * Prints the normal help message
-     */
-    static void printHelp (const char* route);
 };
 } // namespace WallpaperEngine::Application

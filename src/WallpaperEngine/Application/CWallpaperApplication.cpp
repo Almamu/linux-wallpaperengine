@@ -436,7 +436,8 @@ void CWallpaperApplication::prepareOutputs () {
             background,
             WallpaperEngine::Render::CWallpaper::fromWallpaper (
                 info->getWallpaper (), *m_renderContext, *m_audioContext, *m_browserContext,
-                this->m_context.settings.general.screenScalings [background]
+                this->m_context.settings.general.screenScalings [background],
+                this->m_context.settings.general.screenClamps [background]
             )
         );
     }

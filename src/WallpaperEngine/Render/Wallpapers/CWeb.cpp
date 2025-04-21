@@ -10,9 +10,12 @@ using namespace WallpaperEngine::Render::Wallpapers;
 using namespace WallpaperEngine::WebBrowser;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-CWeb::CWeb (const Core::Wallpapers::CWeb* web, CRenderContext& context, CAudioContext& audioContext, CWebBrowserContext& browserContext,
-            const CWallpaperState::TextureUVsScaling& scalingMode) :
-    CWallpaper (web, Type, context, audioContext, scalingMode),
+CWeb::CWeb (
+    const Core::Wallpapers::CWeb* web, CRenderContext& context, CAudioContext& audioContext,
+    CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
+    CWallpaper (web, Type, context, audioContext, scalingMode, clampMode),
     m_browserContext (browserContext),
     m_browser (),
     m_client (),

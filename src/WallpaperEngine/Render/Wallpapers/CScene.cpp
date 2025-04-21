@@ -16,9 +16,12 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
 
-CScene::CScene (const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
-                const CWallpaperState::TextureUVsScaling& scalingMode) :
-    CWallpaper (scene, Type, context, audioContext, scalingMode),
+CScene::CScene (
+    const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
+    CWallpaper (scene, Type, context, audioContext, scalingMode, clampMode),
     m_mousePosition (),
     m_mousePositionLast (),
     m_parallaxDisplacement () {

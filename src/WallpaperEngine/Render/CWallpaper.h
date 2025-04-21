@@ -30,17 +30,17 @@ class CContextAware;
 
 class CWallpaper : public Helpers::CContextAware {
   public:
-    template <class T> const T* as () const {
+    template <class T> [[nodiscard]]const T* as () const {
         assert (is<T> ());
         return reinterpret_cast<const T*> (this);
     }
 
-    template <class T> T* as () {
+    template <class T> [[nodiscard]] T* as () {
         assert (is<T> ());
         return reinterpret_cast<T*> (this);
     }
 
-    template <class T> bool is () const {
+    template <class T> [[nodiscard]] bool is () const {
         return this->m_type == T::Type;
     }
 
@@ -87,8 +87,9 @@ class CWallpaper : public Helpers::CContextAware {
      * @param textureHeight
      * @return
      */
-    CFBO* createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
-                     uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+    CFBO* createFBO (
+        const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+        uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
     /**
      * Creates an alias of an existing fbo
@@ -146,13 +147,16 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static CWallpaper* fromWallpaper (const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
-                                      WebBrowser::CWebBrowserContext& browserContext,
-                                      const CWallpaperState::TextureUVsScaling& scalingMode);
+    static CWallpaper* fromWallpaper (
+        const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
+        WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
   protected:
-    CWallpaper (const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
-                const CWallpaperState::TextureUVsScaling& scalingMode);
+    CWallpaper (
+        const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
+        const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
     /**
      * Renders a frame of the wallpaper

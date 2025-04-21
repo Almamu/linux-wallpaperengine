@@ -21,41 +21,45 @@ class CRenderHandler;
 }
 
 namespace WallpaperEngine::Render::Wallpapers {
-    class CWeb : public CWallpaper
-    {
-        public:
-            CWeb (const Core::Wallpapers::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
-            ~CWeb() override;
-            [[nodiscard]] int getWidth  () const override { return this->m_width; }
+class CWeb : public CWallpaper
+{
+    public:
+        CWeb (
+          const Core::Wallpapers::CWeb* scene, CRenderContext& context, CAudioContext& audioContext,
+          WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
+          const CWallpaperState::TextureUVsScaling& scalingMode,
+          const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        ~CWeb() override;
+        [[nodiscard]] int getWidth  () const override { return this->m_width; }
 
-            [[nodiscard]] int getHeight () const override { return this->m_height; }
+        [[nodiscard]] int getHeight () const override { return this->m_height; }
 
-            void setSize (int width, int height);
+        void setSize (int width, int height);
 
-        protected:
-            void renderFrame (glm::ivec4 viewport) override;
-            void updateMouse (glm::ivec4 viewport);
-            const Core::Wallpapers::CWeb* getWeb () const {
-                return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
-            }
+    protected:
+        void renderFrame (glm::ivec4 viewport) override;
+        void updateMouse (glm::ivec4 viewport);
+        const Core::Wallpapers::CWeb* getWeb () const {
+            return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
+        }
 
-            friend class CWallpaper;
+        friend class CWallpaper;
 
-            static const std::string Type;
+        static const std::string Type;
 
-        private:
-            WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
-            CefRefPtr<CefBrowser> m_browser;
-            CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client;
-            WallpaperEngine::WebBrowser::CEF::CRenderHandler* m_renderHandler = nullptr;
+    private:
+        WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
+        CefRefPtr<CefBrowser> m_browser;
+        CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client;
+        WallpaperEngine::WebBrowser::CEF::CRenderHandler* m_renderHandler = nullptr;
 
-            int m_width;
-            int m_height;
+        int m_width;
+        int m_height;
 
-            WallpaperEngine::Input::MouseClickStatus m_leftClick;
-            WallpaperEngine::Input::MouseClickStatus m_rightClick;
+        WallpaperEngine::Input::MouseClickStatus m_leftClick;
+        WallpaperEngine::Input::MouseClickStatus m_rightClick;
 
-            glm::vec2 m_mousePosition;
-            glm::vec2 m_mousePositionLast;
-    };
+        glm::vec2 m_mousePosition;
+        glm::vec2 m_mousePositionLast;
+};
 }

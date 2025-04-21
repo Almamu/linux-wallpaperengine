@@ -16,3 +16,6 @@
 [submodule "src/External/kissfft"]
 	path = src/External/kissfft
 	url = https://github.com/mborgerding/kissfft.git
+[submodule "src/External/argparse"]
+	path = src/External/argparse
+	url = https://github.com/p-ranav/argparse.git

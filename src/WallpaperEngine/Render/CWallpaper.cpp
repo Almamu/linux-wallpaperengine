@@ -10,8 +10,11 @@
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
-                        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+CWallpaper::CWallpaper (
+    const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,CAudioContext& audioContext,
+    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
     m_sceneFBO (nullptr),
@@ -25,7 +28,7 @@ CWallpaper::CWallpaper (const Core::CWallpaper* wallpaperData, std::string type,
     m_destFramebuffer (GL_NONE),
     m_type (std::move (type)),
     m_audioContext (audioContext),
-    m_state (scalingMode) {
+    m_state (scalingMode, clampMode) {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -237,11 +240,12 @@ void CWallpaper::setPause (bool newState) {}
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();
-    const ITexture::TextureFlags clamp = this->getContext ().getApp ().getContext ().settings.render.window.clamp;
+    const ITexture::TextureFlags clamp = this->m_state.getClampingMode ();
 
     // create framebuffer for the scene
-    this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
-                                        height, width, height);
+    this->m_sceneFBO = this->createFBO (
+        "_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
+        height, width, height);
 
     this->aliasFBO ("_rt_MipMappedFrameBuffer", this->m_sceneFBO);
 }
@@ -281,16 +285,20 @@ CFBO* CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (const Core::CWallpaper* wallpaper, CRenderContext& context,
-                                       CAudioContext& audioContext, WebBrowser::CWebBrowserContext& browserContext,
-                                       const CWallpaperState::TextureUVsScaling& scalingMode) {
-    if (wallpaper->is<Core::Wallpapers::CScene> ())
-        return new WallpaperEngine::Render::Wallpapers::CScene (wallpaper->as<Core::Wallpapers::CScene> (), context, audioContext, scalingMode);
-    if (wallpaper->is<Core::Wallpapers::CVideo> ())
-        return new WallpaperEngine::Render::Wallpapers::CVideo (wallpaper->as<Core::Wallpapers::CVideo> (), context, audioContext, scalingMode);
-    else if (wallpaper->is<Core::Wallpapers::CWeb> ())
-        return new WallpaperEngine::Render::Wallpapers::CWeb (wallpaper->as<Core::Wallpapers::CWeb> (), context, audioContext, browserContext,
-                                                  scalingMode);
-    else
+CWallpaper* CWallpaper::fromWallpaper (
+    const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) {
+    if (wallpaper->is<Core::Wallpapers::CScene> ()) {
+        return new WallpaperEngine::Render::Wallpapers::CScene (
+            wallpaper->as<Core::Wallpapers::CScene> (), context, audioContext, scalingMode, clampMode);
+    } else if (wallpaper->is<Core::Wallpapers::CVideo> ()) {
+        return new WallpaperEngine::Render::Wallpapers::CVideo (
+            wallpaper->as<Core::Wallpapers::CVideo> (), context, audioContext, scalingMode, clampMode);
+    } else if (wallpaper->is<Core::Wallpapers::CWeb> ()) {
+        return new WallpaperEngine::Render::Wallpapers::CWeb (
+            wallpaper->as<Core::Wallpapers::CWeb> (), context, audioContext, browserContext, scalingMode, clampMode);
+    } else
         sLog.exception ("Unsupported wallpaper type");
 }

@@ -14,8 +14,10 @@ class CObject;
 namespace WallpaperEngine::Render::Wallpapers {
 class CScene final : public CWallpaper {
   public:
-    CScene (const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
-            const CWallpaperState::TextureUVsScaling& scalingMode);
+    CScene (
+        const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+        const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
     CCamera* getCamera () const;
 
