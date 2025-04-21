@@ -282,7 +282,6 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
     );
 
     program.parse_args (argc, argv);
-    sLog.out(program.help ().str ());
 
     this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
     this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
