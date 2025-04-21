@@ -29,13 +29,14 @@ class CProject {
     [[nodiscard]] const std::string& getType () const;
     [[nodiscard]] const std::map<std::string, Projects::CProperty*>& getProperties () const;
     [[nodiscard]] const std::string& getWorkshopId () const;
+    [[nodiscard]] bool supportsAudioProcessing () const;
 
     const CContainer* getContainer () const;
 
   protected:
     CProject (
         std::string title, std::string type, std::string workshopid, const CContainer* container,
-        const std::map<std::string, Projects::CProperty*>& properties);
+        bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties);
 
     void setWallpaper (const CWallpaper* wallpaper);
 
@@ -45,6 +46,7 @@ class CProject {
     const std::string m_workshopid;
     const std::string m_title;
     const std::string m_type;
+    const bool m_supportsaudioprocessing;
     const CWallpaper* m_wallpaper;
     const CContainer* m_container;
 };

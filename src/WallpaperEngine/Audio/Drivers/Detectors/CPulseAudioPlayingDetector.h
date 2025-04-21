@@ -8,8 +8,8 @@
 namespace WallpaperEngine::Audio::Drivers::Detectors {
 class CPulseAudioPlayingDetector final : public CAudioPlayingDetector {
   public:
-    explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext,
-                                         const Render::Drivers::Detectors::CFullScreenDetector&);
+    explicit CPulseAudioPlayingDetector (
+        Application::CApplicationContext& appContext, const Render::Drivers::Detectors::CFullScreenDetector*);
     ~CPulseAudioPlayingDetector () override;
 
     void update () override;

@@ -18,8 +18,9 @@ namespace Audio::Drivers::Detectors {
  */
 class CAudioPlayingDetector {
   public:
-    CAudioPlayingDetector (Application::CApplicationContext& appContext,
-                           const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector);
+    CAudioPlayingDetector (
+        Application::CApplicationContext& appContext,
+        const Render::Drivers::Detectors::CFullScreenDetector* fullscreenDetector);
 
     virtual ~CAudioPlayingDetector () = default;
 
@@ -38,7 +39,9 @@ class CAudioPlayingDetector {
     /**
      * Checks if any audio is playing and updates state accordingly
      */
-    virtual void update () = 0;
+    virtual void update ();
+
+  protected:
     /**
      * @return The application context using this detector
      */
@@ -46,13 +49,13 @@ class CAudioPlayingDetector {
     /**
      * @return The fullscreen detector used
      */
-    [[nodiscard]] const Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector () const;
+    [[nodiscard]] const Render::Drivers::Detectors::CFullScreenDetector* getFullscreenDetector () const;
 
   private:
     bool m_isPlaying;
 
     Application::CApplicationContext& m_applicationContext;
-    const Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;
+    const Render::Drivers::Detectors::CFullScreenDetector* m_fullscreenDetector;
 };
 } // namespace Audio::Drivers::Detectors
 } // namespace WallpaperEngine

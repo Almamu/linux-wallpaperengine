@@ -402,25 +402,29 @@ void CWallpaperApplication::setupOutput () {
         m_videoDriver =
             new WallpaperEngine::Render::Drivers::CGLFWOpenGLDriver ("wallpaperengine", this->m_context, *this);
 
+        // no need to initialize the fullscreen detector if automute is off
+        if (this->m_context.settings.render.pauseOnFullscreen || this->m_context.settings.audio.automute) {
 #ifdef ENABLE_WAYLAND
-        if (isWayland) {
-            this->m_fullScreenDetector =
-                new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector (this->m_context);
-        }
+            if (isWayland) {
+                this->m_fullScreenDetector =
+                    new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector (this->m_context);
+            }
 #endif // ENABLE_WAYLAND
 #ifdef ENABLE_X11
 #ifdef ENABLE_WAYLAND
-        else
+            else
 #endif // ENABLE_WAYLAND
-            if (isX11) {
-                this->m_fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (
-                    this->m_context, *reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver));
-            }
+                if (isX11) {
+                    this->m_fullScreenDetector =
+                        new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (
+                            this->m_context, *reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver));
+                }
 #endif // ENABLE_X11
-            else {
-                this->m_fullScreenDetector =
-                    new WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector (this->m_context);
-            }
+                else {
+                    this->m_fullScreenDetector =
+                        new WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector (this->m_context);
+                }
+        }
 
         m_inputContext =
             new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
@@ -429,14 +433,23 @@ void CWallpaperApplication::setupOutput () {
 }
 
 void CWallpaperApplication::setupAudio () {
-    if (this->m_context.settings.audio.audioprocessing) {
+    // ensure audioprocessing is required by any background, and we have it enabled
+    bool audioProcessingRequired = std::any_of (this->m_backgrounds.begin (), this->m_backgrounds.end (), [](const auto& pair) -> bool {
+        return pair.second->supportsAudioProcessing ();
+    });
+
+    if (audioProcessingRequired && this->m_context.settings.audio.audioprocessing) {
         this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder ();
     } else {
         this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder ();
     }
 
-    // audio playing detector
-    m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector (this->m_context, *this->m_fullScreenDetector);
+    if (this->m_context.settings.audio.automute) {
+        m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector (this->m_context, this->m_fullScreenDetector);
+    } else {
+        m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CAudioPlayingDetector (this->m_context, this->m_fullScreenDetector);
+    }
+
     // initialize sdl audio driver
     m_audioDriver =
         new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, *this->m_audioDetector, *this->m_audioRecorder);
@@ -497,7 +510,11 @@ void CWallpaperApplication::show () {
         // update input information
         m_inputContext->update ();
         // check for fullscreen windows and wait until there's none fullscreen
-        if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+        if (
+            this->m_context.settings.render.pauseOnFullscreen &&
+            this->m_fullScreenDetector->anythingFullscreen () &&
+            this->m_context.state.general.keepRunning
+        ) {
             m_renderContext->setPause (true);
             while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
                 usleep (FULLSCREEN_CHECK_WAIT_TIME);

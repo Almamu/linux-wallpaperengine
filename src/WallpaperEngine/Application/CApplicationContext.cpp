@@ -181,9 +181,10 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         performanceGroup.add_argument ("--no-fullscreen-pause")
             .help ("Prevents the background pausing when an app is fullscreen")
-            .default_value (true)
-            .implicit_value (false)
-            .store_into (this->settings.render.pauseOnFullscreen);
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.render.pauseOnFullscreen = false;
+            });
 
     auto& audioGroup = program.add_group ("Sound settings");
     auto& audioSettingsGroup = audioGroup.add_mutually_exclusive_group (false);
@@ -195,21 +196,24 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         audioSettingsGroup.add_argument ("-s", "--silent")
             .help ("Mutes all the sound the wallpaper might produce")
-            .default_value (true)
-            .implicit_value (false)
-            .store_into (this->settings.audio.enabled);
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.audio.enabled = false;
+            });
 
         audioGroup.add_argument ("--noautomute")
             .help ("Disables the automute when an app is playing sound")
-            .default_value (true)
-            .implicit_value (false)
-            .store_into (this->settings.audio.automute);
+            .flag ()
+            .action([this](const std::string& value) -> void {
+                this->settings.audio.automute = false;
+            });
 
         audioGroup.add_argument ("--no-audio-processing")
             .help ("Disables audio processing for backgrounds")
-            .default_value (true)
-            .implicit_value (false)
-            .store_into (this->settings.audio.audioprocessing);
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.audio.audioprocessing = false;
+            });
 
     auto& screenshotGroup = program.add_group ("Screenshot options");
 
@@ -239,14 +243,14 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         configurationGroup.add_argument ("--disable-mouse")
             .help ("Disables mouse interaction with the backgrounds")
-            .default_value (true)
-            .implicit_value (false)
-            .store_into (this->settings.mouse.enabled);
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.mouse.enabled = false;
+            });
 
         configurationGroup.add_argument ("-l", "--list-properties")
             .help ("List all the available properties and their configuration")
-            .default_value (false)
-            .implicit_value (true)
+            .flag ()
             .store_into (this->settings.general.onlyListProperties);
 
         configurationGroup.add_argument ("--set-property", "--property")
@@ -265,8 +269,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         debuggingGroup.add_argument ("-z", "--dump-structure")
             .help ("Dumps the structure of the backgrounds")
-            .default_value (false)
-            .implicit_value (true)
+            .flag ()
             .store_into (this->settings.general.dumpStructure);
 
     program.add_epilog (

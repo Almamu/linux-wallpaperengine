@@ -16,14 +16,15 @@ static int backgroundId = -1;
 
 CProject::CProject (
     std::string title, std::string type, std::string workshopid, const CContainer* container,
-    const std::map<std::string, Projects::CProperty*>& properties
+    bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties
 ) :
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),
     m_type (std::move(type)),
     m_wallpaper (nullptr),
     m_container (container),
-    m_properties (properties) {}
+    m_properties (properties),
+    m_supportsaudioprocessing (supportsaudioprocessing) {}
 
 CProject* CProject::fromFile (const std::string& filename, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
@@ -36,6 +37,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
 
     // workshopid is not required, but we have to use it for some identification stuff,
     // so using a static, decreasing number should be enough
+    bool supportsaudioprocessing = false;
     auto type = jsonFindRequired <std::string> (content, "type", "Project type missing");
     const auto file = jsonFindRequired <std::string> (content, "file", "Project's main file missing");
     auto general = content.find ("general");
@@ -45,6 +47,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
     std::transform (type.begin (), type.end (), type.begin (), tolower);
 
     if (general != content.end ()) {
+        supportsaudioprocessing = jsonFindDefault (general, "supportsaudioprocessing", false);
         const auto properties_it = general->find ("properties");
 
         if (properties_it != general->end ()) {
@@ -65,6 +68,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
         type,
         jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--)),
         container,
+        supportsaudioprocessing,
         properties
     );
 
@@ -108,4 +112,8 @@ const std::string& CProject::getWorkshopId () const {
 
 const CContainer* CProject::getContainer () const {
     return this->m_container;
+}
+
+bool CProject::supportsAudioProcessing () const {
+    return this->m_supportsaudioprocessing;
 }
