@@ -326,7 +326,8 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
     json data = json::parse (content);
     const auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
-    const auto type = data.find ("type");
+    // ignore type as it seems to be used only on the editor
+    // const auto type = data.find ("type");
     const auto defvalue = data.find ("default");
 
     // check the combos
@@ -338,8 +339,6 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
     if (entry == this->m_combos.end ()) {
-        if (type != data.end ())
-            sLog.error ("Resorting to default value as type ", *type, " is unknown");
 
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
