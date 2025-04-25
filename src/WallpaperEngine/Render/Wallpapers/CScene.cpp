@@ -194,7 +194,7 @@ Render::CObject* CScene::createObject (const Core::CObject* object) {
     }
 
     if (renderObject != nullptr)
-        this->m_objects.insert (std::make_pair (renderObject->getId (), renderObject));
+        this->m_objects.insert (std::pair (renderObject->getId (), renderObject));
 
     return renderObject;
 }

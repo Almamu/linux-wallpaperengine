@@ -259,13 +259,13 @@ CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat fo
                              uint32_t textureHeight) {
     CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
-    this->m_fbos.insert (std::make_pair (name, fbo));
+    this->m_fbos.insert (std::pair (name, fbo));
 
     return fbo;
 }
 
 void CWallpaper::aliasFBO (const std::string& alias, CFBO* original) {
-    this->m_fbos.insert (std::make_pair (alias, original));
+    this->m_fbos.insert (std::pair (alias, original));
 }
 
 const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {

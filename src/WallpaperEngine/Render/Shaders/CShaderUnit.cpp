@@ -334,7 +334,7 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
     const auto entry = this->m_combos.find (combo->get<std::string> ());
 
     // add the combo to the found list
-    this->m_usedCombos.insert (std::make_pair (*combo, true));
+    this->m_usedCombos.insert (std::pair (*combo, true));
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
@@ -343,11 +343,11 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_discoveredCombos.insert (std::make_pair (*combo, (int) defaultValue));
+            this->m_discoveredCombos.insert (std::pair (*combo, (int) defaultValue));
         } else if (defvalue->is_number_float ()) {
             sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
         } else if (defvalue->is_number_integer ()) {
-            this->m_discoveredCombos.insert (std::make_pair (*combo, defvalue->get<int> ()));
+            this->m_discoveredCombos.insert (std::pair (*combo, defvalue->get<int> ()));
         } else if (defvalue->is_string ()) {
             sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
         } else {
@@ -475,11 +475,11 @@ void CShaderUnit::parseParameterConfiguration (
 
             if (isRequired) {
                 // add the new combo to the list
-                this->m_discoveredCombos.insert (std::make_pair (*combo, comboValue));
+                this->m_discoveredCombos.insert (std::pair (*combo, comboValue));
 
                 // textures linked to combos need to be tracked too
                 if (this->m_usedCombos.find (*combo) == this->m_usedCombos.end ())
-                    this->m_usedCombos.insert (std::make_pair (*combo, true));
+                    this->m_usedCombos.insert (std::pair (*combo, true));
             }
         }
 

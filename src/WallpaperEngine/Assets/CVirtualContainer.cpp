@@ -14,7 +14,7 @@ CVirtualContainer::~CVirtualContainer() {
 }
 
 void CVirtualContainer::add (const std::filesystem::path& filename, const uint8_t* contents, uint32_t length) {
-    this->m_virtualFiles.insert (std::make_pair (filename, new CFileEntry (contents, length)));
+    this->m_virtualFiles.insert (std::pair (filename, new CFileEntry (contents, length)));
 }
 
 void CVirtualContainer::add (const std::filesystem::path& filename, const std::string& contents) {
