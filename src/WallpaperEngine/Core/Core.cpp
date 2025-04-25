@@ -158,7 +158,7 @@ template <typename T> bool typeCheck (const nlohmann::json::const_iterator& valu
         }
     } else if constexpr (
         std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4> ||
-        std::is_same_v<T, glm::ivec2> || std::is_same_v<T, glm::ivec3> || std::is_same_v<T, glm::ivec4) {
+        std::is_same_v<T, glm::ivec2> || std::is_same_v<T, glm::ivec3> || std::is_same_v<T, glm::ivec4>) {
         if (value->type () != nlohmann::detail::value_t::string) {
             return false;
         }
