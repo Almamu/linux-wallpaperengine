@@ -1,8 +1,10 @@
 #pragma once
 
+#include <vector>
+#include <memory>
+
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
-#include <vector>
 
 namespace WallpaperEngine::Assets {
 /**
@@ -103,7 +105,7 @@ class ITexture {
     /**
      * @return The list of frames this texture has
      */
-    [[nodiscard]] virtual const std::vector<TextureFrame*>& getFrames () const = 0;
+    [[nodiscard]] virtual const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const = 0;
     /**
      * @return The texture's resolution vector
      */

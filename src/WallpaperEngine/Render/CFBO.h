@@ -26,7 +26,7 @@ class CFBO final : public ITexture {
     [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
     [[nodiscard]] uint32_t getRealWidth () const override;
     [[nodiscard]] uint32_t getRealHeight () const override;
-    [[nodiscard]] const std::vector<TextureFrame*>& getFrames () const override;
+    [[nodiscard]] const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const override;
     [[nodiscard]] const glm::vec4* getResolution () const override;
     [[nodiscard]] bool isAnimated () const override;
 
@@ -40,6 +40,6 @@ class CFBO final : public ITexture {
     ITexture::TextureFormat m_format;
     ITexture::TextureFlags m_flags;
     /** Placeholder for frames, FBOs only have ONE */
-    std::vector<TextureFrame*> m_frames;
+    std::vector<std::shared_ptr<TextureFrame>> m_frames;
 };
 } // namespace WallpaperEngine::Render

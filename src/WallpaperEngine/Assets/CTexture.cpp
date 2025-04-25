@@ -10,7 +10,7 @@
 
 using namespace WallpaperEngine::Assets;
 
-CTexture::CTexture (std::shared_ptr<const uint8_t[]> buffer) : m_resolution () {
+CTexture::CTexture (const std::shared_ptr<const uint8_t[]>& buffer) : m_resolution () {
     // ensure the header is parsed
     const void* fileData = buffer.get ();
     this->m_header = parseHeader (static_cast<const char*> (fileData));
@@ -124,7 +124,7 @@ GLint CTexture::setupInternalFormat () {
             case TextureFormat::ARGB8888: return GL_RGBA8; break;
             case TextureFormat::R8: return GL_R8; break;
             case TextureFormat::RG88: return GL_RG8; break;
-            default: delete this->m_header; sLog.exception ("Cannot determine texture format");
+            default: sLog.exception ("Cannot determine texture format");
         }
     }
 }
@@ -155,14 +155,6 @@ void CTexture::setupOpenGLParameters (uint32_t textureID) {
         }
 
         glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
-}
-
-CTexture::~CTexture () {
-    if (this->getHeader () == nullptr)
-        return;
-
-    // free the header if it was allocated
-    delete this->getHeader ();
 }
 
 GLuint CTexture::getTextureID (uint32_t imageIndex) const {
@@ -204,14 +196,14 @@ ITexture::TextureFlags CTexture::getFlags () const {
 }
 
 const CTexture::TextureHeader* CTexture::getHeader () const {
-    return this->m_header;
+    return this->m_header.get ();
 }
 
 const glm::vec4* CTexture::getResolution () const {
     return &this->m_resolution;
 }
 
-const std::vector<ITexture::TextureFrame*>& CTexture::getFrames () const {
+const std::vector<std::shared_ptr<ITexture::TextureFrame>>& CTexture::getFrames () const {
     return this->getHeader ()->frames;
 }
 
@@ -222,8 +214,9 @@ bool CTexture::isAnimated () const {
 CTexture::TextureMipmap::TextureMipmap () = default;
 
 CTexture::TextureMipmap::~TextureMipmap () {
-    if (this->compression == 1)
+    if (this->compression == 1) {
         delete this->compressedData;
+    }
 
     delete this->uncompressedData;
 }
@@ -265,16 +258,7 @@ CTexture::TextureHeader::TextureHeader () :
     mipmapCount (0),
     isVideoMp4 (false) {}
 
-CTexture::TextureHeader::~TextureHeader () {
-    for (const auto& [index, mipmaps] : this->images)
-        for (const auto cur : mipmaps)
-            delete cur;
-
-    for (const auto& frame : this->frames)
-        delete frame;
-}
-
-CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
+std::unique_ptr<CTexture::TextureHeader> CTexture::parseHeader (const char* fileData) {
     // check the magic value on the header first
     if (strncmp (fileData, "TEXV0005", 9) != 0)
         sLog.exception ("unexpected texture container type: ", std::string_view (fileData, 9));
@@ -286,8 +270,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     // jump through the string again
     fileData += 9;
 
-    auto* header = new TextureHeader;
-
+    auto header = std::make_unique <TextureHeader> ();
     const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
     header->format = static_cast<TextureFormat> (*pointer++);
@@ -327,19 +310,18 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     } else if (strncmp (fileData, "TEXB0001", 9) == 0) {
         header->containerVersion = ContainerVersion::TEXB0001;
     } else {
-        delete header;
         sLog.exception ("unknown texture format type: ", std::string_view (fileData, 9));
     }
 
     for (uint32_t image = 0; image < header->imageCount; image++) {
         // read the number of mipmaps available for this image
         header->mipmapCount = *pointer++;
-        std::vector<TextureMipmap*> mipmaps;
+        std::vector<std::shared_ptr<TextureMipmap>> mipmaps;
 
         fileData = reinterpret_cast<const char*> (pointer);
 
         for (uint32_t i = 0; i < header->mipmapCount; i++)
-            mipmaps.emplace_back (parseMipmap (header, &fileData));
+            mipmaps.emplace_back (parseMipmap (header.get (), &fileData));
 
         // add the pixmaps back
         header->images.insert (std::pair (image, mipmaps));
@@ -354,7 +336,6 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
         } else if (strncmp (fileData, "TEXS0003", 9) == 0) {
             header->animatedVersion = AnimatedVersion::TEXS0003;
         } else {
-            delete header;
             sLog.exception ("found animation information of unknown type: ", std::string_view (fileData, 9));
         }
 
@@ -380,7 +361,7 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
 
         // ensure gif width and height is right for TEXS0002
         if (header->animatedVersion == AnimatedVersion::TEXS0002) {
-            const TextureFrame* first = *header->frames.begin ();
+            auto first = *header->frames.begin ();
 
             header->gifWidth = first->width1;
             header->gifHeight = first->height1;
@@ -390,13 +371,13 @@ CTexture::TextureHeader* CTexture::parseHeader (const char* fileData) {
     return header;
 }
 
-CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData) {
+std::shared_ptr<CTexture::TextureFrame> CTexture::parseAnimation (const char** originalFileData) {
     const char* fileData = *originalFileData;
     // get back the pointer into integer
     const auto* pointer = reinterpret_cast<const uint32_t*> (fileData);
 
     // start reading frame information
-    auto* frame = new TextureFrame ();
+    auto frame = std::make_shared <TextureFrame> ();
 
     frame->frameNumber = *pointer++;
 
@@ -417,8 +398,8 @@ CTexture::TextureFrame* CTexture::parseAnimation (const char** originalFileData)
     return frame;
 }
 
-CTexture::TextureMipmap* CTexture::parseMipmap (const TextureHeader* header, const char** originalFileData) {
-    auto* mipmap = new TextureMipmap ();
+std::shared_ptr<CTexture::TextureMipmap> CTexture::parseMipmap (const TextureHeader* header, const char** originalFileData) {
+    auto mipmap = std::make_shared <TextureMipmap> ();
     // get the current position
     const char* fileData = *originalFileData;
 

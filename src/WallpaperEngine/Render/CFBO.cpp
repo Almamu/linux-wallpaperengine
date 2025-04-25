@@ -65,7 +65,7 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
     this->m_resolution = {textureWidth, textureHeight, realWidth, realHeight};
 
     // create the textureframe entries
-    auto* frame = new TextureFrame;
+    auto frame = std::make_shared<TextureFrame> ();
 
     frame->frameNumber = 0;
     frame->frametime = 0;
@@ -80,10 +80,6 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
 }
 
 CFBO::~CFBO () {
-    // free all the resources
-    for (const auto* frame : this->m_frames)
-        delete frame;
-
     // free opengl texture and framebuffer
     glDeleteTextures (1, &this->m_texture);
     glDeleteFramebuffers (1, &this->m_framebuffer);
@@ -133,7 +129,7 @@ uint32_t CFBO::getRealHeight () const {
     return this->m_resolution.w;
 }
 
-const std::vector<ITexture::TextureFrame*>& CFBO::getFrames () const {
+const std::vector<std::shared_ptr<ITexture::TextureFrame>>& CFBO::getFrames () const {
     return this->m_frames;
 }
 
