@@ -705,15 +705,15 @@ void CPass::addUniform (CShaderVariable* value) {
 
 void CPass::addUniform (CShaderVariable* value, const CDynamicValue* setting) {
     if (value->is<CShaderVariableFloat> ()) {
-        this->addUniform (value->getName (), &setting->getFloat ());
+        this->addUniform (value->getName (), setting->getFloat ());
     } else if (value->is<CShaderVariableInteger> ()) {
-        this->addUniform (value->getName (), &setting->getInt ());
+        this->addUniform (value->getName (), setting->getInt ());
     } else if (value->is<CShaderVariableVector2> ()) {
-        this->addUniform (value->getName (), &setting->getVec2 ());
+        this->addUniform (value->getName (), setting->getVec2 ());
     } else if (value->is<CShaderVariableVector3> ()) {
-        this->addUniform (value->getName (), &setting->getVec3 ());
+        this->addUniform (value->getName (), setting->getVec3 ());
     } else if (value->is<CShaderVariableVector4> ()) {
-        this->addUniform (value->getName (), &setting->getVec4 ());
+        this->addUniform (value->getName (), setting->getVec4 ());
     } else {
         sLog.error ("Cannot convert setting dynamic value  to ", value->getName (), ". Using default value");
     }

@@ -21,6 +21,7 @@ class CWallpaper;
 
 class CProject {
   public:
+    ~CProject();
     static CProject* fromFile (const std::string& filename, const CContainer* container);
 
     [[nodiscard]] const CWallpaper* getWallpaper () const;
@@ -31,7 +32,7 @@ class CProject {
     [[nodiscard]] const std::string& getWorkshopId () const;
     [[nodiscard]] bool supportsAudioProcessing () const;
 
-    const CContainer* getContainer () const;
+    [[nodiscard]] const CContainer* getContainer () const;
 
   protected:
     CProject (

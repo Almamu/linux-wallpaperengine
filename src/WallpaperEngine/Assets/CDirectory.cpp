@@ -51,25 +51,16 @@ std::filesystem::path CDirectory::resolveRealFile (const std::filesystem::path& 
 }
 
 const uint8_t* CDirectory::readFile (const std::filesystem::path& filename, uint32_t* length) const {
+    std::filesystem::path final = this->resolveRealFile (filename);
+
+    FILE* fp = fopen (final.c_str (), "rb");
+
+
+    if (fp == nullptr) {
+        throw CAssetLoadException (filename, "Cannot open file for reading");
+    }
+
     try {
-        std::filesystem::path final = this->resolveRealFile (filename);
-
-        // first check the cache, if the file is there already just return the data in there
-        const auto it = this->m_cache.find (final);
-
-        if (it != this->m_cache.end ()) {
-            if (length != nullptr)
-                *length = it->second.length;
-
-            return it->second.address;
-        }
-
-        FILE* fp = fopen (final.c_str (), "rb");
-
-        if (fp == nullptr) {
-            throw CAssetLoadException (filename, "Cannot open file for reading");
-        }
-
         // go to the end, get the position and return to the beginning
         fseek (fp, 0, SEEK_END);
         const long size = ftell (fp);
@@ -87,8 +78,10 @@ const uint8_t* CDirectory::readFile (const std::filesystem::path& filename, uint
             *length = size;
         }
 
+        fclose (fp);
         return contents;
     } catch (std::filesystem::filesystem_error& e) {
+        fclose (fp);
         throw CAssetLoadException (filename, e.what ());
     }
 }

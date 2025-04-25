@@ -24,7 +24,7 @@ const ITexture* CContainer::readTexture (const std::filesystem::path& filename) 
     glObjectLabel (GL_TEXTURE, result->getTextureID (0), -1, texture.c_str ());
 #endif /* NDEBUG */
 
-    delete textureContents;
+    delete[] textureContents;
 
     return result;
 }
@@ -87,7 +87,7 @@ std::string CContainer::readFileAsString (const std::filesystem::path& filename)
 
     // free the intermediate buffer used to generate the std::string
     delete [] buffer;
-    delete contents;
+    delete [] contents;
 
     return result;
 }

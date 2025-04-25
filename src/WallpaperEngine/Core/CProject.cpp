@@ -26,6 +26,14 @@ CProject::CProject (
     m_properties (properties),
     m_supportsaudioprocessing (supportsaudioprocessing) {}
 
+CProject::~CProject () {
+    for (auto& [_, property] : this->m_properties) {
+        delete property;
+    }
+
+    this->m_properties.clear ();
+}
+
 CProject* CProject::fromFile (const std::string& filename, const CContainer* container) {
     json content = json::parse (container->readFileAsString (filename));
 

@@ -166,21 +166,21 @@ CTexture::~CTexture () {
 
 GLuint CTexture::getTextureID (uint32_t imageIndex) const {
     // ensure we do not go out of bounds
-    if (imageIndex > this->m_header->imageCount)
+    if (imageIndex >= this->m_header->imageCount)
         return this->m_textureID [0];
 
     return this->m_textureID [imageIndex];
 }
 
 uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const {
-    if (imageIndex > this->m_header->imageCount)
+    if (imageIndex >= this->m_header->imageCount)
         return this->getHeader ()->textureWidth;
 
     return (*this->m_header->images [imageIndex].begin ())->width;
 }
 
 uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const {
-    if (imageIndex > this->m_header->imageCount)
+    if (imageIndex >= this->m_header->imageCount)
         return this->getHeader ()->textureHeight;
 
     return (*this->m_header->images [imageIndex].begin ())->height;
@@ -436,8 +436,10 @@ CTexture::TextureMipmap* CTexture::parseMipmap (const TextureHeader* header, con
             mipmap->json += *fileData++;
         }
 
+        // skip the null terminator
+        fileData ++;
+
         pointer = reinterpret_cast<const uint32_t*> (fileData);
-        pointer ++;
     }
 
     mipmap->width = *pointer++;

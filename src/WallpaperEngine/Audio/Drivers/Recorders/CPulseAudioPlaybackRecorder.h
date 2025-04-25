@@ -32,7 +32,6 @@ class CPulseAudioPlaybackRecorder final : public CPlaybackRecorder {
     pa_mainloop* m_mainloop;
     pa_mainloop_api* m_mainloopApi;
     pa_context* m_context;
-    pa_stream* m_captureStream;
     SPulseAudioData m_captureData;
 
     float m_audioFFTbuffer [WAVE_BUFFER_SIZE];

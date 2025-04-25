@@ -60,7 +60,7 @@ CPulseAudioPlayingDetector::~CPulseAudioPlayingDetector () {
 void CPulseAudioPlayingDetector::update () {
     if (!this->getApplicationContext ().settings.audio.automute)
         return this->setIsPlaying (false);
-    if (this->getFullscreenDetector ()->anythingFullscreen ())
+    if (this->getFullscreenDetector() != nullptr && this->getFullscreenDetector ()->anythingFullscreen ())
         return this->setIsPlaying (true);
 
     // reset playing state

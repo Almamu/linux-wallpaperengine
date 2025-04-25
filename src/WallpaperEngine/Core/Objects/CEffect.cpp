@@ -191,7 +191,7 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
         const auto bind_it = cur.find ("bind");
         const auto command_it = cur.find ("command");
         const auto compose_it = cur.find ("compose");
-        const Images::CMaterial* material;
+        const Images::CMaterial* material = nullptr;
 
         if (compose_it != cur.end ()) {
             sLog.error ("Composing materials is not supported yet...");
@@ -207,7 +207,7 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
                 }
             }
 
-            const Images::CMaterial::OverrideInfo* overrideInfo;
+            const Images::CMaterial::OverrideInfo* overrideInfo = nullptr;
             const auto overrideIt = overrides.find (materialNumber);
 
             if (overrideIt != overrides.end ()) {

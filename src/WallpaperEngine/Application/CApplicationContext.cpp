@@ -85,8 +85,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
                 const char* str = value.c_str ();
                 const char* delim1 = strchr (str, 'x');
-                const char* delim2 = strchr (str, 'x');
-                const char* delim3 = strchr (str, 'x');
+                const char* delim2 = delim1 ? strchr (delim1, 'x') : nullptr;
+                const char* delim3 = delim2 ? strchr (delim2, 'x') : nullptr;
 
                 if (delim1 == nullptr || delim2 == nullptr || delim3 == nullptr) {
                     sLog.exception ("Window geometry must be in the format: XxYxWxH");
@@ -177,7 +177,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
         performanceGroup.add_argument ("-f", "--fps")
             .help ("Limits the FPS to the given number, useful to keep battery consumption low")
             .default_value (30)
-            .scan<'i', int> ();
+            .store_into(this->settings.render.maximumFPS);
 
         performanceGroup.add_argument ("--no-fullscreen-pause")
             .help ("Prevents the background pausing when an app is fullscreen")

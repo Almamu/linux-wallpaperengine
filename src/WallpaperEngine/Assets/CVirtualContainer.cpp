@@ -5,6 +5,14 @@
 
 using namespace WallpaperEngine::Assets;
 
+CVirtualContainer::~CVirtualContainer() {
+    for (auto& [_, entry] : this->m_virtualFiles) {
+        delete entry;
+    }
+
+    this->m_virtualFiles.clear();
+}
+
 void CVirtualContainer::add (const std::filesystem::path& filename, const uint8_t* contents, uint32_t length) {
     this->m_virtualFiles.insert (std::make_pair (filename, new CFileEntry (contents, length)));
 }

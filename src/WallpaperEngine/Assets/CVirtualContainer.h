@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <filesystem>
 
 #include "CContainer.h"
 #include "CFileEntry.h"
@@ -15,6 +16,8 @@ using json = nlohmann::json;
  */
 class CVirtualContainer final : public CContainer {
   public:
+    ~CVirtualContainer() override;
+
     /**
      * Adds a new file to the virtual container
      *

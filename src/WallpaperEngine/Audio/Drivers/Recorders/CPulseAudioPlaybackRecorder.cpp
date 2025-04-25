@@ -55,7 +55,7 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 
             if (numberOfFullBuffers > 0) {
                 // calculate the start of the last block (we need the end of the previous block, hence the - 1)
-                size_t startOfLastBuffer = dataToCopy + ((numberOfFullBuffers - 1) * WAVE_BUFFER_SIZE);
+                size_t startOfLastBuffer = std::max(dataToCopy + (numberOfFullBuffers - 1) * WAVE_BUFFER_SIZE, currentSize - WAVE_BUFFER_SIZE);
                 // copy directly into the final buffer
                 memcpy (recorder->audioBuffer, &data [startOfLastBuffer], WAVE_BUFFER_SIZE * sizeof (uint8_t));
                 // copy whatever is left to the read/write buffer
@@ -106,7 +106,7 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
     monitor_name += ".monitor";
 
     // setup latency
-    pa_buffer_attr attr = {0};
+    pa_buffer_attr attr {};
 
     // 10 = latency msecs, 750 = max msecs to store
     size_t bytesPerSec = pa_bytes_per_second (&spec);
@@ -151,7 +151,6 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
 }
 
 CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () :
-    m_captureStream (nullptr),
     m_captureData({
         .kisscfg = kiss_fftr_alloc (WAVE_BUFFER_SIZE, 0, nullptr, nullptr),
         .audioBuffer = new uint8_t [WAVE_BUFFER_SIZE],

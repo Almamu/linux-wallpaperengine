@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 
 #include "WallpaperEngine/Core/CObject.h"
