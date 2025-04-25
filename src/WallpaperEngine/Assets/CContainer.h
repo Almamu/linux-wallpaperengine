@@ -32,7 +32,7 @@ class CContainer {
      *
      * @return
      */
-    [[nodiscard]] virtual const uint8_t* readFile (const std::filesystem::path& filename, uint32_t* length) const = 0;
+    [[nodiscard]] virtual std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const = 0;
 
     /**
      * Wrapper for readFile, appends the texture extension at the end of the filename
@@ -41,7 +41,7 @@ class CContainer {
      *
      * @return
      */
-    [[nodiscard]] const ITexture* readTexture (const std::filesystem::path& filename) const;
+    [[nodiscard]] std::shared_ptr <const ITexture> readTexture (const std::filesystem::path& filename) const;
 
     /**
      * Wrapper for readFile, checks for compat versions of the given shader file

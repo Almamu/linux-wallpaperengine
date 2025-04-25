@@ -87,7 +87,7 @@ class CWallpaper : public Helpers::CContextAware {
      * @param textureHeight
      * @return
      */
-    CFBO* createFBO (
+    std::shared_ptr<const CFBO> createFBO (
         const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
         uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
@@ -96,24 +96,24 @@ class CWallpaper : public Helpers::CContextAware {
      * @param alias
      * @param original
      */
-    void aliasFBO (const std::string& alias, CFBO* original);
+    void aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original);
 
     /**
      * @return The full FBO list to work with
      */
-    [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;
+    [[nodiscard]] const std::map<std::string, std::shared_ptr<const CFBO>>& getFBOs () const;
     /**
      * Searches the FBO list for the given FBO
      *
      * @param name
      * @return
      */
-    [[nodiscard]] CFBO* findFBO (const std::string& name) const;
+    [[nodiscard]] std::shared_ptr<const CFBO> findFBO (const std::string& name) const;
 
     /**
      * @return The main FBO of this wallpaper
      */
-    [[nodiscard]] CFBO* getFBO () const;
+    [[nodiscard]] std::shared_ptr<const CFBO> getFBO () const;
 
     /**
      * Updates the UVs coordinates if window/screen/vflip/projection has changed
@@ -173,7 +173,7 @@ class CWallpaper : public Helpers::CContextAware {
     [[nodiscard]] const Core::CWallpaper* getWallpaperData () const;
 
     /** The FBO used for scene output */
-    CFBO* m_sceneFBO;
+    std::shared_ptr<const CFBO> m_sceneFBO;
 
   private:
     /** The texture used for the scene output */
@@ -192,7 +192,7 @@ class CWallpaper : public Helpers::CContextAware {
     /** The type of background this wallpaper is */
     std::string m_type;
     /** List of FBOs registered for this wallpaper */
-    std::map<std::string, CFBO*> m_fbos;
+    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos;
     /** Audio context that is using this wallpaper */
     CAudioContext& m_audioContext;
     /** Current Wallpaper state */

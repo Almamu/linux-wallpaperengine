@@ -10,8 +10,9 @@
 
 using namespace WallpaperEngine::Assets;
 
-CTexture::CTexture (const void* fileData) : m_resolution () {
+CTexture::CTexture (std::shared_ptr<const uint8_t[]> buffer) : m_resolution () {
     // ensure the header is parsed
+    const void* fileData = buffer.get ();
     this->m_header = parseHeader (static_cast<const char*> (fileData));
     this->setupResolution ();
     GLint internalFormat = this->setupInternalFormat();

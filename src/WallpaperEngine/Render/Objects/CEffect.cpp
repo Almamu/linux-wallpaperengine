@@ -18,7 +18,7 @@ const std::vector<Effects::CMaterial*>& CEffect::getMaterials () const {
     return this->m_materials;
 }
 
-const CFBO* CEffect::findFBO (const std::string& name) const {
+std::shared_ptr<const CFBO> CEffect::findFBO (const std::string& name) const {
     const auto fbo = this->m_fbos.find (name);
 
     if (fbo == this->m_fbos.end ()) {
@@ -51,7 +51,7 @@ void CEffect::generateFBOs () {
     }
 }
 
-const std::map<std::string, CFBO*>& CEffect::getFBOs () const {
+const std::map<std::string, std::shared_ptr<const CFBO>>& CEffect::getFBOs () const {
     return this->m_fbos;
 }
 

@@ -19,18 +19,18 @@ class CScene final : public CWallpaper {
         const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
-    CCamera* getCamera () const;
+    [[nodiscard]] CCamera* getCamera () const;
 
-    const Core::Wallpapers::CScene* getScene () const;
+    [[nodiscard]] const Core::Wallpapers::CScene* getScene () const;
 
-    int getWidth () const override;
-    int getHeight () const override;
+    [[nodiscard]] int getWidth () const override;
+    [[nodiscard]] int getHeight () const override;
 
     glm::vec2* getMousePosition ();
     glm::vec2* getMousePositionLast ();
     glm::vec2* getParallaxDisplacement ();
 
-    const std::vector<CObject*>& getObjectsByRenderOrder () const;
+    [[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
 
   protected:
     void renderFrame (glm::ivec4 viewport) override;
@@ -50,8 +50,8 @@ class CScene final : public CWallpaper {
     glm::vec2 m_mousePosition;
     glm::vec2 m_mousePositionLast;
     glm::vec2 m_parallaxDisplacement;
-    CFBO* _rt_4FrameBuffer;
-    CFBO* _rt_8FrameBuffer;
-    CFBO* _rt_Bloom;
+    std::shared_ptr<const CFBO> _rt_4FrameBuffer;
+    std::shared_ptr<const CFBO> _rt_8FrameBuffer;
+    std::shared_ptr<const CFBO> _rt_Bloom;
 };
 } // namespace WallpaperEngine::Render::Wallpaper

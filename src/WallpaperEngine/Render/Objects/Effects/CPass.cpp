@@ -42,7 +42,7 @@ CPass::CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass
     this->setupShaderVariables ();
 }
 
-const ITexture* CPass::resolveTexture (const ITexture* expected, int index, const ITexture* previous) {
+std::shared_ptr<const ITexture> CPass::resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous) {
     if (expected == nullptr) {
         const auto it = this->m_fbos.find (index);
 
@@ -64,7 +64,7 @@ const ITexture* CPass::resolveTexture (const ITexture* expected, int index, cons
     return this->resolveFBO (it->second->getName ());
 }
 
-const CFBO* CPass::resolveFBO (const std::string& name) const {
+std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
     auto fbo = this->m_material->getEffect()->findFBO (name);
 
     if (fbo == nullptr) {
@@ -124,7 +124,7 @@ void CPass::setupRenderTexture () {
     glUseProgram (this->m_programID);
 
     // maybe we can do this when setting the texture?
-    const ITexture* texture = this->resolveTexture (this->m_input, 0, this->m_input);
+    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_input, 0, this->m_input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -291,12 +291,12 @@ const CMaterial* CPass::getMaterial () const {
     return this->m_material;
 }
 
-void CPass::setDestination (const CFBO* drawTo) {
-    this->m_drawTo = drawTo;
+void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) {
+    this->m_drawTo = std::move(drawTo);
 }
 
-void CPass::setInput (const ITexture* input) {
-    this->m_input = input;
+void CPass::setInput (std::shared_ptr<const ITexture> input) {
+    this->m_input = std::move(input);
 }
 
 void CPass::setModelViewProjectionMatrix (const glm::mat4* projection) {
@@ -379,7 +379,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    const ITexture* texture0 = this->m_material->getImage ()->getTexture ();
+    std::shared_ptr<const ITexture> texture0 = this->m_material->getImage ()->getTexture ();
 
     // copy the combos from the pass
     this->m_combos.insert (this->m_pass->getCombos ().begin (), this->m_pass->getCombos ().end ());
@@ -476,7 +476,7 @@ void CPass::setupTextureUniforms () {
     for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
         try {
             // resolve the texture first
-            const ITexture* textureRef;
+            std::shared_ptr<const ITexture> textureRef;
 
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
                 textureRef = this->resolveFBO (textureName);
@@ -493,7 +493,7 @@ void CPass::setupTextureUniforms () {
     for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
         try {
             // resolve the texture first
-            const ITexture* textureRef;
+            std::shared_ptr<const ITexture> textureRef;
 
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
                 textureRef = this->resolveFBO (textureName);
@@ -532,7 +532,7 @@ void CPass::setupTextureUniforms () {
     }
 
     // resolve the main texture
-    const ITexture* texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
+    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);

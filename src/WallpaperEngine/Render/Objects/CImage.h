@@ -44,7 +44,7 @@ class CImage final : public CObject {
     [[nodiscard]] GLuint getPassSpacePosition () const;
     [[nodiscard]] GLuint getTexCoordCopy () const;
     [[nodiscard]] GLuint getTexCoordPass () const;
-    [[nodiscard]] const ITexture* getTexture () const;
+    [[nodiscard]] std::shared_ptr<const ITexture> getTexture () const;
     [[nodiscard]] double getAnimationTime () const;
 
     /**
@@ -53,7 +53,7 @@ class CImage final : public CObject {
      * @param drawTo The framebuffer to use
      * @param asInput The last texture used as output (if needed)
      */
-    void pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput);
+    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput);
 
   protected:
     static const std::string Type;
@@ -63,7 +63,7 @@ class CImage final : public CObject {
     void updateScreenSpacePosition ();
 
   private:
-    const ITexture* m_texture;
+    std::shared_ptr<const ITexture> m_texture;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
@@ -80,10 +80,10 @@ class CImage final : public CObject {
     glm::mat4 m_modelMatrix;
     glm::mat4 m_viewProjectionMatrix;
 
-    CFBO* m_mainFBO;
-    CFBO* m_subFBO;
-    CFBO* m_currentMainFBO;
-    CFBO* m_currentSubFBO;
+    std::shared_ptr<const CFBO> m_mainFBO;
+    std::shared_ptr<const CFBO> m_subFBO;
+    std::shared_ptr<const CFBO> m_currentMainFBO;
+    std::shared_ptr<const CFBO> m_currentSubFBO;
 
     const Core::Objects::CImage* m_image;
 

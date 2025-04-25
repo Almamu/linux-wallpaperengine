@@ -2,6 +2,7 @@
 
 #include <glm/vec4.hpp>
 #include <vector>
+#include <memory>
 
 #include "CTextureCache.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
@@ -40,7 +41,7 @@ class CRenderContext {
     [[nodiscard]] const CWallpaperApplication& getApp () const;
     [[nodiscard]] const Drivers::CVideoDriver& getDriver () const;
     [[nodiscard]] const Drivers::Output::COutput& getOutput () const;
-    const ITexture* resolveTexture (const std::string& name);
+    std::shared_ptr<const ITexture> resolveTexture (const std::string& name);
     [[nodiscard]] const std::map<std::string, CWallpaper*>& getWallpapers () const;
 
   private:

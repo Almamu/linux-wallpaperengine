@@ -8,14 +8,13 @@ namespace WallpaperEngine::Assets {
  */
 class CFileEntry {
   public:
-    CFileEntry (const uint8_t* address, uint32_t length) : address (address), length (length) {}
-
-    ~CFileEntry () {
-        delete [] address;
-    }
+    CFileEntry (std::shared_ptr<const uint8_t[]> content, uint32_t length) :
+        content (content),
+        length (length) {}
+    ~CFileEntry() = default;
 
     /** File contents */
-    const uint8_t* address;
+    std::shared_ptr<const uint8_t[]> content;
     /** File length */
     uint32_t length;
 };

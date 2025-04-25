@@ -41,7 +41,7 @@ std::filesystem::path CCombinedContainer::resolveRealFile (const std::filesystem
     throw CAssetLoadException (filename, "Cannot resolve file in any of the containers");
 }
 
-const uint8_t* CCombinedContainer::readFile (const std::filesystem::path& filename, uint32_t* length) const {
+std::shared_ptr<const uint8_t[]> CCombinedContainer::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     for (const auto cur : this->m_containers) {
         try {
             // try to read the file on the current container, if the file doesn't exists

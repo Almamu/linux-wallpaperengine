@@ -33,7 +33,7 @@ class CAudioContext;
 class CAudioStream {
   public:
     CAudioStream (CAudioContext& context, const std::string& filename);
-    CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length);
+    CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length);
     CAudioStream (CAudioContext& audioContext, AVCodecContext* context);
     ~CAudioStream ();
 
@@ -84,7 +84,7 @@ class CAudioStream {
     /**
      * @return The file data buffer
      */
-    [[nodiscard]] const uint8_t* getBuffer ();
+    [[nodiscard]] std::shared_ptr<const uint8_t[]> getBuffer ();
     /**
      * @return The length of the file data buffer
      */
@@ -181,7 +181,7 @@ class CAudioStream {
     /** The stream index for the audio being played */
     int m_audioStream;
     /** File data pointer */
-    const uint8_t* m_buffer {};
+    std::shared_ptr<const uint8_t[]> m_buffer;
     /** The length of the file data pointer */
     uint32_t m_length {};
     /** The read position on the file data pointer */

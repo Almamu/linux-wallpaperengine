@@ -16,8 +16,6 @@ using json = nlohmann::json;
  */
 class CVirtualContainer final : public CContainer {
   public:
-    ~CVirtualContainer() override;
-
     /**
      * Adds a new file to the virtual container
      *
@@ -25,7 +23,7 @@ class CVirtualContainer final : public CContainer {
      * @param contents
      * @param length
      */
-    void add (const std::filesystem::path& filename, const uint8_t* contents, uint32_t length);
+    void add (const std::filesystem::path& filename, const std::shared_ptr<const uint8_t[]>& contents, uint32_t length);
 
     /**
      * Adds a new file to the virtual container
@@ -50,10 +48,10 @@ class CVirtualContainer final : public CContainer {
     void add (const std::filesystem::path& filename, const json& contents);
 
     /** @inheritdoc */
-    const uint8_t* readFile (const std::filesystem::path& filename, uint32_t* length) const override;
+    std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:
     /** The recorded files in this virtual container */
-    std::map<std::string, CFileEntry*> m_virtualFiles;
+    std::map<std::string, std::unique_ptr<CFileEntry>> m_virtualFiles;
 };
 } // namespace WallpaperEngine::Assets

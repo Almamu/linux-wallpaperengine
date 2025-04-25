@@ -61,7 +61,7 @@ const Drivers::Output::COutput& CRenderContext::getOutput () const {
     return this->m_driver.getOutput ();
 }
 
-const ITexture* CRenderContext::resolveTexture (const std::string& name) {
+std::shared_ptr<const ITexture> CRenderContext::resolveTexture (const std::string& name) {
     return this->m_textureCache->resolve (name);
 }
 

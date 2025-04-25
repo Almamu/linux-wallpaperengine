@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -152,7 +153,7 @@ class CTexture final : public ITexture {
     };
 
   public:
-    explicit CTexture (const void* fileData);
+    explicit CTexture (std::shared_ptr<const uint8_t[]> fileData);
     ~CTexture () override;
 
     /** @inheritdoc */

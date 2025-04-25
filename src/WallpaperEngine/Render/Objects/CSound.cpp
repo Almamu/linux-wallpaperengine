@@ -17,15 +17,13 @@ CSound::~CSound() {
         delete stream;
     }
 
-    for (const auto& buffer : this->m_soundBuffer) {
-        delete buffer;
-    }
+    this->m_soundBuffer.clear ();
 }
 
 void CSound::load () {
     for (const auto& cur : this->m_sound->getSounds ()) {
         uint32_t filesize = 0;
-        const uint8_t* filebuffer = this->getContainer ()->readFile (cur, &filesize);
+        std::shared_ptr<const uint8_t[]> filebuffer = this->getContainer ()->readFile (cur, &filesize);
 
         auto stream = new Audio::CAudioStream (this->getScene ()->getAudioContext (), filebuffer, filesize);
 

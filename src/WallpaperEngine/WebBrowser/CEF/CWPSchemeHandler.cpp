@@ -22,9 +22,6 @@ bool CWPSchemeHandler::Open(CefRefPtr<CefRequest> request,
                              CefRefPtr<CefCallback> callback) {
     DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
 
-    // free previous file so we can properly build the right chain of responses
-    delete this->m_contents;
-
 #if !NDEBUG
     std::cout << "Processing request for path " << request->GetURL ().c_str () << std::endl;
 #endif

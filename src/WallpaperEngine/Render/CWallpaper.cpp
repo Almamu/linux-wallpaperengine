@@ -254,25 +254,26 @@ CAudioContext& CWallpaper::getAudioContext () {
     return this->m_audioContext;
 }
 
-CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags,
-                             float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth,
-                             uint32_t textureHeight) {
-    CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
+std::shared_ptr<const CFBO> CWallpaper::createFBO (
+    const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+    uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight
+) {
+    std::shared_ptr<const CFBO> fbo = std::make_shared <CFBO> (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
     this->m_fbos.insert (std::pair (name, fbo));
 
     return fbo;
 }
 
-void CWallpaper::aliasFBO (const std::string& alias, CFBO* original) {
+void CWallpaper::aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original) {
     this->m_fbos.insert (std::pair (alias, original));
 }
 
-const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {
+const std::map<std::string, std::shared_ptr<const CFBO>>& CWallpaper::getFBOs () const {
     return this->m_fbos;
 }
 
-CFBO* CWallpaper::findFBO (const std::string& name) const {
+std::shared_ptr<const CFBO> CWallpaper::findFBO (const std::string& name) const {
     const auto it = this->m_fbos.find (name);
 
     if (it == this->m_fbos.end ())
@@ -281,7 +282,7 @@ CFBO* CWallpaper::findFBO (const std::string& name) const {
     return it->second;
 }
 
-CFBO* CWallpaper::getFBO () const {
+std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 

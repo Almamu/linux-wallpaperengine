@@ -96,7 +96,7 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
         // same applies to effects
         // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
         // handled
-        this->m_texture = new CFBO (
+        this->m_texture = std::make_shared<CFBO> (
             "", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::NoFlags, 1, size.x,
                   size.y, size.x, size.y);
     }
@@ -305,8 +305,8 @@ void CImage::setup () {
 
 void CImage::setupPasses () {
     // do a pass on everything and setup proper inputs and values
-    const CFBO* drawTo = this->m_currentMainFBO;
-    const ITexture* asInput = this->getTexture ();
+    std::shared_ptr<const CFBO> drawTo = this->m_currentMainFBO;
+    std::shared_ptr<const ITexture> asInput = this->getTexture ();
     GLuint texcoord = this->getTexCoordCopy ();
 
     auto cur = this->m_passes.begin ();
@@ -316,7 +316,7 @@ void CImage::setupPasses () {
     for (; cur != end; ++cur) {
         // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         Effects::CPass* pass = *cur;
-        const CFBO* prevDrawTo = drawTo;
+        std::shared_ptr<const CFBO> prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
         const glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
         const glm::mat4* inverseProjection =
@@ -362,10 +362,10 @@ void CImage::setupPasses () {
     }
 }
 
-void CImage::pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput) {
+void CImage::pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput) {
     // temporarily store FBOs used
-    CFBO* currentMainFBO = this->m_currentMainFBO;
-    CFBO* currentSubFBO = this->m_currentSubFBO;
+    std::shared_ptr<const CFBO> currentMainFBO = this->m_currentMainFBO;
+    std::shared_ptr<const CFBO> currentSubFBO = this->m_currentSubFBO;
 
     if (drawTo != nullptr)
         *drawTo = currentSubFBO;
@@ -435,7 +435,7 @@ void CImage::updateScreenSpacePosition () {
                                                         {x, y, 0.0f});
 }
 
-const ITexture* CImage::getTexture () const {
+std::shared_ptr<const ITexture> CImage::getTexture () const {
     return this->m_texture;
 }
 

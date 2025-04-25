@@ -26,13 +26,13 @@ class CEffect {
 
     [[nodiscard]] const std::vector<Effects::CMaterial*>& getMaterials () const;
 
-    [[nodiscard]] const CFBO* findFBO (const std::string& name) const;
+    [[nodiscard]] std::shared_ptr<const CFBO> findFBO (const std::string& name) const;
     [[nodiscard]] bool isVisible () const;
 
   protected:
     friend class WallpaperEngine::PrettyPrinter::CPrettyPrinter;
 
-    [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;
+    [[nodiscard]] const std::map<std::string, std::shared_ptr<const CFBO>>& getFBOs () const;
 
   private:
     void generatePasses ();
@@ -41,7 +41,7 @@ class CEffect {
     CImage* m_image;
     const Core::Objects::CEffect* m_effect;
 
-    std::map<std::string, CFBO*> m_fbos;
+    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos;
     std::vector<Effects::CMaterial*> m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects

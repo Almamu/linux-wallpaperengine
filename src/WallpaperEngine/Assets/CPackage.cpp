@@ -24,7 +24,7 @@ CPackage::CPackage (std::filesystem::path path) : m_path (std::move (path)) {
     this->init ();
 }
 
-const uint8_t* CPackage::readFile (const std::filesystem::path& filename, uint32_t* length) const {
+std::shared_ptr<const uint8_t[]> CPackage::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     const auto it = this->m_contents.find (filename);
 
     if (it == this->m_contents.end ())
@@ -34,12 +34,7 @@ const uint8_t* CPackage::readFile (const std::filesystem::path& filename, uint32
     if (length != nullptr)
         *length = it->second->length;
 
-    // clone original first
-    auto* result = new uint8_t [it->second->length];
-
-    memcpy (result, it->second->address, it->second->length);
-
-    return result;
+    return it->second->content;
 }
 
 void CPackage::init () {
@@ -128,15 +123,13 @@ void CPackage::loadFiles (FILE* fp) {
             sLog.exception ("Cannot find file ", cur.filename, " from package ", this->m_path);
 
         // allocate memory for the file's contents and read it from the file
-        auto* fileContents = new uint8_t [cur.length];
+        std::shared_ptr<uint8_t[]> contents = std::shared_ptr<uint8_t[]>(new uint8_t [cur.length]);
 
-        if (fread (fileContents, cur.length, 1, fp) != 1) {
-            delete [] fileContents;
-
+        if (fread (contents.get(), cur.length, 1, fp) != 1) {
             sLog.exception ("Cannot read file ", cur.filename, " contents from package ", this->m_path);
         }
 
         // add the file to the map
-        this->m_contents.insert_or_assign (cur.filename, new CFileEntry (fileContents, cur.length));
+        this->m_contents.insert_or_assign (cur.filename, std::make_unique<CFileEntry> (contents, cur.length));
     }
 }

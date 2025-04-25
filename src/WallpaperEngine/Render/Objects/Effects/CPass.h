@@ -27,8 +27,8 @@ class CPass final : public Helpers::CContextAware {
 
     void render ();
 
-    void setDestination (const CFBO* drawTo);
-    void setInput (const ITexture* input);
+    void setDestination (std::shared_ptr<const CFBO> drawTo);
+    void setInput (std::shared_ptr<const ITexture> input);
     void setTexCoord (GLuint texcoord);
     void setPosition (GLuint position);
     void setModelViewProjectionMatrix (const glm::mat4* projection);
@@ -37,7 +37,7 @@ class CPass final : public Helpers::CContextAware {
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
     void setBlendingMode (std::string blendingmode);
     [[nodiscard]] const std::string& getBlendingMode () const;
-    [[nodiscard]] const CFBO* resolveFBO (const std::string& name) const;
+    [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
     [[nodiscard]] const CMaterial* getMaterial () const;
     [[nodiscard]] const Core::Objects::Images::Materials::CPass* getPass () const;
@@ -146,11 +146,11 @@ class CPass final : public Helpers::CContextAware {
     void renderGeometry () const;
     void cleanupRenderSetup ();
 
-    const ITexture* resolveTexture (const ITexture* expected, int index, const ITexture* previous = nullptr);
+    std::shared_ptr<const ITexture> resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous = nullptr);
 
     CMaterial* m_material;
     const Core::Objects::Images::Materials::CPass* m_pass;
-    std::map<int, const CFBO*> m_fbos;
+    std::map<int, std::shared_ptr<const CFBO>> m_fbos;
     std::map<std::string, int> m_combos;
     std::vector<AttribEntry*> m_attribs;
     std::map<std::string, UniformEntry*> m_uniforms;
@@ -164,12 +164,12 @@ class CPass final : public Helpers::CContextAware {
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, const ITexture*> m_textures;
+    std::map<int, std::shared_ptr<const ITexture>> m_textures;
 
     Render::Shaders::CShader* m_shader;
 
-    const CFBO* m_drawTo;
-    const ITexture* m_input;
+    std::shared_ptr<const CFBO> m_drawTo;
+    std::shared_ptr<const ITexture> m_input;
 
     GLuint m_programID;
 

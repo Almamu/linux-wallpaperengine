@@ -8,7 +8,7 @@ using namespace WallpaperEngine::Assets;
 
 CTextureCache::CTextureCache (CRenderContext& context) : Helpers::CContextAware (context) {}
 
-const ITexture* CTextureCache::resolve (const std::string& filename) {
+std::shared_ptr<const ITexture> CTextureCache::resolve (const std::string& filename) {
     const auto found = this->m_textureCache.find (filename);
 
     if (found != this->m_textureCache.end ())
@@ -17,7 +17,7 @@ const ITexture* CTextureCache::resolve (const std::string& filename) {
     // search for the texture in all the different containers just in case
     for (const auto& it : this->getContext ().getApp ().getBackgrounds ()) {
         try {
-            const ITexture* texture = it.second->getContainer ()->readTexture (filename);
+            std::shared_ptr<const ITexture> texture = it.second->getContainer ()->readTexture (filename);
 
             this->store (filename, texture);
 
@@ -30,6 +30,6 @@ const ITexture* CTextureCache::resolve (const std::string& filename) {
     throw CAssetLoadException (filename, "Cannot find file");
 }
 
-void CTextureCache::store (const std::string& name, const ITexture* texture) {
+void CTextureCache::store (const std::string& name, std::shared_ptr<const ITexture> texture) {
     this->m_textureCache.insert_or_assign (name, texture);
 }

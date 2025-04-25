@@ -35,7 +35,7 @@ class CWPSchemeHandler : public CefResourceHandler {
     const Core::CProject* m_project;
 
     const Assets::CContainer* m_container;
-    const uint8_t* m_contents;
+    std::shared_ptr<const uint8_t[]> m_contents;
     uint32_t m_filesize;
     std::string m_mimeType;
     uint32_t m_offset;

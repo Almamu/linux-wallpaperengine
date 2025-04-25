@@ -50,11 +50,10 @@ std::filesystem::path CDirectory::resolveRealFile (const std::filesystem::path& 
     }
 }
 
-const uint8_t* CDirectory::readFile (const std::filesystem::path& filename, uint32_t* length) const {
+std::shared_ptr<const uint8_t[]> CDirectory::readFile (const std::filesystem::path& filename, uint32_t* length) const {
     std::filesystem::path final = this->resolveRealFile (filename);
 
     FILE* fp = fopen (final.c_str (), "rb");
-
 
     if (fp == nullptr) {
         throw CAssetLoadException (filename, "Cannot open file for reading");
@@ -67,10 +66,9 @@ const uint8_t* CDirectory::readFile (const std::filesystem::path& filename, uint
         fseek (fp, 0, SEEK_SET);
 
         // now read the whole file
-        auto* contents = new uint8_t [size];
+        std::shared_ptr<uint8_t[]> contents = std::shared_ptr<uint8_t[]>(new uint8_t [size]);
 
-        if (fread (contents, size, 1, fp) != 1) {
-            delete [] contents;
+        if (fread (contents.get(), size, 1, fp) != 1) {
             throw CAssetLoadException (filename, "Unexpected error when reading the file");
         }
 

@@ -68,7 +68,7 @@ static int audio_read_data_callback (void* streamarg, uint8_t* buffer, int buffe
 
     buffer_size = FFMIN (buffer_size, left);
 
-    memcpy (buffer, stream->getBuffer () + stream->getPosition (), buffer_size);
+    memcpy (buffer, stream->getBuffer ().get() + stream->getPosition (), buffer_size);
     // update position
     stream->setPosition (stream->getPosition () + buffer_size);
 
@@ -96,7 +96,7 @@ CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename)
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length) :
+CAudioStream::CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length) :
     m_swrctx (nullptr),
     m_audioStream(NO_AUDIO_STREAM),
     m_audioContext (context) {
@@ -339,7 +339,7 @@ bool CAudioStream::isRepeat () const {
     return this->m_repeat;
 }
 
-const uint8_t* CAudioStream::getBuffer () {
+std::shared_ptr<const uint8_t[]> CAudioStream::getBuffer () {
     return this->m_buffer;
 }
 
