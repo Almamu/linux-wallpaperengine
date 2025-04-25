@@ -617,6 +617,13 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
     if (id == -1)
         return;
 
+    // free the uniform that's already registered if it's there already
+    const auto it = this->m_uniforms.find (name);
+
+    if (it != this->m_uniforms.end ()) {
+        delete it->second;
+    }
+
     // build a copy of the value and allocate it somewhere
     T* newValue = new T (value);
 
@@ -632,6 +639,13 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
     if (id == -1)
         return;
 
+    // free the uniform that's already registered if it's there already
+    const auto it = this->m_uniforms.find (name);
+
+    if (it != this->m_uniforms.end ()) {
+        delete it->second;
+    }
+
     // uniform found, add it to the list
     this->m_uniforms.insert_or_assign (name, new UniformEntry (id, name, type, value, count));
 }
@@ -643,6 +657,13 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
     // parameter not found, can be ignored
     if (id == -1)
         return;
+
+    // free the uniform that's already registered if it's there already
+    const auto it = this->m_uniforms.find (name);
+
+    if (it != this->m_uniforms.end ()) {
+        delete it->second;
+    }
 
     // uniform found, add it to the list
     this->m_referenceUniforms.insert_or_assign (
@@ -684,15 +705,15 @@ void CPass::addUniform (CShaderVariable* value) {
 
 void CPass::addUniform (CShaderVariable* value, const CDynamicValue* setting) {
     if (value->is<CShaderVariableFloat> ()) {
-        this->addUniform (value->getName (), setting->getFloat ());
+        this->addUniform (value->getName (), &setting->getFloat ());
     } else if (value->is<CShaderVariableInteger> ()) {
-        this->addUniform (value->getName (), setting->getInt ());
+        this->addUniform (value->getName (), &setting->getInt ());
     } else if (value->is<CShaderVariableVector2> ()) {
-        this->addUniform (value->getName (), setting->getVec2 ());
+        this->addUniform (value->getName (), &setting->getVec2 ());
     } else if (value->is<CShaderVariableVector3> ()) {
-        this->addUniform (value->getName (), setting->getVec3 ());
+        this->addUniform (value->getName (), &setting->getVec3 ());
     } else if (value->is<CShaderVariableVector4> ()) {
-        this->addUniform (value->getName (), setting->getVec4 ());
+        this->addUniform (value->getName (), &setting->getVec4 ());
     } else {
         sLog.error ("Cannot convert setting dynamic value  to ", value->getName (), ". Using default value");
     }
