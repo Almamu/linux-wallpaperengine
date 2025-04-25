@@ -1,4 +1,6 @@
 #include "CScene.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/CProject.h"
 
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
@@ -9,15 +11,15 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Wallpapers;
 
 CScene::CScene (
-    const CProject& project, const CContainer* container, const Scenes::CCamera* camera, glm::vec3 ambientColor,
-    const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold,
-    bool cameraFade, bool cameraParallax, float cameraParallaxAmount, float cameraParallaxDelay,
-    float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, float cameraShakeAmplitude,
-    float cameraShakeRoughness, float cameraShakeSpeed, const CUserSettingVector3* clearColor,
-    const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor
+    const CProject& project, std::shared_ptr<const CContainer> container, const Scenes::CCamera* camera,
+    glm::vec3 ambientColor, const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength,
+    const CUserSettingFloat* bloomThreshold, bool cameraFade, bool cameraParallax, float cameraParallaxAmount,
+    float cameraParallaxDelay, float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake,
+    float cameraShakeAmplitude, float cameraShakeRoughness, float cameraShakeSpeed,
+    const CUserSettingVector3* clearColor, const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor
 ) :
     CWallpaper (Type, project),
-    m_container (container),
+    m_container (std::move(container)),
     m_camera (camera),
     m_ambientColor (ambientColor),
     m_bloom (bloom),
@@ -37,7 +39,7 @@ CScene::CScene (
     m_orthogonalProjection (orthogonalProjection),
     m_skylightColor (skylightColor) {}
 
-const CScene* CScene::fromFile (const std::string& filename, const CProject& project, const CContainer* container) {
+const CScene* CScene::fromFile (const std::string& filename, const CProject& project, const std::shared_ptr<const CContainer>& container) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
@@ -85,12 +87,12 @@ const std::vector<const CObject*>& CScene::getObjectsByRenderOrder () const {
 void CScene::insertObject (const CObject* object) {
     /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
     if (object != nullptr) {
-        this->m_objects.insert (std::pair (object->getId (), object));
+        this->m_objects.emplace (object->getId (), object);
         this->m_objectsByRenderOrder.emplace_back (object);
     }
 }
 
-const CContainer* CScene::getContainer () const {
+std::shared_ptr<const CContainer> CScene::getContainer () const {
     return this->m_container;
 }
 

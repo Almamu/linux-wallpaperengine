@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 namespace WallpaperEngine::Assets {
 /**
@@ -9,7 +10,7 @@ namespace WallpaperEngine::Assets {
 class CFileEntry {
   public:
     CFileEntry (std::shared_ptr<const uint8_t[]> content, uint32_t length) :
-        content (content),
+        content (std::move(content)),
         length (length) {}
     ~CFileEntry() = default;
 

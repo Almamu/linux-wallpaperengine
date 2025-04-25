@@ -15,14 +15,14 @@ using namespace WallpaperEngine::Assets;
 static int backgroundId = -1;
 
 CProject::CProject (
-    std::string title, std::string type, std::string workshopid, const CContainer* container,
+    std::string title, std::string type, std::string workshopid, std::shared_ptr<const CContainer> container,
     bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties
 ) :
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),
     m_type (std::move(type)),
     m_wallpaper (nullptr),
-    m_container (container),
+    m_container (std::move(container)),
     m_properties (properties),
     m_supportsaudioprocessing (supportsaudioprocessing) {}
 
@@ -34,7 +34,7 @@ CProject::~CProject () {
     this->m_properties.clear ();
 }
 
-CProject* CProject::fromFile (const std::string& filename, const CContainer* container) {
+CProject* CProject::fromFile (const std::string& filename, std::shared_ptr<const CContainer> container) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
@@ -66,7 +66,7 @@ CProject* CProject::fromFile (const std::string& filename, const CContainer* con
                     continue;
                 }
 
-                properties.insert (std::pair (property->getName (), property));
+                properties.emplace (property->getName (), property);
             }
         }
     }
@@ -118,7 +118,7 @@ const std::string& CProject::getWorkshopId () const {
     return this->m_workshopid;
 }
 
-const CContainer* CProject::getContainer () const {
+std::shared_ptr<const CContainer> CProject::getContainer () const {
     return this->m_container;
 }
 

@@ -8,14 +8,14 @@ using namespace WallpaperEngine::Assets;
 
 CCombinedContainer::CCombinedContainer () : CContainer () {}
 
-void CCombinedContainer::add (CContainer* container) {
+void CCombinedContainer::add (const std::shared_ptr<CContainer>& container) {
     this->m_containers.emplace_back (container);
 }
 
 void CCombinedContainer::addPkg (const std::filesystem::path& path) {
     try {
         // add the package to the list
-        this->add (new CPackage (path));
+        this->add (std::make_shared<CPackage> (path));
         sLog.out ("Detected ", path.filename (), " file at ", path, ". Adding to list of searchable paths");
     } catch (CPackageLoadException&) {
         // ignore this error, the package file was not found
@@ -27,7 +27,7 @@ void CCombinedContainer::addPkg (const std::filesystem::path& path) {
 }
 
 std::filesystem::path CCombinedContainer::resolveRealFile (const std::filesystem::path& filename) const {
-    for (const auto cur : this->m_containers) {
+    for (const auto& cur : this->m_containers) {
         try {
             // try to read the file on the current container, if the file doesn't exists
             // an exception will be thrown
@@ -42,7 +42,7 @@ std::filesystem::path CCombinedContainer::resolveRealFile (const std::filesystem
 }
 
 std::shared_ptr<const uint8_t[]> CCombinedContainer::readFile (const std::filesystem::path& filename, uint32_t* length) const {
-    for (const auto cur : this->m_containers) {
+    for (const auto& cur : this->m_containers) {
         try {
             // try to read the file on the current container, if the file doesn't exists
             // an exception will be thrown

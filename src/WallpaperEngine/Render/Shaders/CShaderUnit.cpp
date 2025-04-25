@@ -55,12 +55,14 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Render::Shaders;
 
-CShaderUnit::CShaderUnit (CGLSLContext::UnitType type, std::string file, std::string content,
-    const CContainer* container, const std::map<std::string, const CShaderConstant*>& constants,
-    const std::map<int, std::string>& passTextures, const std::map<std::string, int>& combos) :
+CShaderUnit::CShaderUnit (
+    CGLSLContext::UnitType type, std::string file, std::string content, std::shared_ptr<const CContainer> container,
+    const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& passTextures,
+    const std::map<std::string, int>& combos
+) :
     m_type (type),
     m_link (nullptr),
-    m_container (container),
+    m_container (std::move(container)),
     m_file (std::move (file)),
     m_constants (constants),
     m_content (std::move(content)),
@@ -334,7 +336,7 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
     const auto entry = this->m_combos.find (combo->get<std::string> ());
 
     // add the combo to the found list
-    this->m_usedCombos.insert (std::pair (*combo, true));
+    this->m_usedCombos.emplace (*combo, true);
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
@@ -343,11 +345,11 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_discoveredCombos.insert (std::pair (*combo, (int) defaultValue));
+            this->m_discoveredCombos.emplace (*combo, (int) defaultValue);
         } else if (defvalue->is_number_float ()) {
             sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
         } else if (defvalue->is_number_integer ()) {
-            this->m_discoveredCombos.insert (std::pair (*combo, defvalue->get<int> ()));
+            this->m_discoveredCombos.emplace (*combo, defvalue->get<int> ());
         } else if (defvalue->is_string ()) {
             sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
         } else {
@@ -475,16 +477,14 @@ void CShaderUnit::parseParameterConfiguration (
 
             if (isRequired) {
                 // add the new combo to the list
-                this->m_discoveredCombos.insert (std::pair (*combo, comboValue));
-
+                this->m_discoveredCombos.emplace (*combo, comboValue);
                 // textures linked to combos need to be tracked too
-                if (this->m_usedCombos.find (*combo) == this->m_usedCombos.end ())
-                    this->m_usedCombos.insert (std::pair (*combo, true));
+                this->m_usedCombos.emplace (*combo, true);
             }
         }
 
         if (textureName != data.end ())
-            this->m_defaultTextures.insert (std::pair (index, *textureName));
+            this->m_defaultTextures.emplace (index, *textureName);
 
         // samplers are not saved, we can ignore them for now
         return;

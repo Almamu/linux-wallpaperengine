@@ -37,7 +37,7 @@ CEffect::CEffect (
 
 const CEffect* CEffect::fromJSON (
     const json& data, const CUserSettingBoolean* visible, const CProject& project, const Images::CMaterial* material,
-    const CContainer* container
+    std::shared_ptr<const CContainer> container
 ) {
     const auto file = jsonFindRequired <std::string> (data, "file", "Object effect must have a file");
     const auto effectpasses_it = data.find ("passes");
@@ -79,7 +79,7 @@ std::map<std::string, int> CEffect::combosFromJSON (const json::const_iterator& 
         auto uppercase = std::string (cur.key ());
 
         std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
-        combos.insert (std::pair (uppercase, cur.value ()));
+        combos.emplace (uppercase, cur.value ());
     }
 
     return combos;
@@ -153,7 +153,7 @@ std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*>
             }
         }
 
-        constants.insert (std::pair (cur.key (), constant));
+        constants.emplace (cur.key (), constant);
     }
 
     return constants;
@@ -178,7 +178,7 @@ std::vector<std::string> CEffect::dependenciesFromJSON (const json::const_iterat
 }
 
 std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
-    const json::const_iterator& passes_it, const std::string& name, const CContainer* container,
+    const json::const_iterator& passes_it, const std::string& name, const std::shared_ptr<const CContainer>& container,
     std::map<int, Images::CMaterial::OverrideInfo> overrides
 ) {
     std::vector<const Images::CMaterial*> materials;
@@ -203,7 +203,7 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
             if (bind_it != cur.end ()) {
                 for (const auto& bindCur : (*bind_it)) {
                     const auto* bind = Effects::CBind::fromJSON (bindCur);
-                    textureBindings.insert (std::pair (bind->getIndex (), bind));
+                    textureBindings.emplace (bind->getIndex (), bind);
                 }
             }
 
@@ -278,11 +278,11 @@ std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
                     name = texture;
                 }
 
-                override.textures.insert (std::pair (textureNumber, name));
+                override.textures.emplace (textureNumber, name);
             }
         }
 
-        result.insert (std::pair (materialNumber, override));
+        result.emplace (materialNumber, override);
     }
 
     return result;

@@ -35,7 +35,7 @@ const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* o
 
         int textureNumber = -1;
         for (const auto& cur : (*textures_it))
-            textures.insert (std::pair (++textureNumber, cur.is_null () ? "" : cur));
+            textures.emplace (++textureNumber, cur.is_null () ? "" : cur);
     }
 
     if (combos_it != data.end ()) {
@@ -44,7 +44,7 @@ const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* o
                 std::string uppercase = std::string (cur.key ());
 
                 std::transform (uppercase.begin (), uppercase.end (), uppercase.begin (), ::toupper);
-                combos.insert (std::pair (uppercase, cur.value ()));
+                combos.emplace (uppercase, cur.value ());
             } else {
                 sLog.exception ("unexpected non-integer combo on pass");
             }

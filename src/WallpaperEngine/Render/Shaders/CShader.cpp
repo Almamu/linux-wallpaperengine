@@ -18,7 +18,7 @@ using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders {
 CShader::CShader (
-    const CContainer* container, std::string filename, const std::map<std::string, int>& combos,
+    std::shared_ptr<const CContainer> container, std::string filename, const std::map<std::string, int>& combos,
     const std::map<int, std::string>& textures, const std::map<std::string, const CShaderConstant*>& constants
 ) :
     m_file (std::move (filename)),

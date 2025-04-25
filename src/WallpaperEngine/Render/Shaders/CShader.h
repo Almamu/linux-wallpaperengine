@@ -42,7 +42,7 @@ class CShader {
      * @param recursive Whether the compiler should add base definitions or not
      */
     CShader (
-        const CContainer* container, std::string filename,
+        std::shared_ptr<const CContainer> container, std::string filename,
         const std::map<std::string, int>& combos, const std::map<int, std::string>& textures,
         const std::map<std::string, const CShaderConstant*>& constants);
     /**

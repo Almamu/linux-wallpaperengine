@@ -33,7 +33,7 @@ CImage::CImage (
     m_effects (std::move(effects)) {}
 
 const WallpaperEngine::Core::CObject* CImage::fromJSON (
-    const Wallpapers::CScene* scene, const json& data, const CContainer* container,
+    const Wallpapers::CScene* scene, const json& data, const std::shared_ptr<const CContainer>& container,
     const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
     const CUserSettingVector3* scale, const CUserSettingVector3* angles, const json::const_iterator& effects_it,
     std::vector<int> dependencies

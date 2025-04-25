@@ -31,7 +31,7 @@ class CObject : public Helpers::CContextAware {
     virtual void render () = 0;
 
     [[nodiscard]] Wallpapers::CScene* getScene () const;
-    [[nodiscard]] const CContainer* getContainer () const;
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
     [[nodiscard]] int getId () const;
 
   protected:

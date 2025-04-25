@@ -17,7 +17,7 @@ using json = nlohmann::json;
 
 class CScene : public CWallpaper {
   public:
-    static const CScene* fromFile (const std::string& filename, const CProject& project, const CContainer* container);
+    static const CScene* fromFile (const std::string& filename, const CProject& project, const std::shared_ptr<const CContainer>& container);
 
     [[nodiscard]] const std::map<uint32_t, const CObject*>& getObjects () const;
     [[nodiscard]] const std::vector<const CObject*>& getObjectsByRenderOrder () const;
@@ -45,21 +45,21 @@ class CScene : public CWallpaper {
     friend class CWallpaper;
 
     CScene (
-        const CProject& project, const CContainer* container, const Scenes::CCamera* camera, glm::vec3 ambientColor,
-        const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold,
-        bool cameraFade, bool cameraParallax, float cameraParallaxAmount, float cameraParallaxDelay,
-        float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, float cameraShakeAmplitude,
-        float cameraShakeRoughness, float cameraShakeSpeed, const CUserSettingVector3* clearColor,
-        const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor);
+        const CProject& project, std::shared_ptr<const CContainer> container, const Scenes::CCamera* camera,
+        glm::vec3 ambientColor, const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength,
+        const CUserSettingFloat* bloomThreshold, bool cameraFade, bool cameraParallax, float cameraParallaxAmount,
+        float cameraParallaxDelay, float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake,
+        float cameraShakeAmplitude, float cameraShakeRoughness, float cameraShakeSpeed,
+        const CUserSettingVector3* clearColor, const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor);
 
     static const std::string Type;
 
     void insertObject (const CObject* object);
 
-    const CContainer* getContainer () const;
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
   private:
-    const CContainer* m_container;
+    const std::shared_ptr<const CContainer> m_container;
     const Scenes::CCamera* m_camera;
 
     // data from general section on the json

@@ -59,7 +59,7 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] const CContainer* getContainer () const;
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
     /**
      * @return The current audio context for this wallpaper

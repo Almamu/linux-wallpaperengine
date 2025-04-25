@@ -29,14 +29,14 @@ CMaterial::CMaterial (
     m_solidlayer (solidlayer)  {}
 
 const CMaterial* CMaterial::fromFile (
-    const std::filesystem::path& filename, const CContainer* container, bool solidlayer,
+    const std::filesystem::path& filename, const std::shared_ptr<const CContainer>& container, bool solidlayer,
     std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
 ) {
     return fromJSON (filename, json::parse (container->readFileAsString (filename)), solidlayer, std::move(textureBindings), overrides);
 }
 
 const CMaterial* CMaterial::fromFile (
-    const std::filesystem::path& filename, const std::string& target, const CContainer* container, bool solidlayer,
+    const std::filesystem::path& filename, const std::string& target, const std::shared_ptr<const CContainer>& container, bool solidlayer,
     std::map<int, const Effects::CBind*> textureBindings, const OverrideInfo* overrides
 ) {
     return fromJSON (filename, json::parse (container->readFileAsString (filename)), target, solidlayer, std::move(textureBindings), overrides);

@@ -32,7 +32,7 @@ CObject::CObject (
     m_dependencies (std::move(dependencies)) {}
 
 const CObject* CObject::fromJSON (
-    const json& data, const Wallpapers::CScene* scene, const CContainer* container
+    const json& data, const Wallpapers::CScene* scene, const std::shared_ptr<const CContainer>& container
 ) {
     const auto id = jsonFindRequired <int> (data, "id", "Objects must have id");
     const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, scene->getProject(), "visible", true);

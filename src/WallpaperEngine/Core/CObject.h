@@ -29,7 +29,7 @@ class CObject {
     friend class Wallpapers::CScene;
 
   public:
-    static const CObject* fromJSON (const json& data, const Wallpapers::CScene* scene, const CContainer* container);
+    static const CObject* fromJSON (const json& data, const Wallpapers::CScene* scene, const std::shared_ptr<const CContainer>& container);
 
     template <class T> [[nodiscard]] const T* as () const {
         assert (is<T> ());

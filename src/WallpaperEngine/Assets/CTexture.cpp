@@ -324,7 +324,7 @@ std::unique_ptr<CTexture::TextureHeader> CTexture::parseHeader (const char* file
             mipmaps.emplace_back (parseMipmap (header.get (), &fileData));
 
         // add the pixmaps back
-        header->images.insert (std::pair (image, mipmaps));
+        header->images.emplace (image, mipmaps);
 
         pointer = reinterpret_cast<const uint32_t*> (fileData);
     }

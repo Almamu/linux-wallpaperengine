@@ -20,7 +20,8 @@ using namespace WallpaperEngine::Core::Objects::Effects::Constants;
  */
 class CShaderUnit {
   public:
-    CShaderUnit (CGLSLContext::UnitType type, std::string file, std::string content, const CContainer* container,
+    CShaderUnit (
+        CGLSLContext::UnitType type, std::string file, std::string content, std::shared_ptr<const CContainer> container,
         const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& passTextures,
         const std::map<std::string, int>& combos);
     ~CShaderUnit () = default;
@@ -150,6 +151,6 @@ class CShaderUnit {
     /**
      * The container to source files from
      */
-    const CContainer* m_container;
+    const std::shared_ptr<const CContainer> m_container;
 };
 }

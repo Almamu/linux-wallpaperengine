@@ -263,7 +263,7 @@ void CImage::setup () {
     if (this->m_image->getColorBlendMode () > 0) {
         Core::Objects::Images::CMaterial::OverrideInfo overrides;
 
-        overrides.combos.insert (std::pair ("BLENDMODE", this->m_image->getColorBlendMode ()));
+        overrides.combos.emplace ("BLENDMODE", this->m_image->getColorBlendMode ());
         const auto material =
             Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer (), false, {}, &overrides);
 

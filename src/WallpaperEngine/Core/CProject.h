@@ -22,7 +22,7 @@ class CWallpaper;
 class CProject {
   public:
     ~CProject();
-    static CProject* fromFile (const std::string& filename, const CContainer* container);
+    static CProject* fromFile (const std::string& filename, std::shared_ptr<const CContainer> container);
 
     [[nodiscard]] const CWallpaper* getWallpaper () const;
 
@@ -32,11 +32,11 @@ class CProject {
     [[nodiscard]] const std::string& getWorkshopId () const;
     [[nodiscard]] bool supportsAudioProcessing () const;
 
-    [[nodiscard]] const CContainer* getContainer () const;
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
   protected:
     CProject (
-        std::string title, std::string type, std::string workshopid, const CContainer* container,
+        std::string title, std::string type, std::string workshopid, std::shared_ptr<const CContainer> container,
         bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties);
 
     void setWallpaper (const CWallpaper* wallpaper);
@@ -49,6 +49,6 @@ class CProject {
     const std::string m_type;
     const bool m_supportsaudioprocessing;
     const CWallpaper* m_wallpaper;
-    const CContainer* m_container;
+    std::shared_ptr<const CContainer> m_container;
 };
 } // namespace WallpaperEngine::Core

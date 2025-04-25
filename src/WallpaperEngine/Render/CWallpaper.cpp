@@ -52,7 +52,7 @@ CWallpaper::CWallpaper (
 
 CWallpaper::~CWallpaper () = default;
 
-const CContainer* CWallpaper::getContainer () const {
+std::shared_ptr<const CContainer> CWallpaper::getContainer () const {
     return this->m_wallpaperData->getProject ().getContainer ();
 }
 
@@ -260,13 +260,13 @@ std::shared_ptr<const CFBO> CWallpaper::createFBO (
 ) {
     std::shared_ptr<const CFBO> fbo = std::make_shared <CFBO> (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
-    this->m_fbos.insert (std::pair (name, fbo));
+    this->m_fbos.emplace (name, fbo);
 
     return fbo;
 }
 
 void CWallpaper::aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original) {
-    this->m_fbos.insert (std::pair (alias, original));
+    this->m_fbos.emplace (alias, original);
 }
 
 const std::map<std::string, std::shared_ptr<const CFBO>>& CWallpaper::getFBOs () const {

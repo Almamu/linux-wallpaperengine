@@ -5,18 +5,22 @@
 
 using namespace WallpaperEngine::Assets;
 
+CVirtualContainer::CVirtualContainer () :
+    m_virtualFiles() {}
+
 void CVirtualContainer::add (const std::filesystem::path& filename, const std::shared_ptr<const uint8_t[]>& contents, uint32_t length) {
-    this->m_virtualFiles.insert (std::pair (filename, std::make_unique<CFileEntry> (contents, length)));
+    this->m_virtualFiles.emplace (filename, std::make_unique<CFileEntry> (contents, length));
 }
 
 void CVirtualContainer::add (const std::filesystem::path& filename, const std::string& contents) {
-    std::shared_ptr<uint8_t[]> copy = std::shared_ptr<uint8_t[]> (new uint8_t [contents.length () + 1]);
+    size_t length = contents.length () + 1;
+    std::shared_ptr<uint8_t[]> copy = std::shared_ptr<uint8_t[]> (new uint8_t [length]);
 
     // copy the text AND the \0
-    memcpy (copy.get(), contents.c_str (), contents.length () + 1);
+    memcpy (copy.get(), contents.c_str (), length);
 
     // finally add to the container
-    this->add (filename, copy, contents.length () + 1);
+    this->add (filename, copy, length);
 }
 
 void CVirtualContainer::add (const std::filesystem::path& filename, const char* contents) {

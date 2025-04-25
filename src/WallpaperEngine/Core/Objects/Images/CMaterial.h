@@ -26,10 +26,10 @@ class CMaterial {
     };
 
     static const CMaterial* fromFile (
-        const std::filesystem::path& filename, const Assets::CContainer* container, bool solidlayer = false,
+        const std::filesystem::path& filename, const std::shared_ptr<const CContainer>& container, bool solidlayer = false,
         std::map<int, const Effects::CBind*> textureBindings = {}, const OverrideInfo* overrides = nullptr);
     static const CMaterial* fromFile (
-        const std::filesystem::path& filename, const std::string& target, const Assets::CContainer* container,
+        const std::filesystem::path& filename, const std::string& target, const std::shared_ptr<const CContainer>& container,
         bool solidlayer = false, std::map<int, const Effects::CBind*> textureBindings = {},
         const OverrideInfo* overrides = nullptr);
     static const CMaterial* fromJSON (

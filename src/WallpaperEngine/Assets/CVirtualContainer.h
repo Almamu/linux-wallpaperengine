@@ -16,6 +16,7 @@ using json = nlohmann::json;
  */
 class CVirtualContainer final : public CContainer {
   public:
+    CVirtualContainer ();
     /**
      * Adds a new file to the virtual container
      *

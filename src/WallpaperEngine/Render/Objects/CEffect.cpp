@@ -36,7 +36,7 @@ void CEffect::generatePasses () {
 void CEffect::generateFBOs () {
     for (const auto& cur : this->m_effect->getFbos ()) {
         // TODO: IS THAT DIVISION OKAY? SHOULDN'T IT BE A MULTIPLICATION? WTF?
-        this->m_fbos.insert (std::pair (
+        this->m_fbos.emplace (
             cur->getName(),
             new CFBO (
                 // TODO: SET PROPER FLAGS AND FORMAT
@@ -47,7 +47,7 @@ void CEffect::generateFBOs () {
                 this->m_image->getSize ().x / cur->getScale (),
                 this->m_image->getSize ().y / cur->getScale ()
             )
-        ));
+        );
     }
 }
 

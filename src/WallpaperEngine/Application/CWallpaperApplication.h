@@ -79,7 +79,7 @@ class CWallpaperApplication {
      * @param container
      * @param bg
      */
-    void setupContainer (CCombinedContainer& container, const std::string& bg) const;
+    void setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const;
     /**
      * Loads projects based off the settings
      */

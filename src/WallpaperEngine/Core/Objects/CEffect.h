@@ -33,7 +33,7 @@ class CEffect {
 
     static const CEffect* fromJSON (
         const json& data, const CUserSettingBoolean* visible, const CProject& object, const Images::CMaterial* material,
-        const CContainer* container);
+        std::shared_ptr<const CContainer> container);
 
     /**
      * @return List of dependencies for the effect to work
@@ -71,8 +71,8 @@ class CEffect {
     static std::vector<const Effects::CFBO*> fbosFromJSON (const json::const_iterator& fbos_it);
     static std::vector<std::string> dependenciesFromJSON (const json::const_iterator& dependencies_it);
     static std::vector<const Images::CMaterial*> materialsFromJSON (
-        const json::const_iterator& passes_it, const std::string& name, const CContainer* container,
-        std::map<int, Images::CMaterial::OverrideInfo>);
+        const json::const_iterator& passes_it, const std::string& name,
+        const std::shared_ptr<const CContainer>& container, std::map<int, Images::CMaterial::OverrideInfo>);
     static std::map<int, Images::CMaterial::OverrideInfo> overridesFromJSON (
         const json::const_iterator& passes_it, const Images::CMaterial* material, const CProject& project);
 

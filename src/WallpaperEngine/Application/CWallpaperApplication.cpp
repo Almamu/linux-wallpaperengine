@@ -59,21 +59,21 @@ CWallpaperApplication::~CWallpaperApplication () {
     delete m_browserContext;
 }
 
-void CWallpaperApplication::setupContainer (CCombinedContainer& container, const std::string& bg) const {
+void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const {
     const std::filesystem::path basepath = bg;
 
-    container.add (new CDirectory (basepath));
-    container.addPkg (basepath / "scene.pkg");
-    container.addPkg (basepath / "gifscene.pkg");
+    container->add (std::make_shared<CDirectory> (basepath));
+    container->addPkg (basepath / "scene.pkg");
+    container->addPkg (basepath / "gifscene.pkg");
 
     try {
-        container.add (new CDirectory (this->m_context.settings.general.assets));
+        container->add (std::make_shared <CDirectory> (this->m_context.settings.general.assets));
     } catch (CAssetLoadException&) {
         sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
     // TODO: move this somewhere else?
-    auto* virtualContainer = new CVirtualContainer ();
+    auto virtualContainer = std::make_shared <CVirtualContainer> ();
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -206,7 +206,7 @@ void CWallpaperApplication::setupContainer (CCombinedContainer& container, const
         "}"
     );
 
-    container.add (virtualContainer);
+    container->add (virtualContainer);
 }
 
 void CWallpaperApplication::loadBackgrounds () {
@@ -227,9 +227,9 @@ void CWallpaperApplication::loadBackgrounds () {
 }
 
 Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg) {
-    auto* container = new CCombinedContainer ();
+    const auto container = std::make_shared <CCombinedContainer> ();
 
-    this->setupContainer (*container, bg);
+    this->setupContainer (container, bg);
 
     return Core::CProject::fromFile ("project.json", container);
 }
