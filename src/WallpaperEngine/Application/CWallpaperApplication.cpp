@@ -197,7 +197,7 @@ void CWallpaperApplication::loadBackgrounds () {
     }
 }
 
-std::unique_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std::string& bg) {
+std::shared_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std::string& bg) {
     const auto container = std::make_shared <CCombinedContainer> ();
 
     this->setupContainer (container, bg);

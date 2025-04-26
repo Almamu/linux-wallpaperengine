@@ -16,7 +16,7 @@ class CProperty : public CDynamicValue {
   public:
     typedef std::function<void(const CProperty*)> function_type;
     virtual ~CProperty () = default;
-    static CProperty* fromJSON (const json& data, const std::string& name);
+    static std::shared_ptr<CProperty> fromJSON (const json& data, const std::string& name);
 
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {

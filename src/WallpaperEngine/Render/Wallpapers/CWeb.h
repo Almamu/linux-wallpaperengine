@@ -25,7 +25,7 @@ class CWeb : public CWallpaper
 {
     public:
         CWeb (
-          const Core::Wallpapers::CWeb* scene, CRenderContext& context, CAudioContext& audioContext,
+          std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
           WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
           const CWallpaperState::TextureUVsScaling& scalingMode,
           const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);

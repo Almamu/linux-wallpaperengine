@@ -19,10 +19,11 @@ class CUserSettingVector3 : public CUserSettingValue {
 
   private:
     CUserSettingVector3 (
-        bool hasCondition, glm::vec3 defaultValue, const Projects::CProperty* source, std::string expectedValue);
+        bool hasCondition, glm::vec3 defaultValue, std::shared_ptr<const Projects::CProperty> source,
+        std::string expectedValue);
 
     const bool m_hasCondition;
-    const Projects::CProperty* m_source;
+    const std::shared_ptr <const Projects::CProperty> m_source;
     const std::string m_expectedValue;
 };
 } // namespace WallpaperEngine::Core::UserSettings

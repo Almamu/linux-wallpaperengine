@@ -13,7 +13,7 @@ using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CUserSettingVector3::CUserSettingVector3 (
-    bool hasCondition, glm::vec3 defaultValue, const Projects::CProperty* source, std::string expectedValue
+    bool hasCondition, glm::vec3 defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue
 ) :
     CUserSettingValue (),
     m_hasCondition (hasCondition),
@@ -35,7 +35,7 @@ CUserSettingVector3::CUserSettingVector3 (
 
 const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& data, const CProject& project) {
     bool hasCondition = false;
-    const Projects::CProperty* sourceProperty = nullptr;
+    std::shared_ptr <const Projects::CProperty> sourceProperty = nullptr;
     glm::vec3 defaultValue;
     std::string source;
     std::string expectedValue;

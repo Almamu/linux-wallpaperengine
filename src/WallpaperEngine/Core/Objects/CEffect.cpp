@@ -21,8 +21,9 @@ using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CEffect::CEffect (
-    std::string name, std::string description, std::string group, std::string preview, const CProject& project,
-    const CUserSettingBoolean* visible, std::vector<std::string> dependencies, std::vector<const Effects::CFBO*> fbos,
+    std::string name, std::string description, std::string group, std::string preview,
+    std::shared_ptr <const Core::CProject> project, const CUserSettingBoolean* visible,
+    std::vector<std::string> dependencies, std::vector<const Effects::CFBO*> fbos,
     std::vector<const Images::CMaterial*> materials
 ) :
     m_name (std::move(name)),
@@ -36,8 +37,8 @@ CEffect::CEffect (
     m_materials (std::move(materials)) {}
 
 const CEffect* CEffect::fromJSON (
-    const json& data, const CUserSettingBoolean* visible, const CProject& project, const Images::CMaterial* material,
-    const std::shared_ptr<const CContainer>& container
+    const json& data, const CUserSettingBoolean* visible, std::shared_ptr <const Core::CProject> project,
+    const Images::CMaterial* material, const std::shared_ptr<const CContainer>& container
 ) {
     const auto file = jsonFindRequired <std::string> (data, "file", "Object effect must have a file");
     const auto effectpasses_it = data.find ("passes");
@@ -86,7 +87,7 @@ std::map<std::string, int> CEffect::combosFromJSON (const json::const_iterator& 
 }
 
 std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> CEffect::constantsFromJSON (
-    const json::const_iterator& constants_it, const CProject& project
+    const json::const_iterator& constants_it, std::shared_ptr <const Core::CProject> project
 ) {
     std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constants;
 
@@ -109,7 +110,7 @@ std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*>
 
             if (user != cur.value ().end () && user->is_string ()) {
                 // look for a property with the correct name
-                const auto& properties = project.getProperties ();
+                const auto& properties = project->getProperties ();
                 const auto property = properties.find (*user);
 
                 if (property != properties.end ()) {
@@ -234,7 +235,8 @@ std::vector<const Images::CMaterial*> CEffect::materialsFromJSON (
 }
 
 std::map<int, Images::CMaterial::OverrideInfo> CEffect::overridesFromJSON (
-    const json::const_iterator& passes_it, const Images::CMaterial* material, const CProject& project
+    const json::const_iterator& passes_it, const Images::CMaterial* material,
+    std::shared_ptr <const Core::CProject> project
 ) {
     std::map<int, Images::CMaterial::OverrideInfo> result;
 
@@ -301,7 +303,7 @@ const std::vector<const Effects::CFBO*>& CEffect::getFbos () const {
 }
 
 const Core::CProject& CEffect::getProject () const {
-    return this->m_project;
+    return *this->m_project;
 }
 
 bool CEffect::isVisible () const {

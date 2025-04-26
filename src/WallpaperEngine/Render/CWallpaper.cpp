@@ -6,26 +6,16 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <utility>
 
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
-    const Core::CWallpaper* wallpaperData, CRenderContext& context,CAudioContext& audioContext,
+    std::shared_ptr <const Core::CWallpaper> wallpaperData, CRenderContext& context,CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
-    m_sceneFBO (nullptr),
-    m_texCoordBuffer (GL_NONE),
-    m_positionBuffer (GL_NONE),
-    m_shader (GL_NONE),
-    g_Texture0 (GL_NONE),
-    a_Position (GL_NONE),
-    a_TexCoord (GL_NONE),
-    m_vaoBuffer (GL_NONE),
-    m_destFramebuffer (GL_NONE),
     m_audioContext (audioContext),
     m_state (scalingMode, clampMode) {
     // generate the VAO to stop opengl from complaining
@@ -52,10 +42,10 @@ CWallpaper::CWallpaper (
 CWallpaper::~CWallpaper () = default;
 
 std::shared_ptr<const CContainer> CWallpaper::getContainer () const {
-    return this->m_wallpaperData->getProject ().getContainer ();
+    return this->m_wallpaperData->getProject ()->getContainer ();
 }
 
-const WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const {
+std::shared_ptr <const WallpaperEngine::Core::CWallpaper> CWallpaper::getWallpaperData () const {
     return this->m_wallpaperData;
 }
 
@@ -285,20 +275,20 @@ std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (
-    const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
+std::shared_ptr<CWallpaper> CWallpaper::fromWallpaper (
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
     WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) {
     if (wallpaper->is<Core::Wallpapers::CScene> ()) {
-        return new WallpaperEngine::Render::Wallpapers::CScene (
-            wallpaper->as<Core::Wallpapers::CScene> (), context, audioContext, scalingMode, clampMode);
+        return std::make_shared <WallpaperEngine::Render::Wallpapers::CScene> (
+            wallpaper, context, audioContext, scalingMode, clampMode);
     } else if (wallpaper->is<Core::Wallpapers::CVideo> ()) {
-        return new WallpaperEngine::Render::Wallpapers::CVideo (
-            wallpaper->as<Core::Wallpapers::CVideo> (), context, audioContext, scalingMode, clampMode);
+        return std::make_shared<WallpaperEngine::Render::Wallpapers::CVideo> (
+            wallpaper, context, audioContext, scalingMode, clampMode);
     } else if (wallpaper->is<Core::Wallpapers::CWeb> ()) {
-        return new WallpaperEngine::Render::Wallpapers::CWeb (
-            wallpaper->as<Core::Wallpapers::CWeb> (), context, audioContext, browserContext, scalingMode, clampMode);
+        return std::make_shared<WallpaperEngine::Render::Wallpapers::CWeb> (
+            wallpaper, context, audioContext, browserContext, scalingMode, clampMode);
     } else
         sLog.exception ("Unsupported wallpaper type");
 }

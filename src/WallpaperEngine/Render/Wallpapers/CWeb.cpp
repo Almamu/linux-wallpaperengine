@@ -11,11 +11,11 @@ using namespace WallpaperEngine::WebBrowser;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CWeb::CWeb (
-    const Core::Wallpapers::CWeb* web, CRenderContext& context, CAudioContext& audioContext,
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
     CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (web, context, audioContext, scalingMode, clampMode),
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
     m_browserContext (browserContext) {
     // setup framebuffers
     this->setupFramebuffers ();
@@ -32,7 +32,7 @@ CWeb::CWeb (
     this->m_client = new WebBrowser::CEF::CBrowserClient (m_renderHandler);
     // use the custom scheme for the wallpaper's files
     const std::string htmlURL =
-        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ()->getProject ().getWorkshopId ()) +
+        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ()->getProject ()->getWorkshopId ()) +
         "://root/" +
         this->getWeb()->getFilename ();
     this->m_browser =

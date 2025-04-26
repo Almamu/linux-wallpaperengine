@@ -8,7 +8,7 @@
 namespace WallpaperEngine::Core::DynamicValues {
 class CDynamicValue {
   public:
-    ~CDynamicValue ();
+    virtual ~CDynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;
     [[nodiscard]] const glm::ivec3& getIVec3 () const;

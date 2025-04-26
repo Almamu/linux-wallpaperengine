@@ -13,7 +13,7 @@ using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CUserSettingFloat::CUserSettingFloat (
-    bool hasCondition, float defaultValue, const Projects::CProperty* source, std::string expectedValue
+    bool hasCondition, float defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue
 ) :
     CUserSettingValue (),
     m_default (defaultValue),
@@ -38,7 +38,7 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
     std::string source;
     std::string expectedValue;
     bool hasCondition = false;
-    const Projects::CProperty* sourceProperty = nullptr;
+    std::shared_ptr <const Projects::CProperty> sourceProperty = nullptr;
 
     if (data.is_object ()) {
         auto animation = data.find ("animation");

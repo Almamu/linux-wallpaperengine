@@ -17,10 +17,10 @@ class CUserSettingBoolean : public CUserSettingValue {
 
   private:
     CUserSettingBoolean (
-        bool hasCondition, bool defaultValue, const Projects::CProperty* source, std::string expectedValue);
+        bool hasCondition, bool defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue);
 
     const bool m_hasCondition;
     const std::string m_expectedValue;
-    const Projects::CProperty* m_source;
+    const std::shared_ptr <const Projects::CProperty> m_source;
 };
 } // namespace WallpaperEngine::Core::UserSettings

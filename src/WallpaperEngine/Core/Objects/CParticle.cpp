@@ -5,9 +5,10 @@
 using namespace WallpaperEngine::Core::Objects;
 
 const CParticle* CParticle::fromFile (
-    const Wallpapers::CScene* scene, const std::string& filename, std::shared_ptr<const CContainer> container,
-    const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
-    const CUserSettingVector3* angles, const CUserSettingVector3* scale, std::vector<int> dependencies
+    std::shared_ptr <const Core::CProject> project, const std::string& filename,
+    const std::shared_ptr<const CContainer>& container, const CUserSettingBoolean* visible, int id,
+    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* angles,
+    const CUserSettingVector3* scale, std::vector<int> dependencies
 ) {
     json data = json::parse (container->readFileAsString (filename));
     const auto controlpoint_it = data.find ("controlpoint");
@@ -28,7 +29,7 @@ const CParticle* CParticle::fromFile (
         initializers.push_back (Particles::CInitializer::fromJSON (cur));
 
     return new CParticle (
-        scene,
+        project,
         jsonFindRequired <uint32_t> (data, "starttime", "Particles must have start time"),
         jsonFindRequired <uint32_t> (data, "maxcount", "Particles must have maximum count"),
         visible,
@@ -45,13 +46,14 @@ const CParticle* CParticle::fromFile (
 }
 
 CParticle::CParticle (
-    const Wallpapers::CScene* scene, uint32_t starttime, uint32_t maxcount, const CUserSettingBoolean* visible, int id,
-    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
-    const CUserSettingVector3* angles, const std::vector<const Particles::CControlPoint*>& controlpoints,
+    std::shared_ptr <const Core::CProject> project, uint32_t starttime, uint32_t maxcount,
+    const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
+    const CUserSettingVector3* scale, const CUserSettingVector3* angles,
+    const std::vector<const Particles::CControlPoint*>& controlpoints,
     const std::vector<const Particles::CEmitter*>& emitters,
     const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, name, origin, scale, angles, std::move(dependencies)),
+    CObject (project, visible, id, name, origin, scale, angles, std::move(dependencies)),
     m_starttime (starttime),
     m_maxcount (maxcount),
     m_controlpoints (controlpoints),

@@ -12,11 +12,11 @@ void* get_proc_address (void* ctx, const char* name) {
 }
 
 CVideo::CVideo (
-    const Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (video, context, audioContext, scalingMode, clampMode) {
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts
@@ -54,7 +54,7 @@ CVideo::CVideo (
         sLog.exception ("Failed to initialize MPV's GL context");
 
     const std::filesystem::path videopath =
-        this->getVideo ()->getProject ().getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+        this->getVideo ()->getProject ()->getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
 
     // build the path to the video file
     const char* command [] = {"loadfile", videopath.c_str (), nullptr};

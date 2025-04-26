@@ -11,7 +11,7 @@ namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
     CVideo (
-        const Core::Wallpapers::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
+        std::shared_ptr<const Core::CWallpaper> video, CRenderContext& context, CAudioContext& audioContext,
         const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 

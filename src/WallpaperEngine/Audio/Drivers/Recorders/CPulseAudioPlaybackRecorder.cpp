@@ -173,6 +173,10 @@ CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () :
 }
 
 CPulseAudioPlaybackRecorder::~CPulseAudioPlaybackRecorder () {
+    if (m_captureData.captureStream) {
+        pa_stream_unref (m_captureData.captureStream);
+    }
+
     delete [] this->m_captureData.audioBufferTmp;
     delete [] this->m_captureData.audioBuffer;
     free (this->m_captureData.kisscfg);

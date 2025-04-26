@@ -34,7 +34,7 @@ void CRenderContext::render (Drivers::Output::COutputViewport* viewport) {
     viewport->swapOutput ();
 }
 
-void CRenderContext::setWallpaper (const std::string& display, CWallpaper* wallpaper) {
+void CRenderContext::setWallpaper (const std::string& display, std::shared_ptr <CWallpaper> wallpaper) {
     this->m_wallpapers.insert_or_assign (display, wallpaper);
 }
 
@@ -63,7 +63,7 @@ std::shared_ptr<const ITexture> CRenderContext::resolveTexture (const std::strin
     return this->m_textureCache->resolve (name);
 }
 
-const std::map<std::string, CWallpaper*>& CRenderContext::getWallpapers () const {
+const std::map<std::string, std::shared_ptr <CWallpaper>>& CRenderContext::getWallpapers () const {
     return this->m_wallpapers;
 }
 } // namespace WallpaperEngine::Render

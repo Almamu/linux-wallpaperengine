@@ -153,15 +153,15 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static CWallpaper* fromWallpaper (
-        const Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    static std::shared_ptr<CWallpaper> fromWallpaper (
+        std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
         WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
   protected:
     CWallpaper (
-        const Core::CWallpaper* wallpaperData, CRenderContext& context, CAudioContext& audioContext,
-        const CWallpaperState::TextureUVsScaling& scalingMode,
+        std::shared_ptr <const WallpaperEngine::Core::CWallpaper> wallpaperData, CRenderContext& context,
+        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
     /**
@@ -174,9 +174,9 @@ class CWallpaper : public Helpers::CContextAware {
      */
     void setupFramebuffers ();
 
-    const Core::CWallpaper* m_wallpaperData;
+    std::shared_ptr <const WallpaperEngine::Core::CWallpaper> m_wallpaperData;
 
-    [[nodiscard]] const Core::CWallpaper* getWallpaperData () const;
+    [[nodiscard]] std::shared_ptr <const WallpaperEngine::Core::CWallpaper> getWallpaperData () const;
 
     /** The FBO used for scene output */
     std::shared_ptr<const CFBO> m_sceneFBO = nullptr;

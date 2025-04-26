@@ -17,14 +17,13 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
 
 CScene::CScene (
-    const Core::Wallpapers::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (scene, context, audioContext, scalingMode, clampMode),
-    m_mousePosition (),
-    m_mousePositionLast (),
-    m_parallaxDisplacement () {
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
+    // caller should check this, if not a std::bad_cast is good to throw
+    const auto& scene = wallpaper->as <Core::Wallpapers::CScene> ();
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
 
@@ -151,7 +150,7 @@ CScene::CScene (
     // create image for bloom passes
     if (this->getScene ()->isBloom ()) {
         this->m_bloomObject = this->createObject (
-            WallpaperEngine::Core::CObject::fromJSON (json, this->getScene (), this->getContainer ()));
+            WallpaperEngine::Core::CObject::fromJSON (json, scene->getProject (), this->getContainer ()));
 
         this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
     }

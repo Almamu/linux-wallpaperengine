@@ -12,13 +12,14 @@ using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CImage::CImage (
-    const Wallpapers::CScene* scene, const Images::CMaterial* material, const CUserSettingBoolean* visible, int id,
-    std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
-    const CUserSettingVector3* angles, glm::vec2 size, std::string alignment, const CUserSettingVector3* color,
-    const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode, glm::vec2 parallaxDepth, bool fullscreen,
-    bool passthrough, bool autosize, std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies
+    std::shared_ptr <const Core::CProject> project, const Images::CMaterial* material,
+    const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+    const CUserSettingVector3* scale, const CUserSettingVector3* angles, glm::vec2 size, std::string alignment,
+    const CUserSettingVector3* color, const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode,
+    glm::vec2 parallaxDepth, bool fullscreen, bool passthrough, bool autosize,
+    std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
+    CObject (project, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
     m_size (size),
     m_parallaxDepth (parallaxDepth),
     m_material (material),
@@ -33,7 +34,7 @@ CImage::CImage (
     m_effects (std::move(effects)) {}
 
 const WallpaperEngine::Core::CObject* CImage::fromJSON (
-    const Wallpapers::CScene* scene, const json& data, const std::shared_ptr<const CContainer>& container,
+    std::shared_ptr <const Core::CProject> project, const json& data, const std::shared_ptr<const CContainer>& container,
     const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
     const CUserSettingVector3* scale, const CUserSettingVector3* angles, const json::const_iterator& effects_it,
     std::vector<int> dependencies
@@ -50,7 +51,7 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
 
     if (effects_it != data.end () && effects_it->is_array ()) {
         for (auto& cur : *effects_it) {
-            const auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, scene->getProject(), "visible", true);
+            const auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, *project, "visible", true);
 
             // TODO: USER CANNOT MODIFY VALUES ON THE FLY, BUT IT MIGHT BE INTERESTING TO SUPPORT THAT AT SOME POINT?
             // TODO: AT LEAST THE ORIGINAL SOFTWARE ALLOWS YOU TO DO THAT IN THE PREVIEW WINDOW
@@ -62,14 +63,14 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
 
             effects.push_back (
                 Objects::CEffect::fromJSON (
-                    cur, effectVisible, scene->getProject (), material, container
+                    cur, effectVisible, project, material, container
                 )
             );
         }
     }
 
     return new CImage (
-        scene,
+        project,
         material,
         visible,
         id,
@@ -79,8 +80,8 @@ const WallpaperEngine::Core::CObject* CImage::fromJSON (
         angles,
         jsonFindDefault<glm::vec2> (data, "size", glm::vec2 (0.0, 0.0)),
         jsonFindDefault<std::string> (data, "alignment", "center"),
-        jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "color", {1, 1, 1}),
-        jsonFindUserConfig<CUserSettingFloat> (data, scene->getProject(), "alpha", 1.0),
+        jsonFindUserConfig<CUserSettingVector3> (data, *project, "color", {1, 1, 1}),
+        jsonFindUserConfig<CUserSettingFloat> (data, *project, "alpha", 1.0),
         jsonFindDefault<float> (data, "brightness", 1.0),
         jsonFindDefault<uint32_t> (data, "colorBlendMode", 0),
         jsonFindDefault<glm::vec2> (data, "parallaxDepth", glm::vec2 (0.0, 0.0)),

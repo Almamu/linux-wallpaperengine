@@ -9,12 +9,8 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CWPSchemeHandler::CWPSchemeHandler(std::shared_ptr<const Core::CProject> project) :
-    m_project (project),
-    m_contents (nullptr),
-    m_filesize (0),
-    m_mimeType (),
-    m_offset (0) {
-    this->m_container = this->m_project->getWallpaper ()->getProject ().getContainer ();
+    m_project (project) {
+    this->m_container = this->m_project->getWallpaper ()->getProject ()->getContainer ();
 }
 
 bool CWPSchemeHandler::Open(CefRefPtr<CefRequest> request,

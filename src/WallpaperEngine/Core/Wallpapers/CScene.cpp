@@ -11,7 +11,7 @@ using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Wallpapers;
 
 CScene::CScene (
-    const CProject& project, std::shared_ptr<const CContainer> container, const Scenes::CCamera* camera,
+    std::shared_ptr <const CProject> project, std::shared_ptr<const CContainer> container, const Scenes::CCamera* camera,
     glm::vec3 ambientColor, const CUserSettingBoolean* bloom, const CUserSettingFloat* bloomStrength,
     const CUserSettingFloat* bloomThreshold, bool cameraFade, bool cameraParallax, float cameraParallaxAmount,
     float cameraParallaxDelay, float cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake,
@@ -39,7 +39,10 @@ CScene::CScene (
     m_orthogonalProjection (orthogonalProjection),
     m_skylightColor (skylightColor) {}
 
-const CScene* CScene::fromFile (const std::string& filename, const CProject& project, const std::shared_ptr<const CContainer>& container) {
+std::shared_ptr <const CScene> CScene::fromFile (
+    const std::string& filename, std::shared_ptr <const Core::CProject> project,
+    const std::shared_ptr<const CContainer>& container
+) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto general_it = jsonFindRequired (content, "general", "Scenes must have a general section");
@@ -48,13 +51,13 @@ const CScene* CScene::fromFile (const std::string& filename, const CProject& pro
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA
     // PARALLAX ARE PRESENT
 
-    auto* scene = new CScene (
+    auto scene = std::make_shared <CScene> (
         project, container,
         Scenes::CCamera::fromJSON (jsonFindRequired (content, "camera", "Scenes must have a defined camera")),
         jsonFindDefault<glm::vec3> (*general_it, "ambientcolor", glm::vec3 (0, 0, 0)),
-        jsonFindUserConfig<CUserSettingBoolean> (*general_it, project, "bloom", false),
-        jsonFindUserConfig<CUserSettingFloat> (*general_it, project, "bloomstrength", 0.0),
-        jsonFindUserConfig<CUserSettingFloat> (*general_it, project, "bloomthreshold", 0.0),
+        jsonFindUserConfig<CUserSettingBoolean> (*general_it, *project, "bloom", false),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, *project, "bloomstrength", 0.0),
+        jsonFindUserConfig<CUserSettingFloat> (*general_it, *project, "bloomthreshold", 0.0),
         jsonFindDefault<bool> (*general_it, "camerafade", false),
         jsonFindDefault<bool> (*general_it, "cameraparallax", true),
         jsonFindDefault<float> (*general_it, "cameraparallaxamount", 1.0f),
@@ -65,13 +68,13 @@ const CScene* CScene::fromFile (const std::string& filename, const CProject& pro
         jsonFindDefault<float> (*general_it, "camerashakeamplitude", 0.0f),
         jsonFindDefault<float> (*general_it, "camerashakeroughness", 0.0f),
         jsonFindDefault<float> (*general_it, "camerashakespeed", 0.0f),
-        jsonFindUserConfig<CUserSettingVector3> (*general_it, project, "clearcolor", {1, 1, 1}),
+        jsonFindUserConfig<CUserSettingVector3> (*general_it, *project, "clearcolor", {1, 1, 1}),
         Scenes::CProjection::fromJSON (jsonFindRequired (*general_it, "orthogonalprojection", "General section must have orthogonal projection info")),
         jsonFindDefault<glm::vec3> (*general_it, "skylightcolor", glm::vec3 (0, 0, 0))
     );
 
     for (const auto& cur : *objects_it)
-        scene->insertObject (CObject::fromJSON (cur, scene, container));
+        scene->insertObject (CObject::fromJSON (cur, project, container));
 
     return scene;
 }

@@ -19,7 +19,7 @@ extern "C"
 namespace WallpaperEngine::Core::Wallpapers {
 class CWeb : public CWallpaper {
   public:
-    CWeb (std::string filename, const CProject& project);
+    CWeb (std::string filename, std::shared_ptr <const CProject> project);
 
     const std::string& getFilename () const;
 

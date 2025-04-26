@@ -5,11 +5,9 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyText* CPropertyText::fromJSON (const json& data, std::string name) {
+std::shared_ptr<CPropertyText> CPropertyText::fromJSON (const json& data, std::string name) {
     //TODO: VALIDATE THIS IS RIGHT
-    const auto text = data.find ("type");
-
-    return new CPropertyText (std::move(name), *text);
+    return std::make_shared <CPropertyText> (std::move(name), *data.find ("type"));
 }
 
 std::string CPropertyText::dump () const {

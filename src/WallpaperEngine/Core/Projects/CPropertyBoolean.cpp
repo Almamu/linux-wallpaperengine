@@ -6,8 +6,8 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyBoolean* CPropertyBoolean::fromJSON (const json& data, std::string name) {
-    return new CPropertyBoolean (
+std::shared_ptr<CPropertyBoolean> CPropertyBoolean::fromJSON (const json& data, std::string name) {
+    return std::make_shared <CPropertyBoolean> (
         jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
         std::move(name),
         jsonFindDefault<std::string> (data, "text", "")

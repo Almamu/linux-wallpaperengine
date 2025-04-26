@@ -17,11 +17,11 @@ class CUserSettingFloat : public CUserSettingValue {
 
   private:
     CUserSettingFloat (
-        bool hasCondition, float defaultValue, const Projects::CProperty* source, std::string expectedValue);
+        bool hasCondition, float defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue);
 
     const double m_default;
     const bool m_hasCondition;
-    const Projects::CProperty* m_source;
+    const std::shared_ptr <const Projects::CProperty> m_source;
     const std::string m_expectedValue;
 };
 } // namespace WallpaperEngine::Core::UserSettings

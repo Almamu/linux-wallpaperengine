@@ -13,7 +13,7 @@ extern "C" {
 namespace WallpaperEngine::Core::Wallpapers {
 class CVideo : public CWallpaper {
   public:
-    CVideo (std::string filename, const CProject& project);
+    CVideo (std::string filename, std::shared_ptr <const CProject> project);
 
     const std::string& getFilename () const;
 

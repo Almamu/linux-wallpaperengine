@@ -7,17 +7,17 @@
 using namespace WallpaperEngine::Core::Objects;
 
 CSound::CSound (
-    const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
-    const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles, bool repeat,
-    std::vector<std::string> sounds, std::vector<int> dependencies
+    std::shared_ptr <const Core::CProject> project, const CUserSettingBoolean* visible, int id, std::string name,
+    const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
+    bool repeat, std::vector<std::string> sounds, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
+    CObject (project, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
     m_repeat (repeat),
     m_sounds (std::move(sounds)) {}
 
 const WallpaperEngine::Core::CObject* CSound::fromJSON (
-    const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible, int id,
-    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
+    std::shared_ptr <const Core::CProject> project, const json& data, const CUserSettingBoolean* visible,
+    int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
     const CUserSettingVector3* angles, std::vector<int> dependencies
 ) {
     // TODO: PARSE AUDIO VOLUME
@@ -31,7 +31,7 @@ const WallpaperEngine::Core::CObject* CSound::fromJSON (
         sounds.push_back (cur);
 
     return new CSound (
-        scene,
+        project,
         visible,
         id,
         name,

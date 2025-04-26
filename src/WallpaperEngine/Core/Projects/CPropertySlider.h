@@ -12,8 +12,9 @@ using json = nlohmann::json;
  */
 class CPropertySlider final : public CProperty {
   public:
-    static CPropertySlider* fromJSON (const json& data, const std::string& name);
+    CPropertySlider (float value, const std::string& name, const std::string& text, float min, float max, float step);
 
+    static std::shared_ptr<CPropertySlider> fromJSON (const json& data, const std::string& name);
     /**
      * @return The slider's minimum value
      */
@@ -28,10 +29,9 @@ class CPropertySlider final : public CProperty {
     [[nodiscard]] const float& getStep () const;
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
-    [[nodiscard]] const char* getType () const override;
 
+    [[nodiscard]] const char* getType () const override;
   private:
-    CPropertySlider (float value, const std::string& name, const std::string& text, float min, float max, float step);
 
     /** Minimum value */
     const float m_min;

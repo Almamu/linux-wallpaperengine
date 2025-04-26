@@ -8,7 +8,7 @@ using json = nlohmann::json;
 /**
  * Represents different combo values
  */
-class CPropertyComboValue {
+struct CPropertyComboValue {
   public:
     const std::string label;
     const std::string value;
@@ -23,20 +23,20 @@ class CPropertyComboValue {
  */
 class CPropertyCombo final : public CProperty {
   public:
-    static CPropertyCombo* fromJSON (const json& data, std::string name);
+    static std::shared_ptr<CPropertyCombo> fromJSON (const json& data, std::string name);
 
-    ~CPropertyCombo () override;
+    CPropertyCombo (
+        std::string name, std::string text, const std::string& defaultValue,
+        std::vector<CPropertyComboValue> values);
 
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
     int translateValueToIndex (const std::string& value) const;
+
     [[nodiscard]] const char* getType () const override;
 
   private:
-    CPropertyCombo (
-        std::string name, std::string text, const std::string& defaultValue, std::vector<const CPropertyComboValue*> values);
-
     /** List of values available to select */
-    const std::vector<const CPropertyComboValue*> m_values;
+    const std::vector<CPropertyComboValue> m_values;
 };
 } // namespace WallpaperEngine::Core::Projects

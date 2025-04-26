@@ -30,15 +30,15 @@ class CWallpaper {
         return typeid(*this) == typeid(T);
     }
 
-    const CProject& getProject () const;
+    std::shared_ptr <const CProject> getProject () const;
 
   protected:
     friend class CProject;
 
-    explicit CWallpaper (const CProject& project);
+    explicit CWallpaper (std::shared_ptr <const CProject> project);
     virtual ~CWallpaper() = default;
 
   private:
-    const CProject& m_project;
+    std::shared_ptr <const CProject> m_project;
 };
 } // namespace WallpaperEngine::Core

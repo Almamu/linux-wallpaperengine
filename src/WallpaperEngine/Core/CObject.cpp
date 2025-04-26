@@ -17,7 +17,7 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CObject::CObject (
-    const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
+    std::shared_ptr <const Core::CProject> project, const CUserSettingBoolean* visible, int id, std::string name,
     const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
     std::vector<int> dependencies
 ) :
@@ -27,17 +27,17 @@ CObject::CObject (
     m_origin (origin),
     m_scale (scale),
     m_angles (angles),
-    m_scene (scene),
+    m_project (project),
     m_dependencies (std::move(dependencies)) {}
 
 const CObject* CObject::fromJSON (
-    const json& data, const Wallpapers::CScene* scene, const std::shared_ptr<const CContainer>& container
+    const json& data, std::shared_ptr <const Core::CProject> project, const std::shared_ptr<const CContainer>& container
 ) {
     const auto id = jsonFindRequired <int> (data, "id", "Objects must have id");
-    const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, scene->getProject(), "visible", true);
-    const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "origin", {0, 0, 0});
-    const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "scale", {1, 1, 1});
-    const auto angles_val = jsonFindUserConfig<CUserSettingVector3> (data, scene->getProject(), "angles", glm::vec3 (0, 0, 0));
+    const auto visible = jsonFindUserConfig<CUserSettingBoolean> (data, *project, "visible", true);
+    const auto origin = jsonFindUserConfig<CUserSettingVector3> (data, *project, "origin", {0, 0, 0});
+    const auto scale = jsonFindUserConfig<CUserSettingVector3> (data, *project, "scale", {1, 1, 1});
+    const auto angles_val = jsonFindUserConfig<CUserSettingVector3> (data, *project, "angles", glm::vec3 (0, 0, 0));
     const auto name = jsonFindRequired <std::string> (data, "name", "Objects must have name");
     const auto effects_it = data.find ("effects");
     const auto dependencies_it = data.find ("dependencies");
@@ -59,14 +59,14 @@ const CObject* CObject::fromJSON (
 
     if (image_it != data.end () && !image_it->is_null ()) {
         object = Objects::CImage::fromJSON (
-            scene, data, container, visible, id, name, origin, scale, angles_val, effects_it, dependencies);
+            project, data, container, visible, id, name, origin, scale, angles_val, effects_it, dependencies);
     } else if (sound_it != data.end () && !sound_it->is_null ()) {
-        object = Objects::CSound::fromJSON (scene, data, visible, id, name, origin, scale, angles_val, dependencies);
+        object = Objects::CSound::fromJSON (project, data, visible, id, name, origin, scale, angles_val, dependencies);
     } else if (particle_it != data.end () && !particle_it->is_null ()) {
         /// TODO: XXXHACK -- TO REMOVE WHEN PARTICLE SUPPORT IS PROPERLY IMPLEMENTED
         try {
             object = Objects::CParticle::fromFile (
-                scene, particle_it->get<std::string> (), container, visible, id, name, origin, angles_val, scale, dependencies);
+                project, particle_it->get<std::string> (), container, visible, id, name, origin, angles_val, scale, dependencies);
         } catch (std::runtime_error&) {
             return nullptr;
         }
@@ -107,8 +107,8 @@ bool CObject::isVisible () const {
     return this->m_visible->getBool ();
 }
 
-const Wallpapers::CScene* CObject::getScene () const {
-    return this->m_scene;
+std::shared_ptr <const CProject> CObject::getProject () const {
+    return this->m_project;
 }
 
 int CObject::getId () const {

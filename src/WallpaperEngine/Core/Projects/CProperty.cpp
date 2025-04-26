@@ -10,7 +10,7 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CProperty* CProperty::fromJSON (const json& data, const std::string& name) {
+std::shared_ptr<CProperty> CProperty::fromJSON (const json& data, const std::string& name) {
     const auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
 
     if (*type == "color")

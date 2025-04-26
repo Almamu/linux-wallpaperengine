@@ -27,13 +27,14 @@ using namespace WallpaperEngine::Core::UserSettings;
 class CEffect {
   public:
     CEffect (
-        std::string name, std::string description, std::string group, std::string preview, const CProject& project,
-        const CUserSettingBoolean* visible, std::vector<std::string> dependencies,
-        std::vector<const Effects::CFBO*> fbos, std::vector<const Images::CMaterial*> materials);
+        std::string name, std::string description, std::string group, std::string preview,
+        std::shared_ptr <const Core::CProject>, const CUserSettingBoolean* visible,
+        std::vector<std::string> dependencies, std::vector<const Effects::CFBO*> fbos,
+        std::vector<const Images::CMaterial*> materials);
 
     static const CEffect* fromJSON (
-        const json& data, const CUserSettingBoolean* visible, const CProject& object, const Images::CMaterial* material,
-        const std::shared_ptr<const CContainer>& container);
+        const json& data, const CUserSettingBoolean* visible, std::shared_ptr <const Core::CProject> project,
+        const Images::CMaterial* material, const std::shared_ptr<const CContainer>& container);
 
     /**
      * @return List of dependencies for the effect to work
@@ -66,7 +67,7 @@ class CEffect {
 
   protected:
     static std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constantsFromJSON (
-        const json::const_iterator& constants_it, const CProject& project);
+        const json::const_iterator& constants_it, std::shared_ptr <const Core::CProject> project);
     static std::map<std::string, int> combosFromJSON (const json::const_iterator& combos_it);
     static std::vector<const Effects::CFBO*> fbosFromJSON (const json::const_iterator& fbos_it);
     static std::vector<std::string> dependenciesFromJSON (const json::const_iterator& dependencies_it);
@@ -74,7 +75,8 @@ class CEffect {
         const json::const_iterator& passes_it, const std::string& name,
         const std::shared_ptr<const CContainer>& container, std::map<int, Images::CMaterial::OverrideInfo>);
     static std::map<int, Images::CMaterial::OverrideInfo> overridesFromJSON (
-        const json::const_iterator& passes_it, const Images::CMaterial* material, const CProject& project);
+        const json::const_iterator& passes_it, const Images::CMaterial* material,
+        std::shared_ptr <const Core::CProject> project);
 
   private:
     /** Effect's name */
@@ -88,7 +90,7 @@ class CEffect {
     /** If the effect is visible or not */
     const UserSettings::CUserSettingBoolean* m_visible;
     /** Project this effect is part of */
-    const CProject& m_project;
+    std::shared_ptr <const Core::CProject> m_project;
 
     /** List of dependencies for the effect */
     const std::vector<std::string> m_dependencies;

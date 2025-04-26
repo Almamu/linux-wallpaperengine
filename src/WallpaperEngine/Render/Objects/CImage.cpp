@@ -236,7 +236,7 @@ void CImage::setup () {
         new CEffect (
             this,
             new Core::Objects::CEffect (
-                "", "", "", "", this->m_image->getScene ()->getProject (),
+                "", "", "", "", this->m_image->getProject (),
                 Core::UserSettings::CUserSettingBoolean::fromScalar (true),
                 {}, {}, {})),
         this->m_image->getMaterial ()
@@ -272,7 +272,7 @@ void CImage::setup () {
             new CEffect (
                 this,
                 new Core::Objects::CEffect (
-                    "", "", "", "", this->m_image->getScene ()->getProject (),
+                    "", "", "", "", this->m_image->getProject (),
                     Core::UserSettings::CUserSettingBoolean::fromScalar (true), {}, {}, {}
                 )
             ),

@@ -20,7 +20,7 @@ class CSound : public CObject {
 
   public:
     static const CObject* fromJSON (
-        const Wallpapers::CScene* scene, const json& data, const CUserSettingBoolean* visible,
+        std::shared_ptr <const Core::CProject> project, const json& data, const CUserSettingBoolean* visible,
         int id, const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
         const CUserSettingVector3* angles, std::vector<int> dependencies);
 
@@ -35,7 +35,7 @@ class CSound : public CObject {
 
   protected:
     CSound (
-        const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
+        std::shared_ptr <const Core::CProject> project, const CUserSettingBoolean* visible, int id, std::string name,
         const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
         bool repeat, std::vector<std::string> sounds, std::vector<int> dependencies);
 
@@ -43,6 +43,6 @@ class CSound : public CObject {
     /** If the sounds should repeat or not */
     bool m_repeat = false;
     /** The list of sounds to play */
-    std::vector<std::string> m_sounds;
+    std::vector<std::string> m_sounds = {};
 };
 } // namespace WallpaperEngine::Core::Objects

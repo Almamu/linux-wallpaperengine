@@ -21,11 +21,11 @@ glm::vec3 ParseColor (std::string value) {
     return WallpaperEngine::Core::aToColorf (value);
 }
 
-CPropertyColor* CPropertyColor::fromJSON (const json& data, std::string name) {
+std::shared_ptr<CPropertyColor> CPropertyColor::fromJSON (const json& data, std::string name) {
     const auto value = jsonFindRequired <std::string> (data, "value", "Color property must have a value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
 
-    return new CPropertyColor (value, std::move(name), text);
+    return std::make_shared <CPropertyColor> (value, std::move(name), text);
 }
 
 void CPropertyColor::set (const std::string& value) {

@@ -4,14 +4,14 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertySlider* CPropertySlider::fromJSON (const json& data, const std::string& name) {
+std::shared_ptr<CPropertySlider> CPropertySlider::fromJSON (const json& data, const std::string& name) {
     const auto value = data.find ("value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
     const auto min = jsonFindDefault (data, "min", 0.0f);
     const auto max = jsonFindDefault (data, "max", 0.0f);
     const auto step = jsonFindDefault (data, "step", 0.0f);
 
-    return new CPropertySlider (*value, name, text, min, max, step);
+    return std::make_shared <CPropertySlider> (*value, name, text, min, max, step);
 }
 
 const float& CPropertySlider::getMinValue () const {

@@ -29,7 +29,8 @@ class CObject {
     friend class Wallpapers::CScene;
 
   public:
-    static const CObject* fromJSON (const json& data, const Wallpapers::CScene* scene, const std::shared_ptr<const CContainer>& container);
+    static const CObject* fromJSON ( const json& data, std::shared_ptr <const Core::CProject> project,
+        const std::shared_ptr<const CContainer>& container);
 
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {
@@ -60,11 +61,11 @@ class CObject {
     [[nodiscard]] const std::string& getName () const;
 
     [[nodiscard]] bool isVisible () const;
-    [[nodiscard]] const Wallpapers::CScene* getScene () const;
+    [[nodiscard]] std::shared_ptr <const Core::CProject> getProject () const;
 
   protected:
     CObject (
-        const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
+        std::shared_ptr <const Core::CProject> scene, const CUserSettingBoolean* visible, int id, std::string name,
         const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
         std::vector<int> dependencies);
 
@@ -80,6 +81,6 @@ class CObject {
 
     const std::vector<int> m_dependencies;
 
-    const Wallpapers::CScene* m_scene;
+    const std::shared_ptr <const Core::CProject> m_project;
 };
 } // namespace WallpaperEngine::Core

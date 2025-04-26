@@ -72,7 +72,7 @@ class CWallpaperApplication {
      * @param bg
      * @return
      */
-    [[nodiscard]] std::unique_ptr<Core::CProject> loadBackground (const std::string& bg);
+    [[nodiscard]] std::shared_ptr<Core::CProject> loadBackground (const std::string& bg);
     /**
      * Prepares all background's values and updates their properties if required
      */

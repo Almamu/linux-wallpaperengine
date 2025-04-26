@@ -16,7 +16,7 @@ using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CUserSettingBoolean::CUserSettingBoolean (
-    bool hasCondition, bool defaultValue, const Projects::CProperty* source, std::string expectedValue
+    bool hasCondition, bool defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue
 ) :
     CUserSettingValue (),
     m_hasCondition (hasCondition),
@@ -41,7 +41,7 @@ CUserSettingBoolean::CUserSettingBoolean (
 
 const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data, const CProject& project) {
     bool hasCondition = false;
-    const Projects::CProperty* sourceProperty = nullptr;
+    std::shared_ptr <const Projects::CProperty> sourceProperty = nullptr;
     bool defaultValue;
     std::string source;
     std::string expectedValue;
