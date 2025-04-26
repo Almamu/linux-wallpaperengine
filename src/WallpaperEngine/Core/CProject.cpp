@@ -21,7 +21,6 @@ CProject::CProject (
     m_workshopid(std::move(workshopid)),
     m_title (std::move(title)),
     m_type (std::move(type)),
-    m_wallpaper (nullptr),
     m_container (std::move(container)),
     m_properties (properties),
     m_supportsaudioprocessing (supportsaudioprocessing) {}
