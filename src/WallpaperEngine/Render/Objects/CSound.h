@@ -20,8 +20,6 @@ class CSound final : public CObject {
     void render () override;
 
   protected:
-    static const std::string Type;
-
     void load ();
 
   private:

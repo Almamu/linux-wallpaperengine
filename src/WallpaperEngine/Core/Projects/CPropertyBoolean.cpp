@@ -31,7 +31,9 @@ std::string CPropertyBoolean::dump () const {
     return ss.str ();
 }
 
-CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
-    CProperty (std::move(name), Type, std::move(text)) {}
+const char* CPropertyBoolean::getType () const {
+    return "bool";
+}
 
-const std::string CPropertyBoolean::Type = "bool";
+CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
+    CProperty (std::move(name), std::move(text)) {}

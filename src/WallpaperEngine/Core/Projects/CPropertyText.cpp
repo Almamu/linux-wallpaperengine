@@ -26,7 +26,9 @@ void CPropertyText::set (const std::string& value) {
     this->m_text = value;
 }
 
-CPropertyText::CPropertyText (std::string name, std::string text) :
-    CProperty (std::move(name), Type, std::move(text)) {}
+const char* CPropertyText::getType () const {
+    return "text";
+}
 
-const std::string CPropertyText::Type = "text";
+CPropertyText::CPropertyText (std::string name, std::string text) :
+    CProperty (std::move(name), std::move(text)) {}

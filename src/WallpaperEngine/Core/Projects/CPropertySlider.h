@@ -28,8 +28,7 @@ class CPropertySlider final : public CProperty {
     [[nodiscard]] const float& getStep () const;
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
-
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
     CPropertySlider (float value, const std::string& name, const std::string& text, float min, float max, float step);

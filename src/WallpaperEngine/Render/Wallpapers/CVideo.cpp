@@ -16,7 +16,7 @@ CVideo::CVideo (
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (video, Type, context, audioContext, scalingMode, clampMode),
+    CWallpaper (video, context, audioContext, scalingMode, clampMode),
     m_mpvGl (nullptr),
     m_paused (false),
     m_width (16),
@@ -141,5 +141,3 @@ int CVideo::getWidth () const {
 int CVideo::getHeight () const {
     return this->m_height;
 }
-
-const std::string CVideo::Type = "video";

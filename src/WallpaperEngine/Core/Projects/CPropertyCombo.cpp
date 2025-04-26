@@ -40,7 +40,7 @@ CPropertyCombo* CPropertyCombo::fromJSON (const json& data, std::string name) {
 CPropertyCombo::CPropertyCombo (
     std::string name, std::string text, const std::string& defaultValue, std::vector<const CPropertyComboValue*> values
 ) :
-    CProperty (std::move(name), Type, std::move(text)),
+    CProperty (std::move(name), std::move(text)),
     m_values (std::move(values)) {
     this->set (defaultValue);
 }
@@ -108,4 +108,6 @@ int CPropertyCombo::translateValueToIndex (const std::string& value) const {
     return index;
 }
 
-const std::string CPropertyCombo::Type = "combo";
+const char* CPropertyCombo::getType () const {
+    return "combo";
+}

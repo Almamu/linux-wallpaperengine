@@ -28,8 +28,6 @@ class CVideo final : public CWallpaper {
 
     friend class CWallpaper;
 
-    static const std::string Type;
-
   private:
     mpv_handle* m_mpv;
     mpv_render_context* m_mpvGl;

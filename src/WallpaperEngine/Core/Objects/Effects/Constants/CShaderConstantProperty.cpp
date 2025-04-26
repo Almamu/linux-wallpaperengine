@@ -3,13 +3,10 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantProperty::CShaderConstantProperty (const CProperty* property) :
-    CShaderConstant (Type) {
+CShaderConstantProperty::CShaderConstantProperty (const CProperty* property) {
     property->connectOutgoing (this);
 }
 
 std::string CShaderConstantProperty::toString () const {
     return "no string representation yet!";
 }
-
-const std::string CShaderConstantProperty::Type = "property";

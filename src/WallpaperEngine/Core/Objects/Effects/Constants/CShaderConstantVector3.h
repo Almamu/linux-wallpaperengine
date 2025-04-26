@@ -13,11 +13,6 @@ class CShaderConstantVector3 : public CShaderConstant {
   public:
     explicit CShaderConstantVector3 (glm::vec3 value);
 
-    /**
-     * Type string indicator
-     */
-    static const std::string Type;
-
     [[nodiscard]] std::string toString () const override;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

@@ -2,8 +2,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantVector3::CShaderConstantVector3 (glm::vec3 value) :
-    CShaderConstant (Type) {
+CShaderConstantVector3::CShaderConstantVector3 (glm::vec3 value) {
     this->update (value);
 }
 
@@ -19,5 +18,3 @@ std::string CShaderConstantVector3::toString () const {
 
     return result;
 }
-
-const std::string CShaderConstantVector3::Type = "vec3";

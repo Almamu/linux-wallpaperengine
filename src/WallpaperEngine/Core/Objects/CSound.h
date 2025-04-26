@@ -39,11 +39,6 @@ class CSound : public CObject {
         const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
         bool repeat, std::vector<std::string> sounds, std::vector<int> dependencies);
 
-    /**
-     * Type value used to differentiate the different types of objects in a background
-     */
-    static const std::string Type;
-
   private:
     /** If the sounds should repeat or not */
     bool m_repeat;

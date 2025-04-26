@@ -93,11 +93,6 @@ class CImage : public CObject {
         bool fullscreen, bool passthrough, bool autosize, std::vector<const Objects::CEffect*> effects,
         std::vector<int> dependencies);
 
-    /**
-     * Type value used to differentiate the different types of objects in a background
-     */
-    static const std::string Type;
-
   private:
     /** The image's size */
     const glm::vec2 m_size;

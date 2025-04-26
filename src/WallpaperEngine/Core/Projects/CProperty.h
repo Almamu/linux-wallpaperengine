@@ -19,17 +19,23 @@ class CProperty : public CDynamicValue {
     static CProperty* fromJSON (const json& data, const std::string& name);
 
     template <class T> [[nodiscard]] const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] bool is () const {
-        return this->m_type == T::Type;
+        return typeid (*this) == typeid(T);
     }
 
     /**
@@ -47,9 +53,9 @@ class CProperty : public CDynamicValue {
      */
     [[nodiscard]] const std::string& getName () const;
     /**
-     * @return Type of the property
+     * @return Textual type representation of this property
      */
-    [[nodiscard]] const std::string& getType () const;
+    [[nodiscard]] virtual const char* getType () const = 0;
     /**
      * @return Text of the property
      */
@@ -64,12 +70,10 @@ class CProperty : public CDynamicValue {
   protected:
     void propagate () const override;
 
-    CProperty (std::string name, std::string type, std::string text);
+    CProperty (std::string name, std::string text);
 
     /** Functions to call when this property's value changes */
     mutable std::vector<function_type> m_subscriptions;
-    /** Type of property */
-    const std::string m_type;
     /** Name of the property */
     const std::string m_name;
     /** Description of the property for the user */

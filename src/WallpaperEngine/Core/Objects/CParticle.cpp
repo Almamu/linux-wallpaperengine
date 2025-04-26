@@ -51,7 +51,7 @@ CParticle::CParticle (
     const std::vector<const Particles::CEmitter*>& emitters,
     const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, name, Type, origin, scale, angles, std::move(dependencies)),
+    CObject (scene, visible, id, name, origin, scale, angles, std::move(dependencies)),
     m_starttime (starttime),
     m_maxcount (maxcount),
     m_controlpoints (controlpoints),
@@ -69,5 +69,3 @@ const std::vector<const Particles::CControlPoint*>& CParticle::getControlPoints 
 const std::vector<const Particles::CInitializer*>& CParticle::getInitializers () const {
     return this->m_initializers;
 }
-
-const std::string CParticle::Type = "particle";

@@ -38,8 +38,6 @@ class CScene final : public CWallpaper {
 
     friend class CWallpaper;
 
-    static const std::string Type;
-
   private:
     Render::CObject* createObject (const Core::CObject* object);
 

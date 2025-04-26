@@ -18,7 +18,7 @@ using namespace WallpaperEngine::Core::UserSettings;
 CUserSettingBoolean::CUserSettingBoolean (
     bool hasCondition, bool defaultValue, const Projects::CProperty* source, std::string expectedValue
 ) :
-    CUserSettingValue (Type),
+    CUserSettingValue (),
     m_hasCondition (hasCondition),
     m_source (source),
     m_expectedValue (std::move(expectedValue)) {
@@ -91,5 +91,3 @@ const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& 
 const CUserSettingBoolean* CUserSettingBoolean::fromScalar (const bool value) {
     return new CUserSettingBoolean (false, value, nullptr, "");
 }
-
-std::string CUserSettingBoolean::Type = "boolean";

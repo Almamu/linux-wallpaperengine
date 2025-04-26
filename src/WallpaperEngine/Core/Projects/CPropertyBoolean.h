@@ -12,12 +12,9 @@ class CPropertyBoolean final : public CProperty {
   public:
     static CPropertyBoolean* fromJSON (const json& data, std::string name);
 
-    /** @inheritdoc */
     [[nodiscard]] std::string dump () const override;
-    /** @inheritdoc */
     void set (const std::string& value) override;
-
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
     CPropertyBoolean (bool value, std::string name, std::string text);

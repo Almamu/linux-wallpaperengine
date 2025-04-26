@@ -5,7 +5,7 @@
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene* scene, const Core::Objects::CSound* sound) :
-    CObject (scene, Type, sound),
+    CObject (scene, sound),
     m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled)
         this->load ();
@@ -38,5 +38,3 @@ void CSound::load () {
 }
 
 void CSound::render () {}
-
-const std::string CSound::Type = "sound";

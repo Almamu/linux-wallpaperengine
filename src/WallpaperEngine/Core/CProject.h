@@ -26,7 +26,7 @@ class CProject {
         bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties);
     ~CProject();
 
-    static std::shared_ptr<CProject> fromFile (const std::string& filename, std::shared_ptr<const CContainer> container);
+    static std::unique_ptr<CProject> fromFile (const std::string& filename, std::shared_ptr<const CContainer> container);
 
     [[nodiscard]] const CWallpaper* getWallpaper () const;
     [[nodiscard]] const std::string& getTitle () const;

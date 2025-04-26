@@ -53,13 +53,15 @@ void CPropertySlider::set (const std::string& value) {
     this->update (newValue);
 }
 
+const char* CPropertySlider::getType () const {
+    return "slider";
+}
+
 CPropertySlider::CPropertySlider (float value, const std::string& name, const std::string& text, float min,
                                   float max, float step) :
-    CProperty (name, Type, text),
+    CProperty (name, text),
     m_min (min),
     m_max (max),
     m_step (step) {
     this->update (value);
 }
-
-const std::string CPropertySlider::Type = "slider";

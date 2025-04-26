@@ -10,23 +10,26 @@ using namespace WallpaperEngine::Core::DynamicValues;
 class CUserSettingValue : public CDynamicValue {
   public:
     template <class T> [[nodiscard]] const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] bool is () const {
-        return this->m_type == T::Type;
+        return typeid (*this) == typeid(T);
     }
 
   protected:
-    explicit CUserSettingValue (std::string type);
-
-  private:
-    const std::string m_type;
+    virtual ~CUserSettingValue() = default;
 };
 } // namespace WallpaperEngine::Core::UserSettings

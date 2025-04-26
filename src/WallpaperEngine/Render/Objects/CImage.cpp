@@ -5,7 +5,7 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
 
 CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
-    Render::CObject (scene, Type, image),
+    Render::CObject (scene, image),
     m_texture (nullptr),
     m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE),
@@ -481,5 +481,3 @@ GLuint CImage::getTexCoordCopy () const {
 GLuint CImage::getTexCoordPass () const {
     return this->m_texcoordPass;
 }
-
-const std::string CImage::Type = "image";

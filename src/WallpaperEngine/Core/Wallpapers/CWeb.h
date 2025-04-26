@@ -29,8 +29,6 @@ namespace WallpaperEngine::Core::Wallpapers
 
         const std::string m_filename;
 
-        static const std::string Type;
-
     private:
     };
 }

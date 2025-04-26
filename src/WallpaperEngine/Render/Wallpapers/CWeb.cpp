@@ -15,7 +15,7 @@ CWeb::CWeb (
     CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (web, Type, context, audioContext, scalingMode, clampMode),
+    CWallpaper (web, context, audioContext, scalingMode, clampMode),
     m_browserContext (browserContext),
     m_browser (),
     m_client (),
@@ -122,5 +122,3 @@ CWeb::~CWeb () {
 
     delete this->m_renderHandler;
 }
-
-const std::string CWeb::Type = "web";

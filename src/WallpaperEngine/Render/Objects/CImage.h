@@ -56,8 +56,6 @@ class CImage final : public CObject {
     void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput);
 
   protected:
-    static const std::string Type;
-
     void setupPasses ();
 
     void updateScreenSpacePosition ();

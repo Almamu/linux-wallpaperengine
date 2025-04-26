@@ -13,8 +13,7 @@ class CPropertyText final : public CProperty {
     static CPropertyText* fromJSON (const json& data, std::string name);
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
-
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
     CPropertyText (std::string name, std::string text);

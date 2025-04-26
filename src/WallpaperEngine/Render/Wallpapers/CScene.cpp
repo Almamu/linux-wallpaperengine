@@ -21,7 +21,7 @@ CScene::CScene (
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (scene, Type, context, audioContext, scalingMode, clampMode),
+    CWallpaper (scene, context, audioContext, scalingMode, clampMode),
     m_mousePosition (),
     m_mousePositionLast (),
     m_parallaxDisplacement () {
@@ -271,5 +271,3 @@ glm::vec2* CScene::getParallaxDisplacement () {
 const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const {
     return this->m_objectsByRenderOrder;
 }
-
-const std::string CScene::Type = "scene";

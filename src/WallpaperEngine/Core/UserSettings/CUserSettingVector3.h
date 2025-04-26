@@ -16,7 +16,6 @@ class CUserSettingVector3 : public CUserSettingValue {
 
     static const CUserSettingVector3* fromJSON (const nlohmann::json& data, const CProject& project);
     static const CUserSettingVector3* fromScalar (glm::vec3 value);
-    static std::string Type;
 
   private:
     CUserSettingVector3 (

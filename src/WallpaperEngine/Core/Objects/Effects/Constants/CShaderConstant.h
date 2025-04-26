@@ -10,33 +10,31 @@ namespace WallpaperEngine::Core::Objects::Effects::Constants {
  */
 class CShaderConstant : public DynamicValues::CDynamicValue {
   public:
-    explicit CShaderConstant (std::string type);
+    virtual ~CShaderConstant () = default;
 
     template <class T> [[nodiscard]] const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] bool is () const {
-        return this->m_type == T::Type;
+        return typeid (*this) == typeid(T);
     }
-
-    /**
-     * @return The type name of this constant
-     */
-    [[nodiscard]] const std::string& getType () const;
 
     /**
      * @return String representation of the constant's value
      */
     [[nodiscard]] virtual std::string toString () const = 0;
-
-  private:
-    const std::string m_type;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

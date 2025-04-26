@@ -30,21 +30,27 @@ class CContextAware;
 
 class CWallpaper : public Helpers::CContextAware {
   public:
-    template <class T> [[nodiscard]]const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] bool is () const {
-        return this->m_type == T::Type;
+        return typeid (*this) == typeid(T);
     }
 
-    ~CWallpaper () override;
+    virtual ~CWallpaper () override;
 
     /**
      * Performs a render pass of the wallpaper
@@ -154,7 +160,7 @@ class CWallpaper : public Helpers::CContextAware {
 
   protected:
     CWallpaper (
-        const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
+        const Core::CWallpaper* wallpaperData, CRenderContext& context, CAudioContext& audioContext,
         const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
@@ -189,8 +195,6 @@ class CWallpaper : public Helpers::CContextAware {
     GLuint m_destFramebuffer;
     /** Setups OpenGL's shaders for this wallpaper backbuffer */
     void setupShaders ();
-    /** The type of background this wallpaper is */
-    std::string m_type;
     /** List of FBOs registered for this wallpaper */
     std::map<std::string, std::shared_ptr<const CFBO>> m_fbos;
     /** Audio context that is using this wallpaper */

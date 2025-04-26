@@ -18,7 +18,7 @@ CImage::CImage (
     const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode, glm::vec2 parallaxDepth, bool fullscreen,
     bool passthrough, bool autosize, std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies
 ) :
-    CObject (scene, visible, id, std::move(name), Type, origin, scale, angles, std::move(dependencies)),
+    CObject (scene, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
     m_size (size),
     m_parallaxDepth (parallaxDepth),
     m_material (material),
@@ -139,5 +139,3 @@ bool CImage::isAutosize () const {
 const std::vector<const CEffect*>& CImage::getEffects () const {
     return this->m_effects;
 }
-
-const std::string CImage::Type = "image";

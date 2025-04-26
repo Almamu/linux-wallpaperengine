@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Core::UserSettings;
 CUserSettingFloat::CUserSettingFloat (
     bool hasCondition, float defaultValue, const Projects::CProperty* source, std::string expectedValue
 ) :
-    CUserSettingValue (Type),
+    CUserSettingValue (),
     m_default (defaultValue),
     m_hasCondition (hasCondition),
     m_source (source),
@@ -85,5 +85,3 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
 const CUserSettingFloat* CUserSettingFloat::fromScalar (const float value) {
     return new CUserSettingFloat (false, value, nullptr, "");
 }
-
-std::string CUserSettingFloat::Type = "float";

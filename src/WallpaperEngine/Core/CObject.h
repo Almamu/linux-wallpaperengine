@@ -32,17 +32,23 @@ class CObject {
     static const CObject* fromJSON (const json& data, const Wallpapers::CScene* scene, const std::shared_ptr<const CContainer>& container);
 
     template <class T> [[nodiscard]] const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] bool is () const {
-        return this->m_type == T::Type;
+        return typeid (*this) == typeid(T);
     }
 
     [[nodiscard]] const std::vector<int>& getDependencies () const;
@@ -58,13 +64,13 @@ class CObject {
 
   protected:
     CObject (
-        const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
+        const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
         const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
         std::vector<int> dependencies);
 
-  private:
-    const std::string m_type;
+    virtual ~CObject () = default;
 
+  private:
     const CUserSettingBoolean* m_visible;
     int m_id;
     const std::string m_name;

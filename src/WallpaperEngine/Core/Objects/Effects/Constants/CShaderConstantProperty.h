@@ -15,11 +15,6 @@ class CShaderConstantProperty : public CShaderConstant {
   public:
     explicit CShaderConstantProperty (const CProperty* property);
 
-    /**
-     * Type string indicator
-     */
-    static const std::string Type;
-
     [[nodiscard]] std::string toString () const override;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

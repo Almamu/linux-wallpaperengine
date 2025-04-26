@@ -10,7 +10,5 @@ const std::string& CWeb::getFilename () const {
 }
 
 CWeb::CWeb (std::string filename, const CProject& project) :
-    CWallpaper (Type, project),
+    CWallpaper (project),
     m_filename (std::move(filename)) {}
-
-const std::string CWeb::Type = "web";

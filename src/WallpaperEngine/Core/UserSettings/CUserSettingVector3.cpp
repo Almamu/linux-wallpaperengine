@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Core::UserSettings;
 CUserSettingVector3::CUserSettingVector3 (
     bool hasCondition, glm::vec3 defaultValue, const Projects::CProperty* source, std::string expectedValue
 ) :
-    CUserSettingValue (Type),
+    CUserSettingValue (),
     m_hasCondition (hasCondition),
     m_source (source),
     m_expectedValue (std::move(expectedValue)) {
@@ -85,5 +85,3 @@ const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& 
 const CUserSettingVector3* CUserSettingVector3::fromScalar (const glm::vec3 value) {
     return new CUserSettingVector3 (false, value, nullptr, "");
 }
-
-std::string CUserSettingVector3::Type = "color";

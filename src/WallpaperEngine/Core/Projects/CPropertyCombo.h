@@ -30,8 +30,7 @@ class CPropertyCombo final : public CProperty {
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
     int translateValueToIndex (const std::string& value) const;
-
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
     CPropertyCombo (

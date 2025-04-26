@@ -11,7 +11,7 @@
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
-    const Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,CAudioContext& audioContext,
+    const Core::CWallpaper* wallpaperData, CRenderContext& context,CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
@@ -26,7 +26,6 @@ CWallpaper::CWallpaper (
     a_TexCoord (GL_NONE),
     m_vaoBuffer (GL_NONE),
     m_destFramebuffer (GL_NONE),
-    m_type (std::move (type)),
     m_audioContext (audioContext),
     m_state (scalingMode, clampMode) {
     // generate the VAO to stop opengl from complaining

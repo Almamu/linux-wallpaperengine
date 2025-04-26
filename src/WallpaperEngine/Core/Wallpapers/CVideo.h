@@ -21,7 +21,5 @@ class CVideo : public CWallpaper {
     friend class CWallpaper;
 
     const std::string m_filename;
-
-    static const std::string Type;
 };
 } // namespace WallpaperEngine::Core

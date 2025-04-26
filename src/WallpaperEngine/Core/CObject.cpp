@@ -17,11 +17,10 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::UserSettings;
 
 CObject::CObject (
-    const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name, std::string type,
+    const Wallpapers::CScene* scene, const CUserSettingBoolean* visible, int id, std::string name,
     const CUserSettingVector3* origin, const CUserSettingVector3* scale, const CUserSettingVector3* angles,
     std::vector<int> dependencies
 ) :
-    m_type (std::move(type)),
     m_visible (visible),
     m_id (id),
     m_name (std::move(name)),

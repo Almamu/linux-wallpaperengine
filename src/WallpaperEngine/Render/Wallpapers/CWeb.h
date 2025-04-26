@@ -45,8 +45,6 @@ class CWeb : public CWallpaper
 
         friend class CWallpaper;
 
-        static const std::string Type;
-
     private:
         WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
         CefRefPtr<CefBrowser> m_browser;

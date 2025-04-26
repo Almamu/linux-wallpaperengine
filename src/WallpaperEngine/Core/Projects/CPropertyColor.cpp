@@ -45,9 +45,11 @@ std::string CPropertyColor::dump () const {
     return ss.str ();
 }
 
-CPropertyColor::CPropertyColor (const std::string& color, std::string name, std::string text) :
-    CProperty (std::move(name), Type, std::move(text)) {
-    this->set (color);
+const char* CPropertyColor::getType () const {
+    return "color";
 }
 
-const std::string CPropertyColor::Type = "color";
+CPropertyColor::CPropertyColor (const std::string& color, std::string name, std::string text) :
+    CProperty (std::move(name), std::move(text)) {
+    this->set (color);
+}

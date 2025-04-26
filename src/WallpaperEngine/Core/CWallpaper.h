@@ -10,30 +10,35 @@ class CProject;
 
 class CWallpaper {
   public:
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is<T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is<T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () const {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid(*this) == typeid(T);
     }
-
-    CWallpaper (std::string type, const CProject& project);
 
     const CProject& getProject () const;
 
   protected:
     friend class CProject;
 
+    explicit CWallpaper (const CProject& project);
+    virtual ~CWallpaper() = default;
+
   private:
     const CProject& m_project;
-
-    const std::string m_type;
 };
 } // namespace WallpaperEngine::Core

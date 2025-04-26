@@ -52,8 +52,6 @@ class CScene : public CWallpaper {
         float cameraShakeAmplitude, float cameraShakeRoughness, float cameraShakeSpeed,
         const CUserSettingVector3* clearColor, const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor);
 
-    static const std::string Type;
-
     void insertObject (const CObject* object);
 
     [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;

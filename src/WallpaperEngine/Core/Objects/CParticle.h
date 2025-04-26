@@ -43,11 +43,6 @@ class CParticle : public CObject {
         const std::vector<const Particles::CEmitter*>& emitters,
         const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies);
 
-    /**
-     * Type value used to differentiate the different types of objects in a background
-     */
-    static const std::string Type;
-
   private:
     /** The time at which the particle system should start emitting */
     const uint32_t m_starttime;

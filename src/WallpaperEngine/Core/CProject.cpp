@@ -34,7 +34,7 @@ CProject::~CProject () {
     this->m_properties.clear ();
 }
 
-std::shared_ptr<CProject> CProject::fromFile (const std::string& filename, std::shared_ptr<const CContainer> container) {
+std::unique_ptr<CProject> CProject::fromFile (const std::string& filename, std::shared_ptr<const CContainer> container) {
     json content = json::parse (container->readFileAsString (filename));
 
     const auto dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
@@ -71,7 +71,7 @@ std::shared_ptr<CProject> CProject::fromFile (const std::string& filename, std::
         }
     }
 
-    std::shared_ptr<CProject> project = std::make_shared <CProject> (
+    std::unique_ptr<CProject> project = std::make_unique <CProject> (
         jsonFindRequired <std::string> (content, "title", "Project title missing"),
         type,
         jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--)),

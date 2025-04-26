@@ -18,7 +18,7 @@ CScene::CScene (
     float cameraShakeAmplitude, float cameraShakeRoughness, float cameraShakeSpeed,
     const CUserSettingVector3* clearColor, const Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor
 ) :
-    CWallpaper (Type, project),
+    CWallpaper (project),
     m_container (std::move(container)),
     m_camera (camera),
     m_ambientColor (ambientColor),
@@ -167,5 +167,3 @@ const Scenes::CProjection* CScene::getOrthogonalProjection () const {
 const glm::vec3& CScene::getSkylightColor () const {
     return this->m_skylightColor;
 }
-
-const std::string CScene::Type = "scene";

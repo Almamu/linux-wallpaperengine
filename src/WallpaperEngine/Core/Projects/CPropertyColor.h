@@ -16,8 +16,7 @@ class CPropertyColor final : public CProperty {
 
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
-
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
     CPropertyColor (const std::string& color, std::string name, std::string text);
