@@ -1,4 +1,5 @@
 #include "UIWindow.h"
+#include <QtConcurrent/qtconcurrentrun.h>
 #include <iostream>
 #include <qapplication.h>
 #include <qboxlayout.h>
@@ -6,10 +7,14 @@
 #include <qcursor.h>
 #include <qlabel.h>
 #include <qlineedit.h>
+#include <qnamespace.h>
 #include <qprocess.h>
 #include <qwidget.h>
+#include <qwindowdefs.h>
 #include <string>
 #include <vector>
+
+#define PICTURE_SIZE 256
 
 UIWindow::UIWindow(QWidget* parent, QApplication* qapp) {
   this->qapp = qapp; 
@@ -39,15 +44,24 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   for (size_t i = 0; i < wallpaperPaths.size(); i++) {
     QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
-    if (pixmap.isNull()) {
-      pixmap = QPixmap(256, 256);
-      pixmap.fill(Qt::black);
-    }
-    
     auto* button = new QPushButton();
-    button->setIcon(pixmap.scaled(256, 256, Qt::KeepAspectRatio));
-    button->setIconSize(QSize(256, 256));
-    button->setFixedSize(256, 256);
+
+    if (pixmap.isNull()) {
+      pixmap = QPixmap(PICTURE_SIZE, PICTURE_SIZE);
+      pixmap.fill(Qt::black);
+
+      auto* movie = new QMovie(QString::fromStdString(wallpaperPaths[i] + "/preview.gif"));
+      if (movie->isValid()) {
+        movie->start();
+        movie->jumpToFrame(0);
+        pixmap = QPixmap::fromImage(movie->currentImage());
+        movie->stop();
+        button->setIcon(pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio));
+      }
+    } else button->setIcon(pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio));
+    
+    button->setIconSize(QSize(PICTURE_SIZE, PICTURE_SIZE));
+    button->setFixedSize(PICTURE_SIZE, PICTURE_SIZE);
     button->setProperty("path", QString::fromStdString(wallpaperPaths[i]));
 
     
@@ -113,6 +127,12 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   this->setLayout(mainlayout);
 }
 
+void UIWindow::showEvent(QShowEvent* event) {
+  QtConcurrent::run([this]() {
+    
+  });
+}
+
 void UIWindow::startNewWallpaperEngine() {
   if (wallpaperEngine->state() == QProcess::Running) {
     // Stop WallpaperProcess
@@ -133,11 +153,6 @@ void UIWindow::startNewWallpaperEngine() {
     }
     args.push_back("--bg");
     args.push_back(QString::fromStdString(wallpaper.second));
-
-    for (QString s : args) {
-      std::cout << s.toStdString();
-    }
-    std::cout << "\r\n";
   }
 
   // start Wallpaper Process

@@ -1,4 +1,5 @@
 cmake-build-debug*
+.cache/
 .idea
 build/
 .vscode/

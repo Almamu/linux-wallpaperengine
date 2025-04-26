@@ -17,6 +17,8 @@
 #include <QComboBox>
 #include <QLineEdit>
 #include <QLabel>
+#include <QMovie>
+#include <QtConcurrent/QtConcurrent>
 #include <string>
 #include <vector>
 #include <bits/stdc++.h>
@@ -39,4 +41,7 @@ class UIWindow : public QWidget {
 
     void startNewWallpaperEngine();
     static std::vector<std::string> split(std::string str, char r);
+
+  protected:
+    void showEvent(QShowEvent* event) override;
 };
