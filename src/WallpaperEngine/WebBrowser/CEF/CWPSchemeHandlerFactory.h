@@ -10,7 +10,7 @@ namespace WallpaperEngine::WebBrowser::CEF {
  */
 class CWPSchemeHandlerFactory : public CefSchemeHandlerFactory {
   public:
-    explicit CWPSchemeHandlerFactory (const Core::CProject* project);
+    explicit CWPSchemeHandlerFactory (const std::shared_ptr<const Core::CProject>& project);
 
     CefRefPtr<CefResourceHandler> Create (
         CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -18,7 +18,7 @@ class CWPSchemeHandlerFactory : public CefSchemeHandlerFactory {
 
     static std::string generateSchemeName (const std::string& workshopId);
   private:
-    const Core::CProject* m_project;
+    std::shared_ptr<const Core::CProject> m_project;
 
     IMPLEMENT_REFCOUNTING (CWPSchemeHandlerFactory);
     DISALLOW_COPY_AND_ASSIGN (CWPSchemeHandlerFactory);

@@ -9,7 +9,7 @@ class CVideoDriver;
 namespace WallpaperEngine::Input {
 class CInputContext {
   public:
-    explicit CInputContext (CMouseInput* mouseInput);
+    explicit CInputContext (CMouseInput& mouseInput);
 
     /**
      * Updates input information
@@ -19,6 +19,6 @@ class CInputContext {
     [[nodiscard]] const CMouseInput& getMouseInput () const;
 
   private:
-    CMouseInput* m_mouse;
+    CMouseInput& m_mouse;
 };
 } // namespace WallpaperEngine::Input

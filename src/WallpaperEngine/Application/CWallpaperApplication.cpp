@@ -6,20 +6,11 @@
 #include "WallpaperEngine/Assets/CDirectory.h"
 #include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
-#include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/PrettyPrinter/CPrettyPrinter.h"
-
-#ifdef ENABLE_WAYLAND
-#include "WallpaperEngine/Input/Drivers/CWaylandMouseInput.h"
-#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
-#endif /* ENABLE_WAYLAND */
-
-#ifdef ENABLE_X11
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
-#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
-#endif /* ENABLE_X11 */
+#include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -33,30 +24,10 @@ float g_Daytime;
 
 namespace WallpaperEngine::Application {
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
-    m_context (context),
-    m_audioContext (nullptr),
-    m_audioDriver (nullptr),
-    m_audioRecorder (nullptr),
-    m_audioDetector (nullptr),
-    m_inputContext (nullptr),
-    m_renderContext (nullptr),
-    m_videoDriver (nullptr),
-    m_fullScreenDetector (nullptr),
-    m_browserContext (nullptr) {
+    m_context (context) {
     this->loadBackgrounds ();
     this->setupProperties ();
     this->setupBrowser();
-}
-
-CWallpaperApplication::~CWallpaperApplication () {
-    delete m_renderContext;
-    delete m_videoDriver;
-    delete m_audioContext;
-    delete m_audioDriver;
-    delete m_audioDetector;
-    delete m_audioRecorder;
-    delete m_inputContext;
-    delete m_browserContext;
 }
 
 void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const {
@@ -226,7 +197,7 @@ void CWallpaperApplication::loadBackgrounds () {
     }
 }
 
-Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg) {
+std::shared_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std::string& bg) {
     const auto container = std::make_shared <CCombinedContainer> ();
 
     this->setupContainer (container, bg);
@@ -234,7 +205,7 @@ Core::CProject* CWallpaperApplication::loadBackground (const std::string& bg) {
     return Core::CProject::fromFile ("project.json", container);
 }
 
-void CWallpaperApplication::setupPropertiesForProject (const Core::CProject* project) {
+void CWallpaperApplication::setupPropertiesForProject (const std::shared_ptr<const Core::CProject>& project) {
     // show properties if required
     for (const auto& [key, cur] : project->getProperties ()) {
         // update the value of the property
@@ -259,7 +230,7 @@ void CWallpaperApplication::setupProperties () {
 void CWallpaperApplication::setupBrowser () {
     bool anyWebProject = std::any_of (
         this->m_backgrounds.begin (), this->m_backgrounds.end (),
-        [](const std::pair<const std::string, const Core::CProject*>& pair) -> bool {
+        [](const std::pair<const std::string, std::shared_ptr<const Core::CProject>>& pair) -> bool {
         return pair.second->getWallpaper()->is<Core::Wallpapers::CWeb> ();
     });
 
@@ -268,7 +239,7 @@ void CWallpaperApplication::setupBrowser () {
         return;
     }
 
-    this->m_browserContext = new WebBrowser::CWebBrowserContext (*this);
+    this->m_browserContext = std::make_unique <WebBrowser::CWebBrowserContext> (*this);
 }
 
 void CWallpaperApplication::takeScreenshot (const std::filesystem::path& filename) const {
@@ -351,85 +322,13 @@ void CWallpaperApplication::setupOutput () {
 
     sLog.debug ("Checking for window servers: ");
 
-#ifdef ENABLE_WAYLAND
-    sLog.debug ("\twayland");
-#endif // ENABLE_WAYLAND
-
-#ifdef ENABLE_X11
-    sLog.debug ("\tx11");
-#endif // ENABLE_X11
-
-#ifdef ENABLE_WAYLAND
-    bool isWayland = strncmp ("wayland", XDG_SESSION_TYPE, strlen ("wayland")) == 0;
-#endif // ENABLE_WAYLAND
-#ifdef ENABLE_X11
-    bool isX11 = strncmp ("x11", XDG_SESSION_TYPE, strlen ("x11")) == 0;
-#endif // ENABLE_X11
-
-    if (this->m_context.settings.render.mode == CApplicationContext::DESKTOP_BACKGROUND) {
-#ifdef ENABLE_WAYLAND
-        if (isWayland) {
-            m_videoDriver = new WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver (this->m_context, *this);
-            m_inputContext =
-                new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CWaylandMouseInput (
-                    reinterpret_cast<WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver*> (m_videoDriver)));
-            this->m_fullScreenDetector =
-                new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector (this->m_context);
-        }
-#endif // ENABLE_WAYLAND
-#ifdef ENABLE_X11
-#ifdef ENABLE_WAYLAND
-        else
-#endif // ENABLE_WAYLAND
-            if (isX11) {
-                m_videoDriver =
-                    new WallpaperEngine::Render::Drivers::CGLFWOpenGLDriver ("wallpaperengine", this->m_context, *this);
-                m_inputContext =
-                    new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
-                        reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver)));
-                this->m_fullScreenDetector = new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (
-                    this->m_context, *reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver));
-            }
-#endif // ENABLE_X11
-#ifdef ENABLE_X11
-            else
-#endif // ENABLE_X11
-            {
-                sLog.exception (
-                    "Cannot run in background mode, window server could not be detected. XDG_SESSION_TYPE must be wayland or x11");
-            }
-    } else {
-        m_videoDriver =
-            new WallpaperEngine::Render::Drivers::CGLFWOpenGLDriver ("wallpaperengine", this->m_context, *this);
-
-        // no need to initialize the fullscreen detector if automute is off
-        if (this->m_context.settings.render.pauseOnFullscreen || this->m_context.settings.audio.automute) {
-#ifdef ENABLE_WAYLAND
-            if (isWayland) {
-                this->m_fullScreenDetector =
-                    new WallpaperEngine::Render::Drivers::Detectors::CWaylandFullScreenDetector (this->m_context);
-            }
-#endif // ENABLE_WAYLAND
-#ifdef ENABLE_X11
-#ifdef ENABLE_WAYLAND
-            else
-#endif // ENABLE_WAYLAND
-                if (isX11) {
-                    this->m_fullScreenDetector =
-                        new WallpaperEngine::Render::Drivers::Detectors::CX11FullScreenDetector (
-                            this->m_context, *reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver));
-                }
-#endif // ENABLE_X11
-                else {
-                    this->m_fullScreenDetector =
-                        new WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector (this->m_context);
-                }
-        }
-
-        m_inputContext =
-            new WallpaperEngine::Input::CInputContext (new WallpaperEngine::Input::Drivers::CGLFWMouseInput (
-                reinterpret_cast<Render::Drivers::CGLFWOpenGLDriver*> (m_videoDriver)));
+    for (const auto& windowServer : sVideoFactories.getRegisteredDrivers ()) {
+        sLog.debug("\t", windowServer);
     }
+
+    this->m_videoDriver = sVideoFactories.createVideoDriver (
+        this->m_context.settings.render.mode, XDG_SESSION_TYPE, this->m_context, *this);
+    this->m_fullScreenDetector = sVideoFactories.createFullscreenDetector (XDG_SESSION_TYPE, this->m_context, *this->m_videoDriver);
 }
 
 void CWallpaperApplication::setupAudio () {
@@ -439,27 +338,26 @@ void CWallpaperApplication::setupAudio () {
     });
 
     if (audioProcessingRequired && this->m_context.settings.audio.audioprocessing) {
-        this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder ();
+        this->m_audioRecorder = std::make_unique <WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder> ();
     } else {
-        this->m_audioRecorder = new WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder ();
+        this->m_audioRecorder = std::make_unique <WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder> ();
     }
 
     if (this->m_context.settings.audio.automute) {
-        m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector (this->m_context, this->m_fullScreenDetector);
+        m_audioDetector = std::make_unique <WallpaperEngine::Audio::Drivers::Detectors::CPulseAudioPlayingDetector> (this->m_context, *this->m_fullScreenDetector);
     } else {
-        m_audioDetector = new WallpaperEngine::Audio::Drivers::Detectors::CAudioPlayingDetector (this->m_context, this->m_fullScreenDetector);
+        m_audioDetector = std::make_unique <WallpaperEngine::Audio::Drivers::Detectors::CAudioPlayingDetector> (this->m_context, *this->m_fullScreenDetector);
     }
 
     // initialize sdl audio driver
-    m_audioDriver =
-        new WallpaperEngine::Audio::Drivers::CSDLAudioDriver (this->m_context, *this->m_audioDetector, *this->m_audioRecorder);
+    m_audioDriver = std::make_unique <WallpaperEngine::Audio::Drivers::CSDLAudioDriver> (this->m_context, *this->m_audioDetector, *this->m_audioRecorder);
     // initialize audio context
-    m_audioContext = new WallpaperEngine::Audio::CAudioContext (*m_audioDriver);
+    m_audioContext = std::make_unique <WallpaperEngine::Audio::CAudioContext> (*m_audioDriver);
 }
 
 void CWallpaperApplication::prepareOutputs () {
     // initialize render context
-    m_renderContext = new WallpaperEngine::Render::CRenderContext (*m_videoDriver, *m_inputContext, *this);
+    m_renderContext = std::make_unique <WallpaperEngine::Render::CRenderContext> (*m_videoDriver, *this);
     // create a new background for each screen
 
     // set all the specific wallpapers required
@@ -508,7 +406,7 @@ void CWallpaperApplication::show () {
         // update audio recorder
         m_audioDriver->update ();
         // update input information
-        m_inputContext->update ();
+        m_videoDriver->getInputContext ().update ();
         // check for fullscreen windows and wait until there's none fullscreen
         if (
             this->m_context.settings.render.pauseOnFullscreen &&
@@ -550,7 +448,7 @@ void CWallpaperApplication::signal (int signal) {
     this->m_context.state.general.keepRunning = false;
 }
 
-const std::map<std::string, Core::CProject*>& CWallpaperApplication::getBackgrounds () const {
+const std::map<std::string, std::shared_ptr<Core::CProject>>& CWallpaperApplication::getBackgrounds () const {
     return this->m_backgrounds;
 }
 

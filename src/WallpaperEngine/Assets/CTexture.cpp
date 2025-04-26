@@ -33,7 +33,7 @@ CTexture::CTexture (const std::shared_ptr<const uint8_t[]>& buffer) : m_resoluti
 
         for (int32_t level = 0; cur != end; ++cur, level++) {
             stbi_uc* handle = nullptr;
-            void* dataptr = (*cur)->uncompressedData;
+            void* dataptr = (*cur)->uncompressedData.get ();
             int width = (*cur)->width;
             int height = (*cur)->height;
             uint32_t bufferSize = (*cur)->uncompressedSize;
@@ -43,7 +43,7 @@ CTexture::CTexture (const std::shared_ptr<const uint8_t[]>& buffer) : m_resoluti
                 int fileChannels;
 
                 dataptr = handle = stbi_load_from_memory (
-                    reinterpret_cast <unsigned char*> ((*cur)->uncompressedData),
+                    reinterpret_cast <unsigned char*> ((*cur)->uncompressedData.get ()),
                     (*cur)->uncompressedSize,
                     &width,
                     &height,
@@ -211,25 +211,16 @@ bool CTexture::isAnimated () const {
     return this->getHeader ()->isAnimated ();
 }
 
-CTexture::TextureMipmap::TextureMipmap () = default;
-
-CTexture::TextureMipmap::~TextureMipmap () {
-    if (this->compression == 1) {
-        delete this->compressedData;
-    }
-
-    delete this->uncompressedData;
-}
-
 void CTexture::TextureMipmap::decompressData () {
     if (this->compression != 1) {
         return;
     }
 
-    this->uncompressedData = new char [this->uncompressedSize];
+    this->uncompressedData = std::unique_ptr <char[]> (new char [this->uncompressedSize]);
 
-    const int result = LZ4_decompress_safe (this->compressedData, this->uncompressedData, this->compressedSize,
-                                            this->uncompressedSize);
+    const int result = LZ4_decompress_safe (
+        this->compressedData.get (), this->uncompressedData.get (), this->compressedSize,
+        this->uncompressedSize);
 
     if (!result)
         sLog.exception ("Cannot decompress texture data, LZ4_decompress_safe returned an error");
@@ -445,18 +436,18 @@ std::shared_ptr<CTexture::TextureMipmap> CTexture::parseMipmap (const TextureHea
         mipmap->uncompressedSize = mipmap->compressedSize;
     }
 
-    mipmap->uncompressedData = new char [mipmap->uncompressedSize];
+    mipmap->uncompressedData = std::unique_ptr<char[]>(new char [mipmap->uncompressedSize]);
 
     if (mipmap->compression == 1) {
-        mipmap->compressedData = new char [mipmap->compressedSize];
+        mipmap->compressedData = std::unique_ptr<char[]>(new char [mipmap->compressedSize]);
 
-        memcpy (mipmap->compressedData, fileData, mipmap->compressedSize);
+        memcpy (mipmap->compressedData.get (), fileData, mipmap->compressedSize);
 
         mipmap->decompressData ();
         // advance to the end of the mipmap
         fileData += mipmap->compressedSize;
     } else {
-        memcpy (mipmap->uncompressedData, fileData, mipmap->uncompressedSize);
+        memcpy (mipmap->uncompressedData.get (), fileData, mipmap->uncompressedSize);
         // advance to the end of the mipmap
         fileData += mipmap->uncompressedSize;
     }

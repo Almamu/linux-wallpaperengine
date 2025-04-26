@@ -327,6 +327,9 @@ add_executable(
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
 
+    src/WallpaperEngine/Render/Drivers/CVideoFactories.cpp
+    src/WallpaperEngine/Render/Drivers/CVideoFactories.h
+
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.cpp
     src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
 

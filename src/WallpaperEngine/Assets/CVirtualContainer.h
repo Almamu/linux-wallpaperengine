@@ -16,7 +16,6 @@ using json = nlohmann::json;
  */
 class CVirtualContainer final : public CContainer {
   public:
-    CVirtualContainer ();
     /**
      * Adds a new file to the virtual container
      *
@@ -53,6 +52,6 @@ class CVirtualContainer final : public CContainer {
 
   private:
     /** The recorded files in this virtual container */
-    std::map<std::string, std::unique_ptr<CFileEntry>> m_virtualFiles;
+    std::map<std::string, std::unique_ptr<CFileEntry>> m_virtualFiles = {};
 };
 } // namespace WallpaperEngine::Assets

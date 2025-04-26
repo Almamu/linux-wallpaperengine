@@ -1,6 +1,7 @@
 #include "CWaylandFullScreenDetector.h"
 
 #include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 #include "wlr-foreign-toplevel-management-unstable-v1-protocol.h"
 #include <cstring>
 
@@ -146,5 +147,15 @@ bool CWaylandFullScreenDetector::anythingFullscreen () const {
 }
 
 void CWaylandFullScreenDetector::reset () {}
+
+
+__attribute__((constructor)) void registerWaylandFullscreenDetector () {
+    sVideoFactories.registerFullscreenDetector(
+        "wayland",
+        [](CApplicationContext& context, CVideoDriver& driver) -> std::unique_ptr<CFullScreenDetector> {
+            return std::make_unique <CWaylandFullScreenDetector> (context);
+        }
+    );
+}
 
 } // namespace WallpaperEngine::Render::Drivers::Detectors

@@ -10,8 +10,9 @@ CLog::CLog () {
 }
 
 CLog& CLog::get () {
-    if (sInstance == nullptr)
-        sInstance = std::make_shared<CLog> ();
+    if (sInstance == nullptr) {
+        sInstance = std::make_unique<CLog> ();
+    }
 
     return *sInstance;
 }
@@ -24,4 +25,4 @@ void CLog::addError (std::ostream* stream) {
     this->mErrors.push_back (stream);
 }
 
-std::shared_ptr<CLog> CLog::sInstance = nullptr;
+std::unique_ptr<CLog> CLog::sInstance = nullptr;

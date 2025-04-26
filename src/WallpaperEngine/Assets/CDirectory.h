@@ -16,9 +16,7 @@ class CDirectory final : public CContainer {
   public:
     explicit CDirectory (const std::filesystem::path& basepath);
 
-    /** @inheritdoc */
     [[nodiscard]] std::filesystem::path resolveRealFile (const std::filesystem::path& filename) const override;
-    /** @inheritdoc */
     [[nodiscard]] std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:

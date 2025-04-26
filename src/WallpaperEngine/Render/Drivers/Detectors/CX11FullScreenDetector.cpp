@@ -5,6 +5,7 @@
 #include <X11/extensions/Xrandr.h>
 
 #include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
@@ -28,12 +29,21 @@ int CustomXIOErrorHandler (Display* dsp) {
     return 0;
 }
 
-CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext,
-                                                CGLFWOpenGLDriver& driver) :
+CX11FullScreenDetector::CX11FullScreenDetector (
+    Application::CApplicationContext& appContext, CVideoDriver& driver
+) :
     CFullScreenDetector (appContext),
     m_display (nullptr),
     m_root (0),
     m_driver (driver) {
+    try {
+        // attempt casting to CGLFWOpenGLDriver, this will throw if it's not possible
+        // so we can gracely handle the error
+        dynamic_cast <CGLFWOpenGLDriver&> (this->m_driver);
+    } catch (std::exception&) {
+        sLog.exception ("X11 FullScreen Detector initialized with the wrong video driver... This is a bug...");
+    }
+
     // do not use previous handler, it might stop the app under weird circumstances
     // these handlers might be replaced by other X11-specific functionality, they
     // should only be used to ignore X11 errors and nothing else
@@ -62,7 +72,7 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
     if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
         return false;
 
-    const auto ourWindow = reinterpret_cast<Window> (this->m_driver.getWindow ());
+    const auto ourWindow = reinterpret_cast<Window> (dynamic_cast <CGLFWOpenGLDriver&> (this->m_driver).getWindow ());
     Window parentWindow;
 
     {
@@ -158,6 +168,15 @@ void CX11FullScreenDetector::stop () {
 
     XCloseDisplay (this->m_display);
     this->m_display = nullptr;
+}
+
+__attribute__((constructor)) void registerX11FullscreenDetector () {
+    sVideoFactories.registerFullscreenDetector(
+        "x11",
+        [](CApplicationContext& context, CVideoDriver& driver) -> std::unique_ptr<CFullScreenDetector> {
+            return std::make_unique <CX11FullScreenDetector> (context, driver);
+        }
+    );
 }
 
 } // namespace WallpaperEngine::Render::Drivers::Detectors

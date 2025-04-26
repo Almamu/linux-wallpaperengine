@@ -16,7 +16,7 @@ namespace WallpaperEngine::WebBrowser::CEF {
  */
 class CWPSchemeHandler : public CefResourceHandler {
   public:
-    explicit CWPSchemeHandler(const Core::CProject* project);
+    explicit CWPSchemeHandler(std::shared_ptr<const Core::CProject> project);
 
     bool Open(CefRefPtr<CefRequest> request,
                bool& handle_request,
@@ -32,7 +32,7 @@ class CWPSchemeHandler : public CefResourceHandler {
                CefRefPtr<CefResourceReadCallback> callback) override;
 
   private:
-    const Core::CProject* m_project;
+    std::shared_ptr<const Core::CProject> m_project;
 
     std::shared_ptr<const Assets::CContainer> m_container;
     std::shared_ptr<const uint8_t[]> m_contents;

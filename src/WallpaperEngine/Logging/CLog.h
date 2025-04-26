@@ -82,7 +82,7 @@ class CLog {
 
     std::vector<std::ostream*> mOutputs;
     std::vector<std::ostream*> mErrors;
-    static std::shared_ptr<CLog> sInstance;
+    static std::unique_ptr<CLog> sInstance;
 };
 } // namespace WallpaperEngine::Logging
 

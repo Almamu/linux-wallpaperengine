@@ -5,9 +5,6 @@
 
 using namespace WallpaperEngine::Assets;
 
-CVirtualContainer::CVirtualContainer () :
-    m_virtualFiles() {}
-
 void CVirtualContainer::add (const std::filesystem::path& filename, const std::shared_ptr<const uint8_t[]>& contents, uint32_t length) {
     this->m_virtualFiles.emplace (filename, std::make_unique<CFileEntry> (contents, length));
 }

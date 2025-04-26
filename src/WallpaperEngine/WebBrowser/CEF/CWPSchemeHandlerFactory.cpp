@@ -5,7 +5,8 @@
 
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-CWPSchemeHandlerFactory::CWPSchemeHandlerFactory (const Core::CProject* project) : m_project (project) {}
+CWPSchemeHandlerFactory::CWPSchemeHandlerFactory (const std::shared_ptr<const Core::CProject>& project) :
+    m_project (project) {}
 
 CefRefPtr<CefResourceHandler> CWPSchemeHandlerFactory::Create (
     CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,

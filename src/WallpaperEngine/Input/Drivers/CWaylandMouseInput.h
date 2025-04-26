@@ -3,10 +3,12 @@
 #ifdef ENABLE_WAYLAND
 
 #include "WallpaperEngine/Input/CMouseInput.h"
-#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 
-#include "GLFW/glfw3.h"
 #include <glm/vec2.hpp>
+
+namespace WallpaperEngine::Render::Drivers {
+class CWaylandOpenGLDriver;
+};
 
 namespace WallpaperEngine::Input::Drivers {
 /**
@@ -14,7 +16,7 @@ namespace WallpaperEngine::Input::Drivers {
  */
 class CWaylandMouseInput final : public CMouseInput {
   public:
-    explicit CWaylandMouseInput (WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver);
+    explicit CWaylandMouseInput (const WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver& driver);
 
     /**
      * Takes current mouse position and updates it
@@ -40,7 +42,7 @@ class CWaylandMouseInput final : public CMouseInput {
     /**
      * Wayland: Driver
      */
-    WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* waylandDriver = nullptr;
+    const WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver& m_waylandDriver;
 
     glm::dvec2 m_pos;
 };

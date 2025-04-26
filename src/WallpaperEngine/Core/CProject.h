@@ -21,24 +21,24 @@ class CWallpaper;
 
 class CProject {
   public:
+    CProject (
+        std::string title, std::string type, std::string workshopid, std::shared_ptr<const CContainer> container,
+        bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties);
     ~CProject();
-    static CProject* fromFile (const std::string& filename, std::shared_ptr<const CContainer> container);
+
+    static std::shared_ptr<CProject> fromFile (const std::string& filename, std::shared_ptr<const CContainer> container);
 
     [[nodiscard]] const CWallpaper* getWallpaper () const;
-
     [[nodiscard]] const std::string& getTitle () const;
     [[nodiscard]] const std::string& getType () const;
     [[nodiscard]] const std::map<std::string, Projects::CProperty*>& getProperties () const;
     [[nodiscard]] const std::string& getWorkshopId () const;
+
     [[nodiscard]] bool supportsAudioProcessing () const;
 
     [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
   protected:
-    CProject (
-        std::string title, std::string type, std::string workshopid, std::shared_ptr<const CContainer> container,
-        bool supportsaudioprocessing, const std::map<std::string, Projects::CProperty*>& properties);
-
     void setWallpaper (const CWallpaper* wallpaper);
 
   private:

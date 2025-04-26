@@ -8,7 +8,7 @@
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-CWPSchemeHandler::CWPSchemeHandler(const Core::CProject* project) :
+CWPSchemeHandler::CWPSchemeHandler(std::shared_ptr<const Core::CProject> project) :
     m_project (project),
     m_contents (nullptr),
     m_filesize (0),

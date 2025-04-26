@@ -1,12 +1,19 @@
 #pragma once
 
 #include "WallpaperEngine/Render/Drivers/Output/COutput.h"
+#include "WallpaperEngine/Input/CMouseInput.h"
+#include "WallpaperEngine/Input/CInputContext.h"
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <string>
 
 namespace WallpaperEngine::Application {
 class CWallpaperApplication;
+}
+
+namespace WallpaperEngine::Input {
+class CInputContext;
+class CWaylandMouseInput;
 }
 
 namespace WallpaperEngine::Render::Drivers {
@@ -16,7 +23,7 @@ class CFullScreenDetector;
 
 class CVideoDriver {
   public:
-    explicit CVideoDriver (CWallpaperApplication& app);
+    explicit CVideoDriver (CWallpaperApplication& app, Input::CMouseInput& mouseInput);
     virtual ~CVideoDriver () = default;
 
     /**
@@ -69,8 +76,14 @@ class CVideoDriver {
      */
     [[nodiscard]] CWallpaperApplication& getApp () const;
 
+    /**
+     * @return The input context in use by this driver
+     */
+    [[nodiscard]] Input::CInputContext& getInputContext ();
+
   private:
     /** App that owns this driver */
     CWallpaperApplication& m_app;
+    Input::CInputContext m_inputContext;
 };
 } // namespace WallpaperEngine::Render::Drivers

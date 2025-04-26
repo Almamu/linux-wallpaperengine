@@ -83,9 +83,6 @@ class CTexture final : public ITexture {
      */
     class TextureMipmap {
       public:
-        TextureMipmap ();
-        ~TextureMipmap ();
-
         /** Width of the mipmap */
         uint32_t width = 0;
         /** Height of the mipmap */
@@ -97,9 +94,9 @@ class CTexture final : public ITexture {
         /** Compress size of the mipmap */
         uint32_t compressedSize = 0;
         /** Pointer to the compressed data */
-        char* compressedData = nullptr;
+        std::unique_ptr<char[]> compressedData = nullptr;
         /** Pointer to the uncompressed data */
-        char* uncompressedData = nullptr;
+        std::unique_ptr<char[]> uncompressedData = nullptr;
         /** JSON data */
         std::string json;
         /**
@@ -155,25 +152,15 @@ class CTexture final : public ITexture {
   public:
     explicit CTexture (const std::shared_ptr<const uint8_t[]>& fileData);
 
-    /** @inheritdoc */
     [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
-    /** @inheritdoc */
     [[nodiscard]] uint32_t getTextureWidth (uint32_t imageIndex) const override;
-    /** @inheritdoc */
     [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
-    /** @inheritdoc */
     [[nodiscard]] uint32_t getRealWidth () const override;
-    /** @inheritdoc */
     [[nodiscard]] uint32_t getRealHeight () const override;
-    /** @inheritdoc */
     [[nodiscard]] TextureFormat getFormat () const override;
-    /** @inheritdoc */
     [[nodiscard]] TextureFlags getFlags () const override;
-    /** @inheritdoc */
     [[nodiscard]] const glm::vec4* getResolution () const override;
-    /** @inheritdoc */
     [[nodiscard]] const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const override;
-    /** @inheritdoc */
     [[nodiscard]] bool isAnimated () const override;
 
   private:

@@ -6,10 +6,8 @@
 #include "CWallpaper.h"
 
 namespace WallpaperEngine::Render {
-CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input,
-                                CWallpaperApplication& app) :
+CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, CWallpaperApplication& app) :
     m_driver (driver),
-    m_input (input),
     m_app (app),
     m_textureCache (new CTextureCache (*this)) {}
 
@@ -46,7 +44,7 @@ void CRenderContext::setPause (bool newState) {
 }
 
 Input::CInputContext& CRenderContext::getInputContext () const {
-    return this->m_input;
+    return this->m_driver.getInputContext ();
 }
 
 const CWallpaperApplication& CRenderContext::getApp () const {

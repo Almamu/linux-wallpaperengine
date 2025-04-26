@@ -15,7 +15,7 @@ namespace WallpaperEngine::Audio::Drivers {
  * Audio output buffers for streams being played under SDL
  */
 struct CSDLAudioBuffer {
-    CAudioStream* stream;
+    CAudioStream* stream = nullptr;
     uint8_t audio_buf [(MAX_AUDIO_FRAME_SIZE * 3) / 2] = {0};
     unsigned int audio_buf_size = 0;
     unsigned int audio_buf_index = 0;
@@ -26,8 +26,9 @@ struct CSDLAudioBuffer {
  */
 class CSDLAudioDriver final : public CAudioDriver {
   public:
-    CSDLAudioDriver (Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector,
-                     Recorders::CPlaybackRecorder& recorder);
+    CSDLAudioDriver (
+        Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector,
+        Recorders::CPlaybackRecorder& recorder);
     ~CSDLAudioDriver () override;
 
     /** @inheritdoc */

@@ -1,35 +1,36 @@
-#include "CWaylandMouseInput.h"
 #include <glm/common.hpp>
+#include "CWaylandMouseInput.h"
+#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
 
 using namespace WallpaperEngine::Input::Drivers;
 
-CWaylandMouseInput::CWaylandMouseInput (WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver* driver) :
-    waylandDriver (driver),
+CWaylandMouseInput::CWaylandMouseInput (const WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver& driver) :
+    m_waylandDriver (driver),
     m_pos () {}
 
 void CWaylandMouseInput::update () {}
 
 glm::dvec2 CWaylandMouseInput::position () const {
-    if (!this->waylandDriver->getApp ().getContext ().settings.mouse.enabled) {
+    if (!this->m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) {
         return {0, 0};
     }
 
-    if (waylandDriver->viewportInFocus && waylandDriver->viewportInFocus->rendering)
-        return waylandDriver->viewportInFocus->mousePos;
+    if (m_waylandDriver.viewportInFocus && m_waylandDriver.viewportInFocus->rendering)
+        return m_waylandDriver.viewportInFocus->mousePos;
 
     return {0, 0};
 }
 
 WallpaperEngine::Input::MouseClickStatus CWaylandMouseInput::leftClick () const {
-    if (waylandDriver->viewportInFocus && waylandDriver->viewportInFocus->rendering)
-        return waylandDriver->viewportInFocus->leftClick;
+    if (m_waylandDriver.viewportInFocus && m_waylandDriver.viewportInFocus->rendering)
+        return m_waylandDriver.viewportInFocus->leftClick;
 
     return MouseClickStatus::Released;
 }
 
 WallpaperEngine::Input::MouseClickStatus CWaylandMouseInput::rightClick () const {
-    if (waylandDriver->viewportInFocus && waylandDriver->viewportInFocus->rendering)
-        return waylandDriver->viewportInFocus->rightClick;
+    if (m_waylandDriver.viewportInFocus && m_waylandDriver.viewportInFocus->rendering)
+        return m_waylandDriver.viewportInFocus->rightClick;
 
     return MouseClickStatus::Released;
 }

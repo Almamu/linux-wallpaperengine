@@ -1,4 +1,5 @@
 #include "CGLFWOpenGLDriver.h"
+#include "CVideoFactories.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
 
@@ -16,7 +17,8 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
 CGLFWOpenGLDriver::CGLFWOpenGLDriver (
     const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app
 ) :
-    CVideoDriver (app),
+    m_mouseInput (*this),
+    CVideoDriver (app, m_mouseInput),
     m_context (context),
     m_frameCounter (0) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
@@ -172,6 +174,31 @@ void* CGLFWOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-GLFWwindow* CGLFWOpenGLDriver::getWindow () {
+GLFWwindow* CGLFWOpenGLDriver::getWindow () const {
     return this->m_window;
+}
+
+
+__attribute__((constructor)) void registerGLFWOpenGLDriver () {
+    sVideoFactories.registerDriver (
+        CApplicationContext::DESKTOP_BACKGROUND,
+        "x11",
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
+    sVideoFactories.registerDriver (
+        CApplicationContext::EXPLICIT_WINDOW,
+        DEFAULT_WINDOW_NAME,
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
+    sVideoFactories.registerDriver (
+        CApplicationContext::NORMAL_WINDOW,
+        DEFAULT_WINDOW_NAME,
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
 }

@@ -31,7 +31,7 @@ void defaultSinkInfoCallback (pa_context* context, const pa_server_info* info, v
 
 CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (
     Application::CApplicationContext& appContext,
-    const Render::Drivers::Detectors::CFullScreenDetector* fullscreenDetector) :
+    const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
     CAudioPlayingDetector (appContext, fullscreenDetector),
     m_mainloop (nullptr),
     m_mainloopApi (nullptr),
@@ -60,7 +60,7 @@ CPulseAudioPlayingDetector::~CPulseAudioPlayingDetector () {
 void CPulseAudioPlayingDetector::update () {
     if (!this->getApplicationContext ().settings.audio.automute)
         return this->setIsPlaying (false);
-    if (this->getFullscreenDetector() != nullptr && this->getFullscreenDetector ()->anythingFullscreen ())
+    if (this->getFullscreenDetector ().anythingFullscreen ())
         return this->setIsPlaying (true);
 
     // reset playing state

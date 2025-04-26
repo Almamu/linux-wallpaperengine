@@ -32,7 +32,7 @@ class CTextureCache;
 
 class CRenderContext {
   public:
-    CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
+    CRenderContext (Drivers::CVideoDriver& driver, CWallpaperApplication& app);
 
     void render (Drivers::Output::COutputViewport* viewport);
     void setWallpaper (const std::string& display, CWallpaper* wallpaper);
@@ -49,8 +49,6 @@ class CRenderContext {
     Drivers::CVideoDriver& m_driver;
     /** Maps screen -> wallpaper list */
     std::map<std::string, CWallpaper*> m_wallpapers;
-    /** Input context for interactions */
-    Input::CInputContext& m_input;
     /** App that holds the render context */
     CWallpaperApplication& m_app;
     /** Texture cache for the render */

@@ -1,4 +1,5 @@
 #include "CWaylandOpenGLDriver.h"
+#include "CVideoFactories.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
@@ -231,7 +232,8 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
 }
 
 CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app) :
-    CVideoDriver (app),
+    m_mouseInput (*this),
+    CVideoDriver (app, m_mouseInput),
     m_output (context, *this),
     m_requestedExit (false),
     m_frameCounter (0),
@@ -370,4 +372,14 @@ Output::CWaylandOutputViewport* CWaylandOpenGLDriver::surfaceToViewport (const w
     }
 
     return nullptr;
+}
+
+__attribute__((constructor)) void registerWaylandOpenGL () {
+    sVideoFactories.registerDriver (
+        CApplicationContext::DESKTOP_BACKGROUND,
+        "wayland",
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CWaylandOpenGLDriver> (context, application);
+        }
+    );
 }
