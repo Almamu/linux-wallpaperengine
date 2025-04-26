@@ -244,7 +244,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
 
             case 'a': this->settings.general.assets = stringPathFixes (optarg); break;
 
-            case 'v': this->settings.audio.volume = std::max (atoi (optarg), 128); break;
+            case 'v': this->settings.audio.volume = atoi (optarg); if(this->settings.audio.volume > 128)this->settings.audio.volume = 128; break;
 
             case 'c':
                 this->settings.screenshot.take = true;
