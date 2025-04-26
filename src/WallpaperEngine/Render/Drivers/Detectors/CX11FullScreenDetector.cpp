@@ -98,7 +98,7 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
             continue;
 
         // compare width and height with the different screens we have
-        for (const auto& [viewport, name] : this->m_screens) {
+        for (const auto& [name, viewport] : this->m_screens) {
             if (attribs.x == viewport.x && attribs.y == viewport.y && attribs.width == viewport.z &&
                 attribs.height == viewport.w) {
                 isFullscreen = true;
@@ -154,7 +154,7 @@ void CX11FullScreenDetector::initialize () {
             continue;
 
         // add the screen to the list of screens
-        this->m_screens.push_back ({{crtc->x, crtc->y, crtc->width, crtc->height}, info->name});
+        this->m_screens.emplace (std::string (info->name), glm::ivec4 (crtc->x, crtc->y, crtc->width, crtc->height));
 
         XRRFreeCrtcInfo (crtc);
     }

@@ -49,6 +49,6 @@ class CProject {
     const std::string m_type;
     const bool m_supportsaudioprocessing;
     const CWallpaper* m_wallpaper;
-    std::shared_ptr<const CContainer> m_container;
+    std::shared_ptr<const CContainer> m_container = nullptr;
 };
 } // namespace WallpaperEngine::Core

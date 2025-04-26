@@ -69,7 +69,6 @@ CSDLAudioDriver::CSDLAudioDriver (
     Recorders::CPlaybackRecorder& recorder
 ) :
     CAudioDriver (applicationContext, detector, recorder),
-    m_initialized (false),
     m_audioSpec () {
     if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {
         sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError ());

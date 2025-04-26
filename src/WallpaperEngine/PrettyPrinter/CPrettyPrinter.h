@@ -101,8 +101,8 @@ class CPrettyPrinter {
      */
     void printTextureInfo (const ITexture& texture);
 
-    int m_level;
-    std::stringbuf m_buffer;
+    int m_level = 0;
+    std::stringbuf m_buffer = {};
     std::ostream m_out;
 };
 }

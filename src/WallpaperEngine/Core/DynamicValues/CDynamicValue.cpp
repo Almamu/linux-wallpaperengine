@@ -3,19 +3,6 @@
 
 using namespace WallpaperEngine::Core::DynamicValues;
 
-CDynamicValue::CDynamicValue() :
-    m_ivec4 (),
-    m_ivec3 (),
-    m_ivec2 (),
-    m_vec4 (),
-    m_vec3 (),
-    m_vec2 (),
-    m_float (),
-    m_int (),
-    m_bool (),
-    m_outgoingConnections (),
-    m_incomingConnections () {}
-
 CDynamicValue::~CDynamicValue() {
     for (auto* connection : this->m_incomingConnections) {
         connection->destroyOutgoingConnection (this);

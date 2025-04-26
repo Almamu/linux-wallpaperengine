@@ -15,8 +15,8 @@ class CFileEntry {
     ~CFileEntry() = default;
 
     /** File contents */
-    std::shared_ptr<const uint8_t[]> content;
+    std::shared_ptr<const uint8_t[]> content = nullptr;
     /** File length */
-    uint32_t length;
+    uint32_t length = 0;
 };
 } // namespace WallpaperEngine::Assets

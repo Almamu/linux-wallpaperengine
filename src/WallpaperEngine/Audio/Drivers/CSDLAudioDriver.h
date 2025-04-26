@@ -53,10 +53,10 @@ class CSDLAudioDriver final : public CAudioDriver {
     /** The device's ID */
     SDL_AudioDeviceID m_deviceID;
     /** If the driver is initialized or not */
-    bool m_initialized;
+    bool m_initialized = false;
     /** The sound output configuration */
-    SDL_AudioSpec m_audioSpec;
+    SDL_AudioSpec m_audioSpec {};
     /** All the playable steams */
-    std::vector<CSDLAudioBuffer*> m_streams;
+    std::vector<CSDLAudioBuffer*> m_streams {};
 };
 } // namespace WallpaperEngine::Audio::Drivers

@@ -14,7 +14,7 @@ class CBrowserClient: public CefClient
 
     [[nodiscard]] CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 
-    CefRefPtr<CefRenderHandler> m_renderHandler;
+    CefRefPtr<CefRenderHandler> m_renderHandler = nullptr;
 
     IMPLEMENT_REFCOUNTING(CBrowserClient);
 };

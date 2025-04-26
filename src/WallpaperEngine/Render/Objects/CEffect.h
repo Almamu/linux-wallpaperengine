@@ -38,10 +38,10 @@ class CEffect {
     void generatePasses ();
     void generateFBOs ();
 
-    CImage* m_image;
+    CImage* m_image = nullptr;
     const Core::Objects::CEffect* m_effect;
 
-    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos;
-    std::vector<Effects::CMaterial*> m_materials;
+    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos = {};
+    std::vector<Effects::CMaterial*> m_materials = {};
 };
 } // namespace WallpaperEngine::Render::Objects

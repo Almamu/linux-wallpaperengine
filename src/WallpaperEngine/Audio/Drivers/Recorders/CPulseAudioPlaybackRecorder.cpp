@@ -155,9 +155,7 @@ CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () :
         .kisscfg = kiss_fftr_alloc (WAVE_BUFFER_SIZE, 0, nullptr, nullptr),
         .audioBuffer = new uint8_t [WAVE_BUFFER_SIZE],
         .audioBufferTmp = new uint8_t [WAVE_BUFFER_SIZE]
-    }),
-    m_audioFFTbuffer {0},
-    m_FFTinfo {0} {
+    }) {
     this->m_mainloop = pa_mainloop_new ();
     this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
     this->m_context = pa_context_new (this->m_mainloopApi, "wallpaperengine-audioprocessing");

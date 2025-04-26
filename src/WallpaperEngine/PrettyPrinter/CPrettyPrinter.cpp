@@ -9,8 +9,6 @@ using namespace WallpaperEngine::PrettyPrinter;
 using namespace WallpaperEngine::Render::Objects;
 
 CPrettyPrinter::CPrettyPrinter () :
-    m_level (0),
-    m_buffer (),
     m_out (&this->m_buffer) {}
 
 void CPrettyPrinter::printWallpaper (const CWallpaper& wallpaper) {

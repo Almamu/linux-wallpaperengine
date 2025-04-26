@@ -30,7 +30,7 @@ class CRenderHandler : public CefRenderHandler {
     IMPLEMENT_REFCOUNTING (CRenderHandler);
 
   private:
-    WallpaperEngine::Render::Wallpapers::CWeb* m_webdata;
+    WallpaperEngine::Render::Wallpapers::CWeb* m_webdata = nullptr;
 
     [[nodiscard]] int getWidth () const;
     [[nodiscard]] int getHeight () const;

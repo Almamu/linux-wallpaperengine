@@ -32,6 +32,6 @@ class CCombinedContainer final : public CContainer {
 
   private:
     /** The list of containers to search files off from */
-    std::vector<std::shared_ptr<CContainer>> m_containers;
+    std::vector<std::shared_ptr<CContainer>> m_containers {};
 };
 }; // namespace WallpaperEngine::Assets

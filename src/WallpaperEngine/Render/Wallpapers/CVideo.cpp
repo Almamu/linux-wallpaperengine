@@ -16,11 +16,7 @@ CVideo::CVideo (
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
-    CWallpaper (video, context, audioContext, scalingMode, clampMode),
-    m_mpvGl (nullptr),
-    m_paused (false),
-    m_width (16),
-    m_height (16) {
+    CWallpaper (video, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts

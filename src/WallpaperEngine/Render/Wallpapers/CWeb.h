@@ -47,17 +47,17 @@ class CWeb : public CWallpaper
 
     private:
         WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
-        CefRefPtr<CefBrowser> m_browser;
-        CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client;
+        CefRefPtr<CefBrowser> m_browser = nullptr;
+        CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client = nullptr;
         WallpaperEngine::WebBrowser::CEF::CRenderHandler* m_renderHandler = nullptr;
 
-        int m_width;
-        int m_height;
+        int m_width = 16;
+        int m_height = 17;
 
-        WallpaperEngine::Input::MouseClickStatus m_leftClick;
-        WallpaperEngine::Input::MouseClickStatus m_rightClick;
+        WallpaperEngine::Input::MouseClickStatus m_leftClick = Input::Released;
+        WallpaperEngine::Input::MouseClickStatus m_rightClick = Input::Released;
 
-        glm::vec2 m_mousePosition;
-        glm::vec2 m_mousePositionLast;
+        glm::vec2 m_mousePosition = {};
+        glm::vec2 m_mousePositionLast = {};
 };
 }

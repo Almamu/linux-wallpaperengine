@@ -16,15 +16,7 @@ CWeb::CWeb (
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
     CWallpaper (web, context, audioContext, scalingMode, clampMode),
-    m_browserContext (browserContext),
-    m_browser (),
-    m_client (),
-    m_width (16),
-    m_height (16),
-    m_leftClick (WallpaperEngine::Input::MouseClickStatus::Released),
-    m_rightClick (WallpaperEngine::Input::MouseClickStatus::Released),
-    m_mousePosition(),
-    m_mousePositionLast() {
+    m_browserContext (browserContext) {
     // setup framebuffers
     this->setupFramebuffers ();
 

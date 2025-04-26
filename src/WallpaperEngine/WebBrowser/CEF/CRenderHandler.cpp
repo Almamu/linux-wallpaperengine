@@ -2,7 +2,8 @@
 
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-CRenderHandler::CRenderHandler (WallpaperEngine::Render::Wallpapers::CWeb* webdata) : m_webdata (webdata) {}
+CRenderHandler::CRenderHandler (WallpaperEngine::Render::Wallpapers::CWeb* webdata) :
+    m_webdata (webdata) {}
 
 // Required by CEF
 void CRenderHandler::GetViewRect (CefRefPtr<CefBrowser> browser, CefRect& rect) {

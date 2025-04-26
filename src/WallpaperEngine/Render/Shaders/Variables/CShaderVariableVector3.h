@@ -9,7 +9,5 @@ class CShaderVariableVector3 final : public CShaderVariable {
   public:
     explicit CShaderVariableVector3 (const glm::vec3& defaultValue);
     CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name);
-
-    static const std::string Type;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

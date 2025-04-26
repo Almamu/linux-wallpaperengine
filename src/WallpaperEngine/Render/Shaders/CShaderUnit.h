@@ -103,27 +103,27 @@ class CShaderUnit {
     /**
      * The filename of this shader unit
      */
-    std::string m_file;
+    std::string m_file = "";
     /**
      * Shader's original contents
      */
-    std::string m_content;
+    std::string m_content = "";
     /**
      * Includes content to be added on compilation
      */
-    std::string m_includes;
+    std::string m_includes = "";
     /**
      * Shader's content after the preprocessing step
      */
-    std::string m_preprocessed;
+    std::string m_preprocessed = "";
     /**
      * Shader's code after the compilation of glslang and spirv
      */
-    std::string m_final;
+    std::string m_final = "";
     /**
      * The parameters the shader needs
      */
-    std::vector<Variables::CShaderVariable*> m_parameters;
+    std::vector<Variables::CShaderVariable*> m_parameters = {};
     /**
      * Pre-defined values for the combos
      */
@@ -131,11 +131,11 @@ class CShaderUnit {
     /**
      * The combos discovered in the pre-processing step that were not in the combos list
      */
-    std::map<std::string, int> m_discoveredCombos;
+    std::map<std::string, int> m_discoveredCombos = {};
     /**
      * The combos used by this unit that should be added
      */
-    std::map<std::string, bool> m_usedCombos;
+    std::map<std::string, bool> m_usedCombos = {};
     /**
      * The constants defined for this unit
      */
@@ -143,7 +143,7 @@ class CShaderUnit {
     /** The textures that are already applied to this shader */
     const std::map<int, std::string> m_passTextures;
     /** The default textures to use when a texture is not applied in a given slot */
-    std::map<int, std::string> m_defaultTextures;
+    std::map<int, std::string> m_defaultTextures = {};
     /**
      * The shader unit this unit is linked to
      */

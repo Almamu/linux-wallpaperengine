@@ -113,10 +113,10 @@ class CImage : public CObject {
     /** Override for effects */
     const std::vector<const Objects::CEffect*> m_effects;
     /** If the image is fullscreen or not */
-    bool m_fullscreen;
+    bool m_fullscreen = false;
     /** If the image is passthrough or not */
-    bool m_passthrough;
+    bool m_passthrough = false;
     /** If the image's size should be automatically determined */
-    bool m_autosize;
+    bool m_autosize = false;
 };
 } // namespace WallpaperEngine::Core::Objects

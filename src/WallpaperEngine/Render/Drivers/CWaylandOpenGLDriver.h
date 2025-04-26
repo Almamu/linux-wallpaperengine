@@ -84,21 +84,21 @@ class CWaylandOpenGLDriver final : public CVideoDriver {
     [[nodiscard]] SWaylandContext* getWaylandContext ();
 
     /** List of available screens */
-    std::vector<Output::CWaylandOutputViewport*> m_screens;
+    std::vector<Output::CWaylandOutputViewport*> m_screens = {};
 
   private:
     /** The output used by the driver */
     Output::CWaylandOutput m_output;
     /** The EGL context in use */
-    SEGLContext m_eglContext;
+    SEGLContext m_eglContext = {};
     /** The Wayland context in use */
-    SWaylandContext m_waylandContext;
+    SWaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
 
     void initEGL ();
     void finishEGL () const;
 
-    uint32_t m_frameCounter;
+    uint32_t m_frameCounter = 0;
     CApplicationContext& m_context;
     CWaylandMouseInput m_mouseInput;
 

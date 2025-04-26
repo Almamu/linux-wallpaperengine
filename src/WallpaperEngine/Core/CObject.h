@@ -72,7 +72,7 @@ class CObject {
 
   private:
     const CUserSettingBoolean* m_visible;
-    int m_id;
+    int m_id = 0;
     const std::string m_name;
     const CUserSettingVector3* m_origin;
     const CUserSettingVector3* m_scale;

@@ -16,8 +16,7 @@ CPass::CPass (std::string blending, std::string cullmode, std::string depthtest,
     m_shader (std::move(shader)),
     m_textures (std::move(textures)),
     m_combos (std::move(combos)),
-    m_constants (std::move(constants))
-{}
+    m_constants (std::move(constants)) {}
 
 const CPass* CPass::fromJSON (const json& data, const CMaterial::OverrideInfo* overrides) {
     // TODO: FIGURE OUT DEFAULT BLENDING MODE

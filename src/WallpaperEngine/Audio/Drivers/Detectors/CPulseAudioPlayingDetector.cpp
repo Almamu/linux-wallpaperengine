@@ -32,10 +32,7 @@ void defaultSinkInfoCallback (pa_context* context, const pa_server_info* info, v
 CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (
     Application::CApplicationContext& appContext,
     const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
-    CAudioPlayingDetector (appContext, fullscreenDetector),
-    m_mainloop (nullptr),
-    m_mainloopApi (nullptr),
-    m_context (nullptr) {
+    CAudioPlayingDetector (appContext, fullscreenDetector) {
     this->m_mainloop = pa_mainloop_new ();
     this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
     this->m_context = pa_context_new (this->m_mainloopApi, "wallpaperengine");

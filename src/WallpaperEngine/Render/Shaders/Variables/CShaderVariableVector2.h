@@ -8,7 +8,5 @@ class CShaderVariableVector2 final : public CShaderVariable {
   public:
     explicit CShaderVariableVector2 (const glm::vec2& defaultValue);
     CShaderVariableVector2 (const glm::vec2& defaultValue, const std::string& name);
-
-    static const std::string Type;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

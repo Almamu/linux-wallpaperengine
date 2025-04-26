@@ -52,7 +52,7 @@ class CAudioPlayingDetector {
     [[nodiscard]] const Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector () const;
 
   private:
-    bool m_isPlaying;
+    bool m_isPlaying = false;
 
     Application::CApplicationContext& m_applicationContext;
     const Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;

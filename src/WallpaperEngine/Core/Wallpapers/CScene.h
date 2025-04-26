@@ -79,7 +79,7 @@ class CScene : public CWallpaper {
     const Scenes::CProjection* m_orthogonalProjection;
     const glm::vec3 m_skylightColor;
 
-    std::map<uint32_t, const CObject*> m_objects;
-    std::vector<const CObject*> m_objectsByRenderOrder;
+    std::map<uint32_t, const CObject*> m_objects = {};
+    std::vector<const CObject*> m_objectsByRenderOrder = {};
 };
 } // namespace WallpaperEngine::Core

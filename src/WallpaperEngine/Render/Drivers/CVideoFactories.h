@@ -63,8 +63,8 @@ class CVideoFactories {
     using SessionTypeToFactoryType = std::map <std::string, DriverConstructionFunc>;
     using WindowModeToSessionType = std::map <CApplicationContext::WINDOW_MODE, SessionTypeToFactoryType>;
 
-    SessionTypeToFullscreenDetectorType m_fullscreenFactories;
-    WindowModeToSessionType m_driverFactories;
+    SessionTypeToFullscreenDetectorType m_fullscreenFactories = {};
+    WindowModeToSessionType m_driverFactories = {};
     static std::unique_ptr<CVideoFactories> sInstance;
 };
 } // namespace WallpaperEngine::Render::Drivers

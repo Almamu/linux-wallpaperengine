@@ -42,9 +42,9 @@ class COutput {
     virtual void updateRender () const = 0;
 
   protected:
-    mutable int m_fullWidth;
-    mutable int m_fullHeight;
-    mutable std::map<std::string, COutputViewport*> m_viewports;
+    mutable int m_fullWidth = 0;
+    mutable int m_fullHeight = 0;
+    mutable std::map<std::string, COutputViewport*> m_viewports = {};
     CApplicationContext& m_context;
     CVideoDriver& m_driver;
 };

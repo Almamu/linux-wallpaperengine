@@ -80,8 +80,8 @@ class CLog {
         return buffer.str ();
     }
 
-    std::vector<std::ostream*> mOutputs;
-    std::vector<std::ostream*> mErrors;
+    std::vector<std::ostream*> mOutputs = {};
+    std::vector<std::ostream*> mErrors = {};
     static std::unique_ptr<CLog> sInstance;
 };
 } // namespace WallpaperEngine::Logging

@@ -37,7 +37,7 @@ CEffect::CEffect (
 
 const CEffect* CEffect::fromJSON (
     const json& data, const CUserSettingBoolean* visible, const CProject& project, const Images::CMaterial* material,
-    std::shared_ptr<const CContainer> container
+    const std::shared_ptr<const CContainer>& container
 ) {
     const auto file = jsonFindRequired <std::string> (data, "file", "Object effect must have a file");
     const auto effectpasses_it = data.find ("passes");

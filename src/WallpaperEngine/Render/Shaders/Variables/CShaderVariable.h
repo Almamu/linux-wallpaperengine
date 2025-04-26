@@ -6,33 +6,36 @@
 namespace WallpaperEngine::Render::Shaders::Variables {
 class CShaderVariable : public Core::DynamicValues::CDynamicValue {
   public:
-    CShaderVariable (std::string type);
     virtual ~CShaderVariable () = default;
 
     template <class T> [[nodiscard]] const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> [[nodiscard]] bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid (*this) == typeid(T);
     }
 
     [[nodiscard]] const std::string& getIdentifierName () const;
     [[nodiscard]] const std::string& getName () const;
-    [[nodiscard]] const std::string& getType () const;
 
     void setIdentifierName (std::string identifierName);
     void setName (const std::string& name);
 
   private:
-    std::string m_identifierName;
-    std::string m_name;
-    std::string m_type;
+    std::string m_identifierName = "";
+    std::string m_name = "";
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

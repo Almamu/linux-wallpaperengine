@@ -33,7 +33,7 @@ class CEffect {
 
     static const CEffect* fromJSON (
         const json& data, const CUserSettingBoolean* visible, const CProject& object, const Images::CMaterial* material,
-        std::shared_ptr<const CContainer> container);
+        const std::shared_ptr<const CContainer>& container);
 
     /**
      * @return List of dependencies for the effect to work

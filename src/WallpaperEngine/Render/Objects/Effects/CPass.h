@@ -148,14 +148,14 @@ class CPass final : public Helpers::CContextAware {
 
     std::shared_ptr<const ITexture> resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous = nullptr);
 
-    CMaterial* m_material;
+    CMaterial* m_material = nullptr;
     const Core::Objects::Images::Materials::CPass* m_pass;
-    std::map<int, std::shared_ptr<const CFBO>> m_fbos;
-    std::map<std::string, int> m_combos;
-    std::vector<AttribEntry*> m_attribs;
-    std::map<std::string, UniformEntry*> m_uniforms;
-    std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms;
-    std::string m_blendingmode;
+    std::map<int, std::shared_ptr<const CFBO>> m_fbos = {};
+    std::map<std::string, int> m_combos = {};
+    std::vector<AttribEntry*> m_attribs = {};
+    std::map<std::string, UniformEntry*> m_uniforms = {};
+    std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms = {};
+    std::string m_blendingmode = "";
     const glm::mat4* m_modelViewProjectionMatrix;
     const glm::mat4* m_modelViewProjectionMatrixInverse;
     const glm::mat4* m_modelMatrix;
@@ -164,12 +164,12 @@ class CPass final : public Helpers::CContextAware {
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, std::shared_ptr<const ITexture>> m_textures;
+    std::map<int, std::shared_ptr<const ITexture>> m_textures = {};
 
-    Render::Shaders::CShader* m_shader;
+    Render::Shaders::CShader* m_shader = nullptr;
 
-    std::shared_ptr<const CFBO> m_drawTo;
-    std::shared_ptr<const ITexture> m_input;
+    std::shared_ptr<const CFBO> m_drawTo = nullptr;
+    std::shared_ptr<const ITexture> m_input = nullptr;
 
     GLuint m_programID;
 

@@ -129,7 +129,7 @@ CGLSLContext::~CGLSLContext () {
 
 CGLSLContext& CGLSLContext::get () {
     if (sInstance == nullptr)
-        sInstance = std::make_shared<CGLSLContext> ();
+        sInstance = std::make_unique <CGLSLContext> ();
 
     return *sInstance;
 }
@@ -195,4 +195,4 @@ std::pair<std::string, std::string> CGLSLContext::toGlsl (const std::string& ver
 }
 
 
-std::shared_ptr<CGLSLContext> CGLSLContext::sInstance = nullptr;
+std::unique_ptr <CGLSLContext> CGLSLContext::sInstance = nullptr;

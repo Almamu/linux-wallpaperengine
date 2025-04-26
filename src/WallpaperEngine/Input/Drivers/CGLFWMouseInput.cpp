@@ -6,11 +6,7 @@
 using namespace WallpaperEngine::Input::Drivers;
 
 CGLFWMouseInput::CGLFWMouseInput (const Render::Drivers::CGLFWOpenGLDriver& driver) :
-    m_driver (driver),
-    m_mousePosition (),
-    m_reportedPosition (),
-    m_leftClick (MouseClickStatus::Released),
-    m_rightClick (MouseClickStatus::Released) {}
+    m_driver (driver) {}
 
 void CGLFWMouseInput::update () {
     if (!this->m_driver.getApp ().getContext ().settings.mouse.enabled) {

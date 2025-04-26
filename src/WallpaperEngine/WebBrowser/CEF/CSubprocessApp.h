@@ -20,7 +20,7 @@ class CSubprocessApp : public CefApp {
     const std::map<std::string, CWPSchemeHandlerFactory*>& getHandlerFactories () const;
 
   private:
-    std::map<std::string, CWPSchemeHandlerFactory*> m_handlerFactories;
+    std::map<std::string, CWPSchemeHandlerFactory*> m_handlerFactories = {};
     WallpaperEngine::Application::CWallpaperApplication& m_application;
     IMPLEMENT_REFCOUNTING (CSubprocessApp);
     DISALLOW_COPY_AND_ASSIGN (CSubprocessApp);

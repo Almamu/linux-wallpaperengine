@@ -32,13 +32,13 @@ class CWPSchemeHandler : public CefResourceHandler {
                CefRefPtr<CefResourceReadCallback> callback) override;
 
   private:
-    std::shared_ptr<const Core::CProject> m_project;
+    std::shared_ptr<const Core::CProject> m_project = nullptr;
 
-    std::shared_ptr<const Assets::CContainer> m_container;
-    std::shared_ptr<const uint8_t[]> m_contents;
-    uint32_t m_filesize;
-    std::string m_mimeType;
-    uint32_t m_offset;
+    std::shared_ptr<const Assets::CContainer> m_container = nullptr;
+    std::shared_ptr<const uint8_t[]> m_contents = nullptr;
+    uint32_t m_filesize = 0;
+    std::string m_mimeType = "";
+    uint32_t m_offset = 0;
 
 
     IMPLEMENT_REFCOUNTING(CWPSchemeHandler);

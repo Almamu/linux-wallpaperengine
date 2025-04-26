@@ -104,7 +104,43 @@ class CApplicationContext {
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
         } screenshot;
-    } settings;
+    } settings = {
+        .general = {
+            .onlyListProperties = false,
+            .dumpStructure = false,
+            .assets = "",
+            .defaultBackground = "",
+            .screenBackgrounds = {},
+            .properties = {},
+            .screenScalings = {},
+            .screenClamps = {},
+        },
+        .render = {
+            .mode = NORMAL_WINDOW,
+            .maximumFPS = 30,
+            .pauseOnFullscreen = true,
+            .window =
+                {
+                    .geometry = {},
+                    .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+                    .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
+                },
+        },
+        .audio = {
+            .enabled = true,
+            .volume = 15,
+            .automute = true,
+            .audioprocessing = true,
+        },
+        .mouse = {
+            .enabled = true,
+        },
+        .screenshot = {
+            .take = false,
+            .delay = 5,
+            .path = "",
+        },
+    };
 
     CApplicationState state;
 

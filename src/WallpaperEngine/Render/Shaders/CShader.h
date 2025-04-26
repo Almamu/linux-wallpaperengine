@@ -85,11 +85,11 @@ class CShader {
     /**
      * The shader file this instance is loading
      */
-    std::string m_file;
+    std::string m_file = "";
     /**
      * The parameters the shader needs
      */
-    std::vector<Variables::CShaderVariable*> m_parameters;
+    std::vector<Variables::CShaderVariable*> m_parameters = {};
     /**
      * The combos the shader should be generated with
      */

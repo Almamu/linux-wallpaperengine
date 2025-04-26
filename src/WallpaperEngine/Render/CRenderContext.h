@@ -48,11 +48,11 @@ class CRenderContext {
     /** Video driver in use */
     Drivers::CVideoDriver& m_driver;
     /** Maps screen -> wallpaper list */
-    std::map<std::string, CWallpaper*> m_wallpapers;
+    std::map<std::string, CWallpaper*> m_wallpapers = {};
     /** App that holds the render context */
     CWallpaperApplication& m_app;
     /** Texture cache for the render */
-    CTextureCache* m_textureCache;
+    CTextureCache* m_textureCache = nullptr;
 };
 } // namespace Render
 } // namespace WallpaperEngine

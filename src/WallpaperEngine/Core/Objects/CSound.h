@@ -41,7 +41,7 @@ class CSound : public CObject {
 
   private:
     /** If the sounds should repeat or not */
-    bool m_repeat;
+    bool m_repeat = false;
     /** The list of sounds to play */
     std::vector<std::string> m_sounds;
 };

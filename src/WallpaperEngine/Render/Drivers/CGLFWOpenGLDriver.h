@@ -38,8 +38,8 @@ class CGLFWOpenGLDriver final : public CVideoDriver {
   private:
     CApplicationContext& m_context;
     Input::Drivers::CGLFWMouseInput m_mouseInput;
-    Output::COutput* m_output;
-    GLFWwindow* m_window;
-    uint32_t m_frameCounter;
+    Output::COutput* m_output = nullptr;
+    GLFWwindow* m_window = nullptr;
+    uint32_t m_frameCounter = 0;
 };
 } // namespace WallpaperEngine::Render::Drivers

@@ -25,6 +25,6 @@ class CGLSLContext {
     [[nodiscard]] static CGLSLContext& get ();
 
   private:
-    static std::shared_ptr<CGLSLContext> sInstance;
+    static std::unique_ptr <CGLSLContext> sInstance;
 };
 } // namespace WallpaperEngine::Render::Shaders

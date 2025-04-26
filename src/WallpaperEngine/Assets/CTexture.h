@@ -98,7 +98,7 @@ class CTexture final : public ITexture {
         /** Pointer to the uncompressed data */
         std::unique_ptr<char[]> uncompressedData = nullptr;
         /** JSON data */
-        std::string json;
+        std::string json {};
         /**
          * Performs actual decompression of the compressed data
          */
@@ -120,33 +120,33 @@ class CTexture final : public ITexture {
         /** The version of the animated data */
         AnimatedVersion animatedVersion = AnimatedVersion::TEXSUNKN;
         /** Flags with extra texture information */
-        TextureFlags flags;
+        TextureFlags flags = TextureFlags::NoFlags;
         /** Real width of the texture */
-        uint32_t width;
+        uint32_t width = 0;
         /** Real height of the texture */
-        uint32_t height;
+        uint32_t height = 0;
         /** Texture width in memory (power of 2) */
-        uint32_t textureWidth;
+        uint32_t textureWidth = 0;
         /** Texture height in memory (power of 2) */
-        uint32_t textureHeight;
+        uint32_t textureHeight = 0;
         /** Gif width */
-        uint32_t gifWidth;
+        uint32_t gifWidth = 0;
         /** Gif height */
-        uint32_t gifHeight;
+        uint32_t gifHeight = 0;
         /** Texture data format */
-        TextureFormat format;
+        TextureFormat format = TextureFormat::UNKNOWN;
         /** Free Image format */
         FreeImageFormat freeImageFormat = FreeImageFormat::FIF_UNKNOWN;
         /** Indicates if we have an MP4 video */
-        bool isVideoMp4{};
+        bool isVideoMp4 = false;
         /** The amount of images in the texture file */
-        uint32_t imageCount;
+        uint32_t imageCount = 0;
         /** Number of mipmap levels on the texture */
-        uint32_t mipmapCount;
+        uint32_t mipmapCount = 0;
         /** List of mipmaps */
-        std::map<uint32_t, std::vector<std::shared_ptr<TextureMipmap>>> images;
+        std::map<uint32_t, std::vector<std::shared_ptr<TextureMipmap>>> images {};
         /** List of animation frames */
-        std::vector<std::shared_ptr<TextureFrame>> frames;
+        std::vector<std::shared_ptr<TextureFrame>> frames {};
     };
 
   public:
@@ -206,10 +206,10 @@ class CTexture final : public ITexture {
     void setupOpenGLParameters (uint32_t textureID);
 
     /** The texture header */
-    std::unique_ptr<TextureHeader> m_header;
+    std::unique_ptr<TextureHeader> m_header = nullptr;
     /** OpenGL's texture ID */
-    GLuint* m_textureID;
+    GLuint* m_textureID = nullptr;
     /** Resolution vector of the texture */
-    glm::vec4 m_resolution;
+    glm::vec4 m_resolution {};
 };
 } // namespace WallpaperEngine::Assets

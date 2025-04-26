@@ -42,9 +42,9 @@ class CGLFWMouseInput final : public CMouseInput {
     /**
      * The current mouse position
      */
-    glm::dvec2 m_mousePosition;
-    glm::dvec2 m_reportedPosition;
-    MouseClickStatus m_leftClick;
-    MouseClickStatus m_rightClick;
+    glm::dvec2 m_mousePosition = {};
+    glm::dvec2 m_reportedPosition = {};
+    MouseClickStatus m_leftClick = Released;
+    MouseClickStatus m_rightClick = Released;
 };
 } // namespace WallpaperEngine::Input::Drivers

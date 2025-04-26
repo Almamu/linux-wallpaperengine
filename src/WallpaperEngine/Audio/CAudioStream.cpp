@@ -5,9 +5,6 @@
 #include <iostream>
 
 // maximum size of the queue to prevent reading too much data
-#define MAX_QUEUE_SIZE (5 * 1024 * 1024)
-#define MIN_FRAMES (25)
-#define NO_AUDIO_STREAM (-1)
 
 using namespace WallpaperEngine::Audio;
 
@@ -90,15 +87,11 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
 }
 
 CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename) :
-    m_swrctx (nullptr),
-    m_audioStream(NO_AUDIO_STREAM),
     m_audioContext (context) {
     this->loadCustomContent (filename.c_str ());
 }
 
 CAudioStream::CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length) :
-    m_swrctx (nullptr),
-    m_audioStream(NO_AUDIO_STREAM),
     m_audioContext (context) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
@@ -122,9 +115,7 @@ CAudioStream::CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_
 }
 
 CAudioStream::CAudioStream (CAudioContext& audioContext, AVCodecContext* context) :
-    m_swrctx (nullptr),
     m_audioContext (audioContext),
-    m_audioStream(NO_AUDIO_STREAM),
     m_context (context),
     m_queue (new PacketQueue) {
     this->initialize ();

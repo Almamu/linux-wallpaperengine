@@ -37,6 +37,6 @@ class CMaterial final : public Helpers::CContextAware {
     const Render::Objects::CEffect* m_effect;
     const Core::Objects::Images::CMaterial* m_material;
 
-    std::vector<CPass*> m_passes;
+    std::vector<CPass*> m_passes = {};
 };
 } // namespace WallpaperEngine::Render::Objects::Effects

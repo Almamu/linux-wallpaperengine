@@ -16,44 +16,7 @@ using namespace WallpaperEngine::Application;
 
 CApplicationContext::CApplicationContext (int argc, char* argv []) :
     m_argc (argc),
-    m_argv (argv),
-    settings ({
-        .general = {
-            .onlyListProperties = false,
-            .dumpStructure = false,
-            .assets = "",
-            .defaultBackground = "",
-            .screenBackgrounds = {},
-            .properties = {},
-            .screenScalings = {},
-            .screenClamps = {},
-        },
-        .render = {
-            .mode = NORMAL_WINDOW,
-            .maximumFPS = 30,
-            .pauseOnFullscreen = true,
-            .window =
-                {
-                    .geometry = {},
-                    .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
-                    .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
-                },
-        },
-        .audio = {
-            .enabled = true,
-            .volume = 15,
-            .automute = true,
-            .audioprocessing = true,
-        },
-        .mouse = {
-            .enabled = true,
-        },
-        .screenshot = {
-            .take = false,
-            .delay = 5,
-            .path = "",
-        },
-    }) {
+    m_argv (argv) {
     std::string lastScreen;
 
     argparse::ArgumentParser program ("linux-wallpaperengine", "0.0", argparse::default_arguments::help);

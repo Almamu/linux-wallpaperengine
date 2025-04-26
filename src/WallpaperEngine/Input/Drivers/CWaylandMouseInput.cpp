@@ -5,8 +5,7 @@
 using namespace WallpaperEngine::Input::Drivers;
 
 CWaylandMouseInput::CWaylandMouseInput (const WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver& driver) :
-    m_waylandDriver (driver),
-    m_pos () {}
+    m_waylandDriver (driver) {}
 
 void CWaylandMouseInput::update () {}
 

@@ -23,8 +23,8 @@ class CSound final : public CObject {
     void load ();
 
   private:
-    std::vector<std::shared_ptr<const uint8_t[]>> m_soundBuffer;
-    std::vector<Audio::CAudioStream*> m_audioStreams;
+    std::vector<std::shared_ptr<const uint8_t[]>> m_soundBuffer = {};
+    std::vector<Audio::CAudioStream*> m_audioStreams = {};
 
     const Core::Objects::CSound* m_sound;
 };

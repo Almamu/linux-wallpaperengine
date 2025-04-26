@@ -40,6 +40,6 @@ class CTextureCache final : Helpers::CContextAware {
 
   private:
     /** Cached textures */
-    std::map<std::string, std::shared_ptr<const ITexture>> m_textureCache;
+    std::map<std::string, std::shared_ptr<const ITexture>> m_textureCache = {};
 };
 } // namespace WallpaperEngine::Render

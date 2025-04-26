@@ -18,7 +18,7 @@ class CWPSchemeHandlerFactory : public CefSchemeHandlerFactory {
 
     static std::string generateSchemeName (const std::string& workshopId);
   private:
-    std::shared_ptr<const Core::CProject> m_project;
+    std::shared_ptr<const Core::CProject> m_project = nullptr;
 
     IMPLEMENT_REFCOUNTING (CWPSchemeHandlerFactory);
     DISALLOW_COPY_AND_ASSIGN (CWPSchemeHandlerFactory);

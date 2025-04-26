@@ -4,7 +4,6 @@ namespace WallpaperEngine::Audio::Drivers::Detectors {
 CAudioPlayingDetector::CAudioPlayingDetector (
     Application::CApplicationContext& appContext,
     const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
-    m_isPlaying (false),
     m_applicationContext (appContext),
     m_fullscreenDetector (fullscreenDetector) {}
 

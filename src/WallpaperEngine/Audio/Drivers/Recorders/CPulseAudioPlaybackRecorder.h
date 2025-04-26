@@ -34,7 +34,7 @@ class CPulseAudioPlaybackRecorder final : public CPlaybackRecorder {
     pa_context* m_context;
     SPulseAudioData m_captureData;
 
-    float m_audioFFTbuffer [WAVE_BUFFER_SIZE];
+    float m_audioFFTbuffer [WAVE_BUFFER_SIZE] = {0.0f};
     kiss_fft_cpx m_FFTinfo [WAVE_BUFFER_SIZE / 2 + 1] = {0};
     float m_FFTdestination64 [64] = {0};
     float m_FFTdestination32 [32] = {0};

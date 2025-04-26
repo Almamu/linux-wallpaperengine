@@ -16,19 +16,16 @@ extern "C"
 #include <libswscale/swscale.h>
 }
 
-namespace WallpaperEngine::Core::Wallpapers
-{
-    class CWeb : public CWallpaper {
-    public:
-        CWeb (std::string filename, const CProject& project);
+namespace WallpaperEngine::Core::Wallpapers {
+class CWeb : public CWallpaper {
+  public:
+    CWeb (std::string filename, const CProject& project);
 
-        const std::string& getFilename () const;
+    const std::string& getFilename () const;
 
-    protected:
-        friend class CWallpaper;
+  protected:
+    friend class CWallpaper;
 
-        const std::string m_filename;
-
-    private:
-    };
+    const std::string m_filename;
+};
 }

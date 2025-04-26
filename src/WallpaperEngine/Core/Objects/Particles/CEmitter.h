@@ -39,7 +39,7 @@ class CEmitter {
     /**
      * @return The rate of particle emission
      */
-    [[nodiscard]] double getRate () const;
+    [[nodiscard]] const double getRate () const;
 
   protected:
     CEmitter (
@@ -60,6 +60,6 @@ class CEmitter {
     /** The center of the emitter */
     const glm::vec3 m_origin;
     /** The rate of emission */
-    double m_rate;
+    const double m_rate;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles

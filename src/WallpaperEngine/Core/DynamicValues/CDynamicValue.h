@@ -8,7 +8,6 @@
 namespace WallpaperEngine::Core::DynamicValues {
 class CDynamicValue {
   public:
-    CDynamicValue ();
     ~CDynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;
@@ -53,17 +52,17 @@ class CDynamicValue {
     virtual void propagate () const;
 
   private:
-    mutable std::vector<CDynamicValue*> m_outgoingConnections;
-    mutable std::vector<const CDynamicValue*> m_incomingConnections;
+    mutable std::vector<CDynamicValue*> m_outgoingConnections = {};
+    mutable std::vector<const CDynamicValue*> m_incomingConnections = {};
     // different values that we will be casted to automagically
-    glm::ivec4 m_ivec4;
-    glm::ivec3 m_ivec3;
-    glm::ivec2 m_ivec2;
-    glm::vec4 m_vec4;
-    glm::vec3 m_vec3;
-    glm::vec2 m_vec2;
-    float m_float;
-    int m_int;
-    bool m_bool;
+    glm::ivec4 m_ivec4 = {};
+    glm::ivec3 m_ivec3 = {};
+    glm::ivec2 m_ivec2 = {};
+    glm::vec4 m_vec4 = {};
+    glm::vec3 m_vec3 = {};
+    glm::vec2 m_vec2 = {};
+    float m_float = 0.0f;
+    int m_int = 0;
+    bool m_bool = false;
 };
 };

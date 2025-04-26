@@ -24,14 +24,9 @@ class CX11FullScreenDetector final : public CFullScreenDetector {
     void initialize ();
     void stop ();
 
-    struct ScreenInfo {
-        glm::ivec4 viewport;
-        std::string name;
-    };
-
-    Display* m_display;
+    Display* m_display = nullptr;
     Window m_root;
-    std::vector<ScreenInfo> m_screens;
+    std::map<std::string, glm::ivec4> m_screens = {};
     CVideoDriver& m_driver;
 };
 } // namespace Detectors

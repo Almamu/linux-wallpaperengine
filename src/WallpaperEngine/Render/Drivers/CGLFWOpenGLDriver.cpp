@@ -2,6 +2,9 @@
 #include "CVideoFactories.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#ifdef ENABLE_X11
+#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#endif
 
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
@@ -19,8 +22,7 @@ CGLFWOpenGLDriver::CGLFWOpenGLDriver (
 ) :
     m_mouseInput (*this),
     CVideoDriver (app, m_mouseInput),
-    m_context (context),
-    m_frameCounter (0) {
+    m_context (context) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw

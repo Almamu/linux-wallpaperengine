@@ -24,19 +24,19 @@ class ITexture {
         virtual ~TextureFrame () = default;
 
         /** The image index of this frame */
-        uint32_t frameNumber;
+        uint32_t frameNumber = 0;
         /** The amount of time this frame spends being displayed */
-        float frametime;
+        float frametime = 0.0f;
         /** The x position of the frame in the texture */
-        float x;
+        float x = 0.0f;
         /** The y position of the frame in the texture */
-        float y;
+        float y = 0.0f;
         /** The width of the frame in the texture */
-        float width1;
-        float width2;
+        float width1 = 0.0f;
+        float width2 = 0.0f;
         /** The height of the frame in the texture */
-        float height1;
-        float height2;
+        float height1 = 0.0f;
+        float height2 = 0.0f;
     };
 
     /**

@@ -31,15 +31,15 @@ class CFBO final : public ITexture {
     [[nodiscard]] bool isAnimated () const override;
 
   private:
-    GLuint m_framebuffer;
-    GLuint m_depthbuffer;
-    GLuint m_texture;
-    glm::vec4 m_resolution;
-    float m_scale;
-    std::string m_name;
-    ITexture::TextureFormat m_format;
-    ITexture::TextureFlags m_flags;
+    GLuint m_framebuffer = GL_NONE;
+    GLuint m_depthbuffer = GL_NONE;
+    GLuint m_texture = GL_NONE;
+    glm::vec4 m_resolution = {};
+    float m_scale = 0;
+    std::string m_name = "";
+    ITexture::TextureFormat m_format = UNKNOWN;
+    ITexture::TextureFlags m_flags = NoFlags;
     /** Placeholder for frames, FBOs only have ONE */
-    std::vector<std::shared_ptr<TextureFrame>> m_frames;
+    std::vector<std::shared_ptr<TextureFrame>> m_frames = {};
 };
 } // namespace WallpaperEngine::Render

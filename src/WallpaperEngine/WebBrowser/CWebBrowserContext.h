@@ -19,8 +19,8 @@ namespace WallpaperEngine::WebBrowser {
         ~CWebBrowserContext();
 
       private:
-        CefRefPtr<CefApp> m_browserApplication;
-        CefRefPtr<CefCommandLine> m_commandLine;
+        CefRefPtr<CefApp> m_browserApplication = nullptr;
+        CefRefPtr<CefCommandLine> m_commandLine = nullptr;
         WallpaperEngine::Application::CWallpaperApplication& m_wallpaperApplication;
     };
 } // namespace WallpaperEngine::WebBrowser

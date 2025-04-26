@@ -45,7 +45,7 @@ class CObject : public Helpers::CContextAware {
     virtual ~CObject () override = default;
 
   private:
-    Wallpapers::CScene* m_scene;
+    Wallpapers::CScene* m_scene = nullptr;
     const Core::CObject* m_object;
 };
 } // namespace WallpaperEngine::Render

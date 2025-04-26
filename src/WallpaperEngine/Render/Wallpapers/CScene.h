@@ -41,15 +41,15 @@ class CScene final : public CWallpaper {
   private:
     Render::CObject* createObject (const Core::CObject* object);
 
-    CCamera* m_camera;
-    CObject* m_bloomObject;
-    std::map<int, CObject*> m_objects;
-    std::vector<CObject*> m_objectsByRenderOrder;
-    glm::vec2 m_mousePosition;
-    glm::vec2 m_mousePositionLast;
-    glm::vec2 m_parallaxDisplacement;
-    std::shared_ptr<const CFBO> _rt_4FrameBuffer;
-    std::shared_ptr<const CFBO> _rt_8FrameBuffer;
-    std::shared_ptr<const CFBO> _rt_Bloom;
+    CCamera* m_camera = nullptr;
+    CObject* m_bloomObject = nullptr;
+    std::map<int, CObject*> m_objects = {};
+    std::vector<CObject*> m_objectsByRenderOrder = {};
+    glm::vec2 m_mousePosition = {};
+    glm::vec2 m_mousePositionLast = {};
+    glm::vec2 m_parallaxDisplacement = {};
+    std::shared_ptr<const CFBO> _rt_4FrameBuffer = nullptr;
+    std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;
+    std::shared_ptr<const CFBO> _rt_Bloom = nullptr;
 };
 } // namespace WallpaperEngine::Render::Wallpaper

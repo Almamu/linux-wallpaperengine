@@ -61,8 +61,8 @@ class CPackage final : public CContainer {
 
   private:
     /** The path to the package file */
-    std::filesystem::path m_path;
+    std::filesystem::path m_path {};
     /** Contents of the package file */
-    std::map<std::string, std::unique_ptr<CFileEntry>> m_contents;
+    std::map<std::string, std::unique_ptr<CFileEntry>> m_contents {};
 };
 } // namespace WallpaperEngine::Assets

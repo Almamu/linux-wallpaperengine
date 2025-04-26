@@ -29,11 +29,11 @@ class CVideo final : public CWallpaper {
     friend class CWallpaper;
 
   private:
-    mpv_handle* m_mpv;
-    mpv_render_context* m_mpvGl;
+    mpv_handle* m_mpv = nullptr;
+    mpv_render_context* m_mpvGl = nullptr;
 
-    bool m_paused;
-    int64_t m_width;
-    int64_t m_height;
+    bool m_paused = false;
+    int64_t m_width = 16;
+    int64_t m_height = 16;
 };
 } // namespace WallpaperEngine::Render::Wallpapers

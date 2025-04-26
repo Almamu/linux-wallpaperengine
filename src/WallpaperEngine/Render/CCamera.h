@@ -19,19 +19,19 @@ class CCamera {
 
     void setOrthogonalProjection (float width, float height);
 
-    const glm::vec3& getCenter () const;
-    const glm::vec3& getEye () const;
-    const glm::vec3& getUp () const;
-    const glm::mat4& getProjection () const;
-    const glm::mat4& getLookAt () const;
-    Wallpapers::CScene* getScene () const;
-    bool isOrthogonal () const;
+    [[nodiscard]] const glm::vec3& getCenter () const;
+    [[nodiscard]] const glm::vec3& getEye () const;
+    [[nodiscard]] const glm::vec3& getUp () const;
+    [[nodiscard]] const glm::mat4& getProjection () const;
+    [[nodiscard]] const glm::mat4& getLookAt () const;
+    [[nodiscard]] Wallpapers::CScene* getScene () const;
+    [[nodiscard]] bool isOrthogonal () const;
 
   private:
-    bool m_isOrthogonal;
-    glm::mat4 m_projection;
-    glm::mat4 m_lookat;
+    bool m_isOrthogonal = false;
+    glm::mat4 m_projection = {};
+    glm::mat4 m_lookat = {};
     const Core::Scenes::CCamera* m_camera;
-    Wallpapers::CScene* m_scene;
+    Wallpapers::CScene* m_scene = nullptr;
 };
 } // namespace WallpaperEngine::Render

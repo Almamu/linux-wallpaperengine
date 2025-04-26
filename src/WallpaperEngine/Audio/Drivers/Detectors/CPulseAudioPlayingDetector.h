@@ -15,8 +15,8 @@ class CPulseAudioPlayingDetector final : public CAudioPlayingDetector {
     void update () override;
 
   private:
-    pa_mainloop* m_mainloop;
-    pa_mainloop_api* m_mainloopApi;
-    pa_context* m_context;
+    pa_mainloop* m_mainloop = nullptr;
+    pa_mainloop_api* m_mainloopApi = nullptr;
+    pa_context* m_context = nullptr;
 };
 } // namespace WallpaperEngine::Audio::Drivers::Detectors

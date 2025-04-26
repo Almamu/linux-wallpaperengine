@@ -61,39 +61,39 @@ class CImage final : public CObject {
     void updateScreenSpacePosition ();
 
   private:
-    std::shared_ptr<const ITexture> m_texture;
+    std::shared_ptr<const ITexture> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
     GLuint m_texcoordCopy;
     GLuint m_texcoordPass;
 
-    glm::mat4 m_modelViewProjectionScreen;
-    glm::mat4 m_modelViewProjectionPass;
-    glm::mat4 m_modelViewProjectionCopy;
-    glm::mat4 m_modelViewProjectionScreenInverse;
-    glm::mat4 m_modelViewProjectionPassInverse;
-    glm::mat4 m_modelViewProjectionCopyInverse;
+    glm::mat4 m_modelViewProjectionScreen = {};
+    glm::mat4 m_modelViewProjectionPass = {};
+    glm::mat4 m_modelViewProjectionCopy = {};
+    glm::mat4 m_modelViewProjectionScreenInverse = {};
+    glm::mat4 m_modelViewProjectionPassInverse = {};
+    glm::mat4 m_modelViewProjectionCopyInverse = {};
 
-    glm::mat4 m_modelMatrix;
-    glm::mat4 m_viewProjectionMatrix;
+    glm::mat4 m_modelMatrix = {};
+    glm::mat4 m_viewProjectionMatrix = {};
 
-    std::shared_ptr<const CFBO> m_mainFBO;
-    std::shared_ptr<const CFBO> m_subFBO;
-    std::shared_ptr<const CFBO> m_currentMainFBO;
-    std::shared_ptr<const CFBO> m_currentSubFBO;
+    std::shared_ptr<const CFBO> m_mainFBO = nullptr;
+    std::shared_ptr<const CFBO> m_subFBO = nullptr;
+    std::shared_ptr<const CFBO> m_currentMainFBO = nullptr;
+    std::shared_ptr<const CFBO> m_currentSubFBO = nullptr;
 
     const Core::Objects::CImage* m_image;
 
-    std::vector<CEffect*> m_effects;
-    Effects::CMaterial* m_material;
-    Effects::CMaterial* m_colorBlendMaterial;
-    std::vector<Effects::CPass*> m_passes;
+    std::vector<CEffect*> m_effects = {};
+    Effects::CMaterial* m_material = nullptr;
+    Effects::CMaterial* m_colorBlendMaterial = nullptr;
+    std::vector<Effects::CPass*> m_passes = {};
 
-    glm::vec4 m_pos;
+    glm::vec4 m_pos = {};
 
-    double m_animationTime;
+    double m_animationTime = 0.0;
 
-    bool m_initialized;
+    bool m_initialized = false;
 };
 } // namespace WallpaperEngine::Render::Objects

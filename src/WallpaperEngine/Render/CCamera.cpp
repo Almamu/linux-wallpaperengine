@@ -7,9 +7,6 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 CCamera::CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera) :
-    m_isOrthogonal (false),
-    m_projection (),
-    m_lookat (),
     m_camera (camera),
     m_scene (scene) {
     // get the lookat position

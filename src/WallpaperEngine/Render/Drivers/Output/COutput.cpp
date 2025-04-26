@@ -3,8 +3,6 @@
 using namespace WallpaperEngine::Render::Drivers::Output;
 
 COutput::COutput (CApplicationContext& context, CVideoDriver& driver) :
-    m_fullWidth (0),
-    m_fullHeight (0),
     m_context (context),
     m_driver (driver) {}
 

@@ -179,24 +179,24 @@ class CWallpaper : public Helpers::CContextAware {
     [[nodiscard]] const Core::CWallpaper* getWallpaperData () const;
 
     /** The FBO used for scene output */
-    std::shared_ptr<const CFBO> m_sceneFBO;
+    std::shared_ptr<const CFBO> m_sceneFBO = nullptr;
 
   private:
     /** The texture used for the scene output */
-    GLuint m_texCoordBuffer;
-    GLuint m_positionBuffer;
-    GLuint m_shader;
+    GLuint m_texCoordBuffer = GL_NONE;
+    GLuint m_positionBuffer = GL_NONE;
+    GLuint m_shader = GL_NONE;
     // shader variables
-    GLint g_Texture0;
-    GLint a_Position;
-    GLint a_TexCoord;
-    GLuint m_vaoBuffer;
+    GLint g_Texture0 = GL_NONE;
+    GLint a_Position = GL_NONE;
+    GLint a_TexCoord = GL_NONE;
+    GLuint m_vaoBuffer = GL_NONE;
     /** The framebuffer to draw the background to */
-    GLuint m_destFramebuffer;
+    GLuint m_destFramebuffer = GL_NONE;
     /** Setups OpenGL's shaders for this wallpaper backbuffer */
     void setupShaders ();
     /** List of FBOs registered for this wallpaper */
-    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos;
+    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos = {};
     /** Audio context that is using this wallpaper */
     CAudioContext& m_audioContext;
     /** Current Wallpaper state */

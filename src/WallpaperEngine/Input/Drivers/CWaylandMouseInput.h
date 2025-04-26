@@ -44,7 +44,7 @@ class CWaylandMouseInput final : public CMouseInput {
      */
     const WallpaperEngine::Render::Drivers::CWaylandOpenGLDriver& m_waylandDriver;
 
-    glm::dvec2 m_pos;
+    glm::dvec2 m_pos = {};
 };
 } // namespace WallpaperEngine::Input::Drivers
 

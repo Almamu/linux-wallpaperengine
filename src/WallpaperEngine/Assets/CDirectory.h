@@ -21,6 +21,6 @@ class CDirectory final : public CContainer {
 
   private:
     /** The basepath for the directory */
-    std::filesystem::path m_basepath;
+    std::filesystem::path m_basepath {};
 };
 } // namespace WallpaperEngine::Assets

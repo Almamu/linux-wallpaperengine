@@ -70,6 +70,6 @@ const glm::vec3& CEmitter::getOrigin () const {
     return this->m_origin;
 }
 
-double CEmitter::getRate () const {
+const double CEmitter::getRate () const {
     return this->m_rate;
 }
