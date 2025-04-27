@@ -38,8 +38,12 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 
 ## Commands
 ```
+# Ubuntu
 sudo apt-get update
 sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 qtbase5-dev
+
+# Fedora
+sudo dnf install @development-tools cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel glew-devel freeglut-devel SDL2-devel lz4-devel libXxf86vm-devel glm-devel glfw-devel mpv-devel qt5-qtbase-devel
 ```
 
 # 5. How to use
@@ -63,12 +67,12 @@ You can download a zipped version of the repository here: https://github.com/Alm
 
 You can also clone the repository using git like this:
 ```
-git clone git@github.com:Almamu/linux-wallpaperengine.git
+git clone git@github.com:delia/linux-wallpaperengine.git
 ```
 
 Or using the HTTPS method if you haven't set up SSH:
 ```
-https://github.com/Almamu/linux-wallpaperengine.git
+https://github.com/delia/linux-wallpaperengine.git
 ```
 
 ## 5.4. Compilation steps
@@ -93,7 +97,18 @@ make
 **REMEMBER: The assets folder has to be in the same folder as the executable**
 
 ## 5.5. Running a background
-### 5.5.1. Running a background from Steam
+There are two ways to run a background: Run it with the gui, or run it in cli with the workshop's ID
+
+### 5.5.1. Running with GUI
+To open the GUI/Wallpaper-launcher you just need to run the following command:
+
+```
+./linux-wallpaperengine --gui
+```
+
+In the simple Qt based UI you can select one of your installed Wallpapers and the screen where the wallpaper should run on.
+
+### 5.5.2. Running a background from Steam
 Just like with the assets, the software can automatically detect where the subscribed backgrounds are stored. To get started, search in the workshop for whatever background you want to use and click the "+Subscribe" button. This should download the background in the steam directory.
 
 To actually use the background you'll need to know the workshop's ID. This can be obtained right-clicking anywhere in the background's page -> "Copy Page URL". You can paste this URL anywhere, it will look something like this:
@@ -107,13 +122,13 @@ Where 1845706469 is the wallpaper's ID. You can use this ID to run wallpaperengi
 ./linux-wallpaperengine 1845706469
 ```
 
-### 5.5.2. Running a background in a different folder
+### 5.5.3. Running a background in a different folder
 For the situations where the software cannot detect where the backgrounds are stored, you can specify a full path to it, like so:
 ```
 ./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
 ```
 
-### 5.5.2. Running in a window (Default)
+### 5.5.4. Running in a window (Default)
 By default the app will load the backgrounds in a window so you can preview them:
 ```
 ./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
@@ -121,7 +136,7 @@ By default the app will load the backgrounds in a window so you can preview them
 
 Where `/home/almamu/Development/backgrounds/1845706469/` is the background's path.
 
-### 5.5.3. Running as a screen's background
+### 5.5.5. Running as a screen's background
 The app supports running as background in X11 and Wayland. Use the --screen-root switch and the screen name, like so:
 
 ```
@@ -137,7 +152,7 @@ Only screens configured with the XRandr extension are supported. To specify the 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, gnome, kde, nautilus, etc)**
 
 
-### 5.5.4. Limiting FPS
+### 5.5.6. Limiting FPS
 To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
 ```
 ./linux-wallpaperengine --fps 30
