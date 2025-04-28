@@ -67,12 +67,12 @@ You can download a zipped version of the repository here: https://github.com/Alm
 
 You can also clone the repository using git like this:
 ```
-git clone git@github.com:delia/linux-wallpaperengine.git
+git clone git@github.com:Deliasama/linux-wallpaperengine.git
 ```
 
 Or using the HTTPS method if you haven't set up SSH:
 ```
-https://github.com/delia/linux-wallpaperengine.git
+https://github.com/Deliasama/linux-wallpaperengine.git
 ```
 
 ## 5.4. Compilation steps
