@@ -1,5 +1,6 @@
 #include <csignal>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <QApplication>
@@ -10,6 +11,7 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QObject>
+#include <QLocalServer>
 #include <iterator>
 #include <qboxlayout.h>
 #include <qcoreapplication.h>
@@ -17,6 +19,7 @@
 #include <qgridlayout.h>
 #include <qlabel.h>
 #include <qnamespace.h>
+#include <qobject.h>
 #include <qprocess.h>
 #include <qpushbutton.h>
 #include <qscrollarea.h>
@@ -25,6 +28,7 @@
 #include <filesystem>
 #include <vector>
 
+#include "Qt/SingleInstanceManager.h"
 #include "Qt/UIWindow.h"
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
@@ -34,6 +38,8 @@
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;
 QCoreApplication* globalApp = nullptr;
+SingleInstanceManager* g_instanceManager = nullptr;
+
 
 class UIWindow;
 
@@ -41,6 +47,7 @@ void signalhandler(int sig)
 {
     if (appPointer == nullptr) {
       if(globalApp != nullptr) {
+        if (g_instanceManager) g_instanceManager->cleanUpServer();
         globalApp->quit();
       } else return;
     }
@@ -56,16 +63,14 @@ void initLogging ()
 
 int main (int argc, char* argv[]) {
     initLogging ();
-    bool runGui = false; 
 
-    for (int i = 1; i < argc; i++) {
-      if(std::strcmp(argv[i], "--gui") == 0) {
-        runGui = true;
-        break;
+    g_instanceManager = new SingleInstanceManager("linux-wallpaperengine");
+
+    if (argc <= 1) {
+      if (!g_instanceManager->tryListen()) {
+        std::cout << "App is already running!!!!\n";
+        return 0;
       }
-    }
-
-    if (runGui) {
       std::string path = Steam::FileSystem::workshopDirectory(431960);
 
       std::vector<std::string> wallpaperPaths;
@@ -81,7 +86,7 @@ int main (int argc, char* argv[]) {
       std::signal (SIGINT, signalhandler);
       std::signal (SIGTERM, signalhandler);
 
-      auto* uiWindow = new UIWindow(nullptr, &qapp);
+      auto* uiWindow = new UIWindow(nullptr, &qapp, g_instanceManager);
 
       uiWindow->setupUIWindow(wallpaperPaths);
 

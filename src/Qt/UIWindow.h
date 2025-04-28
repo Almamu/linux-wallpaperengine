@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Qt/SingleInstanceManager.h"
 #include <map>
 #include <qapplication.h>
 #include <qcombobox.h>
+#include <qglobal.h>
 #include <qgridlayout.h>
 #include <qlineedit.h>
 #include <qobjectdefs.h>
@@ -28,11 +30,12 @@ class UIWindow : public QWidget {
   Q_OBJECT
 
   public:
-    UIWindow(QWidget* parent, QApplication* qapp);
+    UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* instanceGuard);
     void setupUIWindow(std::vector<std::string> wallpaperPaths);
 
   private:
     QApplication* qapp;
+    SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     std::map<std::string, std::string> selectedWallpapers;

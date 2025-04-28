@@ -1,26 +1,31 @@
 #include "UIWindow.h"
+#include "Qt/SingleInstanceManager.h"
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <iostream>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qcursor.h>
+#include <qglobal.h>
 #include <qlabel.h>
 #include <qlineedit.h>
+#include <qlocalsocket.h>
 #include <qnamespace.h>
 #include <qprocess.h>
 #include <qwidget.h>
 #include <qwindowdefs.h>
+#include <QByteArray>
 #include <string>
 #include <vector>
 
 #define PICTURE_SIZE 256
 
-UIWindow::UIWindow(QWidget* parent, QApplication* qapp) {
+UIWindow::UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* ig) {
   this->qapp = qapp; 
   this->screenSelector = new QComboBox(this);
   this->extraFlagsInput = new QLineEdit(this);
   this->wallpaperEngine = new QProcess(this);
+  this->instanceGuard = ig;
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
@@ -67,6 +72,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     
     QAbstractButton::connect(button, &QPushButton::clicked, [button, this]() {
       QString clickedPath = button->property("path").toString();
+      std::cout << clickedPath.toStdString() << "\n";
       button->setEnabled(false);
 
       this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
@@ -88,6 +94,12 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   QObject::connect(this->qapp, &QCoreApplication::aboutToQuit, this, [this]() {
     wallpaperEngine->terminate(); 
     wallpaperEngine->waitForFinished(3000);
+
+    instanceGuard->cleanUpServer();
+  });
+
+  QObject::connect(instanceGuard, &SingleInstanceManager::messageReceived, [this](const QByteArray& msg) {
+    qDebug() << msg;
   });
 
   container->setLayout(layout);

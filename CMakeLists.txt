@@ -34,7 +34,7 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Network)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -214,6 +214,8 @@ add_executable(
     
     src/Qt/UIWindow.h
     src/Qt/UIWindow.cpp
+    src/Qt/SingleInstanceManager.h
+    src/Qt/SingleInstanceManager.cpp
 
     src/External/Android/fft.cpp
     src/External/Android/fft.h
@@ -474,7 +476,8 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     ${PULSEAUDIO_LIBRARY}
     glfw
     libcef_lib libcef_dll_wrapper
-    Qt5::Widgets)
+    Qt5::Widgets
+    Qt5::Network)
 
 
 if (WAYLAND_SUPPORT_FOUND)
