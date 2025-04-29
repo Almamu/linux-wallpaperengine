@@ -5,22 +5,27 @@
 #include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qcursor.h>
+#include <qglobal.h>
 #include <qlabel.h>
+#include <qlayout.h>
 #include <qlineedit.h>
 #include <qnamespace.h>
 #include <qprocess.h>
+#include <qpushbutton.h>
 #include <qwidget.h>
 #include <qwindowdefs.h>
 #include <string>
+#include <strings.h>
 #include <vector>
 
-#define PICTURE_SIZE 256
+#define PICTURE_SIZE 128
 
 UIWindow::UIWindow(QWidget* parent, QApplication* qapp) {
   this->qapp = qapp; 
   this->screenSelector = new QComboBox(this);
   this->extraFlagsInput = new QLineEdit(this);
   this->wallpaperEngine = new QProcess(this);
+  this->buttonLayout = new QGridLayout(this);
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
@@ -28,7 +33,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   
   // palette
   auto* pal = new QPalette();
-  pal->setColor(QPalette::Window, QColor(100, 100, 100, 255));
+  pal->setColor(QPalette::Window, QColor(0x2B, 0x2A, 0x33, 0xFF));
   this->setAutoFillBackground(true);
   this->setPalette(*pal);
    
@@ -38,9 +43,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   auto* container = new QWidget();
 
-  auto* layout = new QGridLayout(container);
-  
-  int cols = 5; 
+  int cols = 6; 
 
   for (size_t i = 0; i < wallpaperPaths.size(); i++) {
     QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
@@ -54,14 +57,15 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
       if (movie->isValid()) {
         movie->start();
         movie->jumpToFrame(0);
-        pixmap = QPixmap::fromImage(movie->currentImage());
+        pixmap = QPixmap::fromImage(movie->currentImage()).scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         movie->stop();
-        button->setIcon(pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio));
+        delete movie;
       }
-    } else button->setIcon(pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio));
-    
+    } else pixmap = pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    button->setIcon(pixmap);
     button->setIconSize(QSize(PICTURE_SIZE, PICTURE_SIZE));
-    button->setFixedSize(PICTURE_SIZE, PICTURE_SIZE);
+    button->setFixedSize(PICTURE_SIZE*1.5, PICTURE_SIZE*1.5);
     button->setProperty("path", QString::fromStdString(wallpaperPaths[i]));
 
     
@@ -76,13 +80,14 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
       QObject::connect(wallpaperEngine, &QProcess::started, button, [=]() {
         button->setEnabled(true);
+        updateSelectedButton();
       });
       // qapp.exit();
     });
 
     int row = i / cols;
     int col = i % cols;
-    layout->addWidget(button, row, col);
+    buttonLayout->addWidget(button, row, col);
   }
 
   QObject::connect(this->qapp, &QCoreApplication::aboutToQuit, this, [this]() {
@@ -90,7 +95,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     wallpaperEngine->waitForFinished(3000);
   });
 
-  container->setLayout(layout);
+  container->setLayout(buttonLayout);
   scrollArea->setWidget(container);
 
   // screen select dropdown
@@ -107,6 +112,10 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   this->screenSelector->setFont(font);
 
   this->screenSelector->setPalette(*pal);
+
+  QObject::connect(this->screenSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
+    updateSelectedButton();
+  });
 
   auto* screenSelectorLayout = new QVBoxLayout();
   auto* label = new QLabel("Screen Selector:");
@@ -125,6 +134,9 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   mainlayout->addWidget(scrollArea);
   mainlayout->addWidget(extraFlagsInput);
   this->setLayout(mainlayout);
+  
+  // update Buttons
+  updateSelectedButton();
 }
 
 void UIWindow::showEvent(QShowEvent* event) {
@@ -157,6 +169,28 @@ void UIWindow::startNewWallpaperEngine() {
 
   // start Wallpaper Process
   wallpaperEngine->start(QCoreApplication::applicationFilePath(), args);
+}
+
+void UIWindow::updateSelectedButton() {
+  for (int i = 0; i < this->buttonLayout->rowCount(); i++) {
+    for (int j = 0; j < this->buttonLayout->columnCount(); j++) {
+      auto* item = this->buttonLayout->itemAtPosition(i, j);
+      if (!item) continue;
+
+      auto* widget = item->widget();
+      if (!widget) continue;
+
+      auto* button = dynamic_cast<QPushButton*>(widget);
+      if (!button) continue;
+
+      std::string selected = this->selectedWallpapers[this->screenSelector->currentText().toStdString()];
+      if (button->property("path").toString().toStdString() == selected) {
+        button->setStyleSheet("background-color: #4488ff; color white; border: 2px solid #0055cc");
+      } else {
+        button->setStyleSheet("background-color: #4A4D51; color white; border: 2px solid #2B2A33");
+      }
+    }
+  }
 }
 
 std::vector<std::string> UIWindow::split(std::string str, char delimiter) {
