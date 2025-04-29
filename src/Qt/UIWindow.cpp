@@ -1,6 +1,7 @@
 #include "UIWindow.h"
 #include "Qt/SingleInstanceManager.h"
 #include <QtConcurrent/qtconcurrentrun.h>
+#include <cstddef>
 #include <iostream>
 #include <qapplication.h>
 #include <qboxlayout.h>
@@ -11,9 +12,11 @@
 #include <qlayout.h>
 #include <qlineedit.h>
 #include <qlocalsocket.h>
+#include <qmenu.h>
 #include <qnamespace.h>
 #include <qprocess.h>
 #include <qpushbutton.h>
+#include <qsystemtrayicon.h>
 #include <qwidget.h>
 #include <qwindowdefs.h>
 #include <QByteArray>
@@ -75,7 +78,6 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     
     QAbstractButton::connect(button, &QPushButton::clicked, [button, this]() {
       QString clickedPath = button->property("path").toString();
-      std::cout << clickedPath.toStdString() << "\n";
       button->setEnabled(false);
 
       this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
@@ -103,7 +105,9 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   });
 
   QObject::connect(instanceGuard, &SingleInstanceManager::messageReceived, [this](const QByteArray& msg) {
-    qDebug() << msg;
+    if (msg == "show") {
+      if (this->isHidden()) show();
+    }
   });
 
   container->setLayout(buttonLayout);
@@ -148,12 +152,37 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   
   // update Buttons
   updateSelectedButton();
+
+  // SYSTEM TRAY
+  auto* trayIcon = new QSystemTrayIcon(QIcon::fromTheme("folder"));
+
+  auto* trayMenu = new QMenu();
+
+  auto* showAction = new QAction("Show");
+  connect(showAction, &QAction::triggered, [this]() {
+    this->show();
+  });
+
+  auto* closeAction = new QAction("close");
+  connect(closeAction, &QAction::triggered, [this]() {
+    this->qapp->quit();
+  });
+
+  trayMenu->addActions({showAction, closeAction});
+  trayIcon->setContextMenu(trayMenu);
+  trayIcon->setToolTip("Linux-Wallpaperengine");
+  trayIcon->show();
 }
 
 void UIWindow::showEvent(QShowEvent* event) {
   QtConcurrent::run([this]() {
     
   });
+}
+
+void UIWindow::closeEvent(QCloseEvent* event) {
+  this->hide();
+  event->ignore();
 }
 
 void UIWindow::startNewWallpaperEngine() {
@@ -169,6 +198,7 @@ void UIWindow::startNewWallpaperEngine() {
   QStringList args;
 
   for (auto wallpaper : this->selectedWallpapers) {
+    if (wallpaper.first == "" || wallpaper.second == "") continue;
     args.push_back("--screen-root");
     args.push_back(QString::fromStdString(wallpaper.first));
     if (!extraFlags[wallpaper.first].empty()) {

@@ -20,6 +20,10 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QMovie>
+#include <QCloseEvent>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 #include <QtConcurrent/QtConcurrent>
 #include <string>
 #include <vector>
@@ -34,11 +38,14 @@ class UIWindow : public QWidget {
     void setupUIWindow(std::vector<std::string> wallpaperPaths);
 
   private:
+    // Components
     QApplication* qapp;
     SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
+    
+    // Important Fields
     std::map<std::string, std::string> selectedWallpapers;
     std::map<std::string, std::vector<std::string>> extraFlags;
     QProcess* wallpaperEngine;
@@ -49,4 +56,5 @@ class UIWindow : public QWidget {
 
   protected:
     void showEvent(QShowEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 };

@@ -19,6 +19,12 @@ void SingleInstanceManager::cleanUpServer() {
 }
 
 bool SingleInstanceManager::tryListen() {
+  QLocalSocket socket;
+  socket.connectToServer(m_serverName);
+  if (!socket.waitForConnected(100)) {
+    QLocalServer::removeServer(m_serverName);
+  } else return false;
+
   if (!server->listen(m_serverName)) return false;
 
   connect(server, &QLocalServer::newConnection, this, [this]() {

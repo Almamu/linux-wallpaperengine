@@ -64,9 +64,13 @@ void initLogging ()
 int main (int argc, char* argv[]) {
     initLogging ();
 
-    g_instanceManager = new SingleInstanceManager("linux-wallpaperengine");
 
     if (argc <= 1) {
+      QApplication qapp(argc, argv);
+      globalApp = &qapp;
+
+      g_instanceManager = new SingleInstanceManager("linux-wallpaperengine");
+
       if (!g_instanceManager->tryListen()) {
         std::cout << "App is already running!!!!\n";
         return 0;
@@ -78,9 +82,6 @@ int main (int argc, char* argv[]) {
       for (const std::filesystem::directory_entry & entry : std::filesystem::directory_iterator(path)) {
         wallpaperPaths.push_back(entry.path());
       }
-
-      QApplication qapp(argc, argv);
-      globalApp = &qapp;
 
       // Signal for properly close the app 
       std::signal (SIGINT, signalhandler);
