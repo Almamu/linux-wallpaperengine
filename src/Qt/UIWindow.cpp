@@ -163,7 +163,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
     this->show();
   });
 
-  auto* closeAction = new QAction("close");
+  auto* closeAction = new QAction("Quit");
   connect(closeAction, &QAction::triggered, [this]() {
     this->qapp->quit();
   });
@@ -228,7 +228,7 @@ void UIWindow::updateSelectedButton() {
       if (button->property("path").toString().toStdString() == selected) {
         button->setStyleSheet("background-color: #4488ff; color white; border: 2px solid #0055cc");
       } else {
-        button->setStyleSheet("background-color: #4A4D51; color white; border: 2px solid #2B2A33");
+        button->setStyleSheet("background-color: #4A4D51; color white; border: 2px solid #3B3A43");
       }
     }
   }
