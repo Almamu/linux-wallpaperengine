@@ -38,11 +38,13 @@ class UIWindow : public QWidget {
     SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
+    QGridLayout* buttonLayout;
     std::map<std::string, std::string> selectedWallpapers;
     std::map<std::string, std::vector<std::string>> extraFlags;
     QProcess* wallpaperEngine;
 
     void startNewWallpaperEngine();
+    void updateSelectedButton();
     static std::vector<std::string> split(std::string str, char r);
 
   protected:
