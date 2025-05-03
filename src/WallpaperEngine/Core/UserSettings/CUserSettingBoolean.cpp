@@ -39,7 +39,7 @@ CUserSettingBoolean::CUserSettingBoolean (
     }
 }
 
-const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data, const CProject& project) {
+const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& data, const std::map <std::string, std::shared_ptr <Projects::CProperty>>& properties) {
     bool hasCondition = false;
     std::shared_ptr <const Projects::CProperty> sourceProperty = nullptr;
     bool defaultValue;
@@ -61,11 +61,10 @@ const CUserSettingBoolean* CUserSettingBoolean::fromJSON (const nlohmann::json& 
                     jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
 
-            for (const auto& [key, property] : project.getProperties ()) {
-                if (key == source) {
-                    sourceProperty = property;
-                    break;
-                }
+            const auto propertyIt = properties.find (source);
+
+            if (propertyIt != properties.end ()) {
+                sourceProperty = propertyIt->second;
             }
 
             if (sourceProperty == nullptr) {

@@ -5,8 +5,19 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+namespace WallpaperEngine::Data::Parsers {
+class UserSettingParser;
+}
+
+namespace WallpaperEngine::Data::Builders {
+class UserSettingBuilder;
+}
+
 namespace WallpaperEngine::Core::DynamicValues {
 class CDynamicValue {
+    //TODO: THIS SHOULD BE CHANGED ONCE THINGS ARE FINISHED
+    friend class WallpaperEngine::Data::Parsers::UserSettingParser;
+    friend class WallpaperEngine::Data::Builders::UserSettingBuilder;
   public:
     virtual ~CDynamicValue ();
 

@@ -33,7 +33,7 @@ CUserSettingFloat::CUserSettingFloat (
     }
 }
 
-const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data, const CProject& project) {
+const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data, const std::map <std::string, std::shared_ptr <Projects::CProperty>>& properties) {
     float defaultValue;
     std::string source;
     std::string expectedValue;
@@ -55,11 +55,10 @@ const CUserSettingFloat* CUserSettingFloat::fromJSON (const nlohmann::json& data
                     jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
             }
 
-            for (const auto& [key, property] : project.getProperties ()) {
-                if (key == source) {
-                    sourceProperty = property;
-                    break;
-                }
+            const auto propertyIt = properties.find (source);
+
+            if (propertyIt != properties.end ()) {
+                sourceProperty = propertyIt->second;
             }
 
             if (sourceProperty == nullptr) {

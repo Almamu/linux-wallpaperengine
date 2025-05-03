@@ -14,6 +14,10 @@ using namespace WallpaperEngine::Core::DynamicValues;
  */
 class CProperty : public CDynamicValue {
   public:
+    using UniquePtr = std::unique_ptr<CProperty>;
+    using SharedPtr = std::shared_ptr<CProperty>;
+    using WeakPtr = std::weak_ptr<CProperty>;
+
     typedef std::function<void(const CProperty*)> function_type;
     virtual ~CProperty () = default;
     static std::shared_ptr<CProperty> fromJSON (const json& data, const std::string& name);

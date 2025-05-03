@@ -509,7 +509,7 @@ template <typename T> const T* Core::jsonFindUserConfig (
     if (it == data->end () || it->type () == nlohmann::detail::value_t::null)
         return T::fromScalar (defaultValue);
 
-    return T::fromJSON (*it, project);
+    return T::fromJSON (*it, project.getProperties ());
 }
 
 template const CUserSettingBoolean* Core::jsonFindUserConfig (
@@ -530,7 +530,7 @@ template <typename T> const T* Core::jsonFindUserConfig (
     if (it == data.end () || it->type () == nlohmann::detail::value_t::null)
         return T::fromScalar (defaultValue);
 
-    return T::fromJSON (*it, project);
+    return T::fromJSON (*it, project.getProperties ());
 }
 
 template const CUserSettingBoolean* Core::jsonFindUserConfig (

@@ -12,6 +12,9 @@
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
+#include "WallpaperEngine/Data/Parsers/ProjectParser.h"
+#include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
+
 #if DEMOMODE
 #include "recording.h"
 #endif /* DEMOMODE */
@@ -205,6 +208,16 @@ std::shared_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std
     const auto container = std::make_shared <CCombinedContainer> ();
 
     this->setupContainer (container, bg);
+
+    // do the parsing with the new parser first
+    auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readFileAsString ("project.json"));
+    const auto project = WallpaperEngine::Data::Parsers::ProjectParser::parse (json, container);
+
+    auto dumper = WallpaperEngine::Data::Dumpers::StringPrinter ();
+
+    dumper.printWallpaper (*project->wallpaper);
+
+    std::cout << dumper.str () << std::endl;
 
     return Core::CProject::fromFile ("project.json", container);
 }

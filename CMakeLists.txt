@@ -198,7 +198,8 @@ if(X11_SUPPORT_FOUND)
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
         src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
+            src/WallpaperEngine/Data/Model/UserSetting.h)
     SET(X11_INCLUDES
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
@@ -510,9 +511,41 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 
+    src/WallpaperEngine/Data/Model/Types.h
+    src/WallpaperEngine/Data/Model/Project.h
+    src/WallpaperEngine/Data/Model/Wallpaper.h
+    src/WallpaperEngine/Data/Model/Object.h
+    src/WallpaperEngine/Data/Model/Material.h
+    src/WallpaperEngine/Data/Model/Effect.h
+    src/WallpaperEngine/Data/Model/Model.h
+    src/WallpaperEngine/Data/Utils/TypeCaster.cpp
+    src/WallpaperEngine/Data/Utils/TypeCaster.h
+    src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
+    src/WallpaperEngine/Data/Parsers/ProjectParser.h
+    src/WallpaperEngine/Data/Parsers/WallpaperParser.cpp
+    src/WallpaperEngine/Data/Parsers/WallpaperParser.h
+    src/WallpaperEngine/Data/Parsers/UserSettingParser.cpp
+    src/WallpaperEngine/Data/Parsers/UserSettingParser.h
+    src/WallpaperEngine/Data/Parsers/ObjectParser.cpp
+    src/WallpaperEngine/Data/Parsers/ObjectParser.h
+    src/WallpaperEngine/Data/Parsers/MaterialParser.cpp
+    src/WallpaperEngine/Data/Parsers/MaterialParser.h
+    src/WallpaperEngine/Data/Parsers/ModelParser.cpp
+    src/WallpaperEngine/Data/Parsers/ModelParser.h
+    src/WallpaperEngine/Data/Parsers/ShaderConstantParser.cpp
+    src/WallpaperEngine/Data/Parsers/ShaderConstantParser.h
+    src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
+    src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
+    src/WallpaperEngine/Data/Builders/VectorBuilder.h
+
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
-    ${DEMOMODE_SOURCES})
+    ${DEMOMODE_SOURCES}
+        src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
+        src/WallpaperEngine/Data/Dumpers/StringPrinter.h
+        src/WallpaperEngine/Data/JSON.cpp
+        src/WallpaperEngine/Data/Parsers/EffectParser.cpp
+        src/WallpaperEngine/Data/Parsers/EffectParser.h)
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}
