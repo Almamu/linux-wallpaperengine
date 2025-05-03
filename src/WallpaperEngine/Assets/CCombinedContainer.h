@@ -19,7 +19,7 @@ class CCombinedContainer final : public CContainer {
      *
      * @param container
      */
-    void add (const std::shared_ptr<CContainer>& container);
+    void add (std::unique_ptr<CContainer> container);
     /**
      * Adds the given package to the list
      *
@@ -32,6 +32,6 @@ class CCombinedContainer final : public CContainer {
 
   private:
     /** The list of containers to search files off from */
-    std::vector<std::shared_ptr<CContainer>> m_containers {};
+    std::vector<std::unique_ptr<CContainer>> m_containers {};
 };
 }; // namespace WallpaperEngine::Assets

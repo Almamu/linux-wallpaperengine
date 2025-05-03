@@ -12,7 +12,7 @@ class CUserSettingBoolean : public CUserSettingValue {
   public:
     typedef bool data_type;
 
-    static const CUserSettingBoolean* fromJSON (const nlohmann::json& data, const CProject& project);
+    static const CUserSettingBoolean* fromJSON (const nlohmann::json& data, const std::map <std::string, std::shared_ptr <Projects::CProperty>>& properties);
     static const CUserSettingBoolean* fromScalar (bool value);
 
   private:

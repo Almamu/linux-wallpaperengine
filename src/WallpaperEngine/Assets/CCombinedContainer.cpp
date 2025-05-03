@@ -8,14 +8,14 @@ using namespace WallpaperEngine::Assets;
 
 CCombinedContainer::CCombinedContainer () : CContainer () {}
 
-void CCombinedContainer::add (const std::shared_ptr<CContainer>& container) {
-    this->m_containers.emplace_back (container);
+void CCombinedContainer::add (std::unique_ptr<CContainer> container) {
+    this->m_containers.emplace_back (std::move(container));
 }
 
 void CCombinedContainer::addPkg (const std::filesystem::path& path) {
     try {
         // add the package to the list
-        this->add (std::make_shared<CPackage> (path));
+        this->add (std::make_unique<CPackage> (path));
         sLog.out ("Detected ", path.filename (), " file at ", path, ". Adding to list of searchable paths");
     } catch (CPackageLoadException&) {
         // ignore this error, the package file was not found

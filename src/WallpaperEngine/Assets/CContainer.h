@@ -6,6 +6,7 @@
 #include <string>
 
 namespace WallpaperEngine::Assets {
+
 /**
  * File container, provides access to files for backgrounds
  */

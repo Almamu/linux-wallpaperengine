@@ -12,6 +12,9 @@
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
+#include "WallpaperEngine/Data/Parsers/ProjectParser.h"
+#include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
+
 #if DEMOMODE
 #include "recording.h"
 #endif /* DEMOMODE */
@@ -37,18 +40,18 @@ CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
 void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const {
     const std::filesystem::path basepath = bg;
 
-    container->add (std::make_shared<CDirectory> (basepath));
+    container->add (std::make_unique<CDirectory> (basepath));
     container->addPkg (basepath / "scene.pkg");
     container->addPkg (basepath / "gifscene.pkg");
 
     try {
-        container->add (std::make_shared <CDirectory> (this->m_context.settings.general.assets));
+        container->add (std::make_unique <CDirectory> (this->m_context.settings.general.assets));
     } catch (CAssetLoadException&) {
         sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
     // TODO: move this somewhere else?
-    auto virtualContainer = std::make_shared <CVirtualContainer> ();
+    auto virtualContainer = std::make_unique <CVirtualContainer> ();
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -181,7 +184,7 @@ void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedConta
         "}"
     );
 
-    container->add (virtualContainer);
+    container->add (std::move(virtualContainer));
 }
 
 void CWallpaperApplication::loadBackgrounds () {
@@ -205,6 +208,16 @@ std::shared_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std
     const auto container = std::make_shared <CCombinedContainer> ();
 
     this->setupContainer (container, bg);
+
+    // do the parsing with the new parser first
+    auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readFileAsString ("project.json"));
+    const auto project = WallpaperEngine::Data::Parsers::ProjectParser::parse (json, container);
+
+    auto dumper = WallpaperEngine::Data::Dumpers::StringPrinter ();
+
+    dumper.printWallpaper (*project->wallpaper);
+
+    std::cout << dumper.str () << std::endl;
 
     return Core::CProject::fromFile ("project.json", container);
 }
