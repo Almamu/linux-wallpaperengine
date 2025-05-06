@@ -141,8 +141,6 @@ class CTexture final : public ITexture {
         bool isVideoMp4 = false;
         /** The amount of images in the texture file */
         uint32_t imageCount = 0;
-        /** Number of mipmap levels on the texture */
-        uint32_t mipmapCount = 0;
         /** List of mipmaps */
         std::map<uint32_t, std::vector<std::shared_ptr<TextureMipmap>>> images {};
         /** List of animation frames */

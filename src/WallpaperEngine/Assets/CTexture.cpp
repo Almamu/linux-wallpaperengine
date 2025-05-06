@@ -135,7 +135,7 @@ void CTexture::setupOpenGLParameters (uint32_t textureID) {
 
         // set mipmap levels
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->mipmapCount - 1);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->images [textureID].size () - 1);
 
         // setup texture wrapping and filtering
         if (this->m_header->flags & TextureFlags::ClampUVs) {
@@ -246,7 +246,6 @@ CTexture::TextureHeader::TextureHeader () :
     gifHeight (0),
     format (TextureFormat::UNKNOWN),
     imageCount (0),
-    mipmapCount (0),
     isVideoMp4 (false) {}
 
 std::unique_ptr<CTexture::TextureHeader> CTexture::parseHeader (const char* fileData) {
@@ -306,12 +305,12 @@ std::unique_ptr<CTexture::TextureHeader> CTexture::parseHeader (const char* file
 
     for (uint32_t image = 0; image < header->imageCount; image++) {
         // read the number of mipmaps available for this image
-        header->mipmapCount = *pointer++;
+        uint32_t mipmapCount = *pointer++;
         std::vector<std::shared_ptr<TextureMipmap>> mipmaps;
 
         fileData = reinterpret_cast<const char*> (pointer);
 
-        for (uint32_t i = 0; i < header->mipmapCount; i++)
+        for (uint32_t i = 0; i < mipmapCount; i++)
             mipmaps.emplace_back (parseMipmap (header.get (), &fileData));
 
         // add the pixmaps back
