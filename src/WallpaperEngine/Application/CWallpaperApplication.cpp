@@ -407,19 +407,19 @@ void CWallpaperApplication::show () {
         m_audioDriver->update ();
         // update input information
         m_videoDriver->getInputContext ().update ();
-        // check for fullscreen windows and wait until there's none fullscreen
-        if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
-            m_renderContext->setPause (true);
-            while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
-                usleep (FULLSCREEN_CHECK_WAIT_TIME);
-            m_renderContext->setPause (false);
-        }
         // process driver events
         m_videoDriver->dispatchEventQueue ();
 
         if (m_videoDriver->closeRequested()) {
             sLog.out ("Stop requested by driver");
             this->m_context.state.general.keepRunning = false;
+        }
+        // check for fullscreen windows and wait until there's none fullscreen
+        if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+            m_renderContext->setPause (true);
+            while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
+                usleep (FULLSCREEN_CHECK_WAIT_TIME);
+            m_renderContext->setPause (false);
         }
 
         if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < this->m_context.settings.screenshot.delay)
