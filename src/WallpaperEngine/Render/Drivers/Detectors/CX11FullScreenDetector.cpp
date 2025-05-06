@@ -59,9 +59,6 @@ CX11FullScreenDetector::~CX11FullScreenDetector () {
 }
 
 bool CX11FullScreenDetector::anythingFullscreen () const {
-    if (!this->getApplicationContext ().settings.render.pauseOnFullscreen)
-        return false;
-
     // stop rendering if anything is fullscreen
     bool isFullscreen = false;
     XWindowAttributes attribs;

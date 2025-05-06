@@ -408,11 +408,7 @@ void CWallpaperApplication::show () {
         // update input information
         m_videoDriver->getInputContext ().update ();
         // check for fullscreen windows and wait until there's none fullscreen
-        if (
-            this->m_context.settings.render.pauseOnFullscreen &&
-            this->m_fullScreenDetector->anythingFullscreen () &&
-            this->m_context.state.general.keepRunning
-        ) {
+        if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
             m_renderContext->setPause (true);
             while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
                 usleep (FULLSCREEN_CHECK_WAIT_TIME);
