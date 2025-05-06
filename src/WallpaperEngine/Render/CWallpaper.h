@@ -155,7 +155,7 @@ class CWallpaper : public Helpers::CContextAware {
      */
     static std::shared_ptr<CWallpaper> fromWallpaper (
         std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-        WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
   protected:

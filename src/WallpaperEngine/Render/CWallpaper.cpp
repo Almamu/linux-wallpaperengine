@@ -277,7 +277,7 @@ std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
 
 std::shared_ptr<CWallpaper> CWallpaper::fromWallpaper (
     std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) {
     if (wallpaper->is<Core::Wallpapers::CScene> ()) {
@@ -288,7 +288,7 @@ std::shared_ptr<CWallpaper> CWallpaper::fromWallpaper (
             wallpaper, context, audioContext, scalingMode, clampMode);
     } else if (wallpaper->is<Core::Wallpapers::CWeb> ()) {
         return std::make_shared<WallpaperEngine::Render::Wallpapers::CWeb> (
-            wallpaper, context, audioContext, browserContext, scalingMode, clampMode);
+            wallpaper, context, audioContext, *browserContext, scalingMode, clampMode);
     } else
         sLog.exception ("Unsupported wallpaper type");
 }
