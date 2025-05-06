@@ -98,7 +98,7 @@ You can copy the `assets` folder manually:
 Clone the repo:
 
 ```bash
-git clone https://github.com/Almamu/linux-wallpaperengine.git
+git clone --recurse-submodules https://github.com/Almamu/linux-wallpaperengine.git
 cd linux-wallpaperengine
 ```
 
@@ -110,7 +110,10 @@ cmake ..
 make
 ```
 
-> ✅ Don’t forget: Place the `assets` folder next to the built binary if it isn’t detected automatically.
+Once the build process is finished, this should create a new `output` folder containing the app and all the required
+support files to run.
+
+> ✅ Remember: Place the `assets` folder next to the built binary if it isn’t detected automatically.
 
 ---
 
@@ -255,7 +258,7 @@ Any of these values can be modified with the --set-property switch. Say you want
 - **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
 - **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
-> Note: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
+> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
 
 ---
 

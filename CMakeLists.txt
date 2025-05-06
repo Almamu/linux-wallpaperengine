@@ -102,9 +102,9 @@ list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-rtti)
 # remove the vulkan library from the files to copy so it doesn't fail after removing it
 list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-set(TARGET_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+set(TARGET_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 add_subdirectory(src/External/glslang-WallpaperEngine glslang)
