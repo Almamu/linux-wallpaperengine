@@ -13,7 +13,7 @@ using namespace WallpaperEngine::Core::Projects;
  */
 class CShaderConstantProperty : public CShaderConstant {
   public:
-    explicit CShaderConstantProperty (std::shared_ptr <const CProperty> property);
+    explicit CShaderConstantProperty (const std::shared_ptr <const CProperty>& property);
 
     [[nodiscard]] std::string toString () const override;
 };

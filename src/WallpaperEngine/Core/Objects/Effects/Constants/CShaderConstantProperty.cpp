@@ -3,7 +3,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantProperty::CShaderConstantProperty (std::shared_ptr <const CProperty> property) {
+CShaderConstantProperty::CShaderConstantProperty (const std::shared_ptr <const CProperty>& property) {
     property->connectOutgoing (this);
 }
 

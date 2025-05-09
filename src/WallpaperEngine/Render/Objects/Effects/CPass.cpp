@@ -675,7 +675,7 @@ void CPass::setupShaderVariables () {
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 
-    for (const auto& cur : this->m_shader->getVertex ().getParameters ())
+    for (const auto& cur : this->m_shader->getFragment ().getParameters ())
         if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
             this->addUniform (cur);
 

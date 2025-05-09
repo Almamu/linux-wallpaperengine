@@ -383,7 +383,7 @@ void CShaderUnit::parseParameterConfiguration (
     // TODO: SUPPORT VALUES FOR ALL THESE TYPES
     // TODO: MAYBE EVEN CONNECT THESE TO THE CORRESPONDING PROPERTY SO THINGS ARE UPDATED AS THE ORIGIN VALUES CHANGE?
     if (type == "vec4") {
-        parameter = new Variables::CShaderVariableVector4(WallpaperEngine::Core::aToVector4 (*defvalue));
+        parameter = new Variables::CShaderVariableVector4 (WallpaperEngine::Core::aToVector4 (*defvalue));
     } else if (type == "vec3") {
         parameter = new Variables::CShaderVariableVector3 (WallpaperEngine::Core::aToVector3 (*defvalue));
     } else if (type == "vec2") {
