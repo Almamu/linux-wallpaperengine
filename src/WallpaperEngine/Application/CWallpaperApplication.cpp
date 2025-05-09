@@ -382,15 +382,13 @@ void CWallpaperApplication::show () {
     static struct tm* timeinfo;
 
     if (this->m_context.settings.general.dumpStructure) {
-        auto* prettyPrinter = new PrettyPrinter::CPrettyPrinter ();
+        auto prettyPrinter = PrettyPrinter::CPrettyPrinter ();
 
         for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
-            prettyPrinter->printWallpaper (*info);
+            prettyPrinter.printWallpaper (*info);
         }
 
-        std::cout << prettyPrinter->str () << std::endl;
-
-        delete prettyPrinter;
+        std::cout << prettyPrinter.str () << std::endl;
     }
 
     while (this->m_context.state.general.keepRunning) {
