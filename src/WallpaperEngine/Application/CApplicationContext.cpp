@@ -48,8 +48,8 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
                 const char* str = value.c_str ();
                 const char* delim1 = strchr (str, 'x');
-                const char* delim2 = delim1 ? strchr (delim1, 'x') : nullptr;
-                const char* delim3 = delim2 ? strchr (delim2, 'x') : nullptr;
+                const char* delim2 = delim1 ? strchr (delim1 + 1, 'x') : nullptr;
+                const char* delim3 = delim2 ? strchr (delim2 + 1, 'x') : nullptr;
 
                 if (delim1 == nullptr || delim2 == nullptr || delim3 == nullptr) {
                     sLog.exception ("Window geometry must be in the format: XxYxWxH");
