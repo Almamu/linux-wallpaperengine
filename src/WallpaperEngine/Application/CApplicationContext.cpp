@@ -59,7 +59,6 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
                 this->settings.render.window.geometry.y = strtol (delim1 + 1, nullptr, 10);
                 this->settings.render.window.geometry.z = strtol (delim2 + 1, nullptr, 10);
                 this->settings.render.window.geometry.w = strtol (delim3 + 1, nullptr, 10);
-
             })
             .append ();
         backgroundMode.add_argument ("-r", "--screen-root")

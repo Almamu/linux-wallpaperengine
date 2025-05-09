@@ -31,8 +31,8 @@ class CPropertySlider final : public CProperty {
     void set (const std::string& value) override;
 
     [[nodiscard]] const char* getType () const override;
-  private:
 
+  private:
     /** Minimum value */
     const float m_min;
     /** Maximum value */

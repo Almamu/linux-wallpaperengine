@@ -424,7 +424,6 @@ void CShaderUnit::parseParameterConfiguration (
             } else if (require != data.end ()) {
                 // this is required based on certain conditions
                 if (requireany != data.end () && requireany->get <bool> ()) {
-
                     // any of the values set are valid, check for them
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();

@@ -51,8 +51,8 @@ class CScene : public CWallpaper {
     [[nodiscard]] const glm::vec3& getSkylightColor () const;
 
     [[nodiscard]] const Scenes::CCamera* getCamera () const;
-  protected:
 
+  protected:
     friend class CWallpaper;
 
     void insertObject (const CObject* object);
