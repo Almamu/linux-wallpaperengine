@@ -2,8 +2,18 @@ name: CMake
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
+      - 'protocols/**'
     branches: [ "main" ]
   pull_request:
+    paths:
+      - 'src/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
+      - 'protocols/**'
     branches: [ "main" ]
 
 env:
