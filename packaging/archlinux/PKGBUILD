@@ -25,6 +25,7 @@ pkgver() {
 }
 
 prepare() {
+    cd "$pkgname"
     git submodule update --init --recursive
     git -c protocol.file.allow=always submodule update
 }
