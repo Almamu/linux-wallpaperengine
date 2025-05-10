@@ -7,160 +7,193 @@
 	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/contributors"><img src="https://img.shields.io/github/contributors/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/issues"><img src="https://img.shields.io/github/issues-raw/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22"><img src="https://img.shields.io/github/issues/Almamu/linux-wallpaperengine/help%20wanted?color=green" alt="help wanted"></a>
+    <a href="https://wpengine.alma.mu/"><img src="https://img.shields.io/badge/showcase_gallery-blue" alt="Compatibility gallery" /></a>
 </p>
 
-# 1. Disclaimer
-**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). As it turns out, working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
+# 🖼️ Linux Wallpaper Engine
 
-# 2. What is this project all about?
-This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
+Bring **Wallpaper Engine**-style live wallpapers to Linux! This project allows you to run animated wallpapers from Steam’s Wallpaper Engine right on your desktop.
 
-# 3. What is Wallpaper Engine?
-Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing its users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
+> ⚠️ This is an educational project that evolved into a functional OpenGL-based wallpaper engine for Linux. Expect some limitations and quirks!
 
-# 4. Compilation requirements
-## linux-wallpaperengine
+---
+
+## 📦 System Requirements
+
+To compile and run this, you'll need:
+
 - OpenGL 3.3 support
 - CMake
-- LZ4
-- ZLIB
+- LZ4, Zlib
 - SDL2
 - FFmpeg
-- X11 (with libxxf86vm) or Wayland
-- Xrandr (for X11 support)
-- GLFW3
-- GLM
-- GLEW
-- GLUT
+- X11 or Wayland
+- Xrandr (for X11)
+- GLFW3, GLEW, GLUT, GLM
 - MPV
 - PulseAudio
+- FFTW3
 
-## Commands
-```
+Install the required dependencies on Ubuntu/Debian-based systems:
+
+### Ubuntu 22.04
+```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
 ```
 
-# 5. How to use
-## 5.1. Pre-requirements
-In order to properly use this software you'll need to own an actual copy of the Windows version of Wallpaper Engine (which you can buy on the [Steam Page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)), as it contains some basic assets on which most of the backgrounds are based on.
-
-The only way to get those assets is to install the Windows version through Steam. Luckily you don't really need a Windows installation for that. Using the Linux Steam client is enough to download the files we need. Note you may need to check "Enable Steam Play for all other titles" in the Steam Play section of Steam's settings if you haven't already. Also note that the software cannot actually be launched through Steam Play (Proton), but the setting is required for Steam to download the software.
-
-## 5.2. Extracting the assets
-The automatic way doesn't require anything extra, as long as Wallpaper Engine is installed in Steam the software should automatically detect where the assets are.
-
-### 5.2.1. Extracting the assets manually
-In the off-case where the software doesn't automatically detect the correct path, the assets can be extracted manually. Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
-
-![folder](docs/images/screenshot_folder.png)
-
-The assets folder itself **must** be copied to the same folder where the binary lives.
-
-## 5.3. Getting the sources
-You can download a zipped version of the repository here: https://github.com/Almamu/linux-wallpaperengine/archive/refs/heads/main.zip
-
-You can also clone the repository using git like this:
-```
-git clone git@github.com:Almamu/linux-wallpaperengine.git
+### Ubuntu 24.04
+```bash
+sudo apt-get update
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev
 ```
 
-Or using the HTTPS method if you haven't set up SSH:
-```
-https://github.com/Almamu/linux-wallpaperengine.git
+---
+
+## 🐧 Arch Linux Users
+
+You can install this directly from the AUR using your favorite AUR helper:
+
+```bash
+yay -S linux-wallpaperengine-git
 ```
 
-## 5.4. Compilation steps
-The project is built on CMake as the build engine. First we need to create the directory where the build will be stored and get into it:
+> This installs the latest development version.
+
+**Note:** You’ll still need assets from the official Wallpaper Engine (via Steam). See below for details.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Get Wallpaper Engine Assets
+
+You **must own and install Wallpaper Engine** via Steam. This provides the required assets used by many backgrounds.
+
+Good news: **you usually don’t need to copy anything manually.** The app will automatically look in these common install paths:
 
 ```
-mkdir build
-cd build
+~/.steam/steam/steamapps/common
+~/.local/share/Steam/steamapps/common
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
+~/snap/steam/common/.local/share/Steam/steamapps/common
 ```
 
-Once the folder is created and we're in it, CMake has to generate the actual Makefiles. This can be done this way:
+> ✅ If Wallpaper Engine is installed in one of these paths, the assets will be detected automatically!
+
+---
+
+#### ❗ If Assets Aren’t Found Automatically
+
+You can copy the `assets` folder manually:
+
+1. In Steam, right-click **Wallpaper Engine** → **Manage** → **Browse local files**
+2. Copy the `assets` folder
+3. Paste it into the same folder where the `linux-wallpaperengine` binary is located
+
+---
+
+### 2. Build from Source
+
+Clone the repo:
+
+```bash
+git clone --recurse-submodules https://github.com/Almamu/linux-wallpaperengine.git
+cd linux-wallpaperengine
 ```
+
+Build it:
+
+```bash
+mkdir build && cd build
 cmake ..
-```
-Take a closer look at the CMake output, if you miss any library, CMake will report the missing libraries so you can install them either trough your package manager or manually in your system.
-
-Finally we can compile the project to generate the actual executable. 
-```
 make
 ```
 
-**REMEMBER: The assets folder has to be in the same folder as the executable**
+Once the build process is finished, this should create a new `output` folder containing the app and all the required
+support files to run.
 
-## 5.5. Running a background
-### 5.5.1. Running a background from Steam
-Just like with the assets, the software can automatically detect where the subscribed backgrounds are stored. To get started, search in the workshop for whatever background you want to use and click the "+Subscribe" button. This should download the background in the steam directory.
+> ✅ Remember: Place the `assets` folder next to the built binary if it isn’t detected automatically.
 
-To actually use the background you'll need to know the workshop's ID. This can be obtained right-clicking anywhere in the background's page -> "Copy Page URL". You can paste this URL anywhere, it will look something like this:
+---
 
+## 🧪 Usage
+
+Basic syntax:
+
+```bash
+./linux-wallpaperengine [options] <background_id or path>
 ```
-https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469&searchtext=portal+3
-```
 
-Where 1845706469 is the wallpaper's ID. You can use this ID to run wallpaperengine:
-```
+You can use either:
+- A Steam Workshop ID (e.g. `1845706469`)
+- A path to a background folder
+
+---
+
+### 🔧 Common Options
+
+| Option | Description |
+|--------|-------------|
+| `--silent` | Mute background audio |
+| `--volume <val>` | Set audio volume |
+| `--noautomute` | Don't mute when other apps play audio |
+| `--no-audio-processing` | Disable audio reactive features |
+| `--fps <val>` | Limit frame rate |
+| `--window <XxYxWxH>` | Run in windowed mode with custom size/position |
+| `--screen-root <screen>` | Set as background for specific screen |
+| `--bg <id/path>` | Assign a background to a specific screen (use after `--screen-root`) |
+| `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
+| `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
+| `--assets-dir <path>` | Set custom path for assets |
+| `--screenshot <file>` | Save screenshot (PNG, JPEG, BMP) |
+| `--list-properties` | Show customizable properties of a wallpaper |
+| `--set-property name=value` | Override a specific property |
+| `--disable-mouse` | Disable mouse interaction |
+| `--disable-parallax` | Disable parallax effect on backgrounds that support it |
+| `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
+
+---
+
+### 💡 Examples
+
+#### Run a background by ID
+```bash
 ./linux-wallpaperengine 1845706469
 ```
 
-### 5.5.2. Running a background in a different folder
-For the situations where the software cannot detect where the backgrounds are stored, you can specify a full path to it, like so:
-```
-./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
-```
-
-### 5.5.2. Running in a window (Default)
-By default the app will load the backgrounds in a window so you can preview them:
-```
-./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
+#### Run a background from a folder
+```bash
+./linux-wallpaperengine ~/backgrounds/1845706469/
 ```
 
-Where `/home/almamu/Development/backgrounds/1845706469/` is the background's path.
-
-### 5.5.3. Running as a screen's background
-The app supports running as background in X11 and Wayland. Use the --screen-root switch and the screen name, like so:
-
-```
-./linux-wallpaperengine --screen-root HDMI-1 --screen-root DVI-D-1 1845706469
+#### Assign backgrounds to screens with scaling
+```bash
+./linux-wallpaperengine \
+  --scaling stretch --screen-root eDP-1 --bg 2667198601 \
+  --scaling fill --screen-root HDMI-1 --bg 2667198602
 ```
 
-#### Wayland
-Has only been tested under wlroots but should work on any flavour as long as wlr-layer-shell-unstable is supported.
-
-#### X11
-Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
-
-**IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, gnome, kde, nautilus, etc)**
-
-
-### 5.5.4. Limiting FPS
-To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
-```
-./linux-wallpaperengine --fps 30
+#### Run in a window
+```bash
+./linux-wallpaperengine --window 0x0x1280x720 1845706469
 ```
 
-## 5.6. Audio
-### 5.6.1. Disable audio
-It's possible to disable the audio of the background with the silent argument
-```
-./linux-wallpaperengine --silent
+#### Limit FPS to save power
+```bash
+./linux-wallpaperengine --fps 30 1845706469
 ```
 
-## 5.7. Taking a screenshot
-It is possible to take a screenshot of the screen's content at the moment a background is loaded up and rendered. Useful for tools like pywal to further customize your environment:
-```
-./linux-wallpaperengine --screenshot /path/to/screenshot/name.png
+#### Take a screenshot
+```bash
+./linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
 
-PNG, BMP and JPEG are supported.
+This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
+to apply to your system.
 
-## 5.8. Properties
-Some backgrounds have a list of properties that the user can customize. These properties modify how parts of the background behave or look like. Support for these is present.
-First, list all the available properties in a background, you can do that with the --list-properties switch:
-```
+#### View and change properties
+```bash
 ./linux-wallpaperengine --list-properties 2370927443
 ```
 
@@ -219,18 +252,43 @@ Any of these values can be modified with the --set-property switch. Say you want
 ./linux-wallpaperengine --set-property bloom=1 2370927443
 ```
 
-If you keep --list-properties in the commandline you can see how the values change to confirm that it applied properly.
+---
 
-## 6. Example background
-This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
+## 🧪 Wayland & X11 Support
 
-![example](docs/images/example.gif)
+- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
+- **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
-###### 1845706469
-In similar fashion to the example background, this one represents the progress of the program. It leverages FBOs (targets), and multiple-effects over objects.
+> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
 
+---
+
+## 🌈 Example Backgrounds
+
+![example1](docs/images/example.gif)
 ![example2](docs/images/example2.gif)
 
-# 7. Special thanks
-- [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
-- [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS
+## 🪲 Common issues
+### Black screen when setting as screen's background
+This can be caused by a few different things depending on your environment and setup.
+
+### X11
+Common symptom of a compositor drawing to the background which prevents Wallpaper Engine from being properly visible.
+The only solution currently is disabling the compositor so Wallpaper Engine can properly draw on the screen
+
+### NVIDIA
+Some users have had issues with GLFW initialization and other OpenGL errors. These are generally something that's
+worth reporting in the issues. Sometimes adding this variable when running Wallpaper Engine helps and/or solves
+the issue:
+```bash
+__GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
+```
+
+We'll be looking at improving this in the future, but for now it can be a useful workaround.
+
+---
+
+## 🙏 Special Thanks
+
+- [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights
+- [RenderDoc](https://github.com/baldurk/renderdoc) – the best OpenGL debugger out there!

@@ -2,10 +2,17 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantVector2::CShaderConstantVector2 (glm::vec2 value) : CShaderConstant (Type), m_value (value) {}
-
-glm::vec2* CShaderConstantVector2::getValue () {
-    return &this->m_value;
+CShaderConstantVector2::CShaderConstantVector2 (glm::vec2 value) {
+    this->update (value);
 }
 
-const std::string CShaderConstantVector2::Type = "vec2";
+std::string CShaderConstantVector2::toString () const {
+    std::string result = "(";
+
+    result.append (std::to_string (this->getVec2 ().x));
+    result.append (",");
+    result.append (std::to_string (this->getVec2 ().y));
+    result.append (")");
+
+    return result;
+}

@@ -15,31 +15,31 @@ class CFBO final : public ITexture {
 
     // TODO: ADD DESTRUCTOR TO FREE RESOURCES
 
-    const std::string& getName () const;
-    const float& getScale () const;
-    const ITexture::TextureFormat getFormat () const override;
-    const ITexture::TextureFlags getFlags () const override;
-    GLuint getFramebuffer () const;
-    GLuint getDepthbuffer () const;
-    const GLuint getTextureID (uint32_t imageIndex = 0) const override;
-    const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
-    const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
-    const uint32_t getRealWidth () const override;
-    const uint32_t getRealHeight () const override;
-    const std::vector<TextureFrame*>& getFrames () const override;
-    const glm::vec4* getResolution () const override;
-    const bool isAnimated () const override;
+    [[nodiscard]] const std::string& getName () const;
+    [[nodiscard]] const float& getScale () const;
+    [[nodiscard]] ITexture::TextureFormat getFormat () const override;
+    [[nodiscard]] ITexture::TextureFlags getFlags () const override;
+    [[nodiscard]] GLuint getFramebuffer () const;
+    [[nodiscard]] GLuint getDepthbuffer () const;
+    [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getTextureWidth (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getRealWidth () const override;
+    [[nodiscard]] uint32_t getRealHeight () const override;
+    [[nodiscard]] const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const override;
+    [[nodiscard]] const glm::vec4* getResolution () const override;
+    [[nodiscard]] bool isAnimated () const override;
 
   private:
-    GLuint m_framebuffer;
-    GLuint m_depthbuffer;
-    GLuint m_texture;
-    glm::vec4 m_resolution;
-    float m_scale;
-    std::string m_name;
-    ITexture::TextureFormat m_format;
-    ITexture::TextureFlags m_flags;
+    GLuint m_framebuffer = GL_NONE;
+    GLuint m_depthbuffer = GL_NONE;
+    GLuint m_texture = GL_NONE;
+    glm::vec4 m_resolution = {};
+    float m_scale = 0;
+    std::string m_name = "";
+    ITexture::TextureFormat m_format = UNKNOWN;
+    ITexture::TextureFlags m_flags = NoFlags;
     /** Placeholder for frames, FBOs only have ONE */
-    std::vector<TextureFrame*> m_frames;
+    std::vector<std::shared_ptr<TextureFrame>> m_frames = {};
 };
 } // namespace WallpaperEngine::Render

@@ -1,19 +1,16 @@
-#include "common.h"
 #include <sstream>
+#include <utility>
 
 #include "CPropertyCombo.h"
 
 #include "WallpaperEngine/Core/Core.h"
-#include <utility>
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
-    const auto value = data.find ("value");
-    const auto text = jsonFindDefault<std::string> (data, "text", "");
+std::shared_ptr<CPropertyCombo> CPropertyCombo::fromJSON (const json& data, std::string name) {
+    std::vector<CPropertyComboValue> values;
     const auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
-
-    auto* combo = new CPropertyCombo (name, text, value->dump ());
 
     if (!options->is_array ())
         sLog.exception ("Property combo options should be an array");
@@ -24,26 +21,27 @@ CPropertyCombo* CPropertyCombo::fromJSON (json data, const std::string& name) {
             continue;
 
         // check for label and value to ensure they're there
-        auto label = jsonFindRequired (cur, "label", "Label is required for a property combo option");
-        auto propertyValue = jsonFindRequired (cur, "value", "Value is required for a property combo option");
-
-        combo->addValue (*label, propertyValue->dump());
+        values.push_back ({
+            .label = jsonFindRequired<std::string> (cur, "label", "Label is required for a property combo option"),
+            .value = jsonFindRequired<std::string> (cur, "value", "Value is required for a property combo option")
+        });
     }
 
-    return combo;
+    return std::make_shared <CPropertyCombo> (
+        std::move(name),
+        jsonFindDefault<std::string> (data, "text", ""),
+        jsonFindRequired<std::string> (data, "value", "Value is required for a property combo"),
+        values
+    );
 }
 
-CPropertyCombo::CPropertyCombo (const std::string& name, const std::string& text, std::string defaultValue) :
-    CProperty (name, Type, text),
-    m_defaultValue (std::move (defaultValue)) {}
-
-CPropertyCombo::~CPropertyCombo () {
-    for (const auto* value : this->m_values)
-        delete value;
-}
-
-const std::string& CPropertyCombo::getValue () const {
-    return this->m_defaultValue;
+CPropertyCombo::CPropertyCombo (
+    std::string name, std::string text, const std::string& defaultValue,
+    std::vector<CPropertyComboValue> values
+) :
+    CProperty (std::move(name), std::move(text)),
+    m_values (std::move(values)) {
+    this->set (defaultValue);
 }
 
 std::string CPropertyCombo::dump () const {
@@ -53,40 +51,57 @@ std::string CPropertyCombo::dump () const {
        << "\t"
        << "Description: " << this->m_text << std::endl
        << "\t"
-       << "Value: " << this->m_defaultValue << std::endl
+       << "Value: " << &this->getInt () << std::endl
        << "\t\t"
        << "Posible values:" << std::endl;
 
-    for (const auto cur : this->m_values)
-        ss << "\t\t" << cur->label << " -> " << cur->value << std::endl;
+    for (const auto& cur : this->m_values)
+        ss << "\t\t" << cur.label << " -> " << cur.value << std::endl;
 
     return ss.str ();
 }
 
-void CPropertyCombo::update (const std::string& value) {
+void CPropertyCombo::set (const std::string& value) {
     bool found = false;
+    int index = 0;
 
     // ensure the value is present somewhere in the value list
-    for (const auto cur : this->m_values) {
-        if (cur->value != value)
-            continue;
+    for (const auto& cur : this->m_values) {
+        if (cur.value == value) {
+            found = true;
+            break;
+        }
 
-        found = true;
+        index ++;
     }
 
     if (!found)
         sLog.exception ("Assigning invalid value to property ", this->m_name);
 
-    this->m_defaultValue = value;
+    this->update (index);
 }
 
-void CPropertyCombo::addValue (std::string label, std::string value) {
-    auto* prop = new CPropertyComboValue;
+int CPropertyCombo::translateValueToIndex (const std::string& value) const {
+    bool found = false;
+    int index = 0;
 
-    prop->label = std::move (label);
-    prop->value = std::move (value);
+    // ensure the value is present somewhere in the value list
+    for (const auto& cur : this->m_values) {
+        if (cur.value == value) {
+            found = true;
+            break;
+        }
 
-    this->m_values.push_back (prop);
+        index ++;
+    }
+
+    if (!found) {
+        return -1;
+    }
+
+    return index;
 }
 
-const std::string CPropertyCombo::Type = "combo";
+const char* CPropertyCombo::getType () const {
+    return "combo";
+}

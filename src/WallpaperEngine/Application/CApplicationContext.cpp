@@ -5,116 +5,225 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <getopt.h>
+#include <iostream>
+
+#include <argparse/argparse.hpp>
 
 #define WORKSHOP_APP_ID 431960
 #define APP_DIRECTORY "wallpaper_engine"
 
 using namespace WallpaperEngine::Application;
 
-struct option long_options [] = {
-    {"screen-root", required_argument, nullptr, 'r'},   {"bg", required_argument, nullptr, 'b'},
-    {"window", required_argument, nullptr, 'w'},        {"pkg", required_argument, nullptr, 'p'},
-    {"dir", required_argument, nullptr, 'd'},           {"silent", no_argument, nullptr, 's'},
-    {"volume", required_argument, nullptr, 'v'},        {"help", no_argument, nullptr, 'h'},
-    {"fps", required_argument, nullptr, 'f'},           {"assets-dir", required_argument, nullptr, 'a'},
-    {"screenshot", required_argument, nullptr, 'c'},    {"list-properties", no_argument, nullptr, 'l'},
-    {"set-property", required_argument, nullptr, 'o'},  {"noautomute", no_argument, nullptr, 'm'},
-    {"no-audio-processing", no_argument, nullptr, 'g'}, {"no-fullscreen-pause", no_argument, nullptr, 'n'},
-    {"disable-mouse", no_argument, nullptr, 'e'},       {"scaling", required_argument, nullptr, 't'},
-    {"clamping", required_argument, nullptr, 't'},      {nullptr, 0, nullptr, 0}};
-
-/* std::hash::operator() isn't constexpr, so it can't be used to get hash values as compile-time constants
- * So here is customHash. It skips all spaces, so hashes for " find " and "fi nd" are the same
- * Basicly got it from here: https://stackoverflow.com/questions/8317508/hash-function-for-a-string
- */
-constexpr size_t customHash (const char* str) {
-    constexpr size_t A = 54059;   /* a prime */
-    constexpr size_t B = 76963;   /* another prime */
-    constexpr size_t C = 86969;   /* yet another prime */
-    constexpr size_t FIRSTH = 37; /* also prime */
-    size_t hash = FIRSTH;
-    while (*str) {
-        if (*str != ' ') // Skip spaces
-            hash = (hash * A) ^ (*str * B);
-        ++str;
-    }
-    return hash % C;
-}
-
-std::string stringPathFixes (const std::string& s) {
-    if (s.empty ())
-        return s;
-
-    std::string str (s);
-
-    // remove single-quotes from the arguments
-    if (str [0] == '\'' && str [str.size () - 1] == '\'')
-        str.erase (str.size () - 1, 1).erase (0, 1);
-
-    return std::move (str);
-}
-
-CApplicationContext::CApplicationContext (int argc, char* argv []) {
-    // setup structs with sane default values for now
-    this->settings = {
-        .general =
-            {
-                .onlyListProperties = false,
-                .assets = "",
-                .defaultBackground = "",
-                .screenBackgrounds = {},
-                .properties = {},
-            },
-        .render =
-            {
-                .mode = NORMAL_WINDOW,
-                .maximumFPS = 30,
-                .pauseOnFullscreen = true,
-                .window =
-                    {
-                        .geometry = {},
-                        .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
-                        .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
-                    },
-            },
-        .audio = {.enabled = true, .volume = 15, .automute = true, .audioprocessing = true},
-        .mouse =
-            {
-                .enabled = true,
-            },
-        .screenshot =
-            {
-                .take = false,
-                .path = "",
-            },
-    };
-
-    int c;
-
+CApplicationContext::CApplicationContext (int argc, char* argv []) :
+    m_argc (argc),
+    m_argv (argv) {
     std::string lastScreen;
 
-    while ((c = getopt_long (argc, argv, "b:r:p:d:shf:a:w:mnt:", long_options, nullptr)) != -1) {
-        switch (c) {
-            case 'n': this->settings.render.pauseOnFullscreen = false; break;
+    argparse::ArgumentParser program ("linux-wallpaperengine", "0.0", argparse::default_arguments::help);
 
-            case 'b':
-                if (lastScreen.empty ())
-                    sLog.exception ("--bg has to go after a --screen-root argument");
+    auto& backgroundGroup = program.add_group ("Background options");
+        auto& backgroundMode = backgroundGroup.add_mutually_exclusive_group (false);
 
-                // no need to check for previous screen being in the list, as it's the only way for this variable
-                // to have any value
-                this->settings.general.screenBackgrounds [lastScreen] = translateBackground (optarg);
-                this->settings.general.screenScalings [lastScreen] = this->settings.render.window.scalingMode;
+        backgroundGroup.add_argument ("background id")
+            .help ("The background to use as default for screens with no background specified")
+            .action([this](const std::string& value) -> void {
+                this->settings.general.defaultBackground = translateBackground (value);
+            });
 
-                // update default background if not set
-                if (this->settings.general.defaultBackground.empty()) {
-                    this->settings.general.defaultBackground = translateBackground (optarg);
+        backgroundMode.add_argument ("-w", "--window")
+            .help ("Window geometry to use for the given screen")
+            .action ([this](const std::string& value) -> void {
+                if (this->settings.render.mode == DESKTOP_BACKGROUND) {
+                    sLog.exception ("Cannot run in both background and window mode");
                 }
-                break;
+                if (this->settings.render.mode == EXPLICIT_WINDOW) {
+                    sLog.exception ("Only one window at a time can be specified in explicit window mode");
+                }
 
-            case 'o': {
-                std::string value = optarg;
+                this->settings.render.mode = EXPLICIT_WINDOW;
+
+                if (value.empty ()) {
+                    sLog.exception ("Window geometry cannot be empty");
+                }
+
+                const char* str = value.c_str ();
+                const char* delim1 = strchr (str, 'x');
+                const char* delim2 = delim1 ? strchr (delim1 + 1, 'x') : nullptr;
+                const char* delim3 = delim2 ? strchr (delim2 + 1, 'x') : nullptr;
+
+                if (delim1 == nullptr || delim2 == nullptr || delim3 == nullptr) {
+                    sLog.exception ("Window geometry must be in the format: XxYxWxH");
+                }
+
+                this->settings.render.window.geometry.x = strtol(str, nullptr, 10);
+                this->settings.render.window.geometry.y = strtol (delim1 + 1, nullptr, 10);
+                this->settings.render.window.geometry.z = strtol (delim2 + 1, nullptr, 10);
+                this->settings.render.window.geometry.w = strtol (delim3 + 1, nullptr, 10);
+            })
+            .append ();
+        backgroundMode.add_argument ("-r", "--screen-root")
+            .help ("The screen the following settings will have an effect on")
+            .action([this, &lastScreen](const std::string& value) -> void {
+                if (this->settings.general.screenBackgrounds.find (value) != this->settings.general.screenBackgrounds.end ()) {
+                    sLog.exception ("Cannot specify the same screen more than once: ", value);
+                }
+                if (this->settings.render.mode == EXPLICIT_WINDOW) {
+                    sLog.exception ("Cannot run in both background and window mode");
+                }
+
+                this->settings.render.mode = DESKTOP_BACKGROUND;
+                lastScreen = value;
+                this->settings.general.screenBackgrounds [lastScreen] = "";
+                this->settings.general.screenScalings [lastScreen] = this->settings.render.window.scalingMode;
+                this->settings.general.screenClamps [lastScreen] = this->settings.render.window.clamp;
+            })
+            .append ();
+        backgroundGroup.add_argument ("-b", "--bg")
+            .help ("After --screen-root, specifies the background to use for the given screen")
+            .action ([this, &lastScreen](const std::string& value) -> void {
+                this->settings.general.screenBackgrounds [lastScreen] = translateBackground (value);
+                // set the default background to the last one used
+                this->settings.general.defaultBackground = translateBackground (value);
+            })
+            .append ();
+        backgroundGroup.add_argument ("--scaling")
+            .help ("Scaling mode to use when rendering the background, this applies to the previous --window or --screen-root output, or the default background if no other background is specified")
+            .choices ("stretch", "fit", "fill", "default")
+            .action([this, &lastScreen](const std::string& value) -> void {
+                WallpaperEngine::Render::CWallpaperState::TextureUVsScaling mode;
+
+                if (value == "stretch") {
+                    mode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::StretchUVs;
+                } else if (value == "fit") {
+                    mode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFitUVs;
+                } else if (value == "fill") {
+                    mode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFillUVs;
+                } else if (value == "default") {
+                    mode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs;
+                } else {
+                    sLog.exception ("Invalid scaling mode: ", value);
+                }
+
+                if (this->settings.render.mode == DESKTOP_BACKGROUND) {
+                    this->settings.general.screenScalings [lastScreen] = mode;
+                } else {
+                    this->settings.render.window.scalingMode = mode;
+                }
+            })
+            .append ();
+        backgroundGroup.add_argument ("--clamp")
+            .help ("Clamp mode to use when rendering the background, this applies to the previous --window or --screen-root output, or the default background if no other background is specified")
+            .choices("clamp", "border", "repeat")
+            .action([this, &lastScreen](const std::string& value) -> void {
+                WallpaperEngine::Assets::ITexture::TextureFlags flags;
+
+                if (value == "clamp") {
+                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs;
+                } else if (value == "border") {
+                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVsBorder;
+                } else if (value == "repeat") {
+                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
+                } else {
+                    sLog.exception ("Invalid clamp mode: ", value);
+                }
+
+                if (this->settings.render.mode == DESKTOP_BACKGROUND) {
+                    this->settings.general.screenClamps [lastScreen] = flags;
+                } else {
+                    this->settings.render.window.clamp = flags;
+                }
+            });
+
+    auto& performanceGroup = program.add_group ("Performance options");
+
+        performanceGroup.add_argument ("-f", "--fps")
+            .help ("Limits the FPS to the given number, useful to keep battery consumption low")
+            .default_value (30)
+            .store_into(this->settings.render.maximumFPS);
+
+        performanceGroup.add_argument ("--no-fullscreen-pause")
+            .help ("Prevents the background pausing when an app is fullscreen")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.render.pauseOnFullscreen = false;
+            });
+
+    auto& audioGroup = program.add_group ("Sound settings");
+    auto& audioSettingsGroup = audioGroup.add_mutually_exclusive_group (false);
+
+        audioSettingsGroup.add_argument ("-v", "--volume")
+            .help ("Volume for all the sounds in the background")
+            .default_value (15)
+            .store_into (this->settings.audio.volume);
+
+        audioSettingsGroup.add_argument ("-s", "--silent")
+            .help ("Mutes all the sound the wallpaper might produce")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.audio.enabled = false;
+            });
+
+        audioGroup.add_argument ("--noautomute")
+            .help ("Disables the automute when an app is playing sound")
+            .flag ()
+            .action([this](const std::string& value) -> void {
+                this->settings.audio.automute = false;
+            });
+
+        audioGroup.add_argument ("--no-audio-processing")
+            .help ("Disables audio processing for backgrounds")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.audio.audioprocessing = false;
+            });
+
+    auto& screenshotGroup = program.add_group ("Screenshot options");
+
+        screenshotGroup.add_argument ("--screenshot")
+            .help ("Takes a screenshot of the background for it's use with tools like PyWAL")
+            .default_value ("")
+            .action ([this](const std::string& value) -> void {
+                this->settings.screenshot.take = true;
+                this->settings.screenshot.path = value;
+            });
+
+        screenshotGroup.add_argument ("--screenshot-delay")
+            .help ("Frames to wait before taking the screenshot")
+            .default_value (5)
+            .store_into (this->settings.screenshot.delay);
+
+    auto& contentGroup = program.add_group ("Content options");
+
+        contentGroup.add_argument ("--assets-dir")
+            .help ("Folder where the assets are stored")
+            .default_value ("")
+            .action ([this](const std::string& value) -> void {
+                this->settings.general.assets = value;
+            });
+
+    auto& configurationGroup = program.add_group ("Wallpaper configuration options");
+
+        configurationGroup.add_argument ("--disable-mouse")
+            .help ("Disables mouse interaction with the backgrounds")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.mouse.enabled = false;
+            });
+        configurationGroup.add_argument ("--disable-parallax")
+            .help ("Disables parallax effect for the backgrounds")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.mouse.disableparallax = true;
+            });
+
+        configurationGroup.add_argument ("-l", "--list-properties")
+            .help ("List all the available properties and their configuration")
+            .flag ()
+            .store_into (this->settings.general.onlyListProperties);
+
+        configurationGroup.add_argument ("--set-property", "--property")
+            .help ("Overrides the default value of the given property")
+            .action([this](const std::string& value) -> void {
                 const std::string::size_type equals = value.find ('=');
 
                 // properties without value are treated as booleans for now
@@ -122,122 +231,44 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
                     this->settings.general.properties [value] = "1";
                 else
                     this->settings.general.properties [value.substr (0, equals)] = value.substr (equals + 1);
-            } break;
+            });
 
-            case 'l': this->settings.general.onlyListProperties = true; break;
+    auto& debuggingGroup = program.add_group ("Debugging options");
 
-            case 'r':
-                if (this->settings.general.screenBackgrounds.find (optarg) !=
-                    this->settings.general.screenBackgrounds.end ())
-                    sLog.exception ("Cannot specify the same screen more than once: ", optarg);
-                if (this->settings.render.mode == EXPLICIT_WINDOW)
-                    sLog.exception ("Cannot run in both background and window mode");
+        debuggingGroup.add_argument ("-z", "--dump-structure")
+            .help ("Dumps the structure of the backgrounds")
+            .flag ()
+            .store_into (this->settings.general.dumpStructure);
 
-                this->settings.render.mode = DESKTOP_BACKGROUND;
-                lastScreen = optarg;
-                this->settings.general.screenBackgrounds [lastScreen] = "";
-                this->settings.general.screenScalings [lastScreen] = this->settings.render.window.scalingMode;
-                break;
+    program.add_epilog (
+        "Usage examples:\n"
+            "  linux-wallpaperengine --screen-root HDMI-1 --bg 2317494988 --scaling fill --clamp border\n"
+            "    Runs the background 2317494988 on screen HDMI-1, scaling it to fill the screen and clamping the UVs to the border\n\n"
+            "  linux-wallpaperengine 2317494988\n"
+            "    Previews the background 2317494988 on a window\n\n"
+            "  linux-wallpaperengine --screen-root HDMI-1 --bg 2317494988 --screen-root HDMI-2 --bg 1108150151\n"
+            "    Runs two backgrounds on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
+            "  linux-wallpaperengine --screen-root HDMI-1 --screen-root HDMI-2 2317494988\n"
+            "    Runs the background 2317494988 on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
+    );
 
-            case 'w':
-                if (this->settings.render.mode == DESKTOP_BACKGROUND)
-                    sLog.exception ("Cannot run in both background and window mode");
+    program.parse_known_args (argc, argv);
 
-                if (optarg != nullptr) {
-                    this->settings.render.mode = EXPLICIT_WINDOW;
-                    // read window geometry
-                    char* pos = optarg;
+    this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
+    this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
 
-                    if (pos != nullptr)
-                        this->settings.render.window.geometry.x = atoi (pos);
-                    if ((pos = strchr (pos, 'x')) != nullptr)
-                        this->settings.render.window.geometry.y = atoi (pos + 1);
-                    if ((pos = strchr (pos + 1, 'x')) != nullptr)
-                        this->settings.render.window.geometry.z = atoi (pos + 1);
-                    if ((pos = strchr (pos + 1, 'x')) != nullptr)
-                        this->settings.render.window.geometry.w = atoi (pos + 1);
-                }
-                break;
+    // use std::cout on this in case logging is disabled, this way it's easy to look at what is running
+    std::stringbuf buffer;
+    std::ostream bufferStream (&buffer);
 
-            case 'p':
-            case 'd':
-                sLog.error ("--dir/--pkg is deprecated and not used anymore");
-                this->settings.general.defaultBackground = translateBackground (stringPathFixes (optarg));
-                break;
+    bufferStream << "Running with: ";
 
-            case 's': this->settings.audio.enabled = false; break;
-
-            case 'h':
-                printHelp (argv [0]);
-                std::exit (0);
-                break;
-
-            case 'f': this->settings.render.maximumFPS = atoi (optarg); break;
-
-            case 'a': this->settings.general.assets = stringPathFixes (optarg); break;
-
-            case 'v': this->settings.audio.volume = std::max (atoi (optarg), 128); break;
-
-            case 'c':
-                this->settings.screenshot.take = true;
-                this->settings.screenshot.path = stringPathFixes (optarg);
-                break;
-
-            case 'm': this->settings.audio.automute = false; break;
-
-            case 'g': this->settings.audio.audioprocessing = false; break;
-
-            case 'e': this->settings.mouse.enabled = false; break;
-
-            case 't': {
-                size_t hash = customHash (optarg);
-                // Use a switch statement with the hash
-                switch (hash) {
-                    // --scale options
-                    case customHash ("stretch"):
-                        this->settings.render.window.scalingMode =
-                            WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::StretchUVs;
-                        break;
-                    case customHash ("fit"):
-                        this->settings.render.window.scalingMode =
-                            WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFitUVs;
-                        break;
-                    case customHash ("fill"):
-                        this->settings.render.window.scalingMode =
-                            WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::ZoomFillUVs;
-                        break;
-                    case customHash ("default"):
-                        this->settings.render.window.scalingMode =
-                            WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs;
-                        break;
-                    // --clamp options
-                    case customHash ("clamp"):
-                        this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs;
-                        break;
-                    case customHash ("border"):
-                        this->settings.render.window.clamp =
-                            WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVsBorder;
-                        break;
-                    case customHash ("repeat"):
-                        this->settings.render.window.clamp = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
-                        break;
-                    default:
-                        sLog.error ("Wrong argument:");
-                        sLog.error (optarg);
-                        sLog.exception ("Wrong argument provided for --scale or --clamp option.");
-                        break;
-                }
-            } break;
-            default: sLog.out ("Default on path parsing: ", optarg); break;
-        }
+    for (int i = 0; i < argc; i ++) {
+        bufferStream << argv [i];
+        bufferStream << " ";
     }
 
-    if (this->settings.general.defaultBackground.empty ()) {
-        if (optind < argc && strlen (argv [optind]) > 0) {
-            this->settings.general.defaultBackground = translateBackground (argv [optind]);
-        }
-    }
-
+    std::cout << buffer.str() << std::endl;
     // perform some extra validation on the inputs
     this->validateAssets ();
     this->validateScreenshot ();
@@ -246,6 +277,23 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) {
     this->state.general.keepRunning = true;
     this->state.audio.enabled = this->settings.audio.enabled;
     this->state.audio.volume = this->settings.audio.volume;
+    this->state.mouse.enabled = this->settings.mouse.enabled;
+
+#if DEMOMODE
+    sLog.error ("WARNING: RUNNING IN DEMO MODE WILL STOP WALLPAPERS AFTER 5 SECONDS SO VIDEO CAN BE RECORDED");
+    // special settings for demomode
+    this->settings.render.maximumFPS = 30;
+    this->settings.screenshot.take = false;
+    this->settings.render.pauseOnFullscreen = false;
+#endif /* DEMOMODE */
+}
+
+int CApplicationContext::getArgc () const {
+    return this->m_argc;
+}
+
+char** CApplicationContext::getArgv () const {
+    return this->m_argv;
 }
 
 std::filesystem::path CApplicationContext::translateBackground (const std::string& bgIdOrPath) {
@@ -270,7 +318,7 @@ void CApplicationContext::validateAssets () {
     }
 }
 
-void CApplicationContext::validateScreenshot () {
+void CApplicationContext::validateScreenshot () const {
     if (!this->settings.screenshot.take)
         return;
 
@@ -281,36 +329,4 @@ void CApplicationContext::validateScreenshot () {
 
     if (extension != ".bmp" && extension != ".png" && extension != ".jpeg" && extension != ".jpg")
         sLog.exception ("Cannot determine screenshot format, unknown extension ", extension);
-}
-
-void CApplicationContext::printHelp (const char* route) {
-    sLog.out ("Usage: ", route, " [options] background_path/background_id");
-    sLog.out ("");
-    sLog.out ("where background_path/background_id can be:");
-    sLog.out ("\tthe ID of the background (for autodetection on your steam installation)");
-    sLog.out ("\ta full path to the background's folder");
-    sLog.out ("");
-    sLog.out ("options:");
-    sLog.out ("\t--silent\t\t\t\t\tMutes all the sound the wallpaper might produce");
-    sLog.out ("\t--volume <amount>\t\t\tSets the volume for all the sounds in the background");
-    sLog.out ("\t--noautomute\t\t\t\tDisables the automute when an app is playing sound");
-    sLog.out ("\t--no-audio-processing\t\t\t\tDisables audio processing for backgrounds");
-    sLog.out ("\t--screen-root <screen name>\tDisplay as screen's background");
-    sLog.out (
-        "\t--window <geometry>\tRuns in window mode, geometry has to be XxYxWxH and sets the position and size of the window");
-    sLog.out ("\t--fps <maximum-fps>\t\t\tLimits the FPS to the given number, useful to keep battery consumption low");
-    sLog.out ("\t--assets-dir <path>\t\t\tFolder where the assets are stored");
-    sLog.out ("\t--screenshot\t\t\t\tTakes a screenshot of the background");
-    sLog.out ("\t--list-properties\t\t\tList all the available properties and their possible values");
-    sLog.out ("\t--set-property <name=value>\tOverrides the default value of the given property");
-    sLog.out ("\t--no-fullscreen-pause\tPrevents the background pausing when an app is fullscreen");
-    sLog.out ("\t--disable-mouse\tDisables mouse interactions");
-    sLog.out (
-        "\t--bg <background_path/background_id>\tAfter --screen-root uses the specified background only on that screen");
-    sLog.out (
-        "\t--scaling <mode>\t Scaling mode for wallpaper. Can be stretch, fit, fill, default. Must be used before wallpaper provided.\n\
-                    \t\t For default wallpaper last specified value will be used.\n\
-                    \t\t Example: ./wallengine --scaling stretch --screen-root eDP-1 --bg 2667198601 --scaling fill --screen-root eDP-2 2667198602");
-    sLog.out (
-        "\t--clamping <mode>\t Clamping mode for all wallpapers. Can be clamp, border, repeat. Enables GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_REPEAT accordingly. Default is clamp.");
 }

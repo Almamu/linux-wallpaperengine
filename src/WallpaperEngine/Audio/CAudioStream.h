@@ -24,6 +24,10 @@ extern "C" {
 #define 	FF_API_OLD_CHANNEL_LAYOUT   (LIBAVUTIL_VERSION_MAJOR < 59)
 #endif
 
+#define MAX_QUEUE_SIZE (5 * 1024 * 1024)
+#define MIN_FRAMES (25)
+#define NO_AUDIO_STREAM (-1)
+
 namespace WallpaperEngine::Audio {
 class CAudioContext;
 
@@ -33,7 +37,7 @@ class CAudioContext;
 class CAudioStream {
   public:
     CAudioStream (CAudioContext& context, const std::string& filename);
-    CAudioStream (CAudioContext& context, const uint8_t* buffer, uint32_t length);
+    CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length);
     CAudioStream (CAudioContext& audioContext, AVCodecContext* context);
     ~CAudioStream ();
 
@@ -64,7 +68,7 @@ class CAudioStream {
     /**
      * @return The audio stream index of the given file
      */
-    [[nodiscard]] unsigned int getAudioStream () const;
+    [[nodiscard]] int getAudioStream () const;
     /**
      * @return If the audio stream can be played or not
      */
@@ -84,7 +88,7 @@ class CAudioStream {
     /**
      * @return The file data buffer
      */
-    [[nodiscard]] const uint8_t* getBuffer ();
+    [[nodiscard]] std::shared_ptr<const uint8_t[]> getBuffer ();
     /**
      * @return The length of the file data buffer
      */
@@ -167,23 +171,23 @@ class CAudioStream {
     void initialize ();
 
     /** The SwrContext that handles resampling */
-    SwrContext* m_swrctx;
+    SwrContext* m_swrctx = nullptr;
     /** The audio context this stream will be played under */
     CAudioContext& m_audioContext;
     /** If this stream was properly initialized or not */
-    bool m_initialized {};
+    bool m_initialized = false;
     /** Repeat enabled? */
-    bool m_repeat {};
+    bool m_repeat = false;
     /** The codec context that contains the original audio format information */
     AVCodecContext* m_context = nullptr;
     /** The format context that controls how data is read off the file */
     AVFormatContext* m_formatContext = nullptr;
     /** The stream index for the audio being played */
-    unsigned int m_audioStream;
+    int m_audioStream = NO_AUDIO_STREAM;
     /** File data pointer */
-    const uint8_t* m_buffer {};
+    std::shared_ptr<const uint8_t[]> m_buffer = nullptr;
     /** The length of the file data pointer */
-    uint32_t m_length {};
+    uint32_t m_length = 0;
     /** The read position on the file data pointer */
     uint32_t m_position = 0;
 
@@ -196,16 +200,16 @@ class CAudioStream {
      */
     struct PacketQueue {
 #if FF_API_FIFO_OLD_API
-        AVFifoBuffer* packetList;
+        AVFifoBuffer* packetList = nullptr;
 #else
-        AVFifo* packetList;
+        AVFifo* packetList = nullptr;
 #endif
-        int nb_packets;
-        int size;
-        int64_t duration;
-        SDL_mutex* mutex;
-        SDL_cond* wait;
-        SDL_cond* cond;
+        int nb_packets = 0;
+        int size = 0;
+        int64_t duration = 0;
+        SDL_mutex* mutex = nullptr;
+        SDL_cond* wait = nullptr;
+        SDL_cond* cond = nullptr;
     }* m_queue {};
 };
 } // namespace WallpaperEngine::Audio

@@ -4,13 +4,15 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects;
 
-CBind::CBind (std::string name, uint32_t index) : m_name (std::move (name)), m_index (index) {}
+CBind::CBind (std::string name, uint32_t index) :
+    m_name (std::move(name)),
+    m_index (index) {}
 
-CBind* CBind::fromJSON (json data) {
-    const auto name_it = jsonFindRequired (data, "name", "bind must have texture name");
-    const auto index_it = jsonFindRequired (data, "index", "bind must have index");
-
-    return new CBind (*name_it, *index_it);
+const CBind* CBind::fromJSON (const json& data) {
+    return new CBind (
+        jsonFindRequired <std::string> (data, "name", "bind must have texture name"),
+        jsonFindRequired <uint32_t> (data, "index", "bind must have index")
+    );
 }
 
 const std::string& CBind::getName () const {

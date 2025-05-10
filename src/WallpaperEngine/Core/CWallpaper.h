@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <string>
 
 #include "CProject.h"
 
@@ -9,30 +10,35 @@ class CProject;
 
 class CWallpaper {
   public:
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is<T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is<T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid(*this) == typeid(T);
     }
 
-    CWallpaper (std::string type, CProject& project);
-
-    CProject& getProject () const;
+    std::shared_ptr <const CProject> getProject () const;
 
   protected:
     friend class CProject;
 
-  private:
-    CProject& m_project;
+    explicit CWallpaper (std::shared_ptr <const CProject> project);
+    virtual ~CWallpaper() = default;
 
-    std::string m_type;
+  private:
+    std::shared_ptr <const CProject> m_project;
 };
 } // namespace WallpaperEngine::Core

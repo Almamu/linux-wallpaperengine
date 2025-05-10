@@ -1,11 +1,9 @@
 #include "CPulseAudioPlaybackRecorder.h"
-#include "External/Android/fft.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include <cmath>
 #include <cstring>
 #include <glm/common.hpp>
 
-namespace WallpaperEngine::Audio::Drivers::Recorders {
 float movetowards (float current, float target, float maxDelta) {
     if (abs (target - current) <= maxDelta)
         return target;
@@ -13,15 +11,17 @@ float movetowards (float current, float target, float maxDelta) {
     return current + glm::sign (target - current) * maxDelta;
 }
 
+namespace WallpaperEngine::Audio::Drivers::Recorders {
 void pa_stream_notify_cb (pa_stream* stream, void* /*userdata*/) {
     switch (pa_stream_get_state (stream)) {
         case PA_STREAM_FAILED: sLog.error ("Cannot open stream for capture. Audio processing is disabled"); break;
         case PA_STREAM_READY: sLog.debug ("Capture stream ready"); break;
+        default: sLog.debug("pa_stream_get_state unknown result"); break;
     }
 }
 
 void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userdata) {
-    auto* recorder = static_cast<CPulseAudioPlaybackRecorder*> (userdata);
+    auto* recorder = static_cast<CPulseAudioPlaybackRecorder::SPulseAudioData*> (userdata);
 
     // Careful when to pa_stream_peek() and pa_stream_drop()!
     // c.f. https://www.freedesktop.org/software/pulseaudio/doxygen/stream_8h.html#ac2838c449cde56e169224d7fe3d00824
@@ -46,27 +46,37 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
     } else if (currentSize > 0 && data) {
         size_t dataToCopy = std::min (currentSize, WAVE_BUFFER_SIZE - recorder->currentWritePointer);
 
-        memcpy (&recorder->audio_buffer_tmp [recorder->currentWritePointer], data, dataToCopy * sizeof (uint8_t));
+        // depending on the amount of data available, we might want to read one or multiple frames
+        size_t end = recorder->currentWritePointer + dataToCopy;
 
-        recorder->currentWritePointer += dataToCopy;
+        // this packet will fill the buffer, perform some extra checks for extra full buffers and get the latest one
+        if (end == WAVE_BUFFER_SIZE) {
+            size_t numberOfFullBuffers = (currentSize - dataToCopy) / WAVE_BUFFER_SIZE;
 
-        if (recorder->currentWritePointer == WAVE_BUFFER_SIZE) {
-            // copy to the final buffer
-            memcpy (recorder->audio_buffer, recorder->audio_buffer_tmp, WAVE_BUFFER_SIZE * sizeof (uint8_t));
-            // reset the write pointer
-            recorder->currentWritePointer = 0;
-            recorder->fullframeReady = true;
-        }
+            if (numberOfFullBuffers > 0) {
+                // calculate the start of the last block (we need the end of the previous block, hence the - 1)
+                size_t startOfLastBuffer = std::max(dataToCopy + (numberOfFullBuffers - 1) * WAVE_BUFFER_SIZE, currentSize - WAVE_BUFFER_SIZE);
+                // copy directly into the final buffer
+                memcpy (recorder->audioBuffer, &data [startOfLastBuffer], WAVE_BUFFER_SIZE * sizeof (uint8_t));
+                // copy whatever is left to the read/write buffer
+                recorder->currentWritePointer = currentSize - startOfLastBuffer - WAVE_BUFFER_SIZE;
+                memcpy (recorder->audioBufferTmp, &data [startOfLastBuffer + WAVE_BUFFER_SIZE], recorder->currentWritePointer * sizeof (uint8_t));
+            } else {
+                // okay, no full extra packets available, copy the rest of the data and flip the buffers
+                memcpy (&recorder->audioBufferTmp [recorder->currentWritePointer], data, dataToCopy * sizeof (uint8_t));
+                uint8_t* tmp = recorder->audioBuffer;
+                recorder->audioBuffer = recorder->audioBufferTmp;
+                recorder->audioBufferTmp = tmp;
+                // reset write pointer
+                recorder->currentWritePointer = 0;
+            }
 
-        // any data read left?
-        if (dataToCopy < currentSize) {
-            while ((currentSize - dataToCopy) > WAVE_BUFFER_SIZE)
-                dataToCopy += WAVE_BUFFER_SIZE; // there's more than one full frame available, skip it entirely
-
-            // data pending, keep it in the buffer
-            memcpy (recorder->audio_buffer_tmp, data + dataToCopy, (currentSize - dataToCopy) * sizeof (uint8_t));
-
-            recorder->currentWritePointer = currentSize - dataToCopy;
+            // signal a new frame is ready
+            recorder->fullFrameReady = true;
+        } else {
+            // copy over available data to the tmp buffer and everything should be set
+            memcpy (&recorder->audioBufferTmp [recorder->currentWritePointer], data, dataToCopy * sizeof (uint8_t));
+            recorder->currentWritePointer += dataToCopy;
         }
     }
 
@@ -76,31 +86,34 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 }
 
 void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userdata) {
-    auto* recorder = static_cast<CPulseAudioPlaybackRecorder*> (userdata);
+    auto* recorder = static_cast<CPulseAudioPlaybackRecorder::SPulseAudioData*> (userdata);
 
     pa_sample_spec spec;
     spec.format = PA_SAMPLE_U8;
     spec.rate = 44100;
     spec.channels = 1;
 
-    if (recorder->getCaptureStream ()) {
-        pa_stream_unref (recorder->getCaptureStream ());
-        // get rid of the reference just in case
-        recorder->setCaptureStream (nullptr);
+    if (recorder->captureStream) {
+        pa_stream_unref (recorder->captureStream);
     }
 
-    pa_stream* captureStream = pa_stream_new (ctx, "output monitor", &spec, nullptr);
+    recorder->captureStream = pa_stream_new (ctx, "output monitor", &spec, nullptr);
 
-    // store the stream first, if the record start fails there'll still be a reference to it
-    // so it can be free'd later
-    recorder->setCaptureStream (captureStream),
-
-        pa_stream_set_state_callback (captureStream, &pa_stream_notify_cb, userdata);
-    pa_stream_set_read_callback (captureStream, &pa_stream_read_cb, userdata);
+    pa_stream_set_state_callback (recorder->captureStream, &pa_stream_notify_cb, userdata);
+    pa_stream_set_read_callback (recorder->captureStream, &pa_stream_read_cb, userdata);
 
     std::string monitor_name (info->default_sink_name);
     monitor_name += ".monitor";
-    if (pa_stream_connect_record (captureStream, monitor_name.c_str (), nullptr, PA_STREAM_NOFLAGS) != 0) {
+
+    // setup latency
+    pa_buffer_attr attr {};
+
+    // 10 = latency msecs, 750 = max msecs to store
+    size_t bytesPerSec = pa_bytes_per_second (&spec);
+    attr.fragsize = bytesPerSec * 10 / 100;
+    attr.maxlength = attr.fragsize + bytesPerSec * 750 / 100;
+
+    if (pa_stream_connect_record (recorder->captureStream, monitor_name.c_str (), &attr, PA_STREAM_ADJUST_LATENCY) != 0) {
         sLog.error ("Failed to connect to input for recording");
     }
 }
@@ -131,15 +144,23 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
         case PA_CONTEXT_FAILED:
             sLog.error ("PulseAudio context initialization failed. Audio processing is disabled");
             break;
+        default:
+            sLog.debug ("pa_context_get_state unknown result");
+            break;
     }
 }
 
-CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () : m_captureStream (nullptr) {
+CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () :
+    m_captureData({
+        .kisscfg = kiss_fftr_alloc (WAVE_BUFFER_SIZE, 0, nullptr, nullptr),
+        .audioBuffer = new uint8_t [WAVE_BUFFER_SIZE],
+        .audioBufferTmp = new uint8_t [WAVE_BUFFER_SIZE]
+    }) {
     this->m_mainloop = pa_mainloop_new ();
     this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
     this->m_context = pa_context_new (this->m_mainloopApi, "wallpaperengine-audioprocessing");
 
-    pa_context_set_state_callback (this->m_context, &pa_context_notify_cb, this);
+    pa_context_set_state_callback (this->m_context, &pa_context_notify_cb, &this->m_captureData);
 
     if (pa_context_connect (this->m_context, nullptr, PA_CONTEXT_NOFLAGS, nullptr) < 0) {
         sLog.error ("PulseAudio connection failed! Audio processing is disabled");
@@ -152,16 +173,16 @@ CPulseAudioPlaybackRecorder::CPulseAudioPlaybackRecorder () : m_captureStream (n
 }
 
 CPulseAudioPlaybackRecorder::~CPulseAudioPlaybackRecorder () {
+    if (m_captureData.captureStream) {
+        pa_stream_unref (m_captureData.captureStream);
+    }
+
+    delete [] this->m_captureData.audioBufferTmp;
+    delete [] this->m_captureData.audioBuffer;
+    free (this->m_captureData.kisscfg);
+
     pa_context_disconnect (this->m_context);
     pa_mainloop_free (this->m_mainloop);
-}
-
-pa_stream* CPulseAudioPlaybackRecorder::getCaptureStream () {
-    return this->m_captureStream;
-}
-
-void CPulseAudioPlaybackRecorder::setCaptureStream (pa_stream* stream) {
-    this->m_captureStream = stream;
 }
 
 void CPulseAudioPlaybackRecorder::update () {
@@ -169,37 +190,45 @@ void CPulseAudioPlaybackRecorder::update () {
 
     // interpolate current values to the destination
     for (int i = 0; i < 64; i++) {
-        this->audio64 [i] = movetowards (this->audio64 [i], fft_destination64 [i], 0.1f);
+        this->audio64 [i] = movetowards (this->audio64 [i], this->m_FFTdestination64 [i], 0.3f);
         if (i >= 32)
             continue;
-        this->audio32 [i] = movetowards (this->audio32 [i], fft_destination32 [i], 0.1f);
+        this->audio32 [i] = movetowards (this->audio32 [i], this->m_FFTdestination32 [i], 0.3f);
         if (i >= 16)
             continue;
-        this->audio16 [i] = movetowards (this->audio16 [i], fft_destination16 [i], 0.1f);
+        this->audio16 [i] = movetowards (this->audio16 [i], this->m_FFTdestination16 [i], 0.3f);
     }
 
-    if (!this->fullframeReady)
+    if (!this->m_captureData.fullFrameReady)
         return;
 
-    this->fullframeReady = false;
+    this->m_captureData.fullFrameReady = false;
 
-    External::Android::doFft (audio_fft, audio_buffer);
+    // convert audio data to deltas so the fft library can properly handle it
+    for (int i = 0; i < WAVE_BUFFER_SIZE; i ++) {
+        this->m_audioFFTbuffer [i] = (this->m_captureData.audioBuffer[i] - 128) / 128.0f;
+    }
 
-    for (int i = 0; i < 64; i++) {
-        const int paramInt = (i + 2) * 2;
-        float f1 = audio_fft [paramInt];
-        float f2 = audio_fft [paramInt + 1];
-        f2 = f1 * f1 + f2 * f2;
-        f1 = 0.0F;
-        if (f2 > 0.0F)
-            f1 = 0.35F * static_cast<float> (log10 (f2));
+    // perform full fft pass
+    kiss_fftr (this->m_captureData.kisscfg, this->m_audioFFTbuffer, this->m_FFTinfo);
 
-        this->fft_destination64 [i] =
-            fmin (1.0F, f1 * static_cast<float> (2.0f - pow (M_E, (1.0F - i / 63.0F) * 1.0f - 0.5f)));
-        this->fft_destination32 [i >> 1] =
-            fmin (1.0F, f1 * static_cast<float> (2.0f - pow (M_E, (1.0F - i / 31.0F) * 1.0f - 0.5f)));
-        this->fft_destination16 [i >> 2] =
-            fmin (1.0F, f1 * static_cast<float> (2.0f - pow (M_E, (1.0F - i / 15.0F) * 1.0f - 0.5f)));
+    // now reduce to the different bands
+    // use just one for loop to produce all 3
+    for (int band = 0; band < 64; band ++) {
+        int index = band * 2;
+        float f1 = this->m_FFTinfo[index].r;
+        float f2 = this->m_FFTinfo[index].i;
+        f2 = f1 * f1 + f2 * f2; // magnitude
+        f1 = 0.0f;
+
+        if (f2 > 0.0f) {
+            f1 = 0.35f * log10 (f2);
+        }
+
+        this->m_FFTdestination64 [band] = fmin (1.0f, f1 * static_cast<float> (2.0f - pow (M_E, (1.0f - band / 63.0f) * 1.0f - 0.5f)));
+        this->m_FFTdestination32 [band >> 1] = fmin (1.0f, f1 * static_cast<float> (2.0f - pow (M_E, (1.0f - band / 31.0f) * 1.0f - 0.5f)));
+        this->m_FFTdestination16 [band >> 2] = fmin (1.0f, f1 * static_cast<float> (2.0f - pow (M_E, (1.0f - band / 15.0f) * 1.0f - 0.5f)));
     }
 }
+
 } // namespace WallpaperEngine::Audio::Drivers::Recorders

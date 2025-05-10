@@ -2,9 +2,15 @@
 
 using namespace WallpaperEngine::Core::Scenes;
 
-CProjection::CProjection (int width, int height) : m_isAuto (false), m_width (width), m_height (height) {}
+CProjection::CProjection (int width, int height) :
+    m_width (width),
+    m_height (height),
+    m_isAuto (false) {}
 
-CProjection::CProjection (bool isAuto) : m_isAuto (isAuto), m_width (0), m_height (0) {}
+CProjection::CProjection (bool isAuto) :
+    m_width (0),
+    m_height (0),
+    m_isAuto (isAuto) {}
 
 const int& CProjection::getWidth () const {
     return this->m_width;
@@ -18,15 +24,15 @@ bool CProjection::isAuto () const {
     return this->m_isAuto;
 }
 
-void CProjection::setWidth (int width) {
+void CProjection::setWidth (int width) const {
     this->m_width = width;
 }
 
-void CProjection::setHeight (int height) {
+void CProjection::setHeight (int height) const {
     this->m_height = height;
 }
 
-CProjection* CProjection::fromJSON (json data) {
+const CProjection* CProjection::fromJSON (const json::const_iterator& data) {
     const auto auto_it = jsonFindDefault<bool> (data, "auto", false);
 
     const auto width_it = jsonFindRequired (data, "width", "Projection must have width");

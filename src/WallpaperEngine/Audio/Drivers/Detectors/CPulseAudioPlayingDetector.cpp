@@ -16,7 +16,7 @@ void sinkInputInfoCallback (pa_context* context, const pa_sink_input_info* info,
     // get processid
     const char* value = pa_proplist_gets (info->proplist, PA_PROP_APPLICATION_PROCESS_ID);
 
-    if (value && atoi (value) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
+    if (value && strtol (value, nullptr, 10) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED)
         detector->setIsPlaying (true);
 }
 
@@ -32,10 +32,7 @@ void defaultSinkInfoCallback (pa_context* context, const pa_server_info* info, v
 CPulseAudioPlayingDetector::CPulseAudioPlayingDetector (
     Application::CApplicationContext& appContext,
     const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
-    CAudioPlayingDetector (appContext, fullscreenDetector),
-    m_mainloop (nullptr),
-    m_mainloopApi (nullptr),
-    m_context (nullptr) {
+    CAudioPlayingDetector (appContext, fullscreenDetector) {
     this->m_mainloop = pa_mainloop_new ();
     this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
     this->m_context = pa_context_new (this->m_mainloopApi, "wallpaperengine");

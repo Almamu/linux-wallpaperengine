@@ -1,0 +1,4 @@
+LIBRARY
+EXPORTS
+D3DCompile=D3DCompile
+D3DReflect=D3DReflect

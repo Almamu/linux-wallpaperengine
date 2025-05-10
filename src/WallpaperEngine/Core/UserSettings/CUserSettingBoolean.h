@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CUserSettingValue.h"
+#include "WallpaperEngine/Core/CProject.h"
 
 namespace WallpaperEngine::Core::Projects {
 class CProperty;
@@ -11,21 +12,15 @@ class CUserSettingBoolean : public CUserSettingValue {
   public:
     typedef bool data_type;
 
-    static CUserSettingBoolean* fromJSON (nlohmann::json& data);
-    static CUserSettingBoolean* fromScalar (bool value);
-    static std::string Type;
-
-    bool processValue (const std::vector<Projects::CProperty*>& properties);
-    bool getDefaultValue () const;
+    static const CUserSettingBoolean* fromJSON (const nlohmann::json& data, const CProject& project);
+    static const CUserSettingBoolean* fromScalar (bool value);
 
   private:
-    CUserSettingBoolean (bool hasCondition, bool hasSource, bool defaultValue, std::string source,
-                         std::string expectedValue);
+    CUserSettingBoolean (
+        bool hasCondition, bool defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue);
 
-    bool m_default;
-    bool m_hasCondition;
-    bool m_hasSource;
-    std::string m_source;
-    std::string m_expectedValue;
+    const bool m_hasCondition;
+    const std::string m_expectedValue;
+    const std::shared_ptr <const Projects::CProperty> m_source;
 };
 } // namespace WallpaperEngine::Core::UserSettings

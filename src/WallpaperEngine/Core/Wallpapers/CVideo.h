@@ -10,18 +10,16 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-namespace WallpaperEngine::Core {
+namespace WallpaperEngine::Core::Wallpapers {
 class CVideo : public CWallpaper {
   public:
-    explicit CVideo (std::string filename, CProject& project);
+    CVideo (std::string filename, std::shared_ptr <const CProject> project);
 
-    const std::string& getFilename ();
+    const std::string& getFilename () const;
 
   protected:
     friend class CWallpaper;
 
     const std::string m_filename;
-
-    static const std::string Type;
 };
 } // namespace WallpaperEngine::Core

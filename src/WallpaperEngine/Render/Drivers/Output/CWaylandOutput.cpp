@@ -1,7 +1,6 @@
 #include "CWaylandOutput.h"
 #include "../CWaylandOpenGLDriver.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "common.h"
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
@@ -9,8 +8,6 @@ CWaylandOutput::CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriv
     COutput (context, driver) {
     updateViewports ();
 }
-
-CWaylandOutput::~CWaylandOutput () {}
 
 void CWaylandOutput::updateViewports () {
     m_viewports.clear ();
@@ -49,6 +46,10 @@ bool CWaylandOutput::haveImageBuffer () const {
 
 void* CWaylandOutput::getImageBuffer () const {
     return nullptr;
+}
+
+uint32_t CWaylandOutput::getImageBufferSize () const {
+    return 0;
 }
 
 void CWaylandOutput::updateRender () const {}

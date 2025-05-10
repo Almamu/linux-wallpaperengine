@@ -1,8 +1,10 @@
 #pragma once
 
+#include <vector>
+#include <memory>
+
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
-#include <vector>
 
 namespace WallpaperEngine::Assets {
 /**
@@ -22,19 +24,19 @@ class ITexture {
         virtual ~TextureFrame () = default;
 
         /** The image index of this frame */
-        uint32_t frameNumber;
+        uint32_t frameNumber = 0;
         /** The amount of time this frame spends being displayed */
-        float frametime;
+        float frametime = 0.0f;
         /** The x position of the frame in the texture */
-        float x;
+        float x = 0.0f;
         /** The y position of the frame in the texture */
-        float y;
+        float y = 0.0f;
         /** The width of the frame in the texture */
-        float width1;
-        float width2;
-        float height2;
+        float width1 = 0.0f;
+        float width2 = 0.0f;
         /** The height of the frame in the texture */
-        float height1;
+        float height1 = 0.0f;
+        float height2 = 0.0f;
     };
 
     /**
@@ -73,37 +75,37 @@ class ITexture {
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The OpenGL texture to use when rendering
      */
-    [[nodiscard]] virtual const GLuint getTextureID (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual GLuint getTextureID (uint32_t imageIndex) const = 0;
     /**
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The texture's width
      */
-    [[nodiscard]] virtual const uint32_t getTextureWidth (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual uint32_t getTextureWidth (uint32_t imageIndex) const = 0;
     /**
      * @param imageIndex For animated textures, the frame to get the ID of
      * @return The texture's height
      */
-    [[nodiscard]] virtual const uint32_t getTextureHeight (uint32_t imageIndex = 0) const = 0;
+    [[nodiscard]] virtual uint32_t getTextureHeight (uint32_t imageIndex) const = 0;
     /**
      * @return The textures real width
      */
-    [[nodiscard]] virtual const uint32_t getRealWidth () const = 0;
+    [[nodiscard]] virtual uint32_t getRealWidth () const = 0;
     /**
      * @return The textures real height
      */
-    [[nodiscard]] virtual const uint32_t getRealHeight () const = 0;
+    [[nodiscard]] virtual uint32_t getRealHeight () const = 0;
     /**
      * @return The texture's memory format
      */
-    [[nodiscard]] virtual const TextureFormat getFormat () const = 0;
+    [[nodiscard]] virtual TextureFormat getFormat () const = 0;
     /**
      * @return The texture's settings
      */
-    [[nodiscard]] virtual const TextureFlags getFlags () const = 0;
+    [[nodiscard]] virtual TextureFlags getFlags () const = 0;
     /**
      * @return The list of frames this texture has
      */
-    [[nodiscard]] virtual const std::vector<TextureFrame*>& getFrames () const = 0;
+    [[nodiscard]] virtual const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const = 0;
     /**
      * @return The texture's resolution vector
      */
@@ -111,6 +113,6 @@ class ITexture {
     /**
      * @return If the texture is animated or not
      */
-    [[nodiscard]] virtual const bool isAnimated () const = 0;
+    [[nodiscard]] virtual bool isAnimated () const = 0;
 };
 } // namespace WallpaperEngine::Assets

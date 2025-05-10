@@ -1,18 +1,14 @@
-#include "common.h"
 #include <iostream>
 
 #include <GL/glew.h>
 
 #include "CRenderContext.h"
 #include "CWallpaper.h"
-#include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 
 namespace WallpaperEngine::Render {
-CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input,
-                                CWallpaperApplication& app) :
+CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, CWallpaperApplication& app) :
     m_driver (driver),
     m_app (app),
-    m_input (input),
     m_textureCache (new CTextureCache (*this)) {}
 
 void CRenderContext::render (Drivers::Output::COutputViewport* viewport) {
@@ -38,7 +34,7 @@ void CRenderContext::render (Drivers::Output::COutputViewport* viewport) {
     viewport->swapOutput ();
 }
 
-void CRenderContext::setWallpaper (const std::string& display, CWallpaper* wallpaper) {
+void CRenderContext::setWallpaper (const std::string& display, std::shared_ptr <CWallpaper> wallpaper) {
     this->m_wallpapers.insert_or_assign (display, wallpaper);
 }
 
@@ -48,7 +44,7 @@ void CRenderContext::setPause (bool newState) {
 }
 
 Input::CInputContext& CRenderContext::getInputContext () const {
-    return this->m_input;
+    return this->m_driver.getInputContext ();
 }
 
 const CWallpaperApplication& CRenderContext::getApp () const {
@@ -63,7 +59,11 @@ const Drivers::Output::COutput& CRenderContext::getOutput () const {
     return this->m_driver.getOutput ();
 }
 
-const ITexture* CRenderContext::resolveTexture (const std::string& name) {
+std::shared_ptr<const ITexture> CRenderContext::resolveTexture (const std::string& name) {
     return this->m_textureCache->resolve (name);
+}
+
+const std::map<std::string, std::shared_ptr <CWallpaper>>& CRenderContext::getWallpapers () const {
+    return this->m_wallpapers;
 }
 } // namespace WallpaperEngine::Render

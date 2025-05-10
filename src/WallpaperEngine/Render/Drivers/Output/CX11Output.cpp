@@ -1,11 +1,10 @@
 #include "CX11Output.h"
 #include "CGLFWOutputViewport.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
-#include <unistd.h>
 
 using namespace WallpaperEngine::Render::Drivers::Output;
 
@@ -30,7 +29,14 @@ int CustomXIOErrorHandler (Display* dsp) {
     return 0;
 }
 
-CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) : COutput (context, driver) {
+CX11Output::CX11Output (CApplicationContext& context, CVideoDriver& driver) : COutput (context, driver),
+    m_display (nullptr),
+    m_pixmap (None),
+    m_root (None),
+    m_gc (None),
+    m_imageData (nullptr),
+    m_imageSize (0),
+    m_image (nullptr) {
     // do not use previous handler, it might stop the app under weird circumstances
     XSetErrorHandler (CustomXErrorHandler);
     XSetIOErrorHandler (CustomXIOErrorHandler);
@@ -83,10 +89,11 @@ bool CX11Output::haveImageBuffer () const {
     return true;
 }
 
-void CX11Output::loadScreenInfo () {
-    // reset the viewports
-    this->m_viewports.clear ();
+uint32_t CX11Output::getImageBufferSize () const {
+    return this->m_imageSize;
+}
 
+void CX11Output::loadScreenInfo () {
     this->m_display = XOpenDisplay (nullptr);
     // set the error handling to try and recover from X disconnections
 #ifdef HAVE_XSETIOERROREXITHANDLER
@@ -163,6 +170,7 @@ void CX11Output::loadScreenInfo () {
     // set the window background as our pixmap
     XSetWindowBackgroundPixmap (this->m_display, this->m_root, this->m_pixmap);
     // allocate space for the image's data
+    this->m_imageSize = this->m_fullWidth * this->m_fullHeight * 4;
     this->m_imageData = new char [this->m_fullWidth * this->m_fullHeight * 4];
     // create an image so we can copy it over
     this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth,

@@ -4,8 +4,9 @@
 
 using namespace WallpaperEngine::Core;
 
-CWallpaper::CWallpaper (std::string type, CProject& project) : m_type (std::move (type)), m_project (project) {}
+CWallpaper::CWallpaper (std::shared_ptr <const CProject> project) :
+    m_project (project) {}
 
-CProject& CWallpaper::getProject () const {
+std::shared_ptr <const CProject> CWallpaper::getProject () const {
     return this->m_project;
 }

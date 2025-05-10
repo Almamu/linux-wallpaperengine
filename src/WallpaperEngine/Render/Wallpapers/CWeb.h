@@ -13,106 +13,51 @@
 #include "WallpaperEngine/Audio/CAudioStream.h"
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include "common.h"
+#include "WallpaperEngine/WebBrowser/CEF/CBrowserClient.h"
+#include "WallpaperEngine/WebBrowser/CEF/CRenderHandler.h"
 
-namespace WallpaperEngine::Render
+namespace WallpaperEngine::WebBrowser::CEF {
+class CRenderHandler;
+}
+
+namespace WallpaperEngine::Render::Wallpapers {
+class CWeb : public CWallpaper
 {
-    class CWeb : public CWallpaper
-    {
-        public:
-            CWeb (Core::CWeb* scene, CRenderContext& context, CAudioContext& audioContext, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode);
-            ~CWeb() override;
-            [[nodiscard]] int getWidth  () const override { return this->m_width; }
+    public:
+        CWeb (
+          std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+          WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
+          const CWallpaperState::TextureUVsScaling& scalingMode,
+          const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        ~CWeb() override;
+        [[nodiscard]] int getWidth  () const override { return this->m_width; }
 
-            [[nodiscard]] int getHeight () const override { return this->m_height; }
+        [[nodiscard]] int getHeight () const override { return this->m_height; }
 
-            void setSize (int width, int height);
+        void setSize (int width, int height);
 
-        protected:
-            void renderFrame (glm::ivec4 viewport) override;
-            void updateMouse (glm::ivec4 viewport);
-            Core::CWeb* getWeb ()
-            {
-                return this->getWallpaperData ()->as<Core::CWeb> ();
-            }
+    protected:
+        void renderFrame (glm::ivec4 viewport) override;
+        void updateMouse (glm::ivec4 viewport);
+        const Core::Wallpapers::CWeb* getWeb () const {
+            return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
+        }
 
-            friend class CWallpaper;
+        friend class CWallpaper;
 
-            static const std::string Type;
+    private:
+        WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
+        CefRefPtr<CefBrowser> m_browser = nullptr;
+        CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client = nullptr;
+        WallpaperEngine::WebBrowser::CEF::CRenderHandler* m_renderHandler = nullptr;
 
-        private:
-            // *************************************************************************
-            //! \brief Private implementation to handle CEF events to draw the web page.
-            // *************************************************************************
-            class RenderHandler: public CefRenderHandler
-            {
-                public:
-                    explicit RenderHandler(CWeb* webdata);
+        int m_width = 16;
+        int m_height = 17;
 
-                    //! \brief
-                    ~RenderHandler() override = default;
+        WallpaperEngine::Input::MouseClickStatus m_leftClick = Input::Released;
+        WallpaperEngine::Input::MouseClickStatus m_rightClick = Input::Released;
 
-                    //! \brief CefRenderHandler interface
-                    void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
-
-                    //! \brief CefRenderHandler interface
-                    //! Update the OpenGL texture.
-                    void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
-                                        const RectList &dirtyRects, const void *buffer,
-                                        int width, int height) override;
-
-                    //! \brief CefBase interface
-                    IMPLEMENT_REFCOUNTING(RenderHandler);
-
-                private:
-                    CWeb* m_webdata;
-
-                    int getWidth () const {
-                        return this->m_webdata->getWidth();
-                    };
-                    int getHeight () const {
-                        return this->m_webdata->getHeight();
-                    };
-                    //! \brief Return the OpenGL texture handle
-                    GLuint texture() const
-                    {
-                        return this->m_webdata->getWallpaperFramebuffer();
-                    }
-            };
-
-            // *************************************************************************
-            //! \brief Provide access to browser-instance-specific callbacks. A single
-            //! CefClient instance can be shared among any number of browsers.
-            // *************************************************************************
-            class BrowserClient: public CefClient
-            {
-                public:
-                    explicit BrowserClient(CefRefPtr<CefRenderHandler> ptr)
-                        : m_renderHandler(std::move(ptr))
-                    {}
-
-                    CefRefPtr<CefRenderHandler> GetRenderHandler() override
-                    {
-                        return m_renderHandler;
-                    }
-
-                    CefRefPtr<CefRenderHandler> m_renderHandler;
-
-                    IMPLEMENT_REFCOUNTING(BrowserClient);
-            };
-
-            WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
-            CefRefPtr<CefBrowser> m_browser;
-            CefRefPtr<BrowserClient> m_client;
-            RenderHandler* m_render_handler = nullptr;
-
-            int m_width;
-            int m_height;
-
-            WallpaperEngine::Input::MouseClickStatus m_leftClick;
-            WallpaperEngine::Input::MouseClickStatus m_rightClick;
-
-            glm::vec2 m_mousePosition;
-            glm::vec2 m_mousePositionLast;
-    };
+        glm::vec2 m_mousePosition = {};
+        glm::vec2 m_mousePositionLast = {};
+};
 }

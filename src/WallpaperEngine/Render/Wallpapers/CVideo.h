@@ -7,13 +7,15 @@
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
 
-namespace WallpaperEngine::Render {
+namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
-    CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
-            const CWallpaperState::TextureUVsScaling& scalingMode);
+    CVideo (
+        std::shared_ptr<const Core::CWallpaper> video, CRenderContext& context, CAudioContext& audioContext,
+        const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
-    Core::CVideo* getVideo ();
+    const Core::Wallpapers::CVideo* getVideo () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
@@ -26,14 +28,12 @@ class CVideo final : public CWallpaper {
 
     friend class CWallpaper;
 
-    static const std::string Type;
-
   private:
-    mpv_handle* m_mpv;
-    mpv_render_context* m_mpvGl;
+    mpv_handle* m_mpv = nullptr;
+    mpv_render_context* m_mpvGl = nullptr;
 
-    bool m_paused;
-    int64_t m_width;
-    int64_t m_height;
+    bool m_paused = false;
+    int64_t m_width = 16;
+    int64_t m_height = 16;
 };
-} // namespace WallpaperEngine::Render
+} // namespace WallpaperEngine::Render::Wallpapers

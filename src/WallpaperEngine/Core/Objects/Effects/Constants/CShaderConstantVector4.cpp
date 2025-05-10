@@ -2,10 +2,21 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantVector4::CShaderConstantVector4 (glm::vec4 value) : CShaderConstant (Type), m_value (value) {}
-
-glm::vec4* CShaderConstantVector4::getValue () {
-    return &this->m_value;
+CShaderConstantVector4::CShaderConstantVector4 (glm::vec4 value) {
+    this->update (value);
 }
 
-const std::string CShaderConstantVector4::Type = "vec4";
+std::string CShaderConstantVector4::toString () const {
+    std::string result = "(";
+
+    result.append (std::to_string (this->getVec4 ().x));
+    result.append (",");
+    result.append (std::to_string (this->getVec4 ().y));
+    result.append (",");
+    result.append (std::to_string (this->getVec4 ().z));
+    result.append (",");
+    result.append (std::to_string (this->getVec4 ().w));
+    result.append (")");
+
+    return result;
+}

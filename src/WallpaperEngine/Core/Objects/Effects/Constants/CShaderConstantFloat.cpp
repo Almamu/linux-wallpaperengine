@@ -2,10 +2,10 @@
 
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
-CShaderConstantFloat::CShaderConstantFloat (float value) : CShaderConstant (Type), m_value (value) {}
-
-float* CShaderConstantFloat::getValue () {
-    return &this->m_value;
+CShaderConstantFloat::CShaderConstantFloat (float value) {
+    this->update (value);
 }
 
-const std::string CShaderConstantFloat::Type = "float";
+std::string CShaderConstantFloat::toString () const {
+    return std::to_string (this->getFloat ());
+}

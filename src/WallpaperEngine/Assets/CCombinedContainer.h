@@ -19,7 +19,7 @@ class CCombinedContainer final : public CContainer {
      *
      * @param container
      */
-    void add (CContainer* container);
+    void add (const std::shared_ptr<CContainer>& container);
     /**
      * Adds the given package to the list
      *
@@ -27,13 +27,11 @@ class CCombinedContainer final : public CContainer {
      */
     void addPkg (const std::filesystem::path& path);
 
-    /** @inheritdoc */
-    [[nodiscard]] std::filesystem::path resolveRealFile (const std::string& filename) const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
+    [[nodiscard]] std::filesystem::path resolveRealFile (const std::filesystem::path& filename) const override;
+    [[nodiscard]] std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:
     /** The list of containers to search files off from */
-    std::vector<CContainer*> m_containers;
+    std::vector<std::shared_ptr<CContainer>> m_containers {};
 };
 }; // namespace WallpaperEngine::Assets

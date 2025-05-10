@@ -9,76 +9,80 @@
 #include "WallpaperEngine/Core/Scenes/CProjection.h"
 
 namespace WallpaperEngine::Core {
-using json = nlohmann::json;
-
 class CObject;
+}
+
+namespace WallpaperEngine::Core::Wallpapers {
+using json = nlohmann::json;
 
 class CScene : public CWallpaper {
   public:
-    static CScene* fromFile (const std::string& filename, CProject& project, CContainer* container);
+    CScene (
+        std::shared_ptr <const Core::CProject> project, std::shared_ptr<const CContainer> container,
+        const Scenes::CCamera* camera, glm::vec3 ambientColor, const CUserSettingBoolean* bloom,
+        const CUserSettingFloat* bloomStrength, const CUserSettingFloat* bloomThreshold, bool cameraFade,
+        bool cameraParallax, float cameraParallaxAmount, float cameraParallaxDelay, float cameraParallaxMouseInfluence,
+        bool cameraPreview, bool cameraShake, float cameraShakeAmplitude, float cameraShakeRoughness,
+        float cameraShakeSpeed, const CUserSettingVector3* clearColor, const Scenes::CProjection* orthogonalProjection,
+        glm::vec3 skylightColor);
 
-    const std::map<uint32_t, CObject*>& getObjects () const;
-    const std::vector<CObject*>& getObjectsByRenderOrder () const;
+    static std::shared_ptr <const CScene> fromFile (
+        const std::string& filename, std::shared_ptr <const Core::CProject> project,
+        const std::shared_ptr<const CContainer>& container);
+    [[nodiscard]] const std::map<uint32_t, const CObject*>& getObjects () const;
 
-    const glm::vec3& getAmbientColor () const;
-    const bool isBloom () const;
-    double getBloomStrength () const;
-    double getBloomThreshold () const;
-    const bool isCameraFade () const;
-    const bool isCameraParallax () const;
-    const double getCameraParallaxAmount () const;
-    const double getCameraParallaxDelay () const;
-    const double getCameraParallaxMouseInfluence () const;
-    const bool isCameraPreview () const;
-    const bool isCameraShake () const;
-    const double getCameraShakeAmplitude () const;
-    const double getCameraShakeRoughness () const;
-    const double getCameraShakeSpeed () const;
-    glm::vec3 getClearColor () const;
-    Scenes::CProjection* getOrthogonalProjection () const;
-    const glm::vec3& getSkylightColor () const;
-    const Scenes::CCamera* getCamera () const;
+    [[nodiscard]] const std::vector<const CObject*>& getObjectsByRenderOrder () const;
+    [[nodiscard]] const glm::vec3& getAmbientColor () const;
+    [[nodiscard]] bool isBloom () const;
+    [[nodiscard]] float getBloomStrength () const;
+    [[nodiscard]] float getBloomThreshold () const;
+    [[nodiscard]] bool isCameraFade () const;
+    [[nodiscard]] bool isCameraParallax () const;
+    [[nodiscard]] float getCameraParallaxAmount () const;
+    [[nodiscard]] float getCameraParallaxDelay () const;
+    [[nodiscard]] float getCameraParallaxMouseInfluence () const;
+    [[nodiscard]] bool isCameraPreview () const;
+    [[nodiscard]] bool isCameraShake () const;
+    [[nodiscard]] float getCameraShakeAmplitude () const;
+    [[nodiscard]] float getCameraShakeRoughness () const;
+    [[nodiscard]] float getCameraShakeSpeed () const;
+    [[nodiscard]] const glm::vec3& getClearColor () const;
+    [[nodiscard]] const Scenes::CProjection* getOrthogonalProjection () const;
+    [[nodiscard]] const glm::vec3& getSkylightColor () const;
+
+    [[nodiscard]] const Scenes::CCamera* getCamera () const;
 
   protected:
     friend class CWallpaper;
 
-    CScene (CProject& project, CContainer* container, Scenes::CCamera* camera, glm::vec3 ambientColor,
-            CUserSettingBoolean* bloom, CUserSettingFloat* bloomStrength, CUserSettingFloat* bloomThreshold,
-            bool cameraFade, bool cameraParallax, double cameraParallaxAmount, double cameraParallaxDelay,
-            double cameraParallaxMouseInfluence, bool cameraPreview, bool cameraShake, double cameraShakeAmplitude,
-            double cameraShakeRoughness, double cameraShakeSpeed, CUserSettingVector3* clearColor,
-            Scenes::CProjection* orthogonalProjection, glm::vec3 skylightColor);
+    void insertObject (const CObject* object);
 
-    static const std::string Type;
-
-    void insertObject (CObject* object);
-
-    CContainer* getContainer ();
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
   private:
-    CContainer* m_container;
-    Scenes::CCamera* m_camera;
+    const std::shared_ptr<const CContainer> m_container;
+    const Scenes::CCamera* m_camera;
 
     // data from general section on the json
-    glm::vec3 m_ambientColor;
-    CUserSettingBoolean* m_bloom;
-    CUserSettingFloat* m_bloomStrength;
-    CUserSettingFloat* m_bloomThreshold;
-    bool m_cameraFade;
-    bool m_cameraParallax;
-    double m_cameraParallaxAmount;
-    double m_cameraParallaxDelay;
-    double m_cameraParallaxMouseInfluence;
-    bool m_cameraPreview;
-    bool m_cameraShake;
-    double m_cameraShakeAmplitude;
-    double m_cameraShakeRoughness;
-    double m_cameraShakeSpeed;
-    CUserSettingVector3* m_clearColor;
-    Scenes::CProjection* m_orthogonalProjection;
-    glm::vec3 m_skylightColor;
+    const glm::vec3 m_ambientColor;
+    const CUserSettingBoolean* m_bloom;
+    const CUserSettingFloat* m_bloomStrength;
+    const CUserSettingFloat* m_bloomThreshold;
+    const bool m_cameraFade;
+    const bool m_cameraParallax;
+    const float m_cameraParallaxAmount;
+    const float m_cameraParallaxDelay;
+    const float m_cameraParallaxMouseInfluence;
+    const bool m_cameraPreview;
+    const bool m_cameraShake;
+    const float m_cameraShakeAmplitude;
+    const float m_cameraShakeRoughness;
+    const float m_cameraShakeSpeed;
+    const CUserSettingVector3* m_clearColor;
+    const Scenes::CProjection* m_orthogonalProjection;
+    const glm::vec3 m_skylightColor;
 
-    std::map<uint32_t, CObject*> m_objects;
-    std::vector<CObject*> m_objectsByRenderOrder;
+    std::map<uint32_t, const CObject*> m_objects = {};
+    std::vector<const CObject*> m_objectsByRenderOrder = {};
 };
 } // namespace WallpaperEngine::Core

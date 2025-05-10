@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -19,6 +20,7 @@ class CTexture final : public ITexture {
      */
     enum ContainerVersion : int {
         UNKNOWN = -1,
+        TEXB0004 = 4,
         TEXB0003 = 3,
         TEXB0002 = 2,
         TEXB0001 = 1
@@ -41,7 +43,7 @@ class CTexture final : public ITexture {
         FIF_JNG		= 3,
         FIF_KOALA	= 4,
         FIF_LBM		= 5,
-        FIF_IFF = FIF_LBM,
+        FIF_IFF         = FIF_LBM,
         FIF_MNG		= 6,
         FIF_PBM		= 7,
         FIF_PBMRAW	= 8,
@@ -61,7 +63,7 @@ class CTexture final : public ITexture {
         FIF_XBM		= 22,
         FIF_XPM		= 23,
         FIF_DDS		= 24,
-        FIF_GIF     = 25,
+        FIF_GIF         = 25,
         FIF_HDR		= 26,
         FIF_FAXG3	= 27,
         FIF_SGI		= 28,
@@ -72,6 +74,7 @@ class CTexture final : public ITexture {
         FIF_PICT	= 33,
         FIF_RAW		= 34,
         FIF_WEBP	= 35,
+        FIF_MP4         = FIF_WEBP,
         FIF_JXR		= 36
     };
 
@@ -80,9 +83,6 @@ class CTexture final : public ITexture {
      */
     class TextureMipmap {
       public:
-        TextureMipmap ();
-        ~TextureMipmap ();
-
         /** Width of the mipmap */
         uint32_t width = 0;
         /** Height of the mipmap */
@@ -94,9 +94,11 @@ class CTexture final : public ITexture {
         /** Compress size of the mipmap */
         uint32_t compressedSize = 0;
         /** Pointer to the compressed data */
-        char* compressedData = nullptr;
+        std::unique_ptr<char[]> compressedData = nullptr;
         /** Pointer to the uncompressed data */
-        char* uncompressedData = nullptr;
+        std::unique_ptr<char[]> uncompressedData = nullptr;
+        /** JSON data */
+        std::string json {};
         /**
          * Performs actual decompression of the compressed data
          */
@@ -109,7 +111,7 @@ class CTexture final : public ITexture {
     class TextureHeader {
       public:
         TextureHeader ();
-        ~TextureHeader ();
+        ~TextureHeader () = default;
 
         [[nodiscard]] bool isAnimated () const;
 
@@ -118,57 +120,46 @@ class CTexture final : public ITexture {
         /** The version of the animated data */
         AnimatedVersion animatedVersion = AnimatedVersion::TEXSUNKN;
         /** Flags with extra texture information */
-        TextureFlags flags;
+        TextureFlags flags = TextureFlags::NoFlags;
         /** Real width of the texture */
-        uint32_t width;
+        uint32_t width = 0;
         /** Real height of the texture */
-        uint32_t height;
+        uint32_t height = 0;
         /** Texture width in memory (power of 2) */
-        uint32_t textureWidth;
+        uint32_t textureWidth = 0;
         /** Texture height in memory (power of 2) */
-        uint32_t textureHeight;
+        uint32_t textureHeight = 0;
         /** Gif width */
-        uint32_t gifWidth;
+        uint32_t gifWidth = 0;
         /** Gif height */
-        uint32_t gifHeight;
+        uint32_t gifHeight = 0;
         /** Texture data format */
-        TextureFormat format;
+        TextureFormat format = TextureFormat::UNKNOWN;
         /** Free Image format */
         FreeImageFormat freeImageFormat = FreeImageFormat::FIF_UNKNOWN;
+        /** Indicates if we have an MP4 video */
+        bool isVideoMp4 = false;
         /** The amount of images in the texture file */
-        uint32_t imageCount;
-        /** Number of mipmap levels on the texture */
-        uint32_t mipmapCount;
+        uint32_t imageCount = 0;
         /** List of mipmaps */
-        std::map<uint32_t, std::vector<TextureMipmap*>> images;
+        std::map<uint32_t, std::vector<std::shared_ptr<TextureMipmap>>> images {};
         /** List of animation frames */
-        std::vector<TextureFrame*> frames;
+        std::vector<std::shared_ptr<TextureFrame>> frames {};
     };
 
   public:
-    explicit CTexture (const void* fileData);
-    ~CTexture () override;
+    explicit CTexture (const std::shared_ptr<const uint8_t[]>& fileData);
 
-    /** @inheritdoc */
-    [[nodiscard]] const GLuint getTextureID (uint32_t imageIndex = 0) const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint32_t getTextureWidth (uint32_t imageIndex = 0) const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint32_t getTextureHeight (uint32_t imageIndex = 0) const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint32_t getRealWidth () const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint32_t getRealHeight () const override;
-    /** @inheritdoc */
-    [[nodiscard]] const TextureFormat getFormat () const override;
-    /** @inheritdoc */
-    [[nodiscard]] const TextureFlags getFlags () const override;
-    /** @inheritdoc */
+    [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getTextureWidth (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
+    [[nodiscard]] uint32_t getRealWidth () const override;
+    [[nodiscard]] uint32_t getRealHeight () const override;
+    [[nodiscard]] TextureFormat getFormat () const override;
+    [[nodiscard]] TextureFlags getFlags () const override;
     [[nodiscard]] const glm::vec4* getResolution () const override;
-    /** @inheritdoc */
-    [[nodiscard]] const std::vector<TextureFrame*>& getFrames () const override;
-    /** @inheritdoc */
-    [[nodiscard]] const bool isAnimated () const override;
+    [[nodiscard]] const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const override;
+    [[nodiscard]] bool isAnimated () const override;
 
   private:
     /**
@@ -182,14 +173,14 @@ class CTexture final : public ITexture {
      * @param fileData The point at which to start reading data off from
      * @return
      */
-    static TextureHeader* parseHeader (const char* fileData);
+    static std::unique_ptr<TextureHeader> parseHeader (const char* fileData);
     /**
      * Tries to parse an animation frame off the given data pointer
      *
      * @param originalFileData The point at which to start reading data off from
      * @return
      */
-    static TextureFrame* parseAnimation (const char** originalFileData);
+    static std::shared_ptr<TextureFrame> parseAnimation (const char** originalFileData);
     /**
      * Tries to parse mipmap information off the given data pointer
      *
@@ -197,13 +188,26 @@ class CTexture final : public ITexture {
      * @param fileData The point at which to start reading data off from
      * @return
      */
-    static TextureMipmap* parseMipmap (const TextureHeader* header, const char** fileData);
+    static std::shared_ptr<TextureMipmap> parseMipmap (const TextureHeader* header, const char** fileData);
+
+    /**
+     * Calculate's texture's resolution vec4
+     */
+    void setupResolution ();
+    /**
+     * Determines the texture's internal storage format
+     */
+    GLint setupInternalFormat ();
+    /**
+     * Prepares openGL parameters for loading texture data
+     */
+    void setupOpenGLParameters (uint32_t textureID);
 
     /** The texture header */
-    TextureHeader* m_header;
+    std::unique_ptr<TextureHeader> m_header = nullptr;
     /** OpenGL's texture ID */
-    GLuint* m_textureID;
+    GLuint* m_textureID = nullptr;
     /** Resolution vector of the texture */
-    glm::vec4 m_resolution;
+    glm::vec4 m_resolution {};
 };
 } // namespace WallpaperEngine::Assets

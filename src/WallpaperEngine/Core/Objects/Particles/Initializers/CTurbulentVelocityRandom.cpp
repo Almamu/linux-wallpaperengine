@@ -1,29 +1,19 @@
 #include "CTurbulentVelocityRandom.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (json data, uint32_t id) {
-    const auto phasemax_it = data.find ("phasemax");
-    const auto scale_it = data.find ("scale");
-    const auto speedmax_it = data.find ("speedmax");
-    const auto speedmin_it = data.find ("speedmin");
-    const auto timescale_it = data.find ("timescale");
-
-    if (phasemax_it == data.end ())
-        sLog.exception ("TurbulentVelocityRandom initializer must have a phasemax value");
-    if (scale_it == data.end ())
-        sLog.exception ("TurbulentVelocityRandom initializer must have a scale value");
-    if (speedmax_it == data.end ())
-        sLog.exception ("TurbulentVelocityRandom initializer must have a maximum speed value");
-    if (speedmin_it == data.end ())
-        sLog.exception ("TurbulentVelocityRandom initializer must have a minimum speed value");
-    if (timescale_it == data.end ())
-        sLog.exception ("TurbulentVelocityRandom initializer must have a timescale value");
-
-    return new CTurbulentVelocityRandom (id, *phasemax_it, *scale_it, *timescale_it, *speedmin_it, *speedmax_it);
+const CTurbulentVelocityRandom* CTurbulentVelocityRandom::fromJSON (const json& data, uint32_t id) {
+    return new CTurbulentVelocityRandom (
+        id,
+        jsonFindRequired <double> (data, "phasemax", "TurbulentVelocityRandom initializer must have a phasemax value"),
+        jsonFindRequired <double> (data, "scale", "TurbulentVelocityRandom initializer must have a scale value"),
+        jsonFindRequired <double>(data, "timescale", "TurbulentVelocityRandom initializer must have a timescale value"),
+        jsonFindRequired <uint32_t> (data, "speedmin", "TurbulentVelocityRandom initializer must have a minimum speed value"),
+        jsonFindRequired <uint32_t> (data, "speedmax", "TurbulentVelocityRandom initializer must have a maximum speed value")
+    );
 }
 
 CTurbulentVelocityRandom::CTurbulentVelocityRandom (uint32_t id, double phasemax, double scale, double timescale,
@@ -35,22 +25,22 @@ CTurbulentVelocityRandom::CTurbulentVelocityRandom (uint32_t id, double phasemax
     m_speedmin (speedmin),
     m_speedmax (speedmax) {}
 
-double CTurbulentVelocityRandom::getPhaseMax () {
+double CTurbulentVelocityRandom::getPhaseMax () const {
     return this->m_phasemax;
 }
 
-double CTurbulentVelocityRandom::getScale () {
+double CTurbulentVelocityRandom::getScale () const {
     return this->m_scale;
 }
 
-double CTurbulentVelocityRandom::getTimeScale () {
+double CTurbulentVelocityRandom::getTimeScale () const {
     return this->m_timescale;
 }
 
-uint32_t CTurbulentVelocityRandom::getMinimumSpeed () {
+uint32_t CTurbulentVelocityRandom::getMinimumSpeed () const {
     return this->m_speedmin;
 }
 
-uint32_t CTurbulentVelocityRandom::getMaximumSpeed () {
+uint32_t CTurbulentVelocityRandom::getMaximumSpeed () const {
     return this->m_speedmax;
 }

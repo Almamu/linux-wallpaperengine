@@ -10,7 +10,7 @@ using json = nlohmann::json;
  */
 class CEmitter {
   public:
-    static CEmitter* fromJSON (json data);
+    static const CEmitter* fromJSON (const json& data);
 
     /**
      * @return The ID of the emitter
@@ -42,23 +42,24 @@ class CEmitter {
     [[nodiscard]] const double getRate () const;
 
   protected:
-    CEmitter (const glm::vec3& directions, const glm::vec3& distancemax, const glm::vec3& distancemin, uint32_t id, std::string name,
-              const glm::vec3& origin, double rate);
+    CEmitter (
+        glm::vec3 directions, glm::vec3 distancemax, glm::vec3 distancemin, uint32_t id, std::string name,
+        glm::vec3 origin, double rate);
 
   private:
     /** Direction the particles should move to */
-    glm::vec3 m_directions;
+    const glm::vec3 m_directions;
     /** Maximum distance before the particle is dead */
-    glm::vec3 m_distancemax;
+    const glm::vec3 m_distancemax;
     /** Minimum distance before the particle is dead */
-    glm::vec3 m_distancemin;
+    const glm::vec3 m_distancemin;
     /** ID of the emitter */
-    uint32_t m_id;
+    const uint32_t m_id;
     /** Name of the emitter, indicates the type of emitter */
-    std::string m_name;
+    const std::string m_name;
     /** The center of the emitter */
-    glm::vec3 m_origin;
+    const glm::vec3 m_origin;
     /** The rate of emission */
-    double m_rate;
+    const double m_rate;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles

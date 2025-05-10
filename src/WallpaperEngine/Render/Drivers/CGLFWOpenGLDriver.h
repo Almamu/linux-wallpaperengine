@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
+#include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h"
 #include <GL/glew.h>
@@ -32,12 +33,13 @@ class CGLFWOpenGLDriver final : public CVideoDriver {
     void dispatchEventQueue () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
-    GLFWwindow* getWindow ();
+    GLFWwindow* getWindow () const;
 
   private:
     CApplicationContext& m_context;
-    Output::COutput* m_output;
-    GLFWwindow* m_window;
-    uint32_t m_frameCounter;
+    Input::Drivers::CGLFWMouseInput m_mouseInput;
+    Output::COutput* m_output = nullptr;
+    GLFWwindow* m_window = nullptr;
+    uint32_t m_frameCounter = 0;
 };
 } // namespace WallpaperEngine::Render::Drivers

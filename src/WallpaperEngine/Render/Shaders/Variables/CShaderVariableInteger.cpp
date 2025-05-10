@@ -5,24 +5,12 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue) :
-    m_defaultValue (defaultValue),
-    m_value (0),
-    CShaderVariable (&this->m_defaultValue, nullptr, Type) {}
-
-CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue, std::string name) :
-    m_defaultValue (defaultValue),
-    m_value (0),
-    CShaderVariable (&this->m_defaultValue, nullptr, Type) {
-    this->setName (std::move (name));
+    CShaderVariable () {
+    this->update (defaultValue);
 }
 
-void CShaderVariableInteger::setValue (int32_t value) {
-    this->m_value = value;
-    CShaderVariable::setValue (&this->m_value);
+CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue, const std::string& name) :
+    CShaderVariable () {
+    this->setName (name);
+    this->update (defaultValue);
 }
-
-const int CShaderVariableInteger::getSize () const {
-    return 1;
-}
-
-const std::string CShaderVariableInteger::Type = "int";

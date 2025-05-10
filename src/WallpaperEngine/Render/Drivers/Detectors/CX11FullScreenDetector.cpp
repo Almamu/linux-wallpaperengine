@@ -5,6 +5,7 @@
 #include <X11/extensions/Xrandr.h>
 
 #include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
+#include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
@@ -28,10 +29,21 @@ int CustomXIOErrorHandler (Display* dsp) {
     return 0;
 }
 
-CX11FullScreenDetector::CX11FullScreenDetector (Application::CApplicationContext& appContext,
-                                                CGLFWOpenGLDriver& driver) :
+CX11FullScreenDetector::CX11FullScreenDetector (
+    Application::CApplicationContext& appContext, CVideoDriver& driver
+) :
     CFullScreenDetector (appContext),
+    m_display (nullptr),
+    m_root (0),
     m_driver (driver) {
+    try {
+        // attempt casting to CGLFWOpenGLDriver, this will throw if it's not possible
+        // so we can gracely handle the error
+        dynamic_cast <CGLFWOpenGLDriver&> (this->m_driver);
+    } catch (std::exception&) {
+        sLog.exception ("X11 FullScreen Detector initialized with the wrong video driver... This is a bug...");
+    }
+
     // do not use previous handler, it might stop the app under weird circumstances
     // these handlers might be replaced by other X11-specific functionality, they
     // should only be used to ignore X11 errors and nothing else
@@ -47,9 +59,6 @@ CX11FullScreenDetector::~CX11FullScreenDetector () {
 }
 
 bool CX11FullScreenDetector::anythingFullscreen () const {
-    if (!this->getApplicationContext ().settings.render.pauseOnFullscreen)
-        return false;
-
     // stop rendering if anything is fullscreen
     bool isFullscreen = false;
     XWindowAttributes attribs;
@@ -60,14 +69,14 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
     if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren))
         return false;
 
-    const auto ourWindow = reinterpret_cast<Window> (this->m_driver.getWindow ());
+    const auto ourWindow = reinterpret_cast<Window> (dynamic_cast <CGLFWOpenGLDriver&> (this->m_driver).getWindow ());
     Window parentWindow;
 
     {
         Window root, *schildren = nullptr;
         unsigned int num_children;
 
-        if (!XQueryTree (m_display, ourWindow, &root, &parentWindow, &schildren, &num_children))
+        if (!XQueryTree (this->m_display, ourWindow, &root, &parentWindow, &schildren, &num_children))
             return false;
 
         if (schildren)
@@ -86,7 +95,7 @@ bool CX11FullScreenDetector::anythingFullscreen () const {
             continue;
 
         // compare width and height with the different screens we have
-        for (const auto& [viewport, name] : this->m_screens) {
+        for (const auto& [name, viewport] : this->m_screens) {
             if (attribs.x == viewport.x && attribs.y == viewport.y && attribs.width == viewport.z &&
                 attribs.height == viewport.w) {
                 isFullscreen = true;
@@ -142,7 +151,7 @@ void CX11FullScreenDetector::initialize () {
             continue;
 
         // add the screen to the list of screens
-        this->m_screens.push_back ({{crtc->x, crtc->y, crtc->width, crtc->height}, info->name});
+        this->m_screens.emplace (std::string (info->name), glm::ivec4 (crtc->x, crtc->y, crtc->width, crtc->height));
 
         XRRFreeCrtcInfo (crtc);
     }
@@ -156,6 +165,15 @@ void CX11FullScreenDetector::stop () {
 
     XCloseDisplay (this->m_display);
     this->m_display = nullptr;
+}
+
+__attribute__((constructor)) void registerX11FullscreenDetector () {
+    sVideoFactories.registerFullscreenDetector(
+        "x11",
+        [](CApplicationContext& context, CVideoDriver& driver) -> std::unique_ptr<CFullScreenDetector> {
+            return std::make_unique <CX11FullScreenDetector> (context, driver);
+        }
+    );
 }
 
 } // namespace WallpaperEngine::Render::Drivers::Detectors

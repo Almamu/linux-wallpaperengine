@@ -14,17 +14,13 @@ namespace WallpaperEngine::Assets {
  */
 class CDirectory final : public CContainer {
   public:
-    explicit CDirectory (std::filesystem::path basepath);
+    explicit CDirectory (const std::filesystem::path& basepath);
 
-    /** @inheritdoc */
-    [[nodiscard]] std::filesystem::path resolveRealFile (const std::string& filename) const override;
-    /** @inheritdoc */
-    [[nodiscard]] const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
+    [[nodiscard]] std::filesystem::path resolveRealFile (const std::filesystem::path& filename) const override;
+    [[nodiscard]] std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   private:
     /** The basepath for the directory */
-    std::filesystem::path m_basepath;
-    /** File cache to simplify access to data */
-    std::map<std::string, CFileEntry> m_cache;
+    std::filesystem::path m_basepath {};
 };
 } // namespace WallpaperEngine::Assets

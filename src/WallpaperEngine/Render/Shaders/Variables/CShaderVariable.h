@@ -1,46 +1,41 @@
 #pragma once
 
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 #include <string>
 
 namespace WallpaperEngine::Render::Shaders::Variables {
-class CShaderVariable {
+class CShaderVariable : public Core::DynamicValues::CDynamicValue {
   public:
-    CShaderVariable (void* defaultValue, void* value, std::string type);
     virtual ~CShaderVariable () = default;
 
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid (*this) == typeid(T);
     }
 
-    const std::string& getIdentifierName () const;
-    const std::string& getName () const;
-    const std::string& getType () const;
+    [[nodiscard]] const std::string& getIdentifierName () const;
+    [[nodiscard]] const std::string& getName () const;
 
     void setIdentifierName (std::string identifierName);
     void setName (const std::string& name);
-    const void* getValue () const;
-
-    virtual const int getSize () const = 0;
-
-  protected:
-    void setValue (void* value);
 
   private:
-    std::string m_identifierName;
-    std::string m_name;
-    std::string m_type;
-
-    void* m_defaultValue;
-    void* m_value;
+    std::string m_identifierName = "";
+    std::string m_name = "";
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

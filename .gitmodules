@@ -1,0 +1,28 @@
+[submodule "src/External/glslang-WallpaperEngine"]
+	path = src/External/glslang-WallpaperEngine
+	url = https://github.com/Almamu/glslang-WallpaperEngine.git
+	branch = main
+[submodule "src/External/SPIRV-Cross-WallpaperEngine"]
+	path = src/External/SPIRV-Cross-WallpaperEngine
+	url = https://github.com/Almamu/SPIRV-Cross-WallpaperEngine.git
+	branch = main
+[submodule "src/External/stb"]
+	path = src/External/stb
+	url = https://github.com/nothings/stb.git
+	branch = master
+[submodule "src/External/json"]
+	path = src/External/json
+	url = https://github.com/nlohmann/json.git
+	branch = develop
+[submodule "src/External/MimeTypes"]
+    path = src/External/MimeTypes
+    url = https://github.com/lasselukkari/MimeTypes.git
+	branch = master
+[submodule "src/External/kissfft"]
+	path = src/External/kissfft
+	url = https://github.com/mborgerding/kissfft.git
+	branch = master
+[submodule "src/External/argparse"]
+	path = src/External/argparse
+	url = https://github.com/p-ranav/argparse.git
+	branch = master

@@ -10,6 +10,6 @@ class CAssetLoadException final : public std::exception {
     [[nodiscard]] const char* what () const noexcept override;
 
   private:
-    std::string m_message;
+    std::string m_message {};
 };
 } // namespace WallpaperEngine::Assets

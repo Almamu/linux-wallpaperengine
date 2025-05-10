@@ -7,22 +7,23 @@ using json = nlohmann::json;
 
 class CProjection {
   public:
-    static CProjection* fromJSON (json data);
+    static const CProjection* fromJSON (const json::const_iterator& data);
 
     [[nodiscard]] const int& getWidth () const;
     [[nodiscard]] const int& getHeight () const;
     [[nodiscard]] bool isAuto () const;
 
-    void setWidth (int width);
-    void setHeight (int height);
+    // TODO: CHANGE THIS SO THE RENDER IS THE ONE RESPONSIBLE FOR THIS?
+    void setWidth (int width) const;
+    void setHeight (int height) const;
 
   protected:
     CProjection (int width, int height);
     explicit CProjection (bool isAuto);
 
   private:
-    int m_width;
-    int m_height;
-    bool m_isAuto;
+    mutable int m_width;
+    mutable int m_height;
+    const bool m_isAuto;
 };
 } // namespace WallpaperEngine::Core::Scenes

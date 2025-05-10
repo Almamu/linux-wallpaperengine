@@ -13,6 +13,7 @@ class CGLFWWindowOutput final : public COutput {
     bool renderMultiple () const override;
     bool haveImageBuffer () const override;
     void* getImageBuffer () const override;
+    uint32_t getImageBufferSize () const override;
     void updateRender () const override;
 
   private:

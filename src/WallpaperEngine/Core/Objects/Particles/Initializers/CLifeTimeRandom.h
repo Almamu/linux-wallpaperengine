@@ -22,14 +22,14 @@ class CLifeTimeRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CLifeTimeRandom* fromJSON (json data, uint32_t id);
+    static const CLifeTimeRandom* fromJSON (const json& data, uint32_t id);
 
     CLifeTimeRandom (uint32_t id, uint32_t min, uint32_t max);
 
   private:
     /** Maximum lifetime */
-    uint32_t m_max;
+    const uint32_t m_max;
     /** Minimum lifetime */
-    uint32_t m_min;
+    const uint32_t m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

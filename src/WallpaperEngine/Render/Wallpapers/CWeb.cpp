@@ -2,38 +2,41 @@
 // https://github.com/if1live/cef-gl-example
 // https://github.com/andmcgregor/cefgui
 #include "CWeb.h"
+#include "WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.h"
 
 using namespace WallpaperEngine::Render;
-using namespace WallpaperEngine::WebBrowser;
+using namespace WallpaperEngine::Render::Wallpapers;
 
-CWeb::CWeb (Core::CWeb* web, CRenderContext& context, CAudioContext& audioContext, CWebBrowserContext& browserContext,
-            const CWallpaperState::TextureUVsScaling& scalingMode) :
-    CWallpaper (web, Type, context, audioContext, scalingMode),
-    m_width (16),
-    m_height (16),
-    m_browserContext (browserContext),
-    m_browser (),
-    m_client () {
-    this->m_browserContext.markAsUsed ();
+using namespace WallpaperEngine::WebBrowser;
+using namespace WallpaperEngine::WebBrowser::CEF;
+
+CWeb::CWeb (
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
+    m_browserContext (browserContext) {
     // setup framebuffers
     this->setupFramebuffers ();
 
     CefWindowInfo window_info;
     window_info.SetAsWindowless (0);
 
-    this->m_render_handler = new RenderHandler (this);
+    this->m_renderHandler = new WebBrowser::CEF::CRenderHandler (this);
 
     CefBrowserSettings browserSettings;
     // Documentaion says that 60 fps is maximum value
     browserSettings.windowless_frame_rate = std::max (60, context.getApp ().getContext ().settings.render.maximumFPS);
 
-    m_client = new BrowserClient (m_render_handler);
-    std::filesystem::path htmlpath =
-        this->getWeb ()->getProject ().getContainer ()->resolveRealFile (this->getWeb ()->getFilename ());
-    // To open local file in browser URL must be "file:///path/to/file.html"
-    const std::string htmlURL = std::string ("file:///") + htmlpath.c_str ();
-    m_browser =
-        CefBrowserHost::CreateBrowserSync (window_info, m_client.get (), htmlURL, browserSettings, nullptr, nullptr);
+    this->m_client = new WebBrowser::CEF::CBrowserClient (m_renderHandler);
+    // use the custom scheme for the wallpaper's files
+    const std::string htmlURL =
+        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ()->getProject ()->getWorkshopId ()) +
+        "://root/" +
+        this->getWeb()->getFilename ();
+    this->m_browser =
+        CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);
 }
 
 void CWeb::setSize (int width, int height) {
@@ -50,7 +53,7 @@ void CWeb::setSize (int width, int height) {
                   nullptr);
 
     // Notify cef that it was resized(maybe it's not even needed)
-    m_browser->GetHost ()->WasResized ();
+    this->m_browser->GetHost ()->WasResized ();
 }
 
 void CWeb::renderFrame (glm::ivec4 viewport) {
@@ -90,15 +93,15 @@ void CWeb::updateMouse (glm::ivec4 viewport) {
     evt.x = std::clamp (int (position.x - viewport.x), 0, viewport.z);
     evt.y = std::clamp (int (position.y - viewport.y), 0, viewport.w);
     // Send mouse position to cef
-    m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
+    this->m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
 
     // TODO: ANY OTHER MOUSE EVENTS TO SEND?
     if (leftClick != this->m_leftClick) {
-        m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_LEFT, leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+        this->m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_LEFT, leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
     }
 
     if (rightClick != this->m_rightClick) {
-        m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_RIGHT, rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+        this->m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_RIGHT, rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
     }
 
     this->m_leftClick = leftClick;
@@ -107,24 +110,7 @@ void CWeb::updateMouse (glm::ivec4 viewport) {
 
 CWeb::~CWeb () {
     CefDoMessageLoopWork ();
-    m_browser->GetHost ()->CloseBrowser (true);
+    this->m_browser->GetHost ()->CloseBrowser (true);
+
+    delete this->m_renderHandler;
 }
-
-CWeb::RenderHandler::RenderHandler (CWeb* webdata) : m_webdata (webdata) {}
-
-// Required by CEF
-void CWeb::RenderHandler::GetViewRect (CefRefPtr<CefBrowser> browser, CefRect& rect) {
-    rect = CefRect (0, 0, this->m_webdata->getWidth (), this->m_webdata->getHeight ());
-}
-
-// Will be executed in CEF message loop
-void CWeb::RenderHandler::OnPaint (CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects,
-                                   const void* buffer, int width, int height) {
-    // sLog.debug("BrowserView::RenderHandler::OnPaint");
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, this->texture ());
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (unsigned char*) buffer);
-    glBindTexture (GL_TEXTURE_2D, 0);
-}
-
-const std::string CWeb::Type = "web";

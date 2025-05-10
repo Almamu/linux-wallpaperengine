@@ -1,11 +1,15 @@
 #pragma once
 
 #include "WallpaperEngine/Core/Core.h"
-
+#include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
 
 namespace WallpaperEngine::Core::Objects {
 class CEffect;
+}
+
+namespace WallpaperEngine::Core::Objects::Images {
+class CMaterial;
 }
 
 namespace WallpaperEngine::Core::Objects::Images::Materials {
@@ -18,20 +22,20 @@ class CPass {
     friend class WallpaperEngine::Core::Objects::CEffect;
 
   public:
-    static CPass* fromJSON (json data);
+    static const CPass* fromJSON (const json& data, const CMaterial::OverrideInfo* overrides);
 
     /**
      * @return The list of textures to bind while rendering
      */
-    [[nodiscard]] const std::vector<std::string>& getTextures () const;
+    [[nodiscard]] const std::map<int, std::string>& getTextures () const;
     /**
      * @return Shader constants that alter how the shader should behave
      */
-    [[nodiscard]] const std::map<std::string, Effects::Constants::CShaderConstant*>& getConstants () const;
+    [[nodiscard]] const std::map<std::string, const Effects::Constants::CShaderConstant*>& getConstants () const;
     /**
      * @return Shader combos that alter how the shader should behave
      */
-    [[nodiscard]] std::map<std::string, int>* getCombos ();
+    [[nodiscard]] const std::map<std::string, int>& getCombos () const;
     /**
      * @return Shader to be used while rendering the pass
      */
@@ -52,61 +56,29 @@ class CPass {
      * @return If depth write has to happen while rendering
      */
     [[nodiscard]] const std::string& getDepthWrite () const;
-    /**
-     * @param mode The new blending mode to use
-     */
-    void setBlendingMode (const std::string& mode);
-
-    /**
-     * Add a shader combo value to the list
-     *
-     * @param name The combo name
-     * @param value It's value
-     */
-    void insertCombo (const std::string& name, int value);
-    /**
-     * Adds a shader constant to the list
-     *
-     * @param name The constant's name
-     * @param constant It's value
-     */
-    void insertConstant (const std::string& name, Effects::Constants::CShaderConstant* constant);
 
   protected:
     CPass (std::string blending, std::string cullmode, std::string depthtest, std::string depthwrite,
-           std::string shader);
-
-    /**
-     * Adds a new texture to the list of textures to bind while rendering
-     *
-     * @param texture
-     */
-    void insertTexture (const std::string& texture);
-    /**
-     * Updates a texture in the specified index for binding while rendering
-     *
-     * @param index
-     * @param texture
-     */
-    void setTexture (std::vector<std::string>::size_type index, const std::string& texture);
+           std::string shader, std::map<int, std::string> textures, std::map<std::string, int> combos,
+           std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> constants);
 
   private:
     // TODO: CREATE ENUMERATIONS FOR THESE INSTEAD OF USING STRING VALUES!
     /** The blending mode to use */
-    std::string m_blending;
+    const std::string m_blending;
     /** The culling mode to use */
-    std::string m_cullmode;
+    const std::string m_cullmode;
     /** If depthtesting has to happen while drawing */
-    std::string m_depthtest;
+    const std::string m_depthtest;
     /** If depthwrite has to happen while drawing */
-    std::string m_depthwrite;
+    const std::string m_depthwrite;
     /** The shader to use */
-    std::string m_shader;
+    const std::string m_shader;
     /** The list of textures to use */
-    std::vector<std::string> m_textures;
+    const std::map<int, std::string> m_textures;
     /** Different combo settings for shader input */
-    std::map<std::string, int> m_combos;
+    const std::map<std::string, int> m_combos;
     /** Shader constant values to use for  the shaders */
-    std::map<std::string, Core::Objects::Effects::Constants::CShaderConstant*> m_constants;
+    const std::map<std::string, const Core::Objects::Effects::Constants::CShaderConstant*> m_constants;
 };
 } // namespace WallpaperEngine::Core::Objects::Images::Materials

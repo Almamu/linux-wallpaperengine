@@ -1,31 +1,23 @@
 #include "CWallpaper.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
-#include "common.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <utility>
 
 using namespace WallpaperEngine::Render;
 
-CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context,
-                        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode) :
+CWallpaper::CWallpaper (
+    std::shared_ptr <const Core::CWallpaper> wallpaperData, CRenderContext& context,CAudioContext& audioContext,
+    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
     CContextAware (context),
     m_wallpaperData (wallpaperData),
-    m_type (std::move (type)),
-    m_destFramebuffer (GL_NONE),
-    m_sceneFBO (nullptr),
-    m_texCoordBuffer (GL_NONE),
-    m_positionBuffer (GL_NONE),
-    m_shader (GL_NONE),
-    g_Texture0 (GL_NONE),
-    a_Position (GL_NONE),
-    a_TexCoord (GL_NONE),
-    m_vaoBuffer (GL_NONE),
     m_audioContext (audioContext),
-    m_state (scalingMode) {
+    m_state (scalingMode, clampMode) {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -49,11 +41,11 @@ CWallpaper::CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRend
 
 CWallpaper::~CWallpaper () = default;
 
-CContainer* CWallpaper::getContainer () const {
-    return this->m_wallpaperData->getProject ().getContainer ();
+std::shared_ptr<const CContainer> CWallpaper::getContainer () const {
+    return this->m_wallpaperData->getProject ()->getContainer ();
 }
 
-WallpaperEngine::Core::CWallpaper* CWallpaper::getWallpaperData () const {
+std::shared_ptr <const WallpaperEngine::Core::CWallpaper> CWallpaper::getWallpaperData () const {
     return this->m_wallpaperData;
 }
 
@@ -237,11 +229,12 @@ void CWallpaper::setPause (bool newState) {}
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();
-    const ITexture::TextureFlags clamp = this->getContext ().getApp ().getContext ().settings.render.window.clamp;
+    const ITexture::TextureFlags clamp = this->m_state.getClampingMode ();
 
     // create framebuffer for the scene
-    this->m_sceneFBO = this->createFBO ("_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
-                                        height, width, height);
+    this->m_sceneFBO = this->createFBO (
+        "_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
+        height, width, height);
 
     this->aliasFBO ("_rt_MipMappedFrameBuffer", this->m_sceneFBO);
 }
@@ -250,25 +243,26 @@ CAudioContext& CWallpaper::getAudioContext () {
     return this->m_audioContext;
 }
 
-CFBO* CWallpaper::createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags,
-                             float scale, uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth,
-                             uint32_t textureHeight) {
-    CFBO* fbo = new CFBO (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
+std::shared_ptr<const CFBO> CWallpaper::createFBO (
+    const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+    uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight
+) {
+    std::shared_ptr<const CFBO> fbo = std::make_shared <CFBO> (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
 
-    this->m_fbos.insert (std::make_pair (name, fbo));
+    this->m_fbos.emplace (name, fbo);
 
     return fbo;
 }
 
-void CWallpaper::aliasFBO (const std::string& alias, CFBO* original) {
-    this->m_fbos.insert (std::make_pair (alias, original));
+void CWallpaper::aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original) {
+    this->m_fbos.emplace (alias, original);
 }
 
-const std::map<std::string, CFBO*>& CWallpaper::getFBOs () const {
+const std::map<std::string, std::shared_ptr<const CFBO>>& CWallpaper::getFBOs () const {
     return this->m_fbos;
 }
 
-CFBO* CWallpaper::findFBO (const std::string& name) const {
+std::shared_ptr<const CFBO> CWallpaper::findFBO (const std::string& name) const {
     const auto it = this->m_fbos.find (name);
 
     if (it == this->m_fbos.end ())
@@ -277,20 +271,24 @@ CFBO* CWallpaper::findFBO (const std::string& name) const {
     return it->second;
 }
 
-CFBO* CWallpaper::getFBO () const {
+std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-CWallpaper* CWallpaper::fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context,
-                                       CAudioContext& audioContext, CWebBrowserContext& browserContext,
-                                       const CWallpaperState::TextureUVsScaling& scalingMode) {
-    if (wallpaper->is<Core::CScene> ())
-        return new WallpaperEngine::Render::CScene (wallpaper->as<Core::CScene> (), context, audioContext, scalingMode);
-    if (wallpaper->is<Core::CVideo> ())
-        return new WallpaperEngine::Render::CVideo (wallpaper->as<Core::CVideo> (), context, audioContext, scalingMode);
-    else if (wallpaper->is<Core::CWeb> ())
-        return new WallpaperEngine::Render::CWeb (wallpaper->as<Core::CWeb> (), context, audioContext, browserContext,
-                                                  scalingMode);
-    else
+std::shared_ptr<CWallpaper> CWallpaper::fromWallpaper (
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) {
+    if (wallpaper->is<Core::Wallpapers::CScene> ()) {
+        return std::make_shared <WallpaperEngine::Render::Wallpapers::CScene> (
+            wallpaper, context, audioContext, scalingMode, clampMode);
+    } else if (wallpaper->is<Core::Wallpapers::CVideo> ()) {
+        return std::make_shared<WallpaperEngine::Render::Wallpapers::CVideo> (
+            wallpaper, context, audioContext, scalingMode, clampMode);
+    } else if (wallpaper->is<Core::Wallpapers::CWeb> ()) {
+        return std::make_shared<WallpaperEngine::Render::Wallpapers::CWeb> (
+            wallpaper, context, audioContext, *browserContext, scalingMode, clampMode);
+    } else
         sLog.exception ("Unsupported wallpaper type");
 }

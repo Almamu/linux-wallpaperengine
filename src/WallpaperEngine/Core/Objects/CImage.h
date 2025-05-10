@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 
 #include "WallpaperEngine/Core/CObject.h"
@@ -11,7 +13,7 @@
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 
-namespace WallpaperEngine::Core {
+namespace WallpaperEngine::Core::Wallpapers {
 class CScene;
 }
 
@@ -27,9 +29,11 @@ class CImage : public CObject {
     friend class CObject;
 
   public:
-    static CObject* fromJSON (CScene* scene, json data, CContainer* container, CUserSettingBoolean* visible,
-                              int id, std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale,
-                              const glm::vec3& angles);
+    static const CObject* fromJSON (
+        std::shared_ptr <const Core::CProject> project, const json& data,
+        const std::shared_ptr<const CContainer>& container, const CUserSettingBoolean* visible, int id,
+        std::string name, const CUserSettingVector3* origin, const CUserSettingVector3* scale,
+        const CUserSettingVector3* angles, const json::const_iterator& effects_it, std::vector<int> dependencies);
 
     /**
      * @return The base material to use for the image
@@ -50,7 +54,7 @@ class CImage : public CObject {
     /**
      * @return The color to use for the image
      */
-    [[nodiscard]] glm::vec3 getColor () const;
+    [[nodiscard]] const glm::vec3& getColor () const;
     /**
      * @return The brightness to use for the image
      */
@@ -75,40 +79,44 @@ class CImage : public CObject {
      * @return If the image is autosized or not
      */
     [[nodiscard]] bool isAutosize () const;
+    /**
+     * @return All of the effects applied to this image
+     */
+    [[nodiscard]] const std::vector<const Objects::CEffect*>& getEffects () const;
 
   protected:
-    CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, int id, std::string name,
-            CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
-            std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
-            uint32_t colorBlendMode, const glm::vec2& parallaxDepth, bool fullscreen, bool passthrough, bool autosize);
-
-    /**
-     * Type value used to differentiate the different types of objects in a background
-     */
-    static const std::string Type;
+    CImage (
+        std::shared_ptr <const Core::CProject> project, const Images::CMaterial* material,
+        const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+        const CUserSettingVector3* scale, const CUserSettingVector3* angles, glm::vec2 size, std::string alignment,
+        const CUserSettingVector3* color, const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode,
+        glm::vec2 parallaxDepth, bool fullscreen, bool passthrough, bool autosize,
+        std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies);
 
   private:
     /** The image's size */
-    glm::vec2 m_size;
+    const glm::vec2 m_size;
     /** Parallax depth */
     const glm::vec2 m_parallaxDepth;
     /** Base material for the image */
-    Images::CMaterial* m_material;
+    const Images::CMaterial* m_material;
     /** What type of alignment to use for the image's position */
-    std::string m_alignment;
+    const std::string m_alignment;
     /** The alpha value for the image */
-    CUserSettingFloat* m_alpha;
+    const CUserSettingFloat* m_alpha;
     /** The brightness for the image */
     float m_brightness;
     /** The color to use for the image */
-    CUserSettingVector3* m_color;
+    const CUserSettingVector3* m_color;
     /** The color blending mode used for the image, special value for shaders */
-    uint32_t m_colorBlendMode;
+    const uint32_t m_colorBlendMode;
+    /** Override for effects */
+    const std::vector<const Objects::CEffect*> m_effects;
     /** If the image is fullscreen or not */
-    bool m_fullscreen;
+    bool m_fullscreen = false;
     /** If the image is passthrough or not */
-    bool m_passthrough;
+    bool m_passthrough = false;
     /** If the image's size should be automatically determined */
-    bool m_autosize;
+    bool m_autosize = false;
 };
 } // namespace WallpaperEngine::Core::Objects

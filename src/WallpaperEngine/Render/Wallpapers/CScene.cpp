@@ -1,5 +1,3 @@
-#include "common.h"
-
 #include "WallpaperEngine/Core/Objects/CImage.h"
 #include "WallpaperEngine/Core/Objects/CSound.h"
 
@@ -9,19 +7,23 @@
 #include "WallpaperEngine/Render/CWallpaperState.h"
 
 #include "CScene.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 extern float g_Time;
 extern float g_TimeLast;
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Wallpapers;
 
-CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& audioContext,
-                const CWallpaperState::TextureUVsScaling& scalingMode) :
-    CWallpaper (scene, Type, context, audioContext, scalingMode),
-    m_mousePosition (),
-    m_mousePositionLast (),
-    m_parallaxDisplacement () {
+CScene::CScene (
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
+    // caller should check this, if not a std::bad_cast is good to throw
+    const auto& scene = wallpaper->as <Core::Wallpapers::CScene> ();
     // setup the scene camera
     this->m_camera = new CCamera (this, scene->getCamera ());
 
@@ -148,13 +150,13 @@ CScene::CScene (Core::CScene* scene, CRenderContext& context, CAudioContext& aud
     // create image for bloom passes
     if (this->getScene ()->isBloom ()) {
         this->m_bloomObject = this->createObject (
-            WallpaperEngine::Core::CObject::fromJSON (json, this->getScene (), this->getContainer ()));
+            WallpaperEngine::Core::CObject::fromJSON (json, scene->getProject (), this->getContainer ()));
 
         this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
     }
 }
 
-Render::CObject* CScene::createObject (Core::CObject* object) {
+Render::CObject* CScene::createObject (const Core::CObject* object) {
     Render::CObject* renderObject = nullptr;
 
     // ensure the item is not loaded already
@@ -191,7 +193,7 @@ Render::CObject* CScene::createObject (Core::CObject* object) {
     }
 
     if (renderObject != nullptr)
-        this->m_objects.insert (std::make_pair (renderObject->getId (), renderObject));
+        this->m_objects.emplace (renderObject->getId (), renderObject);
 
     return renderObject;
 }
@@ -205,7 +207,7 @@ void CScene::renderFrame (glm::ivec4 viewport) {
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ()->isCameraParallax ()) {
+    if (this->getScene ()->isCameraParallax () && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
         const float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
         const float amount = this->getScene ()->getCameraParallaxAmount ();
         const float delay =
@@ -241,8 +243,8 @@ void CScene::updateMouse (glm::ivec4 viewport) {
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-Core::CScene* CScene::getScene () const {
-    return this->getWallpaperData ()->as<Core::CScene> ();
+const Core::Wallpapers::CScene* CScene::getScene () const {
+    return this->getWallpaperData ()->as<Core::Wallpapers::CScene> ();
 }
 
 int CScene::getWidth () const {
@@ -265,4 +267,6 @@ glm::vec2* CScene::getParallaxDisplacement () {
     return &this->m_parallaxDisplacement;
 }
 
-const std::string CScene::Type = "scene";
+const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const {
+    return this->m_objectsByRenderOrder;
+}

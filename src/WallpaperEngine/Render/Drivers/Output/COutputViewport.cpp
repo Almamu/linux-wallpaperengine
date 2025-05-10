@@ -8,5 +8,3 @@ COutputViewport::COutputViewport (glm::ivec4 viewport, std::string name, bool si
     viewport (viewport),
     name (std::move (name)),
     single (single) {}
-
-COutputViewport::~COutputViewport () {}
