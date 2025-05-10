@@ -91,6 +91,8 @@ class CApplicationContext {
         struct {
             /** If the mouse movement is enabled */
             bool enabled;
+            /** If the mouse parallax should be disabled */
+            bool disableparallax;
         } mouse;
 
         /**
@@ -119,12 +121,11 @@ class CApplicationContext {
             .mode = NORMAL_WINDOW,
             .maximumFPS = 30,
             .pauseOnFullscreen = true,
-            .window =
-                {
-                    .geometry = {},
-                    .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
-                    .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
-                },
+            .window = {
+                .geometry = {},
+                .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+                .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
+            },
         },
         .audio = {
             .enabled = true,
@@ -134,6 +135,7 @@ class CApplicationContext {
         },
         .mouse = {
             .enabled = true,
+            .disableparallax = false,
         },
         .screenshot = {
             .take = false,

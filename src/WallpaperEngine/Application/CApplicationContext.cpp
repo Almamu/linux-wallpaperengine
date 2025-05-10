@@ -209,6 +209,12 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
             .action ([this](const std::string& value) -> void {
                 this->settings.mouse.enabled = false;
             });
+        configurationGroup.add_argument ("--disable-parallax")
+            .help ("Disables parallax effect for the backgrounds")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.mouse.disableparallax = true;
+            });
 
         configurationGroup.add_argument ("-l", "--list-properties")
             .help ("List all the available properties and their configuration")

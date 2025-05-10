@@ -420,6 +420,11 @@ void CImage::render () {
 }
 
 void CImage::updateScreenSpacePosition () {
+    // do not perform any changes to the image based on the parallax if it was explicitly disabled
+    if (this->getScene ()->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+        return;
+    }
+
     const double parallaxAmount = this->getScene ()->getScene ()->getCameraParallaxAmount ();
     const glm::vec2 depth = this->getImage ()->getParallaxDepth ();
     const glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();

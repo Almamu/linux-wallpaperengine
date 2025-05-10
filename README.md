@@ -150,6 +150,7 @@ You can use either:
 | `--list-properties` | Show customizable properties of a wallpaper |
 | `--set-property name=value` | Override a specific property |
 | `--disable-mouse` | Disable mouse interaction |
+| `--disable-parallax` | Disable parallax effect on backgrounds that support it |
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 
 ---

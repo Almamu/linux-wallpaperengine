@@ -207,7 +207,7 @@ void CScene::renderFrame (glm::ivec4 viewport) {
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ()->isCameraParallax ()) {
+    if (this->getScene ()->isCameraParallax () && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
         const float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
         const float amount = this->getScene ()->getCameraParallaxAmount ();
         const float delay =
