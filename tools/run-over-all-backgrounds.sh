@@ -19,5 +19,7 @@ for folder in ~/.steam/steam/steamapps/workshop/content/431960/*; do
     mv output.webm output/$bgid.webm
     # take a screenshot
     ffmpeg -ss 00:00:03 -i output/$bgid.webm -frames:v 1  output/$bgid.jpg
+    # copy over the project.json so we have it on hand
+    cp $folder/project.json output/$bgid.json
   fi
 done
