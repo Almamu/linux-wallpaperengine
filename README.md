@@ -157,34 +157,34 @@ You can use either:
 
 ### 💡 Examples
 
-#### Run a background by ID:
+#### Run a background by ID
 ```bash
 ./linux-wallpaperengine 1845706469
 ```
 
-#### Run a background from a folder:
+#### Run a background from a folder
 ```bash
 ./linux-wallpaperengine ~/backgrounds/1845706469/
 ```
 
-#### Assign backgrounds to screens with scaling:
+#### Assign backgrounds to screens with scaling
 ```bash
 ./linux-wallpaperengine \
   --scaling stretch --screen-root eDP-1 --bg 2667198601 \
   --scaling fill --screen-root HDMI-1 --bg 2667198602
 ```
 
-#### Run in a window:
+#### Run in a window
 ```bash
 ./linux-wallpaperengine --window 0x0x1280x720 1845706469
 ```
 
-#### Limit FPS to save power:
+#### Limit FPS to save power
 ```bash
 ./linux-wallpaperengine --fps 30 1845706469
 ```
 
-#### Take a screenshot:
+#### Take a screenshot
 ```bash
 ./linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
@@ -192,7 +192,7 @@ You can use either:
 This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
 to apply to your system.
 
-#### View and change properties:
+#### View and change properties
 ```bash
 ./linux-wallpaperengine --list-properties 2370927443
 ```
@@ -267,6 +267,24 @@ Any of these values can be modified with the --set-property switch. Say you want
 
 ![example1](docs/images/example.gif)
 ![example2](docs/images/example2.gif)
+
+## 🪲 Common issues
+### Black screen when setting as screen's background
+This can be caused by a few different things depending on your environment and setup.
+
+### X11
+Common symptom of a compositor drawing to the background which prevents Wallpaper Engine from being properly visible.
+The only solution currently is disabling the compositor so Wallpaper Engine can properly draw on the screen
+
+### NVIDIA
+Some users have had issues with GLFW initialization and other OpenGL errors. These are generally something that's
+worth reporting in the issues. Sometimes adding this variable when running Wallpaper Engine helps and/or solves
+the issue:
+```bash
+__GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
+```
+
+We'll be looking at improving this in the future, but for now it can be a useful workaround.
 
 ---
 
