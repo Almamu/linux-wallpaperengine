@@ -12,6 +12,10 @@
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
+#if DEMOMODE
+#include "recording.h"
+#endif /* DEMOMODE */
+
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -391,6 +395,19 @@ void CWallpaperApplication::show () {
         std::cout << prettyPrinter.str () << std::endl;
     }
 
+#if DEMOMODE
+    // ensure only one background is running so everything can be properly caught
+    if (this->m_renderContext->getWallpapers ().size () > 1) {
+        sLog.exception ("Demo mode only supports one background");
+    }
+
+    int width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
+    int height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
+    std::vector<uint8_t> pixels(width * height * 3);
+    init_encoder ("output.webm", width, height);
+    int frame = 0;
+#endif /* DEMOMODE */
+
     while (this->m_context.state.general.keepRunning) {
         // update g_Daytime
         time (&seconds);
@@ -412,6 +429,23 @@ void CWallpaperApplication::show () {
             sLog.out ("Stop requested by driver");
             this->m_context.state.general.keepRunning = false;
         }
+
+#if DEMOMODE
+        // do not record frames unless a second has passed
+        if (g_Time > 1) {
+            glBindFramebuffer (GL_FRAMEBUFFER, this->m_renderContext->getWallpapers ().begin ()->second->getWallpaperFramebuffer());
+
+            glPixelStorei (GL_PACK_ALIGNMENT, 1);
+            glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
+            write_video_frame (pixels.data ());
+            frame ++;
+
+            // stop after the given framecount
+            if (frame >= FRAME_COUNT) {
+                this->m_context.state.general.keepRunning = false;
+            }
+        }
+#endif /* DEMOMODE */
         // check for fullscreen windows and wait until there's none fullscreen
         if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
             m_renderContext->setPause (true);
@@ -428,6 +462,10 @@ void CWallpaperApplication::show () {
     }
 
     sLog.out ("Stopping");
+
+#if DEMOMODE
+    close_encoder ();
+#endif /* DEMOMODE */
 
     SDL_Quit ();
 }

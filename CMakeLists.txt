@@ -12,6 +12,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(NOT DEMOMODE)
+    set(DEMOMODE 0)
+endif()
+
 if(NOT ERRORONLY)
     set(ERRORONLY 0)
 endif()
@@ -20,6 +24,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 add_compile_definitions(ERRORONLY=${ERRORONLY})
+add_compile_definitions(DEMOMODE=${DEMOMODE})
 
 find_package(X11)
 find_package(OpenGL REQUIRED)
@@ -207,6 +212,12 @@ if(X11_SUPPORT_FOUND)
     endif()
 endif()
 
+if(DEMOMODE)
+    set(DEMOMODE_SOURCES
+        src/recording.cpp
+        src/recording.h)
+    message(WARNING "Enabling demo mode will automatically record 5 seconds and stop the software. This is used internally to produce the video seen on the website as a sort of status report")
+endif()
 if(NOT WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
     message(WARNING "No window server detected at build time. You will only be able to preview backgrounds")
 endif()
@@ -500,7 +511,8 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
 
     ${WAYLAND_SOURCES}
-    ${X11_SOURCES})
+    ${X11_SOURCES}
+    ${DEMOMODE_SOURCES})
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}
