@@ -24,6 +24,11 @@ pkgver() {
         )
 }
 
+prepare() {
+    git submodule update --init --recursive
+    git -c protocol.file.allow=always submodule update
+}
+
 build() {
     cmake -B build -S "$pkgname" \
         -DCMAKE_BUILD_TYPE='Release' \
