@@ -5,6 +5,10 @@ on:
     workflows: [cmake]
     branches: [main]
     types: [completed]
+  push:
+    paths:
+      - 'packaging/archlinux/**'
+      - '.github/workflows/**'
 
 jobs:
   publish:
