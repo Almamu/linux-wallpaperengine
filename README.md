@@ -268,6 +268,8 @@ Any of these values can be modified with the --set-property switch. Say you want
 ![example1](docs/images/example.gif)
 ![example2](docs/images/example2.gif)
 
+Want to see more examples of backgrounds that work? Head over to the [project's website](https://wpengine.alma.mu/#showcase)
+
 ## 🪲 Common issues
 ### Black screen when setting as screen's background
 This can be caused by a few different things depending on your environment and setup.
