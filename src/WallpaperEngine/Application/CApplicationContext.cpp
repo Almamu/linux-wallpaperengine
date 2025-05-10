@@ -276,6 +276,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 #if DEMOMODE
     sLog.error ("WARNING: RUNNING IN DEMO MODE WILL STOP WALLPAPERS AFTER 5 SECONDS SO VIDEO CAN BE RECORDED");
     // special settings for demomode
+    this->settings.render.maximumFPS = 30;
     this->settings.screenshot.take = false;
     this->settings.render.pauseOnFullscreen = false;
 #endif /* DEMOMODE */

@@ -404,8 +404,9 @@ void CWallpaperApplication::show () {
     int width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
     int height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
     std::vector<uint8_t> pixels(width * height * 3);
-    init_encoder ("output.webm", width, height);
+    bool initialized = false;
     int frame = 0;
+    int elapsed_frames = 0;
 #endif /* DEMOMODE */
 
     while (this->m_context.state.general.keepRunning) {
@@ -431,8 +432,20 @@ void CWallpaperApplication::show () {
         }
 
 #if DEMOMODE
-        // do not record frames unless a second has passed
-        if (g_Time > 1) {
+        elapsed_frames ++;
+
+        // wait for a full render cycle before actually starting
+        // this gives some extra time for video and web decoders to set themselves up
+        // because of size changes
+        if (elapsed_frames > this->m_context.settings.render.maximumFPS) {
+            if (!initialized) {
+                width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
+                height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
+                pixels.reserve(width * height * 3);
+                init_encoder ("output.webm", width, height);
+                initialized = true;
+            }
+
             glBindFramebuffer (GL_FRAMEBUFFER, this->m_renderContext->getWallpapers ().begin ()->second->getWallpaperFramebuffer());
 
             glPixelStorei (GL_PACK_ALIGNMENT, 1);

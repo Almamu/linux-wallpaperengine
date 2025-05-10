@@ -20,7 +20,7 @@ extern "C" {
 }
 
 const int FPS = 30;
-const int FRAME_COUNT = 150;
+const int FRAME_COUNT = FPS * 5;
 int WIDTH = 0;
 int HEIGHT = 0;
 int SOURCE_WIDTH = 0;
