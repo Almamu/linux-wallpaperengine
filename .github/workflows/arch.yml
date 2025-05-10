@@ -5,7 +5,11 @@ on:
     workflows: [cmake]
     branches: [main]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      -
   push:
+    branches: [main]
     paths:
       - 'packaging/archlinux/**'
       - '.github/workflows/**'
