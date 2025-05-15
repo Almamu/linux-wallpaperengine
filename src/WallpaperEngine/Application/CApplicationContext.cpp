@@ -257,6 +257,10 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
     program.parse_known_args (argc, argv);
 
+    if (this->settings.general.defaultBackground.empty ()) {
+        throw std::runtime_error ("No default background specified. Either --bg/-b or <background id> must be specified");
+    }
+
     this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
     this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
 
