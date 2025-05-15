@@ -26,8 +26,11 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         backgroundGroup.add_argument ("background id")
             .help ("The background to use as default for screens with no background specified")
+            .default_value ("")
             .action([this](const std::string& value) -> void {
-                this->settings.general.defaultBackground = translateBackground (value);
+                if (!value.empty()) {
+                    this->settings.general.defaultBackground = translateBackground (value);
+                }
             });
 
         backgroundMode.add_argument ("-w", "--window")
