@@ -133,6 +133,7 @@ add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft kissfft)
 add_subdirectory(src/External/argparse argparse)
+add_subdirectory(src/External/Catch2)
 
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
@@ -264,6 +265,13 @@ include_directories(
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
     ${X11_INCLUDES})
+
+if(BUILD_TESTING)
+    add_executable(
+        tests
+        src/WallpaperEngine/Testing/Cases/Example.cpp
+    )
+endif()
 
 add_executable(
     linux-wallpaperengine
@@ -491,6 +499,30 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     libcef_lib
     libcef_dll_wrapper
     argparse)
+
+if (BUILD_TESTING)
+    target_link_libraries (tests PRIVATE
+        Catch2::Catch2WithMain PUBLIC
+        ${OPENGL_LIBRARIES}
+        ${GLEW_LIBRARIES}
+        ${GLUT_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${LZ4_LIBRARY}
+        ${SDL2_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
+        ${MPV_LIBRARY}
+        ${PULSEAUDIO_LIBRARY}
+        ${WAYLAND_LIBRARIES}
+        ${X11_LIBRARIES}
+        kissfft
+        glslang
+        spirv-cross-core
+        spirv-cross-glsl
+        glfw
+        libcef_lib
+        libcef_dll_wrapper
+        argparse)
+endif()
 
 COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
