@@ -1,0 +1,38 @@
+name: "Installation/Usage Help"
+description: "Request help with installing or using linux-wallpaperengine."
+labels: [question, support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help? Fill this out so we can assist you better.
+  - type: textarea
+    id: issue
+    attributes:
+      label: What are you trying to do, and what's the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried so far?
+    validations:
+      required: false
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: Errors or Log Output
+    validations:
+      required: false
+  - type: input
+    id: system
+    attributes:
+      label: OS, Desktop Environment, X11/Wayland
+    validations:
+      required: true
+  - type: input
+    id: install_method
+    attributes:
+      label: Installation Method (e.g., AUR, Flatpak, build from source)
+    validations:
+      required: true

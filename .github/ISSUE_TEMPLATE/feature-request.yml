@@ -1,0 +1,32 @@
+name: "Feature Request"
+description: "Propose a new feature or enhancement."
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to suggest new features or improvements.
+  - type: textarea
+    id: feature
+    attributes:
+      label: Describe the Feature
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this Feature Addresses (if any)
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context or Mockups
+    validations:
+      required: false

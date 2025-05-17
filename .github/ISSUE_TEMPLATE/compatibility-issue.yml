@@ -1,0 +1,46 @@
+name: "Wallpaper Compatibility Issue"
+description: "Report a problem with a specific Wallpaper Engine wallpaper."
+labels: [compatibility, wallpaper]
+body:
+  - type: input
+    id: wallpaper
+    attributes:
+      label: Wallpaper Name, URL or ID
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Describe the Issue
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Crash Output
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Operating System and Version
+    validations:
+      required: true
+  - type: input
+    id: de
+    attributes:
+      label: Desktop Environment (GNOME, KDE, etc.)
+    validations:
+      required: true
+  - type: input
+    id: x11_wayland
+    attributes:
+      label: Display Server (X11/Wayland)
+    validations:
+      required: true

@@ -255,44 +255,48 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
             "    Runs the background 2317494988 on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
     );
 
-    program.parse_known_args (argc, argv);
+    try {
+        program.parse_known_args (argc, argv);
 
-    if (this->settings.general.defaultBackground.empty ()) {
-        throw std::runtime_error ("No default background specified. Either --bg/-b or <background id> must be specified");
-    }
+        if (this->settings.general.defaultBackground.empty ()) {
+            throw std::runtime_error ("At least one background ID must be specified");
+        }
 
-    this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
-    this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
+        this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
+        this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
 
-    // use std::cout on this in case logging is disabled, this way it's easy to look at what is running
-    std::stringbuf buffer;
-    std::ostream bufferStream (&buffer);
+        // use std::cout on this in case logging is disabled, this way it's easy to look at what is running
+        std::stringbuf buffer;
+        std::ostream bufferStream (&buffer);
 
-    bufferStream << "Running with: ";
+        bufferStream << "Running with: ";
 
-    for (int i = 0; i < argc; i ++) {
-        bufferStream << argv [i];
-        bufferStream << " ";
-    }
+        for (int i = 0; i < argc; i ++) {
+            bufferStream << argv [i];
+            bufferStream << " ";
+        }
 
-    std::cout << buffer.str() << std::endl;
-    // perform some extra validation on the inputs
-    this->validateAssets ();
-    this->validateScreenshot ();
+        std::cout << buffer.str() << std::endl;
+        // perform some extra validation on the inputs
+        this->validateAssets ();
+        this->validateScreenshot ();
 
-    // setup application state
-    this->state.general.keepRunning = true;
-    this->state.audio.enabled = this->settings.audio.enabled;
-    this->state.audio.volume = this->settings.audio.volume;
-    this->state.mouse.enabled = this->settings.mouse.enabled;
+        // setup application state
+        this->state.general.keepRunning = true;
+        this->state.audio.enabled = this->settings.audio.enabled;
+        this->state.audio.volume = this->settings.audio.volume;
+        this->state.mouse.enabled = this->settings.mouse.enabled;
 
 #if DEMOMODE
-    sLog.error ("WARNING: RUNNING IN DEMO MODE WILL STOP WALLPAPERS AFTER 5 SECONDS SO VIDEO CAN BE RECORDED");
-    // special settings for demomode
-    this->settings.render.maximumFPS = 30;
-    this->settings.screenshot.take = false;
-    this->settings.render.pauseOnFullscreen = false;
+        sLog.error ("WARNING: RUNNING IN DEMO MODE WILL STOP WALLPAPERS AFTER 5 SECONDS SO VIDEO CAN BE RECORDED");
+        // special settings for demomode
+        this->settings.render.maximumFPS = 30;
+        this->settings.screenshot.take = false;
+        this->settings.render.pauseOnFullscreen = false;
 #endif /* DEMOMODE */
+   } catch (const std::runtime_error& e) {
+       throw std::runtime_error (std::string (e.what()) + ". Use " + std::string (argv[0]) + " --help for more information");
+   }
 }
 
 int CApplicationContext::getArgc () const {

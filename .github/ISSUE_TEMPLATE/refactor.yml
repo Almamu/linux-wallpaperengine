@@ -1,0 +1,22 @@
+name: "Code Cleanup / Refactor"
+description: "Suggest internal improvements like refactoring or technical debt cleanup."
+labels: [refactor, maintenance]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs improvement?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is this necessary or beneficial?
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact on Users
+    validations:
+      required: false
