@@ -26,3 +26,7 @@
 	path = src/External/argparse
 	url = https://github.com/p-ranav/argparse.git
 	branch = master
+[submodule "src/External/Catch2"]
+	path = src/External/Catch2
+	url = https://github.com/catchorg/Catch2.git
+    branch = devel
