@@ -1,6 +1,8 @@
 name: CMake
 
 on:
+  workflow_run:
+    workflows: [tests]
   workflow_dispatch:
   push:
     paths:
@@ -9,7 +11,7 @@ on:
       - 'CMakeModules/**'
       - CMakeLists.txt
       - 'protocols/**'
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
     paths:
       - '.github/workflows/cmake.yml'
@@ -17,7 +19,7 @@ on:
       - 'CMakeModules/**'
       - CMakeLists.txt
       - 'protocols/**'
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
   build-x11:
