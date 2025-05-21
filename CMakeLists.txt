@@ -16,6 +16,7 @@ if(NOT DEMOMODE)
     set(DEMOMODE 0)
 endif()
 
+# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 if(NOT ERRORONLY)
     set(ERRORONLY 0)
 endif()
@@ -166,7 +167,6 @@ if(WAYLAND_SUPPORT_FOUND)
     add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
         COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
 
-    add_compile_definitions(ENABLE_WAYLAND)
     include_directories(${WAYLAND_SUPPORT_INCLUDE_DIRS})
     include_directories(${WAYLAND_OUTPUT_DIR})
     set(WAYLAND_LIBRARIES
@@ -209,7 +209,6 @@ endif()
 
 if(X11_SUPPORT_FOUND)
     include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR})
-    add_compile_definitions(ENABLE_X11)
 
     set(X11_LIBRARIES
         ${X11_LIBRARIES}
@@ -223,13 +222,6 @@ if(X11_SUPPORT_FOUND)
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
     set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
-
-    # make sure some of the X11 functions we'll use are available
-    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
-
-    if(HAVE_XSETIOERROREXITHANDLER)
-        add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
-    endif()
 endif()
 
 if(DEMOMODE)
@@ -474,8 +466,13 @@ add_executable(
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     src/WallpaperEngine/Data/Dumpers/StringPrinter.h
-    src/WallpaperEngine/Data/JSON.cpp
+    src/WallpaperEngine/Data/JSON.cpp)
 
+add_executable(
+    linux-wallpaperengine
+    src/main.cpp
+
+    ${COMMON_SOURCES}
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES})
@@ -523,6 +520,24 @@ if (BUILD_TESTING)
         libcef_lib
         libcef_dll_wrapper
         argparse)
+endif()
+
+target_compile_definitions(linux-wallpaperengine PUBLIC ERRORONLY=${ERRORONLY})
+target_compile_definitions(linux-wallpaperengine PUBLIC DEMOMODE=${DEMOMODE})
+
+if(X11_SUPPORT_FOUND)
+    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_X11)
+
+    # make sure some of the X11 functions we'll use are available
+    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+    if(HAVE_XSETIOERROREXITHANDLER)
+        target_compile_definitions(linux-wallpaperengine PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
+    endif()
+endif()
+
+if(WAYLAND_SUPPORT_FOUND)
+    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_WAYLAND)
 endif()
 
 COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
