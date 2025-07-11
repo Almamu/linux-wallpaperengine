@@ -1,5 +1,6 @@
 #include "UIWindow.h"
 #include "Qt/SingleInstanceManager.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <cstddef>
 #include <iostream>
