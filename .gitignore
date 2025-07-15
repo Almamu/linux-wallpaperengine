@@ -4,6 +4,7 @@ cmake-build-debug*
 build/
 .vscode/
 third_party/
+cmake/
 compile_commands.json
 
 *-protocol.o

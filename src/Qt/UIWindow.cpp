@@ -8,6 +8,7 @@
 #include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qcursor.h>
+#include <qevent.h>
 #include <qglobal.h>
 #include <qlabel.h>
 #include <qlayout.h>
@@ -153,26 +154,38 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   
   // update Buttons
   updateSelectedButton();
-
+  
   // SYSTEM TRAY
-  auto* trayIcon = new QSystemTrayIcon(QIcon::fromTheme("folder"));
+  auto* trayIcon = new QSystemTrayIcon(QIcon(":/assets/wallpaper-icon.png"));
 
   auto* trayMenu = new QMenu();
 
-  auto* showAction = new QAction("Show");
+  /*auto* showAction = new QAction("Show");
   connect(showAction, &QAction::triggered, [this]() {
     this->show();
-  });
+  });*/
+  
+  trayMenu->addAction("Quit", [this]{ qApp->quit();});
 
-  auto* closeAction = new QAction("Quit");
+  /*auto* closeAction = new QAction("Quit");
   connect(closeAction, &QAction::triggered, [this]() {
     this->qapp->quit();
-  });
-
-  trayMenu->addActions({showAction, closeAction});
+  });*/
+  
+  // trayMenu->addActions({showAction, closeAction});
   trayIcon->setContextMenu(trayMenu);
   trayIcon->setToolTip("Linux-Wallpaperengine");
   trayIcon->show();
+
+  connect(trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
+    if (reason == QSystemTrayIcon::Trigger) {
+      if (isVisible()) {
+        hide();
+      } else {
+        show();
+      } 
+    }
+  });
 }
 
 void UIWindow::showEvent(QShowEvent* event) {
