@@ -8,15 +8,15 @@
 namespace WallpaperEngine::Audio::Drivers::Detectors {
 class CPulseAudioPlayingDetector final : public CAudioPlayingDetector {
   public:
-    explicit CPulseAudioPlayingDetector (Application::CApplicationContext& appContext,
-                                         const Render::Drivers::Detectors::CFullScreenDetector&);
+    explicit CPulseAudioPlayingDetector (
+        Application::CApplicationContext& appContext, const Render::Drivers::Detectors::CFullScreenDetector&);
     ~CPulseAudioPlayingDetector () override;
 
     void update () override;
 
   private:
-    pa_mainloop* m_mainloop;
-    pa_mainloop_api* m_mainloopApi;
-    pa_context* m_context;
+    pa_mainloop* m_mainloop = nullptr;
+    pa_mainloop_api* m_mainloopApi = nullptr;
+    pa_context* m_context = nullptr;
 };
 } // namespace WallpaperEngine::Audio::Drivers::Detectors

@@ -37,18 +37,20 @@ class CApplicationContext {
         struct {
             /** If the user requested a list of properties for the given background */
             bool onlyListProperties;
-
+            /** If the user requested a dump of the background structure */
+            bool dumpStructure;
             /** The path to the assets folder */
             std::filesystem::path assets;
             /** Background to load (provided as the final argument) as fallback for multi-screen setups */
             std::filesystem::path defaultBackground;
-
             /** The backgrounds specified for different screens */
             std::map<std::string, std::filesystem::path> screenBackgrounds;
             /** Properties to change values for */
             std::map<std::string, std::string> properties;
             /** The scaling mode for different screens */
             std::map<std::string, WallpaperEngine::Render::CWallpaperState::TextureUVsScaling> screenScalings;
+            /** The clamping mode for different screens */
+            std::map<std::string, WallpaperEngine::Assets::ITexture::TextureFlags> screenClamps;
         } general;
 
         /**
@@ -90,6 +92,8 @@ class CApplicationContext {
         struct {
             /** If the mouse movement is enabled */
             bool enabled;
+            /** If the mouse parallax should be disabled */
+            bool disableparallax;
         } mouse;
 
         /**
@@ -98,14 +102,60 @@ class CApplicationContext {
         struct {
             /** If an screenshot should be taken */
             bool take;
+            /** The frames to wait until the screenshot is taken */
+            int delay;
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
         } screenshot;
-    } settings;
+    } settings = {
+        .general = {
+            .onlyListProperties = false,
+            .dumpStructure = false,
+            .assets = "",
+            .defaultBackground = "",
+            .screenBackgrounds = {},
+            .properties = {},
+            .screenScalings = {},
+            .screenClamps = {},
+        },
+        .render = {
+            .mode = NORMAL_WINDOW,
+            .maximumFPS = 30,
+            .pauseOnFullscreen = true,
+            .window = {
+                .geometry = {},
+                .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+                .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
+            },
+        },
+        .audio = {
+            .enabled = true,
+            .volume = 15,
+            .automute = true,
+            .audioprocessing = true,
+        },
+        .mouse = {
+            .enabled = true,
+            .disableparallax = false,
+        },
+        .screenshot = {
+            .take = false,
+            .delay = 5,
+            .path = "",
+        },
+    };
 
     CApplicationState state;
 
+    [[nodiscard]] int getArgc() const;
+    [[nodiscard]] char** getArgv() const;
+
   private:
+    /** Program argument count on startup */
+    int m_argc;
+    /** Program arguments on startup */
+    char** m_argv;
+
     /**
      * Validates the assets folder and ensures a valid one is present
      */
@@ -114,7 +164,7 @@ class CApplicationContext {
     /**
      * Validates the screenshot settings
      */
-    void validateScreenshot ();
+    void validateScreenshot () const;
 
     /**
      * Validates a background parameter and returns the real bgIdOrPath to it
@@ -123,10 +173,5 @@ class CApplicationContext {
      * @return
      */
     static std::filesystem::path translateBackground (const std::string& bgIdOrPath);
-
-    /**
-     * Prints the normal help message
-     */
-    static void printHelp (const char* route);
 };
 } // namespace WallpaperEngine::Application

@@ -1,32 +1,28 @@
 #include "CPropertySlider.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include <sstream>
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertySlider* CPropertySlider::fromJSON (json data, const std::string& name) {
+std::shared_ptr<CPropertySlider> CPropertySlider::fromJSON (const json& data, const std::string& name) {
     const auto value = data.find ("value");
     const auto text = jsonFindDefault<std::string> (data, "text", "");
-    const auto min = jsonFindDefault (data, "min", 0.0);
-    const auto max = jsonFindDefault (data, "max", 0.0);
-    const auto step = jsonFindDefault (data, "step", 0.0);
+    const auto min = jsonFindDefault (data, "min", 0.0f);
+    const auto max = jsonFindDefault (data, "max", 0.0f);
+    const auto step = jsonFindDefault (data, "step", 0.0f);
 
-    return new CPropertySlider (*value, name, text, min, max, step);
+    return std::make_shared <CPropertySlider> (*value, name, text, min, max, step);
 }
 
-const double& CPropertySlider::getValue () const {
-    return this->m_value;
-}
-
-const double& CPropertySlider::getMinValue () const {
+const float& CPropertySlider::getMinValue () const {
     return this->m_min;
 }
 
-const double& CPropertySlider::getMaxValue () const {
+const float& CPropertySlider::getMaxValue () const {
     return this->m_max;
 }
 
-const double& CPropertySlider::getStep () const {
+const float& CPropertySlider::getStep () const {
     return this->m_step;
 }
 
@@ -37,7 +33,7 @@ std::string CPropertySlider::dump () const {
        << "\t"
        << "Description: " << this->m_text << std::endl
        << "\t"
-       << "Value: " << this->m_value << std::endl
+       << "Value: " << &this->getFloat () << std::endl
        << "\t"
        << "Minimum value: " << this->m_min << std::endl
        << "\t"
@@ -48,21 +44,24 @@ std::string CPropertySlider::dump () const {
     return ss.str ();
 }
 
-void CPropertySlider::update (const std::string& value) {
-    const double newValue = strtod (value.c_str (), nullptr);
+void CPropertySlider::set (const std::string& value) {
+    const auto newValue = strtof (value.c_str (), nullptr);
 
     if (newValue < this->m_min || newValue > this->m_max)
         sLog.exception ("Slider value (", newValue, ") is out of range (", this->m_min, ",", this->m_max, ")");
 
-    this->m_value = newValue;
+    this->update (newValue);
 }
 
-CPropertySlider::CPropertySlider (double value, const std::string& name, const std::string& text, double min,
-                                  double max, double step) :
-    CProperty (name, Type, text),
-    m_value (value),
+const char* CPropertySlider::getType () const {
+    return "slider";
+}
+
+CPropertySlider::CPropertySlider (float value, const std::string& name, const std::string& text, float min,
+                                  float max, float step) :
+    CProperty (name, text),
     m_min (min),
     m_max (max),
-    m_step (step) {}
-
-const std::string CPropertySlider::Type = "slider";
+    m_step (step) {
+    this->update (value);
+}

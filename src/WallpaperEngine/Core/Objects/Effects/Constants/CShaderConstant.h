@@ -1,35 +1,40 @@
 #pragma once
 
+#include <cassert>
 #include <string>
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 
 namespace WallpaperEngine::Core::Objects::Effects::Constants {
 /**
  * Shader constants base class
  */
-class CShaderConstant {
+class CShaderConstant : public DynamicValues::CDynamicValue {
   public:
-    explicit CShaderConstant (std::string type);
+    virtual ~CShaderConstant () = default;
 
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid (*this) == typeid(T);
     }
 
     /**
-     * @return The type name of this constant
+     * @return String representation of the constant's value
      */
-    [[nodiscard]] const std::string& getType () const;
-
-  private:
-    std::string m_type;
+    [[nodiscard]] virtual std::string toString () const = 0;
 };
 } // namespace WallpaperEngine::Core::Objects::Effects::Constants

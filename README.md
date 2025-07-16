@@ -9,25 +9,25 @@ For more information on the project's license, check [LICENSE](LICENSE).
 # 2. What is this project all about?
 This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that. This fork in particular adds a GUI for selecting your wallpapers! 
 
-# 3. What is Wallpaper Engine?
-Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing its users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
+> ⚠️ This is an educational project that evolved into a functional OpenGL-based wallpaper engine for Linux. Expect some limitations and quirks!
 
-# 4. Compilation requirements
-## linux-wallpaperengine
+---
+
+## 📦 System Requirements
+
+To compile and run this, you'll need:
+
 - OpenGL 3.3 support
 - CMake
-- LZ4
-- ZLIB
+- LZ4, Zlib
 - SDL2
 - FFmpeg
-- X11 (with libxxf86vm) or Wayland
-- Xrandr (for X11 support)
-- GLFW3
-- GLM
-- GLEW
-- GLUT
+- X11 or Wayland
+- Xrandr (for X11)
+- GLFW3, GLEW, GLUT, GLM
 - MPV
 - PulseAudio
+- FFTW3
 - Qt6
 
 ## Commands
@@ -69,26 +69,60 @@ Or using the HTTPS method if you haven't set up SSH:
 https://github.com/Deliasama/linux-wallpaperengine.git
 ```
 
-## 5.4. Compilation steps
-The project is built on CMake as the build engine. First we need to create the directory where the build will be stored and get into it:
+> This installs the latest development version.
+
+**Note:** You’ll still need assets from the official Wallpaper Engine (via Steam). See below for details.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Get Wallpaper Engine Assets
+
+You **must own and install Wallpaper Engine** via Steam. This provides the required assets used by many backgrounds.
+
+Good news: **you usually don’t need to copy anything manually.** The app will automatically look in these common install paths:
 
 ```
-mkdir build
-cd build
+~/.steam/steam/steamapps/common
+~/.local/share/Steam/steamapps/common
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
+~/snap/steam/common/.local/share/Steam/steamapps/common
 ```
 
-Once the folder is created and we're in it, CMake has to generate the actual Makefiles. This can be done this way:
+> ✅ If Wallpaper Engine is installed in one of these paths, the assets will be detected automatically!
+
+---
+
+#### ❗ If Assets Aren’t Found Automatically
+
+You can copy the `assets` folder manually:
+
+1. In Steam, right-click **Wallpaper Engine** → **Manage** → **Browse local files**
+2. Copy the `assets` folder
+3. Paste it into the same folder where the `linux-wallpaperengine` binary is located
+
+---
+
+### 2. Build from Source
+
+Clone the repo:
+
+```bash
+git clone --recurse-submodules https://github.com/Almamu/linux-wallpaperengine.git
+cd linux-wallpaperengine
 ```
+
+Build it:
+
+```bash
+mkdir build && cd build
 cmake ..
-```
-Take a closer look at the CMake output, if you miss any library, CMake will report the missing libraries so you can install them either trough your package manager or manually in your system.
-
-Finally we can compile the project to generate the actual executable. 
-```
 make
 ```
 
-**REMEMBER: The assets folder has to be in the same folder as the executable**
+Once the build process is finished, this should create a new `output` folder containing the app and all the required
+support files to run.
 
 ## 5.5. Running linux-wallpaperengine
 Now you can run the program using the following command:
@@ -123,16 +157,43 @@ To further customize your wallpaper (e.g., adjusting the volume), you can enter 
 | `--disable-mouse` | Disable mouse interaction |
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 
-## 6. Example background
-This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.
+## 🧪 Wayland & X11 Support
 
-![example](docs/images/example.gif)
+- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
+- **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
-###### 1845706469
-In similar fashion to the example background, this one represents the progress of the program. It leverages FBOs (targets), and multiple-effects over objects.
+> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
 
+---
+
+## 🌈 Example Backgrounds
+
+![example1](docs/images/example.gif)
 ![example2](docs/images/example2.gif)
 
-# 7. Special thanks
-- [RePKG](https://github.com/notscuffed/repkg) for the information on texture flags
-- [RenderDoc](https://github.com/baldurk/renderdoc) for the so helpful OpenGL debugging tool that simplified finding issues on the new OpenGL code. Seriously this tool ROCKS
+Want to see more examples of backgrounds that work? Head over to the [project's website](https://wpengine.alma.mu/#showcase)
+
+## 🪲 Common issues
+### Black screen when setting as screen's background
+This can be caused by a few different things depending on your environment and setup.
+
+### X11
+Common symptom of a compositor drawing to the background which prevents Wallpaper Engine from being properly visible.
+The only solution currently is disabling the compositor so Wallpaper Engine can properly draw on the screen
+
+### NVIDIA
+Some users have had issues with GLFW initialization and other OpenGL errors. These are generally something that's
+worth reporting in the issues. Sometimes adding this variable when running Wallpaper Engine helps and/or solves
+the issue:
+```bash
+__GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
+```
+
+We'll be looking at improving this in the future, but for now it can be a useful workaround.
+
+---
+
+## 🙏 Special Thanks
+
+- [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights
+- [RenderDoc](https://github.com/baldurk/renderdoc) – the best OpenGL debugger out there!

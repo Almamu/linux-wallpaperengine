@@ -1,7 +1,7 @@
 #include "CWaylandOpenGLDriver.h"
+#include "CVideoFactories.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
-
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #define class _class
 #define namespace _namespace
@@ -150,7 +150,7 @@ void CWaylandOpenGLDriver::initEGL () {
         sLog.exception ("eglInitialize failed!");
     }
 
-    const std::string CLIENTEXTENSIONSPOSTINIT = std::string (eglQueryString (m_eglContext.display, EGL_EXTENSIONS));
+    const auto CLIENTEXTENSIONSPOSTINIT = std::string (eglQueryString (m_eglContext.display, EGL_EXTENSIONS));
 
     if (CLIENTEXTENSIONSPOSTINIT.find ("EGL_KHR_create_context") == std::string::npos) {
         this->finishEGL ();
@@ -232,11 +232,12 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
 }
 
 CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app) :
-    m_frameCounter (0),
+    m_mouseInput (*this),
+    CVideoDriver (app, m_mouseInput),
     m_output (context, *this),
     m_requestedExit (false),
-    m_context (context),
-    CVideoDriver (app) {
+    m_frameCounter (0),
+    m_context (context) {
     m_waylandContext.display = wl_display_connect (nullptr);
 
     if (!m_waylandContext.display)
@@ -371,4 +372,14 @@ Output::CWaylandOutputViewport* CWaylandOpenGLDriver::surfaceToViewport (const w
     }
 
     return nullptr;
+}
+
+__attribute__((constructor)) void registerWaylandOpenGL () {
+    sVideoFactories.registerDriver (
+        CApplicationContext::DESKTOP_BACKGROUND,
+        "wayland",
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CWaylandOpenGLDriver> (context, application);
+        }
+    );
 }

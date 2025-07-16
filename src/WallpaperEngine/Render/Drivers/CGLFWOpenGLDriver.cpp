@@ -1,6 +1,10 @@
 #include "CGLFWOpenGLDriver.h"
+#include "CVideoFactories.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
-#include "common.h"
+#ifdef ENABLE_X11
+#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
+#endif
 
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
@@ -13,11 +17,12 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CGLFWOpenGLDriver::CGLFWOpenGLDriver (const char* windowTitle, CApplicationContext& context,
-                                      CWallpaperApplication& app) :
-    m_frameCounter (0),
-    m_context (context),
-    CVideoDriver (app) {
+CGLFWOpenGLDriver::CGLFWOpenGLDriver (
+    const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app
+) :
+    m_mouseInput (*this),
+    CVideoDriver (app, m_mouseInput),
+    m_context (context) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw
@@ -132,9 +137,22 @@ void CGLFWOpenGLDriver::dispatchEventQueue () {
         this->getApp ().update (viewport);
 
     // read the full texture into the image
-    if (this->m_output->haveImageBuffer ())
-        glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
-                      GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
+    if (this->m_output->haveImageBuffer ()) {
+        // 4.5 supports glReadnPixels, anything older doesn't...
+        if (GLEW_VERSION_4_5) {
+            glReadnPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
+                           GL_UNSIGNED_BYTE, this->m_output->getImageBufferSize (), this->m_output->getImageBuffer ());
+        } else {
+            // fallback to old version
+            glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
+        }
+
+        GLenum error = glGetError();
+
+        if (error != GL_NO_ERROR) {
+            sLog.exception("OpenGL error when reading texture ", error);
+        }
+    }
 
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
@@ -158,6 +176,31 @@ void* CGLFWOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-GLFWwindow* CGLFWOpenGLDriver::getWindow () {
+GLFWwindow* CGLFWOpenGLDriver::getWindow () const {
     return this->m_window;
+}
+
+
+__attribute__((constructor)) void registerGLFWOpenGLDriver () {
+    sVideoFactories.registerDriver (
+        CApplicationContext::DESKTOP_BACKGROUND,
+        "x11",
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
+    sVideoFactories.registerDriver (
+        CApplicationContext::EXPLICIT_WINDOW,
+        DEFAULT_WINDOW_NAME,
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
+    sVideoFactories.registerDriver (
+        CApplicationContext::NORMAL_WINDOW,
+        DEFAULT_WINDOW_NAME,
+        [](CApplicationContext& context, CWallpaperApplication& application) -> std::unique_ptr<CVideoDriver> {
+            return std::make_unique <CGLFWOpenGLDriver> ("wallpaperengine", context, application);
+        }
+    );
 }

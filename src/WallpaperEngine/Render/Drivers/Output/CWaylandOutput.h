@@ -16,7 +16,7 @@ namespace Output {
 class CWaylandOutput final : public COutput {
   public:
     CWaylandOutput (CApplicationContext& context, CWaylandOpenGLDriver& driver);
-    ~CWaylandOutput () override;
+    ~CWaylandOutput () override = default;
 
     void reset () override;
 
@@ -24,6 +24,7 @@ class CWaylandOutput final : public COutput {
     bool renderMultiple () const override;
     bool haveImageBuffer () const override;
     void* getImageBuffer () const override;
+    uint32_t getImageBufferSize () const override;
     void updateRender () const override;
 
   private:

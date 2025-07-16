@@ -5,8 +5,7 @@ CAudioPlayingDetector::CAudioPlayingDetector (
     Application::CApplicationContext& appContext,
     const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector) :
     m_applicationContext (appContext),
-    m_fullscreenDetector (fullscreenDetector),
-    m_isPlaying (false) {}
+    m_fullscreenDetector (fullscreenDetector) {}
 
 bool CAudioPlayingDetector::anythingPlaying () const {
     return this->m_isPlaying;
@@ -23,4 +22,7 @@ const Render::Drivers::Detectors::CFullScreenDetector& CAudioPlayingDetector::ge
 void CAudioPlayingDetector::setIsPlaying (bool newState) {
     this->m_isPlaying = newState;
 }
+
+void CAudioPlayingDetector::update () {}
+
 } // namespace WallpaperEngine::Audio::Drivers::Detectors

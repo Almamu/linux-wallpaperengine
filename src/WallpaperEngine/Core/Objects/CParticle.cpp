@@ -1,62 +1,73 @@
 #include "CParticle.h"
 
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 #include <utility>
 
 using namespace WallpaperEngine::Core::Objects;
 
-CParticle* CParticle::fromFile (CScene* scene, const std::string& filename, CContainer* container,
-                                CUserSettingBoolean* visible, int id, std::string name, CUserSettingVector3* origin,
-                                CUserSettingVector3* scale) {
-    json data = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
+const CParticle* CParticle::fromFile (
+    std::shared_ptr <const Core::CProject> project, const std::string& filename,
+    const std::shared_ptr<const CContainer>& container, const CUserSettingBoolean* visible, int id,
+    const std::string& name, const CUserSettingVector3* origin, const CUserSettingVector3* angles,
+    const CUserSettingVector3* scale, std::vector<int> dependencies
+) {
+    json data = json::parse (container->readFileAsString (filename));
     const auto controlpoint_it = data.find ("controlpoint");
-    const auto starttime_it = jsonFindRequired (data, "starttime", "Particles must have start time");
-    const auto maxcount_it = jsonFindRequired (data, "maxcount", "Particles must have maximum count");
     const auto emitter_it = jsonFindRequired (data, "emitter", "Particles must have emitters");
     const auto initializer_it = jsonFindRequired (data, "initializer", "Particles must have initializers");
 
-    auto* particle = new CParticle (scene, *starttime_it, *maxcount_it, visible, id, std::move (name), origin, scale);
+    std::vector<const Particles::CControlPoint*> controlpoints;
+    std::vector<const Particles::CEmitter*> emitters;
+    std::vector<const Particles::CInitializer*> initializers;
 
     if (controlpoint_it != data.end ())
         for (const auto& cur : (*controlpoint_it))
-            particle->insertControlPoint (Particles::CControlPoint::fromJSON (cur));
+            controlpoints.push_back (Particles::CControlPoint::fromJSON (cur));
 
     for (const auto& cur : (*emitter_it))
-        particle->insertEmitter (Particles::CEmitter::fromJSON (cur));
+        emitters.push_back (Particles::CEmitter::fromJSON (cur));
     for (const auto& cur : (*initializer_it))
-        particle->insertInitializer (Particles::CInitializer::fromJSON (cur));
+        initializers.push_back (Particles::CInitializer::fromJSON (cur));
 
-    return particle;
+    return new CParticle (
+        project,
+        jsonFindRequired <uint32_t> (data, "starttime", "Particles must have start time"),
+        jsonFindRequired <uint32_t> (data, "maxcount", "Particles must have maximum count"),
+        visible,
+        id,
+        name,
+        origin,
+        scale,
+        angles,
+        controlpoints,
+        emitters,
+        initializers,
+        std::move(dependencies)
+    );
 }
 
-CParticle::CParticle (CScene* scene, uint32_t starttime, uint32_t maxcount, CUserSettingBoolean* visible, int id,
-                      std::string name, CUserSettingVector3* origin, CUserSettingVector3* scale) :
-    CObject (scene, visible, id, std::move (name), Type, origin, scale, glm::vec3 ()),
+CParticle::CParticle (
+    std::shared_ptr <const Core::CProject> project, uint32_t starttime, uint32_t maxcount,
+    const CUserSettingBoolean* visible, int id, const std::string& name, const CUserSettingVector3* origin,
+    const CUserSettingVector3* scale, const CUserSettingVector3* angles,
+    const std::vector<const Particles::CControlPoint*>& controlpoints,
+    const std::vector<const Particles::CEmitter*>& emitters,
+    const std::vector<const Particles::CInitializer*>& initializers, std::vector<int> dependencies
+) :
+    CObject (project, visible, id, name, origin, scale, angles, std::move(dependencies)),
     m_starttime (starttime),
-    m_maxcount (maxcount) {}
+    m_maxcount (maxcount),
+    m_controlpoints (controlpoints),
+    m_emitters (emitters),
+    m_initializers (initializers) {}
 
-const std::vector<Particles::CEmitter*>& CParticle::getEmitters () const {
+const std::vector<const Particles::CEmitter*>& CParticle::getEmitters () const {
     return this->m_emitters;
 }
 
-const std::vector<Particles::CControlPoint*>& CParticle::getControlPoints () const {
+const std::vector<const Particles::CControlPoint*>& CParticle::getControlPoints () const {
     return this->m_controlpoints;
 }
 
-const std::vector<Particles::CInitializer*>& CParticle::getInitializers () const {
+const std::vector<const Particles::CInitializer*>& CParticle::getInitializers () const {
     return this->m_initializers;
 }
-
-void CParticle::insertControlPoint (Particles::CControlPoint* controlpoint) {
-    this->m_controlpoints.push_back (controlpoint);
-}
-
-void CParticle::insertEmitter (Particles::CEmitter* emitter) {
-    this->m_emitters.push_back (emitter);
-}
-
-void CParticle::insertInitializer (Particles::CInitializer* initializer) {
-    this->m_initializers.push_back (initializer);
-}
-
-const std::string CParticle::Type = "particle";

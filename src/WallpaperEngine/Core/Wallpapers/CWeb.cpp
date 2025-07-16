@@ -1,14 +1,14 @@
 #include "CWeb.h"
 
-#include "common.h"
 #include <utility>
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 
-const std::string& CWeb::getFilename () {
+const std::string& CWeb::getFilename () const {
     return this->m_filename;
 }
 
-CWeb::CWeb (std::string filename, CProject& project) : CWallpaper (Type, project), m_filename (std::move (filename)) {}
-
-const std::string CWeb::Type = "web";
+CWeb::CWeb (std::string filename, std::shared_ptr <const CProject> project) :
+    CWallpaper (project),
+    m_filename (std::move(filename)) {}

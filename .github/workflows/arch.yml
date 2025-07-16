@@ -5,6 +5,12 @@ on:
     workflows: [cmake]
     branches: [main]
     types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/archlinux/**'
+      - '.github/workflows/**'
 
 jobs:
   publish:
@@ -14,8 +20,10 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: true
 
-      - name: Publish parallel-disk-usage to the AUR
+      - name: Publish linux-wallpaperengine-git to the AUR
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
           pkgname: linux-wallpaperengine-git

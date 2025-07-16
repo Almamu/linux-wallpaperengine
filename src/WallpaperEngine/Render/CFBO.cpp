@@ -1,18 +1,14 @@
 #include "CFBO.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Render;
 
 CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
             uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight) :
+    m_scale (scale),
     m_name (std::move (name)),
     m_format (format),
-    m_scale (scale),
-    m_flags (flags),
-    m_framebuffer (GL_NONE),
-    m_depthbuffer (GL_NONE),
-    m_texture (GL_NONE),
-    m_resolution () {
+    m_flags (flags) {
     // create an empty texture that'll be free'd so the FBO is transparent
     const GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
@@ -65,7 +61,7 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
     this->m_resolution = {textureWidth, textureHeight, realWidth, realHeight};
 
     // create the textureframe entries
-    auto* frame = new TextureFrame;
+    auto frame = std::make_shared<TextureFrame> ();
 
     frame->frameNumber = 0;
     frame->frametime = 0;
@@ -80,10 +76,6 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
 }
 
 CFBO::~CFBO () {
-    // free all the resources
-    for (const auto* frame : this->m_frames)
-        delete frame;
-
     // free opengl texture and framebuffer
     glDeleteTextures (1, &this->m_texture);
     glDeleteFramebuffers (1, &this->m_framebuffer);
@@ -97,11 +89,11 @@ const float& CFBO::getScale () const {
     return this->m_scale;
 }
 
-const ITexture::TextureFormat CFBO::getFormat () const {
+ITexture::TextureFormat CFBO::getFormat () const {
     return this->m_format;
 }
 
-const ITexture::TextureFlags CFBO::getFlags () const {
+ITexture::TextureFlags CFBO::getFlags () const {
     return this->m_flags;
 }
 
@@ -113,27 +105,27 @@ GLuint CFBO::getDepthbuffer () const {
     return this->m_depthbuffer;
 }
 
-const GLuint CFBO::getTextureID (uint32_t imageIndex) const {
+GLuint CFBO::getTextureID (uint32_t imageIndex) const {
     return this->m_texture;
 }
 
-const uint32_t CFBO::getTextureWidth (uint32_t imageIndex) const {
+uint32_t CFBO::getTextureWidth (uint32_t imageIndex) const {
     return this->m_resolution.x;
 }
 
-const uint32_t CFBO::getTextureHeight (uint32_t imageIndex) const {
+uint32_t CFBO::getTextureHeight (uint32_t imageIndex) const {
     return this->m_resolution.y;
 }
 
-const uint32_t CFBO::getRealWidth () const {
+uint32_t CFBO::getRealWidth () const {
     return this->m_resolution.z;
 }
 
-const uint32_t CFBO::getRealHeight () const {
+uint32_t CFBO::getRealHeight () const {
     return this->m_resolution.w;
 }
 
-const std::vector<ITexture::TextureFrame*>& CFBO::getFrames () const {
+const std::vector<std::shared_ptr<ITexture::TextureFrame>>& CFBO::getFrames () const {
     return this->m_frames;
 }
 
@@ -141,6 +133,6 @@ const glm::vec4* CFBO::getResolution () const {
     return &this->m_resolution;
 }
 
-const bool CFBO::isAnimated () const {
+bool CFBO::isAnimated () const {
     return false;
 }

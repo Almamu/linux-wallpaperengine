@@ -1,5 +1,5 @@
 #include "CSDLAudioDriver.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 4096
 #define MAX_AUDIO_FRAME_SIZE 192000
@@ -53,8 +53,9 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
                 len1 = streamLength;
 
             // mix the audio
-            SDL_MixAudioFormat (streamDataPointer, &buffer->audio_buf [buffer->audio_buf_index],
-                                driver->getSpec ().format, len1, driver->getApplicationContext ().state.audio.volume);
+            SDL_MixAudioFormat (
+                streamDataPointer, &buffer->audio_buf [buffer->audio_buf_index], driver->getSpec ().format,
+                len1, driver->getApplicationContext ().state.audio.volume);
 
             streamLength -= len1;
             streamDataPointer += len1;
@@ -63,10 +64,11 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
     }
 }
 
-CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationContext,
-                                  Detectors::CAudioPlayingDetector& detector, Recorders::CPlaybackRecorder& recorder) :
+CSDLAudioDriver::CSDLAudioDriver (
+    Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector,
+    Recorders::CPlaybackRecorder& recorder
+) :
     CAudioDriver (applicationContext, detector, recorder),
-    m_initialized (false),
     m_audioSpec () {
     if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {
         sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError ());
@@ -75,12 +77,14 @@ CSDLAudioDriver::CSDLAudioDriver (Application::CApplicationContext& applicationC
         return;
     }
 
-    const SDL_AudioSpec requestedSpec = {.freq = 48000,
-                                         .format = AUDIO_F32,
-                                         .channels = 2,
-                                         .samples = SDL_AUDIO_BUFFER_SIZE,
-                                         .callback = audio_callback,
-                                         .userdata = this};
+    const SDL_AudioSpec requestedSpec = {
+        .freq = 48000,
+        .format = AUDIO_F32,
+        .channels = 2,
+        .samples = SDL_AUDIO_BUFFER_SIZE,
+        .callback = audio_callback,
+        .userdata = this
+    };
 
     this->m_deviceID =
         SDL_OpenAudioDevice (nullptr, false, &requestedSpec, &this->m_audioSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);

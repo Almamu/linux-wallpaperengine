@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <memory>
 
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
@@ -27,7 +28,7 @@ class CTextureCache final : Helpers::CContextAware {
      * @param filename
      * @return
      */
-    const ITexture* resolve (const std::string& filename);
+    std::shared_ptr<const ITexture> resolve (const std::string& filename);
 
     /**
      * Registers a texture in the cache
@@ -35,10 +36,10 @@ class CTextureCache final : Helpers::CContextAware {
      * @param name
      * @param texture
      */
-    void store (const std::string& name, const ITexture* texture);
+    void store (const std::string& name, std::shared_ptr<const ITexture> texture);
 
   private:
     /** Cached textures */
-    std::map<std::string, const ITexture*> m_textureCache;
+    std::map<std::string, std::shared_ptr<const ITexture>> m_textureCache = {};
 };
 } // namespace WallpaperEngine::Render

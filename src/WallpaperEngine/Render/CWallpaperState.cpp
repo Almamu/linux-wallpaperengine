@@ -1,8 +1,21 @@
 #include "CWallpaperState.h"
+#include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include <algorithm>
 
 using namespace WallpaperEngine::Render;
+
+CWallpaperState::CWallpaperState (
+    const TextureUVsScaling& textureUVsMode, const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode) :
+    m_textureUVsMode (textureUVsMode) {}
+
+bool CWallpaperState::hasChanged (
+    const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,const int& projectionHeight
+) const {
+    return this->viewport.width != viewport.z || this->viewport.height != viewport.w ||
+           this->projection.width != projectionWidth || this->projection.height != projectionHeight ||
+           this->vflip != vflip;
+}
 
 // Reset UVs to 0/1 values
 void CWallpaperState::resetUVs () {
@@ -121,6 +134,34 @@ template <CWallpaperState::TextureUVsScaling T> void CWallpaperState::updateText
     sLog.exception (
         "Using generic template for scaling is not allowed. Write specialization template for your scaling mode.\
      This message is for developers, if you are just user it's a bug.");
+}
+
+CWallpaperState::TextureUVsScaling CWallpaperState::getTextureUVsScaling () const {
+    return this->m_textureUVsMode;
+}
+
+WallpaperEngine::Assets::ITexture::TextureFlags CWallpaperState::getClampingMode () const {
+    return this->m_clampingMode;
+}
+
+void CWallpaperState::setTextureUVsStrategy (CWallpaperState::TextureUVsScaling strategy) {
+    this->m_textureUVsMode = strategy;
+}
+
+int CWallpaperState::getViewportWidth () const {
+    return this->viewport.width;
+}
+
+int CWallpaperState::getViewportHeight () const {
+    return this->viewport.height;
+}
+
+int CWallpaperState::getProjectionWidth () const {
+    return this->projection.width;
+}
+
+int CWallpaperState::getProjectionHeight () const {
+    return this->projection.height;
 }
 
 void CWallpaperState::updateState (const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,

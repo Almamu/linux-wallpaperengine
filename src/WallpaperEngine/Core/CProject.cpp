@@ -1,69 +1,95 @@
-#include "common.h"
 #include <WallpaperEngine/Assets/CContainer.h>
-#include <WallpaperEngine/FileSystem/FileSystem.h>
+
+#include <utility>
 
 #include "CProject.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
 #include "WallpaperEngine/Core/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Core/Wallpapers/CWeb.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
+using namespace WallpaperEngine::Core::Wallpapers;
 using namespace WallpaperEngine::Assets;
 
-CProject::CProject (std::string title, std::string type, CContainer* container) :
-    m_title (std::move (title)),
-    m_type (std::move (type)),
-    m_wallpaper (nullptr),
-    m_container (container) {}
+static int backgroundId = -1;
 
-CProject* CProject::fromFile (const std::string& filename, CContainer* container) {
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (filename, container));
+CProject::CProject (
+    std::string title, std::string type, std::string workshopid, std::shared_ptr<const CContainer> container,
+    bool supportsaudioprocessing, const std::map<std::string, std::shared_ptr<Projects::CProperty>>& properties
+) :
+    m_workshopid(std::move(workshopid)),
+    m_title (std::move(title)),
+    m_type (std::move(type)),
+    m_container (std::move(container)),
+    m_properties (properties),
+    m_supportsaudioprocessing (supportsaudioprocessing) {}
 
-    std::string dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
-    if (dependency == "No dependency") {
-        std::string title = *jsonFindRequired (content, "title", "Project title missing");
-        std::string type = *jsonFindRequired (content, "type", "Project type missing");
-        std::string file = *jsonFindRequired (content, "file", "Project's main file missing");
-        auto general = content.find ("general");
-        CWallpaper* wallpaper;
+std::shared_ptr<CProject> CProject::fromFile (const std::string& filename, std::shared_ptr<const CContainer> container) {
+    json content = json::parse (container->readFileAsString (filename));
 
-        std::transform (type.begin (), type.end (), type.begin (), tolower);
+    const auto dependency = jsonFindDefault<std::string> (content, "dependency", "No dependency");
 
-        CProject* project = new CProject (title, type, container);
-
-        if (type == "scene")
-            wallpaper = CScene::fromFile (file, *project, container);
-        else if (type == "video")
-            wallpaper = new CVideo (file.c_str (), *project);
-        else if (type == "web")
-            wallpaper = new CWeb (file.c_str (), *project);
-        else
-            sLog.exception ("Unsupported wallpaper type: ", type);
-
-        project->setWallpaper (wallpaper);
-
-        if (general != content.end ()) {
-            const auto properties = general->find ("properties");
-
-            if (properties != general->end ()) {
-                for (const auto& cur : properties->items ()) {
-                    Projects::CProperty* property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
-                    if (property != nullptr)
-                        project->insertProperty (property);
-                }
-            }
-        }
-        return project;
-    } else {
+    if (dependency != "No dependency") {
         sLog.exception ("Project have dependency. They are not supported, quiting");
     }
+
+    // workshopid is not required, but we have to use it for some identification stuff,
+    // so using a static, decreasing number should be enough
+    bool supportsaudioprocessing = false;
+    auto type = jsonFindRequired <std::string> (content, "type", "Project type missing");
+    const auto file = jsonFindRequired <std::string> (content, "file", "Project's main file missing");
+    auto general = content.find ("general");
+    std::shared_ptr <const CWallpaper> wallpaper = nullptr;
+    std::map<std::string, std::shared_ptr <Projects::CProperty>> properties;
+
+    std::transform (type.begin (), type.end (), type.begin (), tolower);
+
+    if (general != content.end ()) {
+        supportsaudioprocessing = jsonFindDefault (general, "supportsaudioprocessing", false);
+        const auto properties_it = general->find ("properties");
+
+        if (properties_it != general->end ()) {
+            for (const auto& cur : properties_it->items ()) {
+                auto property = Projects::CProperty::fromJSON (cur.value (), cur.key ());
+
+                if (property == nullptr) {
+                    continue;
+                }
+
+                properties.emplace (property->getName (), std::move (property));
+            }
+        }
+    }
+
+    std::shared_ptr<CProject> project = std::make_shared <CProject> (
+        jsonFindRequired <std::string> (content, "title", "Project title missing"),
+        type,
+        jsonFindDefault <std::string> (content, "workshopid", std::to_string (backgroundId--)),
+        container,
+        supportsaudioprocessing,
+        properties
+    );
+
+    if (type == "scene")
+        wallpaper = CScene::fromFile (file, project, container);
+    else if (type == "video")
+        wallpaper = std::make_shared<CVideo> (file, project);
+    else if (type == "web")
+        wallpaper = std::make_shared<CWeb> (file, project);
+    else
+        sLog.exception ("Unsupported wallpaper type: ", type);
+
+    project->setWallpaper (wallpaper);
+
+    return project;
 }
 
-void CProject::setWallpaper (CWallpaper* wallpaper) {
+void CProject::setWallpaper (std::shared_ptr <const CWallpaper> wallpaper) {
     this->m_wallpaper = wallpaper;
 }
 
-CWallpaper* CProject::getWallpaper () const {
+const std::shared_ptr <const CWallpaper> CProject::getWallpaper () const {
     return this->m_wallpaper;
 }
 
@@ -75,14 +101,18 @@ const std::string& CProject::getType () const {
     return this->m_type;
 }
 
-const std::vector<Projects::CProperty*>& CProject::getProperties () const {
+const std::map<std::string, std::shared_ptr <Projects::CProperty>>& CProject::getProperties () const {
     return this->m_properties;
 }
 
-CContainer* CProject::getContainer () {
+const std::string& CProject::getWorkshopId () const {
+    return this->m_workshopid;
+}
+
+std::shared_ptr<const CContainer> CProject::getContainer () const {
     return this->m_container;
 }
 
-void CProject::insertProperty (Projects::CProperty* property) {
-    this->m_properties.push_back (property);
+bool CProject::supportsAudioProcessing () const {
+    return this->m_supportsaudioprocessing;
 }

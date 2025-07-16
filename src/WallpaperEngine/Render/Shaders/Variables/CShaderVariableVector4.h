@@ -8,15 +8,5 @@ class CShaderVariableVector4 final : public CShaderVariable {
   public:
     explicit CShaderVariableVector4 (const glm::vec4& defaultValue);
     CShaderVariableVector4 (const glm::vec4& defaultValue, const std::string& name);
-
-    const int getSize () const override;
-
-    void setValue (const glm::vec4& value);
-
-    static const std::string Type;
-
-  private:
-    glm::vec4 m_defaultValue;
-    glm::vec4 m_value;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

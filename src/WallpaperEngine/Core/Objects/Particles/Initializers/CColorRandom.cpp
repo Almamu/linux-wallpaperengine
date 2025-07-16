@@ -2,18 +2,18 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CColorRandom* CColorRandom::fromJSON (json data, uint32_t id) {
-    const auto min_it = jsonFindRequired (data, "min", "Colorrandom initializer must have a minimum value");
-    const auto max_it = jsonFindRequired (data, "max", "Colorrandom initializer must have a maximum value");
-
-    return new CColorRandom (id, WallpaperEngine::Core::aToColori (*min_it),
-                             WallpaperEngine::Core::aToColori (*max_it));
+const CColorRandom* CColorRandom::fromJSON (const json& data, uint32_t id) {
+    return new CColorRandom (
+        id,
+        jsonFindRequired <glm::ivec3> (data, "min", "Colorrandom initializer must have a minimum value"),
+        jsonFindRequired <glm::ivec3> (data, "max", "Colorrandom initializer must have a maximum value")
+    );
 }
 
 CColorRandom::CColorRandom (uint32_t id, glm::ivec3 min, glm::ivec3 max) :
     CInitializer (id, "colorrandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 const glm::ivec3& CColorRandom::getMinimum () const {
     return this->m_min;

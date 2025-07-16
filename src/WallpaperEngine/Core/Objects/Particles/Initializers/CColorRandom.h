@@ -22,14 +22,14 @@ class CColorRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CColorRandom* fromJSON (json data, uint32_t id);
+    static const CColorRandom* fromJSON (const json& data, uint32_t id);
 
     CColorRandom (uint32_t id, glm::ivec3 min, glm::ivec3 max);
 
   private:
     /** Maximum color */
-    glm::ivec3 m_max;
+    const glm::ivec3 m_max;
     /** Minimum color */
-    glm::ivec3 m_min;
+    const glm::ivec3 m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

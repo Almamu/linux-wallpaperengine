@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
-#include "WallpaperEngine/Render/Shaders/Compiler.h"
+#include "WallpaperEngine/Render/Shaders/CShader.h"
 
 #include "WallpaperEngine/Assets/ITexture.h"
 
@@ -29,22 +29,23 @@ class CImage final : public CObject {
     friend CObject;
 
   public:
-    CImage (CScene* scene, Core::Objects::CImage* image);
+    CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image);
 
     void setup ();
     void render () override;
 
-    const Core::Objects::CImage* getImage () const;
-    const std::vector<CEffect*>& getEffects () const;
-    glm::vec2 getSize () const;
+    [[nodiscard]] const Core::Objects::CImage* getImage () const;
+    [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
+    [[nodiscard]] const Effects::CMaterial* getMaterial () const;
+    [[nodiscard]] glm::vec2 getSize () const;
 
-    GLuint getSceneSpacePosition () const;
-    GLuint getCopySpacePosition () const;
-    GLuint getPassSpacePosition () const;
-    GLuint getTexCoordCopy () const;
-    GLuint getTexCoordPass () const;
-    const ITexture* getTexture () const;
-    double getAnimationTime () const;
+    [[nodiscard]] GLuint getSceneSpacePosition () const;
+    [[nodiscard]] GLuint getCopySpacePosition () const;
+    [[nodiscard]] GLuint getPassSpacePosition () const;
+    [[nodiscard]] GLuint getTexCoordCopy () const;
+    [[nodiscard]] GLuint getTexCoordPass () const;
+    [[nodiscard]] std::shared_ptr<const ITexture> getTexture () const;
+    [[nodiscard]] double getAnimationTime () const;
 
     /**
      * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
@@ -52,49 +53,47 @@ class CImage final : public CObject {
      * @param drawTo The framebuffer to use
      * @param asInput The last texture used as output (if needed)
      */
-    void pinpongFramebuffer (const CFBO** drawTo, const ITexture** asInput);
+    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput);
 
   protected:
-    static const std::string Type;
-
     void setupPasses ();
 
     void updateScreenSpacePosition ();
 
   private:
-    const ITexture* m_texture;
+    std::shared_ptr<const ITexture> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
     GLuint m_texcoordCopy;
     GLuint m_texcoordPass;
 
-    glm::mat4 m_modelViewProjectionScreen;
-    glm::mat4 m_modelViewProjectionPass;
-    glm::mat4 m_modelViewProjectionCopy;
-    glm::mat4 m_modelViewProjectionScreenInverse;
-    glm::mat4 m_modelViewProjectionPassInverse;
-    glm::mat4 m_modelViewProjectionCopyInverse;
+    glm::mat4 m_modelViewProjectionScreen = {};
+    glm::mat4 m_modelViewProjectionPass = {};
+    glm::mat4 m_modelViewProjectionCopy = {};
+    glm::mat4 m_modelViewProjectionScreenInverse = {};
+    glm::mat4 m_modelViewProjectionPassInverse = {};
+    glm::mat4 m_modelViewProjectionCopyInverse = {};
 
-    glm::mat4 m_modelMatrix;
-    glm::mat4 m_viewProjectionMatrix;
+    glm::mat4 m_modelMatrix = {};
+    glm::mat4 m_viewProjectionMatrix = {};
 
-    CFBO* m_mainFBO;
-    CFBO* m_subFBO;
-    CFBO* m_currentMainFBO;
-    CFBO* m_currentSubFBO;
+    std::shared_ptr<const CFBO> m_mainFBO = nullptr;
+    std::shared_ptr<const CFBO> m_subFBO = nullptr;
+    std::shared_ptr<const CFBO> m_currentMainFBO = nullptr;
+    std::shared_ptr<const CFBO> m_currentSubFBO = nullptr;
 
-    Core::Objects::CImage* m_image;
+    const Core::Objects::CImage* m_image;
 
-    std::vector<CEffect*> m_effects;
-    Effects::CMaterial* m_material;
-    Effects::CMaterial* m_colorBlendMaterial;
-    std::vector<Effects::CPass*> m_passes;
+    std::vector<CEffect*> m_effects = {};
+    Effects::CMaterial* m_material = nullptr;
+    Effects::CMaterial* m_colorBlendMaterial = nullptr;
+    std::vector<Effects::CPass*> m_passes = {};
 
-    glm::vec4 m_pos;
+    glm::vec4 m_pos = {};
 
-    double m_animationTime;
+    double m_animationTime = 0.0;
 
-    bool m_initialized;
+    bool m_initialized = false;
 };
 } // namespace WallpaperEngine::Render::Objects

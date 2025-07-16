@@ -1,22 +1,22 @@
 #include "CVideo.h"
-#include "common.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #include <GL/glew.h>
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Wallpapers;
 
 void* get_proc_address (void* ctx, const char* name) {
     return static_cast<CVideo*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
-CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& audioContext,
-                const CWallpaperState::TextureUVsScaling& scalingMode) :
-    CWallpaper (video, Type, context, audioContext, scalingMode),
-    m_width (16),
-    m_height (16),
-    m_paused (false),
-    m_mpvGl (nullptr) {
+CVideo::CVideo (
+    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+) :
+    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts
@@ -54,7 +54,7 @@ CVideo::CVideo (Core::CVideo* video, CRenderContext& context, CAudioContext& aud
         sLog.exception ("Failed to initialize MPV's GL context");
 
     const std::filesystem::path videopath =
-        this->getVideo ()->getProject ().getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+        this->getVideo ()->getProject ()->getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
 
     // build the path to the video file
     const char* command [] = {"loadfile", videopath.c_str (), nullptr};
@@ -118,8 +118,8 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-Core::CVideo* CVideo::getVideo () {
-    return this->getWallpaperData ()->as<Core::CVideo> ();
+const Core::Wallpapers::CVideo* CVideo::getVideo () const {
+    return this->getWallpaperData ()->as<Core::Wallpapers::CVideo> ();
 }
 
 void CVideo::setPause (bool newState) {
@@ -137,5 +137,3 @@ int CVideo::getWidth () const {
 int CVideo::getHeight () const {
     return this->m_height;
 }
-
-const std::string CVideo::Type = "video";

@@ -22,14 +22,14 @@ class CSizeRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CSizeRandom* fromJSON (json data, uint32_t id);
+    static const CSizeRandom* fromJSON (const json& data, uint32_t id);
 
     CSizeRandom (uint32_t id, uint32_t min, uint32_t max);
 
   private:
     /** Maximum size */
-    uint32_t m_max;
+    const uint32_t m_max;
     /** Minimum size */
-    uint32_t m_min;
+    const uint32_t m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

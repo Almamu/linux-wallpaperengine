@@ -29,8 +29,9 @@ class CPulseAudioPlaybackRecorder;
  */
 class CAudioDriver {
   public:
-    explicit CAudioDriver (Application::CApplicationContext& applicationContext,
-                           Detectors::CAudioPlayingDetector& detector, Recorders::CPlaybackRecorder& recorder);
+    explicit CAudioDriver (
+        Application::CApplicationContext& applicationContext, Detectors::CAudioPlayingDetector& detector,
+        Recorders::CPlaybackRecorder& recorder);
 
     virtual ~CAudioDriver () = default;
     /**

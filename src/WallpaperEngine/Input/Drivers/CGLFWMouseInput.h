@@ -14,7 +14,7 @@ namespace WallpaperEngine::Input::Drivers {
  */
 class CGLFWMouseInput final : public CMouseInput {
   public:
-    explicit CGLFWMouseInput (Render::Drivers::CGLFWOpenGLDriver* driver);
+    explicit CGLFWMouseInput (const Render::Drivers::CGLFWOpenGLDriver& driver);
 
     /**
      * Takes current mouse position and updates it
@@ -37,14 +37,14 @@ class CGLFWMouseInput final : public CMouseInput {
     [[nodiscard]] MouseClickStatus rightClick () const override;
 
   private:
-    Render::Drivers::CGLFWOpenGLDriver* m_driver;
+    const Render::Drivers::CGLFWOpenGLDriver& m_driver;
 
     /**
      * The current mouse position
      */
-    glm::dvec2 m_mousePosition;
-    glm::dvec2 m_reportedPosition;
-    MouseClickStatus m_leftClick;
-    MouseClickStatus m_rightClick;
+    glm::dvec2 m_mousePosition = {};
+    glm::dvec2 m_reportedPosition = {};
+    MouseClickStatus m_leftClick = Released;
+    MouseClickStatus m_rightClick = Released;
 };
 } // namespace WallpaperEngine::Input::Drivers

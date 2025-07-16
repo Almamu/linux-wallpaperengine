@@ -2,18 +2,18 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CVelocityRandom* CVelocityRandom::fromJSON (json data, uint32_t id) {
-    const auto min_it = jsonFindRequired (data, "min", "Velocityrandom initializer must have a minimum value");
-    const auto max_it = jsonFindRequired (data, "max", "Velocityrandom initializer must have a maximum value");
-
-    return new CVelocityRandom (id, WallpaperEngine::Core::aToVector3 (*min_it),
-                                WallpaperEngine::Core::aToVector3 (*max_it));
+const CVelocityRandom* CVelocityRandom::fromJSON (const json& data, uint32_t id) {
+    return new CVelocityRandom (
+        id,
+        jsonFindRequired <glm::vec3> (data, "min", "Velocityrandom initializer must have a minimum value"),
+        jsonFindRequired <glm::vec3> (data, "max", "Velocityrandom initializer must have a maximum value")
+    );
 }
 
 CVelocityRandom::CVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max) :
     CInitializer (id, "velocityrandom"),
-    m_min (min),
-    m_max (max) {}
+    m_max (max),
+    m_min (min) {}
 
 const glm::vec3& CVelocityRandom::getMinimum () const {
     return this->m_min;

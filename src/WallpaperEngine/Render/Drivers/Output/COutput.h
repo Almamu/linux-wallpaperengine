@@ -38,12 +38,13 @@ class COutput {
     virtual bool haveImageBuffer () const = 0;
     const std::map<std::string, COutputViewport*>& getViewports () const;
     virtual void* getImageBuffer () const = 0;
+    virtual uint32_t getImageBufferSize () const = 0;
     virtual void updateRender () const = 0;
 
   protected:
-    mutable int m_fullWidth;
-    mutable int m_fullHeight;
-    mutable std::map<std::string, COutputViewport*> m_viewports;
+    mutable int m_fullWidth = 0;
+    mutable int m_fullHeight = 0;
+    mutable std::map<std::string, COutputViewport*> m_viewports = {};
     CApplicationContext& m_context;
     CVideoDriver& m_driver;
 };

@@ -21,14 +21,14 @@ class CAngularVelocityRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CAngularVelocityRandom* fromJSON (json data, uint32_t id);
+    static const CAngularVelocityRandom* fromJSON (const json& data, uint32_t id);
 
     CAngularVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max);
 
   private:
     /** Maximum velocity (direction * speed) */
-    glm::vec3 m_max;
+    const glm::vec3 m_max;
     /** Minimum velocity (direction * speed) */
-    glm::vec3 m_min;
+    const glm::vec3 m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

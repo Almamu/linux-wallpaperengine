@@ -62,12 +62,10 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
       auto* movie = new QMovie(QString::fromStdString(wallpaperPaths[i] + "/preview.gif"));
       if (movie->isValid()) {
-        movie->start();
         movie->jumpToFrame(0);
-        pixmap = QPixmap::fromImage(movie->currentImage()).scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        movie->stop();
-        delete movie;
+        pixmap = movie->currentPixmap().scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
       }
+      delete movie;
     } else pixmap = pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     button->setIcon(pixmap);

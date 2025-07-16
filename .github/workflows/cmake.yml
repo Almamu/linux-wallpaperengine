@@ -2,8 +2,18 @@ name: CMake
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
+      - 'protocols/**'
     branches: [ "main" ]
   pull_request:
+    paths:
+      - 'src/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
+      - 'protocols/**'
     branches: [ "main" ]
 
 env:
@@ -14,7 +24,7 @@ jobs:
   build-x11:
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-20.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -22,9 +32,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+      if: matrix.os == 'ubuntu-22.04'
+      run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-24.04'
+      run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -38,7 +54,7 @@ jobs:
   build-x11-wayland:
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -46,9 +62,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 wayland-scanner++ wayland-protocols libwayland-dev
+        if: matrix.os == 'ubuntu-22.04'
+        run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev wayland-scanner++ wayland-protocols libwayland-dev
+
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-24.04'
+        run: sudo apt-get update && sudo apt-get -y install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev wayland-scanner++ wayland-protocols libwayland-dev
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -62,7 +85,7 @@ jobs:
   build-wayland:
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -70,9 +93,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: true
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get -y install wayland-scanner++ wayland-protocols libwayland-dev libwayland-egl-backend-dev libglfw3-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0
+      if: matrix.os == 'ubuntu-22.04'
+      run: sudo apt-get update && sudo apt-get -y install wayland-scanner++ wayland-protocols libwayland-dev libwayland-egl-backend-dev libglfw3-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
+
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-24.04'
+      run: sudo apt-get update && sudo apt-get -y install wayland-scanner++ wayland-protocols libwayland-dev libwayland-egl-backend-dev libglfw3-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

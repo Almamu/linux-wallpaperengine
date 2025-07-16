@@ -10,24 +10,7 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h"
-#ifdef ENABLE_WAYLAND
-#include "WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h"
-#endif
-
-#ifdef ENABLE_X11
-#include "WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h"
-#endif
-#ifdef ENABLE_WAYLAND
-#include "WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h"
-#endif
-
 #include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
-#ifdef ENABLE_X11
-#include "WallpaperEngine/Render/Drivers/Output/CX11Output.h"
-#endif
-#ifdef ENABLE_WAYLAND
-#include "WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h"
-#endif
 
 #include "WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h"
 
@@ -42,8 +25,7 @@ namespace WallpaperEngine::Application {
  */
 class CWallpaperApplication {
   public:
-    explicit CWallpaperApplication (CApplicationContext& context, WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext);
-    ~CWallpaperApplication ();
+    explicit CWallpaperApplication (CApplicationContext& context);
 
     /**
      * Shows the application until it's closed
@@ -58,7 +40,7 @@ class CWallpaperApplication {
     /**
      * @return Maps screens to loaded backgrounds
      */
-    [[nodiscard]] const std::map<std::string, Core::CProject*>& getBackgrounds () const;
+    [[nodiscard]] const std::map<std::string, std::shared_ptr<Core::CProject>>& getBackgrounds () const;
     /**
      * @return The current application context
      */
@@ -79,7 +61,7 @@ class CWallpaperApplication {
      * @param container
      * @param bg
      */
-    void setupContainer (CCombinedContainer& container, const std::string& bg) const;
+    void setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const;
     /**
      * Loads projects based off the settings
      */
@@ -90,7 +72,7 @@ class CWallpaperApplication {
      * @param bg
      * @return
      */
-    Core::CProject* loadBackground (const std::string& bg);
+    [[nodiscard]] std::shared_ptr<Core::CProject> loadBackground (const std::string& bg);
     /**
      * Prepares all background's values and updates their properties if required
      */
@@ -100,26 +82,42 @@ class CWallpaperApplication {
      *
      * @param project
      */
-    void setupPropertiesForProject (const Core::CProject* project);
+    void setupPropertiesForProject (const std::shared_ptr<const Core::CProject>& project);
+    /**
+     * Prepares CEF browser to be used
+     */
+    void setupBrowser ();
+    /**
+     * Prepares desktop environment-related things (like render, window, fullscreen detector, etc)
+     */
+    void setupOutput ();
+    /**
+     * Prepares all audio-related things (like detector, output, etc)
+     */
+    void setupAudio ();
+    /**
+     * Prepares the render-context of all the backgrounds so they can be displayed on the screen
+     */
+    void prepareOutputs ();
     /**
      * Takes an screenshot of the background and saves it to the specified path
      *
      * @param filename
      */
-    void takeScreenshot (const std::filesystem::path& filename);
+    void takeScreenshot (const std::filesystem::path& filename) const;
 
     /** The application context that contains the current app settings */
     CApplicationContext& m_context;
     /** Maps screens to backgrounds */
-    std::map<std::string, Core::CProject*> m_backgrounds;
+    std::map<std::string, std::shared_ptr <Core::CProject>> m_backgrounds {};
 
-    WallpaperEngine::Audio::CAudioContext* m_audioContext;
-    WallpaperEngine::Audio::Drivers::CSDLAudioDriver* m_audioDriver;
-    WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder* m_audioRecorder;
-    WallpaperEngine::Input::CInputContext* m_inputContext;
-    WallpaperEngine::Render::CRenderContext* m_renderContext;
-    WallpaperEngine::Render::Drivers::CVideoDriver* m_videoDriver;
-    WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector* m_fullScreenDetector;
-    WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
+    std::unique_ptr <WallpaperEngine::Audio::Drivers::Detectors::CAudioPlayingDetector> m_audioDetector = nullptr;
+    std::unique_ptr <WallpaperEngine::Audio::CAudioContext> m_audioContext = nullptr;
+    std::unique_ptr <WallpaperEngine::Audio::Drivers::CSDLAudioDriver> m_audioDriver = nullptr;
+    std::unique_ptr <WallpaperEngine::Audio::Drivers::Recorders::CPlaybackRecorder> m_audioRecorder = nullptr;
+    std::unique_ptr <WallpaperEngine::Render::CRenderContext> m_renderContext = nullptr;
+    std::unique_ptr <WallpaperEngine::Render::Drivers::CVideoDriver> m_videoDriver = nullptr;
+    std::unique_ptr <WallpaperEngine::Render::Drivers::Detectors::CFullScreenDetector> m_fullScreenDetector = nullptr;
+    std::unique_ptr <WallpaperEngine::WebBrowser::CWebBrowserContext> m_browserContext = nullptr;
 };
 } // namespace WallpaperEngine::Application

@@ -22,14 +22,14 @@ class CVelocityRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CVelocityRandom* fromJSON (json data, uint32_t id);
+    static const CVelocityRandom* fromJSON (const json& data, uint32_t id);
 
     CVelocityRandom (uint32_t id, glm::vec3 min, glm::vec3 max);
 
   private:
     /** Maximum velocity */
-    glm::vec3 m_max;
+    const glm::vec3 m_max;
     /** Minimum velocity */
-    glm::vec3 m_min;
+    const glm::vec3 m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

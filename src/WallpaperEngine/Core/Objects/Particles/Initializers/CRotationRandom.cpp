@@ -4,7 +4,7 @@
 
 using namespace WallpaperEngine::Core::Objects::Particles::Initializers;
 
-CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id) {
+const CRotationRandom* CRotationRandom::fromJSON (const json& data, uint32_t id) {
     const auto min_it = data.find ("minVector");
     const auto max_it = data.find ("max");
 
@@ -37,10 +37,10 @@ CRotationRandom* CRotationRandom::fromJSON (json data, uint32_t id) {
 CRotationRandom::CRotationRandom (uint32_t id, glm::vec3 minVector, double minNumber, bool isMinimumVector,
                                   glm::vec3 maxVector, double maxNumber, bool isMaximumVector) :
     CInitializer (id, "rotationrandom"),
-    m_minVector (minVector),
     m_maxVector (maxVector),
-    m_minNumber (minNumber),
     m_maxNumber (maxNumber),
+    m_minVector (minVector),
+    m_minNumber (minNumber),
     m_isMinimumVector (isMinimumVector),
     m_isMaximumVector (isMaximumVector) {}
 

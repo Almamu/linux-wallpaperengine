@@ -4,6 +4,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec4.hpp>
 
+#include "WallpaperEngine/Assets/ITexture.h"
+
 namespace WallpaperEngine::Render {
 /**
  * Represents current wallpaper state
@@ -18,66 +20,93 @@ class CWallpaperState {
         StretchUVs,
     };
 
-    CWallpaperState (const TextureUVsScaling& textureUVsMode) : m_textureUVsMode (textureUVsMode) {};
+    CWallpaperState (
+        const TextureUVsScaling& textureUVsMode, const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
-    // Compares saved state values with passed arguments
-    bool hasChanged (const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,
-                     const int& projectionHeight) const {
-        return this->viewport.width != viewport.z || this->viewport.height != viewport.w ||
-               this->projection.width != projectionWidth || this->projection.height != projectionHeight ||
-               this->vflip != vflip;
-    }
+    /**
+     * Checks if any of the given values has changed
+     * @param viewport
+     * @param vflip
+     * @param projectionWidth
+     * @param projectionHeight
+     * @return
+     */
+    [[nodiscard]] bool hasChanged (
+        const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth, const int& projectionHeight) const;
 
-    // Reset UVs to 0/1 values
+    /**
+     * Resets UVs to 0/1 values.
+     */
     void resetUVs ();
 
-    // Update Us coordinates for current viewport and projection
+    /**
+     * Updates UVs coordinates for current viewport and projection
+     *
+     * @param projectionWidth
+     * @param projectionHeight
+     */
     void updateUs (const int& projectionWidth, const int& projectionHeight);
 
-    // Update Vs coordinates for current viewport and projection
+    /**
+     * Updates Vs coordinates for current viewport and projection
+     *
+     * @param projectionWidth
+     * @param projectionHeight
+     */
     void updateVs (const int& projectionWidth, const int& projectionHeight);
 
-    // Get texture UV coordinates
-    auto getTextureUVs () const {
+    /**
+     * @return Texture UV coordinates for current viewport and projection
+     */
+    [[nodiscard]] auto getTextureUVs () const {
         return UVs;
     };
 
-    // Set texture UV coordinates according to texture scaling mode
+    /**
+     * Updates UVs coordinates for current viewport and projection
+     */
     template <CWallpaperState::TextureUVsScaling> void updateTextureUVs ();
 
     // Updates state with provided values
     void updateState (const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,
                       const int& projectionHeight);
 
-    // @return The texture scaling mode
-    TextureUVsScaling getTextureUVsScaling () const {
-        return m_textureUVsMode;
-    };
+    /**
+     * @return The texture scaling mode
+     */
+    [[nodiscard]] TextureUVsScaling getTextureUVsScaling () const;
 
-    // Set texture scaling mode
-    void setTextureUVsStrategy (const TextureUVsScaling strategy) {
-        m_textureUVsMode = strategy;
-    };
+    /**
+     * @return The texture clamping mode.
+     */
+    [[nodiscard]] WallpaperEngine::Assets::ITexture::TextureFlags getClampingMode () const;
 
-    // @return The width of viewport
-    int getViewportWidth () const {
-        return viewport.width;
-    };
+    /**
+     * Sets the texture scaling mode
+     *
+     * @param strategy
+     */
+    void setTextureUVsStrategy (TextureUVsScaling strategy);
 
-    // @return The height of viewport
-    int getViewportHeight () const {
-        return viewport.height;
-    };
+    /**
+     * @return The width of viewport
+     */
+    [[nodiscard]] int getViewportWidth () const;
 
-    // @return The width of viewport
-    int getProjectionWidth () const {
-        return projection.width;
-    };
+    /**
+     * @return The height of viewport
+     */
+    [[nodiscard]] int getViewportHeight () const;
 
-    // @return The height of viewport
-    int getProjectionHeight () const {
-        return projection.height;
-    };
+    /**
+     * @return The width of the projection
+     */
+    [[nodiscard]] int getProjectionWidth () const;
+
+    /**
+     * @return The height of the projection
+     */
+    [[nodiscard]] int getProjectionHeight () const;
 
   private:
     // Cached UVs value for texture coordinates. No need to recalculate if viewport and projection haven't changed.
@@ -105,5 +134,6 @@ class CWallpaperState {
 
     // Texture scaling mode
     TextureUVsScaling m_textureUVsMode = TextureUVsScaling::DefaultUVs;
+    WallpaperEngine::Assets::ITexture::TextureFlags m_clampingMode = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
 };
 } // namespace WallpaperEngine::Render

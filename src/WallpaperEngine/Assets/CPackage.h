@@ -20,7 +20,7 @@ class CPackage final : public CContainer {
   public:
     explicit CPackage (std::filesystem::path path);
 
-    [[nodiscard]] const uint8_t* readFile (const std::string& filename, uint32_t* length) const override;
+    [[nodiscard]] std::shared_ptr<const uint8_t[]> readFile (const std::filesystem::path& filename, uint32_t* length) const override;
 
   protected:
     /**
@@ -61,8 +61,8 @@ class CPackage final : public CContainer {
 
   private:
     /** The path to the package file */
-    std::filesystem::path m_path;
+    std::filesystem::path m_path {};
     /** Contents of the package file */
-    std::map<std::string, CFileEntry*> m_contents;
+    std::map<std::string, std::unique_ptr<CFileEntry>> m_contents {};
 };
 } // namespace WallpaperEngine::Assets

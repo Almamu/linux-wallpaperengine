@@ -1,23 +1,22 @@
 #include <sstream>
+#include <utility>
 
 #include "CPropertyBoolean.h"
 #include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
-CPropertyBoolean* CPropertyBoolean::fromJSON (json data, const std::string& name) {
-    const json::const_iterator value = data.find ("value");
-    const auto text = jsonFindDefault<std::string> (data, "text", "");
-
-    return new CPropertyBoolean (*value, name, text);
+std::shared_ptr<CPropertyBoolean> CPropertyBoolean::fromJSON (const json& data, std::string name) {
+    return std::make_shared <CPropertyBoolean> (
+        jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
+        std::move(name),
+        jsonFindDefault<std::string> (data, "text", "")
+    );
 }
 
-bool CPropertyBoolean::getValue () const {
-    return this->m_value;
-}
 
-void CPropertyBoolean::update (const std::string& value) {
-    this->m_value = value == "1" || value == "true";
+void CPropertyBoolean::set (const std::string& value) {
+    this->update (value == "1" || value == "true" || value == "on");
 }
 
 std::string CPropertyBoolean::dump () const {
@@ -27,13 +26,14 @@ std::string CPropertyBoolean::dump () const {
        << "\t"
        << "Description: " << this->m_text << std::endl
        << "\t"
-       << "Value: " << this->m_value;
+       << "Value: " << &this->getBool ();
 
     return ss.str ();
 }
 
-CPropertyBoolean::CPropertyBoolean (bool value, const std::string& name, const std::string& text) :
-    CProperty (name, Type, text),
-    m_value (value) {}
+const char* CPropertyBoolean::getType () const {
+    return "bool";
+}
 
-const std::string CPropertyBoolean::Type = "bool";
+CPropertyBoolean::CPropertyBoolean (bool value, std::string name, std::string text) :
+    CProperty (std::move(name), std::move(text)) {}

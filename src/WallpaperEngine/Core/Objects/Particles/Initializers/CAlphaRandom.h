@@ -21,14 +21,14 @@ class CAlphaRandom : CInitializer {
   protected:
     friend class CInitializer;
 
-    static CAlphaRandom* fromJSON (json data, uint32_t id);
+    static const CAlphaRandom* fromJSON (const json& data, uint32_t id);
 
     CAlphaRandom (uint32_t id, double min, double max);
 
   private:
     /** Maximum alpha */
-    double m_max;
+    const double m_max;
     /** Minimum alpha */
-    double m_min;
+    const double m_min;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

@@ -1,59 +1,96 @@
 #include "CImage.h"
 
+#include <utility>
+
 #include "WallpaperEngine/Core/Objects/Images/CMaterial.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingFloat.h"
 #include "WallpaperEngine/Core/UserSettings/CUserSettingVector3.h"
 #include "WallpaperEngine/Core/Wallpapers/CScene.h"
-#include <utility>
-
-#include "WallpaperEngine/FileSystem/FileSystem.h"
 
 using namespace WallpaperEngine::Core::Objects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CImage::CImage (CScene* scene, Images::CMaterial* material, CUserSettingBoolean* visible, int id, std::string name,
-                CUserSettingVector3* origin, CUserSettingVector3* scale, const glm::vec3& angles, const glm::vec2& size,
-                std::string alignment, CUserSettingVector3* color, CUserSettingFloat* alpha, float brightness,
-                uint32_t colorBlendMode, const glm::vec2& parallaxDepth, bool fullscreen, bool passthrough,
-                bool autosize) :
-    CObject (scene, visible, id, std::move (name), Type, origin, scale, angles),
+CImage::CImage (
+    std::shared_ptr <const Core::CProject> project, const Images::CMaterial* material,
+    const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+    const CUserSettingVector3* scale, const CUserSettingVector3* angles, glm::vec2 size, std::string alignment,
+    const CUserSettingVector3* color, const CUserSettingFloat* alpha, float brightness, uint32_t colorBlendMode,
+    glm::vec2 parallaxDepth, bool fullscreen, bool passthrough, bool autosize,
+    std::vector<const Objects::CEffect*> effects, std::vector<int> dependencies
+) :
+    CObject (project, visible, id, std::move(name), origin, scale, angles, std::move(dependencies)),
     m_size (size),
+    m_parallaxDepth (parallaxDepth),
     m_material (material),
-    m_alignment (std::move (alignment)),
-    m_color (color),
+    m_alignment (std::move(alignment)),
     m_alpha (alpha),
     m_brightness (brightness),
+    m_color (color),
     m_colorBlendMode (colorBlendMode),
-    m_parallaxDepth (parallaxDepth),
     m_fullscreen (fullscreen),
     m_passthrough (passthrough),
-    m_autosize (autosize) {}
+    m_autosize (autosize),
+    m_effects (std::move(effects)) {}
 
-WallpaperEngine::Core::CObject* CImage::fromJSON (CScene* scene, json data, CContainer* container,
-                                                  CUserSettingBoolean* visible, int id, std::string name,
-                                                  CUserSettingVector3* origin, CUserSettingVector3* scale,
-                                                  const glm::vec3& angles) {
-    const auto image_it = data.find ("image");
-    const auto size_val = jsonFindDefault<std::string> (data, "size", "0.0 0.0"); // this one might need some adjustment
-    const auto alignment = jsonFindDefault<std::string> (data, "alignment", "center");
-    const auto alpha = jsonFindUserConfig<CUserSettingFloat> (data, "alpha", 1.0);
-    const auto color = jsonFindUserConfig<CUserSettingVector3> (data, "color", {1, 1, 1});
-    const auto brightness_val = jsonFindDefault<float> (data, "brightness", 1.0);
-    const auto colorBlendMode_val = jsonFindDefault<uint32_t> (data, "colorBlendMode", 0);
-    const auto parallaxDepth_val = jsonFindDefault<std::string> (data, "parallaxDepth", "0 0");
+const WallpaperEngine::Core::CObject* CImage::fromJSON (
+    std::shared_ptr <const Core::CProject> project, const json& data, const std::shared_ptr<const CContainer>& container,
+    const CUserSettingBoolean* visible, int id, std::string name, const CUserSettingVector3* origin,
+    const CUserSettingVector3* scale, const CUserSettingVector3* angles, const json::const_iterator& effects_it,
+    std::vector<int> dependencies
+) {
+    const auto image = jsonFindRequired <std::string>(data, "image", "Image must have an image");
+    std::vector<const Objects::CEffect*> effects;
+    json content = json::parse (container->readFileAsString (image));
 
-    json content = json::parse (WallpaperEngine::FileSystem::loadFullFile (image_it->get<std::string> (), container));
+    const auto material = Images::CMaterial::fromFile (
+        jsonFindRequired<std::string> (content, "material", "Image must have a material"),
+        container,
+        jsonFindDefault (content, "solidlayer", false)
+    );
 
-    const auto material_it = jsonFindRequired (content, "material", "Image must have a material");
-    const auto fullscreen = jsonFindDefault<bool> (content, "fullscreen", false);
-    const auto passthrough = jsonFindDefault<bool> (content, "passthrough", false);
-    const auto autosize = jsonFindDefault<bool> (content, "autosize", false);
+    if (effects_it != data.end () && effects_it->is_array ()) {
+        for (auto& cur : *effects_it) {
+            const auto effectVisible = jsonFindUserConfig<CUserSettingBoolean> (cur, *project, "visible", true);
 
-    return new CImage (scene, Images::CMaterial::fromFile (material_it->get<std::string> (), container), visible, id,
-                       std::move (name), origin, scale, angles, WallpaperEngine::Core::aToVector2 (size_val), alignment,
-                       color, alpha, brightness_val, colorBlendMode_val,
-                       WallpaperEngine::Core::aToVector2 (parallaxDepth_val), fullscreen, passthrough, autosize);
+            // TODO: USER CANNOT MODIFY VALUES ON THE FLY, BUT IT MIGHT BE INTERESTING TO SUPPORT THAT AT SOME POINT?
+            // TODO: AT LEAST THE ORIGINAL SOFTWARE ALLOWS YOU TO DO THAT IN THE PREVIEW WINDOW
+            // TODO: THAT MIGHT INCREASE COMPLEXITY THO...
+            // TODO: ESPECIALLY IF THAT CHANGES RENDERING OF PASSES/IMAGES
+            // TODO: DECISIONS, DECISIONS, DECISIONS...
+            if (!effectVisible->getBool ())
+                continue;
+
+            effects.push_back (
+                Objects::CEffect::fromJSON (
+                    cur, effectVisible, project, material, container
+                )
+            );
+        }
+    }
+
+    return new CImage (
+        project,
+        material,
+        visible,
+        id,
+        std::move(name),
+        origin,
+        scale,
+        angles,
+        jsonFindDefault<glm::vec2> (data, "size", glm::vec2 (0.0, 0.0)),
+        jsonFindDefault<std::string> (data, "alignment", "center"),
+        jsonFindUserConfig<CUserSettingVector3> (data, *project, "color", {1, 1, 1}),
+        jsonFindUserConfig<CUserSettingFloat> (data, *project, "alpha", 1.0),
+        jsonFindDefault<float> (data, "brightness", 1.0),
+        jsonFindDefault<uint32_t> (data, "colorBlendMode", 0),
+        jsonFindDefault<glm::vec2> (data, "parallaxDepth", glm::vec2 (0.0, 0.0)),
+        jsonFindDefault<bool> (content, "fullscreen", false),
+        jsonFindDefault<bool> (content, "passthrough", false),
+        jsonFindDefault<bool> (content, "autosize", false),
+        effects,
+        std::move(dependencies)
+    );
 }
 
 const Images::CMaterial* CImage::getMaterial () const {
@@ -69,11 +106,11 @@ const std::string& CImage::getAlignment () const {
 }
 
 float CImage::getAlpha () const {
-    return this->m_alpha->processValue (this->getScene ()->getProject ().getProperties ());
+    return this->m_alpha->getFloat ();
 }
 
-glm::vec3 CImage::getColor () const {
-    return this->m_color->processValue (this->getScene ()->getProject ().getProperties ());
+const glm::vec3& CImage::getColor () const {
+    return this->m_color->getVec3 ();
 }
 
 float CImage::getBrightness () const {
@@ -100,4 +137,6 @@ bool CImage::isAutosize () const {
     return this->m_autosize;
 }
 
-const std::string CImage::Type = "image";
+const std::vector<const CEffect*>& CImage::getEffects () const {
+    return this->m_effects;
+}

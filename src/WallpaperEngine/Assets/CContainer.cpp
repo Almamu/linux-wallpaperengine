@@ -9,26 +9,25 @@
 
 using namespace WallpaperEngine::Assets;
 
-std::filesystem::path CContainer::resolveRealFile (const std::string& filename) const {
+std::filesystem::path CContainer::resolveRealFile (const std::filesystem::path& filename) const {
     throw CAssetLoadException (filename, "Cannot resolve physical file in this container");
 }
 
-const ITexture* CContainer::readTexture (const std::string& filename) const {
+std::shared_ptr <const ITexture> CContainer::readTexture (const std::filesystem::path& filename) const {
     // get the texture's filename (usually .tex)
-    const std::string texture = "materials/" + filename + ".tex";
+    std::filesystem::path texture = "materials" / std::filesystem::path (filename.string ().append (".tex"));
 
-    const void* textureContents = this->readFile (texture, nullptr);
-
-    const ITexture* result = new CTexture (textureContents);
+    const auto textureContents = this->readFile (texture, nullptr);
+    const auto result = std::make_shared<CTexture> (textureContents);
 
 #if !NDEBUG
-    glObjectLabel (GL_TEXTURE, result->getTextureID (), -1, texture.c_str ());
+    glObjectLabel (GL_TEXTURE, result->getTextureID (0), -1, texture.c_str ());
 #endif /* NDEBUG */
 
     return result;
 }
 
-std::string CContainer::readShader (const std::string& filename) const {
+std::string CContainer::readShader (const std::filesystem::path& filename) const {
     std::filesystem::path shader = filename;
     auto it = shader.begin ();
 
@@ -37,7 +36,7 @@ std::string CContainer::readShader (const std::string& filename) const {
         const std::filesystem::path workshopId = *it++;
 
         if (++it != shader.end ()) {
-            const std::filesystem::path shaderfile = *it;
+            const std::filesystem::path& shaderfile = *it;
 
             try {
                 shader = std::filesystem::path ("zcompat") / "scene" / "shaders" / workshopId / shaderfile;
@@ -51,37 +50,29 @@ std::string CContainer::readShader (const std::string& filename) const {
         }
     }
 
-    return this->readFileAsString ("shaders/" + filename);
+    return this->readFileAsString ("shaders" / filename);
 }
 
-std::string CContainer::readVertexShader (const std::string& filename) const {
-    return this->readShader (filename + ".vert");
+std::string CContainer::readVertexShader (const std::filesystem::path& filename) const {
+    std::filesystem::path shader = filename;
+    shader.replace_extension (".vert");
+    return this->readShader (shader);
 }
 
-std::string CContainer::readFragmentShader (const std::string& filename) const {
-    return this->readShader (filename + ".frag");
+std::string CContainer::readFragmentShader (const std::filesystem::path& filename) const {
+    std::filesystem::path shader = filename;
+    shader.replace_extension (".frag");
+    return this->readShader (shader);
 }
 
-std::string CContainer::readIncludeShader (const std::string& filename) const {
-    return this->readFileAsString ("shaders/" + filename);
+std::string CContainer::readIncludeShader (const std::filesystem::path& filename) const {
+    return this->readFileAsString ("shaders" / filename);
 }
 
-std::string CContainer::readFileAsString (const std::string& filename) const {
+std::string CContainer::readFileAsString (const std::filesystem::path& filename) const {
     uint32_t length = 0;
 
-    // read file contents and allocate a buffer for a string
-    const uint8_t* contents = this->readFile (filename, &length);
-    char* buffer = new char [length + 1];
-
-    // ensure there's a 0 at the end
-    memset (buffer, 0, length + 1);
-    // copy over the data
-    memcpy (buffer, contents, length);
-    // now build the std::string to use
-    std::string result = buffer;
-
-    // free the intermediate buffer used to generate the std::string
-    delete [] buffer;
-
-    return result;
+    return {
+        reinterpret_cast<const char*> (this->readFile (filename, &length).get ()), length
+    };
 }

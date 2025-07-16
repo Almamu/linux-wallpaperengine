@@ -8,10 +8,10 @@ using json = nlohmann::json;
 /**
  * Represents different combo values
  */
-class CPropertyComboValue {
+struct CPropertyComboValue {
   public:
-    std::string label;
-    std::string value;
+    const std::string label;
+    const std::string value;
 };
 
 /**
@@ -23,33 +23,20 @@ class CPropertyComboValue {
  */
 class CPropertyCombo final : public CProperty {
   public:
-    static CPropertyCombo* fromJSON (json data, const std::string& name);
+    static std::shared_ptr<CPropertyCombo> fromJSON (const json& data, std::string name);
 
-    ~CPropertyCombo () override;
+    CPropertyCombo (
+        std::string name, std::string text, const std::string& defaultValue,
+        std::vector<CPropertyComboValue> values);
 
-    /**
-     * @return The selected value
-     */
-    [[nodiscard]] const std::string& getValue () const;
     [[nodiscard]] std::string dump () const override;
-    void update (const std::string& value) override;
+    void set (const std::string& value) override;
+    int translateValueToIndex (const std::string& value) const;
 
-    static const std::string Type;
+    [[nodiscard]] const char* getType () const override;
 
   private:
-    CPropertyCombo (const std::string& name, const std::string& text, std::string defaultValue);
-
-    /**
-     * Adds a combo value to the list of possible values
-     *
-     * @param label
-     * @param value
-     */
-    void addValue (std::string label, std::string value);
-
     /** List of values available to select */
-    std::vector<CPropertyComboValue*> m_values;
-    /** The default value */
-    std::string m_defaultValue;
+    const std::vector<CPropertyComboValue> m_values;
 };
 } // namespace WallpaperEngine::Core::Projects

@@ -18,8 +18,9 @@ namespace Audio::Drivers::Detectors {
  */
 class CAudioPlayingDetector {
   public:
-    CAudioPlayingDetector (Application::CApplicationContext& appContext,
-                           const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector);
+    CAudioPlayingDetector (
+        Application::CApplicationContext& appContext,
+        const Render::Drivers::Detectors::CFullScreenDetector& fullscreenDetector);
 
     virtual ~CAudioPlayingDetector () = default;
 
@@ -38,7 +39,9 @@ class CAudioPlayingDetector {
     /**
      * Checks if any audio is playing and updates state accordingly
      */
-    virtual void update () = 0;
+    virtual void update ();
+
+  protected:
     /**
      * @return The application context using this detector
      */
@@ -49,7 +52,7 @@ class CAudioPlayingDetector {
     [[nodiscard]] const Render::Drivers::Detectors::CFullScreenDetector& getFullscreenDetector () const;
 
   private:
-    bool m_isPlaying;
+    bool m_isPlaying = false;
 
     Application::CApplicationContext& m_applicationContext;
     const Render::Drivers::Detectors::CFullScreenDetector& m_fullscreenDetector;

@@ -7,7 +7,7 @@ using json = nlohmann::json;
 
 class CCamera {
   public:
-    static CCamera* fromJSON (json data);
+    static const CCamera* fromJSON (const json::const_iterator& data);
 
     const glm::vec3& getCenter () const;
     const glm::vec3& getEye () const;
@@ -17,8 +17,8 @@ class CCamera {
     CCamera (glm::vec3 center, glm::vec3 eye, glm::vec3 up);
 
   private:
-    glm::vec3 m_center;
-    glm::vec3 m_eye;
-    glm::vec3 m_up;
+    const glm::vec3 m_center;
+    const glm::vec3 m_eye;
+    const glm::vec3 m_up;
 };
 } // namespace WallpaperEngine::Core::Scenes

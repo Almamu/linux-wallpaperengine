@@ -1,48 +1,76 @@
 #include "CUserSettingVector3.h"
+
+#include <utility>
 #include "WallpaperEngine/Core/Core.h"
-#include "common.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyColor.h"
 #include "WallpaperEngine/Core/Projects/CPropertySlider.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::UserSettings;
 
-CUserSettingVector3::CUserSettingVector3 (bool hasCondition, bool hasSource, glm::vec3 defaultValue, std::string source,
-                                          std::string expectedValue) :
-    CUserSettingValue (Type),
+CUserSettingVector3::CUserSettingVector3 (
+    bool hasCondition, glm::vec3 defaultValue, std::shared_ptr <const Projects::CProperty> source, std::string expectedValue
+) :
+    CUserSettingValue (),
     m_hasCondition (hasCondition),
-    m_hasSource (hasSource),
-    m_default (defaultValue),
-    m_source (std::move (source)),
-    m_expectedValue (std::move (expectedValue)) {}
+    m_source (source),
+    m_expectedValue (std::move(expectedValue)) {
+    this->update (defaultValue);
 
-CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data) {
+    if (this->m_source != nullptr) {
+        this->m_source->subscribe ([this](const Projects::CProperty* property) -> void {
+            if (this->m_hasCondition) {
+                sLog.error ("Don't know how to check for condition on a float property... Expected value: ", this->m_expectedValue);
+                return;
+            }
+
+            this->update (property->getVec3 ());
+        });
+    }
+}
+
+const CUserSettingVector3* CUserSettingVector3::fromJSON (const nlohmann::json& data, const CProject& project) {
     bool hasCondition = false;
-    bool hasSource = false;
+    std::shared_ptr <const Projects::CProperty> sourceProperty = nullptr;
     glm::vec3 defaultValue;
     std::string source;
     std::string expectedValue;
 
     if (data.is_object ()) {
-        hasSource = true;
+        auto animation = data.find ("animation");
         auto userIt = data.find ("user");
-        defaultValue = WallpaperEngine::Core::aToColorf (
-            jsonFindDefault<std::string> (data, "value", "").c_str ()); // is this default value right?
+        defaultValue = jsonFindDefault (data, "value", glm::vec3()); // is this default value right?
 
         if (userIt != data.end ()) {
             if (userIt->is_string ()) {
                 source = *userIt;
             } else {
                 hasCondition = true;
-                source = *jsonFindRequired (userIt, "name", "Name for conditional setting must be present");
+                source = jsonFindRequired <std::string> (userIt, "name", "Name for conditional setting must be present");
                 expectedValue =
-                    *jsonFindRequired (userIt, "condition", "Condition for conditional setting must be present");
+                    jsonFindRequired <std::string> (userIt, "condition", "Condition for conditional setting must be present");
+            }
+
+            for (const auto& [key, property] : project.getProperties ()) {
+                if (key == source) {
+                    sourceProperty = property;
+                    break;
+                }
+            }
+
+            if (sourceProperty == nullptr) {
+                sLog.error ("Cannot find property ", source, " to get value from for user setting value, using default value: (", defaultValue.x, ",", defaultValue.y, ",", defaultValue.z, ")");
             }
         } else {
             sLog.error ("Vector property doesn't have user member, this could mean an scripted value");
+        }
+
+        if (animation != data.end ()) {
+            sLog.error ("Detected a setting with animation data, which is not supported yet!");
         }
     } else {
         if (!data.is_string ())
@@ -51,39 +79,9 @@ CUserSettingVector3* CUserSettingVector3::fromJSON (nlohmann::json& data) {
         defaultValue = WallpaperEngine::Core::aToColorf (data.get<std::string> ().c_str ());
     }
 
-    return new CUserSettingVector3 (hasCondition, hasSource, defaultValue, source, expectedValue);
+    return new CUserSettingVector3 (hasCondition, defaultValue, sourceProperty, expectedValue);
 }
 
-CUserSettingVector3* CUserSettingVector3::fromScalar (glm::vec3 value) {
-    return new CUserSettingVector3 (false, false, value, "", "");
+const CUserSettingVector3* CUserSettingVector3::fromScalar (const glm::vec3 value) {
+    return new CUserSettingVector3 (false, value, nullptr, "");
 }
-
-glm::vec3 CUserSettingVector3::getDefaultValue () const {
-    return this->m_default;
-}
-
-glm::vec3 CUserSettingVector3::processValue (const std::vector<Projects::CProperty*>& properties) {
-    if (!this->m_hasSource && !this->m_hasCondition)
-        return this->getDefaultValue ();
-
-    for (const auto cur : properties) {
-        if (cur->getName () != this->m_source)
-            continue;
-
-        if (!this->m_hasCondition) {
-            if (cur->is<CPropertyColor> ())
-                return cur->as<CPropertyColor> ()->getValue ();
-            if (cur->is<CPropertySlider> ())
-                return {cur->as<CPropertySlider> ()->getValue (), cur->as<CPropertySlider> ()->getValue (),
-                        cur->as<CPropertySlider> ()->getValue ()};
-
-            sLog.exception ("Property without condition must match type (vector3)");
-        }
-
-        sLog.exception ("Vector property with condition doesn't match against combo value");
-    }
-
-    return this->m_default;
-}
-
-std::string CUserSettingVector3::Type = "color";

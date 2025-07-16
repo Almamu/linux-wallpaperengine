@@ -13,42 +13,42 @@ class CTurbulentVelocityRandom : CInitializer {
     /**
      * @return The phase to use
      */
-    double getPhaseMax ();
+    double getPhaseMax () const;
     /**
      * @return The scale to use
      */
-    double getScale ();
+    double getScale () const;
     /**
      * @return How time affects to the scale
      */
-    double getTimeScale ();
+    double getTimeScale () const;
     /**
      * @return The minimum speed
      */
-    uint32_t getMinimumSpeed ();
+    uint32_t getMinimumSpeed () const;
     /**
      * @return The maximum speed
      */
-    uint32_t getMaximumSpeed ();
+    uint32_t getMaximumSpeed () const;
 
   protected:
     friend class CInitializer;
 
-    static CTurbulentVelocityRandom* fromJSON (json data, uint32_t id);
+    static const CTurbulentVelocityRandom* fromJSON (const json& data, uint32_t id);
 
     CTurbulentVelocityRandom (uint32_t id, double phasemax, double scale, double timescale, uint32_t speedmin,
                               uint32_t speedmax);
 
   private:
     /** Phase */
-    double m_phasemax;
+    const double m_phasemax;
     /** Scale */
-    double m_scale;
+    const double m_scale;
     /** Time scale, how the time affects the scale */
-    double m_timescale;
+    const double m_timescale;
     /** Minimum speed */
-    uint32_t m_speedmin;
+    const uint32_t m_speedmin;
     /** Maximum speed */
-    uint32_t m_speedmax;
+    const uint32_t m_speedmax;
 };
 } // namespace WallpaperEngine::Core::Objects::Particles::Initializers

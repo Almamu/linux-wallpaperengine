@@ -32,8 +32,8 @@ class CWaylandOutputViewport final : public COutputViewport {
      */
     CWaylandOpenGLDriver* getDriver ();
 
-    wl_output* output;
-    glm::ivec2 size;
+    wl_output* output = nullptr;
+    glm::ivec2 size = {};
     uint32_t waylandName;
     int scale = 1;
     bool initialized = false;
@@ -69,7 +69,7 @@ class CWaylandOutputViewport final : public COutputViewport {
     void resize ();
 
   private:
-    CWaylandOpenGLDriver* m_driver;
+    CWaylandOpenGLDriver* m_driver = nullptr;
 };
 } // namespace Output
 } // namespace WallpaperEngine::Render::Drivers

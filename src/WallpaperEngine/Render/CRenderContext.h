@@ -2,6 +2,7 @@
 
 #include <glm/vec4.hpp>
 #include <vector>
+#include <memory>
 
 #include "CTextureCache.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
@@ -31,28 +32,27 @@ class CTextureCache;
 
 class CRenderContext {
   public:
-    CRenderContext (Drivers::CVideoDriver& driver, Input::CInputContext& input, CWallpaperApplication& app);
+    CRenderContext (Drivers::CVideoDriver& driver, CWallpaperApplication& app);
 
     void render (Drivers::Output::COutputViewport* viewport);
-    void setWallpaper (const std::string& display, CWallpaper* wallpaper);
+    void setWallpaper (const std::string& display, std::shared_ptr <CWallpaper> wallpaper);
     void setPause (bool newState);
     [[nodiscard]] Input::CInputContext& getInputContext () const;
     [[nodiscard]] const CWallpaperApplication& getApp () const;
     [[nodiscard]] const Drivers::CVideoDriver& getDriver () const;
     [[nodiscard]] const Drivers::Output::COutput& getOutput () const;
-    const ITexture* resolveTexture (const std::string& name);
+    std::shared_ptr<const ITexture> resolveTexture (const std::string& name);
+    [[nodiscard]] const std::map<std::string, std::shared_ptr <CWallpaper>>& getWallpapers () const;
 
   private:
     /** Video driver in use */
     Drivers::CVideoDriver& m_driver;
     /** Maps screen -> wallpaper list */
-    std::map<std::string, CWallpaper*> m_wallpapers;
-    /** Input context for interactions */
-    Input::CInputContext& m_input;
+    std::map<std::string, std::shared_ptr <CWallpaper>> m_wallpapers = {};
     /** App that holds the render context */
     CWallpaperApplication& m_app;
     /** Texture cache for the render */
-    CTextureCache* m_textureCache;
+    CTextureCache* m_textureCache = nullptr;
 };
 } // namespace Render
 } // namespace WallpaperEngine

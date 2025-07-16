@@ -14,13 +14,14 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
-#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
-
 #include "CWallpaperState.h"
 
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
-using namespace WallpaperEngine::WebBrowser;
+
+namespace WallpaperEngine::WebBrowser {
+class CWebBrowserContext;
+}
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
@@ -29,21 +30,27 @@ class CContextAware;
 
 class CWallpaper : public Helpers::CContextAware {
   public:
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid (*this) == typeid(T);
     }
 
-    ~CWallpaper () override;
+    virtual ~CWallpaper () override;
 
     /**
      * Performs a render pass of the wallpaper
@@ -58,7 +65,7 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] CContainer* getContainer () const;
+    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
 
     /**
      * @return The current audio context for this wallpaper
@@ -86,32 +93,33 @@ class CWallpaper : public Helpers::CContextAware {
      * @param textureHeight
      * @return
      */
-    CFBO* createFBO (const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
-                     uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+    std::shared_ptr<const CFBO> createFBO (
+        const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+        uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
 
     /**
      * Creates an alias of an existing fbo
      * @param alias
      * @param original
      */
-    void aliasFBO (const std::string& alias, CFBO* original);
+    void aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original);
 
     /**
      * @return The full FBO list to work with
      */
-    [[nodiscard]] const std::map<std::string, CFBO*>& getFBOs () const;
+    [[nodiscard]] const std::map<std::string, std::shared_ptr<const CFBO>>& getFBOs () const;
     /**
      * Searches the FBO list for the given FBO
      *
      * @param name
      * @return
      */
-    [[nodiscard]] CFBO* findFBO (const std::string& name) const;
+    [[nodiscard]] std::shared_ptr<const CFBO> findFBO (const std::string& name) const;
 
     /**
      * @return The main FBO of this wallpaper
      */
-    [[nodiscard]] CFBO* getFBO () const;
+    [[nodiscard]] std::shared_ptr<const CFBO> getFBO () const;
 
     /**
      * Updates the UVs coordinates if window/screen/vflip/projection has changed
@@ -145,13 +153,16 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static CWallpaper* fromWallpaper (Core::CWallpaper* wallpaper, CRenderContext& context, CAudioContext& audioContext,
-                                      CWebBrowserContext& browserContext,
-                                      const CWallpaperState::TextureUVsScaling& scalingMode);
+    static std::shared_ptr<CWallpaper> fromWallpaper (
+        std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+        WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
   protected:
-    CWallpaper (Core::CWallpaper* wallpaperData, std::string type, CRenderContext& context, CAudioContext& audioContext,
-                const CWallpaperState::TextureUVsScaling& scalingMode);
+    CWallpaper (
+        std::shared_ptr <const WallpaperEngine::Core::CWallpaper> wallpaperData, CRenderContext& context,
+        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
     /**
      * Renders a frame of the wallpaper
@@ -163,31 +174,29 @@ class CWallpaper : public Helpers::CContextAware {
      */
     void setupFramebuffers ();
 
-    Core::CWallpaper* m_wallpaperData;
+    std::shared_ptr <const WallpaperEngine::Core::CWallpaper> m_wallpaperData;
 
-    [[nodiscard]] Core::CWallpaper* getWallpaperData () const;
+    [[nodiscard]] std::shared_ptr <const WallpaperEngine::Core::CWallpaper> getWallpaperData () const;
 
     /** The FBO used for scene output */
-    CFBO* m_sceneFBO;
+    std::shared_ptr<const CFBO> m_sceneFBO = nullptr;
 
   private:
     /** The texture used for the scene output */
-    GLuint m_texCoordBuffer;
-    GLuint m_positionBuffer;
-    GLuint m_shader;
+    GLuint m_texCoordBuffer = GL_NONE;
+    GLuint m_positionBuffer = GL_NONE;
+    GLuint m_shader = GL_NONE;
     // shader variables
-    GLint g_Texture0;
-    GLint a_Position;
-    GLint a_TexCoord;
-    GLuint m_vaoBuffer;
+    GLint g_Texture0 = GL_NONE;
+    GLint a_Position = GL_NONE;
+    GLint a_TexCoord = GL_NONE;
+    GLuint m_vaoBuffer = GL_NONE;
     /** The framebuffer to draw the background to */
-    GLuint m_destFramebuffer;
+    GLuint m_destFramebuffer = GL_NONE;
     /** Setups OpenGL's shaders for this wallpaper backbuffer */
     void setupShaders ();
-    /** The type of background this wallpaper is */
-    std::string m_type;
     /** List of FBOs registered for this wallpaper */
-    std::map<std::string, CFBO*> m_fbos;
+    std::map<std::string, std::shared_ptr<const CFBO>> m_fbos = {};
     /** Audio context that is using this wallpaper */
     CAudioContext& m_audioContext;
     /** Current Wallpaper state */

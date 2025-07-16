@@ -1,35 +1,41 @@
 #pragma once
 
+#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
 #include "WallpaperEngine/Core/Core.h"
 
 namespace WallpaperEngine::Core::Projects {
 using json = nlohmann::json;
-
+using namespace WallpaperEngine::Core::DynamicValues;
 /**
  * Represents a property in a background
  *
  * Properties are settings that alter how the background looks or works
  * and are configurable by the user so they can customize it to their likings
  */
-class CPropertyColor;
-
-class CProperty {
+class CProperty : public CDynamicValue {
   public:
+    typedef std::function<void(const CProperty*)> function_type;
     virtual ~CProperty () = default;
-    static CProperty* fromJSON (json data, const std::string& name);
+    static std::shared_ptr<CProperty> fromJSON (const json& data, const std::string& name);
 
-    template <class T> const T* as () const {
-        assert (is<T> ());
-        return reinterpret_cast<const T*> (this);
+    template <class T> [[nodiscard]] const T* as () const {
+        if (is <T> ()) {
+            return static_cast <const T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> T* as () {
-        assert (is<T> ());
-        return reinterpret_cast<T*> (this);
+    template <class T> [[nodiscard]] T* as () {
+        if (is <T> ()) {
+            return static_cast <T*> (this);
+        }
+
+        throw std::bad_cast ();
     }
 
-    template <class T> bool is () {
-        return this->m_type == T::Type;
+    template <class T> [[nodiscard]] bool is () const {
+        return typeid (*this) == typeid(T);
     }
 
     /**
@@ -41,29 +47,36 @@ class CProperty {
      *
      * @param value New value for the property
      */
-    virtual void update (const std::string& value) = 0;
-
+    virtual void set (const std::string& value) = 0;
     /**
      * @return Name of the property
      */
     [[nodiscard]] const std::string& getName () const;
     /**
-     * @return Type of the property
+     * @return Textual type representation of this property
      */
-    [[nodiscard]] const std::string& getType () const;
+    [[nodiscard]] virtual const char* getType () const = 0;
     /**
      * @return Text of the property
      */
     [[nodiscard]] const std::string& getText () const;
+    /**
+     * Registers a function to be called when this instance's value changes
+     *
+     * @param callback
+     */
+    void subscribe (const function_type& callback) const;
 
   protected:
-    CProperty (std::string name, std::string type, std::string text);
+    void propagate () const override;
 
-    /** Type of property */
-    std::string m_type;
+    CProperty (std::string name, std::string text);
+
+    /** Functions to call when this property's value changes */
+    mutable std::vector<function_type> m_subscriptions;
     /** Name of the property */
-    std::string m_name;
+    const std::string m_name;
     /** Description of the property for the user */
-    std::string m_text;
+    mutable std::string m_text;
 };
 } // namespace WallpaperEngine::Core::Projects
