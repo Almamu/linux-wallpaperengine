@@ -3,7 +3,7 @@
 </p>
 
 # 1. Disclaimer
-**This is an educational project**. The project started as a fork from [Almamu/linux-wallpaperengine](https://github.com/Almamu/linux-wallpaperengine) so please check out the original!
+**This is an educational project**. The project started as a fork from [Almamu/linux-wallpaperengine](https://github.com/Almamu/linux-wallpaperengine) so please check it out!
 For more information on the project's license, check [LICENSE](LICENSE).
 
 # 2. What is this project all about?
@@ -34,44 +34,11 @@ To compile and run this, you'll need:
 ```
 # Ubuntu
 sudo apt-get update
-sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 qtbase5-dev
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 qtbase6-dev
 
 # Fedora
-sudo dnf install @development-tools cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel glew-devel freeglut-devel SDL2-devel lz4-devel libXxf86vm-devel glm-devel glfw-devel mpv-devel qt5-qtbase-devel
+sudo dnf install @development-tools cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel glew-devel freeglut-devel SDL2-devel lz4-devel libXxf86vm-devel glm-devel glfw-devel mpv-devel qt6-qtbase-devel
 ```
-
-# 5. How to use
-## 5.1. Pre-requirements
-In order to properly use this software you'll need to own an actual copy of the Windows version of Wallpaper Engine (which you can buy on the [Steam Page](https://store.steampowered.com/app/431960/Wallpaper_Engine/)), as it contains some basic assets on which most of the backgrounds are based on.
-
-The only way to get those assets is to install the Windows version through Steam. Luckily you don't really need a Windows installation for that. Using the Linux Steam client is enough to download the files we need. Note you may need to check "Enable Steam Play for all other titles" in the Steam Play section of Steam's settings if you haven't already. Also note that the software cannot actually be launched through Steam Play (Proton), but the setting is required for Steam to download the software.
-
-## 5.2. Extracting the assets
-The automatic way doesn't require anything extra, as long as Wallpaper Engine is installed in Steam the software should automatically detect where the assets are.
-
-### 5.2.1. Extracting the assets manually
-In the off-case where the software doesn't automatically detect the correct path, the assets can be extracted manually. Once Wallpaper Engine is downloaded, open the installation folder (Right-Click the application in Steam -> Manage -> Browse local files). Here you'll see the main folders of Wallpaper Engine. The folder we're interested in is the one named "assets".
-
-![folder](docs/images/screenshot_folder.png)
-
-The assets folder itself **must** be copied to the same folder where the binary lives.
-
-## 5.3. Getting the sources
-You can download a zipped version of the repository here: https://github.com/Almamu/linux-wallpaperengine/archive/refs/heads/main.zip
-
-You can also clone the repository using git like this:
-```
-git clone git@github.com:Deliasama/linux-wallpaperengine.git
-```
-
-Or using the HTTPS method if you haven't set up SSH:
-```
-https://github.com/Deliasama/linux-wallpaperengine.git
-```
-
-> This installs the latest development version.
-
-**Note:** You’ll still need assets from the official Wallpaper Engine (via Steam). See below for details.
 
 ---
 
@@ -109,7 +76,7 @@ You can copy the `assets` folder manually:
 Clone the repo:
 
 ```bash
-git clone --recurse-submodules https://github.com/Almamu/linux-wallpaperengine.git
+git clone --recurse-submodules https://github.com/Deliasama/linux-wallpaperengine.git
 cd linux-wallpaperengine
 ```
 
@@ -155,6 +122,7 @@ To further customize your wallpaper (e.g., adjusting the volume), you can enter 
 | `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
 | `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
 | `--disable-mouse` | Disable mouse interaction |
+| `--disable-parallax` | Disable parallax effect on backgrounds that support it |
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 
 ## 🧪 Wayland & X11 Support
@@ -190,10 +158,3 @@ __GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
 ```
 
 We'll be looking at improving this in the future, but for now it can be a useful workaround.
-
----
-
-## 🙏 Special Thanks
-
-- [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights
-- [RenderDoc](https://github.com/baldurk/renderdoc) – the best OpenGL debugger out there!
