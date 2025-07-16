@@ -52,7 +52,7 @@ class UIWindow : public QWidget {
 
     void startNewWallpaperEngine();
     void updateSelectedButton();
-    static std::vector<std::string> split(std::string str, char r);
+    static std::vector<std::string> split(const std::string &str, char r);
 
   protected:
     void showEvent(QShowEvent* event) override;

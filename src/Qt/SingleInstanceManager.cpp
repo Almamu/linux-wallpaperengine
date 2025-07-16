@@ -10,6 +10,7 @@ SingleInstanceManager::SingleInstanceManager(const QString& name, QObject* paren
 
 SingleInstanceManager::~SingleInstanceManager() {
   cleanUpServer();
+  delete this->server;
 }
 
 void SingleInstanceManager::cleanUpServer() {

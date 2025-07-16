@@ -1,9 +1,7 @@
 #include "UIWindow.h"
 #include "Qt/SingleInstanceManager.h"
-#include "WallpaperEngine/Logging/CLog.h"
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <cstddef>
-#include <iostream>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qcombobox.h>
@@ -159,20 +157,10 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   auto* trayIcon = new QSystemTrayIcon(QIcon(":/assets/wallpaper-icon.png"));
 
   auto* trayMenu = new QMenu();
-
-  /*auto* showAction = new QAction("Show");
-  connect(showAction, &QAction::triggered, [this]() {
-    this->show();
-  });*/
   
-  trayMenu->addAction("Quit", [this]{ qApp->quit();});
+  trayMenu->addAction("Reload wallpapers", [this] { startNewWallpaperEngine(); });
+  trayMenu->addAction("Quit", [this] { qApp->quit(); });
 
-  /*auto* closeAction = new QAction("Quit");
-  connect(closeAction, &QAction::triggered, [this]() {
-    this->qapp->quit();
-  });*/
-  
-  // trayMenu->addActions({showAction, closeAction});
   trayIcon->setContextMenu(trayMenu);
   trayIcon->setToolTip("Linux-Wallpaperengine");
   trayIcon->show();
@@ -211,12 +199,12 @@ void UIWindow::startNewWallpaperEngine() {
   // create args
   QStringList args;
 
-  for (auto wallpaper : this->selectedWallpapers) {
+  for (const auto &wallpaper : this->selectedWallpapers) {
     if (wallpaper.first == "" || wallpaper.second == "") continue;
     args.push_back("--screen-root");
     args.push_back(QString::fromStdString(wallpaper.first));
     if (!extraFlags[wallpaper.first].empty()) {
-      for (std::string a : extraFlags[wallpaper.first]) args.push_back(QString::fromStdString(a));
+      for (const std::string &a : extraFlags[wallpaper.first]) args.push_back(QString::fromStdString(a));
     }
     args.push_back("--bg");
     args.push_back(QString::fromStdString(wallpaper.second));
@@ -248,7 +236,7 @@ void UIWindow::updateSelectedButton() {
   }
 }
 
-std::vector<std::string> UIWindow::split(std::string str, char delimiter) {
+std::vector<std::string> UIWindow::split(const std::string &str, char delimiter) {
   // Using str in a string stream
     std::stringstream ss(str);
     std::vector<std::string> res;
