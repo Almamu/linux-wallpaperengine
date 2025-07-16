@@ -28,7 +28,7 @@ Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steam
 - GLUT
 - MPV
 - PulseAudio
-- Qt5
+- Qt6
 
 ## Commands
 ```
