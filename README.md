@@ -1,19 +1,13 @@
 <p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
-    <a href="https://github.com/Almamu/linux-wallpaperengine/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/Almamu/linux-wallpaperengine/cmake.yml?branch=main" /></a>
-    <a href="https://github.com/Almamu/linux-wallpaperengine/pulse"><img src="https://img.shields.io/tokei/lines/github/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://www.codefactor.io/repository/github/almamu/linux-wallpaperengine"><img src="https://img.shields.io/codefactor/grade/github/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/commit-activity"><img src="https://img.shields.io/github/commit-activity/m/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/contributors"><img src="https://img.shields.io/github/contributors/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/issues"><img src="https://img.shields.io/github/issues-raw/Almamu/linux-wallpaperengine" /></a>
-	<a href="https://github.com/Almamu/linux-wallpaperengine/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22"><img src="https://img.shields.io/github/issues/Almamu/linux-wallpaperengine/help%20wanted?color=green" alt="help wanted"></a>
 </p>
 
 # 1. Disclaimer
-**This is an educational project**. Although the project started as a learning exercise on the Irrlicht Engine, it has kind of turned into an OpenGL one instead due to limitations and issues with Irrlicht (most likely caused by my limited experience with graphics programming). As it turns out, working directly with OpenGL is not as hard as I thought. For more information on the project's license, check [LICENSE](LICENSE).
+**This is an educational project**. The project started as a fork from [Almamu/linux-wallpaperengine](https://github.com/Almamu/linux-wallpaperengine) so please check out the original!
+For more information on the project's license, check [LICENSE](LICENSE).
 
 # 2. What is this project all about?
-This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that.
+This project aims to reproduce the background functionality of Wallpaper Engine on Linux systems. Simple as that. This fork in particular adds a GUI for selecting your wallpapers! 
 
 # 3. What is Wallpaper Engine?
 Wallpaper Engine is a software designed by [Kristjan Skutta](https://store.steampowered.com/search/?developer=Kristjan%20Skutta&snr=1_5_9__400) that provides live wallpaper functionality to Windows Systems, allowing its users to animate their own backgrounds and share their own creations. You can find more about it on their [Steam page](https://store.steampowered.com/app/431960/Wallpaper_Engine/).
@@ -96,146 +90,38 @@ make
 
 **REMEMBER: The assets folder has to be in the same folder as the executable**
 
-## 5.5. Running a background
-There are two ways to run a background: Run it with the gui, or run it in cli with the workshop's ID
-
-### 5.5.1. Running with GUI
-To open the GUI/Wallpaper-launcher you just need to run the following command:
+## 5.5. Running linux-wallpaperengine
+Now you can run the program using the following command:
 
 ```
-./linux-wallpaperengine --gui
+./linux-wallpaperengine
 ```
 
-In the simple Qt based UI you can select one of your installed Wallpapers and the screen where the wallpaper should run on.
-
-### 5.5.2. Running a background from Steam
-Just like with the assets, the software can automatically detect where the subscribed backgrounds are stored. To get started, search in the workshop for whatever background you want to use and click the "+Subscribe" button. This should download the background in the steam directory.
-
-To actually use the background you'll need to know the workshop's ID. This can be obtained right-clicking anywhere in the background's page -> "Copy Page URL". You can paste this URL anywhere, it will look something like this:
-
-```
-https://steamcommunity.com/sharedfiles/filedetails/?id=1845706469&searchtext=portal+3
-```
-
-Where 1845706469 is the wallpaper's ID. You can use this ID to run wallpaperengine:
-```
-./linux-wallpaperengine 1845706469
-```
-
-### 5.5.3. Running a background in a different folder
-For the situations where the software cannot detect where the backgrounds are stored, you can specify a full path to it, like so:
-```
-./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
-```
-
-### 5.5.4. Running in a window (Default)
-By default the app will load the backgrounds in a window so you can preview them:
-```
-./linux-wallpaperengine /home/almamu/Development/backgrounds/1845706469/
-```
-
-Where `/home/almamu/Development/backgrounds/1845706469/` is the background's path.
-
-### 5.5.5. Running as a screen's background
-The app supports running as background in X11 and Wayland. Use the --screen-root switch and the screen name, like so:
-
-```
-./linux-wallpaperengine --screen-root HDMI-1 --screen-root DVI-D-1 1845706469
-```
+## 5.6 Selecting a wallpaper
+In the graphical user interface (GUI), start by selecting the desired screen. Then simply click on a wallpaper to display it.
 
 #### Wayland
 Has only been tested under wlroots but should work on any flavour as long as wlr-layer-shell-unstable is supported.
 
 #### X11
-Only screens configured with the XRandr extension are supported. To specify the screen names (as reported from xrandr tool) just use the ```--screen-root``` switch. You can specify multiple screens at the same time, for example:
+Only screens configured with the XRandr extension are supported.
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, gnome, kde, nautilus, etc)**
 
+### 5.6.1 Using custom-flags
+To further customize your wallpaper (e.g., adjusting the volume), you can enter one or more of the following flags in the text field at the bottom of the GUI **before** selecting a wallpaper:
 
-### 5.5.6. Limiting FPS
-To reduce the performance hit to your system you can reduce (or increase) the FPS limit with the switch ```--fps```, especially useful for laptops:
-```
-./linux-wallpaperengine --fps 30
-```
-
-## 5.6. Audio
-### 5.6.1. Disable audio
-It's possible to disable the audio of the background with the silent argument
-```
-./linux-wallpaperengine --silent
-```
-
-## 5.7. Taking a screenshot
-It is possible to take a screenshot of the screen's content at the moment a background is loaded up and rendered. Useful for tools like pywal to further customize your environment:
-```
-./linux-wallpaperengine --screenshot /path/to/screenshot/name.png
-```
-
-PNG, BMP and JPEG are supported.
-
-## 5.8. Properties
-Some backgrounds have a list of properties that the user can customize. These properties modify how parts of the background behave or look like. Support for these is present.
-First, list all the available properties in a background, you can do that with the --list-properties switch:
-```
-./linux-wallpaperengine --list-properties 2370927443
-```
-
-The output includes all the relevant information for each of the different properties:
-```
-barcount - slider
-	Description: Bar Count
-	Value: 64
-	Minimum value: 16
-	Maximum value: 64
-	Step: 1
-
-bloom - boolean
-	Description: Bloom
-	Value: 0
-frequency - combolist
-	Description: Frequency
-	Value: 2
-		Posible values:
-		16 -> 1
-		32 -> 2
-		64 -> 3
-
-owl - boolean
-	Description: Owl
-	Value: 0
-rain - boolean
-	Description: Rain
-	Value: 1
-schemecolor - color
-	Description: ui_browse_properties_scheme_color
-	R: 0.14902 G: 0.23137 B: 0.4 A: 1
-visualizer - boolean
-	Description: <hr>Add Visualizer<hr>
-	Value: 1
-visualizercolor - color
-	Description: Bar Color
-	R: 0.12549 G: 0.215686 B: 0.352941 A: 1
-visualizeropacity - slider
-	Description: Bar Opacity
-	Value: 1
-	Minimum value: 0
-	Maximum value: 1
-	Step: 0.1
-
-visualizerwidth - slider
-	Description: Bar Spacing
-	Value: 0.25
-	Minimum value: 0
-	Maximum value: 0.5
-	Step: 0.01
-```
-
-Any of these values can be modified with the --set-property switch. Say you want to enable the bloom in this background, you would do so like this:
-```
-./linux-wallpaperengine --set-property bloom=1 2370927443
-```
-
-If you keep --list-properties in the commandline you can see how the values change to confirm that it applied properly.
+| Option | Description |
+|--------|-------------|
+| `--silent` | Mute background audio |
+| `--volume <val>` | Set audio volume |
+| `--noautomute` | Don't mute when other apps play audio |
+| `--no-audio-processing` | Disable audio reactive features |
+| `--fps <val>` | Limit frame rate |
+| `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
+| `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
+| `--disable-mouse` | Disable mouse interaction |
+| `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 
 ## 6. Example background
 This was the first background to even be compatible with the software. And it's not 100% compatible yet. Both textures and shaders are properly loaded, but there are still particles missing.

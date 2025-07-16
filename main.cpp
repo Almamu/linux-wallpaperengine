@@ -1,5 +1,6 @@
 #include <csignal>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <QApplication>
@@ -10,6 +11,7 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QObject>
+#include <QLocalServer>
 #include <iterator>
 #include <qboxlayout.h>
 #include <qcoreapplication.h>
@@ -17,6 +19,7 @@
 #include <qgridlayout.h>
 #include <qlabel.h>
 #include <qnamespace.h>
+#include <qobject.h>
 #include <qprocess.h>
 #include <qpushbutton.h>
 #include <qscrollarea.h>
@@ -25,15 +28,19 @@
 #include <filesystem>
 #include <vector>
 
+#include "Qt/SingleInstanceManager.h"
 #include "Qt/UIWindow.h"
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
+#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 #include "common.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;
 QCoreApplication* globalApp = nullptr;
+SingleInstanceManager* g_instanceManager = nullptr;
+
 
 class UIWindow;
 
@@ -41,6 +48,7 @@ void signalhandler(int sig)
 {
     if (appPointer == nullptr) {
       if(globalApp != nullptr) {
+        if (g_instanceManager) g_instanceManager->cleanUpServer();
         globalApp->quit();
       } else return;
     }
@@ -56,17 +64,20 @@ void initLogging ()
 
 int main (int argc, char* argv[]) {
     initLogging ();
-    bool runGui = false; 
 
-    for (int i = 1; i < argc; i++) {
-      if(std::strcmp(argv[i], "--gui") == 0) {
-        runGui = true;
-        break;
+
+    if (argc <= 1) {
+      QApplication qapp(argc, argv);
+      globalApp = &qapp;
+
+      g_instanceManager = new SingleInstanceManager("linux-wallpaperengine");
+
+      if (!g_instanceManager->tryListen()) {
+        sLog.out("App is already running!");
+        return 0;
       }
-    }
-
-    if (runGui) {
       std::string path = Steam::FileSystem::workshopDirectory(431960);
+      sLog.out("Found workshopDirectory: " + path);
 
       std::vector<std::string> wallpaperPaths;
 
@@ -74,14 +85,15 @@ int main (int argc, char* argv[]) {
         wallpaperPaths.push_back(entry.path());
       }
 
-      QApplication qapp(argc, argv);
-      globalApp = &qapp;
+      sLog.out("Found " + std::to_string(wallpaperPaths.size()) + " Installed Wallpapers!");
 
       // Signal for properly close the app 
       std::signal (SIGINT, signalhandler);
       std::signal (SIGTERM, signalhandler);
 
-      auto* uiWindow = new UIWindow(nullptr, &qapp);
+      sLog.out("Starting App..");
+
+      auto* uiWindow = new UIWindow(nullptr, &qapp, g_instanceManager);
 
       uiWindow->setupUIWindow(wallpaperPaths);
 

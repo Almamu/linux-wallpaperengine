@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Qt/SingleInstanceManager.h"
 #include <map>
 #include <qapplication.h>
 #include <qcombobox.h>
+#include <qglobal.h>
 #include <qgridlayout.h>
 #include <qlineedit.h>
 #include <qobjectdefs.h>
@@ -18,6 +20,10 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QMovie>
+#include <QCloseEvent>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 #include <QtConcurrent/QtConcurrent>
 #include <string>
 #include <vector>
@@ -28,22 +34,27 @@ class UIWindow : public QWidget {
   Q_OBJECT
 
   public:
-    UIWindow(QWidget* parent, QApplication* qapp);
+    UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* instanceGuard);
     void setupUIWindow(std::vector<std::string> wallpaperPaths);
 
   private:
+    // Components
     QApplication* qapp;
+    SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
+    
+    // Important Fields
     std::map<std::string, std::string> selectedWallpapers;
     std::map<std::string, std::vector<std::string>> extraFlags;
     QProcess* wallpaperEngine;
 
     void startNewWallpaperEngine();
     void updateSelectedButton();
-    static std::vector<std::string> split(std::string str, char r);
+    static std::vector<std::string> split(const std::string &str, char r);
 
   protected:
     void showEvent(QShowEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 };
