@@ -8,12 +8,12 @@
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/PrettyPrinter/CPrettyPrinter.h"
-#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
 #include "WallpaperEngine/Data/Parsers/ProjectParser.h"
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 #if DEMOMODE
 #include "recording.h"
@@ -29,7 +29,9 @@ float g_Time;
 float g_TimeLast;
 float g_Daytime;
 
-namespace WallpaperEngine::Application {
+using namespace WallpaperEngine::Application;
+using namespace WallpaperEngine::Data::Model;
+
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context) {
     this->loadBackgrounds ();
@@ -37,7 +39,8 @@ CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     this->setupBrowser();
 }
 
-void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedContainer>& container, const std::string& bg) const {
+ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg) const {
+    auto container = std::make_unique <CCombinedContainer> ();
     const std::filesystem::path basepath = bg;
 
     container->add (std::make_unique<CDirectory> (basepath));
@@ -185,6 +188,8 @@ void CWallpaperApplication::setupContainer (const std::shared_ptr<CCombinedConta
     );
 
     container->add (std::move(virtualContainer));
+
+    return container;
 }
 
 void CWallpaperApplication::loadBackgrounds () {
@@ -204,27 +209,16 @@ void CWallpaperApplication::loadBackgrounds () {
     }
 }
 
-std::shared_ptr<Core::CProject> CWallpaperApplication::loadBackground (const std::string& bg) {
-    const auto container = std::make_shared <CCombinedContainer> ();
-
-    this->setupContainer (container, bg);
-
-    // do the parsing with the new parser first
+ProjectUniquePtr CWallpaperApplication::loadBackground (const std::string& bg) {
+    auto container = this->setupContainer (bg);
     auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readFileAsString ("project.json"));
-    const auto project = WallpaperEngine::Data::Parsers::ProjectParser::parse (json, container);
 
-    auto dumper = WallpaperEngine::Data::Dumpers::StringPrinter ();
-
-    dumper.printWallpaper (*project->wallpaper);
-
-    std::cout << dumper.str () << std::endl;
-
-    return Core::CProject::fromFile ("project.json", container);
+    return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move(container));
 }
 
-void CWallpaperApplication::setupPropertiesForProject (const std::shared_ptr<const Core::CProject>& project) {
+void CWallpaperApplication::setupPropertiesForProject (const Project& project) {
     // show properties if required
-    for (const auto& [key, cur] : project->getProperties ()) {
+    for (const auto& [key, cur] : project.properties) {
         // update the value of the property
         auto override = this->m_context.settings.general.properties.find (key);
 
@@ -241,15 +235,16 @@ void CWallpaperApplication::setupPropertiesForProject (const std::shared_ptr<con
 
 void CWallpaperApplication::setupProperties () {
     for (const auto& [background, info] : this->m_backgrounds)
-        this->setupPropertiesForProject (info);
+        this->setupPropertiesForProject (*info);
 }
 
 void CWallpaperApplication::setupBrowser () {
     bool anyWebProject = std::any_of (
         this->m_backgrounds.begin (), this->m_backgrounds.end (),
-        [](const std::pair<const std::string, std::shared_ptr<const Core::CProject>>& pair) -> bool {
-        return pair.second->getWallpaper()->is<Core::Wallpapers::CWeb> ();
-    });
+        [](const std::pair<const std::string, ProjectUniquePtr>& pair) -> bool {
+            return pair.second->wallpaper->is<Web> ();
+        }
+    );
 
     // do not perform any initialization if no web background is present
     if (!anyWebProject) {
@@ -350,9 +345,12 @@ void CWallpaperApplication::setupOutput () {
 
 void CWallpaperApplication::setupAudio () {
     // ensure audioprocessing is required by any background, and we have it enabled
-    bool audioProcessingRequired = std::any_of (this->m_backgrounds.begin (), this->m_backgrounds.end (), [](const auto& pair) -> bool {
-        return pair.second->supportsAudioProcessing ();
-    });
+    bool audioProcessingRequired = std::any_of (
+        this->m_backgrounds.begin (), this->m_backgrounds.end (),
+        [](const std::pair<const std::string, ProjectUniquePtr>& pair) -> bool {
+            return pair.second->supportsAudioProcessing;
+        }
+    );
 
     if (audioProcessingRequired && this->m_context.settings.audio.audioprocessing) {
         this->m_audioRecorder = std::make_unique <WallpaperEngine::Audio::Drivers::Recorders::CPulseAudioPlaybackRecorder> ();
@@ -382,7 +380,7 @@ void CWallpaperApplication::prepareOutputs () {
         m_renderContext->setWallpaper (
             background,
             WallpaperEngine::Render::CWallpaper::fromWallpaper (
-                info->getWallpaper (), *m_renderContext, *m_audioContext, m_browserContext.get (),
+                *info->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (),
                 this->m_context.settings.general.screenScalings [background],
                 this->m_context.settings.general.screenClamps [background]
             )
@@ -399,6 +397,8 @@ void CWallpaperApplication::show () {
     static struct tm* timeinfo;
 
     if (this->m_context.settings.general.dumpStructure) {
+        // TODO: REWRITE TO USE THE NEW DUMPER
+        /*
         auto prettyPrinter = PrettyPrinter::CPrettyPrinter ();
 
         for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
@@ -406,6 +406,7 @@ void CWallpaperApplication::show () {
         }
 
         std::cout << prettyPrinter.str () << std::endl;
+        */
     }
 
 #if DEMOMODE
@@ -506,7 +507,7 @@ void CWallpaperApplication::signal (int signal) {
     this->m_context.state.general.keepRunning = false;
 }
 
-const std::map<std::string, std::shared_ptr<Core::CProject>>& CWallpaperApplication::getBackgrounds () const {
+const std::map<std::string, ProjectUniquePtr>& CWallpaperApplication::getBackgrounds () const {
     return this->m_backgrounds;
 }
 
@@ -517,4 +518,3 @@ CApplicationContext& CWallpaperApplication::getContext () const {
 const WallpaperEngine::Render::Drivers::Output::COutput& CWallpaperApplication::getOutput () const {
     return this->m_renderContext->getOutput ();
 }
-} // namespace WallpaperEngine::Application

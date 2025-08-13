@@ -6,7 +6,6 @@
 #include "Types.h"
 
 namespace WallpaperEngine::Data::Model {
-using json = WallpaperEngine::Data::JSON::JSON;
 /**
  * Represents a wallpaper engine project
  */
@@ -31,8 +30,8 @@ struct Project {
     Properties properties;
 
     /** The wallpaper this project defines */
-    WallpaperSharedPtr wallpaper;
+    WallpaperUniquePtr wallpaper;
     /** VFS to access the project's files */
-    ContainerWeakPtr container;
+    ContainerUniquePtr container;
 };
 };

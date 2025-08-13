@@ -9,12 +9,12 @@ using namespace WallpaperEngine::Data::Model;
 
 class EffectParser {
   public:
-    static EffectUniquePtr load (const ProjectWeakPtr& project, const std::string& filename);
+    static EffectUniquePtr load (Project& project, const std::string& filename);
 
   private:
-    static EffectUniquePtr parse (const JSON& it, const ProjectWeakPtr& project);
+    static EffectUniquePtr parse (const JSON& it, Project& project);
     static std::vector <std::string> parseDependencies (const JSON& it);
-    static std::vector <EffectPassUniquePtr> parseEffectPasses (const JSON& it, const ProjectWeakPtr& project);
+    static std::vector <EffectPassUniquePtr> parseEffectPasses (const JSON& it, Project& project);
     static std::map <int, std::string> parseBinds (const JSON& it);
 };
 } // namespace WallpaperEngine::Data::Parsers

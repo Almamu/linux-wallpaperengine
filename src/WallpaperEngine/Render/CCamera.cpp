@@ -6,9 +6,11 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
-CCamera::CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera) :
+CCamera::CCamera (Wallpapers::CScene& scene, const SceneData::Camera& camera) :
     m_camera (camera),
-    m_scene (scene) {
+    m_scene (scene),
+    m_width (0),
+    m_height (0) {
     // get the lookat position
     // TODO: ENSURE THIS IS ONLY USED WHEN NOT DOING AN ORTOGRAPHIC CAMERA AS IT THROWS OFF POINTS
     this->m_lookat = glm::lookAt (this->getEye (), this->getCenter (), this->getUp ());
@@ -17,15 +19,15 @@ CCamera::CCamera (Wallpapers::CScene* scene, const Core::Scenes::CCamera* camera
 CCamera::~CCamera () = default;
 
 const glm::vec3& CCamera::getCenter () const {
-    return this->m_camera->getCenter ();
+    return this->m_camera.configuration.center;
 }
 
 const glm::vec3& CCamera::getEye () const {
-    return this->m_camera->getEye ();
+    return this->m_camera.configuration.eye;
 }
 
 const glm::vec3& CCamera::getUp () const {
-    return this->m_camera->getUp ();
+    return this->m_camera.configuration.up;
 }
 
 const glm::mat4& CCamera::getProjection () const {
@@ -40,11 +42,22 @@ bool CCamera::isOrthogonal () const {
     return this->m_isOrthogonal;
 }
 
-Wallpapers::CScene* CCamera::getScene () const {
+Wallpapers::CScene& CCamera::getScene () const {
     return this->m_scene;
 }
 
+float CCamera::getWidth () const {
+    return this->m_width;
+}
+
+float CCamera::getHeight () const {
+    return this->m_height;
+}
+
 void CCamera::setOrthogonalProjection (float width, float height) {
+    this->m_width = width;
+    this->m_height = height;
+
     // TODO: GET THE ZNEAR AND ZFAR FROM THE BACKGROUND (IF AVAILABLE)
     // get the orthogonal projection (the float is there to ensure the values are casted to float, so maths do work)
     this->m_projection = glm::ortho<float> (-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, 0, 1000);

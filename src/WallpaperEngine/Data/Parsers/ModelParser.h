@@ -9,7 +9,7 @@ using namespace WallpaperEngine::Data::Model;
 
 class ModelParser {
   public:
-    static ModelUniquePtr load (const ProjectWeakPtr& project, const std::string& filename);
-    static ModelUniquePtr parse (const JSON& file, const ProjectWeakPtr& project, const std::string& filename);
+    static ModelUniquePtr load (Project& project, const std::string& filename);
+    static ModelUniquePtr parse (const JSON& file, Project& project, const std::string& filename);
 };
 } // namespace WallpaperEngine::Data::Parsers

@@ -12,6 +12,8 @@
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CWallpaperState.h"
 
+#include "WallpaperEngine/Data/Model/Project.h"
+
 namespace WallpaperEngine::Application {
 /**
  * Application information as parsed off the command line arguments

@@ -8,13 +8,13 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-EffectUniquePtr EffectParser::load (const ProjectWeakPtr& project, const std::string& filename) {
-    const auto effectJson = JSON::parse (project.lock ()->container.lock ()->readFileAsString (filename));
+EffectUniquePtr EffectParser::load (Project& project, const std::string& filename) {
+    const auto effectJson = JSON::parse (project.container->readFileAsString (filename));
 
     return parse (effectJson, project);
 }
 
-EffectUniquePtr EffectParser::parse (const JSON& it, const ProjectWeakPtr& project) {
+EffectUniquePtr EffectParser::parse (const JSON& it, Project& project) {
     const auto dependencies = it.optional ("dependencies");
 
     return std::make_unique <Effect> (Effect {
@@ -41,7 +41,7 @@ std::vector <std::string> EffectParser::parseDependencies (const JSON& it) {
     return result;
 }
 
-std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& it, const ProjectWeakPtr& project) {
+std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& it, Project& project) {
     std::vector <EffectPassUniquePtr> result = {};
 
     if (!it.is_array ()) {

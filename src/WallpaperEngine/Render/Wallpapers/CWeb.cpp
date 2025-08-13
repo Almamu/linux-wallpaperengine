@@ -4,6 +4,9 @@
 #include "CWeb.h"
 #include "WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.h"
 
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Model/Project.h"
+
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
 
@@ -11,7 +14,7 @@ using namespace WallpaperEngine::WebBrowser;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CWeb::CWeb (
-    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
@@ -32,9 +35,9 @@ CWeb::CWeb (
     this->m_client = new WebBrowser::CEF::CBrowserClient (m_renderHandler);
     // use the custom scheme for the wallpaper's files
     const std::string htmlURL =
-        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ()->getProject ()->getWorkshopId ()) +
+        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ().project.workshopId) +
         "://root/" +
-        this->getWeb()->getFilename ();
+        this->getWeb().filename;
     this->m_browser =
         CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);
 }

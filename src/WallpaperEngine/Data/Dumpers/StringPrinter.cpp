@@ -39,7 +39,7 @@ void StringPrinter::printWallpaper (const Wallpaper& wallpaper) {
 
         for (const auto& object : scene->objects) {
             this->lineEnd ();
-            this->printObject (*object.second);
+            this->printObject (*object);
             this->lineEnd ();
         }
 

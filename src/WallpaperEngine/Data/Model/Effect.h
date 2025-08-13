@@ -29,7 +29,7 @@ struct EffectPass {
     /** The material to use for this effect's pass */
     MaterialUniquePtr material;
     /** Texture bindings for this effect's pass */
-    std::map <int, std::string> binds;
+    TextureMap binds;
     /** The command this material executes (if specified) */
     std::optional <PassCommand> command;
     /** The target this material renders to (if specified) */

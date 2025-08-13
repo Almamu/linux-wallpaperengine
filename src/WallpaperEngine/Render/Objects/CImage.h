@@ -1,10 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Objects/CImage.h"
-
 #include "WallpaperEngine/Render/CObject.h"
-#include "WallpaperEngine/Render/Objects/CEffect.h"
-#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
@@ -25,16 +21,16 @@ class CPass;
 namespace WallpaperEngine::Render::Objects {
 class CEffect;
 
-class CImage final : public CObject {
+class CImage final : public CObject, public CFBOProvider {
     friend CObject;
 
   public:
-    CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image);
+    CImage (Wallpapers::CScene& scene, const Image& image);
 
     void setup ();
     void render () override;
 
-    [[nodiscard]] const Core::Objects::CImage* getImage () const;
+    [[nodiscard]] const Image& getImage () const;
     [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
     [[nodiscard]] const Effects::CMaterial* getMaterial () const;
     [[nodiscard]] glm::vec2 getSize () const;
@@ -83,7 +79,7 @@ class CImage final : public CObject {
     std::shared_ptr<const CFBO> m_currentMainFBO = nullptr;
     std::shared_ptr<const CFBO> m_currentSubFBO = nullptr;
 
-    const Core::Objects::CImage* m_image;
+    const Image& m_image;
 
     std::vector<CEffect*> m_effects = {};
     Effects::CMaterial* m_material = nullptr;
@@ -95,5 +91,12 @@ class CImage final : public CObject {
     double m_animationTime = 0.0;
 
     bool m_initialized = false;
+
+    struct {
+        struct {
+            MaterialUniquePtr material;
+            ImageEffectPassOverrideUniquePtr override;
+        } colorBlending;
+    } m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects

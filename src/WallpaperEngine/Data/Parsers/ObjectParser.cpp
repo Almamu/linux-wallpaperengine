@@ -10,7 +10,7 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-ObjectUniquePtr ObjectParser::parse (const JSON& it, const ProjectWeakPtr& project) {
+ObjectUniquePtr ObjectParser::parse (const JSON& it, Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
     const auto particleIt = it.find ("particle");
@@ -56,7 +56,7 @@ std::vector<int> ObjectParser::parseDependencies (const JSON& it) {
     return result;
 }
 
-SoundUniquePtr ObjectParser::parseSound (const JSON& it, const ProjectWeakPtr& project, ObjectData base) {
+SoundUniquePtr ObjectParser::parseSound (const JSON& it, Project& project, ObjectData base) {
     const auto soundIt = it.require ("sound", "Object must have a sound");
     std::vector<std::string> sounds = {};
 
@@ -74,8 +74,8 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, const ProjectWeakPtr& p
 }
 
 ImageUniquePtr ObjectParser::parseImage (
-    const JSON& it, const ProjectWeakPtr& project, ObjectData base, const std::string& image) {
-    const auto& properties = project.lock ()->properties;
+    const JSON& it, Project& project, ObjectData base, const std::string& image) {
+    const auto& properties = project.properties;
     const auto& effects = it.optional ("effects");
 
     return std::make_unique <Image> (
@@ -98,7 +98,7 @@ ImageUniquePtr ObjectParser::parseImage (
     );
 }
 
-std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, const ProjectWeakPtr& project) {
+std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, Project& project) {
     if (!it.is_array ()) {
         return {};
     }
@@ -112,18 +112,18 @@ std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, c
     return result;
 }
 
-ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, const ProjectWeakPtr& project) {
+ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, Project& project) {
     const auto& passsOverrides = it.optional ("passes");
     return std::make_unique <ImageEffect> (ImageEffect {
         .id = it.require <int> ("id", "Image effect must have an id"),
         .name = it.require <std::string> ("name", "Image effect must have a name"),
-        .visible = it.user ("visible", project.lock ()->properties, true),
+        .visible = it.user ("visible", project.properties, true),
         .passOverrides = passsOverrides.has_value () ? parseEffectPassOverrides (passsOverrides.value (), project) : std::vector <ImageEffectPassOverrideUniquePtr> {},
         .effect = EffectParser::load (project, it.require ("file", "Image effect must have an effect"))
     });
 }
 
-std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOverrides (const JSON& it, const ProjectWeakPtr& project) {
+std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOverrides (const JSON& it, Project& project) {
     if (!it.is_array ()) {
         return {};
     }
@@ -137,14 +137,14 @@ std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOver
     return result;
 }
 
-ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, const ProjectWeakPtr& project) {
+ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, Project& project) {
     const auto& combos = it.optional ("combos");
     const auto& textures = it.optional ("textures");
     const auto& constants = it.optional ("constantshadervalues");
 
     // TODO: PARSE CONSTANT SHADER VALUES AND FIND REFS?
     return std::make_unique <ImageEffectPassOverride> (ImageEffectPassOverride {
-        .id = it.require <int> ("id", "Image effect pass must have an id"),
+        .id = it.optional <int> ("id", -1),
         .combos = combos.has_value () ? parseComboMap (combos.value ()) : ComboMap {},
         .constants = constants.has_value () ? ShaderConstantParser::parse (constants.value (), project) : ShaderConstantMap {},
         .textures = textures.has_value () ? parseTextureMap (textures.value ()) : TextureMap {},

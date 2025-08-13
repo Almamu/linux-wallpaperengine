@@ -5,27 +5,29 @@
 
 #include "WallpaperParser.h"
 
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+
 using namespace WallpaperEngine::Data::Parsers;
 
 static int backgroundId = 0;
 
-ProjectSharedPtr ProjectParser::parse (const JSON& data, const ContainerWeakPtr& container) {
+ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr container) {
     const auto general = data.optional ("general");
     auto type = data.require <std::string> ("type", "Project type missing");
 
     // lowercase for consistency
     std::transform (type.begin (), type.end (), type.begin (), tolower);
 
-    auto result = std::make_shared <Project> (Project {
+    auto result = std::make_unique <Project> (Project {
         .title = data.require <std::string> ("title", "Project title missing"),
         .type = parseType (type),
         .workshopId = data.optional ("workshopid", std::to_string (--backgroundId)),
         .supportsAudioProcessing = general.has_value () && general.value ().optional ("supportsAudioProcessing", false),
         .properties = parseProperties (general),
-        .container = container,
+        .container = std::move(container),
     });
 
-    result->wallpaper = WallpaperParser::parse (data.require ("file", "Project's main file missing"), result);
+    result->wallpaper = WallpaperParser::parse (data.require ("file", "Project's main file missing"), *result);
 
     return result;
 }

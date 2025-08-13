@@ -9,12 +9,12 @@ using namespace WallpaperEngine::Data::Model;
 
 class WallpaperParser {
   public:
-    static WallpaperSharedPtr parse (const JSON& file, const ProjectWeakPtr& project);
+    static WallpaperUniquePtr parse (const JSON& file, Project& project);
 
   private:
-    static SceneSharedPtr parseScene (const JSON& file, const ProjectWeakPtr& project);
-    static VideoSharedPtr parseVideo (const JSON& file, const ProjectWeakPtr& project);
-    static WebSharedPtr parseWeb (const JSON& file, const ProjectWeakPtr& project);
-    static ObjectMap parseObjects (const JSON& objects, const ProjectWeakPtr& project);
+    static SceneUniquePtr parseScene (const JSON& file, Project& project);
+    static VideoUniquePtr parseVideo (const JSON& file, Project& project);
+    static WebUniquePtr parseWeb (const JSON& file, Project& project);
+    static ObjectList parseObjects (const JSON& objects, Project& project);
 };
 } // namespace WallpaperEngine::Data::Parsers

@@ -3,7 +3,6 @@
 #include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
-#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
 #include "WallpaperEngine/Core/Projects/CPropertyCombo.h"

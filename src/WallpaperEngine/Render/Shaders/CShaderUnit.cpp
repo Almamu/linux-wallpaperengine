@@ -56,13 +56,12 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Render::Shaders;
 
 CShaderUnit::CShaderUnit (
-    CGLSLContext::UnitType type, std::string file, std::string content, std::shared_ptr<const CContainer> container,
-    const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& passTextures,
-    const std::map<std::string, int>& combos
+    CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
+    const ShaderConstantMap& constants, const TextureMap& passTextures, const ComboMap& combos
 ) :
     m_type (type),
     m_link (nullptr),
-    m_container (std::move(container)),
+    m_container (container),
     m_file (std::move (file)),
     m_constants (constants),
     m_content (std::move(content)),
@@ -155,7 +154,7 @@ void CShaderUnit::preprocessIncludes () {
             content += "// begin of include from file ";
             content += filename;
             content += "\n";
-            content += this->m_container->readIncludeShader (filename);
+            content += this->m_container.readIncludeShader (filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -194,7 +193,7 @@ void CShaderUnit::preprocessIncludes () {
             content = "// begin of include from file ";
             content += filename;
             content += "\n";
-            content += this->m_container->readIncludeShader (filename);
+            content += this->m_container.readIncludeShader (filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -382,6 +381,7 @@ void CShaderUnit::parseParameterConfiguration (
 
     // TODO: SUPPORT VALUES FOR ALL THESE TYPES
     // TODO: MAYBE EVEN CONNECT THESE TO THE CORRESPONDING PROPERTY SO THINGS ARE UPDATED AS THE ORIGIN VALUES CHANGE?
+    // TODO: MAKE USE OF PARSERS INSTEAD OF CORE
     if (type == "vec4") {
         parameter = new Variables::CShaderVariableVector4 (WallpaperEngine::Core::aToVector4 (*defvalue));
     } else if (type == "vec3") {
@@ -500,11 +500,11 @@ void CShaderUnit::parseParameterConfiguration (
     }
 }
 
-const std::map<std::string, int>& CShaderUnit::getCombos () const {
+const ComboMap& CShaderUnit::getCombos () const {
     return this->m_combos;
 }
 
-const std::map<std::string, int>& CShaderUnit::getDiscoveredCombos () const {
+const ComboMap& CShaderUnit::getDiscoveredCombos () const {
     return this->m_discoveredCombos;
 }
 
@@ -565,6 +565,6 @@ const std::string& CShaderUnit::compile () {
 const std::vector<Variables::CShaderVariable*>& CShaderUnit::getParameters () const {
     return this->m_parameters;
 }
-const std::map<int, std::string>& CShaderUnit::getTextures () const {
+const TextureMap& CShaderUnit::getTextures () const {
     return this->m_defaultTextures;
 }

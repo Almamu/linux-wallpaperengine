@@ -6,18 +6,14 @@
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Audio/CAudioContext.h"
 
-#include "WallpaperEngine/Core/CWallpaper.h"
-#include "WallpaperEngine/Core/Wallpapers/CScene.h"
-#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
-
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
-#include "CWallpaperState.h"
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
-using namespace WallpaperEngine::Assets;
-using namespace WallpaperEngine::Audio;
+#include "CFBOProvider.h"
+#include "CWallpaperState.h"
 
 namespace WallpaperEngine::WebBrowser {
 class CWebBrowserContext;
@@ -28,7 +24,11 @@ namespace Helpers {
 class CContextAware;
 }
 
-class CWallpaper : public Helpers::CContextAware {
+using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Audio;
+using namespace WallpaperEngine::Data::Model;
+
+class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
   public:
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {
@@ -65,7 +65,7 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
+    [[nodiscard]] const CContainer& getContainer () const;
 
     /**
      * @return The current audio context for this wallpaper
@@ -80,34 +80,6 @@ class CWallpaper : public Helpers::CContextAware {
      * @return The scene's texture
      */
     [[nodiscard]] virtual GLuint getWallpaperTexture () const;
-    /**
-     * Creates a new FBO for this wallpaper
-     *
-     * @param name The name of the FBO
-     * @param format
-     * @param flags
-     * @param scale
-     * @param realWidth
-     * @param realHeight
-     * @param textureWidth
-     * @param textureHeight
-     * @return
-     */
-    std::shared_ptr<const CFBO> createFBO (
-        const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
-        uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
-
-    /**
-     * Creates an alias of an existing fbo
-     * @param alias
-     * @param original
-     */
-    void aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original);
-
-    /**
-     * @return The full FBO list to work with
-     */
-    [[nodiscard]] const std::map<std::string, std::shared_ptr<const CFBO>>& getFBOs () const;
     /**
      * Searches the FBO list for the given FBO
      *
@@ -153,14 +125,14 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static std::shared_ptr<CWallpaper> fromWallpaper (
-        std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    static std::unique_ptr<CWallpaper> fromWallpaper (
+        const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
         WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
   protected:
     CWallpaper (
-        std::shared_ptr <const WallpaperEngine::Core::CWallpaper> wallpaperData, CRenderContext& context,
+        const Wallpaper& wallpaperData, CRenderContext& context,
         CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
@@ -174,9 +146,9 @@ class CWallpaper : public Helpers::CContextAware {
      */
     void setupFramebuffers ();
 
-    std::shared_ptr <const WallpaperEngine::Core::CWallpaper> m_wallpaperData;
+    const Wallpaper& m_wallpaperData;
 
-    [[nodiscard]] std::shared_ptr <const WallpaperEngine::Core::CWallpaper> getWallpaperData () const;
+    [[nodiscard]] const Wallpaper& getWallpaperData () const;
 
     /** The FBO used for scene output */
     std::shared_ptr<const CFBO> m_sceneFBO = nullptr;

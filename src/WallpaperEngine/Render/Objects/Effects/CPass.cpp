@@ -1,7 +1,14 @@
 #include "CPass.h"
-#include "WallpaperEngine/Render/CFBO.h"
 #include <sstream>
 #include <utility>
+
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+
+#include "WallpaperEngine/Data/Model/Effect.h"
+#include "WallpaperEngine/Data/Model/Material.h"
+
+#include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/CFBO.h"
 
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertyColor.h"
@@ -25,19 +32,35 @@
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects::Constants;
-using namespace WallpaperEngine::Render::Shaders::Variables;
+using namespace WallpaperEngine;
+using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Objects;
 
+using namespace WallpaperEngine::Core::Objects::Effects::Constants;
+
+using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Render::Objects::Effects;
 
 extern float g_Time;
 extern float g_Daytime;
 
-CPass::CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass) :
-    Helpers::CContextAware (material),
-    m_material (material),
+const TextureMap DEFAULT_BINDS = {};
+const ImageEffectPassOverride DEFAULT_OVERRIDE = {};
+
+CPass::CPass (
+    CImage& image, std::shared_ptr<const CFBOProvider> fboProvider, const MaterialPass& pass,
+    std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
+    std::optional<std::reference_wrapper<const TextureMap>> binds,
+    std::optional<std::reference_wrapper<std::string>> target
+) :
+    Helpers::CContextAware (image),
+    m_image (image),
     m_pass (pass),
-    m_blendingmode (pass->getBlendingMode ()) {
+    m_blendingmode (pass.blending),
+    m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
+    m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE),
+    m_fboProvider (fboProvider),
+    m_target (target) {
     this->setupShaders ();
     this->setupShaderVariables ();
 }
@@ -51,25 +74,21 @@ std::shared_ptr<const ITexture> CPass::resolveTexture (std::shared_ptr<const ITe
     }
 
     // first check in the binds and replace it if necessary
-    const auto it = this->m_material->getMaterial ()->getTextureBinds ().find (index);
+    const auto it = this->m_binds.find (index);
 
-    if (it == this->m_material->getMaterial ()->getTextureBinds ().end ())
+    if (it == this->m_binds.end ())
         return expected;
 
     // a bind named "previous" is just another way of telling it to use whatever texture there was already
-    if (it->second->getName () == "previous")
+    if (it->second == "previous")
         return previous ?: expected;
 
     // the bind actually has a name, search the FBO in the effect and return it
-    return this->resolveFBO (it->second->getName ());
+    return this->resolveFBO (it->second);
 }
 
 std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
-    auto fbo = this->m_material->getEffect()->findFBO (name);
-
-    if (fbo == nullptr) {
-        fbo = this->m_material->getImage ()->getScene ()->findFBO (name);
-    }
+    auto fbo = this->m_fboProvider->find (name);
 
     if (fbo == nullptr) {
         sLog.exception ("Tried to resolve and FBO without any luck: ", name);
@@ -100,19 +119,19 @@ void CPass::setupRenderFramebuffer () {
     }
 
     // set depth testing
-    if (this->m_pass->getDepthTest () == "disabled") {
+    if (this->m_pass.depthtest == "disabled") {
         glDisable (GL_DEPTH_TEST);
     } else {
         glEnable (GL_DEPTH_TEST);
     }
 
-    if (this->m_pass->getCullingMode () == "nocull") {
+    if (this->m_pass.cullmode == "nocull") {
         glDisable (GL_CULL_FACE);
     } else {
         glEnable (GL_CULL_FACE);
     }
 
-    if (this->m_pass->getDepthWrite () == "disabled") {
+    if (this->m_pass.depthwrite == "disabled") {
         glDepthMask (false);
     } else {
         glDepthMask (true);
@@ -133,7 +152,7 @@ void CPass::setupRenderTexture () {
     if (texture->isAnimated ()) {
         // calculate current texture and frame
         double currentRenderTime = fmod (static_cast<double> (this->getContext ().getDriver ().getRenderTime ()),
-                                         this->m_material->getImage ()->getAnimationTime ());
+                                         this->m_image.getAnimationTime ());
 
         for (const auto& frameCur : texture->getFrames ()) {
             currentRenderTime -= frameCur->frametime;
@@ -246,8 +265,8 @@ void CPass::setupRenderAttributes () {
 
 #if !NDEBUG
         glObjectLabel (GL_BUFFER, *cur->value, -1,
-                       ("Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) + " Pass " +
-                        this->m_pass->getShader () + " " + cur->name)
+                       ("Image " + std::to_string (this->m_image.getId ()) + " Pass " +
+                        this->m_pass.shader + " " + cur->name)
                            .c_str ());
 #endif /* DEBUG */
     }
@@ -287,8 +306,12 @@ void CPass::render () {
     this->cleanupRenderSetup ();
 }
 
-const CMaterial* CPass::getMaterial () const {
-    return this->m_material;
+std::shared_ptr<const CFBOProvider> CPass::getFBOProvider () const {
+    return this->m_fboProvider;
+}
+
+const CImage& CPass::getImage () const {
+    return this->m_image;
 }
 
 void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) {
@@ -331,8 +354,12 @@ void CPass::setPosition (GLuint position) {
     this->a_Position = position;
 }
 
-const Core::Objects::Images::Materials::CPass* CPass::getPass () const {
+const MaterialPass& CPass::getPass () const {
     return this->m_pass;
+}
+
+const std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const {
+    return this->m_target;
 }
 
 Render::Shaders::CShader* CPass::getShader () const {
@@ -379,10 +406,10 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    std::shared_ptr<const ITexture> texture0 = this->m_material->getImage ()->getTexture ();
+    std::shared_ptr<const ITexture> texture0 = this->m_image.getTexture ();
 
     // copy the combos from the pass
-    this->m_combos.insert (this->m_pass->getCombos ().begin (), this->m_pass->getCombos ().end ());
+    this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
 
     // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL
     // ELEMENTS?
@@ -398,8 +425,8 @@ void CPass::setupShaders () {
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
     this->m_shader = new Render::Shaders::CShader (
-        this->getMaterial ()->getImage ()->getContainer (), this->m_pass->getShader (), this->m_combos,
-        this->m_pass->getTextures (), this->m_pass->getConstants ()
+        this->m_image.getContainer (), this->m_pass.shader, this->m_combos,
+        this->m_pass.textures, this->m_override.constants
     );
 
     const auto shaders = Shaders::CGLSLContext::get ().toGlsl (
@@ -441,9 +468,9 @@ void CPass::setupShaders () {
     }
 
 #if !NDEBUG
-    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
-    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
-    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
+    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass.shader.c_str ());
+    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass.shader + ".vert").c_str ());
+    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass.shader + ".frag").c_str ());
 #endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted
@@ -507,7 +534,7 @@ void CPass::setupTextureUniforms () {
         }
     }
 
-    for (const auto& [index, textureName] : this->m_pass->getTextures ()) {
+    for (const auto& [index, textureName] : this->m_pass.textures) {
         // ignore first texture as that'll be the input of the previous pass (or the image if it's the first pass)
         if (index == 0) {
             continue;
@@ -516,23 +543,23 @@ void CPass::setupTextureUniforms () {
         if (textureName.find ("_rt_") == 0) {
             this->m_textures[index] = this->resolveFBO (textureName);
         } else if (!textureName.empty ()) {
-            this->m_textures[index] = this->m_material->getImage ()->getContext ().resolveTexture (textureName);
+            this->m_textures[index] = this->m_image.getContext ().resolveTexture (textureName);
         }
     }
 
     // binds are set last as they're the most important to be set
-    for (const auto& [index, bind] : this->m_material->getMaterial ()->getTextureBinds ()) {
-        if (bind->getName () == "previous") {
+    for (const auto& [index, bind] : this->m_binds) {
+        if (bind == "previous") {
             // use nullptr as indication for "previous" texture
             this->m_textures [index] = nullptr;
         } else {
             // a normal bind, search for the corresponding FBO and set it
-            this->m_textures [index] = this->resolveFBO (bind->getName ());
+            this->m_textures [index] = this->resolveFBO (bind);
         }
     }
 
     // resolve the main texture
-    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
+    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_image.getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -557,21 +584,22 @@ void CPass::setupTextureUniforms () {
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
 
-    const auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
+    const auto& image = this->m_image.getImage ();
+    const auto& scene = this->m_image.getScene ();
+    const auto& sceneData = this->m_image.getScene ().getScene ();
+    const auto& recorder = this->m_image.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
-    this->addUniform ("g_LightAmbientColor",
-                      this->m_material->getImage ()->getScene ()->getScene ()->getAmbientColor ());
-    this->addUniform ("g_LightSkylightColor",
-                      this->m_material->getImage ()->getScene ()->getScene ()->getSkylightColor ());
+    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
+    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
     // register variables like brightness and alpha with some default value
-    this->addUniform ("g_Brightness", this->m_material->getImage ()->getImage ()->getBrightness ());
-    this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
-    this->addUniform ("g_Alpha", this->m_material->getImage ()->getImage ()->getAlpha ());
-    this->addUniform ("g_Color", this->m_material->getImage ()->getImage ()->getColor ());
-    this->addUniform ("g_Color4", glm::vec4 (this->m_material->getImage ()->getImage ()->getColor (), 1));
+    this->addUniform ("g_Brightness", image.brightness);
+    this->addUniform ("g_UserAlpha", image.alpha->value->getFloat ());
+    this->addUniform ("g_Alpha", image.alpha->value->getFloat ());
+    this->addUniform ("g_Color", image.color->value->getVec3 ());
+    this->addUniform ("g_Color4", image.color->value->getVec4());
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
-    this->addUniform ("g_CompositeColor", this->m_material->getImage ()->getImage ()->getColor ());
+    this->addUniform ("g_CompositeColor", image.color->value->getVec3 ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     this->addUniform ("g_Daytime", &g_Daytime);
@@ -581,24 +609,18 @@ void CPass::setupUniforms () {
     this->addUniform ("g_ModelMatrix", &this->m_modelMatrix);
     this->addUniform ("g_NormalModelMatrix", glm::identity<glm::mat3> ());
     this->addUniform ("g_ViewProjectionMatrix", &this->m_viewProjectionMatrix);
-    this->addUniform ("g_PointerPosition", this->m_material->getImage ()->getScene ()->getMousePosition ());
-    this->addUniform ("g_PointerPositionLast", this->m_material->getImage ()->getScene ()->getMousePositionLast ());
+    this->addUniform ("g_PointerPosition", scene.getMousePosition ());
+    this->addUniform ("g_PointerPositionLast", scene.getMousePositionLast ());
     this->addUniform ("g_EffectTextureProjectionMatrix", glm::mat4 (1.0));
     this->addUniform ("g_EffectTextureProjectionMatrixInverse", glm::mat4 (1.0));
-    this->addUniform ("g_TexelSize", glm::vec2 (1.0 / projection->getWidth (), 1.0 / projection->getHeight ()));
-    this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
-    this->addUniform ("g_AudioSpectrum16Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
-    this->addUniform ("g_AudioSpectrum16Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
-    this->addUniform ("g_AudioSpectrum32Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
-    this->addUniform ("g_AudioSpectrum32Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
-    this->addUniform ("g_AudioSpectrum64Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
-    this->addUniform ("g_AudioSpectrum64Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
+    this->addUniform ("g_TexelSize", glm::vec2 (1.0 / scene.getWidth (), 1.0 / scene.getHeight ()));
+    this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / scene.getWidth (), 0.5 / scene.getHeight ()));
+    this->addUniform ("g_AudioSpectrum16Left", recorder.audio16, 16);
+    this->addUniform ("g_AudioSpectrum16Right", recorder.audio16, 16);
+    this->addUniform ("g_AudioSpectrum32Left", recorder.audio32, 32);
+    this->addUniform ("g_AudioSpectrum32Right", recorder.audio32, 32);
+    this->addUniform ("g_AudioSpectrum64Left", recorder.audio64, 64);
+    this->addUniform ("g_AudioSpectrum64Right", recorder.audio64, 64);
 }
 
 void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value) {
@@ -680,7 +702,7 @@ void CPass::setupShaderVariables () {
             this->addUniform (cur);
 
     // find variables in the shaders and set the value with the constants if possible
-    for (const auto& [name, value] : this->m_pass->getConstants ()) {
+    for (const auto& [name, value] : this->m_override.constants) {
         const auto parameters = this->m_shader->findParameter (name);
 
         // variable not found, can be ignored
@@ -692,7 +714,7 @@ void CPass::setupShaderVariables () {
 
         // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
         // of the underlying CDynamicValue used for the value
-        this->addUniform (var, value);
+        this->addUniform (var, value.get ());
     }
 }
 

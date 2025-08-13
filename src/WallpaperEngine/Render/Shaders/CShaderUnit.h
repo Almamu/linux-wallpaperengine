@@ -11,19 +11,23 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "nlohmann/json.hpp"
 
+#include "WallpaperEngine/Data/Model/Types.h"
+
 namespace WallpaperEngine::Render::Shaders {
 using json = nlohmann::json;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
+using namespace WallpaperEngine::Data::Model;
+
 /**
  * Represents a whole shader unit
  */
 class CShaderUnit {
   public:
     CShaderUnit (
-        CGLSLContext::UnitType type, std::string file, std::string content, std::shared_ptr<const CContainer> container,
-        const std::map<std::string, const CShaderConstant*>& constants, const std::map<int, std::string>& passTextures,
-        const std::map<std::string, int>& combos);
+        CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
+        const ShaderConstantMap& constants, const TextureMap& passTextures,
+        const ComboMap& combos);
     ~CShaderUnit () = default;
 
     /**
@@ -49,15 +53,15 @@ class CShaderUnit {
     /**
      * @return The textures this shader unit requires
      */
-    [[nodiscard]] const std::map<int, std::string>& getTextures () const;
+    [[nodiscard]] const TextureMap& getTextures () const;
     /**
      * @return The combos set for this shader unit by the configuration
      */
-    [[nodiscard]] const std::map<std::string, int>& getCombos () const;
+    [[nodiscard]] const ComboMap& getCombos () const;
     /**
      * @return Other combos detected by this shader unit during the preprocess
      */
-    [[nodiscard]] const std::map<std::string, int>& getDiscoveredCombos () const;
+    [[nodiscard]] const ComboMap& getDiscoveredCombos () const;
 
   protected:
     /**
@@ -127,11 +131,11 @@ class CShaderUnit {
     /**
      * Pre-defined values for the combos
      */
-    const std::map<std::string, int>& m_combos;
+    const ComboMap& m_combos;
     /**
      * The combos discovered in the pre-processing step that were not in the combos list
      */
-    std::map<std::string, int> m_discoveredCombos = {};
+    ComboMap m_discoveredCombos = {};
     /**
      * The combos used by this unit that should be added
      */
@@ -139,11 +143,11 @@ class CShaderUnit {
     /**
      * The constants defined for this unit
      */
-    const std::map<std::string, const CShaderConstant*>& m_constants;
+    const ShaderConstantMap& m_constants;
     /** The textures that are already applied to this shader */
-    const std::map<int, std::string> m_passTextures;
+    const TextureMap m_passTextures = {};
     /** The default textures to use when a texture is not applied in a given slot */
-    std::map<int, std::string> m_defaultTextures = {};
+    TextureMap m_defaultTextures = {};
     /**
      * The shader unit this unit is linked to
      */
@@ -151,6 +155,6 @@ class CShaderUnit {
     /**
      * The container to source files from
      */
-    const std::shared_ptr<const CContainer> m_container;
+    const CContainer& m_container;
 };
 }

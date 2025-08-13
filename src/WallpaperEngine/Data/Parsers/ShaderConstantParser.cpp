@@ -5,7 +5,7 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-ShaderConstantMap ShaderConstantParser::parse (const JSON& it, const ProjectWeakPtr& project) {
+ShaderConstantMap ShaderConstantParser::parse (const JSON& it, Project& project) {
     if (!it.is_object ()) {
         return {};
     }
@@ -19,7 +19,7 @@ ShaderConstantMap ShaderConstantParser::parse (const JSON& it, const ProjectWeak
     return result;
 }
 
-ShaderConstantUniquePtr ShaderConstantParser::parseConstant (const JSON& it, const ProjectWeakPtr& project) {
+ShaderConstantUniquePtr ShaderConstantParser::parseConstant (const JSON& it, Project& project) {
     ShaderConstant* constant = nullptr;
     auto valueIt = it;
 
@@ -33,7 +33,7 @@ ShaderConstantUniquePtr ShaderConstantParser::parseConstant (const JSON& it, con
         }
 
         if (user != it.end () && user->is_string ()) {
-            const auto& properties = project.lock ()->properties;
+            const auto& properties = project.properties;
             const auto& propertyIt = properties.find (*user);
 
             if (propertyIt != properties.end ()) {

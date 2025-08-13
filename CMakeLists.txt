@@ -261,9 +261,6 @@ add_executable(
     src/WallpaperEngine/Logging/CLog.cpp
     src/WallpaperEngine/Logging/CLog.h
 
-    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.cpp
-    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.h
-
     src/WallpaperEngine/Application/CApplicationContext.cpp
     src/WallpaperEngine/Application/CApplicationContext.h
     src/WallpaperEngine/Application/CWallpaperApplication.cpp
@@ -361,6 +358,8 @@ add_executable(
     src/WallpaperEngine/Render/CRenderContext.cpp
     src/WallpaperEngine/Render/CTextureCache.h
     src/WallpaperEngine/Render/CTextureCache.cpp
+    src/WallpaperEngine/Render/CFBOProvider.cpp
+    src/WallpaperEngine/Render/CFBOProvider.h
 
     src/WallpaperEngine/Render/Helpers/CContextAware.cpp
     src/WallpaperEngine/Render/Helpers/CContextAware.h
@@ -384,15 +383,11 @@ add_executable(
     src/WallpaperEngine/Render/Objects/CImage.cpp
     src/WallpaperEngine/Render/Objects/CSound.h
     src/WallpaperEngine/Render/Objects/CSound.cpp
-    src/WallpaperEngine/Render/Objects/CEffect.h
-    src/WallpaperEngine/Render/Objects/CEffect.cpp
 
     src/WallpaperEngine/Render/CFBO.h
     src/WallpaperEngine/Render/CFBO.cpp
     src/WallpaperEngine/Render/Objects/Effects/CPass.h
     src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
-    src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
-    src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
     src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.cpp
     src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.h
@@ -421,19 +416,6 @@ add_executable(
     src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.cpp
     src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.h
 
-    src/WallpaperEngine/Core/CProject.cpp
-    src/WallpaperEngine/Core/CProject.h
-    src/WallpaperEngine/Core/CWallpaper.cpp
-    src/WallpaperEngine/Core/CWallpaper.h
-    src/WallpaperEngine/Core/Wallpapers/CScene.cpp
-    src/WallpaperEngine/Core/Wallpapers/CScene.h
-    src/WallpaperEngine/Core/Wallpapers/CVideo.cpp
-    src/WallpaperEngine/Core/Wallpapers/CVideo.h
-    src/WallpaperEngine/Core/Wallpapers/CWeb.cpp
-    src/WallpaperEngine/Core/Wallpapers/CWeb.h
-    src/WallpaperEngine/Core/CObject.cpp
-    src/WallpaperEngine/Core/CObject.h
-
     src/WallpaperEngine/Core/Projects/CProperty.h
     src/WallpaperEngine/Core/Projects/CProperty.cpp
     src/WallpaperEngine/Core/Projects/CPropertyColor.h
@@ -447,24 +429,8 @@ add_executable(
     src/WallpaperEngine/Core/Projects/CPropertyText.h
     src/WallpaperEngine/Core/Projects/CPropertyText.cpp
 
-    src/WallpaperEngine/Core/Scenes/CCamera.cpp
-    src/WallpaperEngine/Core/Scenes/CCamera.h
-    src/WallpaperEngine/Core/Scenes/CProjection.cpp
-    src/WallpaperEngine/Core/Scenes/CProjection.h
-
-    src/WallpaperEngine/Core/Objects/CImage.cpp
-    src/WallpaperEngine/Core/Objects/CImage.h
-    src/WallpaperEngine/Core/Objects/CSound.cpp
-    src/WallpaperEngine/Core/Objects/CSound.h
-    src/WallpaperEngine/Core/Objects/CEffect.cpp
-    src/WallpaperEngine/Core/Objects/CEffect.h
-    src/WallpaperEngine/Core/Objects/CParticle.cpp
-    src/WallpaperEngine/Core/Objects/CParticle.h
-
-    src/WallpaperEngine/Core/Objects/Effects/CFBO.h
-    src/WallpaperEngine/Core/Objects/Effects/CFBO.cpp
-    src/WallpaperEngine/Core/Objects/Effects/CBind.h
-    src/WallpaperEngine/Core/Objects/Effects/CBind.cpp
+#    src/WallpaperEngine/Core/Objects/CParticle.cpp
+#    src/WallpaperEngine/Core/Objects/CParticle.h
 
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
@@ -481,35 +447,29 @@ add_executable(
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h
     src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.cpp
 
-    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
-    src/WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CEmitter.h
-    src/WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CInitializer.h
-
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h
-
-    src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
-    src/WallpaperEngine/Core/Objects/Images/CMaterial.h
-
-    src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
-    src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
+#    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
+#    src/WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/CEmitter.h
+#    src/WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/CInitializer.h
+#
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.cpp
+#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h
 
     src/WallpaperEngine/Data/Model/Types.h
     src/WallpaperEngine/Data/Model/Project.h
@@ -541,11 +501,11 @@ add_executable(
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES}
-        src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
-        src/WallpaperEngine/Data/Dumpers/StringPrinter.h
-        src/WallpaperEngine/Data/JSON.cpp
-        src/WallpaperEngine/Data/Parsers/EffectParser.cpp
-        src/WallpaperEngine/Data/Parsers/EffectParser.h)
+    src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
+    src/WallpaperEngine/Data/Dumpers/StringPrinter.h
+    src/WallpaperEngine/Data/JSON.cpp
+    src/WallpaperEngine/Data/Parsers/EffectParser.cpp
+    src/WallpaperEngine/Data/Parsers/EffectParser.h)
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}

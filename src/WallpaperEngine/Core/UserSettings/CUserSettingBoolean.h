@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CUserSettingValue.h"
-#include "WallpaperEngine/Core/CProject.h"
 
 namespace WallpaperEngine::Core::Projects {
 class CProperty;

@@ -3,6 +3,8 @@
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
+#include "WallpaperEngine/Data/Model/Project.h"
+
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Assets;
 
@@ -15,9 +17,9 @@ std::shared_ptr<const ITexture> CTextureCache::resolve (const std::string& filen
         return found->second;
 
     // search for the texture in all the different containers just in case
-    for (const auto& it : this->getContext ().getApp ().getBackgrounds ()) {
+    for (const auto& [name, project] : this->getContext ().getApp ().getBackgrounds ()) {
         try {
-            std::shared_ptr<const ITexture> texture = it.second->getContainer ()->readTexture (filename);
+            std::shared_ptr<const ITexture> texture = project->container->readTexture (filename);
 
             this->store (filename, texture);
 

@@ -6,21 +6,20 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-MaterialUniquePtr MaterialParser::load (const ProjectWeakPtr& project, const std::string& filename) {
-    const auto materialJson = JSON::parse (project.lock ()->container.lock ()->readFileAsString (filename));
+MaterialUniquePtr MaterialParser::load (Project& project, const std::string& filename) {
+    const auto materialJson = JSON::parse (project.container->readFileAsString (filename));
 
     return parse (materialJson, project, filename);
 }
 
-MaterialUniquePtr MaterialParser::parse (const JSON& it, const ProjectWeakPtr& project, const std::string& filename) {
+MaterialUniquePtr MaterialParser::parse (const JSON& it, Project& project, const std::string& filename) {
     return std::make_unique <Material> (Material {
         .filename = filename,
-        //TODO: PARSE PASSES
         .passes = parsePasses (it.require ("passes", "Material must have passes to render"), project),
     });
 }
 
-std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it, const ProjectWeakPtr& project) {
+std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it, Project& project) {
     std::vector <MaterialPassUniquePtr> result = {};
 
     if (!it.is_array ()) {
@@ -34,7 +33,7 @@ std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it,
     return result;
 }
 
-MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const ProjectWeakPtr& project) {
+MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, Project& project) {
     const auto textures = it.optional ("textures");
     const auto combos = it.optional ("combos");
     const auto constants = it.optional ("constants");

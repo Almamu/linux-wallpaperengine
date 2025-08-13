@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Data::Model;
  */
 class ProjectParser {
   public:
-    static ProjectSharedPtr parse (const JSON& data, const ContainerWeakPtr& container);
+    static ProjectUniquePtr parse (const JSON& data, ContainerUniquePtr container);
 
   private:
     static Project::Type parseType (const std::string& type);

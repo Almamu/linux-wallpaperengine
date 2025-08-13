@@ -11,10 +11,11 @@
 #include <algorithm>
 
 #include "WallpaperEngine/Audio/CAudioStream.h"
-#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/WebBrowser/CEF/CBrowserClient.h"
 #include "WallpaperEngine/WebBrowser/CEF/CRenderHandler.h"
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 namespace WallpaperEngine::WebBrowser::CEF {
 class CRenderHandler;
@@ -25,7 +26,7 @@ class CWeb : public CWallpaper
 {
     public:
         CWeb (
-          std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+          const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
           WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
           const CWallpaperState::TextureUVsScaling& scalingMode,
           const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
@@ -39,8 +40,8 @@ class CWeb : public CWallpaper
     protected:
         void renderFrame (glm::ivec4 viewport) override;
         void updateMouse (glm::ivec4 viewport);
-        const Core::Wallpapers::CWeb* getWeb () const {
-            return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
+        const Web& getWeb () const {
+            return *this->getWallpaperData ().as<Web> ();
         }
 
         friend class CWallpaper;

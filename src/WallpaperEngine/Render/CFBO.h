@@ -1,8 +1,8 @@
 #pragma once
 
+#include <string>
+
 #include "WallpaperEngine/Assets/ITexture.h"
-#include "WallpaperEngine/Core/Objects/CImage.h"
-#include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
 
 using namespace WallpaperEngine::Assets;
 

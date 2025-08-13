@@ -5,12 +5,14 @@
 #include "MimeTypes.h"
 #include "include/cef_parser.h"
 
+#include "WallpaperEngine/Data/Model/Project.h"
+
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-CWPSchemeHandler::CWPSchemeHandler(std::shared_ptr<const Core::CProject> project) :
-    m_project (project) {
-    this->m_container = this->m_project->getWallpaper ()->getProject ()->getContainer ();
+CWPSchemeHandler::CWPSchemeHandler(const Project& project) :
+    m_project (project),
+    m_container (*this->m_project.container) {
 }
 
 bool CWPSchemeHandler::Open(CefRefPtr<CefRequest> request,
@@ -46,7 +48,7 @@ bool CWPSchemeHandler::Open(CefRefPtr<CefRequest> request,
             this->m_mimeType = mime;
         }
 
-        this->m_contents = this->m_container->readFile (file, &this->m_filesize);
+        this->m_contents = this->m_container.readFile (file, &this->m_filesize);
         callback->Continue ();
     } catch (CAssetLoadException&) {
 #if !NDEBUG

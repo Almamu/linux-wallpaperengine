@@ -3,6 +3,9 @@
 
 #include <GL/glew.h>
 
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Model/Project.h"
+
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
@@ -12,7 +15,7 @@ void* get_proc_address (void* ctx, const char* name) {
 }
 
 CVideo::CVideo (
-    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
+    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
     const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
 ) :
@@ -54,7 +57,7 @@ CVideo::CVideo (
         sLog.exception ("Failed to initialize MPV's GL context");
 
     const std::filesystem::path videopath =
-        this->getVideo ()->getProject ()->getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+        this->getVideo ().project.container->resolveRealFile (this->getVideo ().filename);
 
     // build the path to the video file
     const char* command [] = {"loadfile", videopath.c_str (), nullptr};
@@ -118,8 +121,8 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-const Core::Wallpapers::CVideo* CVideo::getVideo () const {
-    return this->getWallpaperData ()->as<Core::Wallpapers::CVideo> ();
+const Video& CVideo::getVideo () const {
+    return *this->getWallpaperData ().as<Video>();
 }
 
 void CVideo::setPause (bool newState) {

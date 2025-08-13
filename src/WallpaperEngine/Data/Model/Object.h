@@ -110,6 +110,7 @@ class Image : public Object, public ImageData {
 
 struct SoundData {
     /** Playback mode, loop, */
+    // TODO: WRITE AN ENUM FOR THIS
     std::optional <std::string> playbackmode;
     std::vector <std::string> sounds;
 };

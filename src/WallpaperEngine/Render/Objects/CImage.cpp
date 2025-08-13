@@ -1,11 +1,21 @@
 #include "CImage.h"
 #include <sstream>
 
+#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
+#include "WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "WallpaperEngine/Data/Builders/UserSettingBuilder.h"
+#include "WallpaperEngine/Data/Model/Object.h"
+#include "WallpaperEngine/Data/Model/Material.h"
+
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Objects;
+using namespace WallpaperEngine::Render::Objects::Effects;
+using namespace WallpaperEngine::Data::Parsers;
+using namespace WallpaperEngine::Data::Builders;
 
-CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
+CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     Render::CObject (scene, image),
+    Render::CFBOProvider (&scene),
     m_texture (nullptr),
     m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE),
@@ -26,19 +36,19 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     m_pos (),
     m_animationTime (0.0),
     m_initialized (false) {
-    auto projection = this->getScene ()->getScene ()->getOrthogonalProjection ();
 
     // get scene width and height to calculate positions
-    auto scene_width = static_cast<float> (projection->getWidth ());
-    auto scene_height = static_cast<float> (projection->getHeight ());
+    auto scene_width = static_cast<float> (scene.getWidth ());
+    auto scene_height = static_cast<float> (scene.getHeight ());
 
-    glm::vec3 origin = this->getImage ()->getOrigin ();
+    // TODO: MAKE USE OF THE USER PROPERTIES POINTER HERE TOO! SO EVERYTHING IS UPDATED ACCORDINGLY
+    glm::vec3 origin = this->getImage ().origin->value->getVec3 ();
     glm::vec2 size = this->getSize ();
-    glm::vec3 scale = this->getImage ()->getScale ();
+    glm::vec3 scale = this->getImage ().scale->value->getVec3 ();
 
     // fullscreen layers should use the whole projection's size
     // TODO: WHAT SHOULD AUTOSIZE DO?
-    if (this->getImage ()->isFullscreen ()) {
+    if (this->getImage ().model->fullscreen) {
         size = {scene_width, scene_height};
         origin = {scene_width / 2, scene_height / 2, 0};
 
@@ -53,18 +63,18 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     this->m_pos.z = origin.x + (scaledSize.x / 2);
     this->m_pos.y = origin.y - (scaledSize.y / 2);
 
-    if (this->getImage ()->getAlignment ().find ("top") != std::string::npos) {
+    if (this->getImage ().alignment.find ("top") != std::string::npos) {
         this->m_pos.y -= scaledSize.y / 2;
         this->m_pos.w -= scaledSize.y / 2;
-    } else if (this->getImage ()->getAlignment ().find ("bottom") != std::string::npos) {
+    } else if (this->getImage ().alignment.find ("bottom") != std::string::npos) {
         this->m_pos.y += scaledSize.y / 2;
         this->m_pos.w += scaledSize.y / 2;
     }
 
-    if (this->getImage ()->getAlignment ().find ("left") != std::string::npos) {
+    if (this->getImage ().alignment.find ("left") != std::string::npos) {
         this->m_pos.x += scaledSize.x / 2;
         this->m_pos.z += scaledSize.x / 2;
-    } else if (this->getImage ()->getAlignment ().find ("right") != std::string::npos) {
+    } else if (this->getImage ().alignment.find ("right") != std::string::npos) {
         this->m_pos.x -= scaledSize.x / 2;
         this->m_pos.z -= scaledSize.x / 2;
     }
@@ -76,19 +86,19 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     this->m_pos.w = scene_height / 2 - this->m_pos.w;
 
     // detect texture (if any)
-    auto textures = (*this->m_image->getMaterial ()->getPasses ().begin ())->getTextures ();
+    auto textures = (*this->m_image.model->material->passes.begin ())->textures;
 
     if (!textures.empty ()) {
         std::string textureName = textures.begin ()->second;
 
         if (textureName.find ("_rt_") == 0) {
-            this->m_texture = this->getScene ()->findFBO (textureName);
+            this->m_texture = this->getScene ().findFBO (textureName);
         } else {
             // get the first texture on the first pass (this one represents the image assigned to this object)
             this->m_texture = this->getContext ().resolveTexture (textureName);
         }
     } else {
-        if (this->m_image->getMaterial ()->isSolidLayer()) {
+        if (this->m_image.model->solidlayer) {
             size.x = scene_width;
             size.y = scene_height;
         }
@@ -105,15 +115,15 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     std::ostringstream nameA, nameB;
 
     // TODO: determine when _rt_imageLayerComposite and _rt_imageLayerAlbedo is used
-    nameA << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_a";
-    nameB << "_rt_imageLayerComposite_" << this->getImage ()->getId () << "_b";
+    nameA << "_rt_imageLayerComposite_" << this->getImage ().id << "_a";
+    nameB << "_rt_imageLayerComposite_" << this->getImage ().id << "_b";
 
     this->m_currentMainFBO = this->m_mainFBO =
-        scene->createFBO (nameA.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
-                          size.x, size.y, size.x, size.y);
+        scene.create (nameA.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+                      {size.x, size.y}, {size.x, size.y});
     this->m_currentSubFBO = this->m_subFBO =
-        scene->createFBO (nameB.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
-                          size.x, size.y, size.x, size.y);
+        scene.create (nameB.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+                      {size.x, size.y}, {size.x, size.y});
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition [] = {this->m_pos.x, this->m_pos.y, 0.0f, this->m_pos.x, this->m_pos.w, 0.0f,
@@ -163,13 +173,13 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     GLfloat realX = 0.0;
     GLfloat realY = 0.0;
 
-    if (this->getImage ()->isPassthrough ()) {
+    if (this->getImage ().model->passthrough) {
         x = -((this->m_pos.x + (scene_width / 2)) / size.x);
         y = -((this->m_pos.w + (scene_height / 2)) / size.y);
         height = (this->m_pos.y + (scene_height / 2)) / size.y;
         width = (this->m_pos.z + (scene_width / 2)) / size.x;
 
-        if (this->getImage ()->isFullscreen ()) {
+        if (this->getImage ().model->fullscreen) {
             realX = -1.0;
             realY = -1.0;
             realWidth = 1.0;
@@ -210,7 +220,7 @@ CImage::CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image) :
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
     this->m_modelViewProjectionScreen =
-        this->getScene ()->getCamera ()->getProjection () * this->getScene ()->getCamera ()->getLookAt ();
+        this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
 
     this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 
@@ -226,62 +236,79 @@ void CImage::setup () {
         return;
 
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
-
     // passthrough images without effects are bad, do not draw them
-    if (this->getImage ()->isPassthrough () && this->getImage ()->getEffects ().empty ())
+    if (this->m_image.model->passthrough && this->m_image.effects.empty ())
         return;
 
-    // generate the main material used to render the image
-    this->m_material = new Effects::CMaterial (
-        new CEffect (
-            this,
-            new Core::Objects::CEffect (
-                "", "", "", "", this->m_image->getProject (),
-                Core::UserSettings::CUserSettingBoolean::fromScalar (true),
-                {}, {}, {})),
-        this->m_image->getMaterial ()
-    );
-
     // add blendmode to the combos
-    for (const auto& cur : this->m_material->getPasses ())
-        this->m_passes.push_back (cur);
+    for (const auto& cur : this->getImage ().model->material->passes)
+        this->m_passes.push_back (
+            new CPass (*this, std::make_shared<CFBOProvider>(this), *cur, std::nullopt, std::nullopt, std::nullopt)
+        );
 
+    // TODO: MAYBE GET RID OF THE WHOLE EFFECT CLASS AND PROCESS THE EFFECTS DIRECTLY TO SIMPLIFY RENDERING CODE?
     // prepare the passes list
-    if (!this->getImage ()->getEffects ().empty ()) {
+    if (!this->getImage ().effects.empty ()) {
         // generate the effects used by this material
-        for (const auto& cur : this->getImage ()->getEffects ()) {
-            auto effect = new CEffect (this, cur);
+        for (const auto& cur : this->m_image.effects) {
+            auto fboProvider = std::make_shared<CFBOProvider> (this);
 
-            for (const auto& material : effect->getMaterials ())
-                for (const auto& pass : material->getPasses ())
-                    this->m_passes.push_back (pass);
+            // create all the fbos for this effect
+            for (const auto& fbo : cur->effect->fbos) {
+                fboProvider->create (*fbo, this->m_texture->getFlags (), this->getSize ());
+            }
 
-            this->m_effects.push_back (effect);
+            // TODO: MAKE USE OF ZIP OPERATOR IN BOOST? WAY OVERKILL JUST FOR THIS...
+
+            auto curEffect = cur->effect->passes.begin ();
+            auto endEffect = cur->effect->passes.end ();
+            auto curOverride = cur->passOverrides.begin ();
+            auto endOverride = cur->passOverrides.end ();
+
+            for (; curEffect != endEffect; curEffect++) {
+                auto curPass = (*curEffect)->material->passes.begin ();
+                auto endPass = (*curEffect)->material->passes.end ();
+
+                const auto override = curOverride != endOverride
+                    ? **curOverride
+                    : std::optional<std::reference_wrapper<const ImageEffectPassOverride>> (std::nullopt);
+                const auto target = (*curEffect)->target.has_value ()
+                    ? *(*curEffect)->target
+                    : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
+
+                this->m_passes.push_back (
+                    new CPass (
+                        *this, fboProvider, **curPass, override, (*curEffect)->binds, target)
+                );
+
+                if (curOverride != endOverride) {
+                    curOverride ++;
+                }
+            }
         }
     }
 
-    if (this->m_image->getColorBlendMode () > 0) {
-        Core::Objects::Images::CMaterial::OverrideInfo overrides;
+    if (this->m_image.colorBlendMode > 0) {
+        this->m_materials.colorBlending.material = MaterialParser::load (this->getScene ().getScene ().project, "materials/util/effectpassthrough.json");
+        this->m_materials.colorBlending.override = std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
+            .id = -1,
+            .combos = {
+                {"BLENDMODE", this->m_image.colorBlendMode},
+            },
+            .constants = {},
+            .textures = {},
+        });
 
-        overrides.combos.emplace ("BLENDMODE", this->m_image->getColorBlendMode ());
-        const auto material =
-            Core::Objects::Images::CMaterial::fromFile ("materials/util/effectpassthrough.json", this->getContainer (), false, {}, &overrides);
-
-        // generate the main material used to render the image
-        this->m_colorBlendMaterial = new Effects::CMaterial (
-            new CEffect (
-                this,
-                new Core::Objects::CEffect (
-                    "", "", "", "", this->m_image->getProject (),
-                    Core::UserSettings::CUserSettingBoolean::fromScalar (true), {}, {}, {}
-                )
-            ),
-            material
+        this->m_passes.push_back (
+            new CPass (
+                *this,
+                std::make_shared <CFBOProvider>(this),
+                **this->m_materials.colorBlending.material->passes.begin (),
+                *this->m_materials.colorBlending.override,
+                std::nullopt,
+                std::nullopt
+            )
         );
-
-        // add blendmode to the combos
-        for (const auto& cur : this->m_colorBlendMaterial->getPasses ())
-            this->m_passes.push_back (cur);
     }
 
     // if there's more than one pass the blendmode has to be moved from the beginning to the end
@@ -327,22 +354,24 @@ void CImage::setupPasses () {
         pass->setViewProjectionMatrix (&this->m_viewProjectionMatrix);
 
         // set viewport and target texture if needed
-        if (pass->getMaterial ()->getMaterial ()->hasTarget ()) {
+        if (pass->getTarget ().has_value ()) {
             // setup target texture
-            std::string target = pass->getMaterial ()->getMaterial ()->getTarget ();
-            drawTo = pass->getMaterial ()->getEffect ()->findFBO (target);
+            std::string target = pass->getTarget ().value ();
+            drawTo = pass->getFBOProvider ()->find (target);
             // spacePosition = this->getPassSpacePosition ();
 
             // not a local fbo, try to find a scene fbo with the same name
-            if (drawTo == nullptr)
+            if (drawTo == nullptr) {
                 // this one throws if no fbo was found
-                drawTo = this->getScene ()->findFBO (target);
+                drawTo = this->getScene ().findFBO (target);
+            }
         }
         // determine if it's the last element in the list as this is a screen-copy-like process
-        else if (std::next (cur) == end && this->getImage ()->isVisible ()) {
+        // TODO: PROPERLY CHECK IF THIS IS ALL THAT'S NEEDED
+        else if (std::next (cur) == end && this->getImage ().visible->value->getBool ()) {
             // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
             spacePosition = this->getSceneSpacePosition ();
-            drawTo = this->getScene ()->getFBO ();
+            drawTo = this->getScene ().getFBO ();
             projection = &this->m_modelViewProjectionScreen;
             inverseProjection = &this->m_modelViewProjectionScreenInverse;
         }
@@ -357,7 +386,7 @@ void CImage::setupPasses () {
         texcoord = this->getTexCoordPass ();
         drawTo = prevDrawTo;
 
-        if (!pass->getMaterial ()->getMaterial ()->hasTarget ())
+        if (!pass->getTarget ().has_value ())
             this->pinpongFramebuffer (&drawTo, &asInput);
     }
 }
@@ -387,17 +416,17 @@ void CImage::render () {
 
     // update the position if required
     // TODO: There's more images that are not affected by parallax, autosize or fullscreen are not affected
-    if (this->getScene ()->getScene ()->isCameraParallax () && !this->getImage ()->isFullscreen ())
+    if (this->getScene ().getScene ().camera.parallax.enabled && !this->getImage ().model->fullscreen)
         this->updateScreenSpacePosition ();
 
 #if !NDEBUG
     std::string str = "Rendering ";
 
-    if (this->getScene ()->getScene ()->isBloom () && this->getId () == -1)
+    if (this->getScene ().getScene ().camera.bloom.enabled->value->getBool () && this->getId () == -1)
         str += "bloom";
     else {
-        str += this->getImage ()->getName () + " (" + std::to_string (this->getId ()) + ", " +
-               this->getImage ()->getMaterial ()->getName () + ")";
+        str += this->getImage ().name + " (" + std::to_string (this->getId ()) + ", " +
+               this->getImage ().model->material->filename + ")";
     }
 
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
@@ -421,20 +450,21 @@ void CImage::render () {
 
 void CImage::updateScreenSpacePosition () {
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
-    if (this->getScene ()->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+    if (this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
         return;
     }
 
-    const double parallaxAmount = this->getScene ()->getScene ()->getCameraParallaxAmount ();
-    const glm::vec2 depth = this->getImage ()->getParallaxDepth ();
-    const glm::vec2* displacement = this->getScene ()->getParallaxDisplacement ();
+    const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount;
+    const glm::vec2 depth = this->getImage ().parallaxDepth;
+    const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
 
     float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
     float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
 
-    this->m_modelViewProjectionScreen = glm::translate (this->getScene ()->getCamera ()->getProjection () *
-                                                            this->getScene ()->getCamera ()->getLookAt (),
-                                                        {x, y, 0.0f});
+    this->m_modelViewProjectionScreen = glm::translate (
+        this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt (),
+        {x, y, 0.0f}
+    );
 }
 
 std::shared_ptr<const ITexture> CImage::getTexture () const {
@@ -445,7 +475,7 @@ double CImage::getAnimationTime () const {
     return this->m_animationTime;
 }
 
-const Core::Objects::CImage* CImage::getImage () const {
+const Image& CImage::getImage () const {
     return this->m_image;
 }
 
@@ -459,7 +489,7 @@ const Effects::CMaterial* CImage::getMaterial () const {
 
 glm::vec2 CImage::getSize () const {
     if (this->m_texture == nullptr)
-        return this->getImage ()->getSize ();
+        return this->getImage ().size;
 
     return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }

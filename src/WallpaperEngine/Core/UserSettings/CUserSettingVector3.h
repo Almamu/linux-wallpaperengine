@@ -3,7 +3,6 @@
 #include <glm/vec3.hpp>
 
 #include "CUserSettingValue.h"
-#include "WallpaperEngine/Core/CProject.h"
 
 namespace WallpaperEngine::Core::Projects {
 class CProperty;

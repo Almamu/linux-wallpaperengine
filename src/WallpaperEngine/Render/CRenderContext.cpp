@@ -5,6 +5,8 @@
 #include "CRenderContext.h"
 #include "CWallpaper.h"
 
+#include "WallpaperEngine/Data/Model/Project.h"
+
 namespace WallpaperEngine::Render {
 CRenderContext::CRenderContext (Drivers::CVideoDriver& driver, CWallpaperApplication& app) :
     m_driver (driver),

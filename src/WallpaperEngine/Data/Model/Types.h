@@ -58,15 +58,12 @@ using ShaderConstantUniquePtr = std::unique_ptr <ShaderConstant>;
 
 using ShaderConstantMap = std::map <std::string, ShaderConstantUniquePtr>;
 
-using ProjectSharedPtr = std::shared_ptr <Project>;
-using WallpaperSharedPtr = std::shared_ptr <Wallpaper>;
-using WallpaperWeakPtr = std::weak_ptr <Wallpaper>;
-using ProjectWeakPtr = std::weak_ptr <Project>;
-using ContainerSharedPtr = std::shared_ptr <Container>;
-using ContainerWeakPtr = std::weak_ptr <Container>;
-using SceneSharedPtr = std::shared_ptr <Scene>;
-using WebSharedPtr = std::shared_ptr <Web>;
-using VideoSharedPtr = std::shared_ptr <Video>;
+using ProjectUniquePtr = std::unique_ptr <Project>;
+using WallpaperUniquePtr = std::unique_ptr <Wallpaper>;
+using ContainerUniquePtr = std::unique_ptr <Container>;
+using SceneUniquePtr = std::unique_ptr <Scene>;
+using WebUniquePtr = std::unique_ptr <Web>;
+using VideoUniquePtr = std::unique_ptr <Video>;
 using ObjectUniquePtr = std::unique_ptr <Object>;
 using SoundUniquePtr = std::unique_ptr <Sound>;
 using ImageUniquePtr = std::unique_ptr <Image>;
@@ -80,7 +77,7 @@ using EffectPassUniquePtr = std::unique_ptr <EffectPass>;
 using FBOUniquePtr = std::unique_ptr <FBO>;
 using ModelUniquePtr = std::unique_ptr <ModelStruct>;
 
-using ObjectMap = std::map<int, ObjectUniquePtr>;
+using ObjectList = std::vector<ObjectUniquePtr>;
 using ComboMap = std::map<std::string, int>;
 using TextureMap = std::map<int, std::string>;
 }

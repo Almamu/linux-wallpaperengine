@@ -16,7 +16,7 @@ using TypeCaster = WallpaperEngine::Data::Utils::TypeCaster;
 
 struct WallpaperData {
     std::string filename;
-    ProjectWeakPtr project;
+    Project& project;
 };
 
 class Wallpaper : public TypeCaster, public WallpaperData {
@@ -49,7 +49,7 @@ struct SceneData {
     /**
      * Camera configuration
      */
-    struct {
+    struct Camera {
         /** Enable fade effect */
         bool fade;
         /** Used by the software to allow the users to preview the background or not? */
@@ -104,8 +104,8 @@ struct SceneData {
             bool isAuto;
         } projection;
     } camera;
-    ObjectMap objects;
-    ProjectWeakPtr project;
+
+    ObjectList objects;
 };
 
 class Scene : public Wallpaper, public SceneData {

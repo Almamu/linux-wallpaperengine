@@ -13,10 +13,13 @@
 #include "CShaderUnit.h"
 #include "CGLSLContext.h"
 
+#include "WallpaperEngine/Data/Model/Types.h"
+
 namespace WallpaperEngine::Render::Shaders {
 using json = nlohmann::json;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
+using namespace WallpaperEngine::Data::Model;
 
 /**
  * A basic shader loader that adds basic function definitions to every loaded shader
@@ -42,9 +45,9 @@ class CShader {
      * @param recursive Whether the compiler should add base definitions or not
      */
     CShader (
-        std::shared_ptr<const CContainer> container, std::string filename,
-        const std::map<std::string, int>& combos, const std::map<int, std::string>& textures,
-        const std::map<std::string, const CShaderConstant*>& constants);
+        const CContainer& container, std::string filename,
+        const ComboMap& combos, const TextureMap& textures,
+        const ShaderConstantMap& constants);
     /**
      * @return The vertex's shader coude for OpenGL to use
      */
@@ -93,10 +96,10 @@ class CShader {
     /**
      * The combos the shader should be generated with
      */
-    const std::map<std::string, int>& m_combos;
+    const ComboMap& m_combos;
     /**
      * The list of textures the pass knows about
      */
-    const std::map<int, std::string> m_passTextures;
+    const TextureMap m_passTextures;
 };
 } // namespace WallpaperEngine::Render::Shaders

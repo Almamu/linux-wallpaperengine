@@ -1,7 +1,5 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
-
 #include "WallpaperEngine/Audio/CAudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include <mpv/client.h>
@@ -11,11 +9,11 @@ namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
     CVideo (
-        std::shared_ptr<const Core::CWallpaper> video, CRenderContext& context, CAudioContext& audioContext,
+        const Wallpaper& video, CRenderContext& context, CAudioContext& audioContext,
         const CWallpaperState::TextureUVsScaling& scalingMode,
         const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
 
-    const Core::Wallpapers::CVideo* getVideo () const;
+    const Video& getVideo () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;

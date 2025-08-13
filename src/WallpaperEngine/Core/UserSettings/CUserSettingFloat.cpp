@@ -3,7 +3,6 @@
 #include <utility>
 #include "WallpaperEngine/Core/Core.h"
 
-#include "WallpaperEngine/Core/CProject.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 #include "WallpaperEngine/Core/Projects/CPropertySlider.h"
 #include "WallpaperEngine/Logging/CLog.h"

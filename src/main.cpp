@@ -20,7 +20,7 @@ void initLogging () {
 }
 
 int main (int argc, char* argv[]) {
-    try {
+    //try {
         // if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
         bool enableLogging = true;
         std::string typeZygote = "--type=zygote";
@@ -64,8 +64,8 @@ int main (int argc, char* argv[]) {
         delete app;
 
         return 0;
-    } catch (const std::exception& e) {
+/*    } catch (const std::exception& e) {
         std::cerr << e.what () << std::endl;
         return 1;
-    }
+    }*/
 }

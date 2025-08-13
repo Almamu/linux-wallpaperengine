@@ -8,13 +8,13 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-ModelUniquePtr ModelParser::load (const ProjectWeakPtr& project, const std::string& filename) {
-    const auto model = JSON::parse (project.lock ()->container.lock ()->readFileAsString (filename));
+ModelUniquePtr ModelParser::load (Project& project, const std::string& filename) {
+    const auto model = JSON::parse (project.container->readFileAsString (filename));
 
     return parse (model, project, filename);
 }
 
-ModelUniquePtr ModelParser::parse (const JSON& file, const ProjectWeakPtr& project, const std::string& filename) {
+ModelUniquePtr ModelParser::parse (const JSON& file, Project& project, const std::string& filename) {
     const auto material = file.require <std::string> ("material", "Model must have a material");
 
     return std::make_unique <ModelStruct> (ModelStruct {

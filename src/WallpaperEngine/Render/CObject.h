@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "WallpaperEngine/Core/CObject.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
@@ -36,16 +35,16 @@ class CObject : public Helpers::CContextAware {
 
     virtual void render () = 0;
 
-    [[nodiscard]] Wallpapers::CScene* getScene () const;
-    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
+    [[nodiscard]] Wallpapers::CScene& getScene () const;
+    [[nodiscard]] const CContainer& getContainer () const;
     [[nodiscard]] int getId () const;
 
   protected:
-    CObject (Wallpapers::CScene* scene, const Core::CObject* object);
+    CObject (Wallpapers::CScene& scene, const Object& object);
     virtual ~CObject () override = default;
 
   private:
-    Wallpapers::CScene* m_scene = nullptr;
-    const Core::CObject* m_object;
+    Wallpapers::CScene& m_scene;
+    const Object& m_object;
 };
 } // namespace WallpaperEngine::Render

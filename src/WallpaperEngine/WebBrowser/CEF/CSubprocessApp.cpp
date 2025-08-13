@@ -1,12 +1,13 @@
 #include "CSubprocessApp.h"
 #include "CWPSchemeHandlerFactory.h"
+#include "WallpaperEngine/Data/Model/Project.h"
 
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CSubprocessApp::CSubprocessApp (WallpaperEngine::Application::CWallpaperApplication& application) :
     m_application (application) {
     for (const auto& [_, info] : this->m_application.getBackgrounds()) {
-        this->m_handlerFactories [info->getWorkshopId ()] = new CWPSchemeHandlerFactory (info);
+        this->m_handlerFactories [info->workshopId] = new CWPSchemeHandlerFactory (*info);
     }
 }
 

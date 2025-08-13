@@ -7,31 +7,31 @@
 
 using namespace WallpaperEngine::Data::Parsers;
 
-WallpaperSharedPtr WallpaperParser::parse (const JSON& file, const ProjectWeakPtr& project) {
-    switch (project.lock ()->type) {
+WallpaperUniquePtr WallpaperParser::parse (const JSON& file, Project& project) {
+    switch (project.type) {
         case Project::Type_Scene:
-            return std::dynamic_pointer_cast <Wallpaper> (parseScene (file, project));
+            return parseScene (file, project);
         case Project::Type_Video:
-            return std::dynamic_pointer_cast <Wallpaper> (parseVideo (file, project));
+            return parseVideo (file, project);
         case Project::Type_Web:
-            return std::dynamic_pointer_cast <Wallpaper> (parseWeb (file, project));
+            return parseWeb (file, project);
         default:
             sLog.exception ("Unexpected project type value found... This is likely a bug");
     }
 }
 
-SceneSharedPtr WallpaperParser::parseScene (const JSON& file, const ProjectWeakPtr& project) {
-    const auto scene = JSON::parse (project.lock ()->container.lock ()->readFileAsString (file));
+SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) {
+    const auto scene = JSON::parse (project.container->readFileAsString (file));
     const auto camera = scene.require ("camera", "Scenes must have a camera section");
     const auto general = scene.require ("general", "Scenes must have a general section");
     const auto projection = general.require ("orthogonalprojection", "General section must have orthogonal projection info");
     const auto objects = scene.require ("objects", "Scenes must have an objects section");
-    const auto& properties = project.lock ()->properties;
+    const auto& properties = project.properties;
 
     // TODO: FIND IF THESE DEFAULTS ARE SENSIBLE OR NOT AND PERFORM PROPER VALIDATION WHEN CAMERA PREVIEW AND CAMERA
     // PARALLAX ARE PRESENT
 
-    return std::make_shared <Scene> (
+    return std::make_unique <Scene> (
         WallpaperData {
             .filename = "",
             .project = project
@@ -72,34 +72,34 @@ SceneSharedPtr WallpaperParser::parseScene (const JSON& file, const ProjectWeakP
                     .isAuto = projection.optional ("auto", false)
                 }
             },
-            .objects = parseObjects (objects, project)
+            .objects = parseObjects (objects, project),
         }
     );
 }
 
-VideoSharedPtr WallpaperParser::parseVideo (const JSON& file, const ProjectWeakPtr& project) {
+VideoUniquePtr WallpaperParser::parseVideo (const JSON& file, Project& project) {
     return std::make_unique <Video> (WallpaperData {
         .filename = file,
         .project = project
     });
 }
 
-WebSharedPtr  WallpaperParser::parseWeb (const JSON& file, const ProjectWeakPtr& project) {
+WebUniquePtr  WallpaperParser::parseWeb (const JSON& file, Project& project) {
     return std::make_unique <Web> (WallpaperData {
         .filename = file,
         .project = project,
     });
 }
 
-ObjectMap WallpaperParser::parseObjects (const JSON& objects, const ProjectWeakPtr& project) {
-    ObjectMap result = {};
+ObjectList WallpaperParser::parseObjects (const JSON& objects, Project& project) {
+    ObjectList result = {};
 
     for (const auto& cur : objects) {
         auto object = ObjectParser::parse (cur, project);
 
         //TODO: DO WE REALLY WANT TO DIRECTLY CONSTRUCT UNIQUE AND SHARED PTRS EVERYWHERE?
         // SHOULDN'T THAT BE HANDLED BY CALLING CODE (LIKE THIS) INSTEAD?
-        result.emplace (object->id, std::move (object));
+        result.emplace_back (std::move (object));
     }
 
     return result;

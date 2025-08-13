@@ -5,25 +5,31 @@
 
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
+#include "WallpaperEngine/Core/UserSettings/CUserSettingValue.h"
 #include "WallpaperEngine/Render/CFBO.h"
-#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
+#include "WallpaperEngine/Render/CFBOProvider.h"
+#include "WallpaperEngine/Render/Helpers/CContextAware.h"
 #include "WallpaperEngine/Render/Shaders/CShader.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingValue.h"
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+
+namespace WallpaperEngine::Render::Objects {
+class CImage;
+}
 
 namespace WallpaperEngine::Render::Objects::Effects {
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Core::Objects::Effects::Constants;
-
-class CMaterial;
+using namespace WallpaperEngine::Data::Model;
 
 class CPass final : public Helpers::CContextAware {
   public:
-    CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass);
+    CPass (
+        CImage& image, std::shared_ptr<const CFBOProvider> fboProvider, const MaterialPass& pass,
+        std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
+        std::optional<std::reference_wrapper<const TextureMap>> binds,
+        std::optional<std::reference_wrapper<std::string>> target);
 
     void render ();
 
@@ -39,8 +45,10 @@ class CPass final : public Helpers::CContextAware {
     [[nodiscard]] const std::string& getBlendingMode () const;
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
-    [[nodiscard]] const CMaterial* getMaterial () const;
-    [[nodiscard]] const Core::Objects::Images::Materials::CPass* getPass () const;
+    [[nodiscard]] std::shared_ptr<const CFBOProvider> getFBOProvider () const;
+    [[nodiscard]] const CImage& getImage () const;
+    [[nodiscard]] const MaterialPass& getPass () const;
+    [[nodiscard]] const std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::CShader* getShader () const;
 
   private:
@@ -148,8 +156,12 @@ class CPass final : public Helpers::CContextAware {
 
     std::shared_ptr<const ITexture> resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous = nullptr);
 
-    CMaterial* m_material = nullptr;
-    const Core::Objects::Images::Materials::CPass* m_pass;
+    CImage& m_image;
+    std::shared_ptr<const CFBOProvider> m_fboProvider;
+    const MaterialPass& m_pass;
+    const TextureMap& m_binds;
+    const ImageEffectPassOverride& m_override;
+    std::optional<std::reference_wrapper<std::string>> m_target;
     std::map<int, std::shared_ptr<const CFBO>> m_fbos = {};
     std::map<std::string, int> m_combos = {};
     std::vector<AttribEntry*> m_attribs = {};
