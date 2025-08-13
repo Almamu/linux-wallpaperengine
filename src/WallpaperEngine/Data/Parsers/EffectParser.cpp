@@ -16,6 +16,7 @@ EffectUniquePtr EffectParser::load (Project& project, const std::string& filenam
 
 EffectUniquePtr EffectParser::parse (const JSON& it, Project& project) {
     const auto dependencies = it.optional ("dependencies");
+    const auto fbos = it.optional ("fbos");
 
     return std::make_unique <Effect> (Effect {
         .name = it.optional <std::string> ("name", ""),
@@ -24,6 +25,7 @@ EffectUniquePtr EffectParser::parse (const JSON& it, Project& project) {
         .preview = it.optional <std::string> ("preview", ""),
         .dependencies = dependencies.has_value () ? parseDependencies (*dependencies) : std::vector <std::string> {},
         .passes = parseEffectPasses (it.require ("passes", "Effect file must have passes"), project),
+        .fbos = fbos.has_value () ? parseFBOs (*fbos) : std::vector <FBOUniquePtr> {},
     });
 }
 
@@ -89,6 +91,24 @@ std::map <int, std::string> EffectParser::parseBinds (const JSON& it) {
             cur.require ("index", "Texture binds must have an index"),
             cur.require ("name", "Texture bind must name the FBO that should be used")
         );
+    }
+
+    return result;
+}
+
+std::vector <FBOUniquePtr> EffectParser::parseFBOs (const JSON& it) {
+    std::vector <FBOUniquePtr> result = {};
+
+    if (!it.is_array ()) {
+        return result;
+    }
+
+    for (const auto& cur : it) {
+        result.push_back(std::make_unique<FBO>(FBO {
+            .name = cur.require <std::string> ("name", "FBO must have a name"),
+            .format = cur.optional <std::string> ("format", "rgba8888"),
+            .scale = cur.optional ("scale", 1.0f),
+        }));
     }
 
     return result;

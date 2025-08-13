@@ -60,7 +60,7 @@ std::map <int, std::string> MaterialParser::parseTextures (const JSON& it) {
     int index = 0;
 
     for (const auto& cur : it) {
-        if (!it.is_null ()) {
+        if (!cur.is_null ()) {
             result.emplace (index, cur);
         }
 

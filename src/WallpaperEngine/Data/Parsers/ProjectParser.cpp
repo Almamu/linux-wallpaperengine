@@ -63,6 +63,11 @@ Properties ProjectParser::parseProperties (const std::optional <JSON>& data) {
     for (const auto& cur : properties.value ().items ()) {
         const auto& property = Property::fromJSON (cur.value (), cur.key ());
 
+        // ignore properties that failed, these are generally groups
+        if (property == nullptr) {
+            continue;
+        }
+
         result.emplace (property->getName (), property);
     }
 

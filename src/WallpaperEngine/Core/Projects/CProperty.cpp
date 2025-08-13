@@ -24,9 +24,11 @@ std::shared_ptr<CProperty> CProperty::fromJSON (const json& data, const std::str
     if (*type == "text")
         return CPropertyText::fromJSON (data, name);
 
-    // show the error and ignore this property
-    sLog.error ("Unexpected type for property: ", *type);
-    sLog.error (data);
+    if (*type != "group") {
+        // show the error and ignore this property
+        sLog.error ("Unexpected type for property: ", *type);
+        sLog.error (data);
+    }
 
     return nullptr;
 }
