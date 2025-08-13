@@ -284,7 +284,7 @@ std::unique_ptr<CTexture::TextureHeader> CTexture::parseHeader (const char* file
         header->freeImageFormat = static_cast<FreeImageFormat> (*pointer++);
         header->isVideoMp4 = *pointer++ == 1;
 
-        if (header->freeImageFormat == FIF_UNKNOWN) {
+        if (header->freeImageFormat == FIF_UNKNOWN && header->isVideoMp4) {
             header->freeImageFormat = FIF_MP4;
         }
 
@@ -412,6 +412,8 @@ std::shared_ptr<CTexture::TextureMipmap> CTexture::parseMipmap (const TextureHea
         fileData ++;
 
         pointer = reinterpret_cast<const uint32_t*> (fileData);
+        // this is another param to ignore
+        pointer++;
     }
 
     mipmap->width = *pointer++;
