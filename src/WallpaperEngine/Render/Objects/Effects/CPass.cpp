@@ -59,7 +59,7 @@ CPass::CPass (
     m_blendingmode (pass.blending),
     m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE),
-    m_fboProvider (fboProvider),
+    m_fboProvider (std::move(fboProvider)),
     m_target (target) {
     this->setupShaders ();
     this->setupShaderVariables ();
@@ -502,16 +502,11 @@ void CPass::setupTextureUniforms () {
     // and then try with fragment's and override any existing
     for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
         try {
-            // resolve the texture first
-            std::shared_ptr<const ITexture> textureRef;
-
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->resolveFBO (textureName);
-            } else {
-                textureRef = this->getContext ().resolveTexture (textureName);
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if(!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
             }
-
-            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
@@ -519,16 +514,11 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
         try {
-            // resolve the texture first
-            std::shared_ptr<const ITexture> textureRef;
-
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->resolveFBO (textureName);
-            } else {
-                textureRef = this->getContext ().resolveTexture (textureName);
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if(!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
             }
-
-            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
@@ -540,10 +530,31 @@ void CPass::setupTextureUniforms () {
             continue;
         }
 
-        if (textureName.find ("_rt_") == 0) {
-            this->m_textures[index] = this->resolveFBO (textureName);
-        } else if (!textureName.empty ()) {
-            this->m_textures[index] = this->m_image.getContext ().resolveTexture (textureName);
+        try {
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if (!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
+            }
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for pass ", ex.what ());
+        }
+    }
+
+    // override any texture
+    for (const auto& [index, textureName] : this->m_override.textures) {
+        if (index == 0) {
+            continue;
+        }
+
+        try {
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if (!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
+            }
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for override ", ex.what ());
         }
     }
 
@@ -552,7 +563,7 @@ void CPass::setupTextureUniforms () {
         if (bind == "previous") {
             // use nullptr as indication for "previous" texture
             this->m_textures [index] = nullptr;
-        } else {
+        } else if(!bind.empty ()) {
             // a normal bind, search for the corresponding FBO and set it
             this->m_textures [index] = this->resolveFBO (bind);
         }

@@ -115,8 +115,8 @@ std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, P
 ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, Project& project) {
     const auto& passsOverrides = it.optional ("passes");
     return std::make_unique <ImageEffect> (ImageEffect {
-        .id = it.require <int> ("id", "Image effect must have an id"),
-        .name = it.require <std::string> ("name", "Image effect must have a name"),
+        .id = it.optional <int> ("id", -1),
+        .name = it.optional <std::string> ("name", "Effect without name"),
         .visible = it.user ("visible", project.properties, true),
         .passOverrides = passsOverrides.has_value () ? parseEffectPassOverrides (passsOverrides.value (), project) : std::vector <ImageEffectPassOverrideUniquePtr> {},
         .effect = EffectParser::load (project, it.require ("file", "Image effect must have an effect"))

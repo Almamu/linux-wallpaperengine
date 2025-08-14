@@ -46,6 +46,14 @@ CScene::CScene (
     // setup framebuffers here as they're required for the scene setup
     this->setupFramebuffers ();
 
+    const uint32_t sceneWidth = this->m_camera->getWidth ();
+    const uint32_t sceneHeight = this->m_camera->getHeight ();
+
+    this->_rt_shadowAtlas =
+        this->create ("_rt_shadowAtlas", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+                      {sceneWidth, sceneHeight}, {sceneWidth, sceneHeight});
+    this->alias ("_alias_lightCookie", "_rt_shadowAtlas");
+
     // set clear color
     // TODO: MAKE USE OF THE REFERENCE POSSIBILITIES?!
     const glm::vec3 clearColor = scene->colors.clear->value->getVec3 ();
@@ -66,9 +74,6 @@ CScene::CScene (
 
         this->m_objectsByRenderOrder.emplace_back (obj->second);
     }
-
-    const uint32_t sceneWidth = this->m_camera->getWidth ();
-    const uint32_t sceneHeight = this->m_camera->getHeight ();
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer =
