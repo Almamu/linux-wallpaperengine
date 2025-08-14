@@ -93,67 +93,64 @@ CScene::CScene (
     //
 
     // TODO: TAKE THIS OUT OF HERE AND INTO THE GENERAL WALLPAPER APPLICATION?!
-    const std::string imagejson = "{"
-                                  "\t\"image\": \"models/wpenginelinux.json\","
-                                  "\t\"name\": \"bloomimagewpenginelinux\","
-                                  "\t\"visible\": true,"
-                                  "\t\"scale\": \"1.0 1.0 1.0\","
-                                  "\t\"angles\": \"0.0 0.0 0.0\","
-                                  "\t\"origin\": \"" +
-                                  std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) +
-                                  " 0.0\","
-                                  "\t\"id\": -1" +
-                                  ","
-                                  "\t\"effects\":"
-                                  "\t["
-                                  "\t\t{"
-                                  "\t\t\t\"file\": \"effects/wpenginelinux/bloomeffect.json\","
-                                  "\t\t\t\"id\": 15242000,"
-                                  "\t\t\t\"name\": \"\","
-                                  "\t\t\t\"passes\":"
-                                  "\t\t\t["
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ().camera.bloom.strength->value->getFloat ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ().camera.bloom.threshold->value->getFloat ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t},"
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ().camera.bloom.strength->value->getFloat ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ().camera.bloom.threshold->value->getFloat ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t},"
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ().camera.bloom.strength->value->getFloat ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ().camera.bloom.strength->value->getFloat ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t}"
-                                  "\t\t\t]"
-                                  "\t\t}"
-                                  "\t],"
-                                  "\t\"size\": \"" +
-                                  std::to_string (sceneWidth) + " " + std::to_string (sceneHeight) +
-                                  "\""
-                                  "}";
-    const auto json = nlohmann::json::parse (imagejson);
+    const auto bloomOrigin = glm::vec3 { sceneWidth / 2, sceneHeight / 2, 0.0f };
+    const auto bloomSize = glm::vec2 { sceneWidth, sceneHeight };
+
+    const nlohmann::json bloom = {
+        {"image", "models/wpenginelinux.json"},
+        {"name", "bloomimagewpenginelinux"},
+        {"visible", true},
+        {"scale", "1.0 1.0 1.0"},
+        {"angles", "0.0 0.0 0.0"},
+        {"origin", std::to_string (bloomOrigin.x) + " " + std::to_string (bloomOrigin.y) + " " + std::to_string(bloomOrigin.z)},
+        {"size", std::to_string (bloomSize.x) + " " + std::to_string (bloomSize.y)},
+        {"id", -1},
+        {"effects",
+            json::array (
+                {
+                    {
+                        {"file", "effects/wpenginelinux/bloomeffect.json"},
+                        {"id", 15242000},
+                        {"name", ""},
+                        {"passes",
+                             json::array (
+                                 {
+                                     {
+                                         {"constantshadervalues",
+                                             {
+                                                 {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                 {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                             }
+                                         }
+                                     },
+                                     {
+                                         {"constantshadervalues",
+                                            {
+                                                {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                            }
+                                        }
+                                     },
+                                     {
+                                         {"constantshadervalues",
+                                             {
+                                                 {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                 {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                             }
+                                         }
+                                     }
+                                 }
+                             )
+                        }
+                    }
+                }
+            )
+        }
+    };
 
     // create image for bloom passes
     if (scene->camera.bloom.enabled->value->getBool ()) {
-        this->m_bloomObjectData = ObjectParser::parse (json, scene->project);
+        this->m_bloomObjectData = ObjectParser::parse (bloom, scene->project);
         this->m_bloomObject = this->createObject (*this->m_bloomObjectData);
 
         this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
