@@ -22,7 +22,7 @@ ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr cont
         .title = data.require <std::string> ("title", "Project title missing"),
         .type = parseType (type),
         .workshopId = data.optional ("workshopid", std::to_string (--backgroundId)),
-        .supportsAudioProcessing = general.has_value () && general.value ().optional ("supportsAudioProcessing", false),
+        .supportsAudioProcessing = general.has_value () && general.value ().optional ("supportsaudioprocessing", false),
         .properties = parseProperties (general),
         .container = std::move(container),
     });
