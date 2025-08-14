@@ -27,7 +27,7 @@ class CShaderUnit {
     CShaderUnit (
         CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
         const ShaderConstantMap& constants, const TextureMap& passTextures,
-        const ComboMap& combos);
+        const TextureMap& overrideTextures, const ComboMap& combos);
     ~CShaderUnit () = default;
 
     /**
@@ -145,7 +145,9 @@ class CShaderUnit {
      */
     const ShaderConstantMap& m_constants;
     /** The textures that are already applied to this shader */
-    const TextureMap m_passTextures = {};
+    const TextureMap& m_passTextures;
+    /** The textures that are being overridden */
+    const TextureMap& m_overrideTextures;
     /** The default textures to use when a texture is not applied in a given slot */
     TextureMap m_defaultTextures = {};
     /**

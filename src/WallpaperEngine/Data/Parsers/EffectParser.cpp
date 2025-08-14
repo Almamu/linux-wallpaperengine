@@ -51,7 +51,7 @@ std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& i
     }
 
     for (const auto& cur : it) {
-        const auto binds = cur.optional ("binds");
+        const auto binds = cur.optional ("bind");
         std::optional <PassCommand> command = std::nullopt;
 
         if (cur.contains ("command")) {

@@ -426,7 +426,7 @@ void CPass::setupShaders () {
     // use the combos copied from the pass so it includes the texture format
     this->m_shader = new Render::Shaders::CShader (
         this->m_image.getContainer (), this->m_pass.shader, this->m_combos,
-        this->m_pass.textures, this->m_override.constants
+        this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
     const auto shaders = Shaders::CGLSLContext::get ().toGlsl (

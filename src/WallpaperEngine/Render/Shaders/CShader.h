@@ -47,6 +47,7 @@ class CShader {
     CShader (
         const CContainer& container, std::string filename,
         const ComboMap& combos, const TextureMap& textures,
+        const TextureMap& overrideTextures,
         const ShaderConstantMap& constants);
     /**
      * @return The vertex's shader coude for OpenGL to use
@@ -101,5 +102,9 @@ class CShader {
      * The list of textures the pass knows about
      */
     const TextureMap m_passTextures;
+    /**
+     * The list of the override textures
+     */
+    const TextureMap& m_overrideTextures;
 };
 } // namespace WallpaperEngine::Render::Shaders

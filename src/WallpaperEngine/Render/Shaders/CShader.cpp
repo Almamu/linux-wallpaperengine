@@ -20,17 +20,19 @@ namespace WallpaperEngine::Render::Shaders {
 CShader::CShader (
     const CContainer& container, std::string filename,
     const ComboMap& combos, const TextureMap& textures,
+    const TextureMap& overrideTextures,
     const ShaderConstantMap& constants
 ) :
     m_file (std::move (filename)),
     m_combos (combos),
     m_passTextures (textures),
+    m_overrideTextures (overrideTextures),
     m_vertex (
         CGLSLContext::UnitType_Vertex, filename, container.readVertexShader (filename),
-        container, constants, textures, combos),
+        container, constants, textures, overrideTextures, combos),
     m_fragment (
         CGLSLContext::UnitType_Fragment, filename, container.readFragmentShader (filename),
-        container, constants, textures, combos) {
+        container, constants, textures, overrideTextures, combos) {
     // link shaders between them
     this->m_vertex.linkToUnit (&this->m_fragment);
     this->m_fragment.linkToUnit (&this->m_vertex);

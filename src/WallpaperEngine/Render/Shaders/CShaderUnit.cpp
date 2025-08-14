@@ -57,7 +57,8 @@ using namespace WallpaperEngine::Render::Shaders;
 
 CShaderUnit::CShaderUnit (
     CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
-    const ShaderConstantMap& constants, const TextureMap& passTextures, const ComboMap& combos
+    const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
+    const ComboMap& combos
 ) :
     m_type (type),
     m_link (nullptr),
@@ -66,6 +67,7 @@ CShaderUnit::CShaderUnit (
     m_constants (constants),
     m_content (std::move(content)),
     m_passTextures (passTextures),
+    m_overrideTextures (overrideTextures),
     m_combos (combos),
     m_discoveredCombos (),
     m_usedCombos () {
@@ -409,15 +411,17 @@ void CShaderUnit::parseParameterConfiguration (
         const auto requireany = data.find ("requireany");
         const auto require = data.find ("require");
         // now convert it to integer
+        // TODO: BETTER CONVERSION HERE
         size_t index = value - '0';
 
         if (combo != data.end ()) {
+            // TODO: CLEANUP HOW THIS IS DETERMINED FIRST
             // if the texture exists (and is not null), add to the combo
-            auto texture = this->m_passTextures.find (index);
+            auto textureSlotUsed = this->m_passTextures.find (index) != this->m_passTextures.end () || this->m_overrideTextures.find (index) != this->m_overrideTextures.end ();
             bool isRequired = false;
             int comboValue = 1;
 
-            if (texture != this->m_passTextures.end ()) {
+            if (textureSlotUsed) {
                 // nothing extra to do, the texture exists, the combo must be set
                 // these tend to not have default value
                 isRequired = true;
@@ -452,7 +456,7 @@ void CShaderUnit::parseParameterConfiguration (
                 }
             }
 
-            if (isRequired && texture == this->m_passTextures.end ()) {
+            if (isRequired && !textureSlotUsed) {
                 if (defvalue == data.end ()) {
                     isRequired = false;
                 } else {
