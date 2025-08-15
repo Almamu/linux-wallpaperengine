@@ -27,7 +27,7 @@ class CShaderUnit {
     CShaderUnit (
         CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
         const ShaderConstantMap& constants, const TextureMap& passTextures,
-        const TextureMap& overrideTextures, const ComboMap& combos);
+        const TextureMap& overrideTextures, const ComboMap& combos, const ComboMap& overrideCombos);
     ~CShaderUnit () = default;
 
     /**
@@ -132,6 +132,10 @@ class CShaderUnit {
      * Pre-defined values for the combos
      */
     const ComboMap& m_combos;
+    /**
+     * Pre-defined overriden values for the combos
+     */
+    const ComboMap& m_overrideCombos;
     /**
      * The combos discovered in the pre-processing step that were not in the combos list
      */

@@ -19,6 +19,7 @@ void CDynamicValue::update(float newValue) {
     this->m_float = newValue;
     this->m_int = static_cast<int> (newValue);
     this->m_bool = static_cast<int> (newValue) != 0;
+    this->m_type = UnderlyingType::Float;
 
     this->propagate ();
 }
@@ -33,6 +34,7 @@ void CDynamicValue::update(int newValue) {
     this->m_float = static_cast<float> (newValue);
     this->m_int = newValue;
     this->m_bool = newValue != 0;
+    this->m_type = UnderlyingType::Int;
 
     this->propagate ();
 }
@@ -47,6 +49,7 @@ void CDynamicValue::update(bool newValue) {
     this->m_float = newValue;
     this->m_int = newValue;
     this->m_bool = newValue;
+    this->m_type = UnderlyingType::Boolean;
 
     this->propagate ();
 }
@@ -61,6 +64,7 @@ void CDynamicValue::update(const glm::vec2& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_type = UnderlyingType::Vec2;
 
     this->propagate ();
 }
@@ -75,6 +79,7 @@ void CDynamicValue::update(const glm::vec3& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_type = UnderlyingType::Vec3;
 
     this->propagate ();
 }
@@ -89,6 +94,7 @@ void CDynamicValue::update(const glm::vec4& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_type = UnderlyingType::Vec4;
 
     this->propagate ();
 }
@@ -103,6 +109,7 @@ void CDynamicValue::update(const glm::ivec2& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_type = UnderlyingType::IVec2;
 
     this->propagate ();
 }
@@ -117,6 +124,7 @@ void CDynamicValue::update(const glm::ivec3& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_type = UnderlyingType::IVec3;
 
     this->propagate ();
 }
@@ -131,6 +139,7 @@ void CDynamicValue::update(const glm::ivec4& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_type = UnderlyingType::IVec4;
 
     this->propagate ();
 }
@@ -202,4 +211,8 @@ const int& CDynamicValue::getInt () const {
 
 const bool& CDynamicValue::getBool () const {
     return this->m_bool;
+}
+
+CDynamicValue::UnderlyingType CDynamicValue::getType () const {
+    return this->m_type;
 }

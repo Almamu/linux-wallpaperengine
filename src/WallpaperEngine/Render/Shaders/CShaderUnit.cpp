@@ -58,7 +58,7 @@ using namespace WallpaperEngine::Render::Shaders;
 CShaderUnit::CShaderUnit (
     CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
     const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
-    const ComboMap& combos
+    const ComboMap& combos, const ComboMap& overrideCombos
 ) :
     m_type (type),
     m_link (nullptr),
@@ -69,6 +69,7 @@ CShaderUnit::CShaderUnit (
     m_passTextures (passTextures),
     m_overrideTextures (overrideTextures),
     m_combos (combos),
+    m_overrideCombos (overrideCombos),
     m_discoveredCombos (),
     m_usedCombos () {
     // pre-process the shader so the units are clear
@@ -335,14 +336,14 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
 
     // check the combos
     const auto entry = this->m_combos.find (combo->get<std::string> ());
+    const auto entryOverride = this->m_overrideCombos.find (combo->get<std::string> ());
 
     // add the combo to the found list
     this->m_usedCombos.emplace (*combo, true);
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
-    if (entry == this->m_combos.end ()) {
-
+    if (entry == this->m_combos.end () && entryOverride == this->m_overrideCombos.end ()) {
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
@@ -406,6 +407,8 @@ void CShaderUnit::parseParameterConfiguration (
         // samplers can have special requirements, check what sampler we're working with and create definitions
         // if needed
         const auto textureName = data.find ("default");
+        // TODO: CREATE TEXTURE WITH THE GIVEN COLOR
+        const auto paintDefaultColor = data.find ("paintdefaultcolor");
         // extract the texture number from the name
         const char value = name.at (std::string ("g_Texture").length ());
         const auto requireany = data.find ("requireany");
@@ -413,6 +416,10 @@ void CShaderUnit::parseParameterConfiguration (
         // now convert it to integer
         // TODO: BETTER CONVERSION HERE
         size_t index = value - '0';
+
+        if (combo != data.end () && paintDefaultColor != data.end () && combo->get <std::string> () == "MASK" && this->m_file.find ("water")) {
+            sLog.debug("mask defaultcolor!");
+        }
 
         if (combo != data.end ()) {
             // TODO: CLEANUP HOW THIS IS DETERMINED FIRST
@@ -432,9 +439,10 @@ void CShaderUnit::parseParameterConfiguration (
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
+                        const auto itOverride = this->m_overrideCombos.find (macro);
 
                         // if any of the values matched, this option is required
-                        if (it == this->m_combos.end () || it->second != item.value ()) {
+                        if (it == this->m_combos.end () || itOverride != this->m_overrideCombos.end () || it->second != item.value ()) {
                             isRequired = true;
                             break;
                         }
@@ -446,9 +454,10 @@ void CShaderUnit::parseParameterConfiguration (
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
+                        const auto itOverride = this->m_overrideCombos.find (macro);
 
                         // these can not exist and that'd be fine, we just care about the values
-                        if (it != this->m_combos.end () && it->second == item.value ()) {
+                        if ((it != this->m_combos.end () || itOverride != this->m_overrideCombos.end ()) && it->second == item.value ()) {
                             isRequired = false;
                             break;
                         }
@@ -463,9 +472,10 @@ void CShaderUnit::parseParameterConfiguration (
                     // is the combo registered already?
                     // if not, add it with the default value
                     const auto combo_it = this->m_combos.find (*combo);
+                    const auto overridencombo_it = this->m_overrideCombos.find (*combo);
 
                     // there's already a combo providing this value, so it doesn't need to be added
-                    if (combo_it != this->m_combos.end ()) {
+                    if (combo_it != this->m_combos.end () || overridencombo_it != this->m_overrideCombos.end ()) {
                         isRequired = false;
                         // otherwise a default value must be used
                     } else if (defvalue->is_string ()) {
@@ -535,27 +545,42 @@ const std::string& CShaderUnit::compile () {
 
     std::map<std::string, bool> addedCombos;
 
+    for (const auto& combo : this->m_overrideCombos) {
+        if (addedCombos.find (combo.first) == addedCombos.end ()) {
+            this->m_final += DEFINE_COMBO (combo.first, combo.second);
+        }
+
+        addedCombos.emplace (combo.first, true);
+    }
     // now add all the combos to the source
     for (const auto& combo : this->m_combos) {
         if (addedCombos.find (combo.first) == addedCombos.end ()) {
             this->m_final += DEFINE_COMBO (combo.first, combo.second);
         }
+
+        addedCombos.emplace (combo.first, true);
     }
     for (const auto& combo : this->m_discoveredCombos) {
         if (addedCombos.find (combo.first) == addedCombos.end ()) {
             this->m_final += DEFINE_COMBO (combo.first, combo.second);
         }
+
+        addedCombos.emplace (combo.first, true);
     }
     if (this->m_link != nullptr) {
         for (const auto& combo : this->m_link->getCombos ()) {
             if (addedCombos.find (combo.first) == addedCombos.end ()) {
                 this->m_final += DEFINE_COMBO (combo.first, combo.second);
             }
+
+            addedCombos.emplace (combo.first, true);
         }
         for (const auto& combo : this->m_link->getDiscoveredCombos ()) {
             if (addedCombos.find (combo.first) == addedCombos.end ()) {
                 this->m_final += DEFINE_COMBO (combo.first, combo.second);
             }
+
+            addedCombos.emplace (combo.first, true);
         }
     }
 

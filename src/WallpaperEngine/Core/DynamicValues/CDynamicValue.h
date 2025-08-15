@@ -19,6 +19,19 @@ class CDynamicValue {
     friend class WallpaperEngine::Data::Parsers::UserSettingParser;
     friend class WallpaperEngine::Data::Builders::UserSettingBuilder;
   public:
+    enum UnderlyingType {
+        Unknown = -1,
+        IVec4 = 0,
+        IVec3 = 1,
+        IVec2 = 2,
+        Vec4 = 3,
+        Vec3 = 4,
+        Vec2 = 5,
+        Float = 6,
+        Int = 7,
+        Boolean = 8
+    };
+
     virtual ~CDynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;
@@ -30,6 +43,7 @@ class CDynamicValue {
     [[nodiscard]] const float& getFloat () const;
     [[nodiscard]] const int& getInt () const;
     [[nodiscard]] const bool& getBool () const;
+    [[nodiscard]] UnderlyingType getType () const;
 
     /**
      * Connects the current instance to the given instance, updating it's values
@@ -38,8 +52,6 @@ class CDynamicValue {
      * @param value
      */
     void connectOutgoing (CDynamicValue* value) const;
-
-  protected:
     void update (float newValue);
     void update (int newValue);
     void update (bool newValue);
@@ -49,6 +61,8 @@ class CDynamicValue {
     void update (const glm::ivec2& newValue);
     void update (const glm::ivec3& newValue);
     void update (const glm::ivec4& newValue);
+
+  protected:
     /**
      * Registers an incoming connection (another CDynamicValue affecting the current instance's value)
      * Useful mainly for destroying the connection on delete
@@ -65,6 +79,7 @@ class CDynamicValue {
   private:
     mutable std::vector<CDynamicValue*> m_outgoingConnections = {};
     mutable std::vector<const CDynamicValue*> m_incomingConnections = {};
+    UnderlyingType m_type = UnderlyingType::Unknown;
     // different values that we will be casted to automagically
     glm::ivec4 m_ivec4 = {};
     glm::ivec3 m_ivec3 = {};

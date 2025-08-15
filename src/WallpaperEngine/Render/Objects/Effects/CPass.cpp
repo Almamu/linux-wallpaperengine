@@ -425,7 +425,7 @@ void CPass::setupShaders () {
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
     this->m_shader = new Render::Shaders::CShader (
-        this->m_image.getContainer (), this->m_pass.shader, this->m_combos,
+        this->m_image.getContainer (), this->m_pass.shader, this->m_combos, this->m_override.combos,
         this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
@@ -608,7 +608,7 @@ void CPass::setupUniforms () {
     this->addUniform ("g_UserAlpha", image.alpha->value->getFloat ());
     this->addUniform ("g_Alpha", image.alpha->value->getFloat ());
     this->addUniform ("g_Color", image.color->value->getVec3 ());
-    this->addUniform ("g_Color4", image.color->value->getVec4());
+    this->addUniform ("g_Color4", image.color->value->getVec4 ());
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
     this->addUniform ("g_CompositeColor", image.color->value->getVec3 ());
     // add some external variables

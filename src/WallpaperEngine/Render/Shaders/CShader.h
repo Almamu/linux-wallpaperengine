@@ -46,8 +46,8 @@ class CShader {
      */
     CShader (
         const CContainer& container, std::string filename,
-        const ComboMap& combos, const TextureMap& textures,
-        const TextureMap& overrideTextures,
+        const ComboMap& combos, const ComboMap& overrideCombos,
+        const TextureMap& textures, const TextureMap& overrideTextures,
         const ShaderConstantMap& constants);
     /**
      * @return The vertex's shader coude for OpenGL to use
@@ -98,6 +98,10 @@ class CShader {
      * The combos the shader should be generated with
      */
     const ComboMap& m_combos;
+    /**
+     * The overriden combos
+     */
+    const ComboMap& m_overrideCombos;
     /**
      * The list of textures the pass knows about
      */

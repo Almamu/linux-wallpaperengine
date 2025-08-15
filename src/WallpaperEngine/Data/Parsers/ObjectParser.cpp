@@ -78,7 +78,7 @@ ImageUniquePtr ObjectParser::parseImage (
     const auto& properties = project.properties;
     const auto& effects = it.optional ("effects");
 
-    return std::make_unique <Image> (
+    auto result = std::make_unique <Image> (
         std::move (base),
         ImageData {
             .origin = it.user ("origin", properties, glm::vec3 (0.0f)),
@@ -86,7 +86,7 @@ ImageUniquePtr ObjectParser::parseImage (
             .angles = it.user ("angles", properties, glm::vec3 (0.0)),
             .visible = it.user ("visible", properties, true),
             .alpha = it.user ("alpha", properties, 1.0f),
-            .color = it.user ("color", properties, glm::vec3 (1.0f)),
+            .color = it.user ("color", properties, glm::vec4 (1.0f)),
             .alignment = it.optional ("alignment", std::string ("center")),
             .size = it.optional ("size", glm::vec2 (0.0f)),
             .parallaxDepth = it.optional ("parallaxDepth", glm::vec2 (0.0f)),
@@ -96,6 +96,15 @@ ImageUniquePtr ObjectParser::parseImage (
             .effects = effects.has_value () ? parseEffects (*effects, project) : std::vector <ImageEffectUniquePtr> {},
         }
     );
+
+    // color should be a vec4 for alpha, but it's read as vec3
+    if (result->color->value->getType () == DynamicValue::UnderlyingType::Vec3) {
+        result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
+    } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
+        result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
+    }
+
+    return result;
 }
 
 std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, Project& project) {
@@ -163,10 +172,10 @@ TextureMap ObjectParser::parseTextureMap (const JSON& it) {
         textureIndex ++;
 
         if (cur.is_null ()) {
-            continue;
+            result.emplace (textureIndex, "");
+        } else {
+            result.emplace (textureIndex, cur);
         }
-
-        result.emplace (textureIndex, cur);
     }
 
     return result;
