@@ -14,7 +14,19 @@ static int backgroundId = 0;
 
 ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr container) {
     const auto general = data.optional ("general");
+    const auto workshopId = data.optional ("workshopid");
+    auto actualWorkshopId = std::to_string (--backgroundId);
     auto type = data.require <std::string> ("type", "Project type missing");
+
+    if (workshopId.has_value ()) {
+        if (workshopId->is_number ()) {
+            actualWorkshopId = std::to_string (workshopId->get <int> ());
+        } else if (workshopId->is_string ()) {
+            actualWorkshopId = workshopId->get <std::string> ();
+        } else {
+            sLog.error ("Invalid workshop id: ", workshopId->dump ());
+        }
+    }
 
     // lowercase for consistency
     std::transform (type.begin (), type.end (), type.begin (), tolower);
@@ -22,7 +34,7 @@ ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr cont
     auto result = std::make_unique <Project> (Project {
         .title = data.require <std::string> ("title", "Project title missing"),
         .type = parseType (type),
-        .workshopId = data.optional ("workshopid", std::to_string (--backgroundId)),
+        .workshopId = actualWorkshopId,
         .supportsAudioProcessing = general.has_value () && general.value ().optional ("supportsaudioprocessing", false),
         .properties = parseProperties (general),
         .container = std::move(container),

@@ -14,6 +14,30 @@ glm::vec3 ParseColor (std::string value) {
     }
 
     if (value.find ('.') == std::string::npos && value != "0 0 0" && value != "1 1 1") {
+        if (value.find ('#') == 0) {
+            // hex color, parse it to int color and then convert it to float
+            auto number = value.substr (1);
+
+            if (number.size () == 3) {
+                // CSS short-number, expand to the proper size
+                number = number[0] + number[0] + number[1] + number[1] + number[2] + number[2];
+            }
+
+            // remove alpha if it's present, should look into it more closely
+            if (number.size () > 6) {
+                sLog.error ("Color value has alpha channel, which is not supported");
+                number = number.substr (0, 6);
+            }
+
+            const auto color = std::stoi (number, nullptr, 16);
+
+            return {
+                (((color >> 16) & 0xFF) / 255.0),
+                (((color >> 8) & 0xFF) / 255.0),
+                (((color >> 0) & 0xFF) / 255.0)
+            };
+        }
+
         const auto intcolor = VectorBuilder::parse <glm::ivec3> (value);
 
         return {intcolor.r / 255.0, intcolor.g / 255.0, intcolor.b / 255.0};

@@ -19,17 +19,23 @@ std::shared_ptr<CPropertyCombo> CPropertyCombo::fromJSON (const JSON& data, std:
         if (!cur.is_object ())
             continue;
 
+        const auto valueIt = cur.require ("value", "Value is required for a property combo option");
+        auto value = valueIt.is_number () ? std::to_string (valueIt.get <int> ()) : valueIt.get <std::string> ();
+
         // check for label and value to ensure they're there
         values.push_back ({
             .label = cur.require ("label", "Label is required for a property combo option"),
-            .value = cur.require ("value", "Value is required for a property combo option")
+            .value = value
         });
     }
+
+    const auto valueIt = data.require ("value", "Value is required for a property combo");
+    auto value = valueIt.is_number () ? std::to_string (valueIt.get <int> ()) : valueIt.get <std::string> ();
 
     return std::make_shared <CPropertyCombo> (
         std::move(name),
         data.optional <std::string> ("text", ""),
-        data.require ("value", "Value is required for a property combo"),
+        value,
         values
     );
 }
