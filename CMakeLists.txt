@@ -407,15 +407,6 @@ add_executable(
     src/WallpaperEngine/Core/DynamicValues/CDynamicValue.cpp
     src/WallpaperEngine/Core/DynamicValues/CDynamicValue.h
 
-    src/WallpaperEngine/Core/UserSettings/CUserSettingValue.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingValue.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.h
-
     src/WallpaperEngine/Core/Projects/CProperty.h
     src/WallpaperEngine/Core/Projects/CProperty.cpp
     src/WallpaperEngine/Core/Projects/CPropertyColor.h
@@ -428,48 +419,6 @@ add_executable(
     src/WallpaperEngine/Core/Projects/CPropertyCombo.cpp
     src/WallpaperEngine/Core/Projects/CPropertyText.h
     src/WallpaperEngine/Core/Projects/CPropertyText.cpp
-
-#    src/WallpaperEngine/Core/Objects/CParticle.cpp
-#    src/WallpaperEngine/Core/Objects/CParticle.h
-
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.cpp
-
-#    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
-#    src/WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/CEmitter.h
-#    src/WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/CInitializer.h
-#
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.cpp
-#    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h
 
     src/WallpaperEngine/Data/Model/Types.h
     src/WallpaperEngine/Data/Model/Project.h

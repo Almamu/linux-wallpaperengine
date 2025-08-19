@@ -191,7 +191,7 @@ void StringPrinter::printImageEffectPassOverride (const ImageEffectPassOverride&
 
         for (const auto& constant : imageEffectPass.constants) {
             this->lineEnd ();
-            this->m_out << "Constant " << constant.first << "=" << constant.second->toString();
+            this->m_out << "Constant " << constant.first << "=" << constant.second->value->toString();
         }
 
         this->decreaseIndentation ();

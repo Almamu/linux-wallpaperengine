@@ -3,9 +3,6 @@
 #include <utility>
 
 // shader compiler
-#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h>
-#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h>
-#include <WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h>
 #include <WallpaperEngine/Render/Shaders/CShader.h>
 #include <regex>
 

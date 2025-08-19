@@ -4,13 +4,6 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
 #include "WallpaperEngine/Core/Projects/CProperty.h"
 
 namespace WallpaperEngine::Data::Model {
@@ -35,13 +28,6 @@ struct ModelStruct;
 
 // TODO: REMOVE ONCE THESE ARE RENAMED AND MOVED
 using Container = WallpaperEngine::Assets::CContainer;
-using ShaderConstant = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstant;
-using ShaderConstantProperty = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantProperty;
-using ShaderConstantFloat = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantFloat;
-using ShaderConstantInteger = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantInteger;
-using ShaderConstantVector2 = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantVector2;
-using ShaderConstantVector3 = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantVector3;
-using ShaderConstantVector4 = WallpaperEngine::Core::Objects::Effects::Constants::CShaderConstantVector4;
 
 using Property = WallpaperEngine::Core::Projects::CProperty;
 using PropertySharedPtr = std::shared_ptr <Property>;
@@ -52,11 +38,11 @@ using DynamicValueUniquePtr = std::unique_ptr <DynamicValue>;
 using DynamicValueSharedPtr = std::shared_ptr <DynamicValue>;
 using DynamicValueWeakPtr = std::weak_ptr <DynamicValue>;
 using UserSettingSharedPtr = std::shared_ptr <UserSetting>;
+using UserSettingUniquePtr = std::unique_ptr <UserSetting>;
 using UserSettingWeakPtr = std::weak_ptr <UserSetting>;
-using ShaderConstantUniquePtr = std::unique_ptr <ShaderConstant>;
 // TODO: UP TO THIS POINT
 
-using ShaderConstantMap = std::map <std::string, ShaderConstantUniquePtr>;
+using ShaderConstantMap = std::map <std::string, UserSettingUniquePtr>;
 
 using ProjectUniquePtr = std::unique_ptr <Project>;
 using WallpaperUniquePtr = std::unique_ptr <Wallpaper>;

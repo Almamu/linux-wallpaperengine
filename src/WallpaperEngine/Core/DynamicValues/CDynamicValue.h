@@ -44,6 +44,7 @@ class CDynamicValue {
     [[nodiscard]] const int& getInt () const;
     [[nodiscard]] const bool& getBool () const;
     [[nodiscard]] UnderlyingType getType () const;
+    [[nodiscard]] std::string toString () const;
 
     /**
      * Connects the current instance to the given instance, updating it's values

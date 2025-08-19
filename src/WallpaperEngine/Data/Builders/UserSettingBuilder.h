@@ -8,12 +8,12 @@ using namespace WallpaperEngine::Data::Model;
 class UserSettingBuilder {
   public:
     template <typename T>
-    static UserSettingSharedPtr fromValue (T defaultValue) {
+    static UserSettingUniquePtr fromValue (T defaultValue) {
         DynamicValueUniquePtr value = std::make_unique <DynamicValue> ();
 
         value->update (defaultValue);
 
-        return std::make_shared <UserSetting> (UserSetting {
+        return std::make_unique <UserSetting> (UserSetting {
             .value = std::move (value),
             .property = PropertyWeakPtr (),
             .condition = std::nullopt,

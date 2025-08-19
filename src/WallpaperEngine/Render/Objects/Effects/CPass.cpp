@@ -23,20 +23,11 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Objects;
-
-using namespace WallpaperEngine::Core::Objects::Effects::Constants;
 
 using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Render::Objects::Effects;
@@ -725,7 +716,7 @@ void CPass::setupShaderVariables () {
 
         // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
         // of the underlying CDynamicValue used for the value
-        this->addUniform (var, value.get ());
+        this->addUniform (var, value->value.get ());
     }
 }
 

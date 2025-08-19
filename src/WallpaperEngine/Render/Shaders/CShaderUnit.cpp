@@ -6,12 +6,6 @@
 #include <utility>
 #include "WallpaperEngine/Logging/CLog.h"
 
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
-
 #include "CGLSLContext.h"
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"

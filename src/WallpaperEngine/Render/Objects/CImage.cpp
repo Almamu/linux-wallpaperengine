@@ -1,7 +1,6 @@
 #include "CImage.h"
 #include <sstream>
 
-#include "WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
 #include "WallpaperEngine/Data/Builders/UserSettingBuilder.h"
 #include "WallpaperEngine/Data/Model/Object.h"

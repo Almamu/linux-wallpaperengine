@@ -130,9 +130,9 @@ class JsonExtensions {
 
         return (*it);
     }
-    [[nodiscard]] UserSettingSharedPtr user (const std::string& key, const Properties& properties) const;
+    [[nodiscard]] UserSettingUniquePtr user (const std::string& key, const Properties& properties) const;
     template <typename T>
-    [[nodiscard]] UserSettingSharedPtr user (const std::string& key, const Properties& properties, T defaultValue) const {
+    [[nodiscard]] UserSettingUniquePtr user (const std::string& key, const Properties& properties, T defaultValue) const {
         const auto value = this->optional (key);
 
         if (!value.has_value ()) {

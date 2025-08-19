@@ -44,7 +44,7 @@ struct SceneData {
     struct {
         glm::vec3 ambient;
         glm::vec3 skylight;
-        UserSettingSharedPtr clear;
+        UserSettingUniquePtr clear;
     } colors;
     /**
      * Camera configuration
@@ -60,11 +60,11 @@ struct SceneData {
          */
         struct {
             /** If bloom is enabled or not */
-            UserSettingSharedPtr enabled;
+            UserSettingUniquePtr enabled;
             /** Bloom's strength to pass onto the shader */
-            UserSettingSharedPtr strength;
+            UserSettingUniquePtr strength;
             /** Bloom's threshold to pass onto the shader */
-            UserSettingSharedPtr threshold;
+            UserSettingUniquePtr threshold;
         } bloom;
         /**
          * Parallax effect configuration

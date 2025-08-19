@@ -216,3 +216,28 @@ const bool& CDynamicValue::getBool () const {
 CDynamicValue::UnderlyingType CDynamicValue::getType () const {
     return this->m_type;
 }
+
+std::string CDynamicValue::toString () const {
+    switch (this->m_type) {
+        case UnderlyingType::Float:
+            return std::to_string (this->m_float);
+        case UnderlyingType::Int:
+            return std::to_string (this->m_int);
+        case UnderlyingType::Boolean:
+            return std::to_string (this->m_bool);
+        case UnderlyingType::Vec2:
+            return std::to_string (this->m_vec2.x) + ", " + std::to_string (this->m_vec2.y);
+        case UnderlyingType::Vec3:
+            return std::to_string (this->m_vec3.x) + ", " + std::to_string (this->m_vec3.y) + ", " + std::to_string (this->m_vec3.z);
+        case UnderlyingType::Vec4:
+            return std::to_string (this->m_vec4.x) + ", " + std::to_string (this->m_vec4.y) + ", " + std::to_string (this->m_vec4.z) + ", " + std::to_string (this->m_vec4.w);
+        case UnderlyingType::IVec2:
+            return std::to_string (this->m_ivec2.x) + ", " + std::to_string (this->m_ivec2.y);
+        case UnderlyingType::IVec3:
+            return std::to_string (this->m_ivec3.x) + ", " + std::to_string (this->m_ivec3.y) + ", " + std::to_string (this->m_ivec3.z);
+        case UnderlyingType::IVec4:
+            return std::to_string (this->m_ivec4.x) + ", " + std::to_string (this->m_ivec4.y) + ", " + std::to_string (this->m_ivec4.z) + ", " + std::to_string (this->m_ivec4.w);
+        default:
+            return "Unknown conversion for dynamic value of type: " + std::to_string (static_cast<int> (this->m_type));
+    }
+}

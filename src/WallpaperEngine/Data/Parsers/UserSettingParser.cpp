@@ -5,19 +5,26 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
-UserSettingSharedPtr UserSettingParser::parse (const json& data, const Properties& properties) {
+UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties) {
     DynamicValueUniquePtr value = std::make_unique <DynamicValue> ();
     PropertyWeakPtr property;
     std::optional<ConditionInfo> condition;
     auto valueIt = data;
+    std::string content = data.dump ();
 
     if (data.is_object ()) {
         const auto user = data.optional ("user");
+        const auto script = data.optional ("script");
         valueIt = data.require ("value", "User setting must have a value");
 
-        if (user.has_value ()) {
+        // TODO: PARSE SCRIPT VALUES
+        if (script.has_value () && !script->is_null ()) {
+            sLog.error ("Found user setting with script value: ", script.value ().dump ());
+        }
+
+        if (user.has_value () && !user->is_null ()) {
             std::string source;
-            const auto& it = user.value ();
+            const auto& it = *user;
 
             if (it.is_string ()) {
                 source = it;
@@ -61,7 +68,7 @@ UserSettingSharedPtr UserSettingParser::parse (const json& data, const Propertie
         sLog.exception ("Unsupported user setting type ", valueIt.type_name ());
     }
 
-    return std::make_shared <UserSetting> (UserSetting {
+    return std::make_unique <UserSetting> (UserSetting {
         .value = std::move (value),
         .property = property,
         .condition = condition,
