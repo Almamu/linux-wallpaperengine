@@ -89,7 +89,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     if (!textures.empty ()) {
         std::string textureName = textures.begin ()->second;
 
-        if (textureName.find ("_rt_") == 0) {
+        if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
             this->m_texture = this->getScene ().findFBO (textureName);
         } else {
             // get the first texture on the first pass (this one represents the image assigned to this object)

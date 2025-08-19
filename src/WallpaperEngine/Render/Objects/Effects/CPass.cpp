@@ -53,7 +53,6 @@ CPass::CPass (
     m_fboProvider (std::move(fboProvider)),
     m_target (target) {
     this->setupShaders ();
-    this->setupShaderVariables ();
 }
 
 std::shared_ptr<const ITexture> CPass::resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous) {
@@ -471,6 +470,8 @@ void CPass::setupShaders () {
     glDeleteShader (vertexShaderID);
     glDeleteShader (fragmentShaderID);
 
+    // first setup the default values, these will be overwritten by future values
+    this->setupShaderVariables ();
     // setup uniforms
     this->setupUniforms ();
     // setup attributes too
