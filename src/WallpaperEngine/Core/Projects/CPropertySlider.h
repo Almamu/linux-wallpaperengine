@@ -2,10 +2,8 @@
 
 #include "CProperty.h"
 
-#include "WallpaperEngine/Core/Core.h"
-
 namespace WallpaperEngine::Core::Projects {
-using json = nlohmann::json;
+using JSON = WallpaperEngine::Data::JSON::JSON;
 
 /**
  * Represents a slider value with a minimum and maximum value
@@ -14,7 +12,7 @@ class CPropertySlider final : public CProperty {
   public:
     CPropertySlider (float value, const std::string& name, const std::string& text, float min, float max, float step);
 
-    static std::shared_ptr<CPropertySlider> fromJSON (const json& data, const std::string& name);
+    static std::shared_ptr<CPropertySlider> fromJSON (const JSON& data, const std::string& name);
     /**
      * @return The slider's minimum value
      */
@@ -30,7 +28,7 @@ class CPropertySlider final : public CProperty {
     [[nodiscard]] std::string dump () const override;
     void set (const std::string& value) override;
 
-    [[nodiscard]] const char* getType () const override;
+    [[nodiscard]] const char* getPropertyType () const override;
 
   private:
     /** Minimum value */

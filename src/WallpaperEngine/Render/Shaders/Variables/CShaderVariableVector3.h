@@ -7,7 +7,8 @@
 namespace WallpaperEngine::Render::Shaders::Variables {
 class CShaderVariableVector3 final : public CShaderVariable {
   public:
-    explicit CShaderVariableVector3 (const glm::vec3& defaultValue);
+    using CShaderVariable::CShaderVariable;
+
     CShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name);
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

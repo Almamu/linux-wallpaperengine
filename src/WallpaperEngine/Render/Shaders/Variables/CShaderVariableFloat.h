@@ -5,7 +5,8 @@
 namespace WallpaperEngine::Render::Shaders::Variables {
 class CShaderVariableFloat final : public CShaderVariable {
   public:
-    explicit CShaderVariableFloat (float defaultValue);
+    using CShaderVariable::CShaderVariable;
+
     CShaderVariableFloat (float defaultValue, const std::string& name);
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

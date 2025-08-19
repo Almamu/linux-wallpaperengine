@@ -727,7 +727,7 @@ void CPass::addUniform (CShaderVariable* value) {
     this->addUniform (value, value);
 }
 
-void CPass::addUniform (CShaderVariable* value, const CDynamicValue* setting) {
+void CPass::addUniform (CShaderVariable* value, const DynamicValue* setting) {
     if (value->is<CShaderVariableFloat> ()) {
         this->addUniform (value->getName (), setting->getFloat ());
     } else if (value->is<CShaderVariableInteger> ()) {

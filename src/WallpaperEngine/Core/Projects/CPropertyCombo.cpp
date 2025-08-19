@@ -3,34 +3,33 @@
 
 #include "CPropertyCombo.h"
 
-#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Logging/CLog.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
-std::shared_ptr<CPropertyCombo> CPropertyCombo::fromJSON (const json& data, std::string name) {
+std::shared_ptr<CPropertyCombo> CPropertyCombo::fromJSON (const JSON& data, std::string name) {
     std::vector<CPropertyComboValue> values;
-    const auto options = jsonFindRequired (data, "options", "Options for a property combo is required");
+    const auto options = data.require ("options", "Options for a property combo is required");
 
-    if (!options->is_array ())
+    if (!options.is_array ())
         sLog.exception ("Property combo options should be an array");
 
-    for (auto& cur : (*options)) {
+    for (auto& cur : options) {
         // TODO: PROPERLY REPORT THESE ISSUES
         if (!cur.is_object ())
             continue;
 
         // check for label and value to ensure they're there
         values.push_back ({
-            .label = jsonFindRequired<std::string> (cur, "label", "Label is required for a property combo option"),
-            .value = jsonFindRequired<std::string> (cur, "value", "Value is required for a property combo option")
+            .label = cur.require ("label", "Label is required for a property combo option"),
+            .value = cur.require ("value", "Value is required for a property combo option")
         });
     }
 
     return std::make_shared <CPropertyCombo> (
         std::move(name),
-        jsonFindDefault<std::string> (data, "text", ""),
-        jsonFindRequired<std::string> (data, "value", "Value is required for a property combo"),
+        data.optional <std::string> ("text", ""),
+        data.require ("value", "Value is required for a property combo"),
         values
     );
 }
@@ -102,6 +101,6 @@ int CPropertyCombo::translateValueToIndex (const std::string& value) const {
     return index;
 }
 
-const char* CPropertyCombo::getType () const {
+const char* CPropertyCombo::getPropertyType () const {
     return "combo";
 }

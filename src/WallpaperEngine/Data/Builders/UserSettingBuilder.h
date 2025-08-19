@@ -9,9 +9,7 @@ class UserSettingBuilder {
   public:
     template <typename T>
     static UserSettingUniquePtr fromValue (T defaultValue) {
-        DynamicValueUniquePtr value = std::make_unique <DynamicValue> ();
-
-        value->update (defaultValue);
+        DynamicValueUniquePtr value = std::make_unique <DynamicValue> (defaultValue);
 
         return std::make_unique <UserSetting> (UserSetting {
             .value = std::move (value),

@@ -2,11 +2,15 @@
 
 #include <cstring>
 #include <string>
-#include <glm/glm.hpp>
+#include <glm/detail/qualifier.hpp>
+#include <glm/detail/type_vec1.hpp>
 
 #include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Data/Utils/SFINAE.h"
 
 namespace WallpaperEngine::Data::Builders {
+using namespace WallpaperEngine::Data::Utils::SFINAE;
+
 class VectorBuilder {
   private:
     /**
@@ -60,7 +64,7 @@ class VectorBuilder {
      * @return
      */
     template <int length, typename type, glm::qualifier qualifier>
-    static glm::vec<length, type, qualifier> parse (const std::string& str) {
+    [[nodiscard]] static glm::vec<length, type, qualifier> parse (const std::string& str) {
         const char* p = str.c_str ();
 
         // get up to 4 spaces
@@ -118,6 +122,15 @@ class VectorBuilder {
             };
         }
     }
+    template <typename T, typename std::enable_if_t<is_glm_vec<T>::value, int> = 0>
+    [[nodiscard]] static T parse (const std::string& str) {
+        constexpr int length = GlmVecTraits<T>::length;
+        constexpr glm::qualifier qualifier = GlmVecTraits<T>::qualifier;
+
+        // call the specialized version of the function
+        return parse<length, typename GlmVecTraits<T>::type, qualifier> (str);
+    }
+  private:
 };
 
 template <>
@@ -127,7 +140,7 @@ inline float VectorBuilder::convert<float> (const char* str) {
 
 template <>
 inline int VectorBuilder::convert<int> (const char* str) {
-    return std::strtol (str, nullptr, 10);
+    return std::stoi (str);
 }
 
 template <>

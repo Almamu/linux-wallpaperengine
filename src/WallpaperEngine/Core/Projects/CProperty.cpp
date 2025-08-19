@@ -10,23 +10,23 @@
 
 using namespace WallpaperEngine::Core::Projects;
 
-std::shared_ptr<CProperty> CProperty::fromJSON (const json& data, const std::string& name) {
-    const auto type = jsonFindRequired (data, "type", "Project properties must have the type field");
+std::shared_ptr<CProperty> CProperty::fromJSON (const JSON& data, const std::string& name) {
+    const auto type = data.require <std::string> ("type", "Project properties must have the type field");
 
-    if (*type == "color")
+    if (type == "color")
         return CPropertyColor::fromJSON (data, name);
-    if (*type == "bool")
+    if (type == "bool")
         return CPropertyBoolean::fromJSON (data, name);
-    if (*type == "slider")
+    if (type == "slider")
         return CPropertySlider::fromJSON (data, name);
-    if (*type == "combo")
+    if (type == "combo")
         return CPropertyCombo::fromJSON (data, name);
-    if (*type == "text")
+    if (type == "text")
         return CPropertyText::fromJSON (data, name);
 
-    if (*type != "group") {
+    if (type != "group") {
         // show the error and ignore this property
-        sLog.error ("Unexpected type for property: ", *type);
+        sLog.error ("Unexpected type for property: ", type);
         sLog.error (data);
     }
 
@@ -36,18 +36,6 @@ std::shared_ptr<CProperty> CProperty::fromJSON (const json& data, const std::str
 CProperty::CProperty (std::string name, std::string text) :
     m_name (std::move(name)),
     m_text (std::move(text)) {}
-
-void CProperty::subscribe (const function_type& callback) const {
-    this->m_subscriptions.push_back (callback);
-}
-
-void CProperty::propagate () const {
-    CDynamicValue::propagate ();
-
-    for (const auto& callback : this->m_subscriptions) {
-        callback(this);
-    }
-}
 
 const std::string& CProperty::getName () const {
     return this->m_name;

@@ -3,10 +3,8 @@
 #include <memory>
 #include <optional>
 
+#include "DynamicValue.h"
 #include "Types.h"
-
-#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
-#include "WallpaperEngine/Core/Projects/CProperty.h"
 
 namespace WallpaperEngine::Data::Model {
 struct ConditionInfo {

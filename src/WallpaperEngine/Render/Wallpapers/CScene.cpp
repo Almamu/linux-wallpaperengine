@@ -55,7 +55,6 @@ CScene::CScene (
     this->alias ("_alias_lightCookie", "_rt_shadowAtlas");
 
     // set clear color
-    // TODO: MAKE USE OF THE REFERENCE POSSIBILITIES?!
     const glm::vec3 clearColor = scene->colors.clear->value->getVec3 ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
@@ -92,7 +91,6 @@ CScene::CScene (
     // (it renders directly to the screen, whereas here we never do that from a scene)
     //
 
-    // TODO: TAKE THIS OUT OF HERE AND INTO THE GENERAL WALLPAPER APPLICATION?!
     const auto bloomOrigin = glm::vec3 { sceneWidth / 2, sceneHeight / 2, 0.0f };
     const auto bloomSize = glm::vec2 { sceneWidth, sceneHeight };
 

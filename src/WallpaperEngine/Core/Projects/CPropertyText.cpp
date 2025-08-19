@@ -1,13 +1,15 @@
 #include "CPropertyText.h"
-#include "WallpaperEngine/Core/Core.h"
 #include <sstream>
 #include <utility>
 
 using namespace WallpaperEngine::Core::Projects;
 
-std::shared_ptr<CPropertyText> CPropertyText::fromJSON (const json& data, std::string name) {
+std::shared_ptr<CPropertyText> CPropertyText::fromJSON (const JSON& data, std::string name) {
     //TODO: VALIDATE THIS IS RIGHT
-    return std::make_shared <CPropertyText> (std::move(name), *data.find ("type"));
+    return std::make_shared <CPropertyText> (
+        std::move(name),
+        data.optional <std::string> ("text", "")
+    );
 }
 
 std::string CPropertyText::dump () const {
@@ -24,7 +26,7 @@ void CPropertyText::set (const std::string& value) {
     this->m_text = value;
 }
 
-const char* CPropertyText::getType () const {
+const char* CPropertyText::getPropertyType () const {
     return "text";
 }
 

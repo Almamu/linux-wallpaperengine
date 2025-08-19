@@ -114,7 +114,7 @@ class CPass final : public Helpers::CContextAware {
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (CShaderVariable* value);
-    void addUniform (CShaderVariable* value, const CDynamicValue* setting);
+    void addUniform (CShaderVariable* value, const DynamicValue* setting);
     void addUniform (const std::string& name, int value);
     void addUniform (const std::string& name, double value);
     void addUniform (const std::string& name, float value);

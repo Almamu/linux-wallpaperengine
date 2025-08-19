@@ -6,7 +6,6 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Assets/ITexture.h"
-#include "WallpaperEngine/Core/Core.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 #include "CShaderUnit.h"

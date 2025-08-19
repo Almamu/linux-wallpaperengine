@@ -198,8 +198,7 @@ if(X11_SUPPORT_FOUND)
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
         src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
         src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h
-            src/WallpaperEngine/Data/Model/UserSetting.h)
+        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
     SET(X11_INCLUDES
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
@@ -283,9 +282,6 @@ add_executable(
     src/WallpaperEngine/Assets/ITexture.h
     src/WallpaperEngine/Assets/CTexture.h
     src/WallpaperEngine/Assets/CTexture.cpp
-
-    src/WallpaperEngine/Core/Core.h
-    src/WallpaperEngine/Core/Core.cpp
 
     src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.cpp
     src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.h
@@ -404,9 +400,6 @@ add_executable(
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 
-    src/WallpaperEngine/Core/DynamicValues/CDynamicValue.cpp
-    src/WallpaperEngine/Core/DynamicValues/CDynamicValue.h
-
     src/WallpaperEngine/Core/Projects/CProperty.h
     src/WallpaperEngine/Core/Projects/CProperty.cpp
     src/WallpaperEngine/Core/Projects/CPropertyColor.h
@@ -427,8 +420,12 @@ add_executable(
     src/WallpaperEngine/Data/Model/Material.h
     src/WallpaperEngine/Data/Model/Effect.h
     src/WallpaperEngine/Data/Model/Model.h
+    src/WallpaperEngine/Data/Model/UserSetting.h
+    src/WallpaperEngine/Data/Model/DynamicValue.h
+    src/WallpaperEngine/Data/Model/DynamicValue.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.h
+    src/WallpaperEngine/Data/Utils/SFINAE.h
     src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
     src/WallpaperEngine/Data/Parsers/ProjectParser.h
     src/WallpaperEngine/Data/Parsers/WallpaperParser.cpp

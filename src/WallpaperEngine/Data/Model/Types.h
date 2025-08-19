@@ -1,10 +1,16 @@
 #pragma once
 
+#include <map>
+#include <vector>
+#include <string>
+#include <optional>
 #include <memory>
 
 #include "WallpaperEngine/Assets/CContainer.h"
-#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
-#include "WallpaperEngine/Core/Projects/CProperty.h"
+
+namespace WallpaperEngine::Core::Projects {
+class CProperty;
+}
 
 namespace WallpaperEngine::Data::Model {
 struct Project;
@@ -19,6 +25,7 @@ class Image;
 struct ImageEffect;
 struct ImageEffectPassOverride;
 class Particle;
+class DynamicValue;
 struct Material;
 struct MaterialPass;
 struct FBO;
@@ -33,7 +40,6 @@ using Property = WallpaperEngine::Core::Projects::CProperty;
 using PropertySharedPtr = std::shared_ptr <Property>;
 using PropertyWeakPtr = std::weak_ptr <Property>;
 using Properties = std::map <std::string, PropertySharedPtr>;
-using DynamicValue = WallpaperEngine::Core::DynamicValues::CDynamicValue;
 using DynamicValueUniquePtr = std::unique_ptr <DynamicValue>;
 using DynamicValueSharedPtr = std::shared_ptr <DynamicValue>;
 using DynamicValueWeakPtr = std::weak_ptr <DynamicValue>;

@@ -6,14 +6,14 @@
 
 #include "CGLSLContext.h"
 #include "WallpaperEngine/Assets/CContainer.h"
-#include "WallpaperEngine/Core/Core.h"
+#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "nlohmann/json.hpp"
 
 #include "WallpaperEngine/Data/Model/Types.h"
 
 namespace WallpaperEngine::Render::Shaders {
-using json = nlohmann::json;
+using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 

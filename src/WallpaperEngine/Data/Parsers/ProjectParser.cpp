@@ -6,6 +6,7 @@
 #include "WallpaperParser.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Core/Projects/CProperty.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 

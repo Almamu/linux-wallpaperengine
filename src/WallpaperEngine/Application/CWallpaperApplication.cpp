@@ -10,6 +10,8 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
+#include "WallpaperEngine/Core/Projects/CProperty.h"
+
 #include "WallpaperEngine/Data/Parsers/ProjectParser.h"
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
 

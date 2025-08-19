@@ -15,6 +15,8 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
+#include "WallpaperEngine/Data/Builders/VectorBuilder.h"
+
 #define SHADER_HEADER(filename) "#version 330\n" \
     "// ======================================================\n" \
     "// Processed shader " + \
@@ -47,6 +49,7 @@
 
 using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Render::Shaders;
 
 CShaderUnit::CShaderUnit (
@@ -322,18 +325,18 @@ void CShaderUnit::preprocessRequires () {
 
 void CShaderUnit::parseComboConfiguration (const std::string& content, int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
-    json data = json::parse (content);
-    const auto combo = jsonFindRequired (data, "combo", "cannot parse combo information");
+    const auto data = JSON::parse (content);
+    const auto combo = data.require <std::string> ("combo", "cannot parse combo information");
     // ignore type as it seems to be used only on the editor
     // const auto type = data.find ("type");
     const auto defvalue = data.find ("default");
 
     // check the combos
-    const auto entry = this->m_combos.find (combo->get<std::string> ());
-    const auto entryOverride = this->m_overrideCombos.find (combo->get<std::string> ());
+    const auto entry = this->m_combos.find (combo);
+    const auto entryOverride = this->m_overrideCombos.find (combo);
 
     // add the combo to the found list
-    this->m_usedCombos.emplace (*combo, true);
+    this->m_usedCombos.emplace (combo, true);
 
     // if the combo was not found in the predefined values this means that the default value in the JSON data can be
     // used so only define the ones that are not already defined
@@ -341,15 +344,15 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_discoveredCombos.emplace (*combo, (int) defaultValue);
+            this->m_discoveredCombos.emplace (combo, (int) defaultValue);
         } else if (defvalue->is_number_float ()) {
-            sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", *combo);
+            sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", combo);
         } else if (defvalue->is_number_integer ()) {
-            this->m_discoveredCombos.emplace (*combo, defvalue->get<int> ());
+            this->m_discoveredCombos.emplace (combo, defvalue->get<int> ());
         } else if (defvalue->is_string ()) {
-            sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", *combo);
+            sLog.exception ("string combos are not supported in shader ", this->m_file, ". ", combo);
         } else {
-            sLog.exception ("cannot parse combo information ", *combo, ". unknown type for ", defvalue->dump ());
+            sLog.exception ("cannot parse combo information ", combo, ". unknown type for ", defvalue->dump ());
         }
     }
 }
@@ -357,45 +360,42 @@ void CShaderUnit::parseComboConfiguration (const std::string& content, int defau
 void CShaderUnit::parseParameterConfiguration (
     const std::string& type, const std::string& name, const std::string& content
 ) {
-    json data = json::parse (content);
-    const auto material = data.find ("material");
-    const auto defvalue = data.find ("default");
+    const auto data = JSON::parse (content);
+    const auto material = data.optional ("material");
+    const auto defvalue = data.optional ("default");
     // auto range = data.find ("range");
     const auto combo = data.find ("combo");
 
     // this is not a real parameter
     auto constant = this->m_constants.end ();
 
-    if (material != data.end ())
+    if (material.has_value ())
         constant = this->m_constants.find (*material);
 
-    if (constant == this->m_constants.end () && defvalue == data.end ()) {
+    if (constant == this->m_constants.end () && !defvalue.has_value ()) {
         if (type != "sampler2D")
             sLog.exception ("Cannot parse parameter data for ", name, " in shader ", this->m_file);
     }
 
     Variables::CShaderVariable* parameter = nullptr;
 
-    // TODO: SUPPORT VALUES FOR ALL THESE TYPES
-    // TODO: MAYBE EVEN CONNECT THESE TO THE CORRESPONDING PROPERTY SO THINGS ARE UPDATED AS THE ORIGIN VALUES CHANGE?
-    // TODO: MAKE USE OF PARSERS INSTEAD OF CORE
     if (type == "vec4") {
-        parameter = new Variables::CShaderVariableVector4 (WallpaperEngine::Core::aToVector4 (*defvalue));
+        parameter = new Variables::CShaderVariableVector4 (VectorBuilder::parse <glm::vec4> (defvalue->get <std::string> ()));
     } else if (type == "vec3") {
-        parameter = new Variables::CShaderVariableVector3 (WallpaperEngine::Core::aToVector3 (*defvalue));
+        parameter = new Variables::CShaderVariableVector3 (VectorBuilder::parse <glm::vec3> (*defvalue));
     } else if (type == "vec2") {
-        parameter = new Variables::CShaderVariableVector2 (WallpaperEngine::Core::aToVector2 (*defvalue));
+        parameter = new Variables::CShaderVariableVector2 (VectorBuilder::parse <glm::vec2> (*defvalue));
     } else if (type == "float") {
         if (defvalue->is_string ()) {
-            parameter = new Variables::CShaderVariableFloat (strtof32 ((defvalue->get<std::string> ()).c_str (), nullptr));
+            parameter = new Variables::CShaderVariableFloat (std::stoi (defvalue->get<std::string> ()));
         } else {
-            parameter = new Variables::CShaderVariableFloat (*defvalue);
+            parameter = new Variables::CShaderVariableFloat (defvalue->get<float> ());
         }
     } else if (type == "int") {
         if (defvalue->is_string ()) {
-            parameter = new Variables::CShaderVariableInteger (strtol((defvalue->get<std::string> ()).c_str (), nullptr, 10));
+            parameter = new Variables::CShaderVariableInteger (std::stoi(defvalue->get<std::string> ()));
         } else {
-            parameter = new Variables::CShaderVariableInteger (*defvalue);
+            parameter = new Variables::CShaderVariableInteger (defvalue->get <int> ());
         }
     } else if (type == "sampler2D" || type == "sampler2DComparison") {
         // samplers can have special requirements, check what sampler we're working with and create definitions
@@ -460,7 +460,7 @@ void CShaderUnit::parseParameterConfiguration (
             }
 
             if (isRequired && !textureSlotUsed) {
-                if (defvalue == data.end ()) {
+                if (!defvalue.has_value ()) {
                     isRequired = false;
                 } else {
                     // is the combo registered already?
@@ -473,7 +473,7 @@ void CShaderUnit::parseParameterConfiguration (
                         isRequired = false;
                         // otherwise a default value must be used
                     } else if (defvalue->is_string ()) {
-                        comboValue = strtol (defvalue->get <std::string> ().c_str (), nullptr, 10);
+                        comboValue = std::stoi (defvalue->get <std::string> ().c_str ());
                     } else if (defvalue->is_number()) {
                         comboValue = *defvalue;
                     } else {
@@ -500,7 +500,7 @@ void CShaderUnit::parseParameterConfiguration (
         return;
     }
 
-    if (material != data.end () && parameter != nullptr) {
+    if (material.has_value () && parameter != nullptr) {
         parameter->setIdentifierName (*material);
         parameter->setName (name);
 

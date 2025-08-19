@@ -3,7 +3,7 @@
 #include "CProperty.h"
 
 namespace WallpaperEngine::Core::Projects {
-using json = nlohmann::json;
+using JSON = WallpaperEngine::Data::JSON::JSON;;
 
 /**
  * Represents different combo values
@@ -23,7 +23,7 @@ struct CPropertyComboValue {
  */
 class CPropertyCombo final : public CProperty {
   public:
-    static std::shared_ptr<CPropertyCombo> fromJSON (const json& data, std::string name);
+    static std::shared_ptr<CPropertyCombo> fromJSON (const JSON& data, std::string name);
 
     CPropertyCombo (
         std::string name, std::string text, const std::string& defaultValue,
@@ -33,7 +33,7 @@ class CPropertyCombo final : public CProperty {
     void set (const std::string& value) override;
     int translateValueToIndex (const std::string& value) const;
 
-    [[nodiscard]] const char* getType () const override;
+    [[nodiscard]] const char* getPropertyType () const override;
 
   private:
     /** List of values available to select */

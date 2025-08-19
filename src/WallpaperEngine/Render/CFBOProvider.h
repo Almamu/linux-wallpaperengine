@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/vec2.hpp>
+
 #include "CFBO.h"
 #include "WallpaperEngine/Data/Model/Effect.h"
 

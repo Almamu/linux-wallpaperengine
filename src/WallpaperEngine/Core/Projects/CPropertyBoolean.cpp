@@ -2,15 +2,14 @@
 #include <utility>
 
 #include "CPropertyBoolean.h"
-#include "WallpaperEngine/Core/Core.h"
 
 using namespace WallpaperEngine::Core::Projects;
 
-std::shared_ptr<CPropertyBoolean> CPropertyBoolean::fromJSON (const json& data, std::string name) {
+std::shared_ptr<CPropertyBoolean> CPropertyBoolean::fromJSON (const JSON& data, std::string name) {
     return std::make_shared <CPropertyBoolean> (
-        jsonFindRequired <bool> (data, "value", "Boolean property must have a value"),
+        data.require ("value", "Boolean property must have a value"),
         std::move(name),
-        jsonFindDefault<std::string> (data, "text", "")
+        data.optional <std::string> ("text", "")
     );
 }
 
@@ -31,7 +30,7 @@ std::string CPropertyBoolean::dump () const {
     return ss.str ();
 }
 
-const char* CPropertyBoolean::getType () const {
+const char* CPropertyBoolean::getPropertyType () const {
     return "bool";
 }
 

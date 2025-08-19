@@ -4,13 +4,7 @@
 
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
-CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue) :
-    CShaderVariable () {
-    this->update (defaultValue);
-}
-
-CShaderVariableInteger::CShaderVariableInteger (int32_t defaultValue, const std::string& name) :
-    CShaderVariable () {
+CShaderVariableInteger::CShaderVariableInteger (int defaultValue, const std::string& name) :
+    CShaderVariable (defaultValue) {
     this->setName (name);
-    this->update (defaultValue);
 }

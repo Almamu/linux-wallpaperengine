@@ -3,6 +3,7 @@
 
 #include "CPropertyColor.h"
 
+using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Core::Projects;
 
 glm::vec3 ParseColor (std::string value) {
@@ -13,19 +14,20 @@ glm::vec3 ParseColor (std::string value) {
     }
 
     if (value.find ('.') == std::string::npos && value != "0 0 0" && value != "1 1 1") {
-        const glm::ivec3 intcolor = WallpaperEngine::Core::aToColori (value);
+        const auto intcolor = VectorBuilder::parse <glm::ivec3> (value);
 
         return {intcolor.r / 255.0, intcolor.g / 255.0, intcolor.b / 255.0};
     }
 
-    return WallpaperEngine::Core::aToColorf (value);
+    return VectorBuilder::parse <glm::vec3> (value);
 }
 
-std::shared_ptr<CPropertyColor> CPropertyColor::fromJSON (const json& data, std::string name) {
-    const auto value = jsonFindRequired <std::string> (data, "value", "Color property must have a value");
-    const auto text = jsonFindDefault<std::string> (data, "text", "");
-
-    return std::make_shared <CPropertyColor> (value, std::move(name), text);
+std::shared_ptr<CPropertyColor> CPropertyColor::fromJSON (const JSON& data, std::string name) {
+    return std::make_shared <CPropertyColor> (
+        data.require ("value", "Color property must have a value"),
+        std::move(name),
+        data.optional <std::string> ("text", "")
+    );
 }
 
 void CPropertyColor::set (const std::string& value) {
@@ -45,7 +47,7 @@ std::string CPropertyColor::dump () const {
     return ss.str ();
 }
 
-const char* CPropertyColor::getType () const {
+const char* CPropertyColor::getPropertyType () const {
     return "color";
 }
 

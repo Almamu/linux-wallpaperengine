@@ -1,32 +1,17 @@
 #pragma once
 
-#include "WallpaperEngine/Core/DynamicValues/CDynamicValue.h"
+#include "WallpaperEngine/Data/Utils/TypeCaster.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
+#include <exception>
 #include <string>
 
 namespace WallpaperEngine::Render::Shaders::Variables {
-class CShaderVariable : public Core::DynamicValues::CDynamicValue {
+using namespace WallpaperEngine::Data::Model;
+using namespace WallpaperEngine::Data::Utils;
+
+class CShaderVariable : public DynamicValue, public TypeCaster {
   public:
-    virtual ~CShaderVariable () = default;
-
-    template <class T> [[nodiscard]] const T* as () const {
-        if (is <T> ()) {
-            return static_cast <const T*> (this);
-        }
-
-        throw std::bad_cast ();
-    }
-
-    template <class T> [[nodiscard]] T* as () {
-        if (is <T> ()) {
-            return static_cast <T*> (this);
-        }
-
-        throw std::bad_cast ();
-    }
-
-    template <class T> [[nodiscard]] bool is () const {
-        return typeid (*this) == typeid(T);
-    }
+    using DynamicValue::DynamicValue;
 
     [[nodiscard]] const std::string& getIdentifierName () const;
     [[nodiscard]] const std::string& getName () const;
@@ -35,7 +20,7 @@ class CShaderVariable : public Core::DynamicValues::CDynamicValue {
     void setName (const std::string& name);
 
   private:
-    std::string m_identifierName = "";
-    std::string m_name = "";
+    std::string m_identifierName;
+    std::string m_name;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables
