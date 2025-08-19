@@ -541,7 +541,10 @@ const std::string& CShaderUnit::compile () {
 
     for (const auto& combo : this->m_overrideCombos) {
         if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            this->m_final += DEFINE_COMBO (combo.first, combo.second);
+            std::string name;
+            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+
+            this->m_final += DEFINE_COMBO (name, combo.second);
         }
 
         addedCombos.emplace (combo.first, true);
@@ -549,14 +552,20 @@ const std::string& CShaderUnit::compile () {
     // now add all the combos to the source
     for (const auto& combo : this->m_combos) {
         if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            this->m_final += DEFINE_COMBO (combo.first, combo.second);
+            std::string name;
+            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+
+            this->m_final += DEFINE_COMBO (name, combo.second);
         }
 
         addedCombos.emplace (combo.first, true);
     }
     for (const auto& combo : this->m_discoveredCombos) {
         if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            this->m_final += DEFINE_COMBO (combo.first, combo.second);
+            std::string name;
+            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+
+            this->m_final += DEFINE_COMBO (name, combo.second);
         }
 
         addedCombos.emplace (combo.first, true);
@@ -564,14 +573,20 @@ const std::string& CShaderUnit::compile () {
     if (this->m_link != nullptr) {
         for (const auto& combo : this->m_link->getCombos ()) {
             if (addedCombos.find (combo.first) == addedCombos.end ()) {
-                this->m_final += DEFINE_COMBO (combo.first, combo.second);
+                std::string name;
+                std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+
+                this->m_final += DEFINE_COMBO (name, combo.second);
             }
 
             addedCombos.emplace (combo.first, true);
         }
         for (const auto& combo : this->m_link->getDiscoveredCombos ()) {
             if (addedCombos.find (combo.first) == addedCombos.end ()) {
-                this->m_final += DEFINE_COMBO (combo.first, combo.second);
+                std::string name;
+                std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+
+                this->m_final += DEFINE_COMBO (name, combo.second);
             }
 
             addedCombos.emplace (combo.first, true);
