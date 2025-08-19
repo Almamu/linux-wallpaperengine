@@ -56,7 +56,7 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                     .mouseInfluence = general.optional ("cameraparallaxmouseinfluence", 1.0f),
                 },
                 .shake = {
-                    .enabled = general.optional ("camerashake", false),
+                    .enabled = general.user ("camerashake", properties, false),
                     .amplitude = general.optional ("camerashakeamplitude", 0.0f),
                     .roughness = general.optional ("camerashakeroughness", 0.0f),
                     .speed = general.optional ("camerashakespeed", 0.0f),

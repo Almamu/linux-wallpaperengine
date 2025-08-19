@@ -80,7 +80,7 @@ struct SceneData {
          * Shake effect configuration
          */
         struct {
-            bool enabled;
+            UserSettingUniquePtr enabled;
             float amplitude;
             float roughness;
             float speed;

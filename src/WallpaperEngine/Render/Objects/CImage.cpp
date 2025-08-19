@@ -230,24 +230,38 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 
 void CImage::setup () {
     // do not double-init stuff, that's bad!
-    if (this->m_initialized)
+    if (this->m_initialized) {
         return;
+    }
+
+    // TODO: SETUP RECALCULATION OF THINGS WHEN A VISIBILITY VALUE CHANGES!!
+    if (!this->m_image.visible->value->getBool ()) {
+        return;
+    }
 
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
     // passthrough images without effects are bad, do not draw them
-    if (this->m_image.model->passthrough && this->m_image.effects.empty ())
+    if (this->m_image.model->passthrough && this->m_image.effects.empty ()) {
         return;
+    }
 
-    // add blendmode to the combos
-    for (const auto& cur : this->getImage ().model->material->passes)
+    // copy pass to the composite layer
+    for (const auto& cur : this->getImage ().model->material->passes) {
         this->m_passes.push_back (
-            new CPass (*this, std::make_shared<CFBOProvider>(this), *cur, std::nullopt, std::nullopt, std::nullopt)
+            new CPass (*this, std::make_shared<CFBOProvider> (this), *cur, std::nullopt, std::nullopt, std::nullopt)
         );
+    }
 
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
         // generate the effects used by this material
         for (const auto& cur : this->m_image.effects) {
+            // do not add non-visible effects, this might need some adjustements tho as some effects might not be visible
+            // but affect the output of the image...
+            if (!cur->visible->value->getBool ()) {
+                continue;
+            }
+
             auto fboProvider = std::make_shared<CFBOProvider> (this);
 
             // create all the fbos for this effect
@@ -325,6 +339,7 @@ void CImage::setup () {
         }
     }
 
+    // extra render pass if there's any blending to be done
     if (this->m_image.colorBlendMode > 0) {
         this->m_materials.colorBlending.material = MaterialParser::load (this->getScene ().getScene ().project, "materials/util/effectpassthrough.json");
         this->m_materials.colorBlending.override = std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
@@ -360,8 +375,9 @@ void CImage::setup () {
     // calculate full animation time (if any)
     this->m_animationTime = 0.0f;
 
-    for (const auto& cur : this->getTexture ()->getFrames ())
+    for (const auto& cur : this->getTexture ()->getFrames ()) {
         this->m_animationTime += cur->frametime;
+    }
 
     this->setupPasses ();
     this->m_initialized = true;
@@ -379,6 +395,8 @@ void CImage::setupPasses () {
 
     for (; cur != end; ++cur) {
         // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
+        // TODO: THIS REQUIRES ON-THE-FLY EVALUATION OF EFFECTS VISIBILITY TO FIGURE OUT
+        // TODO: WHICH ONE IS THE LAST + A FEW OTHER THINGS
         Effects::CPass* pass = *cur;
         std::shared_ptr<const CFBO> prevDrawTo = drawTo;
         GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
