@@ -265,39 +265,47 @@ void StringPrinter::printEffect (const Effect& effect) {
 
 void StringPrinter::printEffectPass (const EffectPass& effectPass) {
     if (effectPass.command.has_value ()) {
-        const auto& command = effectPass.command.value ();
+        this->m_out << "Command: " << (*effectPass.command == Command_Copy ? "copy" : "swap");
 
-        this->m_out << "Command: " << (command.command == Command_Copy ? "copy" : "swap");
-        this->lineEnd ();
-        this->m_out << "Source: " << command.source;
-        this->lineEnd ();
-        this->m_out << "Target: " << command.target;
-    } else {
+        if (effectPass.target.has_value () || effectPass.source.has_value ()) {
+            this->lineEnd ();
+        }
+    }
+
+    if (effectPass.target.has_value ()) {
+        this->m_out << "Target: " << effectPass.target.value ();
+
+        if (effectPass.source.has_value ()) {
+            this->lineEnd ();
+        }
+    }
+
+    if (effectPass.source.has_value ()) {
+        this->m_out << "Source: " << effectPass.source.value ();
+    }
+
+    if (!effectPass.binds.empty ()) {
         if (effectPass.target.has_value ()) {
-            this->m_out << "Target: " << effectPass.target.value ();
-        }
-
-        if (!effectPass.binds.empty ()) {
-            if (effectPass.target.has_value ()) {
-                this->lineEnd ();
-            }
-
-            this->m_out << "Binds count: " << effectPass.binds.size ();
-            this->increaseIndentation ();
-
-            for (const auto& bind : effectPass.binds) {
-                this->lineEnd ();
-                this->m_out << "Bind " << bind.first << ": " << bind.second;
-            }
-
-            this->decreaseIndentation ();
-        }
-
-        if (effectPass.target.has_value () || !effectPass.binds.empty ()) {
             this->lineEnd ();
         }
 
-        this->printMaterial (*effectPass.material);
+        this->m_out << "Binds count: " << effectPass.binds.size ();
+        this->increaseIndentation ();
+
+        for (const auto& bind : effectPass.binds) {
+            this->lineEnd ();
+            this->m_out << "Bind " << bind.first << ": " << bind.second;
+        }
+
+        this->decreaseIndentation ();
+    }
+
+    if (effectPass.target.has_value () || !effectPass.binds.empty ()) {
+        this->lineEnd ();
+    }
+
+    if (effectPass.material.has_value ()) {
+        this->printMaterial (**effectPass.material);
     }
 }
 

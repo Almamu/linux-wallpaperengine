@@ -349,7 +349,7 @@ const MaterialPass& CPass::getPass () const {
     return this->m_pass;
 }
 
-const std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const {
+std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const {
     return this->m_target;
 }
 

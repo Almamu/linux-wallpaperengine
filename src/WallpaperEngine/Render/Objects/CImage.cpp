@@ -2,7 +2,6 @@
 #include <sstream>
 
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
-#include "WallpaperEngine/Data/Builders/UserSettingBuilder.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/Material.h"
 
@@ -245,7 +244,6 @@ void CImage::setup () {
             new CPass (*this, std::make_shared<CFBOProvider>(this), *cur, std::nullopt, std::nullopt, std::nullopt)
         );
 
-    // TODO: MAYBE GET RID OF THE WHOLE EFFECT CLASS AND PROCESS THE EFFECTS DIRECTLY TO SIMPLIFY RENDERING CODE?
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
         // generate the effects used by this material
@@ -265,23 +263,63 @@ void CImage::setup () {
             auto endOverride = cur->passOverrides.end ();
 
             for (; curEffect != endEffect; curEffect++) {
-                auto curPass = (*curEffect)->material->passes.begin ();
-                auto endPass = (*curEffect)->material->passes.end ();
+                if (!(*curEffect)->material.has_value ()) {
+                    if (!(*curEffect)->command.has_value ()) {
+                        sLog.error ("Pass without material and command not supported");
+                        continue;
+                    }
 
-                const auto override = curOverride != endOverride
-                    ? **curOverride
-                    : std::optional<std::reference_wrapper<const ImageEffectPassOverride>> (std::nullopt);
-                const auto target = (*curEffect)->target.has_value ()
-                    ? *(*curEffect)->target
-                    : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
+                    if (!(*curEffect)->source.has_value ()) {
+                        sLog.error ("Pass without material and source not supported");
+                        continue;
+                    }
 
-                this->m_passes.push_back (
-                    new CPass (
-                        *this, fboProvider, **curPass, override, (*curEffect)->binds, target)
-                );
+                    if (!(*curEffect)->target.has_value ()) {
+                        sLog.error ("Pass without material and target not supported");
+                        continue;
+                    }
 
-                if (curOverride != endOverride) {
-                    curOverride ++;
+                    if ((*curEffect)->command != Command_Copy) {
+                        sLog.error ("Only copy command is supported for pass without material");
+                        continue;
+                    }
+
+                    const auto virtualPass = MaterialPass {
+                        .blending = "normal",
+                        .cullmode = "nocull",
+                        .depthtest = "disabled",
+                        .depthwrite = "disabled",
+                        .shader = "commands/copy",
+                        .textures = {
+                            {0, *(*curEffect)->source}
+                        },
+                        .combos = {}
+                    };
+
+                    const auto& config = this->m_virtualPassess.emplace_back (virtualPass);
+
+                    // build a pass for a copy shader
+                    this->m_passes.push_back (
+                        new CPass (*this, fboProvider, config, std::nullopt, std::nullopt, (*curEffect)->target.value ())
+                    );
+                } else {
+                    auto curPass = (*curEffect)->material.value ()->passes.begin ();
+                    auto endPass = (*curEffect)->material.value ()->passes.end ();
+
+                    const auto override =
+                        curOverride != endOverride
+                            ? **curOverride
+                            : std::optional<std::reference_wrapper<const ImageEffectPassOverride>> (std::nullopt);
+                    const auto target = (*curEffect)->target.has_value ()
+                                            ? *(*curEffect)->target
+                                            : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
+
+                    this->m_passes.push_back (
+                        new CPass (*this, fboProvider, **curPass, override, (*curEffect)->binds, target));
+
+                    if (curOverride != endOverride) {
+                        curOverride++;
+                    }
                 }
             }
         }

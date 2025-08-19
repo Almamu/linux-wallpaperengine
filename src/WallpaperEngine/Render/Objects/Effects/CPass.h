@@ -45,7 +45,7 @@ class CPass final : public Helpers::CContextAware {
     [[nodiscard]] std::shared_ptr<const CFBOProvider> getFBOProvider () const;
     [[nodiscard]] const CImage& getImage () const;
     [[nodiscard]] const MaterialPass& getPass () const;
-    [[nodiscard]] const std::optional<std::reference_wrapper<std::string>> getTarget () const;
+    [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::CShader* getShader () const;
 
   private:

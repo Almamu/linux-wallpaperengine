@@ -52,27 +52,17 @@ std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& i
 
     for (const auto& cur : it) {
         const auto binds = cur.optional ("bind");
-        std::optional <PassCommand> command = std::nullopt;
+        const auto command = cur.optional ("command");
+        const auto material = cur.optional ("material");
 
-        if (cur.contains ("command")) {
-            command = {
-                .command = cur.require <std::string> ("command", "Material command must have a command") == "copy"
-                               ? Command_Copy
-                               : Command_Swap,
-                .target = cur.require <std::string> ("target", "Material command must have a target"),
-                .source = cur.require <std::string> ("source", "Material command must have a source"),
-            };
-        }
+        // TODO: CAN TARGET BE SET IF MATERIAL IS SET?
 
         result.push_back (std::make_unique <EffectPass> (EffectPass {
-            .material = MaterialParser::load (project, cur.require <std::string> ("material", "Effect pass must have a material")),
+            .material = material.has_value () ? MaterialParser::load (project, *material) : std::optional<MaterialUniquePtr> {},
             .binds = binds.has_value () ? parseBinds (binds.value ()) : std::map<int, std::string> {},
-            .command = command,
-            // target is a bit special: if the material is a command this will be nullopt
-            // and the actual target will be set in the command itself, otherwise it will
-            // be set to whatever is in the json, which is not required to be present for
-            // normal materials
-            .target = command.has_value () ? std::nullopt : cur.optional <std::string> ("target"),
+            .command = command.has_value () ? (command.value () == "copy" ? Command_Copy : Command_Swap) : std::optional<PassCommandType> {},
+            .source = command.has_value () ? cur.require <std::string> ("source", "Effect command must have a source") : cur.optional <std::string> ("source"),
+            .target = command.has_value () ? cur.require <std::string> ("target", "Effect command must have a target") : cur.optional <std::string> ("target"),
         }));
     }
 
@@ -108,6 +98,7 @@ std::vector <FBOUniquePtr> EffectParser::parseFBOs (const JSON& it) {
             .name = cur.require <std::string> ("name", "FBO must have a name"),
             .format = cur.optional <std::string> ("format", "rgba8888"),
             .scale = cur.optional ("scale", 1.0f),
+            .unique = cur.optional ("unique", false),
         }));
     }
 

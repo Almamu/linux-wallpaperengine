@@ -14,24 +14,18 @@ struct FBO {
     std::string name;
     std::string format;
     float scale;
-};
-
-struct PassCommand {
-    /** The type of command to execute */
-    PassCommandType command;
-    /** The target of the command (where to draw to) */
-    std::string target;
-    /** The source of the command (where to draw from) */
-    std::string source;
+    bool unique;
 };
 
 struct EffectPass {
     /** The material to use for this effect's pass */
-    MaterialUniquePtr material;
+    std::optional<MaterialUniquePtr> material;
     /** Texture bindings for this effect's pass */
     TextureMap binds;
     /** The command this material executes (if specified) */
-    std::optional <PassCommand> command;
+    std::optional <PassCommandType> command;
+    /** The source this material renders from (if specified) */
+    std::optional <std::string> source;
     /** The target this material renders to (if specified) */
     std::optional <std::string> target;
 };
