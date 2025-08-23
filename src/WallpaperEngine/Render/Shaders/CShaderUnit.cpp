@@ -409,6 +409,7 @@ void CShaderUnit::parseParameterConfiguration (
         // now convert it to integer
         // TODO: BETTER CONVERSION HERE
         size_t index = value - '0';
+        // TODO: SUPPORT USER TEXTURES!!
 
         if (combo != data.end ()) {
             // TODO: CLEANUP HOW THIS IS DETERMINED FIRST

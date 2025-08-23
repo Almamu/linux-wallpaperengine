@@ -16,5 +16,6 @@ class PropertyParser {
     static PropertySharedPtr parseBoolean (const JSON& it, std::string name);
     static PropertySharedPtr parseSlider (const JSON& it, std::string name);
     static PropertySharedPtr parseText (const JSON& it, std::string name);
+    static PropertySharedPtr parseSceneTexture (const JSON& it, std::string name);
 };
 }

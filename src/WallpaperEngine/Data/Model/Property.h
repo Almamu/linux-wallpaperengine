@@ -135,4 +135,18 @@ class PropertyText : public Property {
         return this->text;
     }
 };
+
+class PropertySceneTexture : public Property {
+  public:
+    explicit PropertySceneTexture (PropertyData data, std::string value) : Property (std::move(data)) {
+        this->update (value);
+    }
+
+    void update(const std::string& value) override {
+        this->m_value = value;
+    }
+
+  private:
+    std::string m_value;
+};
 }

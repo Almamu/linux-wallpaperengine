@@ -35,6 +35,7 @@ std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it,
 
 MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, Project& project) {
     const auto textures = it.optional ("textures");
+    const auto usertextures = it.optional ("usertextures");
     const auto combos = it.optional ("combos");
     const auto constants = it.optional ("constants");
 
@@ -45,8 +46,9 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, Project& projec
         .depthtest = it.optional ("depthtest", std::string ("disabled")),
         .depthwrite = it.optional ("depthwrite", std::string ("disabled")),
         .shader = it.require <std::string> ("shader", "Material pass must have a shader"),
-        .textures = textures.has_value () ? parseTextures (*textures) : std::map <int, std::string> {},
-        .combos = combos.has_value () ? parseCombos (*combos) : std::map <std::string, int> {},
+        .textures = textures.has_value () ? parseTextures (*textures) : TextureMap {},
+        .usertextures = usertextures.has_value () ? parseTextures (*usertextures) : TextureMap {},
+        .combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
     });
 }
 

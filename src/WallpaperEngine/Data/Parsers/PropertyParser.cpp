@@ -22,6 +22,9 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, std::string name) {
     if (type == "text") {
         return parseText (it, name);
     }
+    if (type == "scenetexture") {
+        return parseSceneTexture (it, name);
+    }
 
     if (type != "group") {
         // show the error and ignore this property
@@ -95,4 +98,11 @@ PropertySharedPtr PropertyParser::parseText (const JSON& it, std::string name) {
         .name = name,
         .text = it.optional <std::string> ("text", ""),
     });
+}
+
+PropertySharedPtr PropertyParser::parseSceneTexture (const JSON& it, std::string name) {
+    return std::make_shared <PropertySceneTexture> (PropertyData {
+        .name = name,
+        .text = it.optional <std::string> ("text", ""),
+    }, it.require ("value", "Property must have a value"));
 }

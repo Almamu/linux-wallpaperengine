@@ -22,6 +22,8 @@ struct MaterialPass {
     std::string shader;
     /** List of textures defined for this pass */
     TextureMap textures;
+    /** List of user textures defined for this pass */
+    TextureMap usertextures;
     /** The combos and their values to pass onto the shader */
     ComboMap combos;
 };
