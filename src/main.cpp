@@ -6,6 +6,7 @@
 #include <qcoreapplication.h>
 #include <qglobal.h>
 #include <qnamespace.h>
+#include <qstandardpaths.h>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -44,6 +45,8 @@ void initLogging ()
 
 int main (int argc, char* argv[]) {
     initLogging ();
+
+    std::cout << QStandardPaths::writableLocation(QStandardPaths::AppDataLocation).toStdString() << "\n";
 
 
     if (argc <= 1) {

@@ -261,6 +261,8 @@ add_executable(
     src/Qt/UIWindow.cpp
     src/Qt/SingleInstanceManager.h
     src/Qt/SingleInstanceManager.cpp
+    src/Qt/WallpaperButton.h 
+    src/Qt/WallpaperButton.cpp
 
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h

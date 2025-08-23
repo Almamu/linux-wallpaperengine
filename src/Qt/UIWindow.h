@@ -3,9 +3,11 @@
 #include "Qt/SingleInstanceManager.h"
 #include <map>
 #include <qapplication.h>
+#include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qglobal.h>
 #include <qgridlayout.h>
+#include <qlabel.h>
 #include <qlineedit.h>
 #include <qobjectdefs.h>
 #include <qprocess.h>
@@ -28,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <bits/stdc++.h>
+#include <QVBoxLayout>
 #include <iostream>
 
 class UIWindow : public QWidget {
@@ -44,6 +47,8 @@ class UIWindow : public QWidget {
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
+    QLabel* previewImageLabel;
+    QLabel* previewTitleLabel; 
     
     // Important Fields
     std::map<std::string, std::string> selectedWallpapers;
@@ -52,6 +57,7 @@ class UIWindow : public QWidget {
 
     void startNewWallpaperEngine();
     void updateSelectedButton();
+    void updateConfigLayout();
     static std::vector<std::string> split(const std::string &str, char r);
 
   protected:

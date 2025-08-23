@@ -1,22 +1,26 @@
 #pragma once
 
 #include <qcoreevent.h>
+#include <qevent.h>
 #include <qobjectdefs.h>
-#include <qpushbutton.h>
+#include <qtoolbutton.h>
 #include <qwidget.h>
 #include <string>
 #include "UIWindow.h"
 
-class WallpaperButton : public QPushButton {
+#define PICTURE_SIZE 128
+
+class WallpaperButton : public QToolButton {
   Q_OBJECT
 
   public:
     explicit WallpaperButton(UIWindow* mainWindow, std::string& wallpaperPath, QWidget* parent = nullptr);
 
   protected:
-    void mousePressEvent(QMouseEvent* event) override;
-    void enterEvent(QEvent* event) override;
-    void leaveEvent(QEvent* event) override;
+    // void mousePressEvent(QMouseEvent* event) override;
+    // void enterEvent(QEvent* event) override;
+    // void leaveEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
   private: 
     UIWindow* mainWindow;

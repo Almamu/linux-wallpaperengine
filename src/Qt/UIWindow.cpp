@@ -1,13 +1,23 @@
 #include "UIWindow.h"
 #include "Qt/SingleInstanceManager.h"
+#include "Qt/WallpaperButton.h"
 #include <QtConcurrent/qtconcurrentrun.h>
+#include <X11/X.h>
+#include <algorithm>
 #include <cstddef>
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <qapplication.h>
 #include <qboxlayout.h>
+#include <QHBoxLayout>
 #include <qcombobox.h>
 #include <qcursor.h>
+#include <qdebug.h>
 #include <qevent.h>
 #include <qglobal.h>
+#include <qgroupbox.h>
 #include <qlabel.h>
 #include <qlayout.h>
 #include <qlineedit.h>
@@ -23,6 +33,9 @@
 #include <string>
 #include <strings.h>
 #include <vector>
+#include <QToolButton>
+#include <QGroupBox>
+#include "WallpaperButton.h"
 
 #define PICTURE_SIZE 128
 
@@ -53,26 +66,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   int cols = 6; 
 
   for (size_t i = 0; i < wallpaperPaths.size(); i++) {
-    QPixmap pixmap(QString::fromStdString(wallpaperPaths[i] + "/preview.jpg"));
-    auto* button = new QPushButton();
-
-    if (pixmap.isNull()) {
-      pixmap = QPixmap(PICTURE_SIZE, PICTURE_SIZE);
-      pixmap.fill(Qt::black);
-
-      auto* movie = new QMovie(QString::fromStdString(wallpaperPaths[i] + "/preview.gif"));
-      if (movie->isValid()) {
-        movie->jumpToFrame(0);
-        pixmap = movie->currentPixmap().scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-      }
-      delete movie;
-    } else pixmap = pixmap.scaled(PICTURE_SIZE, PICTURE_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-    button->setIcon(pixmap);
-    button->setIconSize(QSize(PICTURE_SIZE, PICTURE_SIZE));
-    button->setFixedSize(PICTURE_SIZE*1.5, PICTURE_SIZE*1.5);
-    button->setProperty("path", QString::fromStdString(wallpaperPaths[i]));
-
+    auto* button = new WallpaperButton(this, wallpaperPaths[i]);
     
     QAbstractButton::connect(button, &QPushButton::clicked, [button, this]() {
       QString clickedPath = button->property("path").toString();
@@ -86,8 +80,8 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
       QObject::connect(wallpaperEngine, &QProcess::started, button, [=]() {
         button->setEnabled(true);
         updateSelectedButton();
+        updateConfigLayout();
       });
-      // qapp.exit();
     });
 
     int row = i / cols;
@@ -128,6 +122,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   QObject::connect(this->screenSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
     updateSelectedButton();
+    updateConfigLayout();
   });
 
   auto* screenSelectorLayout = new QVBoxLayout();
@@ -139,12 +134,41 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   auto* screenSelectContainer = new QWidget();
   screenSelectContainer->setLayout(screenSelectorLayout);
   
-  // Flags Inputfield
-  //    
-
+  // Main Layout
   auto* mainlayout = new QVBoxLayout(this);
   mainlayout->addWidget(screenSelectContainer);
-  mainlayout->addWidget(scrollArea);
+
+  auto* splitWidget = new QGroupBox("Wallpaper Selection", this);
+  splitWidget->setStyleSheet(
+    "font-size: 26px; "
+    "color: white; "
+    "background: transparent; "
+  );
+  auto* splitLayout = new QHBoxLayout(splitWidget);
+  splitWidget->setLayout(splitLayout);
+
+  // left side 
+  auto* leftWidget = new QWidget(splitWidget);
+  auto* leftLayout = new QVBoxLayout(leftWidget);
+  leftLayout->addWidget(scrollArea);
+  leftWidget->setLayout(leftLayout);
+
+  // right side
+  auto* rightWidget = new QWidget(splitWidget);
+  auto* rightLayout = new QVBoxLayout(rightWidget);
+  this->previewTitleLabel = new QLabel("...", rightWidget);
+  this->previewTitleLabel->setAlignment(Qt::AlignTop);
+  this->previewImageLabel = new QLabel(rightWidget);
+  this->previewImageLabel->setFixedSize(256, 256);
+  this->previewImageLabel->setAlignment(Qt::AlignCenter);
+  rightLayout->addWidget(previewImageLabel);
+  rightLayout->addWidget(previewTitleLabel);
+  rightWidget->setLayout(rightLayout);
+  
+  splitLayout->addWidget(leftWidget, 2);
+  splitLayout->addWidget(rightWidget, 1);
+
+  mainlayout->addWidget(splitWidget);
   mainlayout->addWidget(extraFlagsInput);
   this->setLayout(mainlayout);
   
@@ -212,6 +236,43 @@ void UIWindow::startNewWallpaperEngine() {
   wallpaperEngine->start(QCoreApplication::applicationFilePath(), args);
 }
 
+void UIWindow::updateConfigLayout() {
+  std::string selected = this->selectedWallpapers[this->screenSelector->currentText().toStdString()];
+  if (selected.empty()) return;
+
+  std::ifstream file(selected + "/project.json");
+  nlohmann::json wallpaperJSON = nlohmann::json::parse(file);
+
+  if (wallpaperJSON.empty()) {
+    return;
+  }
+
+  std::string title = wallpaperJSON.at("title");
+  if (title.size() > 25) {
+    title = title.substr(0, 24) + "..";
+  }
+
+  QPixmap pixmap(QString::fromStdString(selected + "/preview.jpg"));
+
+
+  if (pixmap.isNull()) {
+    pixmap = QPixmap(256, 256);
+    pixmap.fill(Qt::black);
+
+    auto* movie = new QMovie(QString::fromStdString(selected + "/preview.gif"));
+    if (movie->isValid()) {
+      movie->jumpToFrame(0);
+      pixmap = movie->currentPixmap().scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    delete movie;
+  } else pixmap = pixmap.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+  // edit previewLabel  
+  this->previewImageLabel->setPixmap(pixmap);
+  // edit Title
+  this->previewTitleLabel->setText(QString::fromStdString(title));
+}
+
 void UIWindow::updateSelectedButton() {
   for (int i = 0; i < this->buttonLayout->rowCount(); i++) {
     for (int j = 0; j < this->buttonLayout->columnCount(); j++) {
@@ -221,14 +282,18 @@ void UIWindow::updateSelectedButton() {
       auto* widget = item->widget();
       if (!widget) continue;
 
-      auto* button = dynamic_cast<QPushButton*>(widget);
+      auto* button = dynamic_cast<WallpaperButton*>(widget);
       if (!button) continue;
 
       std::string selected = this->selectedWallpapers[this->screenSelector->currentText().toStdString()];
+      QString currentStyle = button->styleSheet();
+      QString newStyle = currentStyle;
       if (button->property("path").toString().toStdString() == selected) {
-        button->setStyleSheet("background-color: #4488ff; color white; border: 2px solid #0055cc");
+        newStyle = newStyle.replace(QRegularExpression("background-color:[^;]+;"), "background-color: #4488ff; ");
+        button->setStyleSheet(newStyle);
       } else {
-        button->setStyleSheet("background-color: #4A4D51; color white; border: 2px solid #3B3A43");
+        newStyle = newStyle.replace(QRegularExpression("background-color:[^;]+;"), "background-color: #4A4D51; ");
+        button->setStyleSheet(newStyle);
       }
     }
   }
