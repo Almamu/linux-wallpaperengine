@@ -65,7 +65,7 @@ struct ImageEffect {
     /** Effect's name for the editor */
     std::string name;
     /** If this effect is visible or not */
-    UserSettingSharedPtr visible;
+    UserSettingUniquePtr visible;
     /** Pass overrides to apply to the effect's passes */
     std::vector <ImageEffectPassOverrideUniquePtr> passOverrides;
     /** The effect definition */
@@ -74,17 +74,17 @@ struct ImageEffect {
 
 struct ImageData {
     /** The point of origin of the image */
-    UserSettingSharedPtr origin;
+    UserSettingUniquePtr origin;
     /** The scale of the image */
-    UserSettingSharedPtr scale;
+    UserSettingUniquePtr scale;
     /** The rotation of the image */
-    UserSettingSharedPtr angles;
+    UserSettingUniquePtr angles;
     /** If the image is visible or not */
-    UserSettingSharedPtr visible;
+    UserSettingUniquePtr visible;
     /** The alpha of the image */
-    UserSettingSharedPtr alpha;
+    UserSettingUniquePtr alpha;
     /** The color of the image */
-    UserSettingSharedPtr color;
+    UserSettingUniquePtr color;
     // TODO: WRITE A COUPLE OF ENUMS FOR THIS
     /** The alignment of the image */
     std::string alignment;

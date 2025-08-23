@@ -10,7 +10,6 @@
 
 #include "CGLSLContext.h"
 
-using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 
 namespace WallpaperEngine::Render::Shaders {

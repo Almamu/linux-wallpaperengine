@@ -271,6 +271,9 @@ void DynamicValue::connect (DynamicValue* other) {
         this->update (other);
     });
 
+    // update our value on connection
+    this->update (*other);
+
     this->m_connections.push_back (deregisterFunction);
 }
 

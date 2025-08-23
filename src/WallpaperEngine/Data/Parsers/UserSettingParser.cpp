@@ -1,13 +1,14 @@
 #include "UserSettingParser.h"
 
 #include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Data/Model/Property.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties) {
     DynamicValueUniquePtr value = std::make_unique <DynamicValue> ();
-    PropertyWeakPtr property;
+    PropertySharedPtr property;
     std::optional<ConditionInfo> condition;
     auto valueIt = data;
     std::string content = data.dump ();
@@ -64,6 +65,9 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
         value->update (valueIt.get <float> ());
     } else if (valueIt.is_boolean ()) {
         value->update (valueIt.get <bool> ());
+    } else if (valueIt.is_null () && property != nullptr) {
+        // null values are directly connected to the property
+        value->connect (property.get());
     } else {
         sLog.exception ("Unsupported user setting type ", valueIt.type_name ());
     }

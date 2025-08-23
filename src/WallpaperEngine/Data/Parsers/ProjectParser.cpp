@@ -5,8 +5,8 @@
 
 #include "WallpaperParser.h"
 
+#include "PropertyParser.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
-#include "WallpaperEngine/Core/Projects/CProperty.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 
@@ -70,18 +70,15 @@ Properties ProjectParser::parseProperties (const std::optional <JSON>& data) {
 
     Properties result = {};
 
-    // TODO: CHANGE THIS ONCE THE PROPERTIES PARSING IS HANDLED IN THE NEW TYPES
-    //  THESE ARE COMPLEX TYPES THAT INCLUDE SOME RUNTIME INFO THAT ISN'T EXPLICITLY DATA
-    //  SO THIS WILL NEED A RETHINK IN THE FUTURE
     for (const auto& cur : properties.value ().items ()) {
-        const auto& property = Property::fromJSON (cur.value (), cur.key ());
+        const auto& property = PropertyParser::parse (cur.value (), cur.key ());
 
         // ignore properties that failed, these are generally groups
         if (property == nullptr) {
             continue;
         }
 
-        result.emplace (property->getName (), property);
+        result.emplace (cur.key (), property);
     }
 
     return result;

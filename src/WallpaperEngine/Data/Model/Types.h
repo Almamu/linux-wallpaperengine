@@ -8,10 +8,6 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 
-namespace WallpaperEngine::Core::Projects {
-class CProperty;
-}
-
 namespace WallpaperEngine::Data::Model {
 struct Project;
 class Wallpaper;
@@ -26,6 +22,12 @@ struct ImageEffect;
 struct ImageEffectPassOverride;
 class Particle;
 class DynamicValue;
+class Property;
+class PropertySlider;
+class PropertyBoolean;
+class PropertyCombo;
+class PropertyText;
+class PropertyColor;
 struct Material;
 struct MaterialPass;
 struct FBO;
@@ -36,16 +38,10 @@ struct ModelStruct;
 // TODO: REMOVE ONCE THESE ARE RENAMED AND MOVED
 using Container = WallpaperEngine::Assets::CContainer;
 
-using Property = WallpaperEngine::Core::Projects::CProperty;
 using PropertySharedPtr = std::shared_ptr <Property>;
-using PropertyWeakPtr = std::weak_ptr <Property>;
 using Properties = std::map <std::string, PropertySharedPtr>;
 using DynamicValueUniquePtr = std::unique_ptr <DynamicValue>;
-using DynamicValueSharedPtr = std::shared_ptr <DynamicValue>;
-using DynamicValueWeakPtr = std::weak_ptr <DynamicValue>;
-using UserSettingSharedPtr = std::shared_ptr <UserSetting>;
 using UserSettingUniquePtr = std::unique_ptr <UserSetting>;
-using UserSettingWeakPtr = std::weak_ptr <UserSetting>;
 // TODO: UP TO THIS POINT
 
 using ShaderConstantMap = std::map <std::string, UserSettingUniquePtr>;

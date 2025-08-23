@@ -13,7 +13,7 @@ class UserSettingBuilder {
 
         return std::make_unique <UserSetting> (UserSetting {
             .value = std::move (value),
-            .property = PropertyWeakPtr (),
+            .property = PropertySharedPtr (),
             .condition = std::nullopt,
         });
     }

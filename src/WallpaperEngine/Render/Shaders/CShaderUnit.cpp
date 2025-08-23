@@ -47,7 +47,6 @@
     "#define varying out\n"
 #define DEFINE_COMBO(name, value) "#define " + name + " " + std::to_string (value) + "\n";
 
-using namespace WallpaperEngine::Core;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Render::Shaders;

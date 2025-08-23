@@ -45,7 +45,7 @@ class DynamicValue {
     [[nodiscard]] const int& getInt () const;
     [[nodiscard]] const bool& getBool () const;
     [[nodiscard]] UnderlyingType getType () const;
-    [[nodiscard]] std::string toString () const;
+    [[nodiscard]] virtual std::string toString () const;
 
     void update (float newValue);
     void update (int newValue);

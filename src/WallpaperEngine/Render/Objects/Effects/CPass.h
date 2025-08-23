@@ -17,7 +17,6 @@ class CImage;
 namespace WallpaperEngine::Render::Objects::Effects {
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Render::Shaders::Variables;
-using namespace WallpaperEngine::Core::Projects;
 using namespace WallpaperEngine::Data::Model;
 
 class CPass final : public Helpers::CContextAware {

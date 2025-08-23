@@ -10,12 +10,6 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/CFBO.h"
 
-#include "WallpaperEngine/Core/Projects/CProperty.h"
-#include "WallpaperEngine/Core/Projects/CPropertyColor.h"
-#include "WallpaperEngine/Core/Projects/CPropertyCombo.h"
-#include "WallpaperEngine/Core/Projects/CPropertySlider.h"
-#include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
-
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"

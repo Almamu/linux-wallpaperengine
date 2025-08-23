@@ -400,19 +400,6 @@ add_executable(
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 
-    src/WallpaperEngine/Core/Projects/CProperty.h
-    src/WallpaperEngine/Core/Projects/CProperty.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyColor.h
-    src/WallpaperEngine/Core/Projects/CPropertyColor.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyBoolean.h
-    src/WallpaperEngine/Core/Projects/CPropertyBoolean.cpp
-    src/WallpaperEngine/Core/Projects/CPropertySlider.h
-    src/WallpaperEngine/Core/Projects/CPropertySlider.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyCombo.h
-    src/WallpaperEngine/Core/Projects/CPropertyCombo.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyText.h
-    src/WallpaperEngine/Core/Projects/CPropertyText.cpp
-
     src/WallpaperEngine/Data/Model/Types.h
     src/WallpaperEngine/Data/Model/Project.h
     src/WallpaperEngine/Data/Model/Wallpaper.h
@@ -423,6 +410,7 @@ add_executable(
     src/WallpaperEngine/Data/Model/UserSetting.h
     src/WallpaperEngine/Data/Model/DynamicValue.h
     src/WallpaperEngine/Data/Model/DynamicValue.cpp
+    src/WallpaperEngine/Data/Model/Property.h
     src/WallpaperEngine/Data/Utils/TypeCaster.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.h
     src/WallpaperEngine/Data/Utils/SFINAE.h
@@ -440,6 +428,8 @@ add_executable(
     src/WallpaperEngine/Data/Parsers/ModelParser.h
     src/WallpaperEngine/Data/Parsers/ShaderConstantParser.cpp
     src/WallpaperEngine/Data/Parsers/ShaderConstantParser.h
+    src/WallpaperEngine/Data/Parsers/PropertyParser.cpp
+    src/WallpaperEngine/Data/Parsers/PropertyParser.h
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h

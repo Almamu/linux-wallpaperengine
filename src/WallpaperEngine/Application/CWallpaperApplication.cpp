@@ -10,12 +10,11 @@
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
 
-#include "WallpaperEngine/Core/Projects/CProperty.h"
-
 #include "WallpaperEngine/Data/Parsers/ProjectParser.h"
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Model/Property.h"
 
 #if DEMOMODE
 #include "recording.h"
@@ -227,11 +226,11 @@ void CWallpaperApplication::setupPropertiesForProject (const Project& project) {
         if (override != this->m_context.settings.general.properties.end ()) {
             sLog.out ("Applying override value for ", key);
 
-            cur->set (override->second);
+            cur->update (override->second);
         }
 
         if (this->m_context.settings.general.onlyListProperties)
-            sLog.out (cur->dump ());
+            sLog.out (cur->toString ());
     }
 }
 
