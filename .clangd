@@ -1,3 +1,0 @@
-CompileFlags:
-  Remove: [-mono-direct-extern-access]
-  Add: [-std=c++20]
