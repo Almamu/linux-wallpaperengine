@@ -29,9 +29,9 @@
 #include <QtConcurrent/QtConcurrent>
 #include <string>
 #include <vector>
-#include <bits/stdc++.h>
 #include <QVBoxLayout>
 #include <iostream>
+#include "Qt/WallpaperSettingsWidget.h"
 
 class UIWindow : public QWidget {
   Q_OBJECT
@@ -47,8 +47,7 @@ class UIWindow : public QWidget {
     QComboBox* screenSelector;
     QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
-    QLabel* previewImageLabel;
-    QLabel* previewTitleLabel; 
+    WallpaperSettingsWidget* wallpaperSettingsWidget;
     
     // Important Fields
     std::map<std::string, std::string> selectedWallpapers;
@@ -57,7 +56,6 @@ class UIWindow : public QWidget {
 
     void startNewWallpaperEngine();
     void updateSelectedButton();
-    void updateConfigLayout();
     static std::vector<std::string> split(const std::string &str, char r);
 
   protected:

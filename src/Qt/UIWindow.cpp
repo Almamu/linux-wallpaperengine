@@ -3,10 +3,7 @@
 #include "Qt/WallpaperButton.h"
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <X11/X.h>
-#include <algorithm>
 #include <cstddef>
-#include <fstream>
-#include <iostream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <qapplication.h>
@@ -35,6 +32,7 @@
 #include <vector>
 #include <QToolButton>
 #include <QGroupBox>
+#include "Qt/WallpaperSettingsWidget.h"
 #include "WallpaperButton.h"
 
 #define PICTURE_SIZE 128
@@ -46,6 +44,8 @@ UIWindow::UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* i
   this->wallpaperEngine = new QProcess(this);
   this->instanceGuard = ig;
   this->buttonLayout = new QGridLayout(this);
+
+  this->wallpaperSettingsWidget = nullptr;
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
@@ -77,10 +77,10 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
       startNewWallpaperEngine();
 
-      QObject::connect(wallpaperEngine, &QProcess::started, button, [=]() {
+      QObject::connect(wallpaperEngine, &QProcess::started, button, [this, button]() {
         button->setEnabled(true);
         updateSelectedButton();
-        updateConfigLayout();
+        this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
       });
     });
 
@@ -122,7 +122,7 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   QObject::connect(this->screenSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
     updateSelectedButton();
-    updateConfigLayout();
+    this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
   });
 
   auto* screenSelectorLayout = new QVBoxLayout();
@@ -154,19 +154,10 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   leftWidget->setLayout(leftLayout);
 
   // right side
-  auto* rightWidget = new QWidget(splitWidget);
-  auto* rightLayout = new QVBoxLayout(rightWidget);
-  this->previewTitleLabel = new QLabel("...", rightWidget);
-  this->previewTitleLabel->setAlignment(Qt::AlignTop);
-  this->previewImageLabel = new QLabel(rightWidget);
-  this->previewImageLabel->setFixedSize(256, 256);
-  this->previewImageLabel->setAlignment(Qt::AlignCenter);
-  rightLayout->addWidget(previewImageLabel);
-  rightLayout->addWidget(previewTitleLabel);
-  rightWidget->setLayout(rightLayout);
+  this->wallpaperSettingsWidget = new WallpaperSettingsWidget(splitWidget);
   
   splitLayout->addWidget(leftWidget, 2);
-  splitLayout->addWidget(rightWidget, 1);
+  splitLayout->addWidget(this->wallpaperSettingsWidget, 1);
 
   mainlayout->addWidget(splitWidget);
   mainlayout->addWidget(extraFlagsInput);
@@ -236,49 +227,12 @@ void UIWindow::startNewWallpaperEngine() {
   wallpaperEngine->start(QCoreApplication::applicationFilePath(), args);
 }
 
-void UIWindow::updateConfigLayout() {
-  std::string selected = this->selectedWallpapers[this->screenSelector->currentText().toStdString()];
-  if (selected.empty()) return;
-
-  std::ifstream file(selected + "/project.json");
-  nlohmann::json wallpaperJSON = nlohmann::json::parse(file);
-
-  if (wallpaperJSON.empty()) {
-    return;
-  }
-
-  std::string title = wallpaperJSON.at("title");
-  if (title.size() > 25) {
-    title = title.substr(0, 24) + "..";
-  }
-
-  QPixmap pixmap(QString::fromStdString(selected + "/preview.jpg"));
-
-
-  if (pixmap.isNull()) {
-    pixmap = QPixmap(256, 256);
-    pixmap.fill(Qt::black);
-
-    auto* movie = new QMovie(QString::fromStdString(selected + "/preview.gif"));
-    if (movie->isValid()) {
-      movie->jumpToFrame(0);
-      pixmap = movie->currentPixmap().scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
-    delete movie;
-  } else pixmap = pixmap.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-  // edit previewLabel  
-  this->previewImageLabel->setPixmap(pixmap);
-  // edit Title
-  this->previewTitleLabel->setText(QString::fromStdString(title));
-}
-
 void UIWindow::updateSelectedButton() {
   for (int i = 0; i < this->buttonLayout->rowCount(); i++) {
     for (int j = 0; j < this->buttonLayout->columnCount(); j++) {
       auto* item = this->buttonLayout->itemAtPosition(i, j);
       if (!item) continue;
-
+      
       auto* widget = item->widget();
       if (!widget) continue;
 
