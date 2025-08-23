@@ -410,10 +410,6 @@ void CShaderUnit::parseParameterConfiguration (
         // TODO: BETTER CONVERSION HERE
         size_t index = value - '0';
 
-        if (combo != data.end () && paintDefaultColor != data.end () && combo->get <std::string> () == "MASK" && this->m_file.find ("water")) {
-            sLog.debug("mask defaultcolor!");
-        }
-
         if (combo != data.end ()) {
             // TODO: CLEANUP HOW THIS IS DETERMINED FIRST
             // if the texture exists (and is not null), add to the combo
