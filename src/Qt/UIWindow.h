@@ -30,7 +30,6 @@
 #include <string>
 #include <vector>
 #include <QVBoxLayout>
-#include <iostream>
 #include "Qt/WallpaperSettingsWidget.h"
 
 class UIWindow : public QWidget {
@@ -45,7 +44,6 @@ class UIWindow : public QWidget {
     QApplication* qapp;
     SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
-    QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
     WallpaperSettingsWidget* wallpaperSettingsWidget;
     
