@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Qt/SingleInstanceManager.h"
+#include <cstddef>
+#include <cstdlib>
 #include <map>
+#include <new>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qcombobox.h>

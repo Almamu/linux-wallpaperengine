@@ -58,7 +58,7 @@ class WallpaperSettingsWidget : public QWidget {
   " border: 1px solid gray;"
   "}"
   "QCheckBox::indicator:checked {"
-  " background-color: #4CAF50;"
+  " background-color:#4488FF;"
   "}";
 
   signals:

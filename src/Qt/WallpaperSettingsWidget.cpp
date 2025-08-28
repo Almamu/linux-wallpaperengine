@@ -1,5 +1,6 @@
 #include "WallpaperSettingsWidget.h"
 #include <fstream>
+#include <memory>
 #include <nlohmann/json_fwd.hpp>
 #include <qchar.h>
 #include <qcheckbox.h>
@@ -19,6 +20,8 @@
 #include <QComboBox>
 #include <variant>
 #include <iostream>
+#include "WallpaperEngine/Assets/CCombinedContainer.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 WallpaperSettingsWidget::WallpaperSettingsWidget(QWidget* parent)
   : QWidget(parent) {
@@ -91,7 +94,10 @@ void WallpaperSettingsWidget::update(const std::string& selected) {
   // edit Title
   preview.title->setText(QString::fromStdString(title));
 
+  file.close();
+
   updateSettings(selected, wallpaperJSON);
+  apply();
 }
 
 QCheckBox* createStyledCheckBox(const QString& style) {
@@ -104,7 +110,18 @@ void WallpaperSettingsWidget::updateSettings(const std::string& wallpaperPath, c
   clearSettings();
    
   // TODO: add individual settings depending on wallpaper 
-  
+  /*
+  auto general = wallpaper.find("general");
+  if (general != wallpaper.end()) {
+    if (general->find("properties") != general->end()) {
+      const auto properties = general->at("properties");
+      if (properties != nullptr) {
+        sLog.out(properties);
+      }
+    }
+  }
+  */
+
   this->currentOptions.push_back({createStyledCheckBox(this->checkboxStyleSheet), "Mute Audio:", "mute_audio", "--silent", false, false});
   this->currentOptions.push_back({new QSlider(Qt::Horizontal), "Volume:", "volume", "--volume", true, 50});
   this->currentOptions.push_back({createStyledCheckBox(this->checkboxStyleSheet), "Disable Automute:", "disable_automute", "--noautomute", false, false});
@@ -146,8 +163,12 @@ void WallpaperSettingsWidget::clearSettings() {
     if (item->widget()) {
       delete item->widget();
     }
+    if (item->layout()) {
+      delete item->layout();
+    }
     delete item;
   }
+  
   this->currentOptions.clear();
 }
 

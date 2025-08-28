@@ -50,7 +50,7 @@ UIWindow::UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* i
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
-  this->setWindowTitle("Wallpapers :3");
+  this->setWindowTitle("Linux-WallpaperEngine");
 
   this->setStyleSheet(R"(
     QWidget {
@@ -76,8 +76,9 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
       button->setEnabled(false);
 
       this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
-
-      startNewWallpaperEngine();
+      
+      // startNewWallpaperEngine();
+      // Doesn't need to start a new WallpaperEngine here since update wallpaperSettings does emit applySettings()
       updateSelectedButton();
       this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
     });
@@ -218,6 +219,7 @@ void UIWindow::startNewWallpaperEngine() {
       wallpaperEngine->waitForFinished();
     }
   }
+  // delete this->wallpaperEngine;
   // create args
   QStringList args;
 
