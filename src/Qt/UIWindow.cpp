@@ -1,9 +1,11 @@
 #include "UIWindow.h"
 #include "Qt/SingleInstanceManager.h"
+#include <QListView>
 #include "Qt/WallpaperButton.h"
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <X11/X.h>
 #include <cstddef>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <qapplication.h>
@@ -40,7 +42,6 @@
 UIWindow::UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* ig) {
   this->qapp = qapp; 
   this->screenSelector = new QComboBox(this);
-  this->extraFlagsInput = new QLineEdit(this);
   this->wallpaperEngine = new QProcess(this);
   this->instanceGuard = ig;
   this->buttonLayout = new QGridLayout(this);
@@ -49,17 +50,19 @@ UIWindow::UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* i
 }
 
 void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
-  this->setWindowTitle("Wallpapers :3");
+  this->setWindowTitle("Linux-WallpaperEngine");
+
+  this->setStyleSheet(R"(
+    QWidget {
+      background-color: #2B2A33;
+      color: white;
+    }
+    )");
+
+  this->setAttribute(Qt::WA_StyledBackground, true);
   
-  // palette
-  auto* pal = new QPalette();
-  pal->setColor(QPalette::Window, QColor(0x2B, 0x2A, 0x33, 0xFF));
-  this->setAutoFillBackground(true);
-  this->setPalette(*pal);
-   
   auto* scrollArea = new QScrollArea(this); 
   scrollArea->setWidgetResizable(true);
-  scrollArea->setPalette(*pal);
 
   auto* container = new QWidget();
 
@@ -73,21 +76,20 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
       button->setEnabled(false);
 
       this->selectedWallpapers[this->screenSelector->currentText().toStdString()] = clickedPath.toStdString();
-      this->extraFlags[this->screenSelector->currentText().toStdString()] = split(this->extraFlagsInput->text().toStdString(), ' ');
-
-      startNewWallpaperEngine();
-
-      QObject::connect(wallpaperEngine, &QProcess::started, button, [this, button]() {
-        button->setEnabled(true);
-        updateSelectedButton();
-        this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
-      });
+      
+      // startNewWallpaperEngine();
+      // Doesn't need to start a new WallpaperEngine here since update wallpaperSettings does emit applySettings()
+      updateSelectedButton();
+      this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
     });
-
     int row = i / cols;
     int col = i % cols;
     buttonLayout->addWidget(button, row, col);
   }
+
+  QObject::connect(wallpaperEngine, &QProcess::started, this, [this]() {
+    updateSelectedButton();
+  });
 
   QObject::connect(this->qapp, &QCoreApplication::aboutToQuit, this, [this]() {
     wallpaperEngine->terminate(); 
@@ -114,20 +116,24 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   this->screenSelector->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   this->screenSelector->setFixedHeight(48);
 
-  auto font = screenSelector->font();
-  font.setPointSize(18);
-  this->screenSelector->setFont(font);
+  this->screenSelector->setView(new QListView());
+  this->screenSelector->view()->setStyleSheet(
+    "QListView { background-color:#2B2A33; selection-background-color:#4488FF; color:white; }"
+    "QListView::item:hover { background-color:#4488FF; }"
+  );
 
-  this->screenSelector->setPalette(*pal);
+  this->screenSelector->setStyleSheet(
+    "font-size: 24px;"
+  );
+
 
   QObject::connect(this->screenSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
     updateSelectedButton();
     this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
   });
 
-  auto* screenSelectorLayout = new QVBoxLayout();
+  auto* screenSelectorLayout = new QVBoxLayout(this);
   auto* label = new QLabel("Screen Selector:");
-  label->setFont(font);
   screenSelectorLayout->addWidget(label);
   screenSelectorLayout->addWidget(screenSelector);
 
@@ -155,12 +161,16 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   // right side
   this->wallpaperSettingsWidget = new WallpaperSettingsWidget(splitWidget);
+
+  connect(this->wallpaperSettingsWidget, &WallpaperSettingsWidget::applySettings, this, [this](const std::string& flags) {
+    this->extraFlags[this->screenSelector->currentText().toStdString()] = split(flags, ' ');
+    startNewWallpaperEngine();
+  });
   
   splitLayout->addWidget(leftWidget, 2);
   splitLayout->addWidget(this->wallpaperSettingsWidget, 1);
 
   mainlayout->addWidget(splitWidget);
-  mainlayout->addWidget(extraFlagsInput);
   this->setLayout(mainlayout);
   
   // update Buttons
@@ -209,6 +219,7 @@ void UIWindow::startNewWallpaperEngine() {
       wallpaperEngine->waitForFinished();
     }
   }
+  // delete this->wallpaperEngine;
   // create args
   QStringList args;
 
@@ -238,6 +249,8 @@ void UIWindow::updateSelectedButton() {
 
       auto* button = dynamic_cast<WallpaperButton*>(widget);
       if (!button) continue;
+
+      button->setEnabled(true);
 
       std::string selected = this->selectedWallpapers[this->screenSelector->currentText().toStdString()];
       QString currentStyle = button->styleSheet();

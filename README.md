@@ -91,15 +91,12 @@ make
 Once the build process is finished, this should create a new `output` folder containing the app and all the required
 support files to run.
 
-## 5.5. Running linux-wallpaperengine
+## 2.1. Running linux-wallpaperengine
 Now you can run the program using the following command:
 
 ```
 ./linux-wallpaperengine
 ```
-
-## 5.6 Selecting a wallpaper
-In the graphical user interface (GUI), start by selecting the desired screen. Then simply click on a wallpaper to display it.
 
 #### Wayland
 Has only been tested under wlroots but should work on any flavour as long as wlr-layer-shell-unstable is supported.
@@ -108,29 +105,6 @@ Has only been tested under wlroots but should work on any flavour as long as wlr
 Only screens configured with the XRandr extension are supported.
 
 **IMPORTANT: Right now this doesn't work if there is anything drawing to the background (like a compositor, gnome, kde, nautilus, etc)**
-
-### 5.6.1 Using custom-flags
-To further customize your wallpaper (e.g., adjusting the volume), you can enter one or more of the following flags in the text field at the bottom of the GUI **before** selecting a wallpaper:
-
-| Option | Description |
-|--------|-------------|
-| `--silent` | Mute background audio |
-| `--volume <val>` | Set audio volume |
-| `--noautomute` | Don't mute when other apps play audio |
-| `--no-audio-processing` | Disable audio reactive features |
-| `--fps <val>` | Limit frame rate |
-| `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
-| `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
-| `--disable-mouse` | Disable mouse interaction |
-| `--disable-parallax` | Disable parallax effect on backgrounds that support it |
-| `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
-
-## 🧪 Wayland & X11 Support
-
-- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
-- **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
-
-> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
 
 ---
 

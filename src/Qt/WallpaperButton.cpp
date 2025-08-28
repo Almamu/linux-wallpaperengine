@@ -61,5 +61,4 @@ void WallpaperButton::resizeEvent(QResizeEvent* event) {
   QToolButton::resizeEvent(event);
   int size = std::min(event->size().width(), event->size().height()) * 0.8f;
   setIconSize(QSize(size, size));
-
 }

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Qt/SingleInstanceManager.h"
+#include <cstddef>
+#include <cstdlib>
 #include <map>
+#include <new>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qcombobox.h>
@@ -30,7 +33,6 @@
 #include <string>
 #include <vector>
 #include <QVBoxLayout>
-#include <iostream>
 #include "Qt/WallpaperSettingsWidget.h"
 
 class UIWindow : public QWidget {
@@ -45,7 +47,6 @@ class UIWindow : public QWidget {
     QApplication* qapp;
     SingleInstanceManager* instanceGuard;
     QComboBox* screenSelector;
-    QLineEdit* extraFlagsInput;
     QGridLayout* buttonLayout;
     WallpaperSettingsWidget* wallpaperSettingsWidget;
     
