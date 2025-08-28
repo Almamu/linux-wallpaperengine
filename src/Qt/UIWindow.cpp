@@ -5,7 +5,6 @@
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <X11/X.h>
 #include <cstddef>
-#include <iostream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <qapplication.h>
@@ -31,11 +30,13 @@
 #include <QByteArray>
 #include <string>
 #include <strings.h>
+#include <unistd.h>
 #include <vector>
 #include <QToolButton>
 #include <QGroupBox>
 #include "Qt/WallpaperSettingsWidget.h"
 #include "WallpaperButton.h"
+#include "WallpaperEngine/Logging/CLog.h"
 
 #define PICTURE_SIZE 128
 
@@ -217,6 +218,7 @@ void UIWindow::startNewWallpaperEngine() {
     if (!wallpaperEngine->waitForFinished(3000)) {
       wallpaperEngine->kill();
       wallpaperEngine->waitForFinished();
+
     }
   }
   // delete this->wallpaperEngine;

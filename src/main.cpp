@@ -16,7 +16,6 @@
 #include "WallpaperEngine/Application/CApplicationContext.h"
 #include "WallpaperEngine/Application/CWallpaperApplication.h"
 #include "WallpaperEngine/Logging/CLog.h"
-#include "WallpaperEngine/WebBrowser/CWebBrowserContext.h"
 
 WallpaperEngine::Application::CWallpaperApplication* appPointer;
 QCoreApplication* globalApp = nullptr;
