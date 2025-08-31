@@ -10,10 +10,10 @@ void CVirtualContainer::add (const std::filesystem::path& filename, const std::s
 }
 
 void CVirtualContainer::add (const std::filesystem::path& filename, const std::string& contents) {
-    size_t length = contents.length () + 1;
+    // do not copy the null terminator
+    size_t length = contents.length ();
     std::shared_ptr<uint8_t[]> copy = std::shared_ptr<uint8_t[]> (new uint8_t [length]);
 
-    // copy the text AND the \0
     memcpy (copy.get(), contents.c_str (), length);
 
     // finally add to the container
