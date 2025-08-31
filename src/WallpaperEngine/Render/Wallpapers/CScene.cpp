@@ -64,14 +64,8 @@ CScene::CScene (
         this->createObject (*object);
 
     // copy over objects by render order
-    for (const auto& cur : scene->objects) {
-        auto obj = this->m_objects.find (cur->id);
-
-        // ignores not created objects like particle systems
-        if (obj == this->m_objects.end ())
-            continue;
-
-        this->m_objectsByRenderOrder.emplace_back (obj->second);
+    for (const auto& object : scene->objects) {
+        this->addObjectToRenderOrder (*object);
     }
 
     // create extra framebuffers for the bloom effect
@@ -201,6 +195,50 @@ Render::CObject* CScene::createObject (const Object& object) {
         this->m_objects.emplace (renderObject->getId (), renderObject);
 
     return renderObject;
+}
+
+void CScene::addObjectToRenderOrder (const Object& object) {
+    auto obj = this->m_objects.find (object.id);
+
+    // ignores not created objects like particle systems
+    if (obj == this->m_objects.end ())
+        return;
+
+    // take into account any dependency first
+    for (const auto& dep : object.dependencies) {
+        // self-dependency is possible
+        if (dep == object.id) {
+            continue;
+        }
+
+        // add the dependency to the list if it's created
+        auto depIt = std::find_if (
+            this->getScene ().objects.begin (),
+            this->getScene ().objects.end (),
+            [&dep] (const auto& o) {
+                return o->id == dep;
+            }
+        );
+
+        if (depIt != this->getScene ().objects.end ()) {
+            this->addObjectToRenderOrder (**depIt);
+        } else {
+            sLog.error ("Cannot find dependency ", dep, " for object ", object.id);
+        }
+    }
+
+    // ensure we're added only once to the render list
+    const auto renderIt = std::find_if (
+        this->m_objectsByRenderOrder.begin (),
+        this->m_objectsByRenderOrder.end (),
+        [&object] (const auto& o) {
+            return o->getId () == object.id;
+        }
+    );
+
+    if (renderIt == this->m_objectsByRenderOrder.end ()) {
+        this->m_objectsByRenderOrder.emplace_back (obj->second);
+    }
 }
 
 CCamera& CScene::getCamera () const {

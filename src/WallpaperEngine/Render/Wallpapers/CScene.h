@@ -40,6 +40,7 @@ class CScene final : public CWallpaper {
 
   private:
     Render::CObject* createObject (const Object& object);
+    void addObjectToRenderOrder (const Object& object);
 
     std::unique_ptr<CCamera> m_camera;
     ObjectUniquePtr m_bloomObjectData;

@@ -234,11 +234,7 @@ void CImage::setup () {
         return;
     }
 
-    // TODO: SETUP RECALCULATION OF THINGS WHEN A VISIBILITY VALUE CHANGES!!
-    if (!this->m_image.visible->value->getBool ()) {
-        return;
-    }
-
+    // TODO: CHECK ORDER OF THINGS, 2419444134'S ID 27 DEPENDS ON 104'S COMPOSITE_A WHEN OUR LAST RENDER IS ON COMPOSITE_B
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
     // passthrough images without effects are bad, do not draw them
     if (this->m_image.model->passthrough && this->m_image.effects.empty ()) {
@@ -317,19 +313,18 @@ void CImage::setup () {
                         new CPass (*this, fboProvider, config, std::nullopt, std::nullopt, (*curEffect)->target.value ())
                     );
                 } else {
-                    auto curPass = (*curEffect)->material.value ()->passes.begin ();
-                    auto endPass = (*curEffect)->material.value ()->passes.end ();
+                    for (auto& pass : (*curEffect)->material.value ()->passes) {
+                        const auto override =
+                            curOverride != endOverride
+                                ? **curOverride
+                                : std::optional<std::reference_wrapper<const ImageEffectPassOverride>> (std::nullopt);
+                        const auto target = (*curEffect)->target.has_value ()
+                                                ? *(*curEffect)->target
+                                                : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
 
-                    const auto override =
-                        curOverride != endOverride
-                            ? **curOverride
-                            : std::optional<std::reference_wrapper<const ImageEffectPassOverride>> (std::nullopt);
-                    const auto target = (*curEffect)->target.has_value ()
-                                            ? *(*curEffect)->target
-                                            : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
-
-                    this->m_passes.push_back (
-                        new CPass (*this, fboProvider, **curPass, override, (*curEffect)->binds, target));
+                        this->m_passes.push_back (
+                            new CPass (*this, fboProvider, *pass, override, (*curEffect)->binds, target));
+                    }
 
                     if (curOverride != endOverride) {
                         curOverride++;
