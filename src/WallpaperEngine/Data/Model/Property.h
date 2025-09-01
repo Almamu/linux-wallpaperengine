@@ -60,7 +60,7 @@ class PropertyBoolean : public Property {
 class PropertyColor : public Property {
   public:
     explicit PropertyColor (PropertyData data, std::string value) : Property (std::move(data)) {
-        this->update (value);
+        this->PropertyColor::update (value);
     }
 
     using Property::update;
@@ -113,7 +113,7 @@ class PropertyColor : public Property {
 class PropertyCombo : public Property, ComboData {
   public:
     PropertyCombo (PropertyData data, ComboData comboData, std::string value) : Property (std::move(data)), ComboData (std::move(comboData)) {
-        this->update (value);
+        this->PropertyCombo::update (value);
     }
 
     using Property::update;
@@ -139,7 +139,7 @@ class PropertyText : public Property {
 class PropertySceneTexture : public Property {
   public:
     explicit PropertySceneTexture (PropertyData data, std::string value) : Property (std::move(data)) {
-        this->update (value);
+        this->PropertySceneTexture::update (value);
     }
 
     void update(const std::string& value) override {

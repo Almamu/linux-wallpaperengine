@@ -29,6 +29,7 @@ struct EffectPass {
     /** The target this material renders to (if specified) */
     std::optional <std::string> target;
 };
+
 struct Effect {
     /** Effect's name for the UI */
     std::string name;

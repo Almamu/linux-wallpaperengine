@@ -14,7 +14,7 @@ class Wallpaper;
 class Scene;
 class Web;
 class Video;
-class UserSetting;
+struct UserSetting;
 class Object;
 class Sound;
 class Image;

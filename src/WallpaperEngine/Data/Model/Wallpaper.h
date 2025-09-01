@@ -8,11 +8,9 @@
 #include "Types.h"
 #include "Object.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
-#include "WallpaperEngine/Data/JSON.h"
 
 namespace WallpaperEngine::Data::Model {
-using json = WallpaperEngine::Data::JSON::JSON;
-using TypeCaster = WallpaperEngine::Data::Utils::TypeCaster;
+using namespace WallpaperEngine::Data::Utils;
 
 struct WallpaperData {
     std::string filename;
@@ -110,10 +108,8 @@ struct SceneData {
 
 class Scene : public Wallpaper, public SceneData {
   public:
-    explicit Scene (WallpaperData data, SceneData sceneData) noexcept : SceneData (std::move(sceneData)), Wallpaper (data) {}
+    explicit Scene (WallpaperData data, SceneData sceneData) noexcept : Wallpaper (std::move (data)), SceneData (std::move (sceneData)) {}
 
     ~Scene () override = default;
-
-    // TODO: ADD OBJECTS HERE
 };
 } // namespace WallpaperEngine::Data::Model

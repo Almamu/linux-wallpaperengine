@@ -17,6 +17,7 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
+using JSON = WallpaperEngine::Data::JSON::JSON;
 
 CScene::CScene (
     const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
@@ -88,7 +89,7 @@ CScene::CScene (
     const auto bloomOrigin = glm::vec3 { sceneWidth / 2, sceneHeight / 2, 0.0f };
     const auto bloomSize = glm::vec2 { sceneWidth, sceneHeight };
 
-    const nlohmann::json bloom = {
+    const JSON bloom = {
         {"image", "models/wpenginelinux.json"},
         {"name", "bloomimagewpenginelinux"},
         {"visible", true},
@@ -98,14 +99,14 @@ CScene::CScene (
         {"size", std::to_string (bloomSize.x) + " " + std::to_string (bloomSize.y)},
         {"id", -1},
         {"effects",
-            json::array (
+            JSON::array (
                 {
                     {
                         {"file", "effects/wpenginelinux/bloomeffect.json"},
                         {"id", 15242000},
                         {"name", ""},
                         {"passes",
-                             json::array (
+                             JSON::array (
                                  {
                                      {
                                          {"constantshadervalues",

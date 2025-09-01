@@ -8,12 +8,11 @@
 
 namespace WallpaperEngine::Data::Model {
 struct ConditionInfo {
-  public:
     std::string name;
     std::string condition;
 };
+
 struct UserSetting {
-  public:
     /**
      * The value of this setting, can be a few different things:
      * - a value connected to the property

@@ -7,13 +7,14 @@
 #include <glm/glm.hpp>
 
 #include "Types.h"
-#include "Effect.h"
+#include "UserSetting.h"
 #include "Material.h"
 #include "Model.h"
+#include "Effect.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
 
 namespace WallpaperEngine::Data::Model {
-using TypeCaster = WallpaperEngine::Data::Utils::TypeCaster;
+using namespace WallpaperEngine::Data::Utils;
 
 struct ObjectData {
     int id;
@@ -48,7 +49,7 @@ struct ImageEffectPassOverride {
     int id;
     ComboMap combos;
     ShaderConstantMap constants;
-    std::map <int, std::string> textures;
+    TextureMap textures;
 };
 
 /**

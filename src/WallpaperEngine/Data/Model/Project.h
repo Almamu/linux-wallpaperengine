@@ -10,7 +10,6 @@ namespace WallpaperEngine::Data::Model {
  * Represents a wallpaper engine project
  */
 struct Project {
-  public:
     enum Type {
         Type_Scene = 0,
         Type_Web = 1,
