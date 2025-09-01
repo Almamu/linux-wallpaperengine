@@ -136,6 +136,7 @@ class JsonExtensions {
         // call the specialized version of the function
         return operator glm::vec <length, typename GlmVecTraits<T>::type, qualifier> ();
     }
+
   private:
     /**
      * @return The base json object to be used by the extension methods

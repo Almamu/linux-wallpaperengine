@@ -12,7 +12,6 @@ namespace WallpaperEngine::Data::Builders {
 using namespace WallpaperEngine::Data::Utils::SFINAE;
 
 class VectorBuilder {
-  private:
     /**
      * Convert template that calls the proper std::strto* function
      * based on the incoming type

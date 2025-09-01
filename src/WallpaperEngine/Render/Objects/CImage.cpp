@@ -34,7 +34,6 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     m_pos (),
     m_animationTime (0.0),
     m_initialized (false) {
-
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());
     auto scene_height = static_cast<float> (scene.getHeight ());
