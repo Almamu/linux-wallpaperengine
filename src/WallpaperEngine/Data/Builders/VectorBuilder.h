@@ -129,7 +129,6 @@ class VectorBuilder {
         // call the specialized version of the function
         return parse<length, typename GlmVecTraits<T>::type, qualifier> (str);
     }
-  private:
 };
 
 template <>
