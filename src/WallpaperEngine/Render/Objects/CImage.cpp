@@ -294,10 +294,10 @@ void CImage::setup () {
                     }
 
                     const auto virtualPass = MaterialPass {
-                        .blending = "normal",
-                        .cullmode = "nocull",
-                        .depthtest = "disabled",
-                        .depthwrite = "disabled",
+                        .blending = BlendingMode_Normal,
+                        .cullmode = CullingMode_Disable,
+                        .depthtest = DepthtestMode_Disabled,
+                        .depthwrite = DepthwriteMode_Disabled,
                         .shader = "commands/copy",
                         .textures = {
                             {0, *(*curEffect)->source}
@@ -363,7 +363,7 @@ void CImage::setup () {
         const auto last = this->m_passes.rbegin ();
 
         (*last)->setBlendingMode ((*first)->getBlendingMode ());
-        (*first)->setBlendingMode ("normal");
+        (*first)->setBlendingMode (BlendingMode_Normal);
     }
 
     // calculate full animation time (if any)

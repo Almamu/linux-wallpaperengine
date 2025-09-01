@@ -33,7 +33,7 @@ class DynamicValue {
     explicit DynamicValue(float value);
     explicit DynamicValue(int value);
     explicit DynamicValue(bool value);
-    ~DynamicValue ();
+    virtual ~DynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;
     [[nodiscard]] const glm::ivec3& getIVec3 () const;

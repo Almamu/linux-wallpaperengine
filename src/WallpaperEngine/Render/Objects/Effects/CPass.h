@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
+#include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/CFBOProvider.h"
@@ -37,8 +38,8 @@ class CPass final : public Helpers::CContextAware {
     void setModelViewProjectionMatrixInverse (const glm::mat4* projection);
     void setModelMatrix (const glm::mat4* model);
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
-    void setBlendingMode (std::string blendingmode);
-    [[nodiscard]] const std::string& getBlendingMode () const;
+    void setBlendingMode (BlendingMode blendingmode);
+    [[nodiscard]] BlendingMode getBlendingMode () const;
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
     [[nodiscard]] std::shared_ptr<const CFBOProvider> getFBOProvider () const;
@@ -163,7 +164,7 @@ class CPass final : public Helpers::CContextAware {
     std::vector<AttribEntry*> m_attribs = {};
     std::map<std::string, UniformEntry*> m_uniforms = {};
     std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms = {};
-    std::string m_blendingmode = "";
+    BlendingMode m_blendingmode = BlendingMode_Normal;
     const glm::mat4* m_modelViewProjectionMatrix;
     const glm::mat4* m_modelViewProjectionMatrixInverse;
     const glm::mat4* m_modelMatrix;

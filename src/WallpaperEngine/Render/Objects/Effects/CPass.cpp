@@ -89,36 +89,55 @@ void CPass::setupRenderFramebuffer () {
     glViewport (0, 0, this->m_drawTo->getRealWidth (), this->m_drawTo->getRealHeight ());
 
     // set texture blending
-    if (this->getBlendingMode () == "translucent") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else if (this->getBlendingMode () == "additive") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
-    } else if (this->getBlendingMode () == "normal") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
-    } else {
+    switch (this->getBlendingMode ()) {
+        case BlendingMode_Translucent:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            break;
+        case BlendingMode_Additive:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+            break;
+        case BlendingMode_Normal:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+            break;
+        default:
         glDisable (GL_BLEND);
+            break;
     }
 
-    // set depth testing
-    if (this->m_pass.depthtest == "disabled") {
-        glDisable (GL_DEPTH_TEST);
-    } else {
-        glEnable (GL_DEPTH_TEST);
+    switch (this->m_pass.depthtest) {
+        case DepthtestMode_Enabled:
+            glEnable (GL_DEPTH_TEST);
+            break;
+        case DepthtestMode_Disabled:
+        default:
+            glDisable (GL_DEPTH_TEST);
+            break;
+
     }
 
-    if (this->m_pass.cullmode == "nocull") {
-        glDisable (GL_CULL_FACE);
-    } else {
-        glEnable (GL_CULL_FACE);
+    switch (this->m_pass.cullmode) {
+        case CullingMode_Normal:
+            glEnable (GL_CULL_FACE);
+            break;
+
+        case CullingMode_Disable:
+        default:
+            glDisable (GL_CULL_FACE);
+            break;
     }
 
-    if (this->m_pass.depthwrite == "disabled") {
-        glDepthMask (false);
-    } else {
-        glDepthMask (true);
+    switch (this->m_pass.depthwrite) {
+        case DepthwriteMode_Enabled:
+            glDepthMask (true);
+            break;
+
+        case DepthwriteMode_Disabled:
+        default:
+            glDepthMask (false);
+            break;
     }
 }
 
@@ -322,11 +341,11 @@ void CPass::setViewProjectionMatrix (const glm::mat4* viewProjection) {
     this->m_viewProjectionMatrix = viewProjection;
 }
 
-void CPass::setBlendingMode (std::string blendingmode) {
-    this->m_blendingmode = std::move(blendingmode);
+void CPass::setBlendingMode (BlendingMode blendingmode) {
+    this->m_blendingmode = blendingmode;
 }
 
-const std::string& CPass::getBlendingMode () const {
+BlendingMode CPass::getBlendingMode () const {
     return this->m_blendingmode;
 }
 
