@@ -417,9 +417,9 @@ void CPass::setupShaders () {
     // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL
     // ELEMENTS?
     if (texture0 != nullptr) {
-        if (texture0->getFormat () == ITexture::TextureFormat::RG88) {
+        if (texture0->getFormat () == TextureFormat_RG88) {
             this->m_combos.insert_or_assign ("TEX0FORMAT", 8);
-        } else if (texture0->getFormat () == ITexture::TextureFormat::R8) {
+        } else if (texture0->getFormat () == TextureFormat_R8) {
             this->m_combos.insert_or_assign ("TEX0FORMAT", 9);
         }
     }

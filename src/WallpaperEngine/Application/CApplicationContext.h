@@ -15,6 +15,7 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 
 namespace WallpaperEngine::Application {
+using namespace WallpaperEngine::Data::Assets;
 /**
  * Application information as parsed off the command line arguments
  */
@@ -51,7 +52,7 @@ class CApplicationContext {
             /** The scaling mode for different screens */
             std::map<std::string, WallpaperEngine::Render::CWallpaperState::TextureUVsScaling> screenScalings;
             /** The clamping mode for different screens */
-            std::map<std::string, WallpaperEngine::Assets::ITexture::TextureFlags> screenClamps;
+            std::map<std::string, TextureFlags> screenClamps;
         } general;
 
         /**
@@ -68,7 +69,7 @@ class CApplicationContext {
             struct {
                 /** The window size used in explicit window */
                 glm::ivec4 geometry;
-                WallpaperEngine::Assets::ITexture::TextureFlags clamp;
+                TextureFlags clamp;
                 WallpaperEngine::Render::CWallpaperState::TextureUVsScaling scalingMode;
             } window;
         } render;
@@ -125,7 +126,7 @@ class CApplicationContext {
             .pauseOnFullscreen = true,
             .window = {
                 .geometry = {},
-                .clamp = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs,
+                .clamp = TextureFlags_ClampUVs,
                 .scalingMode = WallpaperEngine::Render::CWallpaperState::TextureUVsScaling::DefaultUVs,
             },
         },

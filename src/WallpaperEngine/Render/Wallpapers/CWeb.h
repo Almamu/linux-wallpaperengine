@@ -29,7 +29,7 @@ class CWeb : public CWallpaper
           const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
           WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
           const CWallpaperState::TextureUVsScaling& scalingMode,
-          const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+          const uint32_t& clampMode);
         ~CWeb() override;
         [[nodiscard]] int getWidth  () const override { return this->m_width; }
 

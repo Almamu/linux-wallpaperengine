@@ -9,11 +9,11 @@ CFBOProvider::CFBOProvider (const CFBOProvider* parent) :
     m_parent (parent) {}
 
 
-std::shared_ptr<CFBO> CFBOProvider::create(const FBO& base, ITexture::TextureFlags flags, glm::vec2 size) {
+std::shared_ptr<CFBO> CFBOProvider::create(const FBO& base, uint32_t flags, glm::vec2 size) {
     return this->m_fbos[base.name] = std::make_shared <CFBO> (
         base.name,
         // TODO: PROPERLY DETERMINE FBO FORMAT BASED ON THE STRING
-        ITexture::TextureFormat::ARGB8888,
+        TextureFormat_ARGB8888,
         flags,
         base.scale,
         size.x / base.scale,
@@ -24,12 +24,12 @@ std::shared_ptr<CFBO> CFBOProvider::create(const FBO& base, ITexture::TextureFla
 }
 
 std::shared_ptr<CFBO> CFBOProvider::create (
-    const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+    const std::string& name, TextureFormat format, uint32_t flags, float scale,
     glm::vec2 realSize, glm::vec2 textureSize
 ) {
     return this->m_fbos[name] = std::make_shared <CFBO> (
         name,
-        ITexture::TextureFormat::ARGB8888,
+        TextureFormat_ARGB8888,
         flags,
         scale,
         realSize.x,

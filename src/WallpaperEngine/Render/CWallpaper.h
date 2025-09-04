@@ -128,13 +128,13 @@ class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
     static std::unique_ptr<CWallpaper> fromWallpaper (
         const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
         WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const uint32_t& clampMode);
 
   protected:
     CWallpaper (
         const Wallpaper& wallpaperData, CRenderContext& context,
         CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const uint32_t& clampMode);
 
     /**
      * Renders a frame of the wallpaper

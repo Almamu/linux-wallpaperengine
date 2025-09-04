@@ -6,7 +6,7 @@
 using namespace WallpaperEngine::Render;
 
 CWallpaperState::CWallpaperState (
-    const TextureUVsScaling& textureUVsMode, const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode) :
+    const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode) :
     m_textureUVsMode (textureUVsMode) {}
 
 bool CWallpaperState::hasChanged (
@@ -140,7 +140,7 @@ CWallpaperState::TextureUVsScaling CWallpaperState::getTextureUVsScaling () cons
     return this->m_textureUVsMode;
 }
 
-WallpaperEngine::Assets::ITexture::TextureFlags CWallpaperState::getClampingMode () const {
+uint32_t CWallpaperState::getClampingMode () const {
     return this->m_clampingMode;
 }
 

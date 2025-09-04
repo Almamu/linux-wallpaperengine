@@ -17,7 +17,7 @@ class CScene final : public CWallpaper {
     CScene (
         const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
         const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const uint32_t& clampMode);
 
     [[nodiscard]] CCamera& getCamera () const;
 

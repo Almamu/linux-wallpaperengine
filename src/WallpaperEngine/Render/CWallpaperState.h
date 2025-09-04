@@ -7,6 +7,7 @@
 #include "WallpaperEngine/Assets/ITexture.h"
 
 namespace WallpaperEngine::Render {
+using namespace WallpaperEngine::Data::Assets;
 /**
  * Represents current wallpaper state
  */
@@ -21,7 +22,7 @@ class CWallpaperState {
     };
 
     CWallpaperState (
-        const TextureUVsScaling& textureUVsMode, const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode);
 
     /**
      * Checks if any of the given values has changed
@@ -79,7 +80,7 @@ class CWallpaperState {
     /**
      * @return The texture clamping mode.
      */
-    [[nodiscard]] WallpaperEngine::Assets::ITexture::TextureFlags getClampingMode () const;
+    [[nodiscard]] uint32_t getClampingMode () const;
 
     /**
      * Sets the texture scaling mode
@@ -134,6 +135,6 @@ class CWallpaperState {
 
     // Texture scaling mode
     TextureUVsScaling m_textureUVsMode = TextureUVsScaling::DefaultUVs;
-    WallpaperEngine::Assets::ITexture::TextureFlags m_clampingMode = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
+    uint32_t m_clampingMode = TextureFlags_NoFlags;
 };
 } // namespace WallpaperEngine::Render

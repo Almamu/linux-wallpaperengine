@@ -11,7 +11,7 @@ class CVideo final : public CWallpaper {
     CVideo (
         const Wallpaper& video, CRenderContext& context, CAudioContext& audioContext,
         const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const uint32_t& clampMode);
 
     const Video& getVideo () const;
 

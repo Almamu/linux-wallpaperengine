@@ -104,7 +104,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
         // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
         // handled
         this->m_texture = std::make_shared<CFBO> (
-            "", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::NoFlags, 1, size.x,
+            "", TextureFormat_ARGB8888, TextureFlags_NoFlags, 1, size.x,
                   size.y, size.x, size.y);
     }
 
@@ -116,10 +116,10 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     nameB << "_rt_imageLayerComposite_" << this->getImage ().id << "_b";
 
     this->m_currentMainFBO = this->m_mainFBO =
-        scene.create (nameA.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+        scene.create (nameA.str (), TextureFormat_ARGB8888, this->m_texture->getFlags (), 1,
                       {size.x, size.y}, {size.x, size.y});
     this->m_currentSubFBO = this->m_subFBO =
-        scene.create (nameB.str (), ITexture::TextureFormat::ARGB8888, this->m_texture->getFlags (), 1,
+        scene.create (nameB.str (), TextureFormat_ARGB8888, this->m_texture->getFlags (), 1,
                       {size.x, size.y}, {size.x, size.y});
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)

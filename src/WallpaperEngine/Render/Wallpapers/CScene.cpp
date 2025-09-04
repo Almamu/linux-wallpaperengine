@@ -22,7 +22,7 @@ using JSON = WallpaperEngine::Data::JSON::JSON;
 CScene::CScene (
     const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     // caller should check this, if not a std::bad_cast is good to throw
@@ -51,7 +51,7 @@ CScene::CScene (
     const uint32_t sceneHeight = this->m_camera->getHeight ();
 
     this->_rt_shadowAtlas =
-        this->create ("_rt_shadowAtlas", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+        this->create ("_rt_shadowAtlas", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
                       {sceneWidth, sceneHeight}, {sceneWidth, sceneHeight});
     this->alias ("_alias_lightCookie", "_rt_shadowAtlas");
 
@@ -71,12 +71,12 @@ CScene::CScene (
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer =
-        this->create ("_rt_4FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+        this->create ("_rt_4FrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
                       {sceneWidth / 4, sceneHeight / 4}, {sceneWidth / 4, sceneHeight / 4});
     this->_rt_8FrameBuffer =
-        this->create ("_rt_8FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
+        this->create ("_rt_8FrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
                       {sceneWidth / 8, sceneHeight / 8}, {sceneWidth / 8, sceneHeight / 8});
-    this->_rt_Bloom = this->create ("_rt_Bloom", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs,
+    this->_rt_Bloom = this->create ("_rt_Bloom", TextureFormat_ARGB8888, TextureFlags_ClampUVs,
                                        1.0, {sceneWidth / 8, sceneHeight / 8}, {sceneWidth / 8, sceneHeight / 8});
 
     //

@@ -16,7 +16,7 @@ using namespace WallpaperEngine::WebBrowser::CEF;
 CWeb::CWeb (
     const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
     m_browserContext (browserContext) {

@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Render;
 CWallpaper::CWallpaper (
     const Wallpaper& wallpaperData, CRenderContext& context,CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const uint32_t& clampMode
 ) :
     CContextAware (context),
     CFBOProvider (nullptr),
@@ -245,11 +245,11 @@ void CWallpaper::setPause (bool newState) {}
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();
-    const ITexture::TextureFlags clamp = this->m_state.getClampingMode ();
+    const uint32_t clamp = this->m_state.getClampingMode ();
 
     // create framebuffer for the scene
     this->m_sceneFBO = this->create (
-        "_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, {width,
+        "_rt_FullFrameBuffer", TextureFormat_ARGB8888, clamp, 1.0, {width,
         height}, {width, height});
 
     this->alias ("_rt_MipMappedFrameBuffer", "_rt_FullFrameBuffer");
@@ -275,17 +275,22 @@ std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
 std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
     const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const uint32_t& clampMode
 ) {
     if (wallpaper.is<Scene> ()) {
         return std::make_unique <WallpaperEngine::Render::Wallpapers::CScene> (
             wallpaper, context, audioContext, scalingMode, clampMode);
-    } else if (wallpaper.is<Video> ()) {
+    }
+
+    if (wallpaper.is<Video> ()) {
         return std::make_unique<WallpaperEngine::Render::Wallpapers::CVideo> (
             wallpaper, context, audioContext, scalingMode, clampMode);
-    } else if (wallpaper.is<Web> ()) {
+    }
+
+    if (wallpaper.is<Web> ()) {
         return std::make_unique<WallpaperEngine::Render::Wallpapers::CWeb> (
             wallpaper, context, audioContext, *browserContext, scalingMode, clampMode);
-    } else
-        sLog.exception ("Unsupported wallpaper type");
+    }
+
+    sLog.exception ("Unsupported wallpaper type");
 }

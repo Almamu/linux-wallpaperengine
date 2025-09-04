@@ -400,6 +400,8 @@ add_executable(
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
     src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
 
+    src/WallpaperEngine/Data/Assets/Types.h
+    src/WallpaperEngine/Data/Assets/Texture.h
     src/WallpaperEngine/Data/Model/Types.h
     src/WallpaperEngine/Data/Model/Project.h
     src/WallpaperEngine/Data/Model/Wallpaper.h
@@ -413,6 +415,9 @@ add_executable(
     src/WallpaperEngine/Data/Model/Property.h
     src/WallpaperEngine/Data/Utils/TypeCaster.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.h
+    src/WallpaperEngine/Data/Utils/BinaryReader.cpp
+    src/WallpaperEngine/Data/Utils/BinaryReader.h
+    src/WallpaperEngine/Data/Utils/MemoryStream.h
     src/WallpaperEngine/Data/Utils/SFINAE.h
     src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
     src/WallpaperEngine/Data/Parsers/ProjectParser.h
@@ -430,6 +435,8 @@ add_executable(
     src/WallpaperEngine/Data/Parsers/ShaderConstantParser.h
     src/WallpaperEngine/Data/Parsers/PropertyParser.cpp
     src/WallpaperEngine/Data/Parsers/PropertyParser.h
+    src/WallpaperEngine/Data/Parsers/TextureParser.cpp
+    src/WallpaperEngine/Data/Parsers/TextureParser.h
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h

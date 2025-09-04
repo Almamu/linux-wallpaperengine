@@ -8,6 +8,11 @@
 
 #include "WallpaperEngine/Assets/CContainer.h"
 
+namespace WallpaperEngine::Assets {
+class CContainer;
+}
+
+
 namespace WallpaperEngine::Data::Model {
 struct Project;
 class Wallpaper;

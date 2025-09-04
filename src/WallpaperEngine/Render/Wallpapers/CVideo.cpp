@@ -17,7 +17,7 @@ void* get_proc_address (void* ctx, const char* name) {
 CVideo::CVideo (
     const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
     const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;

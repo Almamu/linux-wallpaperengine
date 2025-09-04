@@ -6,6 +6,7 @@
 #include <string>
 
 namespace WallpaperEngine::Assets {
+class ITexture;
 
 /**
  * File container, provides access to files for backgrounds

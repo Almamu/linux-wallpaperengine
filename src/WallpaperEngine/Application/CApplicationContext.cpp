@@ -118,14 +118,14 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
             .help ("Clamp mode to use when rendering the background, this applies to the previous --window or --screen-root output, or the default background if no other background is specified")
             .choices("clamp", "border", "repeat")
             .action([this, &lastScreen](const std::string& value) -> void {
-                WallpaperEngine::Assets::ITexture::TextureFlags flags;
+                TextureFlags flags;
 
                 if (value == "clamp") {
-                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVs;
+                    flags = TextureFlags_ClampUVs;
                 } else if (value == "border") {
-                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::ClampUVsBorder;
+                    flags = TextureFlags_ClampUVsBorder;
                 } else if (value == "repeat") {
-                    flags = WallpaperEngine::Assets::ITexture::TextureFlags::NoFlags;
+                    flags = TextureFlags_NoFlags;
                 } else {
                     sLog.exception ("Invalid clamp mode: ", value);
                 }
