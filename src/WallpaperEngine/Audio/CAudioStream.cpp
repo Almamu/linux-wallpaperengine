@@ -252,7 +252,7 @@ bool CAudioStream::doQueue (AVPacket* pkt) {
     MyAVPacketList entry {pkt};
 
 #if FF_API_FIFO_OLD_API
-    if (av_fifo_space (this->m_queue->packetList) < sizeof (entry))
+    if (av_fifo_space (this->m_queue->packetList) < static_cast <int> (sizeof (entry)))
         if (av_fifo_grow (this->m_queue->packetList, sizeof (entry)) < 0)
             return false;
 
@@ -281,7 +281,7 @@ void CAudioStream::dequeuePacket (AVPacket* output) {
 #if FF_API_FIFO_OLD_API
         int ret = -1;
 
-        if (av_fifo_size (this->m_queue->packetList) >= sizeof (entry))
+        if (av_fifo_size (this->m_queue->packetList) >= static_cast <int> (sizeof (entry)))
             ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
 #else
         int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);

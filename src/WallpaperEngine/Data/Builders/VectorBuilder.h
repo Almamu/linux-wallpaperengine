@@ -40,13 +40,17 @@ class VectorBuilder {
 
         if (first == nullptr) {
             sLog.exception ("Invalid vector format: " + str + " (too few values, expected: 2, 3 or 4)");
-        } else if (second == nullptr) {
-            return 2;
-        } else if (third == nullptr) {
-            return 3;
-        } else {
-            return 4;
         }
+
+        if (second == nullptr) {
+            return 2;
+        }
+
+        if (third == nullptr) {
+            return 3;
+        }
+
+        return 4;
     }
 
     /**
@@ -64,6 +68,9 @@ class VectorBuilder {
      */
     template <int length, typename type, glm::qualifier qualifier>
     [[nodiscard]] static glm::vec<length, type, qualifier> parse (const std::string& str) {
+        // ensure a valid type is used, only 1 to 4 vectors are supported
+        static_assert (length >= 1 && length <= 4, "Invalid vector length");
+
         const char* p = str.c_str ();
 
         // get up to 4 spaces
@@ -79,21 +86,22 @@ class VectorBuilder {
         } else if constexpr (length == 2) {
             if (first == nullptr) {
                 sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-            } else if (second != nullptr) {
+            }
+
+            if (second != nullptr) {
                 sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
             }
         } else if constexpr (length == 3) {
             if (first == nullptr || second == nullptr) {
                 sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-            } else if (third != nullptr) {
+            }
+            if (third != nullptr) {
                 sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
             }
         } else if constexpr (length == 4) {
             if (first == nullptr || second == nullptr || third == nullptr) {
                 sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
             }
-        } else {
-            sLog.exception ("Invalid vector length: ", length);
         }
 
         // lengths validated, values can be used directly without issues
@@ -112,7 +120,7 @@ class VectorBuilder {
                 convert <type> (first + 1),
                 convert <type> (second + 1)
             };
-        } else {
+        } else if constexpr (length == 4) {
             return {
                 convert <type> (p),
                 convert <type> (first + 1),
