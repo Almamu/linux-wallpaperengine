@@ -105,7 +105,7 @@ class CApplicationContext {
             /** If an screenshot should be taken */
             bool take;
             /** The frames to wait until the screenshot is taken */
-            int delay;
+            uint32_t delay;
             /** The path to where the screenshot must be saved */
             std::filesystem::path path;
         } screenshot;

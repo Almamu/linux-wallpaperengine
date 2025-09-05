@@ -35,7 +35,7 @@ struct ObjectData {
  */
 class Object : public TypeCaster, public ObjectData {
   public:
-    explicit Object (ObjectData data) noexcept : ObjectData (std::move (data)), TypeCaster () {};
+    explicit Object (ObjectData data) noexcept : TypeCaster (), ObjectData (std::move (data)) {};
     ~Object () override = default;
 };
 

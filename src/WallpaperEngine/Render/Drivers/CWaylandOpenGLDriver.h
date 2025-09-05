@@ -22,10 +22,6 @@ class CApplicationContext;
 class CWallpaperApplication;
 } // namespace WallpaperEngine::Application
 
-namespace WallpaperEngine::Input::Drivers {
-class CWaylandMouseInput;
-}
-
 struct zwlr_layer_shell_v1;
 struct zwlr_layer_surface_v1;
 

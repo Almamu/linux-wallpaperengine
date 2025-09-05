@@ -19,7 +19,7 @@ struct WallpaperData {
 
 class Wallpaper : public TypeCaster, public WallpaperData {
   public:
-    explicit Wallpaper (WallpaperData data) noexcept : WallpaperData (std::move(data)), TypeCaster () {};
+    explicit Wallpaper (WallpaperData data) noexcept : TypeCaster (), WallpaperData (std::move(data)) {};
     ~Wallpaper () override = default;
 };
 

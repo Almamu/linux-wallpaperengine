@@ -232,12 +232,12 @@ void CWaylandOpenGLDriver::onLayerClose (Output::CWaylandOutputViewport* viewpor
 }
 
 CWaylandOpenGLDriver::CWaylandOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app) :
-    m_mouseInput (*this),
     CVideoDriver (app, m_mouseInput),
     m_output (context, *this),
     m_requestedExit (false),
     m_frameCounter (0),
-    m_context (context) {
+    m_context (context),
+    m_mouseInput (*this) {
     m_waylandContext.display = wl_display_connect (nullptr);
 
     if (!m_waylandContext.display)

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bit>
 
 #include "BinaryReader.h"
 
@@ -13,10 +14,17 @@ uint32_t BinaryReader::nextUInt32 () {
 
     this->m_input.read (buffer, 4);
 
-    return (buffer [3] & 0xFF) << 24 |
-           (buffer [2] & 0xFF) << 16 |
-           (buffer [1] & 0xFF) << 8 |
-           (buffer [0] & 0xFF);
+    if constexpr (std::endian::native == std::endian::little) {
+        return (buffer [3] & 0xFF) << 24 |
+               (buffer [2] & 0xFF) << 16 |
+               (buffer [1] & 0xFF) << 8 |
+               (buffer [0] & 0xFF);
+    } else {
+        return (buffer [0] & 0xFF) << 24 |
+               (buffer [1] & 0xFF) << 16 |
+               (buffer [2] & 0xFF) << 8 |
+               (buffer [3] & 0xFF);
+    }
 }
 
 int BinaryReader::nextInt () {
@@ -24,18 +32,24 @@ int BinaryReader::nextInt () {
 
     this->m_input.read (buffer, 4);
 
-    return (buffer [3] & 0xFF) << 24 |
-           (buffer [2] & 0xFF) << 16 |
-           (buffer [1] & 0xFF) << 8 |
-           (buffer [0] & 0xFF);
+    if constexpr (std::endian::native == std::endian::little) {
+        return (buffer [3] & 0xFF) << 24 |
+               (buffer [2] & 0xFF) << 16 |
+               (buffer [1] & 0xFF) << 8 |
+               (buffer [0] & 0xFF);
+    } else {
+        return (buffer [0] & 0xFF) << 24 |
+               (buffer [1] & 0xFF) << 16 |
+               (buffer [2] & 0xFF) << 8 |
+               (buffer [3] & 0xFF);
+    }
 }
 
-
 float BinaryReader::nextFloat () {
-    float result {};
-    uint32_t bytes = this->nextUInt32 ();
+    float result;
+    static_assert (std::endian::native == std::endian::little, "Only little endian is supported for floats");
 
-    memcpy (&result, &bytes, sizeof (result));
+    this->m_input.read (reinterpret_cast<char*>(&result), sizeof (result));
 
     return result;
 }

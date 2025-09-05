@@ -57,17 +57,15 @@ CShaderUnit::CShaderUnit (
     const ComboMap& combos, const ComboMap& overrideCombos
 ) :
     m_type (type),
-    m_link (nullptr),
-    m_container (container),
     m_file (std::move (file)),
-    m_constants (constants),
     m_content (std::move(content)),
-    m_passTextures (passTextures),
-    m_overrideTextures (overrideTextures),
     m_combos (combos),
     m_overrideCombos (overrideCombos),
-    m_discoveredCombos (),
-    m_usedCombos () {
+    m_constants (constants),
+    m_passTextures (passTextures),
+    m_overrideTextures (overrideTextures),
+    m_link (nullptr),
+    m_container (container) {
     // pre-process the shader so the units are clear
     this->preprocess ();
 }

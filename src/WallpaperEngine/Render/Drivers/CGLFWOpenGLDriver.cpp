@@ -20,9 +20,9 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
 CGLFWOpenGLDriver::CGLFWOpenGLDriver (
     const char* windowTitle, CApplicationContext& context, CWallpaperApplication& app
 ) :
-    m_mouseInput (*this),
     CVideoDriver (app, m_mouseInput),
-    m_context (context) {
+    m_context (context),
+    m_mouseInput (*this) {
     glfwSetErrorCallback (CustomGLFWErrorHandler);
 
     // initialize glfw

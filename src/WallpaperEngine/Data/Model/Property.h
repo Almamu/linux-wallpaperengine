@@ -27,7 +27,7 @@ struct ComboData {
 
 class Property : public DynamicValue, public TypeCaster, public PropertyData {
   public:
-    explicit Property (PropertyData data) : PropertyData (std::move(data)), TypeCaster (), DynamicValue () {}
+    explicit Property (PropertyData data) : DynamicValue (), TypeCaster (), PropertyData (std::move(data)) {}
 
     using DynamicValue::update;
     virtual void update(const std::string& value) = 0;

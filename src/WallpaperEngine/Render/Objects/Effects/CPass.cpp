@@ -40,12 +40,12 @@ CPass::CPass (
 ) :
     Helpers::CContextAware (image),
     m_image (image),
+    m_fboProvider (std::move(fboProvider)),
     m_pass (pass),
-    m_blendingmode (pass.blending),
     m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE),
-    m_fboProvider (std::move(fboProvider)),
-    m_target (target) {
+    m_target (target),
+    m_blendingmode (pass.blending) {
     this->setupShaders ();
 }
 

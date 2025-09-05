@@ -192,7 +192,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
 
         screenshotGroup.add_argument ("--screenshot-delay")
             .help ("Frames to wait before taking the screenshot")
-            .default_value (5)
+            .default_value <uint32_t> (5)
             .store_into (this->settings.screenshot.delay);
 
     auto& contentGroup = program.add_group ("Content options");
@@ -263,7 +263,7 @@ CApplicationContext::CApplicationContext (int argc, char* argv []) :
         }
 
         this->settings.audio.volume = std::max(0, std::min (this->settings.audio.volume, 128));
-        this->settings.screenshot.delay = std::max (0, std::min (this->settings.screenshot.delay, 5));
+        this->settings.screenshot.delay = std::max <uint32_t> (0, std::min <uint32_t> (this->settings.screenshot.delay, 5));
 
         // use std::cout on this in case logging is disabled, this way it's easy to look at what is running
         std::stringbuf buffer;

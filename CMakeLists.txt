@@ -7,7 +7,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -104,6 +104,8 @@ find_package(CEF REQUIRED)
 # remove some switches that forbid us from using things that are commonplace in our codebase
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-exceptions)
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-rtti)
+list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -std=c++17)
+list(APPEND CEF_CXX_COMPILER_FLAGS -std=c++20)
 # remove the vulkan library from the files to copy so it doesn't fail after removing it
 list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
 
@@ -419,6 +421,8 @@ add_executable(
     src/WallpaperEngine/Data/Utils/BinaryReader.h
     src/WallpaperEngine/Data/Utils/MemoryStream.h
     src/WallpaperEngine/Data/Utils/SFINAE.h
+    src/WallpaperEngine/Data/Parsers/EffectParser.cpp
+    src/WallpaperEngine/Data/Parsers/EffectParser.h
     src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
     src/WallpaperEngine/Data/Parsers/ProjectParser.h
     src/WallpaperEngine/Data/Parsers/WallpaperParser.cpp
@@ -440,15 +444,13 @@ add_executable(
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
-
-    ${WAYLAND_SOURCES}
-    ${X11_SOURCES}
-    ${DEMOMODE_SOURCES}
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     src/WallpaperEngine/Data/Dumpers/StringPrinter.h
     src/WallpaperEngine/Data/JSON.cpp
-    src/WallpaperEngine/Data/Parsers/EffectParser.cpp
-    src/WallpaperEngine/Data/Parsers/EffectParser.h)
+
+    ${WAYLAND_SOURCES}
+    ${X11_SOURCES}
+    ${DEMOMODE_SOURCES})
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}

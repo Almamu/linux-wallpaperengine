@@ -421,7 +421,6 @@ void CWallpaperApplication::show () {
     std::vector<uint8_t> pixels(width * height * 3);
     bool initialized = false;
     int frame = 0;
-    int elapsed_frames = 0;
 #endif /* DEMOMODE */
 
     while (this->m_context.state.general.keepRunning) {
@@ -447,12 +446,10 @@ void CWallpaperApplication::show () {
         }
 
 #if DEMOMODE
-        elapsed_frames ++;
-
         // wait for a full render cycle before actually starting
         // this gives some extra time for video and web decoders to set themselves up
         // because of size changes
-        if (elapsed_frames > this->m_context.settings.render.maximumFPS) {
+        if (m_videoDriver->getFrameCounter () > this->m_context.settings.render.maximumFPS) {
             if (!initialized) {
                 width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
                 height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
