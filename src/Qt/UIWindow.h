@@ -33,13 +33,14 @@
 #include <string>
 #include <vector>
 #include <QVBoxLayout>
+#include <nlohmann/json.hpp>
 #include "Qt/WallpaperSettingsWidget.h"
 
 class UIWindow : public QWidget {
   Q_OBJECT
 
   public:
-    UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* instanceGuard);
+    UIWindow(QWidget* parent, QApplication* qapp, SingleInstanceManager* instanceGuard, const std::string& appDataLocation);
     void setupUIWindow(std::vector<std::string> wallpaperPaths);
 
   private:
@@ -55,8 +56,12 @@ class UIWindow : public QWidget {
     std::map<std::string, std::vector<std::string>> extraFlags;
     QProcess* wallpaperEngine;
 
+    std::string appDataPath;
+    nlohmann::json selectedWallpapersJSON;
+
     void startNewWallpaperEngine();
     void updateSelectedButton();
+    void updateStoredSelectedWallpapers();
     static std::vector<std::string> split(const std::string &str, char r);
 
   protected:

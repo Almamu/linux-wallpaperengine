@@ -6,6 +6,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "/opt/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 endif()
 
+
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
@@ -529,6 +530,8 @@ add_executable(
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES}
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
 
 qt_add_resources(RESOURCES resources.qrc)
 target_sources(linux-wallpaperengine PRIVATE ${RESOURCES})
