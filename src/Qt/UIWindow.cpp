@@ -152,7 +152,6 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
 
   QObject::connect(this->screenSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
     updateSelectedButton();
-    sLog.out(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
     this->wallpaperSettingsWidget->update(this->selectedWallpapers[this->screenSelector->currentText().toStdString()]);
   });
 
@@ -186,8 +185,9 @@ void UIWindow::setupUIWindow(std::vector<std::string> wallpaperPaths) {
   // right side
   this->wallpaperSettingsWidget = new WallpaperSettingsWidget(splitWidget);
 
-  connect(this->wallpaperSettingsWidget, &WallpaperSettingsWidget::applySettings, this, [this](const std::string& flags) {
-    this->extraFlags[this->screenSelector->currentText().toStdString()] = split(flags, ' ');
+  connect(this->wallpaperSettingsWidget, &WallpaperSettingsWidget::applySettings, this, [this](const std::string& flags, const std::string& individualFlags) {
+    globalFlags = flags;
+    this->extraFlags[this->screenSelector->currentText().toStdString()] = split(individualFlags, ' ');
     startNewWallpaperEngine();
     // updateStoredSelectedWallpapers();
   });
@@ -240,18 +240,19 @@ void UIWindow::showEvent(QShowEvent* event) {
 
 void UIWindow::closeEvent(QCloseEvent* event) {
   this->hide();
+
+  updateStoredSelectedWallpapers();
+
   event->ignore();
 }
 
 void UIWindow::startNewWallpaperEngine() {
-  sLog.out("Start new WallpaperEngine..");
 
   for (const auto& n : this->extraFlags) {
     std::string str;
     for (const auto& s : n.second) {
        str.append(s);
     }
-    sLog.out(n.first + " | " + str);
   }
   if (wallpaperEngine->state() == QProcess::Running) {
     // Stop WallpaperProcess
@@ -264,6 +265,10 @@ void UIWindow::startNewWallpaperEngine() {
   }
   // create args
   QStringList args;
+  
+  for (const auto& f : split(globalFlags, ' ')) {
+    args.push_back(QString::fromStdString(f));
+  }
 
   for (const auto &wallpaper : this->selectedWallpapers) {
     if (wallpaper.first == "" || wallpaper.second == "") continue;

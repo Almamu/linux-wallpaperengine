@@ -54,6 +54,7 @@ class UIWindow : public QWidget {
     // Important Fields
     std::map<std::string, std::string> selectedWallpapers;
     std::map<std::string, std::vector<std::string>> extraFlags;
+    std::string globalFlags;
     QProcess* wallpaperEngine;
 
     std::string appDataPath;

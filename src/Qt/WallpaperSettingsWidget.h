@@ -25,6 +25,7 @@ struct Option {
   std::string optionName;
   std::string flag;
   bool flagHasValue;
+  bool oneTimeFlag;
 
   std::variant<bool, int, float, QString> defaultValue;
 };
@@ -62,7 +63,7 @@ class WallpaperSettingsWidget : public QWidget {
   "}";
 
   signals:
-  void applySettings(const std::string& flags);
+  void applySettings(const std::string& flags, const std::string& individualFlags);
 
   protected:
 };
