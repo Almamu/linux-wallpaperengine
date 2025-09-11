@@ -6,7 +6,7 @@
 
 #include "WallpaperEngine/Render/Shaders/CShader.h"
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "../ITexture.h"
 
 #include <glm/vec3.hpp>
 

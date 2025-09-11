@@ -3,8 +3,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
+#include "../../ITexture.h"
 #include "WallpaperEngine/Data/Model/Material.h"
-#include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/CFBOProvider.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"

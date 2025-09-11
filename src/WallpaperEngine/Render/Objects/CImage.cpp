@@ -247,6 +247,8 @@ void CImage::setup () {
         );
     }
 
+    auto fboProvider = std::make_shared<CFBOProvider> (this);
+
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
         // generate the effects used by this material
@@ -256,8 +258,6 @@ void CImage::setup () {
             if (!cur->visible->value->getBool ()) {
                 continue;
             }
-
-            auto fboProvider = std::make_shared<CFBOProvider> (this);
 
             // create all the fbos for this effect
             for (const auto& fbo : cur->effect->fbos) {

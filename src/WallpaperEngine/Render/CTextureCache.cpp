@@ -2,8 +2,8 @@
 
 #include "WallpaperEngine/FileSystem/Container.h"
 
+#include "CTexture.h"
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
-#include "WallpaperEngine/Assets/CTexture.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
 #include "WallpaperEngine/Data/Model/Project.h"

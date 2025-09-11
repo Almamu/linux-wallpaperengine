@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "../ITexture.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
 #include "CShaderUnit.h"

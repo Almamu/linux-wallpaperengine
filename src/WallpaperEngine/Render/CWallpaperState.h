@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec4.hpp>
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "ITexture.h"
 
 namespace WallpaperEngine::Render {
 using namespace WallpaperEngine::Data::Assets;

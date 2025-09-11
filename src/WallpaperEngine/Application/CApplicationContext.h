@@ -9,7 +9,7 @@
 
 #include "CApplicationState.h"
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "../Render/ITexture.h"
 #include "WallpaperEngine/Render/CWallpaperState.h"
 
 #include "WallpaperEngine/Data/Model/Project.h"

@@ -267,9 +267,6 @@ add_executable(
     src/WallpaperEngine/Application/CWallpaperApplication.cpp
     src/WallpaperEngine/Application/CWallpaperApplication.h
 
-    src/WallpaperEngine/Assets/ITexture.h
-    src/WallpaperEngine/Assets/CTexture.h
-    src/WallpaperEngine/Assets/CTexture.cpp
     src/WallpaperEngine/Assets/CAssetLoadException.cpp
     src/WallpaperEngine/Assets/CAssetLoadException.h
 
@@ -374,6 +371,9 @@ add_executable(
     src/WallpaperEngine/Render/CCamera.cpp
     src/WallpaperEngine/Render/CObject.h
     src/WallpaperEngine/Render/CObject.cpp
+    src/WallpaperEngine/Render/CTexture.cpp
+    src/WallpaperEngine/Render/CTexture.h
+    src/WallpaperEngine/Render/ITexture.h
 
     src/WallpaperEngine/Render/Objects/CImage.h
     src/WallpaperEngine/Render/Objects/CImage.cpp

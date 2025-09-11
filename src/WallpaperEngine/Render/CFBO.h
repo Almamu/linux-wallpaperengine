@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "ITexture.h"
 
 using namespace WallpaperEngine::Assets;
 

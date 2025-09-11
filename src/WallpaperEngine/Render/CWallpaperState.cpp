@@ -1,5 +1,5 @@
 #include "CWallpaperState.h"
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "ITexture.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include <algorithm>
 

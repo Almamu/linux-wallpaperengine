@@ -5,10 +5,7 @@
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
-#include <map>
 #include <memory>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace WallpaperEngine::Assets {

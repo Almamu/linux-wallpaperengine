@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "ITexture.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Helpers/CContextAware.h"
 
