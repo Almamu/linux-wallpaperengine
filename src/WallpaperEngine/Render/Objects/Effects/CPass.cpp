@@ -115,7 +115,6 @@ void CPass::setupRenderFramebuffer () {
         default:
             glDisable (GL_DEPTH_TEST);
             break;
-
     }
 
     switch (this->m_pass.cullmode) {

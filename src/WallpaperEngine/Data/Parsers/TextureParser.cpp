@@ -9,57 +9,11 @@
 using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Parsers;
 
-TextureUniquePtr TextureParser::parse (BinaryReader& file) {
-    char magic[9] = { 0 };
-    file.next (magic, 9);
-
-    if (strncmp (magic, "TEXV0005", 9) != 0)
-        sLog.exception ("unexpected texture container type: ", std::string_view (magic, 9));
-
-    file.next (magic, 9);
-
-    if (strncmp (magic, "TEXI0001", 9) != 0)
-        sLog.exception ("unexpected texture sub-container type: ", std::string_view (magic, 9));
-
+TextureUniquePtr TextureParser::parse (const BinaryReader& file) {
     auto result = std::make_unique<Texture> ();
 
-    result->format = parseTextureFormat (file.nextUInt32 ());
-    result->flags = parseTextureFlags (file.nextUInt32 ());
-    result->textureWidth = file.nextUInt32 ();
-    result->textureHeight = file.nextUInt32 ();
-    result->width = file.nextUInt32 ();
-    result->height = file.nextUInt32 ();
-
-    // ignore some more bytes
-    std::ignore = file.nextUInt32 ();
-
-    file.next (magic, 9);
-
-    result->imageCount = file.nextUInt32 ();
-
-    if (strncmp (magic, "TEXB0004", 9) == 0) {
-        result->containerVersion = ContainerVersion_TEXB0004;
-        result->freeImageFormat = parseFIF (file.nextUInt32 ());
-        result->isVideoMp4 = file.nextUInt32 () == 1;
-
-        if (result->freeImageFormat == FIF_UNKNOWN && result->isVideoMp4) {
-            result->freeImageFormat = FIF_MP4;
-        }
-
-        // default to TEXB0003 format here
-        if (result->freeImageFormat != FIF_MP4) {
-            result->containerVersion = ContainerVersion_TEXB0003;
-        }
-    } else if (strncmp (magic, "TEXB0003", 9) == 0) {
-        result->containerVersion = ContainerVersion_TEXB0003;
-        result->freeImageFormat = parseFIF (file.nextUInt32 ());
-    } else if (strncmp (magic, "TEXB0002", 9) == 0) {
-        result->containerVersion = ContainerVersion_TEXB0002;
-    } else if (strncmp (magic, "TEXB0001", 9) == 0) {
-        result->containerVersion = ContainerVersion_TEXB0001;
-    } else {
-        sLog.exception ("unknown texture format type: ", std::string_view (magic, 9));
-    }
+    parseTextureHeader (*result, file);
+    parseContainer (*result, file);
 
     for (uint32_t image = 0; image < result->imageCount; image++) {
         uint32_t mipmapCount = file.nextUInt32 ();
@@ -76,38 +30,12 @@ TextureUniquePtr TextureParser::parse (BinaryReader& file) {
         return result;
     }
 
-    // image is animated, keep parsing the rest of the image info
-    file.next (magic, 9);
-
-    if (strncmp (magic, "TEXS0002", 9) == 0) {
-        result->animatedVersion = AnimatedVersion_TEXS0002;
-    } else if (strncmp (magic, "TEXS0003", 9) == 0) {
-        result->animatedVersion = AnimatedVersion_TEXS0003;
-    } else {
-        sLog.exception ("found animation information of unknown type: ", std::string_view (magic, 9));
-    }
-
-    uint32_t frameCount = file.nextUInt32 ();
-
-    if (result->animatedVersion == AnimatedVersion_TEXS0003) {
-        result->gifWidth = file.nextUInt32 ();
-        result->gifHeight = file.nextUInt32 ();
-    }
-
-    while (frameCount-- > 0) {
-        result->frames.push_back (parseFrame (file, *result));
-    }
-
-    // ensure gif width and height is right for TEXS0002
-    if (result->animatedVersion == AnimatedVersion_TEXS0002) {
-        result->gifWidth = (*result->frames.begin ())->width1;
-        result->gifHeight = (*result->frames.begin ())->height1;
-    }
+    parseAnimations (*result, file);
 
     return result;
 }
 
-MipmapSharedPtr TextureParser::parseMipmap (BinaryReader& file, Texture& header) {
+MipmapSharedPtr TextureParser::parseMipmap (const BinaryReader& file, const Texture& header) {
     auto result = std::make_shared<Mipmap> ();
 
     // TEXB0004 has some extra data in the header that has to be handled
@@ -162,7 +90,7 @@ MipmapSharedPtr TextureParser::parseMipmap (BinaryReader& file, Texture& header)
     return result;
 }
 
-FrameSharedPtr TextureParser::parseFrame (BinaryReader& file, Texture& header) {
+FrameSharedPtr TextureParser::parseFrame (const BinaryReader& file) {
     auto result = std::make_shared<Frame> ();
 
     result->frameNumber = file.nextUInt32 ();
@@ -199,6 +127,97 @@ TextureFormat TextureParser::parseTextureFormat (uint32_t value) {
         default:
             sLog.exception ("unknown texture format: ", value);
     }
+}
+
+void TextureParser::parseTextureHeader (Texture& header, const BinaryReader& file) {
+    char magic[9] = { 0 };
+
+    file.next (magic, 9);
+
+    if (strncmp (magic, "TEXV0005", 9) != 0)
+        sLog.exception ("unexpected texture container type: ", std::string_view (magic, 9));
+
+    file.next (magic, 9);
+
+    if (strncmp (magic, "TEXI0001", 9) != 0)
+        sLog.exception ("unexpected texture sub-container type: ", std::string_view (magic, 9));
+
+
+    header.format = parseTextureFormat (file.nextUInt32 ());
+    header.flags = parseTextureFlags (file.nextUInt32 ());
+    header.textureWidth = file.nextUInt32 ();
+    header.textureHeight = file.nextUInt32 ();
+    header.width = file.nextUInt32 ();
+    header.height = file.nextUInt32 ();
+
+    // ignore some more bytes
+    std::ignore = file.nextUInt32 ();
+}
+
+void TextureParser::parseContainer (Texture& header, const BinaryReader& file) {
+    char magic[9] = { 0 };
+
+    file.next (magic, 9);
+
+    header.imageCount = file.nextUInt32 ();
+
+    if (strncmp (magic, "TEXB0004", 9) == 0) {
+        header.containerVersion = ContainerVersion_TEXB0004;
+        header.freeImageFormat = parseFIF (file.nextUInt32 ());
+        header.isVideoMp4 = file.nextUInt32 () == 1;
+
+        if (header.freeImageFormat == FIF_UNKNOWN && header.isVideoMp4) {
+            header.freeImageFormat = FIF_MP4;
+        }
+
+        // default to TEXB0003 format here
+        if (header.freeImageFormat != FIF_MP4) {
+            header.containerVersion = ContainerVersion_TEXB0003;
+        }
+    } else if (strncmp (magic, "TEXB0003", 9) == 0) {
+        header.containerVersion = ContainerVersion_TEXB0003;
+        header.freeImageFormat = parseFIF (file.nextUInt32 ());
+    } else if (strncmp (magic, "TEXB0002", 9) == 0) {
+        header.containerVersion = ContainerVersion_TEXB0002;
+    } else if (strncmp (magic, "TEXB0001", 9) == 0) {
+        header.containerVersion = ContainerVersion_TEXB0001;
+    } else {
+        sLog.exception ("unknown texture format type: ", std::string_view (magic, 9));
+    }
+
+}
+
+void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) {
+    char magic[9] = { 0 };
+
+    // image is animated, keep parsing the rest of the image info
+    file.next (magic, 9);
+
+    if (strncmp (magic, "TEXS0002", 9) == 0) {
+        header.animatedVersion = AnimatedVersion_TEXS0002;
+    } else if (strncmp (magic, "TEXS0003", 9) == 0) {
+        header.animatedVersion = AnimatedVersion_TEXS0003;
+    } else {
+        sLog.exception ("found animation information of unknown type: ", std::string_view (magic, 9));
+    }
+
+    uint32_t frameCount = file.nextUInt32 ();
+
+    if (header.animatedVersion == AnimatedVersion_TEXS0003) {
+        header.gifWidth = file.nextUInt32 ();
+        header.gifHeight = file.nextUInt32 ();
+    }
+
+    while (frameCount-- > 0) {
+        header.frames.push_back (parseFrame (file));
+    }
+
+    // ensure gif width and height is right for TEXS0002
+    if (header.animatedVersion == AnimatedVersion_TEXS0002) {
+        header.gifWidth = (*header.frames.begin ())->width1;
+        header.gifHeight = (*header.frames.begin ())->height1;
+    }
+
 }
 
 uint32_t TextureParser::parseTextureFlags (uint32_t value) {

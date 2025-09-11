@@ -35,9 +35,7 @@ std::string readShader (const std::filesystem::path& filename, const Container& 
                 sLog.out ("Replaced ", filename, " with compat ", shader);
 
                 return contents;
-            } catch (CAssetLoadException&) {
-
-            }
+            } catch (CAssetLoadException&) { }
         }
     }
 

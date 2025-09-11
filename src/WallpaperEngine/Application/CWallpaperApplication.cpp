@@ -48,15 +48,11 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
     container->mount (path, "/");
     try {
         container->mount (path / "scene.pkg", "/");
-    } catch (std::runtime_error&) {
-
-    }
+    } catch (std::runtime_error&) { }
 
     try {
         container->mount (path / "gifscene.pkg", "/");
-    } catch (std::runtime_error&) {
-
-    }
+    } catch (std::runtime_error&) { }
 
     try {
         container->mount (this->m_context.settings.general.assets, "/");
