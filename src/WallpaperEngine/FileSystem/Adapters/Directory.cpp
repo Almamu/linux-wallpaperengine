@@ -53,7 +53,7 @@ bool DirectoryAdapter::exists (const std::filesystem::path& path) const {
     }
 }
 
-std::filesystem::path DirectoryAdapter::realpath (const std::filesystem::path& path) const {
+std::filesystem::path DirectoryAdapter::physicalPath (const std::filesystem::path& path) const {
     auto finalpath = std::filesystem::canonical(this->basepath / path);
 
     if (finalpath.string ().find (this->basepath.string ()) != 0) {

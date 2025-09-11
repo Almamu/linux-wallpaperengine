@@ -38,7 +38,7 @@ class Container {
      * @param path The path to resolve to a real file
      * @return The full public, absolute path to the given file
      */
-    [[nodiscard]] std::filesystem::path realpath (const std::filesystem::path& path) const;
+    [[nodiscard]] std::filesystem::path physicalPath (const std::filesystem::path& path) const;
 
     /**
      *

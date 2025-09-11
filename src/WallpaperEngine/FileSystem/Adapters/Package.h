@@ -22,7 +22,7 @@ struct PackageAdapter final : Adapter {
 
     [[nodiscard]] ReadStreamSharedPtr open (const std::filesystem::path& path) const override;
     [[nodiscard]] bool exists (const std::filesystem::path& path) const override;
-    [[nodiscard]] std::filesystem::path realpath (const std::filesystem::path& path) const override;
+    [[nodiscard]] std::filesystem::path physicalPath (const std::filesystem::path& path) const override;
 
     PackageUniquePtr package;
 };

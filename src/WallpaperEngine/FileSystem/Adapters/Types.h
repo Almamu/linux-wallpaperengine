@@ -11,7 +11,7 @@ struct Adapter {
 
     [[nodiscard]] virtual ReadStreamSharedPtr open (const std::filesystem::path& path) const = 0;
     [[nodiscard]] virtual bool exists (const std::filesystem::path& path) const = 0;
-    [[nodiscard]] virtual std::filesystem::path realpath (const std::filesystem::path& path) const = 0;
+    [[nodiscard]] virtual std::filesystem::path physicalPath (const std::filesystem::path& path) const = 0;
 };
 
 using AdapterSharedPtr = std::shared_ptr<Adapter>;

@@ -21,7 +21,7 @@ bool VirtualAdapter::exists (const std::filesystem::path& path) const {
     return this->files.contains (path);
 }
 
-std::filesystem::path VirtualAdapter::realpath (const std::filesystem::path& path) const {
+std::filesystem::path VirtualAdapter::physicalPath (const std::filesystem::path& path) const {
     throw Assets::CAssetLoadException ("Virtual adapter does not support realpath", path);
 }
 

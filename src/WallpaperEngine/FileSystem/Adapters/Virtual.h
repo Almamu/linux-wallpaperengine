@@ -20,7 +20,7 @@ struct VirtualFactory final : Factory {
 struct VirtualAdapter final : Adapter {
     [[nodiscard]] ReadStreamSharedPtr open (const std::filesystem::path& path) const override;
     [[nodiscard]] bool exists (const std::filesystem::path& path) const override;
-    [[nodiscard]] std::filesystem::path realpath (const std::filesystem::path& path) const override;
+    [[nodiscard]] std::filesystem::path physicalPath (const std::filesystem::path& path) const override;
 
     void add (const std::filesystem::path& path, const char* data);
     void add (const std::filesystem::path& path, const JSON& contents);

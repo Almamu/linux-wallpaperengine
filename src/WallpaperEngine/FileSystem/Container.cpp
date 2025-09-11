@@ -76,10 +76,10 @@ std::string Container::readString (const std::filesystem::path& path) const {
     return buffer.str ();
 }
 
-std::filesystem::path Container::realpath (const std::filesystem::path& path) const {
+std::filesystem::path Container::physicalPath (const std::filesystem::path& path) const {
     std::filesystem::path normalized = normalize_path (path);
 
-    return  this->resolveAdapterForFile (path).realpath (normalized);
+    return  this->resolveAdapterForFile (path).physicalPath (normalized);
 }
 
 

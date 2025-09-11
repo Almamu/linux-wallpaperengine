@@ -184,7 +184,6 @@ void TextureParser::parseContainer (Texture& header, const BinaryReader& file) {
     } else {
         sLog.exception ("unknown texture format type: ", std::string_view (magic, 9));
     }
-
 }
 
 void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) {
@@ -217,7 +216,6 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
         header.gifWidth = (*header.frames.begin ())->width1;
         header.gifHeight = (*header.frames.begin ())->height1;
     }
-
 }
 
 uint32_t TextureParser::parseTextureFlags (uint32_t value) {

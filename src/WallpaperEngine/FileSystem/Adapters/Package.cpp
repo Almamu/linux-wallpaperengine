@@ -44,7 +44,7 @@ bool PackageAdapter::exists (const std::filesystem::path& path) const {
     return false;
 }
 
-std::filesystem::path PackageAdapter::realpath (const std::filesystem::path& path) const {
+std::filesystem::path PackageAdapter::physicalPath (const std::filesystem::path& path) const {
     throw Assets::CAssetLoadException ("Package adapter does not support realpath", path);
 }
 
