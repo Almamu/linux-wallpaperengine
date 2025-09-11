@@ -15,6 +15,6 @@ class WallpaperParser {
     static SceneUniquePtr parseScene (const JSON& file, Project& project);
     static VideoUniquePtr parseVideo (const JSON& file, Project& project);
     static WebUniquePtr parseWeb (const JSON& file, Project& project);
-    static ObjectList parseObjects (const JSON& objects, Project& project);
+    static ObjectList parseObjects (const JSON& objects, const Project& project);
 };
 } // namespace WallpaperEngine::Data::Parsers

@@ -9,13 +9,13 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-EffectUniquePtr EffectParser::load (Project& project, const std::string& filename) {
+EffectUniquePtr EffectParser::load (const Project& project, const std::string& filename) {
     const auto effectJson = JSON::parse (project.container->readString (filename));
 
     return parse (effectJson, project);
 }
 
-EffectUniquePtr EffectParser::parse (const JSON& it, Project& project) {
+EffectUniquePtr EffectParser::parse (const JSON& it, const Project& project) {
     const auto dependencies = it.optional ("dependencies");
     const auto fbos = it.optional ("fbos");
 
@@ -44,7 +44,7 @@ std::vector <std::string> EffectParser::parseDependencies (const JSON& it) {
     return result;
 }
 
-std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& it, Project& project) {
+std::vector <EffectPassUniquePtr> EffectParser::parseEffectPasses (const JSON& it, const Project& project) {
     std::vector <EffectPassUniquePtr> result = {};
 
     if (!it.is_array ()) {

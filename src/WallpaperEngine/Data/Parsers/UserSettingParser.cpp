@@ -53,11 +53,11 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 
         //TODO: VALIDATE THIS IS RIGHT?
         if (size == 2) {
-            value->update ((glm::vec2) valueIt);
+            value->update (static_cast<glm::vec2> (valueIt));
         } else if (size == 3) {
-            value->update ((glm::vec3) valueIt);
+            value->update (static_cast<glm::vec3> (valueIt));
         } else {
-            value->update ((glm::vec4) valueIt);
+            value->update (static_cast<glm::vec4> (valueIt));
         }
     } else if (valueIt.is_number_integer ()) {
         value->update (valueIt.get <int> ());

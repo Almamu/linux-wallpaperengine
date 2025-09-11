@@ -16,9 +16,8 @@ using namespace WallpaperEngine::Data::Parsers;
 CTextureCache::CTextureCache (CRenderContext& context) : Helpers::CContextAware (context) {}
 
 std::shared_ptr<const ITexture> CTextureCache::resolve (const std::string& filename) {
-    const auto found = this->m_textureCache.find (filename);
 
-    if (found != this->m_textureCache.end ())
+    if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ())
         return found->second;
 
     auto finalFilename = std::filesystem::path("materials") / filename;

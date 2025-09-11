@@ -10,7 +10,7 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-ObjectUniquePtr ObjectParser::parse (const JSON& it, Project& project) {
+ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
     const auto particleIt = it.find ("particle");
@@ -25,7 +25,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, Project& project) {
     if (imageIt != it.end () && imageIt->is_string ()) {
         return parseImage (it, project, basedata, *imageIt);
     } else if (soundIt != it.end () && soundIt->is_array ()) {
-        return parseSound (it, project, basedata);
+        return parseSound (it, basedata);
     } else if (particleIt != it.end ()) {
         sLog.error ("Particle objects are not supported yet");
     } else if (textIt != it.end ()) {
@@ -56,7 +56,7 @@ std::vector<int> ObjectParser::parseDependencies (const JSON& it) {
     return result;
 }
 
-SoundUniquePtr ObjectParser::parseSound (const JSON& it, Project& project, ObjectData base) {
+SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
     const auto soundIt = it.require ("sound", "Object must have a sound");
     std::vector<std::string> sounds = {};
 
@@ -73,8 +73,7 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, Project& project, Objec
     );
 }
 
-ImageUniquePtr ObjectParser::parseImage (
-    const JSON& it, Project& project, ObjectData base, const std::string& image) {
+ImageUniquePtr ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image) {
     const auto& properties = project.properties;
     const auto& effects = it.optional ("effects");
 
@@ -107,7 +106,7 @@ ImageUniquePtr ObjectParser::parseImage (
     return result;
 }
 
-std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, Project& project) {
+std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, const Project& project) {
     if (!it.is_array ()) {
         return {};
     }
@@ -121,7 +120,7 @@ std::vector <ImageEffectUniquePtr> ObjectParser::parseEffects (const JSON& it, P
     return result;
 }
 
-ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, Project& project) {
+ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, const Project& project) {
     const auto& passsOverrides = it.optional ("passes");
     return std::make_unique <ImageEffect> (ImageEffect {
         .id = it.optional <int> ("id", -1),
@@ -132,7 +131,7 @@ ImageEffectUniquePtr ObjectParser::parseEffect (const JSON& it, Project& project
     });
 }
 
-std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOverrides (const JSON& it, Project& project) {
+std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOverrides (const JSON& it, const Project& project) {
     if (!it.is_array ()) {
         return {};
     }
@@ -146,7 +145,7 @@ std::vector <ImageEffectPassOverrideUniquePtr> ObjectParser::parseEffectPassOver
     return result;
 }
 
-ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, Project& project) {
+ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, const Project& project) {
     const auto& combos = it.optional ("combos");
     const auto& textures = it.optional ("textures");
     const auto& constants = it.optional ("constantshadervalues");

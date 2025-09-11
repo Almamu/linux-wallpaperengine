@@ -92,15 +92,11 @@ WebUniquePtr  WallpaperParser::parseWeb (const JSON& file, Project& project) {
     });
 }
 
-ObjectList WallpaperParser::parseObjects (const JSON& objects, Project& project) {
+ObjectList WallpaperParser::parseObjects (const JSON& objects, const Project& project) {
     ObjectList result = {};
 
     for (const auto& cur : objects) {
-        auto object = ObjectParser::parse (cur, project);
-
-        //TODO: DO WE REALLY WANT TO DIRECTLY CONSTRUCT UNIQUE AND SHARED PTRS EVERYWHERE?
-        // SHOULDN'T THAT BE HANDLED BY CALLING CODE (LIKE THIS) INSTEAD?
-        result.emplace_back (std::move (object));
+        result.emplace_back (ObjectParser::parse (cur, project));
     }
 
     return result;

@@ -15,17 +15,16 @@ using namespace WallpaperEngine::Data::Model;
 
 class ObjectParser {
   public:
-    static ObjectUniquePtr parse (const JSON& it, Project& project);
+    static ObjectUniquePtr parse (const JSON& it, const Project& project);
 
   private:
     static std::vector<int> parseDependencies (const JSON& it);
-    static SoundUniquePtr parseSound (const JSON& it, Project& project, ObjectData base);
-    static ImageUniquePtr parseImage (
-        const JSON& it, Project& project, ObjectData base, const std::string& image);
-    static std::vector <ImageEffectUniquePtr> parseEffects (const JSON& it, Project& project);
-    static ImageEffectUniquePtr parseEffect (const JSON& it, Project& project);
-    static std::vector <ImageEffectPassOverrideUniquePtr> parseEffectPassOverrides (const JSON& it, Project& project);
-    static ImageEffectPassOverrideUniquePtr parseEffectPass (const JSON& it, Project& project);
+    static SoundUniquePtr parseSound (const JSON& it, ObjectData base);
+    static ImageUniquePtr parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image);
+    static std::vector <ImageEffectUniquePtr> parseEffects (const JSON& it, const Project& project);
+    static ImageEffectUniquePtr parseEffect (const JSON& it, const Project& project);
+    static std::vector <ImageEffectPassOverrideUniquePtr> parseEffectPassOverrides (const JSON& it, const Project& project);
+    static ImageEffectPassOverrideUniquePtr parseEffectPass (const JSON& it, const Project& project);
     static TextureMap parseTextureMap (const JSON& it);
     static ComboMap parseComboMap (const JSON& it);
 };

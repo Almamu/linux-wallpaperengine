@@ -4,7 +4,7 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-PropertySharedPtr PropertyParser::parse (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name) {
     const auto type = it.require <std::string> ("type", "Property type is required");
 
     if (type == "color") {
@@ -36,7 +36,7 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, std::string name) {
 }
 
 
-PropertySharedPtr PropertyParser::parseCombo (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string& name) {
     std::map <std::string, std::string> optionsMap = {};
 
     const auto options = it.require ("options", "Combo property must have options");
@@ -68,21 +68,21 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, std::string name) 
     }, value.is_number () ? std::to_string (value.get <int> ()) : value.get <std::string> ());
 }
 
-PropertySharedPtr PropertyParser::parseColor (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseColor (const JSON& it, const std::string& name) {
     return std::make_shared <PropertyColor> (PropertyData {
         .name = name,
         .text = it.optional <std::string> ("text", ""),
     }, it.require ("value", "Property must have a value"));
 }
 
-PropertySharedPtr PropertyParser::parseBoolean (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseBoolean (const JSON& it, const std::string& name) {
     return std::make_shared <PropertyBoolean> (PropertyData {
         .name = name,
         .text = it.optional <std::string> ("text", ""),
     }, it.require ("value", "Property must have a value"));
 }
 
-PropertySharedPtr PropertyParser::parseSlider (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseSlider (const JSON& it, const std::string& name) {
     return std::make_shared <PropertySlider> (PropertyData {
         .name = name,
         .text = it.optional <std::string> ("text", ""),
@@ -93,14 +93,14 @@ PropertySharedPtr PropertyParser::parseSlider (const JSON& it, std::string name)
     }, it.require ("value", "Property must have a value"));
 }
 
-PropertySharedPtr PropertyParser::parseText (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseText (const JSON& it, const std::string& name) {
     return std::make_shared <PropertyText> (PropertyData {
         .name = name,
         .text = it.optional <std::string> ("text", ""),
     });
 }
 
-PropertySharedPtr PropertyParser::parseSceneTexture (const JSON& it, std::string name) {
+PropertySharedPtr PropertyParser::parseSceneTexture (const JSON& it, const std::string& name) {
     return std::make_shared <PropertySceneTexture> (PropertyData {
         .name = name,
         .text = it.optional <std::string> ("text", ""),

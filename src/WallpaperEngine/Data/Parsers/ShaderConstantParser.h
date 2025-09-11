@@ -9,6 +9,6 @@ using namespace WallpaperEngine::Data::Model;
 
 class ShaderConstantParser {
   public:
-    static ShaderConstantMap parse (const JSON& it, Project& project);
+    static ShaderConstantMap parse (const JSON& it, const Project& project);
 };
 } // namespace WallpaperEngine::Data::Parsers

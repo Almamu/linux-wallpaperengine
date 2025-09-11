@@ -6,7 +6,7 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-ShaderConstantMap ShaderConstantParser::parse (const JSON& it, Project& project) {
+ShaderConstantMap ShaderConstantParser::parse (const JSON& it, const Project& project) {
     if (!it.is_object ()) {
         return {};
     }
