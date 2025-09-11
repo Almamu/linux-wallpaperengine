@@ -2,12 +2,13 @@
 
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/FileSystem/Container.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 MaterialUniquePtr MaterialParser::load (Project& project, const std::string& filename) {
-    const auto materialJson = JSON::parse (project.container->readFileAsString (filename));
+    const auto materialJson = JSON::parse (project.container->readString (filename));
 
     return parse (materialJson, project, filename);
 }

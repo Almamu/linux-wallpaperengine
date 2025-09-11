@@ -4,7 +4,6 @@
 #include <map>
 #include <vector>
 
-#include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Assets/ITexture.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 
@@ -42,7 +41,7 @@ class CShader {
      * @param recursive Whether the compiler should add base definitions or not
      */
     CShader (
-        const CContainer& container, std::string filename,
+        const Container& container, std::string filename,
         const ComboMap& combos, const ComboMap& overrideCombos,
         const TextureMap& textures, const TextureMap& overrideTextures,
         const ShaderConstantMap& constants);

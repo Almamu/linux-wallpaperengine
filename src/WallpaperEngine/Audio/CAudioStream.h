@@ -31,13 +31,15 @@ extern "C" {
 namespace WallpaperEngine::Audio {
 class CAudioContext;
 
+using namespace WallpaperEngine::FileSystem;
+
 /**
  * Represents a playable audio stream for the audio driver
  */
 class CAudioStream {
   public:
     CAudioStream (CAudioContext& context, const std::string& filename);
-    CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length);
+    CAudioStream (CAudioContext& context, const ReadStreamSharedPtr& buffer, uint32_t length);
     CAudioStream (CAudioContext& audioContext, AVCodecContext* context);
     ~CAudioStream ();
 
@@ -88,21 +90,11 @@ class CAudioStream {
     /**
      * @return The file data buffer
      */
-    [[nodiscard]] std::shared_ptr<const uint8_t[]> getBuffer ();
+    [[nodiscard]] ReadStreamSharedPtr& getBuffer ();
     /**
      * @return The length of the file data buffer
      */
     [[nodiscard]] uint32_t getLength () const;
-    /**
-     * @return The read position of the data buffer
-     */
-    [[nodiscard]] uint32_t getPosition () const;
-    /**
-     * Updates the read position of the data buffer
-     *
-     * @param current
-     */
-    void setPosition (uint32_t current);
     /**
      * @return The SDL_cond used to signal waiting for data
      */
@@ -185,11 +177,9 @@ class CAudioStream {
     /** The stream index for the audio being played */
     int m_audioStream = NO_AUDIO_STREAM;
     /** File data pointer */
-    std::shared_ptr<const uint8_t[]> m_buffer = nullptr;
+    ReadStreamSharedPtr m_buffer = nullptr;
     /** The length of the file data pointer */
     uint32_t m_length = 0;
-    /** The read position on the file data pointer */
-    uint32_t m_position = 0;
 
     struct MyAVPacketList {
         AVPacket* packet;

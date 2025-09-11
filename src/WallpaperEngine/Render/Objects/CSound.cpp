@@ -2,6 +2,8 @@
 
 #include "CSound.h"
 
+#include "WallpaperEngine/FileSystem/Container.h"
+
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) :
@@ -16,21 +18,17 @@ CSound::~CSound() {
     for (const auto& stream : this->m_audioStreams) {
         delete stream;
     }
-
-    this->m_soundBuffer.clear ();
 }
 
 void CSound::load () {
     for (const auto& cur : this->m_sound.sounds) {
         uint32_t filesize = 0;
-        std::shared_ptr<const uint8_t[]> filebuffer = this->getContainer ().readFile (cur, &filesize);
-
+        auto filebuffer = this->getContainer ().read (cur);
         auto stream = new Audio::CAudioStream (this->getScene ().getAudioContext (), filebuffer, filesize);
 
         stream->setRepeat (this->m_sound.playbackmode.has_value() && this->m_sound.playbackmode == "loop");
 
         this->m_audioStreams.push_back (stream);
-        this->m_soundBuffer.push_back (filebuffer);
 
         // add the stream to the context so it can be played
         this->getScene ().getAudioContext ().addStream (stream);

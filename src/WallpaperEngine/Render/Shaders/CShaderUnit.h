@@ -5,7 +5,6 @@
 #include <string>
 
 #include "CGLSLContext.h"
-#include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
 #include "nlohmann/json.hpp"
@@ -14,7 +13,7 @@
 
 namespace WallpaperEngine::Render::Shaders {
 using JSON = WallpaperEngine::Data::JSON::JSON;
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::Data::Model;
 
 /**
@@ -23,7 +22,7 @@ using namespace WallpaperEngine::Data::Model;
 class CShaderUnit {
   public:
     CShaderUnit (
-        CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
+        CGLSLContext::UnitType type, std::string file, std::string content, const Container& container,
         const ShaderConstantMap& constants, const TextureMap& passTextures,
         const TextureMap& overrideTextures, const ComboMap& combos, const ComboMap& overrideCombos);
     ~CShaderUnit () = default;
@@ -159,6 +158,6 @@ class CShaderUnit {
     /**
      * The container to source files from
      */
-    const CContainer& m_container;
+    const Container& m_container;
 };
 }

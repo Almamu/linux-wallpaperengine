@@ -61,26 +61,24 @@ int audio_read_thread (void* arg) {
 
 static int audio_read_data_callback (void* streamarg, uint8_t* buffer, int buffer_size) {
     const auto stream = static_cast<CAudioStream*> (streamarg);
-    const int left = stream->getLength () - stream->getPosition ();
 
-    buffer_size = FFMIN (buffer_size, left);
+    stream->getBuffer ()->read (reinterpret_cast<std::istream::char_type*> (buffer), buffer_size);
 
-    memcpy (buffer, stream->getBuffer ().get() + stream->getPosition (), buffer_size);
-    // update position
-    stream->setPosition (stream->getPosition () + buffer_size);
-
-    return buffer_size;
+    // return read bytes only
+    return stream->getBuffer ()->gcount ();
 }
 
 int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
     const auto stream = static_cast<CAudioStream*> (streamarg);
 
+    // this was supported before, now we don't as there's no easy way to tell length
+    // so returning <0 signals no support for it
     if (whence & AVSEEK_SIZE)
-        return stream->getLength ();
+        return -1;
 
     switch (whence) {
-        case SEEK_CUR: stream->setPosition (stream->getPosition () + offset); break;
-        case SEEK_SET: stream->setPosition (offset); break;
+        case SEEK_CUR: stream->getBuffer ()->seekg (offset, std::ios_base::cur); break;
+        case SEEK_SET: stream->getBuffer ()->seekg (offset, std::ios_base::beg); break;
     }
 
     return offset;
@@ -91,7 +89,7 @@ CAudioStream::CAudioStream (CAudioContext& context, const std::string& filename)
     this->loadCustomContent (filename.c_str ());
 }
 
-CAudioStream::CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_t[]> buffer, uint32_t length) :
+CAudioStream::CAudioStream (CAudioContext& context, const ReadStreamSharedPtr& buffer, uint32_t length) :
     m_audioContext (context) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
@@ -101,7 +99,6 @@ CAudioStream::CAudioStream (CAudioContext& context, std::shared_ptr<const uint8_
 
     this->m_buffer = buffer;
     this->m_length = length;
-    this->m_position = 0;
 
     // setup custom io for it
     this->m_formatContext->pb = avio_alloc_context (static_cast<uint8_t*> (av_malloc (4096)), 4096, 0, this,
@@ -330,20 +327,12 @@ bool CAudioStream::isRepeat () const {
     return this->m_repeat;
 }
 
-std::shared_ptr<const uint8_t[]> CAudioStream::getBuffer () {
+ReadStreamSharedPtr& CAudioStream::getBuffer () {
     return this->m_buffer;
 }
 
 uint32_t CAudioStream::getLength () const {
     return this->m_length;
-}
-
-uint32_t CAudioStream::getPosition () const {
-    return this->m_position;
-}
-
-void CAudioStream::setPosition (uint32_t current) {
-    this->m_position = current;
 }
 
 SDL_cond* CAudioStream::getWaitCondition () {

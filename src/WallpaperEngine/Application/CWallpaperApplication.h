@@ -2,8 +2,6 @@
 
 #include "WallpaperEngine/Application/CApplicationContext.h"
 
-#include "WallpaperEngine/Assets/CCombinedContainer.h"
-
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h"

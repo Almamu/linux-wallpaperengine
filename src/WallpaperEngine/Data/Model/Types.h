@@ -3,15 +3,11 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <optional>
 #include <memory>
 
-#include "WallpaperEngine/Assets/CContainer.h"
-
-namespace WallpaperEngine::Assets {
-class CContainer;
+namespace WallpaperEngine::FileSystem {
+class Container;
 }
-
 
 namespace WallpaperEngine::Data::Model {
 struct Project;
@@ -40,9 +36,6 @@ struct Effect;
 struct EffectPass;
 struct ModelStruct;
 
-// TODO: REMOVE ONCE THESE ARE RENAMED AND MOVED
-using Container = WallpaperEngine::Assets::CContainer;
-
 using PropertySharedPtr = std::shared_ptr <Property>;
 using Properties = std::map <std::string, PropertySharedPtr>;
 using DynamicValueUniquePtr = std::unique_ptr <DynamicValue>;
@@ -53,7 +46,7 @@ using ShaderConstantMap = std::map <std::string, UserSettingUniquePtr>;
 
 using ProjectUniquePtr = std::unique_ptr <Project>;
 using WallpaperUniquePtr = std::unique_ptr <Wallpaper>;
-using ContainerUniquePtr = std::unique_ptr <Container>;
+using ContainerUniquePtr = std::unique_ptr <FileSystem::Container>;
 using SceneUniquePtr = std::unique_ptr <Scene>;
 using WebUniquePtr = std::unique_ptr <Web>;
 using VideoUniquePtr = std::unique_ptr <Video>;

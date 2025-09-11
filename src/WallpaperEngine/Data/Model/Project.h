@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "Types.h"
+#include "WallpaperEngine/FileSystem/Container.h"
 
 namespace WallpaperEngine::Data::Model {
 /**
@@ -27,7 +28,6 @@ struct Project {
     bool supportsAudioProcessing;
     /** All the available properties that the project defines for the user to change */
     Properties properties;
-
     /** The wallpaper this project defines */
     WallpaperUniquePtr wallpaper;
     /** VFS to access the project's files */

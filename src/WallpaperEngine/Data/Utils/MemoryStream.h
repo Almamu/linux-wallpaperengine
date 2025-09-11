@@ -3,11 +3,21 @@
 #include <iostream>
 
 namespace WallpaperEngine::Data::Utils {
-struct MemoryStream : std::streambuf
+struct MemoryStream : std::istream, private std::streambuf
 {
-    MemoryStream (char* p, size_t size)
+    MemoryStream (std::unique_ptr <char[]> buffer, const size_t size) :
+        std::istream (this),
+        m_buffer (std::move (buffer))
     {
-        this->setg(p, p, p + size); // set start end end pointers
+        this->setg(
+            this->m_buffer.get (),
+            this->m_buffer.get (),
+            this->m_buffer.get () + size
+        );
     }
+
+    std::unique_ptr<char[]> m_buffer;
 };
+
+using MemoryStreamSharedPtr = std::shared_ptr<MemoryStream>;
 }

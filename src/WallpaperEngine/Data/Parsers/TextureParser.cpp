@@ -31,7 +31,7 @@ TextureUniquePtr TextureParser::parse (BinaryReader& file) {
     result->height = file.nextUInt32 ();
 
     // ignore some more bytes
-    file.nextUInt32 ();
+    std::ignore = file.nextUInt32 ();
 
     file.next (magic, 9);
 
@@ -114,13 +114,13 @@ MipmapSharedPtr TextureParser::parseMipmap (BinaryReader& file, Texture& header)
     if (header.containerVersion == ContainerVersion_TEXB0004) {
         // some integers that we can ignore as they only seem to affect
         // the editor
-        file.nextUInt32 ();
-        file.nextUInt32 ();
+        std::ignore = file.nextUInt32 ();
+        std::ignore = file.nextUInt32 ();
         // this format includes some json in the header that we might need
         // to parse at some point...
         result->json = file.nextNullTerminatedString ();
         // last ignorable integer
-        file.nextUInt32 ();
+        std::ignore = file.nextUInt32 ();
     }
 
     result->width = file.nextUInt32 ();

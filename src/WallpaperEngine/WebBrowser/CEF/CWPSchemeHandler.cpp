@@ -48,7 +48,7 @@ bool CWPSchemeHandler::Open(CefRefPtr<CefRequest> request,
             this->m_mimeType = mime;
         }
 
-        this->m_contents = this->m_container.readFile (file, &this->m_filesize);
+        this->m_contents = this->m_container.read (file);
         callback->Continue ();
     } catch (CAssetLoadException&) {
 #if !NDEBUG
@@ -77,7 +77,8 @@ void CWPSchemeHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
     response->SetMimeType (this->m_mimeType);
     response->SetStatus (200);
 
-    response_length = this->m_filesize;
+    // signals an unknown-length file
+    response_length = -1;
 }
 
 void CWPSchemeHandler::Cancel () {
@@ -90,14 +91,18 @@ bool CWPSchemeHandler::Read(void* data_out, int bytes_to_read, int& bytes_read,
 
     bytes_read = 0;
 
-    if (this->m_contents && this->m_offset < this->m_filesize) {
-        int bytes_to_transfer = std::min (bytes_to_read, static_cast <int> (this->m_filesize - this->m_offset));
-
-        memcpy (data_out, &this->m_contents [this->m_offset], bytes_to_transfer);
-
-        this->m_offset += bytes_read = bytes_to_transfer;
-        return true;
+    if (this->m_contents->eof ()) {
+        return false;
     }
 
-    return false;
+    try {
+        this->m_contents->read (static_cast<std::istream::char_type*> (data_out), bytes_to_read);
+    } catch (std::ios::failure&) {
+        bytes_read = -1;
+        return false;
+    }
+
+    bytes_read = this->m_contents->gcount ();
+
+    return true;
 }

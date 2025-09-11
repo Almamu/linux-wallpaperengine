@@ -7,12 +7,12 @@
 
 using namespace WallpaperEngine::Data::Utils;
 
-BinaryReader::BinaryReader (std::istream& file) : m_input (file) { }
+BinaryReader::BinaryReader (ReadStreamSharedPtr file) : m_input (std::move (file)) { }
 
-uint32_t BinaryReader::nextUInt32 () {
+uint32_t BinaryReader::nextUInt32 () const {
     char buffer[4];
 
-    this->m_input.read (buffer, 4);
+    this->m_input->read (buffer, 4);
 
     if constexpr (std::endian::native == std::endian::little) {
         return (buffer [3] & 0xFF) << 24 |
@@ -27,10 +27,10 @@ uint32_t BinaryReader::nextUInt32 () {
     }
 }
 
-int BinaryReader::nextInt () {
+int BinaryReader::nextInt () const {
     char buffer[4];
 
-    this->m_input.read (buffer, 4);
+    this->m_input->read (buffer, 4);
 
     if constexpr (std::endian::native == std::endian::little) {
         return (buffer [3] & 0xFF) << 24 |
@@ -45,17 +45,17 @@ int BinaryReader::nextInt () {
     }
 }
 
-float BinaryReader::nextFloat () {
+float BinaryReader::nextFloat () const {
     float result;
     static_assert (std::endian::native == std::endian::little, "Only little endian is supported for floats");
 
-    this->m_input.read (reinterpret_cast<char*>(&result), sizeof (result));
+    this->m_input->read (reinterpret_cast<char*>(&result), sizeof (result));
 
     return result;
 }
 
 
-std::string BinaryReader::nextNullTerminatedString () {
+std::string BinaryReader::nextNullTerminatedString () const {
     std::string output;
 
     while (const auto c = this->next ()) {
@@ -65,13 +65,26 @@ std::string BinaryReader::nextNullTerminatedString () {
     return output;
 }
 
-void BinaryReader::next (char* out, size_t size) {
-    this->m_input.read (out, size);
+std::string BinaryReader::nextSizedString () const {
+    uint32_t length = this->nextUInt32 ();
+    std::string output (length, '\0');
+
+    this->m_input->read (output.data (), length);
+
+    return output;
 }
 
-char BinaryReader::next () {
+
+void BinaryReader::next (char* out, size_t size) const {
+    this->m_input->read (out, size);
+}
+
+char BinaryReader::next () const {
     char buffer;
-    this->m_input.read (&buffer, 1);
+    this->m_input->read (&buffer, 1);
     return buffer;
 }
 
+std::istream& BinaryReader::base () const {
+    return *this->m_input;
+}

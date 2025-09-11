@@ -2,19 +2,18 @@
 
 #include <string>
 
+#include "WallpaperEngine/FileSystem/Container.h"
+
 #include "include/cef_resource_handler.h"
 #include "include/wrapper/cef_helpers.h"
 
-namespace WallpaperEngine::Assets {
-class CContainer;
-}
-
 namespace WallpaperEngine::Data::Model {
-class Project;
+struct Project;
 }
 
 namespace WallpaperEngine::WebBrowser::CEF {
 
+using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::Data::Model;
 
 /**
@@ -40,11 +39,9 @@ class CWPSchemeHandler : public CefResourceHandler {
   private:
     const Project& m_project;
 
-    const Assets::CContainer& m_container;
-    std::shared_ptr<const uint8_t[]> m_contents = nullptr;
-    uint32_t m_filesize = 0;
-    std::string m_mimeType = "";
-    uint32_t m_offset = 0;
+    const Container& m_container;
+    ReadStreamSharedPtr m_contents = nullptr;
+    std::string m_mimeType;
 
 
     IMPLEMENT_REFCOUNTING(CWPSchemeHandler);

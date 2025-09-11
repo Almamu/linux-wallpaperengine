@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "WallpaperEngine/Assets/CContainer.h"
 #include "WallpaperEngine/Audio/CAudioContext.h"
 
 #include "WallpaperEngine/Render/CFBO.h"
@@ -27,6 +26,7 @@ class CContextAware;
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Audio;
 using namespace WallpaperEngine::Data::Model;
+using namespace WallpaperEngine::FileSystem;
 
 class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
   public:
@@ -65,7 +65,7 @@ class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] const CContainer& getContainer () const;
+    [[nodiscard]] const Container& getContainer () const;
 
     /**
      * @return The current audio context for this wallpaper

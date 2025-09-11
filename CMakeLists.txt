@@ -267,23 +267,21 @@ add_executable(
     src/WallpaperEngine/Application/CWallpaperApplication.cpp
     src/WallpaperEngine/Application/CWallpaperApplication.h
 
-    src/WallpaperEngine/Assets/CPackageLoadException.cpp
-    src/WallpaperEngine/Assets/CPackageLoadException.h
-    src/WallpaperEngine/Assets/CAssetLoadException.cpp
-    src/WallpaperEngine/Assets/CAssetLoadException.h
-    src/WallpaperEngine/Assets/CContainer.h
-    src/WallpaperEngine/Assets/CContainer.cpp
-    src/WallpaperEngine/Assets/CVirtualContainer.h
-    src/WallpaperEngine/Assets/CVirtualContainer.cpp
-    src/WallpaperEngine/Assets/CCombinedContainer.h
-    src/WallpaperEngine/Assets/CCombinedContainer.cpp
-    src/WallpaperEngine/Assets/CDirectory.h
-    src/WallpaperEngine/Assets/CDirectory.cpp
-    src/WallpaperEngine/Assets/CPackage.h
-    src/WallpaperEngine/Assets/CPackage.cpp
     src/WallpaperEngine/Assets/ITexture.h
     src/WallpaperEngine/Assets/CTexture.h
     src/WallpaperEngine/Assets/CTexture.cpp
+    src/WallpaperEngine/Assets/CAssetLoadException.cpp
+    src/WallpaperEngine/Assets/CAssetLoadException.h
+
+    src/WallpaperEngine/FileSystem/Container.h
+    src/WallpaperEngine/FileSystem/Container.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Types.h
+    src/WallpaperEngine/FileSystem/Adapters/Directory.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Directory.h
+    src/WallpaperEngine/FileSystem/Adapters/Package.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Package.h
+    src/WallpaperEngine/FileSystem/Adapters/Virtual.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Virtual.h
 
     src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.cpp
     src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.h
@@ -404,6 +402,7 @@ add_executable(
 
     src/WallpaperEngine/Data/Assets/Types.h
     src/WallpaperEngine/Data/Assets/Texture.h
+    src/WallpaperEngine/Data/Assets/Package.h
     src/WallpaperEngine/Data/Model/Types.h
     src/WallpaperEngine/Data/Model/Project.h
     src/WallpaperEngine/Data/Model/Wallpaper.h
@@ -437,6 +436,8 @@ add_executable(
     src/WallpaperEngine/Data/Parsers/ModelParser.h
     src/WallpaperEngine/Data/Parsers/ShaderConstantParser.cpp
     src/WallpaperEngine/Data/Parsers/ShaderConstantParser.h
+    src/WallpaperEngine/Data/Parsers/PackageParser.cpp
+    src/WallpaperEngine/Data/Parsers/PackageParser.h
     src/WallpaperEngine/Data/Parsers/PropertyParser.cpp
     src/WallpaperEngine/Data/Parsers/PropertyParser.h
     src/WallpaperEngine/Data/Parsers/TextureParser.cpp
@@ -450,7 +451,11 @@ add_executable(
 
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
-    ${DEMOMODE_SOURCES})
+    ${DEMOMODE_SOURCES}
+        src/WallpaperEngine/FileSystem/Adapters/Package.h
+        src/WallpaperEngine/FileSystem/Adapters/Package.cpp
+        src/WallpaperEngine/FileSystem/Adapters/Virtual.h
+        src/WallpaperEngine/FileSystem/Adapters/Virtual.cpp)
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}

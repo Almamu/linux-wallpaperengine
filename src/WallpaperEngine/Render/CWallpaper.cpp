@@ -45,7 +45,7 @@ CWallpaper::CWallpaper (
 
 CWallpaper::~CWallpaper () = default;
 
-const CContainer& CWallpaper::getContainer () const {
+const Container& CWallpaper::getContainer () const {
     return *this->m_wallpaperData.project.container;
 }
 

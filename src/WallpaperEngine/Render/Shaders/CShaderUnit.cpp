@@ -16,6 +16,7 @@
 #include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
 
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
+#include "WallpaperEngine/FileSystem/Container.h"
 
 #define SHADER_HEADER(filename) "#version 330\n" \
     "// ======================================================\n" \
@@ -52,7 +53,7 @@ using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Render::Shaders;
 
 CShaderUnit::CShaderUnit (
-    CGLSLContext::UnitType type, std::string file, std::string content, const CContainer& container,
+    CGLSLContext::UnitType type, std::string file, std::string content, const Container& container,
     const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
     const ComboMap& combos, const ComboMap& overrideCombos
 ) :
@@ -151,7 +152,8 @@ void CShaderUnit::preprocessIncludes () {
             content += "// begin of include from file ";
             content += filename;
             content += "\n";
-            content += this->m_container.readIncludeShader (filename);
+            // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
+            content += this->m_container.readString (std::filesystem::path("shaders") / filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -190,7 +192,8 @@ void CShaderUnit::preprocessIncludes () {
             content = "// begin of include from file ";
             content += filename;
             content += "\n";
-            content += this->m_container.readIncludeShader (filename);
+            // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
+            content += this->m_container.readString (std::filesystem::path("shaders") / filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";

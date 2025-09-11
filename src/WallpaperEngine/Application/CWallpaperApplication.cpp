@@ -3,9 +3,8 @@
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Application/CApplicationState.h"
 #include "WallpaperEngine/Assets/CAssetLoadException.h"
-#include "WallpaperEngine/Assets/CDirectory.h"
-#include "WallpaperEngine/Assets/CVirtualContainer.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h"
+#include "WallpaperEngine/FileSystem/Container.h"
 #include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Render/CRenderContext.h"
 #include "WallpaperEngine/Render/Drivers/CVideoFactories.h"
@@ -32,6 +31,7 @@ float g_Daytime;
 
 using namespace WallpaperEngine::Application;
 using namespace WallpaperEngine::Data::Model;
+using namespace WallpaperEngine::FileSystem;
 
 CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
     m_context (context) {
@@ -41,21 +41,30 @@ CWallpaperApplication::CWallpaperApplication (CApplicationContext& context) :
 }
 
 ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg) const {
-    auto container = std::make_unique <CCombinedContainer> ();
-    const std::filesystem::path basepath = bg;
+    auto container = std::make_unique <Container> ();
 
-    container->add (std::make_unique<CDirectory> (basepath));
-    container->addPkg (basepath / "scene.pkg");
-    container->addPkg (basepath / "gifscene.pkg");
+    std::filesystem::path path (bg);
+
+    container->mount (path, "/");
+    try {
+        container->mount (path / "scene.pkg", "/");
+    } catch (std::runtime_error&) {
+
+    }
 
     try {
-        container->add (std::make_unique <CDirectory> (this->m_context.settings.general.assets));
-    } catch (CAssetLoadException&) {
+        container->mount (path / "gifscene.pkg", "/");
+    } catch (std::runtime_error&) {
+
+    }
+
+    try {
+        container->mount (this->m_context.settings.general.assets, "/");
+    } catch (std::runtime_error&) {
         sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
-    // TODO: move this somewhere else?
-    auto virtualContainer = std::make_unique <CVirtualContainer> ();
+    auto& vfs = container->getVFS ();
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -66,21 +75,21 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
     // add the effect file for screen bloom
 
     // add some model for the image element even if it's going to waste rendering cycles
-    virtualContainer->add (
+    vfs.add (
         "effects/wpenginelinux/bloomeffect.json",
         {
             {"name", "camerabloom_wpengine_linux"},
             {"group", "wpengine_linux_camera"},
-            {"dependencies", json::array ()},
+            {"dependencies", JSON::array ()},
             {"passes",
-                json::array (
+                JSON::array (
                     {
                         {
                             {"material", "materials/util/downsample_quarter_bloom.json"},
                             {"target", "_rt_4FrameBuffer"},
                             {
                                 "bind",
-                                json::array (
+                                JSON::array (
                                     {
                                         {
                                             {"name", "_rt_FullFrameBuffer"},
@@ -95,7 +104,7 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
                             {"target", "_rt_8FrameBuffer"},
                             {
                                 "bind",
-                                json::array (
+                                JSON::array (
                                     {
                                         {
                                             {"name", "_rt_4FrameBuffer"},
@@ -110,7 +119,7 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
                             {"target", "_rt_Bloom"},
                             {
                                 "bind",
-                                json::array (
+                                JSON::array (
                                     {
                                         {
                                             {"name", "_rt_8FrameBuffer"},
@@ -125,7 +134,7 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
                             {"target", "_rt_FullFrameBuffer"},
                             {
                                 "bind",
-                                json::array (
+                                JSON::array (
                                     {
                                         {
                                             {"name", "_rt_imageLayerComposite_-1_a"},
@@ -145,17 +154,17 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
         }
     );
 
-    virtualContainer->add (
+    vfs.add (
         "models/wpenginelinux.json",
         {
             {"material","materials/wpenginelinux.json"}
         }
     );
 
-    virtualContainer->add(
+    vfs.add(
         "materials/wpenginelinux.json",
         {
-            {"passes", json::array (
+            {"passes", JSON::array (
                 {
                     {
                         {"blending", "normal"},
@@ -163,13 +172,13 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
                         {"depthtest", "disabled"},
                         {"depthwrite", "disabled"},
                         {"shader", "genericimage2"},
-                        {"textures", json::array ({"_rt_FullFrameBuffer"})}
+                        {"textures", JSON::array ({"_rt_FullFrameBuffer"})}
                     }
                 }
             )}}
     );
 
-    virtualContainer->add(
+    vfs.add(
         "shaders/commands/copy.frag",
         "uniform sampler2D g_Texture0;\n"
         "in vec2 v_TexCoord;\n"
@@ -177,7 +186,7 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
         "out_FragColor = texture (g_Texture0, v_TexCoord);\n"
         "}"
     );
-    virtualContainer->add(
+    vfs.add(
         "shaders/commands/copy.vert",
         "in vec3 a_Position;\n"
         "in vec2 a_TexCoord;\n"
@@ -187,8 +196,6 @@ ContainerUniquePtr CWallpaperApplication::setupContainer (const std::string& bg)
         "v_TexCoord = a_TexCoord;\n"
         "}"
     );
-
-    container->add (std::move(virtualContainer));
 
     return container;
 }
@@ -212,7 +219,7 @@ void CWallpaperApplication::loadBackgrounds () {
 
 ProjectUniquePtr CWallpaperApplication::loadBackground (const std::string& bg) {
     auto container = this->setupContainer (bg);
-    auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readFileAsString ("project.json"));
+    auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
 
     return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move(container));
 }
