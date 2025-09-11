@@ -7,8 +7,8 @@
 #include "Adapters/Package.h"
 #include "Adapters/Types.h"
 #include "Adapters/Virtual.h"
-#include "WallpaperEngine/Assets/CAssetLoadException.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Assets/AssetLoadException.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::FileSystem::Adapters;
@@ -56,7 +56,6 @@ Container::Container () {
     this->m_factories.push_back (std::make_unique<PackageFactory> ());
     this->m_factories.push_back (std::make_unique<DirectoryFactory> ());
 
-    // TODO: FIND A BETTER WAY OF MOUNTING THE VIRTUAL FILESYSTEM
     this->m_vfs = std::make_shared<VirtualAdapter> ();
     this->m_mountpoints.emplace_back ("/", this->m_vfs);
     // mount the current directory as root
@@ -64,9 +63,9 @@ Container::Container () {
 }
 
 ReadStreamSharedPtr Container::read (const std::filesystem::path& path) const {
-    std::filesystem::path normalized = normalize_path (path);
+    const auto normalized = normalize_path (path);
 
-    return  this->resolveAdapterForFile (path).open (normalized);
+    return this->resolveAdapterForFile (path).open (normalized);
 }
 
 std::string Container::readString (const std::filesystem::path& path) const {
@@ -77,9 +76,9 @@ std::string Container::readString (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path Container::physicalPath (const std::filesystem::path& path) const {
-    std::filesystem::path normalized = normalize_path (path);
+    const auto normalized = normalize_path (path);
 
-    return  this->resolveAdapterForFile (path).physicalPath (normalized);
+    return this->resolveAdapterForFile (path).physicalPath (normalized);
 }
 
 
@@ -101,16 +100,15 @@ VirtualAdapter& Container::getVFS () const {
 }
 
 Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) const {
-    std::filesystem::path normalized = normalize_path (path);
+    const auto normalized = normalize_path (path);
 
     for (const auto& [root, adapter] : this->m_mountpoints) {
         if (normalized.string().starts_with (root.string()) == false) {
             continue;
         }
 
-        std::filesystem::path relative = normalized.string().substr (root.string().length());
-
-        if (adapter->exists (relative) == false) {
+        if (const auto relative = normalized.string ().substr (root.string ().length ());
+            adapter->exists (relative) == false) {
             continue;
         }
 
@@ -122,5 +120,5 @@ Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) co
         return this->resolveAdapterForFile ("/" + normalized.string());
     }
 
-    throw Assets::CAssetLoadException ("Cannot find requested file ", path);
+    throw Render::AssetLoadException ("Cannot find requested file ", path);
 }

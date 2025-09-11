@@ -1,5 +1,5 @@
 #include "CVideo.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <GL/glew.h>
 
@@ -15,8 +15,8 @@ void* get_proc_address (void* ctx, const char* name) {
 }
 
 CVideo::CVideo (
-    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
     const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {

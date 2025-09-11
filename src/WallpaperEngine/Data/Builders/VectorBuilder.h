@@ -5,8 +5,8 @@
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
 
-#include "WallpaperEngine/Logging/CLog.h"
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 namespace WallpaperEngine::Data::Builders {
 using namespace WallpaperEngine::Data::Utils::SFINAE;

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "WallpaperEngine/Render/CCamera.h"
+#include "WallpaperEngine/Render/Camera.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 
 namespace WallpaperEngine::Render {
-class CCamera;
+class Camera;
 class CObject;
 }
 
@@ -15,11 +15,11 @@ using namespace WallpaperEngine::Data::Model;
 class CScene final : public CWallpaper {
   public:
     CScene (
-        const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-        const CWallpaperState::TextureUVsScaling& scalingMode,
+        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+        const WallpaperState::TextureUVsScaling& scalingMode,
         const uint32_t& clampMode);
 
-    [[nodiscard]] CCamera& getCamera () const;
+    [[nodiscard]] Camera& getCamera () const;
 
     [[nodiscard]] const Scene& getScene () const;
 
@@ -42,7 +42,7 @@ class CScene final : public CWallpaper {
     Render::CObject* createObject (const Object& object);
     void addObjectToRenderOrder (const Object& object);
 
-    std::unique_ptr<CCamera> m_camera;
+    std::unique_ptr<Camera> m_camera;
     ObjectUniquePtr m_bloomObjectData;
     CObject* m_bloomObject = nullptr;
     std::map<int, CObject*> m_objects = {};

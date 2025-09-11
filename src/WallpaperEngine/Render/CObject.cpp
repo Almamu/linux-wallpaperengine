@@ -7,7 +7,7 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
 
 CObject::CObject (Wallpapers::CScene& scene, const Object& object) :
-    Helpers::CContextAware (scene),
+    Helpers::ContextAware (scene),
     m_scene (scene),
     m_object (object) {}
 

@@ -3,27 +3,27 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
-#include "../../ITexture.h"
+#include "../../TextureProvider.h"
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Render/CFBO.h"
-#include "WallpaperEngine/Render/CFBOProvider.h"
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
-#include "WallpaperEngine/Render/Shaders/CShader.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
+#include "WallpaperEngine/Render/FBOProvider.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
+#include "WallpaperEngine/Render/Shaders/Shader.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 namespace WallpaperEngine::Render::Objects {
 class CImage;
 }
 
 namespace WallpaperEngine::Render::Objects::Effects {
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Data::Model;
 
-class CPass final : public Helpers::CContextAware {
+class CPass final : public Helpers::ContextAware {
   public:
     CPass (
-        CImage& image, std::shared_ptr<const CFBOProvider> fboProvider, const MaterialPass& pass,
+        CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
         std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
         std::optional<std::reference_wrapper<const TextureMap>> binds,
         std::optional<std::reference_wrapper<std::string>> target);
@@ -31,7 +31,7 @@ class CPass final : public Helpers::CContextAware {
     void render ();
 
     void setDestination (std::shared_ptr<const CFBO> drawTo);
-    void setInput (std::shared_ptr<const ITexture> input);
+    void setInput (std::shared_ptr<const TextureProvider> input);
     void setTexCoord (GLuint texcoord);
     void setPosition (GLuint position);
     void setModelViewProjectionMatrix (const glm::mat4* projection);
@@ -42,11 +42,11 @@ class CPass final : public Helpers::CContextAware {
     [[nodiscard]] BlendingMode getBlendingMode () const;
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
-    [[nodiscard]] std::shared_ptr<const CFBOProvider> getFBOProvider () const;
+    [[nodiscard]] std::shared_ptr<const FBOProvider> getFBOProvider () const;
     [[nodiscard]] const CImage& getImage () const;
     [[nodiscard]] const MaterialPass& getPass () const;
     [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
-    [[nodiscard]] Render::Shaders::CShader* getShader () const;
+    [[nodiscard]] Render::Shaders::Shader* getShader () const;
 
   private:
     enum UniformType {
@@ -113,8 +113,8 @@ class CPass final : public Helpers::CContextAware {
     void setupTextureUniforms ();
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
-    void addUniform (CShaderVariable* value);
-    void addUniform (CShaderVariable* value, const DynamicValue* setting);
+    void addUniform (ShaderVariable* value);
+    void addUniform (ShaderVariable* value, const DynamicValue* setting);
     void addUniform (const std::string& name, int value);
     void addUniform (const std::string& name, double value);
     void addUniform (const std::string& name, float value);
@@ -151,10 +151,10 @@ class CPass final : public Helpers::CContextAware {
     void renderGeometry () const;
     void cleanupRenderSetup ();
 
-    std::shared_ptr<const ITexture> resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous = nullptr);
+    std::shared_ptr<const TextureProvider> resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous = nullptr);
 
     CImage& m_image;
-    std::shared_ptr<const CFBOProvider> m_fboProvider;
+    std::shared_ptr<const FBOProvider> m_fboProvider;
     const MaterialPass& m_pass;
     const TextureMap& m_binds;
     const ImageEffectPassOverride& m_override;
@@ -173,12 +173,12 @@ class CPass final : public Helpers::CContextAware {
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, std::shared_ptr<const ITexture>> m_textures = {};
+    std::map<int, std::shared_ptr<const TextureProvider>> m_textures = {};
 
-    Render::Shaders::CShader* m_shader = nullptr;
+    Render::Shaders::Shader* m_shader = nullptr;
 
     std::shared_ptr<const CFBO> m_drawTo = nullptr;
-    std::shared_ptr<const ITexture> m_input = nullptr;
+    std::shared_ptr<const TextureProvider> m_input = nullptr;
 
     GLuint m_programID;
 

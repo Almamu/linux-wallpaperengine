@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
 
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
@@ -11,7 +11,7 @@ class CScene;
 }
 
 namespace WallpaperEngine::Render {
-class CObject : public Helpers::CContextAware {
+class CObject : public Helpers::ContextAware {
   public:
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {

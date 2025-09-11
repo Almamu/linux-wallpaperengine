@@ -2,10 +2,10 @@
 // https://github.com/if1live/cef-gl-example
 // https://github.com/andmcgregor/cefgui
 #include "CWeb.h"
-#include "WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.h"
+#include "WallpaperEngine/WebBrowser/CEF/WPSchemeHandlerFactory.h"
 
-#include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Wallpapers;
@@ -14,8 +14,8 @@ using namespace WallpaperEngine::WebBrowser;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CWeb::CWeb (
-    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    CWebBrowserContext& browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    WebBrowserContext& browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
     const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
@@ -26,16 +26,16 @@ CWeb::CWeb (
     CefWindowInfo window_info;
     window_info.SetAsWindowless (0);
 
-    this->m_renderHandler = new WebBrowser::CEF::CRenderHandler (this);
+    this->m_renderHandler = new WebBrowser::CEF::RenderHandler (this);
 
     CefBrowserSettings browserSettings;
     // Documentaion says that 60 fps is maximum value
     browserSettings.windowless_frame_rate = std::max (60, context.getApp ().getContext ().settings.render.maximumFPS);
 
-    this->m_client = new WebBrowser::CEF::CBrowserClient (m_renderHandler);
+    this->m_client = new WebBrowser::CEF::BrowserClient (m_renderHandler);
     // use the custom scheme for the wallpaper's files
     const std::string htmlURL =
-        CWPSchemeHandlerFactory::generateSchemeName(this->getWeb ().project.workshopId) +
+        WPSchemeHandlerFactory::generateSchemeName(this->getWeb ().project.workshopId) +
         "://root/" +
         this->getWeb().filename;
     this->m_browser =

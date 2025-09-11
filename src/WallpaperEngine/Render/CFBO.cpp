@@ -1,5 +1,5 @@
 #include "CFBO.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Render;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ITexture.h"
+#include "TextureProvider.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
 
 #include <GL/glew.h>
@@ -8,13 +8,13 @@
 #include <memory>
 #include <vector>
 
-namespace WallpaperEngine::Assets {
+namespace WallpaperEngine::Render {
 using namespace WallpaperEngine::Data::Assets;
 
 /**
  * A normal texture file in WallpaperEngine's format
  */
-class CTexture final : public ITexture {
+class CTexture final : public TextureProvider {
   public:
     explicit CTexture (TextureUniquePtr header);
 

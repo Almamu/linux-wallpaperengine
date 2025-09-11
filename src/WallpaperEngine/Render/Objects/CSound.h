@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Audio/CAudioStream.h"
+#include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CObject.h"
 
 using namespace WallpaperEngine;
@@ -23,7 +23,7 @@ class CSound final : public CObject {
     void load ();
 
   private:
-    std::vector<Audio::CAudioStream*> m_audioStreams = {};
+    std::vector<Audio::AudioStream*> m_audioStreams = {};
 
     const Sound& m_sound;
 };

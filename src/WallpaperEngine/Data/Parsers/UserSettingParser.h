@@ -3,7 +3,7 @@
 #include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 namespace WallpaperEngine::Data::Parsers {
 using json = WallpaperEngine::Data::JSON::JSON;

@@ -9,9 +9,9 @@
 
 #include "WallpaperEngine/Data/Builders/UserSettingBuilder.h"
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
-#include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Data/Model/Types.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Data/Utils/SFINAE.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 namespace WallpaperEngine::Data::JSON {
 using namespace WallpaperEngine::Data::Builders;

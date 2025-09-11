@@ -1,10 +1,10 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 
-#include "WallpaperEngine/Render/CWallpaperState.h"
+#include "WallpaperEngine/Render/WallpaperState.h"
 
 #include "CScene.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
@@ -20,8 +20,8 @@ using namespace WallpaperEngine::Render::Wallpapers;
 using JSON = WallpaperEngine::Data::JSON::JSON;
 
 CScene::CScene (
-    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
     const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
@@ -29,7 +29,7 @@ CScene::CScene (
     auto scene = wallpaper.as <Scene> ();
 
     // setup the scene camera
-    this->m_camera = std::make_unique<CCamera> (*this, scene->camera);
+    this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 
     float width = scene->camera.projection.width;
     float height = scene->camera.projection.height;
@@ -242,7 +242,7 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
-CCamera& CScene::getCamera () const {
+Camera& CScene::getCamera () const {
     return *this->m_camera;
 }
 

@@ -2,7 +2,7 @@
 #include <sstream>
 #include <utility>
 
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
 
 #include "WallpaperEngine/Data/Model/Effect.h"
 #include "WallpaperEngine/Data/Model/Material.h"
@@ -10,14 +10,14 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/CFBO.h"
 
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableFloat.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableInteger.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector2.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector3.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector4.h"
 
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -33,12 +33,12 @@ const TextureMap DEFAULT_BINDS = {};
 const ImageEffectPassOverride DEFAULT_OVERRIDE = {};
 
 CPass::CPass (
-    CImage& image, std::shared_ptr<const CFBOProvider> fboProvider, const MaterialPass& pass,
+    CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
     std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
     std::optional<std::reference_wrapper<const TextureMap>> binds,
     std::optional<std::reference_wrapper<std::string>> target
 ) :
-    Helpers::CContextAware (image),
+    Helpers::ContextAware (image),
     m_image (image),
     m_fboProvider (std::move(fboProvider)),
     m_pass (pass),
@@ -49,7 +49,7 @@ CPass::CPass (
     this->setupShaders ();
 }
 
-std::shared_ptr<const ITexture> CPass::resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous) {
+std::shared_ptr<const TextureProvider> CPass::resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous) {
     if (expected == nullptr) {
         const auto it = this->m_fbos.find (index);
 
@@ -145,7 +145,7 @@ void CPass::setupRenderTexture () {
     glUseProgram (this->m_programID);
 
     // maybe we can do this when setting the texture?
-    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_input, 0, this->m_input);
+    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_input, 0, this->m_input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -308,7 +308,7 @@ void CPass::render () {
     this->cleanupRenderSetup ();
 }
 
-std::shared_ptr<const CFBOProvider> CPass::getFBOProvider () const {
+std::shared_ptr<const FBOProvider> CPass::getFBOProvider () const {
     return this->m_fboProvider;
 }
 
@@ -320,7 +320,7 @@ void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) {
     this->m_drawTo = std::move(drawTo);
 }
 
-void CPass::setInput (std::shared_ptr<const ITexture> input) {
+void CPass::setInput (std::shared_ptr<const TextureProvider> input) {
     this->m_input = std::move(input);
 }
 
@@ -364,7 +364,7 @@ std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const {
     return this->m_target;
 }
 
-Render::Shaders::CShader* CPass::getShader () const {
+Render::Shaders::Shader* CPass::getShader () const {
     return this->m_shader;
 }
 
@@ -408,7 +408,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    std::shared_ptr<const ITexture> texture0 = this->m_image.getTexture ();
+    std::shared_ptr<const TextureProvider> texture0 = this->m_image.getTexture ();
 
     // copy the combos from the pass
     this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
@@ -426,12 +426,12 @@ void CPass::setupShaders () {
     // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
-    this->m_shader = new Render::Shaders::CShader (
+    this->m_shader = new Render::Shaders::Shader (
         this->m_image.getContainer (), this->m_pass.shader, this->m_combos, this->m_override.combos,
         this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
-    const auto shaders = Shaders::CGLSLContext::get ().toGlsl (
+    const auto shaders = Shaders::GLSLContext::get ().toGlsl (
         this->m_shader->vertex (), this->m_shader->fragment ());
 
     // compile the shaders
@@ -574,7 +574,7 @@ void CPass::setupTextureUniforms () {
     }
 
     // resolve the main texture
-    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_image.getTexture (), 0);
+    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_image.getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -725,7 +725,7 @@ void CPass::setupShaderVariables () {
             continue;
 
         // get one instance of it
-        CShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
+        ShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
 
         // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
         // of the underlying CDynamicValue used for the value
@@ -734,22 +734,22 @@ void CPass::setupShaderVariables () {
 }
 
 // define some basic methods for the template
-void CPass::addUniform (CShaderVariable* value) {
+void CPass::addUniform (ShaderVariable* value) {
     // no need to re-implement this, call the version that takes a CDynamicValue as second parameter
     // and that handles casting and everything
     this->addUniform (value, value);
 }
 
-void CPass::addUniform (CShaderVariable* value, const DynamicValue* setting) {
-    if (value->is<CShaderVariableFloat> ()) {
+void CPass::addUniform (ShaderVariable* value, const DynamicValue* setting) {
+    if (value->is<ShaderVariableFloat> ()) {
         this->addUniform (value->getName (), setting->getFloat ());
-    } else if (value->is<CShaderVariableInteger> ()) {
+    } else if (value->is<ShaderVariableInteger> ()) {
         this->addUniform (value->getName (), setting->getInt ());
-    } else if (value->is<CShaderVariableVector2> ()) {
+    } else if (value->is<ShaderVariableVector2> ()) {
         this->addUniform (value->getName (), setting->getVec2 ());
-    } else if (value->is<CShaderVariableVector3> ()) {
+    } else if (value->is<ShaderVariableVector3> ()) {
         this->addUniform (value->getName (), setting->getVec3 ());
-    } else if (value->is<CShaderVariableVector4> ()) {
+    } else if (value->is<ShaderVariableVector4> ()) {
         this->addUniform (value->getName (), setting->getVec4 ());
     } else {
         sLog.error ("Cannot convert setting dynamic value  to ", value->getName (), ". Using default value");

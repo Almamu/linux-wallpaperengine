@@ -3,32 +3,32 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "WallpaperEngine/Audio/CAudioContext.h"
+#include "WallpaperEngine/Audio/AudioContext.h"
 
 #include "WallpaperEngine/Render/CFBO.h"
-#include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
+#include "WallpaperEngine/Render/RenderContext.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 
-#include "CFBOProvider.h"
-#include "CWallpaperState.h"
+#include "FBOProvider.h"
+#include "WallpaperState.h"
 
 namespace WallpaperEngine::WebBrowser {
-class CWebBrowserContext;
+class WebBrowserContext;
 }
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
-class CContextAware;
+class ContextAware;
 }
 
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Audio;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::FileSystem;
 
-class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
+class CWallpaper : public Helpers::ContextAware, public FBOProvider {
   public:
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {
@@ -70,7 +70,7 @@ class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
     /**
      * @return The current audio context for this wallpaper
      */
-    CAudioContext& getAudioContext ();
+    AudioContext& getAudioContext ();
 
     /**
      * @return The scene's framebuffer
@@ -126,14 +126,14 @@ class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
      * @return
      */
     static std::unique_ptr<CWallpaper> fromWallpaper (
-        const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-        WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+        WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
         const uint32_t& clampMode);
 
   protected:
     CWallpaper (
-        const Wallpaper& wallpaperData, CRenderContext& context,
-        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+        const Wallpaper& wallpaperData, RenderContext& context,
+        AudioContext& audioContext, const WallpaperState::TextureUVsScaling& scalingMode,
         const uint32_t& clampMode);
 
     /**
@@ -170,8 +170,8 @@ class CWallpaper : public Helpers::CContextAware, public CFBOProvider {
     /** List of FBOs registered for this wallpaper */
     std::map<std::string, std::shared_ptr<const CFBO>> m_fbos = {};
     /** Audio context that is using this wallpaper */
-    CAudioContext& m_audioContext;
+    AudioContext& m_audioContext;
     /** Current Wallpaper state */
-    CWallpaperState m_state;
+    WallpaperState m_state;
 };
 } // namespace WallpaperEngine::Render

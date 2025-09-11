@@ -4,7 +4,7 @@
 
 #include "TextureParser.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Parsers;

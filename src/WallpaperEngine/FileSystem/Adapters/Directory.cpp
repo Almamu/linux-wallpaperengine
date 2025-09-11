@@ -4,7 +4,7 @@
 
 #include "Directory.h"
 
-#include "WallpaperEngine/Assets/CAssetLoadException.h"
+#include "WallpaperEngine/Assets/AssetLoadException.h"
 
 using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::FileSystem::Adapters;
@@ -57,7 +57,7 @@ std::filesystem::path DirectoryAdapter::physicalPath (const std::filesystem::pat
     auto finalpath = std::filesystem::canonical(this->basepath / path);
 
     if (finalpath.string ().find (this->basepath.string ()) != 0) {
-        throw Assets::CAssetLoadException ("Cannot find file", path);
+        throw Render::AssetLoadException ("Cannot find file", path);
     }
 
     return finalpath;

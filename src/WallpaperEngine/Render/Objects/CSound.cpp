@@ -24,7 +24,7 @@ void CSound::load () {
     for (const auto& cur : this->m_sound.sounds) {
         uint32_t filesize = 0;
         auto filebuffer = this->getContainer ().read (cur);
-        auto stream = new Audio::CAudioStream (this->getScene ().getAudioContext (), filebuffer, filesize);
+        auto stream = new Audio::AudioStream (this->getScene ().getAudioContext (), filebuffer, filesize);
 
         stream->setRepeat (this->m_sound.playbackmode.has_value() && this->m_sound.playbackmode == "loop");
 

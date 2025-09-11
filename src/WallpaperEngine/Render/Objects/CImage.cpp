@@ -13,7 +13,7 @@ using namespace WallpaperEngine::Data::Builders;
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     Render::CObject (scene, image),
-    Render::CFBOProvider (&scene),
+    Render::FBOProvider (&scene),
     m_texture (nullptr),
     m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE),
@@ -243,11 +243,11 @@ void CImage::setup () {
     // copy pass to the composite layer
     for (const auto& cur : this->getImage ().model->material->passes) {
         this->m_passes.push_back (
-            new CPass (*this, std::make_shared<CFBOProvider> (this), *cur, std::nullopt, std::nullopt, std::nullopt)
+            new CPass (*this, std::make_shared<FBOProvider> (this), *cur, std::nullopt, std::nullopt, std::nullopt)
         );
     }
 
-    auto fboProvider = std::make_shared<CFBOProvider> (this);
+    auto fboProvider = std::make_shared<FBOProvider> (this);
 
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
@@ -348,7 +348,7 @@ void CImage::setup () {
         this->m_passes.push_back (
             new CPass (
                 *this,
-                std::make_shared <CFBOProvider>(this),
+                std::make_shared <FBOProvider>(this),
                 **this->m_materials.colorBlending.material->passes.begin (),
                 *this->m_materials.colorBlending.override,
                 std::nullopt,
@@ -380,7 +380,7 @@ void CImage::setup () {
 void CImage::setupPasses () {
     // do a pass on everything and setup proper inputs and values
     std::shared_ptr<const CFBO> drawTo = this->m_currentMainFBO;
-    std::shared_ptr<const ITexture> asInput = this->getTexture ();
+    std::shared_ptr<const TextureProvider> asInput = this->getTexture ();
     GLuint texcoord = this->getTexCoordCopy ();
 
     auto cur = this->m_passes.begin ();
@@ -440,7 +440,7 @@ void CImage::setupPasses () {
     }
 }
 
-void CImage::pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput) {
+void CImage::pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const TextureProvider>* asInput) {
     // temporarily store FBOs used
     std::shared_ptr<const CFBO> currentMainFBO = this->m_currentMainFBO;
     std::shared_ptr<const CFBO> currentSubFBO = this->m_currentSubFBO;
@@ -516,7 +516,7 @@ void CImage::updateScreenSpacePosition () {
     );
 }
 
-std::shared_ptr<const ITexture> CImage::getTexture () const {
+std::shared_ptr<const TextureProvider> CImage::getTexture () const {
     return this->m_texture;
 }
 

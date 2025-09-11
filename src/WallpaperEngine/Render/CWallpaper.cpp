@@ -1,5 +1,5 @@
 #include "CWallpaper.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
@@ -13,12 +13,12 @@
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
-    const Wallpaper& wallpaperData, CRenderContext& context,CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
+    const Wallpaper& wallpaperData, RenderContext& context,AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
     const uint32_t& clampMode
 ) :
-    CContextAware (context),
-    CFBOProvider (nullptr),
+    ContextAware (context),
+    FBOProvider (nullptr),
     m_wallpaperData (wallpaperData),
     m_audioContext (audioContext),
     m_state (scalingMode, clampMode) {
@@ -255,7 +255,7 @@ void CWallpaper::setupFramebuffers () {
     this->alias ("_rt_MipMappedFrameBuffer", "_rt_FullFrameBuffer");
 }
 
-CAudioContext& CWallpaper::getAudioContext () {
+AudioContext& CWallpaper::getAudioContext () {
     return this->m_audioContext;
 }
 
@@ -273,8 +273,8 @@ std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
 }
 
 std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
-    const Wallpaper& wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
     const uint32_t& clampMode
 ) {
     if (wallpaper.is<Scene> ()) {

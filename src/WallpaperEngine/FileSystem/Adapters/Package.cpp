@@ -3,7 +3,7 @@
 
 #include "Package.h"
 
-#include "WallpaperEngine/Assets/CAssetLoadException.h"
+#include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Data/Parsers/PackageParser.h"
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"
 #include "WallpaperEngine/Data/Utils/MemoryStream.h"
@@ -45,7 +45,7 @@ bool PackageAdapter::exists (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path PackageAdapter::physicalPath (const std::filesystem::path& path) const {
-    throw Assets::CAssetLoadException ("Package adapter does not support realpath", path);
+    throw Render::AssetLoadException ("Package adapter does not support realpath", path);
 }
 
 bool PackageFactory::handlesMountpoint (const std::filesystem::path& path) const {

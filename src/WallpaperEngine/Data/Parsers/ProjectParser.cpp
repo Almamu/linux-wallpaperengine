@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "ProjectParser.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include "WallpaperParser.h"
 

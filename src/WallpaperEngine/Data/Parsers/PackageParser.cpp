@@ -1,7 +1,7 @@
 #include "PackageParser.h"
 
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include "WallpaperEngine/Data/Assets/Package.h"
 

@@ -1,11 +1,11 @@
 #include <csignal>
 #include <iostream>
 
-#include "WallpaperEngine/Application/CApplicationContext.h"
-#include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Application/WallpaperApplication.h"
+#include "WallpaperEngine/Logging/Log.h"
 
-WallpaperEngine::Application::CWallpaperApplication* app;
+WallpaperEngine::Application::WallpaperApplication* app;
 
 void signalhandler(int sig) {
     if (app == nullptr)
@@ -40,13 +40,13 @@ int main (int argc, char* argv[]) {
             initLogging ();
         }
 
-        WallpaperEngine::Application::CApplicationContext appContext (argc, argv);
+        WallpaperEngine::Application::ApplicationContext appContext (argc, argv);
 
         // halt if the list-properties option was specified
         if (appContext.settings.general.onlyListProperties)
             return 0;
 
-        app = new WallpaperEngine::Application::CWallpaperApplication (appContext);
+        app = new WallpaperEngine::Application::WallpaperApplication (appContext);
 
         // attach signals to gracefully stop
         std::signal (SIGINT, signalhandler);

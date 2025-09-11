@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Audio/CAudioStream.h"
+#include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
@@ -9,8 +9,8 @@ namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
     CVideo (
-        const Wallpaper& video, CRenderContext& context, CAudioContext& audioContext,
-        const CWallpaperState::TextureUVsScaling& scalingMode,
+        const Wallpaper& video, RenderContext& context, AudioContext& audioContext,
+        const WallpaperState::TextureUVsScaling& scalingMode,
         const uint32_t& clampMode);
 
     const Video& getVideo () const;

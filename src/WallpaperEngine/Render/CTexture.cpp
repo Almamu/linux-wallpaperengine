@@ -1,5 +1,5 @@
 #include "CTexture.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <cstring>
 #include <lz4.h>
@@ -8,7 +8,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 
 CTexture::CTexture (TextureUniquePtr header) : m_header (std::move(header)) {
     // ensure the header is parsed

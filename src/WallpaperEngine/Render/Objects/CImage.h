@@ -4,14 +4,14 @@
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
-#include "WallpaperEngine/Render/Shaders/CShader.h"
+#include "WallpaperEngine/Render/Shaders/Shader.h"
 
-#include "../ITexture.h"
+#include "../TextureProvider.h"
 
 #include <glm/vec3.hpp>
 
 using namespace WallpaperEngine;
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render::Objects::Effects {
 class CMaterial;
@@ -21,7 +21,7 @@ class CPass;
 namespace WallpaperEngine::Render::Objects {
 class CEffect;
 
-class CImage final : public CObject, public CFBOProvider {
+class CImage final : public CObject, public FBOProvider {
     friend CObject;
 
   public:
@@ -40,7 +40,7 @@ class CImage final : public CObject, public CFBOProvider {
     [[nodiscard]] GLuint getPassSpacePosition () const;
     [[nodiscard]] GLuint getTexCoordCopy () const;
     [[nodiscard]] GLuint getTexCoordPass () const;
-    [[nodiscard]] std::shared_ptr<const ITexture> getTexture () const;
+    [[nodiscard]] std::shared_ptr<const TextureProvider> getTexture () const;
     [[nodiscard]] double getAnimationTime () const;
 
     /**
@@ -49,7 +49,7 @@ class CImage final : public CObject, public CFBOProvider {
      * @param drawTo The framebuffer to use
      * @param asInput The last texture used as output (if needed)
      */
-    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput);
+    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const TextureProvider>* asInput);
 
   protected:
     void setupPasses ();
@@ -57,7 +57,7 @@ class CImage final : public CObject, public CFBOProvider {
     void updateScreenSpacePosition ();
 
   private:
-    std::shared_ptr<const ITexture> m_texture = nullptr;
+    std::shared_ptr<const TextureProvider> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;

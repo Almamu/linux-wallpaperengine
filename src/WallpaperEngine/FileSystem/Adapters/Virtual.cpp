@@ -1,6 +1,6 @@
 #include "Virtual.h"
 
-#include "WallpaperEngine/Assets/CAssetLoadException.h"
+#include "WallpaperEngine/Assets/AssetLoadException.h"
 
 #include <cstring>
 
@@ -22,7 +22,7 @@ bool VirtualAdapter::exists (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path VirtualAdapter::physicalPath (const std::filesystem::path& path) const {
-    throw Assets::CAssetLoadException ("Virtual adapter does not support realpath", path);
+    throw Render::AssetLoadException ("Virtual adapter does not support realpath", path);
 }
 
 

@@ -1,5 +1,5 @@
 #include "FileSystem.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 #include <climits>
 #include <cstdlib>
 #include <filesystem>
