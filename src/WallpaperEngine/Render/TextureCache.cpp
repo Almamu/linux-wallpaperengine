@@ -16,7 +16,6 @@ using namespace WallpaperEngine::Data::Parsers;
 TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) {}
 
 std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string& filename) {
-
     if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ())
         return found->second;
 

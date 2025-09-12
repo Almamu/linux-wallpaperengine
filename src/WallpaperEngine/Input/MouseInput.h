@@ -33,6 +33,5 @@ class MouseInput {
      * @return The status of the mouse's right click
      */
     [[nodiscard]] virtual MouseClickStatus rightClick () const = 0;
-
 };
 } // namespace WallpaperEngine::Input
