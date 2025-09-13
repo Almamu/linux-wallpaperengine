@@ -13,7 +13,7 @@ using namespace WallpaperEngine::Data::Parsers;
 
 static int backgroundId = 0;
 
-ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr container) {
+ProjectUniquePtr ProjectParser::parse (const JSON& data, AssetLocatorUniquePtr container) {
     const auto general = data.optional ("general");
     const auto workshopId = data.optional ("workshopid");
     auto actualWorkshopId = std::to_string (--backgroundId);
@@ -38,7 +38,7 @@ ProjectUniquePtr ProjectParser::parse (const JSON& data, ContainerUniquePtr cont
         .workshopId = actualWorkshopId,
         .supportsAudioProcessing = general.has_value () && general.value ().optional ("supportsaudioprocessing", false),
         .properties = parseProperties (general),
-        .container = std::move(container),
+        .assetLocator = std::move(container),
     });
 
     result->wallpaper = WallpaperParser::parse (data.require ("file", "Project's main file missing"), *result);

@@ -4,9 +4,10 @@
 #include <memory>
 
 #include "Types.h"
-#include "WallpaperEngine/FileSystem/Container.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
 
 namespace WallpaperEngine::Data::Model {
+using namespace WallpaperEngine::Assets;
 /**
  * Represents a wallpaper engine project
  */
@@ -30,7 +31,7 @@ struct Project {
     Properties properties;
     /** The wallpaper this project defines */
     WallpaperUniquePtr wallpaper;
-    /** VFS to access the project's files */
-    ContainerUniquePtr container;
+    /** Abstraction over asset loading to provide access to them */
+    AssetLocatorUniquePtr assetLocator;
 };
 };

@@ -22,7 +22,7 @@ WallpaperUniquePtr WallpaperParser::parse (const JSON& file, Project& project) {
 }
 
 SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) {
-    const auto scene = JSON::parse (project.container->readString (file));
+    const auto scene = JSON::parse (project.assetLocator->readString (file));
     const auto camera = scene.require ("camera", "Scenes must have a camera section");
     const auto general = scene.require ("general", "Scenes must have a general section");
     const auto projection = general.require ("orthogonalprojection", "General section must have orthogonal projection info");

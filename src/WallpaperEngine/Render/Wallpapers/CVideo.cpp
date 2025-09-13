@@ -57,7 +57,7 @@ CVideo::CVideo (
         sLog.exception ("Failed to initialize MPV's GL context");
 
     const std::filesystem::path videopath =
-        this->getVideo ().project.container->physicalPath (this->getVideo ().filename);
+        this->getVideo ().project.assetLocator->physicalPath (this->getVideo ().filename);
 
     // build the path to the video file
     const char* command [] = {"loadfile", videopath.c_str (), nullptr};

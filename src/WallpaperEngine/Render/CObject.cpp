@@ -15,8 +15,8 @@ Wallpapers::CScene& CObject::getScene () const {
     return this->m_scene;
 }
 
-const Container& CObject::getContainer () const {
-    return this->getScene ().getContainer ();
+const AssetLocator& CObject::getAssetLocator () const {
+    return this->getScene ().getAssetLocator ();
 }
 
 int CObject::getId () const {

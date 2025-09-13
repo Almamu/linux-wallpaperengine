@@ -6,6 +6,7 @@
 
 #include "GLSLContext.h"
 #include "WallpaperEngine/Data/JSON.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 #include "nlohmann/json.hpp"
 
@@ -13,7 +14,7 @@
 
 namespace WallpaperEngine::Render::Shaders {
 using JSON = WallpaperEngine::Data::JSON::JSON;
-using namespace WallpaperEngine::FileSystem;
+using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 
 /**
@@ -22,7 +23,7 @@ using namespace WallpaperEngine::Data::Model;
 class ShaderUnit {
   public:
     ShaderUnit (
-        GLSLContext::UnitType type, std::string file, std::string content, const Container& container,
+        GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
         const ShaderConstantMap& constants, const TextureMap& passTextures,
         const TextureMap& overrideTextures, const ComboMap& combos, const ComboMap& overrideCombos);
     ~ShaderUnit () = default;
@@ -158,6 +159,6 @@ class ShaderUnit {
     /**
      * The container to source files from
      */
-    const Container& m_container;
+    const AssetLocator& m_assetLocator;
 };
 }

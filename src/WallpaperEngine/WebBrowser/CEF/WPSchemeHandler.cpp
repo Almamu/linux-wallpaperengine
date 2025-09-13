@@ -7,12 +7,11 @@
 
 #include "WallpaperEngine/Data/Model/Project.h"
 
-using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 WPSchemeHandler::WPSchemeHandler(const Project& project) :
     m_project (project),
-    m_container (*this->m_project.container) {
+    m_assetLoader (*this->m_project.assetLocator) {
 }
 
 bool WPSchemeHandler::Open(CefRefPtr<CefRequest> request,
@@ -48,7 +47,7 @@ bool WPSchemeHandler::Open(CefRefPtr<CefRequest> request,
             this->m_mimeType = mime;
         }
 
-        this->m_contents = this->m_container.read (file);
+        this->m_contents = this->m_assetLoader.read (file);
         callback->Continue ();
     } catch (AssetLoadException&) {
 #if !NDEBUG

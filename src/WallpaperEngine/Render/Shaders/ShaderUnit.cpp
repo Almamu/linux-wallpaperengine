@@ -53,7 +53,7 @@ using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Render::Shaders;
 
 ShaderUnit::ShaderUnit (
-    GLSLContext::UnitType type, std::string file, std::string content, const Container& container,
+    GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
     const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
     const ComboMap& combos, const ComboMap& overrideCombos
 ) :
@@ -66,7 +66,7 @@ ShaderUnit::ShaderUnit (
     m_passTextures (passTextures),
     m_overrideTextures (overrideTextures),
     m_link (nullptr),
-    m_container (container) {
+    m_assetLocator (assetLocator) {
     // pre-process the shader so the units are clear
     this->preprocess ();
 }
@@ -153,7 +153,7 @@ void ShaderUnit::preprocessIncludes () {
             content += filename;
             content += "\n";
             // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
-            content += this->m_container.readString (std::filesystem::path("shaders") / filename);
+            content += this->m_assetLocator.readString (std::filesystem::path("shaders") / filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -193,7 +193,7 @@ void ShaderUnit::preprocessIncludes () {
             content += filename;
             content += "\n";
             // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
-            content += this->m_container.readString (std::filesystem::path("shaders") / filename);
+            content += this->m_assetLocator.readString (std::filesystem::path("shaders") / filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";

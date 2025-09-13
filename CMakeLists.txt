@@ -269,6 +269,8 @@ add_executable(
 
     src/WallpaperEngine/Assets/AssetLoadException.cpp
     src/WallpaperEngine/Assets/AssetLoadException.h
+    src/WallpaperEngine/Assets/AssetLocator.cpp
+    src/WallpaperEngine/Assets/AssetLocator.h
 
     src/WallpaperEngine/FileSystem/Container.h
     src/WallpaperEngine/FileSystem/Container.cpp

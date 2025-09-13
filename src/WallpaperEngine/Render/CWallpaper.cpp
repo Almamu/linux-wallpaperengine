@@ -45,8 +45,8 @@ CWallpaper::CWallpaper (
 
 CWallpaper::~CWallpaper () = default;
 
-const Container& CWallpaper::getContainer () const {
-    return *this->m_wallpaperData.project.container;
+const AssetLocator& CWallpaper::getAssetLocator () const {
+    return *this->m_wallpaperData.project.assetLocator;
 }
 
 const Wallpaper& CWallpaper::getWallpaperData () const {

@@ -25,7 +25,7 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
     // search for the texture in all the different containers just in case
     for (const auto& [name, project] : this->getContext ().getApp ().getBackgrounds ()) {
         try {
-            auto contents = project->container->read (finalFilename);
+            auto contents = project->assetLocator->read (finalFilename);
             auto stream = BinaryReader (contents);
 
             auto parsedTexture = TextureParser::parse (stream);
@@ -39,7 +39,7 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
         }
     }
 
-    throw AssetLoadException (filename, "Cannot find file");
+    throw AssetLoadException ("Cannot find file", filename, std::error_code ());
 }
 
 void TextureCache::store (const std::string& name, std::shared_ptr<const TextureProvider> texture) {

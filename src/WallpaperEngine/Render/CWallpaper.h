@@ -65,7 +65,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] const Container& getContainer () const;
+    [[nodiscard]] const AssetLocator& getAssetLocator () const;
 
     /**
      * @return The current audio context for this wallpaper

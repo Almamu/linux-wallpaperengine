@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h"
@@ -16,6 +17,7 @@
 #include "WallpaperEngine/Data/Model/Types.h"
 
 namespace WallpaperEngine::Application {
+using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 /**
  * Small wrapper class over the actual wallpaper's main application skeleton
@@ -53,12 +55,11 @@ class WallpaperApplication {
 
   private:
     /**
-     * Sets up a combined container for the given background, adding default files and directories to the list
+     * Sets up an asset locator for the given background
      *
-     * @param container
      * @param bg
      */
-    ContainerUniquePtr setupContainer (const std::string& bg) const;
+    AssetLocatorUniquePtr setupAssetLocator (const std::string& bg) const;
     /**
      * Loads projects based off the settings
      */

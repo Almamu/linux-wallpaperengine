@@ -45,7 +45,7 @@ bool PackageAdapter::exists (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path PackageAdapter::physicalPath (const std::filesystem::path& path) const {
-    throw Render::AssetLoadException ("Package adapter does not support realpath", path);
+    throw std::filesystem::filesystem_error ("Package adapter does not support realpath", path, std::error_code ());
 }
 
 bool PackageFactory::handlesMountpoint (const std::filesystem::path& path) const {

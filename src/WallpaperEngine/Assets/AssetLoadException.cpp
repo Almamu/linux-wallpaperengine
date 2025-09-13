@@ -1,10 +1,6 @@
 #include "AssetLoadException.h"
 
-using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Assets;
 
-AssetLoadException::AssetLoadException (const std::string& filename, const std::string& extrainfo) :
-    m_message ("Cannot find file " + filename + ": " + extrainfo) {}
-
-const char* AssetLoadException::what () const noexcept {
-    return this->m_message.c_str ();
-}
+AssetLoadException::AssetLoadException (const std::filesystem::filesystem_error& filesystem_error) noexcept
+: std::filesystem::filesystem_error (filesystem_error) {}

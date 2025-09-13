@@ -10,7 +10,7 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 EffectUniquePtr EffectParser::load (const Project& project, const std::string& filename) {
-    const auto effectJson = JSON::parse (project.container->readString (filename));
+    const auto effectJson = JSON::parse (project.assetLocator->readString (filename));
 
     return parse (effectJson, project);
 }

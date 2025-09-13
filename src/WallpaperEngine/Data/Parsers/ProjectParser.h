@@ -4,10 +4,12 @@
 
 #include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
 
 namespace WallpaperEngine::Data::Parsers {
 using JSON = WallpaperEngine::Data::JSON::JSON;
 
+using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 
 /**
@@ -15,7 +17,7 @@ using namespace WallpaperEngine::Data::Model;
  */
 class ProjectParser {
   public:
-    static ProjectUniquePtr parse (const JSON& data, ContainerUniquePtr container);
+    static ProjectUniquePtr parse (const JSON& data, AssetLocatorUniquePtr container);
 
   private:
     static Project::Type parseType (const std::string& type);

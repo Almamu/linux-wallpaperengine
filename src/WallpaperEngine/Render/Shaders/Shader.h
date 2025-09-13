@@ -31,7 +31,7 @@ class Shader {
      * the pre-processing and compilation of the shader, adding
      * required definitions if needed
      *
-     * @param container The container to use for file lookup
+     * @param assetLocator The asset locator where to ask for assets for
      * @param filename The file to load
      * @param combos Settings for the shader
      * @param overrideCombos List of override combos to use
@@ -40,7 +40,7 @@ class Shader {
      * @param constants Default values for shader variables
      */
     Shader (
-        const Container& container, std::string filename,
+        const AssetLocator& assetLocator, std::string filename,
         const ComboMap& combos, const ComboMap& overrideCombos,
         const TextureMap& textures, const TextureMap& overrideTextures,
         const ShaderConstantMap& constants);

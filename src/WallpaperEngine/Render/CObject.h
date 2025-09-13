@@ -36,7 +36,7 @@ class CObject : public Helpers::ContextAware {
     virtual void render () = 0;
 
     [[nodiscard]] Wallpapers::CScene& getScene () const;
-    [[nodiscard]] const Container& getContainer () const;
+    [[nodiscard]] const AssetLocator& getAssetLocator () const;
     [[nodiscard]] int getId () const;
 
   protected:

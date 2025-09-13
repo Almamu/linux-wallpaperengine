@@ -81,7 +81,6 @@ std::filesystem::path Container::physicalPath (const std::filesystem::path& path
     return this->resolveAdapterForFile (path).physicalPath (normalized);
 }
 
-
 AdapterSharedPtr Container::mount (const std::filesystem::path& path, const std::filesystem::path& mountPoint) {
     // check if any adapter can handle the path
     for (const auto& factory : this->m_factories) {
@@ -92,7 +91,8 @@ AdapterSharedPtr Container::mount (const std::filesystem::path& path, const std:
         return this->m_mountpoints.emplace_back (mountPoint, factory->create (path)).second;
     }
 
-    sLog.exception("The specified mount (", path, ") cannot be handled by any of the filesystem adapters");
+    throw std::filesystem::filesystem_error (
+        "The specified mount cannot be handled by any of the filesystem adapters", path, std::error_code ());
 }
 
 VirtualAdapter& Container::getVFS () const {
@@ -120,5 +120,5 @@ Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) co
         return this->resolveAdapterForFile ("/" + normalized.string());
     }
 
-    throw Render::AssetLoadException ("Cannot find requested file ", path);
+    throw std::filesystem::filesystem_error ("Cannot find requested file in any of the mountpoints", path, std::error_code ());
 }

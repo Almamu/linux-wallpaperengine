@@ -22,7 +22,7 @@ bool VirtualAdapter::exists (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path VirtualAdapter::physicalPath (const std::filesystem::path& path) const {
-    throw Render::AssetLoadException ("Virtual adapter does not support realpath", path);
+    throw std::filesystem::filesystem_error ("Virtual adapter does not support realpath", path, std::error_code ());
 }
 
 

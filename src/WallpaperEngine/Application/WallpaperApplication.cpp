@@ -29,6 +29,7 @@ float g_Time;
 float g_TimeLast;
 float g_Daytime;
 
+using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Application;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::FileSystem;
@@ -40,10 +41,10 @@ WallpaperApplication::WallpaperApplication (ApplicationContext& context) :
     this->setupBrowser();
 }
 
-ContainerUniquePtr WallpaperApplication::setupContainer (const std::string& bg) const {
+AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string& bg) const {
     auto container = std::make_unique <Container> ();
 
-    std::filesystem::path path (bg);
+    const std::filesystem::path path = bg;
 
     container->mount (path, "/");
     try {
@@ -193,7 +194,7 @@ ContainerUniquePtr WallpaperApplication::setupContainer (const std::string& bg) 
         "}"
     );
 
-    return container;
+    return std::make_unique <AssetLocator> (std::move (container));
 }
 
 void WallpaperApplication::loadBackgrounds () {
@@ -214,7 +215,7 @@ void WallpaperApplication::loadBackgrounds () {
 }
 
 ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
-    auto container = this->setupContainer (bg);
+    auto container = this->setupAssetLocator (bg);
     auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
 
     return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move(container));

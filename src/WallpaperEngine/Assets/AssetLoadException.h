@@ -1,16 +1,11 @@
 #pragma once
 
-#include <exception>
-#include <string>
+#include <filesystem>
 
-// TODO: REWRITE THIS ONE TO MAKE MORE SENSE, IT REALLY MEANS "FILE-RELATED EXCEPTION"
-namespace WallpaperEngine::Render {
-class AssetLoadException final : public std::exception {
+namespace WallpaperEngine::Assets {
+class AssetLoadException final : public std::filesystem::filesystem_error {
   public:
-    explicit AssetLoadException (const std::string& filename, const std::string& extrainfo = "");
-    [[nodiscard]] const char* what () const noexcept override;
-
-  private:
-    std::string m_message {};
+    using std::filesystem::filesystem_error::filesystem_error;
+    explicit AssetLoadException (const std::filesystem::filesystem_error& filesystem_error) noexcept;
 };
 } // namespace WallpaperEngine::Assets

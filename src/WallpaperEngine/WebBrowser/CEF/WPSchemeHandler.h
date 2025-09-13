@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "WallpaperEngine/FileSystem/Container.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
 
 #include "include/cef_resource_handler.h"
 #include "include/wrapper/cef_helpers.h"
@@ -13,7 +13,7 @@ struct Project;
 
 namespace WallpaperEngine::WebBrowser::CEF {
 
-using namespace WallpaperEngine::FileSystem;
+using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 
 /**
@@ -39,7 +39,7 @@ class WPSchemeHandler : public CefResourceHandler {
   private:
     const Project& m_project;
 
-    const Container& m_container;
+    const AssetLocator& m_assetLoader;
     ReadStreamSharedPtr m_contents = nullptr;
     std::string m_mimeType;
 

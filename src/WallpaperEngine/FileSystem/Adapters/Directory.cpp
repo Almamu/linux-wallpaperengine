@@ -57,7 +57,7 @@ std::filesystem::path DirectoryAdapter::physicalPath (const std::filesystem::pat
     auto finalpath = std::filesystem::canonical(this->basepath / path);
 
     if (finalpath.string ().find (this->basepath.string ()) != 0) {
-        throw Render::AssetLoadException ("Cannot find file", path);
+        throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
     }
 
     return finalpath;
