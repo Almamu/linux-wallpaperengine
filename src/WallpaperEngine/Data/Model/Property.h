@@ -33,9 +33,9 @@ class Property : public DynamicValue, public TypeCaster, public PropertyData {
     virtual void update(const std::string& value) = 0;
 };
 
-class PropertySlider : public Property, SliderData {
+class PropertySlider final : public Property, SliderData {
   public:
-    PropertySlider (PropertyData data, SliderData sliderData, float value) : Property (std::move(data)), SliderData (sliderData) {
+    PropertySlider (PropertyData data, SliderData sliderData, const float value) : Property (std::move(data)), SliderData (std::move (sliderData)) {
         this->update (value);
     }
 
@@ -45,9 +45,9 @@ class PropertySlider : public Property, SliderData {
     }
 };
 
-class PropertyBoolean : public Property {
+class PropertyBoolean final : public Property {
   public:
-    explicit PropertyBoolean (PropertyData data, bool value) : Property (std::move(data)) {
+    explicit PropertyBoolean (PropertyData data, const bool value) : Property (std::move(data)) {
         this->update (value);
     }
 
@@ -57,9 +57,9 @@ class PropertyBoolean : public Property {
     }
 };
 
-class PropertyColor : public Property {
+class PropertyColor final : public Property {
   public:
-    explicit PropertyColor (PropertyData data, std::string value) : Property (std::move(data)) {
+    explicit PropertyColor (PropertyData data, const std::string& value) : Property (std::move(data)) {
         this->PropertyColor::update (value);
     }
 
@@ -70,7 +70,7 @@ class PropertyColor : public Property {
         // TODO: ENSURE ALL THIS PARSING IS CORRECT
         if (copy.find (',') != std::string::npos) {
             // replace comma separator with spaces so it's
-            std::replace (copy.begin (), copy.end (), ',', ' ');
+            std::ranges::replace (copy, ',', ' ');
         }
 
         // hex colors should be converted to int colors
@@ -110,9 +110,9 @@ class PropertyColor : public Property {
     }
 };
 
-class PropertyCombo : public Property, ComboData {
+class PropertyCombo final : public Property, ComboData {
   public:
-    PropertyCombo (PropertyData data, ComboData comboData, std::string value) : Property (std::move(data)), ComboData (std::move(comboData)) {
+    PropertyCombo (PropertyData data, ComboData comboData, const std::string& value) : Property (std::move(data)), ComboData (std::move(comboData)) {
         this->PropertyCombo::update (value);
     }
 
@@ -122,7 +122,7 @@ class PropertyCombo : public Property, ComboData {
     }
 };
 
-class PropertyText : public Property {
+class PropertyText final : public Property {
   public:
     explicit PropertyText (PropertyData data) : Property (std::move(data)) {}
 
@@ -136,9 +136,9 @@ class PropertyText : public Property {
     }
 };
 
-class PropertySceneTexture : public Property {
+class PropertySceneTexture final : public Property {
   public:
-    explicit PropertySceneTexture (PropertyData data, std::string value) : Property (std::move(data)) {
+    explicit PropertySceneTexture (PropertyData data, const std::string& value) : Property (std::move(data)) {
         this->PropertySceneTexture::update (value);
     }
 

@@ -5,10 +5,6 @@
 #include <string>
 #include <memory>
 
-namespace WallpaperEngine::FileSystem {
-class Container;
-}
-
 namespace WallpaperEngine::Data::Model {
 struct Project;
 class Wallpaper;
@@ -40,13 +36,11 @@ using PropertySharedPtr = std::shared_ptr <Property>;
 using Properties = std::map <std::string, PropertySharedPtr>;
 using DynamicValueUniquePtr = std::unique_ptr <DynamicValue>;
 using UserSettingUniquePtr = std::unique_ptr <UserSetting>;
-// TODO: UP TO THIS POINT
 
 using ShaderConstantMap = std::map <std::string, UserSettingUniquePtr>;
 
 using ProjectUniquePtr = std::unique_ptr <Project>;
 using WallpaperUniquePtr = std::unique_ptr <Wallpaper>;
-using ContainerUniquePtr = std::unique_ptr <FileSystem::Container>;
 using SceneUniquePtr = std::unique_ptr <Scene>;
 using WebUniquePtr = std::unique_ptr <Web>;
 using VideoUniquePtr = std::unique_ptr <Video>;

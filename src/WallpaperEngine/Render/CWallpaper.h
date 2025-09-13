@@ -14,6 +14,10 @@
 #include "FBOProvider.h"
 #include "WallpaperState.h"
 
+namespace WallpaperEngine::Application {
+class WallpaperApplication;
+}
+
 namespace WallpaperEngine::WebBrowser {
 class WebBrowserContext;
 }
@@ -29,6 +33,7 @@ using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::FileSystem;
 
 class CWallpaper : public Helpers::ContextAware, public FBOProvider {
+    friend class WallpaperEngine::Application::WallpaperApplication;
   public:
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {

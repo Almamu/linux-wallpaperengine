@@ -23,10 +23,9 @@ void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
 #endif /* DEBUG */
 
     // search the background in the viewport selection
-    const auto ref = this->m_wallpapers.find (viewport->name);
 
     // render the background
-    if (ref != this->m_wallpapers.end ())
+    if (const auto ref = this->m_wallpapers.find (viewport->name); ref != this->m_wallpapers.end ())
         ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
 
 #if !NDEBUG

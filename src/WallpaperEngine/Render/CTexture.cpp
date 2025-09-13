@@ -110,24 +110,17 @@ void CTexture::setupResolution () {
 GLint CTexture::setupInternalFormat () {
     if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
         return GL_RGBA8;
-        // set some extra information too as it's used for image sizing
-        // this ensures that a_TexCoord uses the full image instead of just part of it
-        // TODO: MAYBE IT'S BETTER TO CREATE A TEXTURE OF THE GIVEN SIZE AND COPY OVER WHAT WE READ FROM THE FILE?
-        /*this->m_header->width = this->m_header->mipmaps [0]->width;
-        this->m_header->height = this->m_header->mipmaps [0]->height;
-        this->m_header->textureWidth = this->m_header->mipmaps [0]->width;
-        this->m_header->textureHeight = this->m_header->mipmaps [0]->height;*/
-    } else {
-        // detect the image format and hand it to openGL to be used
-        switch (this->m_header->format) {
-            case TextureFormat_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
-            case TextureFormat_DXT3: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-            case TextureFormat_DXT1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-            case TextureFormat_ARGB8888: return GL_RGBA8; break;
-            case TextureFormat_R8: return GL_R8; break;
-            case TextureFormat_RG88: return GL_RG8; break;
-            default: sLog.exception ("Cannot determine texture format");
-        }
+    }
+
+    // detect the image format and hand it to openGL to be used
+    switch (this->m_header->format) {
+        case TextureFormat_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+        case TextureFormat_DXT3: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+        case TextureFormat_DXT1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+        case TextureFormat_ARGB8888: return GL_RGBA8; break;
+        case TextureFormat_R8: return GL_R8; break;
+        case TextureFormat_RG88: return GL_RG8; break;
+        default: sLog.exception ("Cannot determine texture format");
     }
 }
 

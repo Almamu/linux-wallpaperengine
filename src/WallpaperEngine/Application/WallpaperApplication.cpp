@@ -402,16 +402,13 @@ void WallpaperApplication::show () {
     static struct tm* timeinfo;
 
     if (this->m_context.settings.general.dumpStructure) {
-        // TODO: REWRITE TO USE THE NEW DUMPER
-        /*
-        auto prettyPrinter = PrettyPrinter::CPrettyPrinter ();
+        auto prettyPrinter = Data::Dumpers::StringPrinter ();
 
         for (const auto& [background, info] : this->m_renderContext->getWallpapers ()) {
-            prettyPrinter.printWallpaper (*info);
+            prettyPrinter.printWallpaper (info->getWallpaperData ());
         }
 
         std::cout << prettyPrinter.str () << std::endl;
-        */
     }
 
 #if DEMOMODE

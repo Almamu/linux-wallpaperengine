@@ -485,7 +485,6 @@ void CImage::render () {
     const auto end = this->m_passes.end ();
 
     for (; cur != end; ++cur) {
-        // TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
         if (std::next (cur) == end)
             glColorMask (true, true, true, false);
 

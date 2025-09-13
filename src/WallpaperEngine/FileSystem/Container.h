@@ -67,4 +67,6 @@ class Container {
     /** Virtual file system adapter */
     std::shared_ptr<VirtualAdapter> m_vfs;
 };
+
+using ContainerUniquePtr = std::unique_ptr<Container>;
 }

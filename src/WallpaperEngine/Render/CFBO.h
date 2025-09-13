@@ -13,8 +13,6 @@ class CFBO final : public TextureProvider {
           uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
     ~CFBO () override;
 
-    // TODO: ADD DESTRUCTOR TO FREE RESOURCES
-
     [[nodiscard]] const std::string& getName () const;
     [[nodiscard]] const float& getScale () const;
     [[nodiscard]] TextureFormat getFormat () const override;

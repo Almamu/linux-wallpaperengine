@@ -22,8 +22,6 @@ struct ObjectData {
     std::vector <int> dependencies;
 };
 
-//TODO: CHECK IF THE SEMANTICS FOR MEMORY ARE RIGHT HERE
-
 /**
  * Base class for all objects, represents a single object in the scene
  *

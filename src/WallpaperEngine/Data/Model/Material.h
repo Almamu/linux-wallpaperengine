@@ -35,7 +35,6 @@ enum DepthwriteMode {
 };
 
 struct MaterialPass {
-    // TODO: WRITE ENUMS FOR THESE
     /** Blending mode */
     BlendingMode blending;
     /** Culling mode */

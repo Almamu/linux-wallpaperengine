@@ -152,8 +152,7 @@ void ShaderUnit::preprocessIncludes () {
             content += "// begin of include from file ";
             content += filename;
             content += "\n";
-            // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
-            content += this->m_assetLocator.readString (std::filesystem::path("shaders") / filename);
+            content += this->m_assetLocator.includeShader (filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -192,8 +191,7 @@ void ShaderUnit::preprocessIncludes () {
             content = "// begin of include from file ";
             content += filename;
             content += "\n";
-            // TODO: MOVE SHADER PATH FROM HERE TO SOMEWHERE LIKE AN ASSET RESOLVER OR SOMETHING LIKE THAT
-            content += this->m_assetLocator.readString (std::filesystem::path("shaders") / filename);
+            content += this->m_assetLocator.includeShader (filename);
             content += "\n// end of included from file ";
             content += filename;
             content += "\n";
@@ -313,7 +311,7 @@ void ShaderUnit::preprocessRequires () {
     // comment out requires
     while((start = this->m_preprocessed.find("#require", end)) != std::string::npos) {
         // TODO: CHECK FOR ERRORS HERE
-        size_t lineEnd = this->m_preprocessed.find_first_of('\n', start);
+        const size_t lineEnd = this->m_preprocessed.find_first_of('\n', start);
         sLog.out("Shader has a require block ", this->m_preprocessed.substr (start, lineEnd - start));
         // replace the first two letters with a comment so the filelength doesn't change
         this->m_preprocessed = this->m_preprocessed.replace(start, 2, "//");

@@ -7,7 +7,7 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties) {
-    DynamicValueUniquePtr value = std::make_unique <DynamicValue> ();
+    auto value = std::make_unique <DynamicValue> ();
     PropertySharedPtr property;
     std::optional<ConditionInfo> condition;
     auto valueIt = data;
@@ -25,9 +25,8 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 
         if (user.has_value () && !user->is_null ()) {
             std::string source;
-            const auto& it = *user;
 
-            if (it.is_string ()) {
+            if (const auto& it = *user; it.is_string ()) {
                 source = it;
             } else {
                 condition = ConditionInfo {
@@ -38,9 +37,7 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
                 source = condition.value ().name;
             }
 
-            const auto propertyIt = properties.find (source);
-
-            if (propertyIt != properties.end ()) {
+            if (const auto propertyIt = properties.find (source); propertyIt != properties.end ()) {
                 property = propertyIt->second;
             }
         }
