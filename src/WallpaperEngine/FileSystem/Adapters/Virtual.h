@@ -23,7 +23,7 @@ struct VirtualAdapter final : Adapter {
     [[nodiscard]] std::filesystem::path physicalPath (const std::filesystem::path& path) const override;
 
     void add (const std::filesystem::path& path, const char* data);
-    void add (const std::filesystem::path& path, const JSON& contents);
+    void add (const std::filesystem::path& path, const JSON& data);
     void add (const std::filesystem::path& path, const std::string& data);
     void add (const std::filesystem::path& path, MemoryStreamSharedPtr stream);
 

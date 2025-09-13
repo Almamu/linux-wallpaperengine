@@ -39,7 +39,7 @@ X11FullScreenDetector::X11FullScreenDetector (
     try {
         // attempt casting to CGLFWOpenGLDriver, this will throw if it's not possible
         // so we can gracely handle the error
-        dynamic_cast <GLFWOpenGLDriver&> (this->m_driver);
+        std::ignore = dynamic_cast <GLFWOpenGLDriver&> (this->m_driver);
     } catch (std::exception&) {
         sLog.exception ("X11 FullScreen Detector initialized with the wrong video driver... This is a bug...");
     }

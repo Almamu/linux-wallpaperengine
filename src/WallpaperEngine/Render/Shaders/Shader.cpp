@@ -38,7 +38,6 @@ Shader::Shader (
     this->m_fragment.linkToUnit (&this->m_vertex);
 }
 
-
 const std::string& Shader::vertex () {
     return this->m_vertex.compile ();
 }
@@ -59,7 +58,7 @@ const std::map<std::string, int>& Shader::getCombos () const {
     return this->m_combos;
 }
 
-Shader::ParameterSearchResult Shader::findParameter (const std::string& name) {
+Shader::ParameterSearchResult Shader::findParameter (const std::string& name) const {
     Variables::ShaderVariable* vertex = nullptr;
     Variables::ShaderVariable* fragment = nullptr;
 

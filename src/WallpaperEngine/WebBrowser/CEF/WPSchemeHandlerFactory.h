@@ -4,7 +4,7 @@
 #include "include/cef_scheme.h"
 
 namespace WallpaperEngine::Data::Model {
-class Project;
+struct Project;
 }
 
 namespace WallpaperEngine::WebBrowser::CEF {

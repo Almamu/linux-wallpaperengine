@@ -70,7 +70,7 @@ class Shader {
      * @param name
      * @return
      */
-    [[nodiscard]] ParameterSearchResult findParameter (const std::string& name);
+    [[nodiscard]] ParameterSearchResult findParameter (const std::string& name) const;
 
   private:
     /**

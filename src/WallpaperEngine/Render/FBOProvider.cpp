@@ -44,10 +44,9 @@ std::shared_ptr<CFBO> FBOProvider::alias (const std::string& newName, const std:
 }
 
 std::shared_ptr<CFBO> FBOProvider::find (const std::string& name) const {
-    const auto it = this->m_fbos.find (name);
-
-    if (it != this->m_fbos.end ())
+    if (const auto it = this->m_fbos.find (name); it != this->m_fbos.end ()) {
         return it->second;
+    }
 
     if (this->m_parent == nullptr) {
         return nullptr;
