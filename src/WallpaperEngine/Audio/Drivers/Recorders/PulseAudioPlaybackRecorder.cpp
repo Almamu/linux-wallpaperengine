@@ -51,7 +51,6 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 
         // this packet will fill the buffer, perform some extra checks for extra full buffers and get the latest one
         if (end == WAVE_BUFFER_SIZE) {
-
             if (const size_t numberOfFullBuffers = (currentSize - dataToCopy) / WAVE_BUFFER_SIZE;
                 numberOfFullBuffers > 0) {
                 // calculate the start of the last block (we need the end of the previous block, hence the - 1)
