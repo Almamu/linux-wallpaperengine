@@ -1,16 +1,16 @@
 #include "CFBO.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Render;
 
-CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+CFBO::CFBO (std::string name, const TextureFormat format, const uint32_t flags, const float scale,
             uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight) :
     m_scale (scale),
     m_name (std::move (name)),
     m_format (format),
     m_flags (flags) {
     // create an empty texture that'll be free'd so the FBO is transparent
-    const GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
+    constexpr GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
     glGenFramebuffers (1, &this->m_framebuffer);
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_framebuffer);
@@ -25,10 +25,10 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
     glObjectLabel (GL_TEXTURE, this->m_texture, -1, this->m_name.c_str ());
 #endif /* DEBUG */
     // set filtering parameters, otherwise the texture is not rendered
-    if (flags & TextureFlags::ClampUVs) {
+    if (flags & TextureFlags_ClampUVs) {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    } else if (flags & TextureFlags::ClampUVsBorder) {
+    } else if (flags & TextureFlags_ClampUVsBorder) {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     } else {
@@ -36,7 +36,7 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
-    if (flags & TextureFlags::NoInterpolation) {
+    if (flags & TextureFlags_NoInterpolation) {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     } else {
@@ -61,7 +61,7 @@ CFBO::CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureF
     this->m_resolution = {textureWidth, textureHeight, realWidth, realHeight};
 
     // create the textureframe entries
-    auto frame = std::make_shared<TextureFrame> ();
+    const auto frame = std::make_shared<Frame> ();
 
     frame->frameNumber = 0;
     frame->frametime = 0;
@@ -89,11 +89,11 @@ const float& CFBO::getScale () const {
     return this->m_scale;
 }
 
-ITexture::TextureFormat CFBO::getFormat () const {
+TextureFormat CFBO::getFormat () const {
     return this->m_format;
 }
 
-ITexture::TextureFlags CFBO::getFlags () const {
+uint32_t CFBO::getFlags () const {
     return this->m_flags;
 }
 
@@ -125,7 +125,7 @@ uint32_t CFBO::getRealHeight () const {
     return this->m_resolution.w;
 }
 
-const std::vector<std::shared_ptr<ITexture::TextureFrame>>& CFBO::getFrames () const {
+const std::vector<FrameSharedPtr>& CFBO::getFrames () const {
     return this->m_frames;
 }
 

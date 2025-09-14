@@ -1,13 +1,13 @@
 #include <csignal>
 #include <iostream>
 
-#include "WallpaperEngine/Application/CApplicationContext.h"
-#include "WallpaperEngine/Application/CWallpaperApplication.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Application/WallpaperApplication.h"
+#include "WallpaperEngine/Logging/Log.h"
 
-WallpaperEngine::Application::CWallpaperApplication* app;
+WallpaperEngine::Application::WallpaperApplication* app;
 
-void signalhandler(int sig) {
+void signalhandler (const int sig) {
     if (app == nullptr)
         return;
 
@@ -23,14 +23,16 @@ int main (int argc, char* argv[]) {
     try {
         // if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
         bool enableLogging = true;
-        std::string typeZygote = "--type=zygote";
-        std::string typeUtility = "--type=utility";
+        const std::string typeZygote = "--type=zygote";
+        const std::string typeUtility = "--type=utility";
 
         for (int i = 1; i < argc; i ++) {
             if (strncmp (typeZygote.c_str(), argv[i], typeZygote.size()) == 0) {
                 enableLogging = false;
                 break;
-            } else if (strncmp (typeUtility.c_str(), argv[i], typeUtility.size()) == 0) {
+            }
+
+            if (strncmp (typeUtility.c_str(), argv[i], typeUtility.size()) == 0) {
                 enableLogging = false;
                 break;
             }
@@ -40,13 +42,13 @@ int main (int argc, char* argv[]) {
             initLogging ();
         }
 
-        WallpaperEngine::Application::CApplicationContext appContext (argc, argv);
+        WallpaperEngine::Application::ApplicationContext appContext (argc, argv);
 
         // halt if the list-properties option was specified
         if (appContext.settings.general.onlyListProperties)
             return 0;
 
-        app = new WallpaperEngine::Application::CWallpaperApplication (appContext);
+        app = new WallpaperEngine::Application::WallpaperApplication (appContext);
 
         // attach signals to gracefully stop
         std::signal (SIGINT, signalhandler);

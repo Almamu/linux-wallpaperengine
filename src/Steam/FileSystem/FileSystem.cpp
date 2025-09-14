@@ -1,25 +1,23 @@
 #include "FileSystem.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 #include <climits>
 #include <cstdlib>
 #include <filesystem>
 #include <sstream>
 #include <sys/stat.h>
 
-const char* assets_default_paths [] = {
+std::vector<std::string> appDirectoryPaths = {
     ".steam/steam/steamapps/common",
     ".local/share/Steam/steamapps/common",
     ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common",
     "snap/steam/common/.local/share/Steam/steamapps/common",
-    nullptr
 };
 
-const char* workshop_content_default_paths [] = {
+std::vector<std::string> workshopDirectoryPaths = {
     ".local/share/Steam/steamapps/workshop/content",
     ".steam/steam/steamapps/workshop/content",
     ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/workshop/content",
     "snap/steam/common/.local/share/Steam/steamapps/workshop/content",
-    nullptr
 };
 
 std::filesystem::path detectHomepath () {
@@ -33,14 +31,14 @@ std::filesystem::path detectHomepath () {
     if (!std::filesystem::is_directory (path))
         sLog.exception ("Cannot find home directory for current user, ", home, " is not a directory");
 
-    return home;
+    return path;
 }
 
 std::filesystem::path Steam::FileSystem::workshopDirectory (int appID, const std::string& contentID) {
     auto homepath = detectHomepath ();
 
-    for (const char** current = workshop_content_default_paths; *current != nullptr; current++) {
-        auto currentpath = std::filesystem::path (homepath) / *current / std::to_string (appID) / contentID;
+    for (const auto& current : workshopDirectoryPaths) {
+        auto currentpath = std::filesystem::path (homepath) / current / std::to_string (appID) / contentID;
 
         if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
             continue;
@@ -54,8 +52,8 @@ std::filesystem::path Steam::FileSystem::workshopDirectory (int appID, const std
 std::filesystem::path Steam::FileSystem::appDirectory (const std::string& appDirectory, const std::string& path) {
     auto homepath = detectHomepath ();
 
-    for (const char** current = assets_default_paths; *current != nullptr; current++) {
-        auto currentpath = std::filesystem::path (homepath) / *current / appDirectory / path;
+    for (const auto& current : appDirectoryPaths) {
+        auto currentpath = std::filesystem::path (homepath) / current / appDirectory / path;
 
         if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
             continue;

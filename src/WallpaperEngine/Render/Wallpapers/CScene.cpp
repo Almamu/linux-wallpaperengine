@@ -1,86 +1,83 @@
-#include "WallpaperEngine/Core/Objects/CImage.h"
-#include "WallpaperEngine/Core/Objects/CSound.h"
-
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 
-#include "WallpaperEngine/Render/CWallpaperState.h"
+#include "WallpaperEngine/Render/WallpaperState.h"
 
 #include "CScene.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Parsers/ObjectParser.h"
 
 extern float g_Time;
 extern float g_TimeLast;
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Data::Model;
+using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
+using JSON = WallpaperEngine::Data::JSON::JSON;
 
 CScene::CScene (
-    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
+    const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     // caller should check this, if not a std::bad_cast is good to throw
-    const auto& scene = wallpaper->as <Core::Wallpapers::CScene> ();
+    auto scene = wallpaper.as <Scene> ();
+
     // setup the scene camera
-    this->m_camera = new CCamera (this, scene->getCamera ());
+    this->m_camera = std::make_unique<Camera> (*this, scene->camera);
+
+    float width = scene->camera.projection.width;
+    float height = scene->camera.projection.height;
 
     // detect size if the orthogonal project is auto
-    if (scene->getOrthogonalProjection ()->isAuto ()) {
-        // calculate the size of the projection based on the size of everything
-        for (const auto& [id, sceneObject] : scene->getObjects ()) {
-            if (!sceneObject->is<Core::Objects::CImage> ())
-                continue;
-
-            const glm::vec2 size = sceneObject->as<Core::Objects::CImage> ()->getSize ();
-
-            scene->getOrthogonalProjection ()->setWidth (size.x);
-            scene->getOrthogonalProjection ()->setHeight (size.y);
-        }
+    if (scene->camera.projection.isAuto) {
+        // TODO: CALCULATE ORTHOGONAL PROJECTION BASED ON CONTENT'S SIZE HERE
     }
 
     this->m_parallaxDisplacement = {0, 0};
 
-    this->m_camera->setOrthogonalProjection (scene->getOrthogonalProjection ()->getWidth (),
-                                             scene->getOrthogonalProjection ()->getHeight ());
+    // TODO: CONVERSION
+    this->m_camera->setOrthogonalProjection (width, height);
 
     // setup framebuffers here as they're required for the scene setup
     this->setupFramebuffers ();
 
+    const uint32_t sceneWidth = this->m_camera->getWidth ();
+    const uint32_t sceneHeight = this->m_camera->getHeight ();
+
+    this->_rt_shadowAtlas =
+        this->create ("_rt_shadowAtlas", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
+                      {sceneWidth, sceneHeight}, {sceneWidth, sceneHeight});
+    this->alias ("_alias_lightCookie", "_rt_shadowAtlas");
+
     // set clear color
-    const glm::vec3 clearColor = this->getScene ()->getClearColor ();
+    const glm::vec3 clearColor = scene->colors.clear->value->getVec3 ();
 
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
 
     // create all objects based off their dependencies
-    for (const auto& [id, sceneObject] : scene->getObjects ())
-        this->createObject (sceneObject);
+    for (const auto& object : scene->objects)
+        this->createObject (*object);
 
     // copy over objects by render order
-    for (const auto& cur : scene->getObjectsByRenderOrder ()) {
-        auto obj = this->m_objects.find (cur->getId ());
-
-        // ignores not created objects like particle systems
-        if (obj == this->m_objects.end ())
-            continue;
-
-        this->m_objectsByRenderOrder.emplace_back (obj->second);
+    for (const auto& object : scene->objects) {
+        this->addObjectToRenderOrder (*object);
     }
-
-    const uint32_t sceneWidth = scene->getOrthogonalProjection ()->getWidth ();
-    const uint32_t sceneHeight = scene->getOrthogonalProjection ()->getHeight ();
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer =
-        this->createFBO ("_rt_4FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
-                         sceneWidth / 4, sceneHeight / 4, sceneWidth / 4, sceneHeight / 4);
+        this->create ("_rt_4FrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
+                      {sceneWidth / 4, sceneHeight / 4}, {sceneWidth / 4, sceneHeight / 4});
     this->_rt_8FrameBuffer =
-        this->createFBO ("_rt_8FrameBuffer", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs, 1.0,
-                         sceneWidth / 8, sceneHeight / 8, sceneWidth / 8, sceneHeight / 8);
-    this->_rt_Bloom = this->createFBO ("_rt_Bloom", ITexture::TextureFormat::ARGB8888, ITexture::TextureFlags::ClampUVs,
-                                       1.0, sceneWidth / 8, sceneHeight / 8, sceneWidth / 8, sceneHeight / 8);
+        this->create ("_rt_8FrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0,
+                      {sceneWidth / 8, sceneHeight / 8}, {sceneWidth / 8, sceneHeight / 8});
+    this->_rt_Bloom = this->create ("_rt_Bloom", TextureFormat_ARGB8888, TextureFlags_ClampUVs,
+                                       1.0, {sceneWidth / 8, sceneHeight / 8}, {sceneWidth / 8, sceneHeight / 8});
 
     //
     // Had to get a little creative with the effects to achieve the same bloom effect without any custom code
@@ -89,107 +86,106 @@ CScene::CScene (
     // (it renders directly to the screen, whereas here we never do that from a scene)
     //
 
-    const std::string imagejson = "{"
-                                  "\t\"image\": \"models/wpenginelinux.json\","
-                                  "\t\"name\": \"bloomimagewpenginelinux\","
-                                  "\t\"visible\": true,"
-                                  "\t\"scale\": \"1.0 1.0 1.0\","
-                                  "\t\"angles\": \"0.0 0.0 0.0\","
-                                  "\t\"origin\": \"" +
-                                  std::to_string (sceneWidth / 2) + " " + std::to_string (sceneHeight / 2) +
-                                  " 0.0\","
-                                  "\t\"id\": -1" +
-                                  ","
-                                  "\t\"effects\":"
-                                  "\t["
-                                  "\t\t{"
-                                  "\t\t\t\"file\": \"effects/wpenginelinux/bloomeffect.json\","
-                                  "\t\t\t\"id\": 15242000,"
-                                  "\t\t\t\"name\": \"\","
-                                  "\t\t\t\"passes\":"
-                                  "\t\t\t["
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ()->getBloomStrength ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t},"
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ()->getBloomStrength ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t},"
-                                  "\t\t\t\t{"
-                                  "\t\t\t\t\t\"constantshadervalues\":"
-                                  "\t\t\t\t\t{"
-                                  "\t\t\t\t\t\t\"bloomstrength\": " +
-                                  std::to_string (this->getScene ()->getBloomStrength ()) +
-                                  ","
-                                  "\t\t\t\t\t\t\"bloomthreshold\": " +
-                                  std::to_string (this->getScene ()->getBloomThreshold ()) +
-                                  "\t\t\t\t\t}"
-                                  "\t\t\t\t}"
-                                  "\t\t\t]"
-                                  "\t\t}"
-                                  "\t],"
-                                  "\t\"size\": \"" +
-                                  std::to_string (sceneWidth) + " " + std::to_string (sceneHeight) +
-                                  "\""
-                                  "}";
-    const auto json = nlohmann::json::parse (imagejson);
+    const auto bloomOrigin = glm::vec3 { sceneWidth / 2, sceneHeight / 2, 0.0f };
+    const auto bloomSize = glm::vec2 { sceneWidth, sceneHeight };
+
+    const JSON bloom = {
+        {"image", "models/wpenginelinux.json"},
+        {"name", "bloomimagewpenginelinux"},
+        {"visible", true},
+        {"scale", "1.0 1.0 1.0"},
+        {"angles", "0.0 0.0 0.0"},
+        {"origin", std::to_string (bloomOrigin.x) + " " + std::to_string (bloomOrigin.y) + " " + std::to_string(bloomOrigin.z)},
+        {"size", std::to_string (bloomSize.x) + " " + std::to_string (bloomSize.y)},
+        {"id", -1},
+        {"effects",
+            JSON::array (
+                {
+                    {
+                        {"file", "effects/wpenginelinux/bloomeffect.json"},
+                        {"id", 15242000},
+                        {"name", ""},
+                        {"passes",
+                             JSON::array (
+                                 {
+                                     {
+                                         {"constantshadervalues",
+                                             {
+                                                 {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                 {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                             }
+                                         }
+                                     },
+                                     {
+                                         {"constantshadervalues",
+                                            {
+                                                {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                            }
+                                        }
+                                     },
+                                     {
+                                         {"constantshadervalues",
+                                             {
+                                                 {"bloomstrength", this->getScene ().camera.bloom.strength->value->getFloat ()},
+                                                 {"bloomthreshold", this->getScene ().camera.bloom.threshold->value->getFloat ()}
+                                             }
+                                         }
+                                     }
+                                 }
+                             )
+                        }
+                    }
+                }
+            )
+        }
+    };
 
     // create image for bloom passes
-    if (this->getScene ()->isBloom ()) {
-        this->m_bloomObject = this->createObject (
-            WallpaperEngine::Core::CObject::fromJSON (json, scene->getProject (), this->getContainer ()));
+    if (scene->camera.bloom.enabled->value->getBool ()) {
+        this->m_bloomObjectData = ObjectParser::parse (bloom, scene->project);
+        this->m_bloomObject = this->createObject (*this->m_bloomObjectData);
 
         this->m_objectsByRenderOrder.push_back (this->m_bloomObject);
     }
 }
 
-Render::CObject* CScene::createObject (const Core::CObject* object) {
+Render::CObject* CScene::createObject (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
     // ensure the item is not loaded already
-    const auto current = this->m_objects.find (object->getId ());
-
-    if (current != this->m_objects.end ())
+    if (const auto current = this->m_objects.find (object.id); current != this->m_objects.end ())
         return current->second;
 
     // check dependencies too!
-    for (const auto& cur : object->getDependencies ()) {
+    for (const auto& cur : object.dependencies) {
         // self-dependency is a possibility...
-        if (cur == object->getId ())
+        if (cur == object.id)
             continue;
 
-        auto dep = this->getScene ()->getObjects ().find (cur);
+        const auto dep = std::ranges::find_if (this->getScene ().objects,
+            [&cur] (const auto& o) {
+                return o->id == cur;
+            }
+        );
 
-        if (dep != this->getScene ()->getObjects ().end ())
-            this->createObject (dep->second);
+        if (dep != this->getScene ().objects.end ())
+            this->createObject (**dep);
     }
 
-    if (object->is<Core::Objects::CImage> ()) {
-        auto* image = new Objects::CImage (this, object->as<Core::Objects::CImage> ());
+    if (object.is<Image> ()) {
+        auto* image = new Objects::CImage (*this, *object.as<Image> ());
 
         try {
             image->setup ();
         } catch (std::runtime_error&) {
             // this error message is already printed, so just show extra info about it
-            sLog.error ("Cannot setup image ", image->getImage ()->getName ());
+            sLog.error ("Cannot setup image ", image->getImage ().name);
         }
 
         renderObject = image;
-    } else if (object->is<Core::Objects::CSound> ()) {
-        renderObject = new Objects::CSound (this, object->as<Core::Objects::CSound> ());
+    } else if (object.is<Sound> ()) {
+        renderObject = new Objects::CSound (*this, *object.as<Sound> ());
     }
 
     if (renderObject != nullptr)
@@ -198,20 +194,60 @@ Render::CObject* CScene::createObject (const Core::CObject* object) {
     return renderObject;
 }
 
-CCamera* CScene::getCamera () const {
-    return this->m_camera;
+void CScene::addObjectToRenderOrder (const Object& object) {
+    const auto obj = this->m_objects.find (object.id);
+
+    // ignores not created objects like particle systems
+    if (obj == this->m_objects.end ())
+        return;
+
+    // take into account any dependency first
+    for (const auto& dep : object.dependencies) {
+        // self-dependency is possible
+        if (dep == object.id) {
+            continue;
+        }
+
+        // add the dependency to the list if it's created
+        auto depIt = std::ranges::find_if (this->getScene ().objects,
+            [&dep] (const auto& o) {
+                return o->id == dep;
+            }
+        );
+
+        if (depIt != this->getScene ().objects.end ()) {
+            this->addObjectToRenderOrder (**depIt);
+        } else {
+            sLog.error ("Cannot find dependency ", dep, " for object ", object.id);
+        }
+    }
+
+    // ensure we're added only once to the render list
+    const auto renderIt = std::ranges::find_if (this->m_objectsByRenderOrder,
+        [&object] (const auto& o) {
+            return o->getId () == object.id;
+        }
+    );
+
+    if (renderIt == this->m_objectsByRenderOrder.end ()) {
+        this->m_objectsByRenderOrder.emplace_back (obj->second);
+    }
 }
 
-void CScene::renderFrame (glm::ivec4 viewport) {
+Camera& CScene::getCamera () const {
+    return *this->m_camera;
+}
+
+void CScene::renderFrame (const glm::ivec4& viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ()->isCameraParallax () && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
-        const float influence = this->getScene ()->getCameraParallaxMouseInfluence ();
-        const float amount = this->getScene ()->getCameraParallaxAmount ();
+    if (this->getScene ().camera.parallax.enabled && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+        const float influence = this->getScene ().camera.parallax.mouseInfluence;
+        const float amount = this->getScene ().camera.parallax.amount;
         const float delay =
-            glm::min (static_cast<float> (this->getScene ()->getCameraParallaxDelay ()), g_Time - g_TimeLast);
+            glm::min (static_cast<float> (this->getScene ().camera.parallax.delay), g_Time - g_TimeLast);
 
         this->m_parallaxDisplacement =
             glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
@@ -228,7 +264,7 @@ void CScene::renderFrame (glm::ivec4 viewport) {
         cur->render ();
 }
 
-void CScene::updateMouse (glm::ivec4 viewport) {
+void CScene::updateMouse (const glm::ivec4& viewport) {
     // update virtual mouse position first
     const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
@@ -243,27 +279,27 @@ void CScene::updateMouse (glm::ivec4 viewport) {
     // screen-space positions have to be transposed to what the screen will actually show
 }
 
-const Core::Wallpapers::CScene* CScene::getScene () const {
-    return this->getWallpaperData ()->as<Core::Wallpapers::CScene> ();
+const Scene& CScene::getScene () const {
+    return *this->getWallpaperData ().as<Scene> ();
 }
 
 int CScene::getWidth () const {
-    return this->getScene ()->getOrthogonalProjection ()->getWidth ();
+    return this->m_camera->getWidth ();
 }
 
 int CScene::getHeight () const {
-    return this->getScene ()->getOrthogonalProjection ()->getHeight ();
+    return this->m_camera->getHeight ();
 }
 
-glm::vec2* CScene::getMousePosition () {
+const glm::vec2* CScene::getMousePosition () const {
     return &this->m_mousePosition;
 }
 
-glm::vec2* CScene::getMousePositionLast () {
+const glm::vec2* CScene::getMousePositionLast () const {
     return &this->m_mousePositionLast;
 }
 
-glm::vec2* CScene::getParallaxDisplacement () {
+const glm::vec2* CScene::getParallaxDisplacement () const {
     return &this->m_parallaxDisplacement;
 }
 

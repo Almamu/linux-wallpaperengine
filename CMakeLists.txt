@@ -7,7 +7,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -104,6 +104,8 @@ find_package(CEF REQUIRED)
 # remove some switches that forbid us from using things that are commonplace in our codebase
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-exceptions)
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-rtti)
+list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -std=c++17)
+list(APPEND CEF_CXX_COMPILER_FLAGS -std=c++20)
 # remove the vulkan library from the files to copy so it doesn't fail after removing it
 list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
 
@@ -156,16 +158,16 @@ if(WAYLAND_SUPPORT_FOUND)
         wayland-egl
         ${OPENGL_egl_LIBRARY})
     set(WAYLAND_SOURCES
-        src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.h
-        src/WallpaperEngine/Render/Drivers/CWaylandOpenGLDriver.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CWaylandFullScreenDetector.h
-        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.cpp
-        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutput.h
-        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.cpp
-        src/WallpaperEngine/Render/Drivers/Output/CWaylandOutputViewport.h
-        src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.cpp
-        src/WallpaperEngine/Input/Drivers/CWaylandMouseInput.h
+        src/WallpaperEngine/Render/Drivers/WaylandOpenGLDriver.h
+        src/WallpaperEngine/Render/Drivers/WaylandOpenGLDriver.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/WaylandFullScreenDetector.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/WaylandFullScreenDetector.h
+        src/WallpaperEngine/Render/Drivers/Output/WaylandOutput.cpp
+        src/WallpaperEngine/Render/Drivers/Output/WaylandOutput.h
+        src/WallpaperEngine/Render/Drivers/Output/WaylandOutputViewport.cpp
+        src/WallpaperEngine/Render/Drivers/Output/WaylandOutputViewport.h
+        src/WallpaperEngine/Input/Drivers/WaylandMouseInput.cpp
+        src/WallpaperEngine/Input/Drivers/WaylandMouseInput.h
         ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
         ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.h
         ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.c
@@ -195,10 +197,10 @@ if(X11_SUPPORT_FOUND)
         ${X11_LIBRARIES}
         ${X11_Xrandr_LIB})
     set(X11_SOURCES
-        src/WallpaperEngine/Render/Drivers/Output/CX11Output.cpp
-        src/WallpaperEngine/Render/Drivers/Output/CX11Output.h
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.cpp
-        src/WallpaperEngine/Render/Drivers/Detectors/CX11FullScreenDetector.h)
+        src/WallpaperEngine/Render/Drivers/Output/X11Output.cpp
+        src/WallpaperEngine/Render/Drivers/Output/X11Output.h
+        src/WallpaperEngine/Render/Drivers/Detectors/X11FullScreenDetector.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/X11FullScreenDetector.h)
     SET(X11_INCLUDES
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
@@ -257,258 +259,195 @@ add_executable(
     src/Steam/FileSystem/FileSystem.cpp
     src/Steam/FileSystem/FileSystem.h
 
-    src/WallpaperEngine/Logging/CLog.cpp
-    src/WallpaperEngine/Logging/CLog.h
+    src/WallpaperEngine/Logging/Log.cpp
+    src/WallpaperEngine/Logging/Log.h
 
-    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.cpp
-    src/WallpaperEngine/PrettyPrinter/CPrettyPrinter.h
+    src/WallpaperEngine/Application/ApplicationContext.cpp
+    src/WallpaperEngine/Application/ApplicationContext.h
+    src/WallpaperEngine/Application/WallpaperApplication.cpp
+    src/WallpaperEngine/Application/WallpaperApplication.h
 
-    src/WallpaperEngine/Application/CApplicationContext.cpp
-    src/WallpaperEngine/Application/CApplicationContext.h
-    src/WallpaperEngine/Application/CWallpaperApplication.cpp
-    src/WallpaperEngine/Application/CWallpaperApplication.h
+    src/WallpaperEngine/Assets/AssetLoadException.cpp
+    src/WallpaperEngine/Assets/AssetLoadException.h
+    src/WallpaperEngine/Assets/AssetLocator.cpp
+    src/WallpaperEngine/Assets/AssetLocator.h
 
-    src/WallpaperEngine/Assets/CPackageLoadException.cpp
-    src/WallpaperEngine/Assets/CPackageLoadException.h
-    src/WallpaperEngine/Assets/CAssetLoadException.cpp
-    src/WallpaperEngine/Assets/CAssetLoadException.h
-    src/WallpaperEngine/Assets/CContainer.h
-    src/WallpaperEngine/Assets/CContainer.cpp
-    src/WallpaperEngine/Assets/CVirtualContainer.h
-    src/WallpaperEngine/Assets/CVirtualContainer.cpp
-    src/WallpaperEngine/Assets/CCombinedContainer.h
-    src/WallpaperEngine/Assets/CCombinedContainer.cpp
-    src/WallpaperEngine/Assets/CDirectory.h
-    src/WallpaperEngine/Assets/CDirectory.cpp
-    src/WallpaperEngine/Assets/CPackage.h
-    src/WallpaperEngine/Assets/CPackage.cpp
-    src/WallpaperEngine/Assets/ITexture.h
-    src/WallpaperEngine/Assets/CTexture.h
-    src/WallpaperEngine/Assets/CTexture.cpp
+    src/WallpaperEngine/FileSystem/Container.h
+    src/WallpaperEngine/FileSystem/Container.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Types.h
+    src/WallpaperEngine/FileSystem/Adapters/Directory.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Directory.h
+    src/WallpaperEngine/FileSystem/Adapters/Package.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Package.h
+    src/WallpaperEngine/FileSystem/Adapters/Virtual.cpp
+    src/WallpaperEngine/FileSystem/Adapters/Virtual.h
 
-    src/WallpaperEngine/Core/Core.h
-    src/WallpaperEngine/Core/Core.cpp
+    src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.cpp
+    src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.h
+    src/WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.cpp
+    src/WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h
 
-    src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.cpp
-    src/WallpaperEngine/Audio/Drivers/Recorders/CPulseAudioPlaybackRecorder.h
-    src/WallpaperEngine/Audio/Drivers/Recorders/CPlaybackRecorder.cpp
-    src/WallpaperEngine/Audio/Drivers/Recorders/CPlaybackRecorder.h
+    src/WallpaperEngine/Audio/Drivers/Detectors/PulseAudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Drivers/Detectors/PulseAudioPlayingDetector.h
+    src/WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h
 
-    src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.cpp
-    src/WallpaperEngine/Audio/Drivers/Detectors/CPulseAudioPlayingDetector.h
-    src/WallpaperEngine/Audio/Drivers/Detectors/CAudioPlayingDetector.cpp
-    src/WallpaperEngine/Audio/Drivers/Detectors/CAudioPlayingDetector.h
+    src/WallpaperEngine/Audio/Drivers/AudioDriver.cpp
+    src/WallpaperEngine/Audio/Drivers/AudioDriver.h
+    src/WallpaperEngine/Audio/Drivers/SDLAudioDriver.cpp
+    src/WallpaperEngine/Audio/Drivers/SDLAudioDriver.h
+    src/WallpaperEngine/Audio/AudioContext.cpp
+    src/WallpaperEngine/Audio/AudioContext.h
+    src/WallpaperEngine/Audio/AudioStream.cpp
+    src/WallpaperEngine/Audio/AudioStream.h
 
-    src/WallpaperEngine/Audio/Drivers/CAudioDriver.cpp
-    src/WallpaperEngine/Audio/Drivers/CAudioDriver.h
-    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.cpp
-    src/WallpaperEngine/Audio/Drivers/CSDLAudioDriver.h
-    src/WallpaperEngine/Audio/CAudioContext.cpp
-    src/WallpaperEngine/Audio/CAudioContext.h
-    src/WallpaperEngine/Audio/CAudioStream.cpp
-    src/WallpaperEngine/Audio/CAudioStream.h
+    src/WallpaperEngine/Input/InputContext.cpp
+    src/WallpaperEngine/Input/InputContext.h
+    src/WallpaperEngine/Input/MouseInput.h
+    src/WallpaperEngine/Input/Drivers/GLFWMouseInput.cpp
+    src/WallpaperEngine/Input/Drivers/GLFWMouseInput.h
 
-    src/WallpaperEngine/Input/CInputContext.cpp
-    src/WallpaperEngine/Input/CInputContext.h
-    src/WallpaperEngine/Input/CMouseInput.cpp
-    src/WallpaperEngine/Input/CMouseInput.h
-    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.cpp
-    src/WallpaperEngine/Input/Drivers/CGLFWMouseInput.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.cpp
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableFloat.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableFloat.cpp
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableInteger.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableInteger.cpp
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector2.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector2.cpp
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector3.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector3.cpp
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector4.h
+    src/WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector4.cpp
 
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariable.cpp
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.cpp
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.cpp
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.cpp
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.cpp
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h
-    src/WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.cpp
+    src/WallpaperEngine/Render/Shaders/Shader.h
+    src/WallpaperEngine/Render/Shaders/Shader.cpp
+    src/WallpaperEngine/Render/Shaders/ShaderUnit.cpp
+    src/WallpaperEngine/Render/Shaders/ShaderUnit.h
+    src/WallpaperEngine/Render/Shaders/GLSLContext.cpp
+    src/WallpaperEngine/Render/Shaders/GLSLContext.h
 
-    src/WallpaperEngine/Render/Shaders/CShader.h
-    src/WallpaperEngine/Render/Shaders/CShader.cpp
-    src/WallpaperEngine/Render/Shaders/CShaderUnit.cpp
-    src/WallpaperEngine/Render/Shaders/CShaderUnit.h
-    src/WallpaperEngine/Render/Shaders/CGLSLContext.cpp
-    src/WallpaperEngine/Render/Shaders/CGLSLContext.h
+    src/WallpaperEngine/Render/Helpers/ContextAware.cpp
+    src/WallpaperEngine/Render/Helpers/ContextAware.h
 
-    src/WallpaperEngine/Render/Helpers/CContextAware.cpp
-    src/WallpaperEngine/Render/Helpers/CContextAware.h
+    src/WallpaperEngine/Render/Drivers/VideoFactories.cpp
+    src/WallpaperEngine/Render/Drivers/VideoFactories.h
 
-    src/WallpaperEngine/Render/Drivers/CVideoFactories.cpp
-    src/WallpaperEngine/Render/Drivers/CVideoFactories.h
+    src/WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.cpp
+    src/WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h
 
-    src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.cpp
-    src/WallpaperEngine/Render/Drivers/Detectors/CFullScreenDetector.h
+    src/WallpaperEngine/Render/Drivers/Output/Output.cpp
+    src/WallpaperEngine/Render/Drivers/Output/Output.h
+    src/WallpaperEngine/Render/Drivers/Output/GLFWWindowOutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/GLFWWindowOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/GLFWOutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/GLFWOutputViewport.h
+    src/WallpaperEngine/Render/Drivers/Output/OutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/OutputViewport.h
+    src/WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.cpp
+    src/WallpaperEngine/Render/Drivers/VideoDriver.h
+    src/WallpaperEngine/Render/Drivers/VideoDriver.cpp
+    src/WallpaperEngine/Render/RenderContext.h
+    src/WallpaperEngine/Render/RenderContext.cpp
+    src/WallpaperEngine/Render/TextureCache.h
+    src/WallpaperEngine/Render/TextureCache.cpp
+    src/WallpaperEngine/Render/FBOProvider.cpp
+    src/WallpaperEngine/Render/FBOProvider.h
 
-    src/WallpaperEngine/Render/Drivers/Output/COutput.cpp
-    src/WallpaperEngine/Render/Drivers/Output/COutput.h
-    src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h
-    src/WallpaperEngine/Render/Drivers/Output/CGLFWOutputViewport.cpp
-    src/WallpaperEngine/Render/Drivers/Output/CGLFWOutputViewport.h
-    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.cpp
-    src/WallpaperEngine/Render/Drivers/Output/COutputViewport.h
-    src/WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.h
-    src/WallpaperEngine/Render/Drivers/CGLFWOpenGLDriver.cpp
-    src/WallpaperEngine/Render/Drivers/CVideoDriver.h
-    src/WallpaperEngine/Render/Drivers/CVideoDriver.cpp
-    src/WallpaperEngine/Render/CRenderContext.h
-    src/WallpaperEngine/Render/CRenderContext.cpp
-    src/WallpaperEngine/Render/CTextureCache.h
-    src/WallpaperEngine/Render/CTextureCache.cpp
-
-    src/WallpaperEngine/Render/Helpers/CContextAware.cpp
-    src/WallpaperEngine/Render/Helpers/CContextAware.h
+    src/WallpaperEngine/Render/Helpers/ContextAware.cpp
+    src/WallpaperEngine/Render/Helpers/ContextAware.h
 
     src/WallpaperEngine/Render/CWallpaper.h
     src/WallpaperEngine/Render/CWallpaper.cpp
-    src/WallpaperEngine/Render/CWallpaperState.h
-    src/WallpaperEngine/Render/CWallpaperState.cpp
+    src/WallpaperEngine/Render/WallpaperState.h
+    src/WallpaperEngine/Render/WallpaperState.cpp
     src/WallpaperEngine/Render/Wallpapers/CScene.h
     src/WallpaperEngine/Render/Wallpapers/CScene.cpp
     src/WallpaperEngine/Render/Wallpapers/CVideo.h
     src/WallpaperEngine/Render/Wallpapers/CVideo.cpp
     src/WallpaperEngine/Render/Wallpapers/CWeb.h
     src/WallpaperEngine/Render/Wallpapers/CWeb.cpp
-    src/WallpaperEngine/Render/CCamera.h
-    src/WallpaperEngine/Render/CCamera.cpp
+    src/WallpaperEngine/Render/Camera.h
+    src/WallpaperEngine/Render/Camera.cpp
     src/WallpaperEngine/Render/CObject.h
     src/WallpaperEngine/Render/CObject.cpp
+    src/WallpaperEngine/Render/CTexture.cpp
+    src/WallpaperEngine/Render/CTexture.h
+    src/WallpaperEngine/Render/TextureProvider.h
 
     src/WallpaperEngine/Render/Objects/CImage.h
     src/WallpaperEngine/Render/Objects/CImage.cpp
     src/WallpaperEngine/Render/Objects/CSound.h
     src/WallpaperEngine/Render/Objects/CSound.cpp
-    src/WallpaperEngine/Render/Objects/CEffect.h
-    src/WallpaperEngine/Render/Objects/CEffect.cpp
 
     src/WallpaperEngine/Render/CFBO.h
     src/WallpaperEngine/Render/CFBO.cpp
     src/WallpaperEngine/Render/Objects/Effects/CPass.h
     src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
-    src/WallpaperEngine/Render/Objects/Effects/CMaterial.h
-    src/WallpaperEngine/Render/Objects/Effects/CMaterial.cpp
 
-    src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CRenderHandler.h
-    src/WallpaperEngine/WebBrowser/CEF/CBrowserClient.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CBrowserClient.h
-    src/WallpaperEngine/WebBrowser/CEF/CBrowserApp.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CBrowserApp.h
-    src/WallpaperEngine/WebBrowser/CEF/CSubprocessApp.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CSubprocessApp.h
-    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandlerFactory.h
-    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandler.cpp
-    src/WallpaperEngine/WebBrowser/CEF/CWPSchemeHandler.h
-    src/WallpaperEngine/WebBrowser/CWebBrowserContext.cpp
-    src/WallpaperEngine/WebBrowser/CWebBrowserContext.h
+    src/WallpaperEngine/WebBrowser/CEF/RenderHandler.cpp
+    src/WallpaperEngine/WebBrowser/CEF/RenderHandler.h
+    src/WallpaperEngine/WebBrowser/CEF/BrowserClient.cpp
+    src/WallpaperEngine/WebBrowser/CEF/BrowserClient.h
+    src/WallpaperEngine/WebBrowser/CEF/BrowserApp.cpp
+    src/WallpaperEngine/WebBrowser/CEF/BrowserApp.h
+    src/WallpaperEngine/WebBrowser/CEF/SubprocessApp.cpp
+    src/WallpaperEngine/WebBrowser/CEF/SubprocessApp.h
+    src/WallpaperEngine/WebBrowser/CEF/WPSchemeHandlerFactory.cpp
+    src/WallpaperEngine/WebBrowser/CEF/WPSchemeHandlerFactory.h
+    src/WallpaperEngine/WebBrowser/CEF/WPSchemeHandler.cpp
+    src/WallpaperEngine/WebBrowser/CEF/WPSchemeHandler.h
+    src/WallpaperEngine/WebBrowser/WebBrowserContext.cpp
+    src/WallpaperEngine/WebBrowser/WebBrowserContext.h
 
-    src/WallpaperEngine/Core/DynamicValues/CDynamicValue.cpp
-    src/WallpaperEngine/Core/DynamicValues/CDynamicValue.h
-
-    src/WallpaperEngine/Core/UserSettings/CUserSettingValue.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingValue.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingBoolean.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingVector3.h
-    src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.cpp
-    src/WallpaperEngine/Core/UserSettings/CUserSettingFloat.h
-
-    src/WallpaperEngine/Core/CProject.cpp
-    src/WallpaperEngine/Core/CProject.h
-    src/WallpaperEngine/Core/CWallpaper.cpp
-    src/WallpaperEngine/Core/CWallpaper.h
-    src/WallpaperEngine/Core/Wallpapers/CScene.cpp
-    src/WallpaperEngine/Core/Wallpapers/CScene.h
-    src/WallpaperEngine/Core/Wallpapers/CVideo.cpp
-    src/WallpaperEngine/Core/Wallpapers/CVideo.h
-    src/WallpaperEngine/Core/Wallpapers/CWeb.cpp
-    src/WallpaperEngine/Core/Wallpapers/CWeb.h
-    src/WallpaperEngine/Core/CObject.cpp
-    src/WallpaperEngine/Core/CObject.h
-
-    src/WallpaperEngine/Core/Projects/CProperty.h
-    src/WallpaperEngine/Core/Projects/CProperty.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyColor.h
-    src/WallpaperEngine/Core/Projects/CPropertyColor.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyBoolean.h
-    src/WallpaperEngine/Core/Projects/CPropertyBoolean.cpp
-    src/WallpaperEngine/Core/Projects/CPropertySlider.h
-    src/WallpaperEngine/Core/Projects/CPropertySlider.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyCombo.h
-    src/WallpaperEngine/Core/Projects/CPropertyCombo.cpp
-    src/WallpaperEngine/Core/Projects/CPropertyText.h
-    src/WallpaperEngine/Core/Projects/CPropertyText.cpp
-
-    src/WallpaperEngine/Core/Scenes/CCamera.cpp
-    src/WallpaperEngine/Core/Scenes/CCamera.h
-    src/WallpaperEngine/Core/Scenes/CProjection.cpp
-    src/WallpaperEngine/Core/Scenes/CProjection.h
-
-    src/WallpaperEngine/Core/Objects/CImage.cpp
-    src/WallpaperEngine/Core/Objects/CImage.h
-    src/WallpaperEngine/Core/Objects/CSound.cpp
-    src/WallpaperEngine/Core/Objects/CSound.h
-    src/WallpaperEngine/Core/Objects/CEffect.cpp
-    src/WallpaperEngine/Core/Objects/CEffect.h
-    src/WallpaperEngine/Core/Objects/CParticle.cpp
-    src/WallpaperEngine/Core/Objects/CParticle.h
-
-    src/WallpaperEngine/Core/Objects/Effects/CFBO.h
-    src/WallpaperEngine/Core/Objects/Effects/CFBO.cpp
-    src/WallpaperEngine/Core/Objects/Effects/CBind.h
-    src/WallpaperEngine/Core/Objects/Effects/CBind.cpp
-
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.cpp
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h
-    src/WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.cpp
-
-    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CControlPoint.h
-    src/WallpaperEngine/Core/Objects/Particles/CEmitter.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CEmitter.h
-    src/WallpaperEngine/Core/Objects/Particles/CInitializer.cpp
-    src/WallpaperEngine/Core/Objects/Particles/CInitializer.h
-
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CLifeTimeRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CSizeRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CRotationRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CVelocityRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CColorRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAlphaRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CAngularVelocityRandom.h
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.cpp
-    src/WallpaperEngine/Core/Objects/Particles/Initializers/CTurbulentVelocityRandom.h
-
-    src/WallpaperEngine/Core/Objects/Images/CMaterial.cpp
-    src/WallpaperEngine/Core/Objects/Images/CMaterial.h
-
-    src/WallpaperEngine/Core/Objects/Images/Materials/CPass.cpp
-    src/WallpaperEngine/Core/Objects/Images/Materials/CPass.h
+    src/WallpaperEngine/Data/Assets/Types.h
+    src/WallpaperEngine/Data/Assets/Texture.h
+    src/WallpaperEngine/Data/Assets/Package.h
+    src/WallpaperEngine/Data/Model/Types.h
+    src/WallpaperEngine/Data/Model/Project.h
+    src/WallpaperEngine/Data/Model/Wallpaper.h
+    src/WallpaperEngine/Data/Model/Object.h
+    src/WallpaperEngine/Data/Model/Material.h
+    src/WallpaperEngine/Data/Model/Effect.h
+    src/WallpaperEngine/Data/Model/Model.h
+    src/WallpaperEngine/Data/Model/UserSetting.h
+    src/WallpaperEngine/Data/Model/DynamicValue.h
+    src/WallpaperEngine/Data/Model/DynamicValue.cpp
+    src/WallpaperEngine/Data/Model/Property.h
+    src/WallpaperEngine/Data/Utils/TypeCaster.h
+    src/WallpaperEngine/Data/Utils/BinaryReader.cpp
+    src/WallpaperEngine/Data/Utils/BinaryReader.h
+    src/WallpaperEngine/Data/Utils/MemoryStream.h
+    src/WallpaperEngine/Data/Utils/SFINAE.h
+    src/WallpaperEngine/Data/Parsers/EffectParser.cpp
+    src/WallpaperEngine/Data/Parsers/EffectParser.h
+    src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
+    src/WallpaperEngine/Data/Parsers/ProjectParser.h
+    src/WallpaperEngine/Data/Parsers/WallpaperParser.cpp
+    src/WallpaperEngine/Data/Parsers/WallpaperParser.h
+    src/WallpaperEngine/Data/Parsers/UserSettingParser.cpp
+    src/WallpaperEngine/Data/Parsers/UserSettingParser.h
+    src/WallpaperEngine/Data/Parsers/ObjectParser.cpp
+    src/WallpaperEngine/Data/Parsers/ObjectParser.h
+    src/WallpaperEngine/Data/Parsers/MaterialParser.cpp
+    src/WallpaperEngine/Data/Parsers/MaterialParser.h
+    src/WallpaperEngine/Data/Parsers/ModelParser.cpp
+    src/WallpaperEngine/Data/Parsers/ModelParser.h
+    src/WallpaperEngine/Data/Parsers/ShaderConstantParser.cpp
+    src/WallpaperEngine/Data/Parsers/ShaderConstantParser.h
+    src/WallpaperEngine/Data/Parsers/PackageParser.cpp
+    src/WallpaperEngine/Data/Parsers/PackageParser.h
+    src/WallpaperEngine/Data/Parsers/PropertyParser.cpp
+    src/WallpaperEngine/Data/Parsers/PropertyParser.h
+    src/WallpaperEngine/Data/Parsers/TextureParser.cpp
+    src/WallpaperEngine/Data/Parsers/TextureParser.h
+    src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
+    src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
+    src/WallpaperEngine/Data/Builders/VectorBuilder.h
+    src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
+    src/WallpaperEngine/Data/Dumpers/StringPrinter.h
+    src/WallpaperEngine/Data/JSON.cpp
 
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}

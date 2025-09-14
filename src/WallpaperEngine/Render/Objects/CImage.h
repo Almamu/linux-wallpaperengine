@@ -1,21 +1,17 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Objects/CImage.h"
-
 #include "WallpaperEngine/Render/CObject.h"
-#include "WallpaperEngine/Render/Objects/CEffect.h"
-#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
-#include "WallpaperEngine/Render/Shaders/CShader.h"
+#include "WallpaperEngine/Render/Shaders/Shader.h"
 
-#include "WallpaperEngine/Assets/ITexture.h"
+#include "../TextureProvider.h"
 
 #include <glm/vec3.hpp>
 
 using namespace WallpaperEngine;
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render::Objects::Effects {
 class CMaterial;
@@ -25,16 +21,16 @@ class CPass;
 namespace WallpaperEngine::Render::Objects {
 class CEffect;
 
-class CImage final : public CObject {
+class CImage final : public CObject, public FBOProvider {
     friend CObject;
 
   public:
-    CImage (Wallpapers::CScene* scene, const Core::Objects::CImage* image);
+    CImage (Wallpapers::CScene& scene, const Image& image);
 
     void setup ();
     void render () override;
 
-    [[nodiscard]] const Core::Objects::CImage* getImage () const;
+    [[nodiscard]] const Image& getImage () const;
     [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
     [[nodiscard]] const Effects::CMaterial* getMaterial () const;
     [[nodiscard]] glm::vec2 getSize () const;
@@ -44,7 +40,7 @@ class CImage final : public CObject {
     [[nodiscard]] GLuint getPassSpacePosition () const;
     [[nodiscard]] GLuint getTexCoordCopy () const;
     [[nodiscard]] GLuint getTexCoordPass () const;
-    [[nodiscard]] std::shared_ptr<const ITexture> getTexture () const;
+    [[nodiscard]] std::shared_ptr<const TextureProvider> getTexture () const;
     [[nodiscard]] double getAnimationTime () const;
 
     /**
@@ -53,7 +49,7 @@ class CImage final : public CObject {
      * @param drawTo The framebuffer to use
      * @param asInput The last texture used as output (if needed)
      */
-    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const ITexture>* asInput);
+    void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const TextureProvider>* asInput);
 
   protected:
     void setupPasses ();
@@ -61,7 +57,7 @@ class CImage final : public CObject {
     void updateScreenSpacePosition ();
 
   private:
-    std::shared_ptr<const ITexture> m_texture = nullptr;
+    std::shared_ptr<const TextureProvider> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
@@ -83,17 +79,25 @@ class CImage final : public CObject {
     std::shared_ptr<const CFBO> m_currentMainFBO = nullptr;
     std::shared_ptr<const CFBO> m_currentSubFBO = nullptr;
 
-    const Core::Objects::CImage* m_image;
+    const Image& m_image;
 
     std::vector<CEffect*> m_effects = {};
     Effects::CMaterial* m_material = nullptr;
     Effects::CMaterial* m_colorBlendMaterial = nullptr;
     std::vector<Effects::CPass*> m_passes = {};
+    std::vector<MaterialPass> m_virtualPassess = {};
 
     glm::vec4 m_pos = {};
 
     double m_animationTime = 0.0;
 
     bool m_initialized = false;
+
+    struct {
+        struct {
+            MaterialUniquePtr material;
+            ImageEffectPassOverrideUniquePtr override;
+        } colorBlending;
+    } m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects

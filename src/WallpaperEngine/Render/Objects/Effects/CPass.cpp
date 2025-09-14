@@ -1,75 +1,76 @@
 #include "CPass.h"
-#include "WallpaperEngine/Render/CFBO.h"
 #include <sstream>
 #include <utility>
 
-#include "WallpaperEngine/Core/Projects/CProperty.h"
-#include "WallpaperEngine/Core/Projects/CPropertyColor.h"
-#include "WallpaperEngine/Core/Projects/CPropertyCombo.h"
-#include "WallpaperEngine/Core/Projects/CPropertySlider.h"
-#include "WallpaperEngine/Core/Projects/CPropertyBoolean.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
 
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableFloat.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableInteger.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector2.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector3.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariableVector4.h"
+#include "WallpaperEngine/Data/Model/Effect.h"
+#include "WallpaperEngine/Data/Model/Material.h"
 
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantFloat.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantInteger.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector2.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector3.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantVector4.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstantProperty.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/CFBO.h"
 
-using namespace WallpaperEngine::Core::Objects::Effects::Constants;
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableFloat.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableInteger.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector2.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector3.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariableVector4.h"
+
+#include "WallpaperEngine/Logging/Log.h"
+
+using namespace WallpaperEngine;
+using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Objects;
+
 using namespace WallpaperEngine::Render::Shaders::Variables;
-
 using namespace WallpaperEngine::Render::Objects::Effects;
 
 extern float g_Time;
 extern float g_Daytime;
 
-CPass::CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass) :
-    Helpers::CContextAware (material),
-    m_material (material),
+const TextureMap DEFAULT_BINDS = {};
+const ImageEffectPassOverride DEFAULT_OVERRIDE = {};
+
+CPass::CPass (
+    CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+    std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
+    std::optional<std::reference_wrapper<const TextureMap>> binds,
+    std::optional<std::reference_wrapper<std::string>> target
+) :
+    Helpers::ContextAware (image),
+    m_image (image),
+    m_fboProvider (std::move(fboProvider)),
     m_pass (pass),
-    m_blendingmode (pass->getBlendingMode ()) {
+    m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
+    m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE),
+    m_target (target),
+    m_blendingmode (pass.blending) {
     this->setupShaders ();
-    this->setupShaderVariables ();
 }
 
-std::shared_ptr<const ITexture> CPass::resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous) {
+std::shared_ptr<const TextureProvider> CPass::resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous) {
     if (expected == nullptr) {
-        const auto it = this->m_fbos.find (index);
-
-        if (it != this->m_fbos.end ())
+        if (const auto it = this->m_fbos.find (index); it != this->m_fbos.end ())
             expected = it->second;
     }
 
     // first check in the binds and replace it if necessary
-    const auto it = this->m_material->getMaterial ()->getTextureBinds ().find (index);
+    const auto it = this->m_binds.find (index);
 
-    if (it == this->m_material->getMaterial ()->getTextureBinds ().end ())
+    if (it == this->m_binds.end ())
         return expected;
 
     // a bind named "previous" is just another way of telling it to use whatever texture there was already
-    if (it->second->getName () == "previous")
+    if (it->second == "previous")
         return previous ?: expected;
 
     // the bind actually has a name, search the FBO in the effect and return it
-    return this->resolveFBO (it->second->getName ());
+    return this->resolveFBO (it->second);
 }
 
 std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
-    auto fbo = this->m_material->getEffect()->findFBO (name);
-
-    if (fbo == nullptr) {
-        fbo = this->m_material->getImage ()->getScene ()->findFBO (name);
-    }
+    auto fbo = this->m_fboProvider->find (name);
 
     if (fbo == nullptr) {
         sLog.exception ("Tried to resolve and FBO without any luck: ", name);
@@ -78,7 +79,7 @@ std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
     return fbo;
 }
 
-void CPass::setupRenderFramebuffer () {
+void CPass::setupRenderFramebuffer () const {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_drawTo->getFramebuffer ());
 
@@ -86,36 +87,54 @@ void CPass::setupRenderFramebuffer () {
     glViewport (0, 0, this->m_drawTo->getRealWidth (), this->m_drawTo->getRealHeight ());
 
     // set texture blending
-    if (this->getBlendingMode () == "translucent") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else if (this->getBlendingMode () == "additive") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
-    } else if (this->getBlendingMode () == "normal") {
-        glEnable (GL_BLEND);
-        glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
-    } else {
+    switch (this->getBlendingMode ()) {
+        case BlendingMode_Translucent:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            break;
+        case BlendingMode_Additive:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+            break;
+        case BlendingMode_Normal:
+            glEnable (GL_BLEND);
+            glBlendFuncSeparate (GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+            break;
+        default:
         glDisable (GL_BLEND);
+            break;
     }
 
-    // set depth testing
-    if (this->m_pass->getDepthTest () == "disabled") {
-        glDisable (GL_DEPTH_TEST);
-    } else {
-        glEnable (GL_DEPTH_TEST);
+    switch (this->m_pass.depthtest) {
+        case DepthtestMode_Enabled:
+            glEnable (GL_DEPTH_TEST);
+            break;
+        case DepthtestMode_Disabled:
+        default:
+            glDisable (GL_DEPTH_TEST);
+            break;
     }
 
-    if (this->m_pass->getCullingMode () == "nocull") {
-        glDisable (GL_CULL_FACE);
-    } else {
-        glEnable (GL_CULL_FACE);
+    switch (this->m_pass.cullmode) {
+        case CullingMode_Normal:
+            glEnable (GL_CULL_FACE);
+            break;
+
+        case CullingMode_Disable:
+        default:
+            glDisable (GL_CULL_FACE);
+            break;
     }
 
-    if (this->m_pass->getDepthWrite () == "disabled") {
-        glDepthMask (false);
-    } else {
-        glDepthMask (true);
+    switch (this->m_pass.depthwrite) {
+        case DepthwriteMode_Enabled:
+            glDepthMask (true);
+            break;
+
+        case DepthwriteMode_Disabled:
+        default:
+            glDepthMask (false);
+            break;
     }
 }
 
@@ -124,7 +143,7 @@ void CPass::setupRenderTexture () {
     glUseProgram (this->m_programID);
 
     // maybe we can do this when setting the texture?
-    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_input, 0, this->m_input);
+    auto texture = this->resolveTexture (this->m_input, 0, this->m_input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -133,7 +152,7 @@ void CPass::setupRenderTexture () {
     if (texture->isAnimated ()) {
         // calculate current texture and frame
         double currentRenderTime = fmod (static_cast<double> (this->getContext ().getDriver ().getRenderTime ()),
-                                         this->m_material->getImage ()->getAnimationTime ());
+                                         this->m_image.getAnimationTime ());
 
         for (const auto& frameCur : texture->getFrames ()) {
             currentRenderTime -= frameCur->frametime;
@@ -183,7 +202,7 @@ void CPass::setupRenderTexture () {
 
 void CPass::setupRenderReferenceUniforms () {
     // add reference uniforms
-    for (const auto& [name, value] : this->m_referenceUniforms) {
+    for (const auto& value : this->m_referenceUniforms | std::views::values) {
         switch (value->type) {
             case Double: glUniform1d (value->id, *static_cast<const double*> (*value->value)); break;
             case Float: glUniform1f (value->id, *static_cast<const float*> (*value->value)); break;
@@ -211,7 +230,7 @@ void CPass::setupRenderReferenceUniforms () {
 
 void CPass::setupRenderUniforms () {
     // add uniforms
-    for (const auto& [name, value] : this->m_uniforms) {
+    for (const auto& value : this->m_uniforms | std::views::values) {
         switch (value->type) {
             case Double: glUniform1dv (value->id, value->count, static_cast<const double*> (value->value)); break;
             case Float: glUniform1fv (value->id, value->count, static_cast<const float*> (value->value)); break;
@@ -238,7 +257,7 @@ void CPass::setupRenderUniforms () {
     }
 }
 
-void CPass::setupRenderAttributes () {
+void CPass::setupRenderAttributes () const {
     for (const auto& cur : this->m_attribs) {
         glEnableVertexAttribArray (cur->id);
         glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
@@ -246,8 +265,8 @@ void CPass::setupRenderAttributes () {
 
 #if !NDEBUG
         glObjectLabel (GL_BUFFER, *cur->value, -1,
-                       ("Image " + std::to_string (this->getMaterial ()->getImage ()->getId ()) + " Pass " +
-                        this->m_pass->getShader () + " " + cur->name)
+                       ("Image " + std::to_string (this->m_image.getId ()) + " Pass " +
+                        this->m_pass.shader + " " + cur->name)
                            .c_str ());
 #endif /* DEBUG */
     }
@@ -269,11 +288,9 @@ void CPass::cleanupRenderSetup () {
     glBindTexture (GL_TEXTURE_2D, 0);
 
     // continue on the map from the second texture
-    if (!this->m_textures.empty ()) {
-        for (const auto& [index, _] : this->m_textures) {
-            glActiveTexture (GL_TEXTURE0 + index);
-            glBindTexture (GL_TEXTURE_2D, 0);
-        }
+    for (const auto& index : this->m_textures | std::views::keys) {
+        glActiveTexture (GL_TEXTURE0 + index);
+        glBindTexture (GL_TEXTURE_2D, 0);
     }
 }
 
@@ -287,15 +304,19 @@ void CPass::render () {
     this->cleanupRenderSetup ();
 }
 
-const CMaterial* CPass::getMaterial () const {
-    return this->m_material;
+std::shared_ptr<const FBOProvider> CPass::getFBOProvider () const {
+    return this->m_fboProvider;
+}
+
+const CImage& CPass::getImage () const {
+    return this->m_image;
 }
 
 void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) {
     this->m_drawTo = std::move(drawTo);
 }
 
-void CPass::setInput (std::shared_ptr<const ITexture> input) {
+void CPass::setInput (std::shared_ptr<const TextureProvider> input) {
     this->m_input = std::move(input);
 }
 
@@ -315,11 +336,11 @@ void CPass::setViewProjectionMatrix (const glm::mat4* viewProjection) {
     this->m_viewProjectionMatrix = viewProjection;
 }
 
-void CPass::setBlendingMode (std::string blendingmode) {
-    this->m_blendingmode = std::move(blendingmode);
+void CPass::setBlendingMode (BlendingMode blendingmode) {
+    this->m_blendingmode = blendingmode;
 }
 
-const std::string& CPass::getBlendingMode () const {
+BlendingMode CPass::getBlendingMode () const {
     return this->m_blendingmode;
 }
 
@@ -331,11 +352,15 @@ void CPass::setPosition (GLuint position) {
     this->a_Position = position;
 }
 
-const Core::Objects::Images::Materials::CPass* CPass::getPass () const {
+const MaterialPass& CPass::getPass () const {
     return this->m_pass;
 }
 
-Render::Shaders::CShader* CPass::getShader () const {
+std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const {
+    return this->m_target;
+}
+
+Render::Shaders::Shader* CPass::getShader () const {
     return this->m_shader;
 }
 
@@ -354,7 +379,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
     glGetShaderiv (shaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -379,17 +404,17 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    std::shared_ptr<const ITexture> texture0 = this->m_material->getImage ()->getTexture ();
+    const auto texture0 = this->m_image.getTexture ();
 
     // copy the combos from the pass
-    this->m_combos.insert (this->m_pass->getCombos ().begin (), this->m_pass->getCombos ().end ());
+    this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
 
     // TODO: THE VALUES ARE THE SAME AS THE ENUMERATION, SO MAYBE IT HAS TO BE SPECIFIED FOR THE TEXTURE 0 OF ALL
     // ELEMENTS?
     if (texture0 != nullptr) {
-        if (texture0->getFormat () == ITexture::TextureFormat::RG88) {
+        if (texture0->getFormat () == TextureFormat_RG88) {
             this->m_combos.insert_or_assign ("TEX0FORMAT", 8);
-        } else if (texture0->getFormat () == ITexture::TextureFormat::R8) {
+        } else if (texture0->getFormat () == TextureFormat_R8) {
             this->m_combos.insert_or_assign ("TEX0FORMAT", 9);
         }
     }
@@ -397,17 +422,17 @@ void CPass::setupShaders () {
     // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
-    this->m_shader = new Render::Shaders::CShader (
-        this->getMaterial ()->getImage ()->getContainer (), this->m_pass->getShader (), this->m_combos,
-        this->m_pass->getTextures (), this->m_pass->getConstants ()
+    this->m_shader = new Render::Shaders::Shader (
+        this->m_image.getAssetLocator (), this->m_pass.shader, this->m_combos, this->m_override.combos,
+        this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
-    const auto shaders = Shaders::CGLSLContext::get ().toGlsl (
+    const auto [vertex, fragment] = Shaders::GLSLContext::get ().toGlsl (
         this->m_shader->vertex (), this->m_shader->fragment ());
 
     // compile the shaders
-    const GLuint vertexShaderID = compileShader (shaders.first.c_str (), GL_VERTEX_SHADER);
-    const GLuint fragmentShaderID = compileShader (shaders.second.c_str (), GL_FRAGMENT_SHADER);
+    const GLuint vertexShaderID = compileShader (vertex.c_str (), GL_VERTEX_SHADER);
+    const GLuint fragmentShaderID = compileShader (fragment.c_str (), GL_FRAGMENT_SHADER);
     // create the final program
     this->m_programID = glCreateProgram ();
     // link the shaders together
@@ -422,7 +447,7 @@ void CPass::setupShaders () {
     glGetProgramiv (this->m_programID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -441,9 +466,9 @@ void CPass::setupShaders () {
     }
 
 #if !NDEBUG
-    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass->getShader ().c_str ());
-    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass->getShader () + ".vert").c_str ());
-    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass->getShader () + ".frag").c_str ());
+    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass.shader.c_str ());
+    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass.shader + ".vert").c_str ());
+    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass.shader + ".frag").c_str ());
 #endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted
@@ -453,6 +478,8 @@ void CPass::setupShaders () {
     glDeleteShader (vertexShaderID);
     glDeleteShader (fragmentShaderID);
 
+    // first setup the default values, these will be overwritten by future values
+    this->setupShaderVariables ();
     // setup uniforms
     this->setupUniforms ();
     // setup attributes too
@@ -475,16 +502,11 @@ void CPass::setupTextureUniforms () {
     // and then try with fragment's and override any existing
     for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
         try {
-            // resolve the texture first
-            std::shared_ptr<const ITexture> textureRef;
-
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->resolveFBO (textureName);
-            } else {
-                textureRef = this->getContext ().resolveTexture (textureName);
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if(!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
             }
-
-            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
@@ -492,47 +514,63 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
         try {
-            // resolve the texture first
-            std::shared_ptr<const ITexture> textureRef;
-
             if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-                textureRef = this->resolveFBO (textureName);
-            } else {
-                textureRef = this->getContext ().resolveTexture (textureName);
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if(!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
             }
-
-            this->m_textures [index] = textureRef;
         } catch (std::runtime_error& ex) {
             sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
         }
     }
 
-    for (const auto& [index, textureName] : this->m_pass->getTextures ()) {
+    for (const auto& [index, textureName] : this->m_pass.textures) {
         // ignore first texture as that'll be the input of the previous pass (or the image if it's the first pass)
         if (index == 0) {
             continue;
         }
 
-        if (textureName.find ("_rt_") == 0) {
-            this->m_textures[index] = this->resolveFBO (textureName);
-        } else if (!textureName.empty ()) {
-            this->m_textures[index] = this->m_material->getImage ()->getContext ().resolveTexture (textureName);
+        try {
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if (!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
+            }
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for pass ", ex.what ());
+        }
+    }
+
+    // override any texture
+    for (const auto& [index, textureName] : this->m_override.textures) {
+        if (index == 0) {
+            continue;
+        }
+
+        try {
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                this->m_textures [index] = this->resolveFBO (textureName);
+            } else if (!textureName.empty ()) {
+                this->m_textures [index] = this->getContext ().resolveTexture (textureName);
+            }
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve texture ", textureName, " for override ", ex.what ());
         }
     }
 
     // binds are set last as they're the most important to be set
-    for (const auto& [index, bind] : this->m_material->getMaterial ()->getTextureBinds ()) {
-        if (bind->getName () == "previous") {
+    for (const auto& [index, bind] : this->m_binds) {
+        if (bind == "previous") {
             // use nullptr as indication for "previous" texture
             this->m_textures [index] = nullptr;
-        } else {
+        } else if(!bind.empty ()) {
             // a normal bind, search for the corresponding FBO and set it
-            this->m_textures [index] = this->resolveFBO (bind->getName ());
+            this->m_textures [index] = this->resolveFBO (bind);
         }
     }
 
     // resolve the main texture
-    std::shared_ptr<const ITexture> texture = this->resolveTexture (this->m_material->getImage ()->getTexture (), 0);
+    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_image.getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -557,21 +595,22 @@ void CPass::setupTextureUniforms () {
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
 
-    const auto projection = this->getMaterial ()->getImage ()->getScene ()->getScene ()->getOrthogonalProjection ();
+    const auto& image = this->m_image.getImage ();
+    const auto& scene = this->m_image.getScene ();
+    const auto& sceneData = this->m_image.getScene ().getScene ();
+    const auto& recorder = this->m_image.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
-    this->addUniform ("g_LightAmbientColor",
-                      this->m_material->getImage ()->getScene ()->getScene ()->getAmbientColor ());
-    this->addUniform ("g_LightSkylightColor",
-                      this->m_material->getImage ()->getScene ()->getScene ()->getSkylightColor ());
+    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
+    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
     // register variables like brightness and alpha with some default value
-    this->addUniform ("g_Brightness", this->m_material->getImage ()->getImage ()->getBrightness ());
-    this->addUniform ("g_UserAlpha", this->m_material->getImage ()->getImage ()->getAlpha ());
-    this->addUniform ("g_Alpha", this->m_material->getImage ()->getImage ()->getAlpha ());
-    this->addUniform ("g_Color", this->m_material->getImage ()->getImage ()->getColor ());
-    this->addUniform ("g_Color4", glm::vec4 (this->m_material->getImage ()->getImage ()->getColor (), 1));
+    this->addUniform ("g_Brightness", image.brightness);
+    this->addUniform ("g_UserAlpha", image.alpha->value->getFloat ());
+    this->addUniform ("g_Alpha", image.alpha->value->getFloat ());
+    this->addUniform ("g_Color", image.color->value->getVec3 ());
+    this->addUniform ("g_Color4", image.color->value->getVec4 ());
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
-    this->addUniform ("g_CompositeColor", this->m_material->getImage ()->getImage ()->getColor ());
+    this->addUniform ("g_CompositeColor", image.color->value->getVec3 ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     this->addUniform ("g_Daytime", &g_Daytime);
@@ -581,24 +620,18 @@ void CPass::setupUniforms () {
     this->addUniform ("g_ModelMatrix", &this->m_modelMatrix);
     this->addUniform ("g_NormalModelMatrix", glm::identity<glm::mat3> ());
     this->addUniform ("g_ViewProjectionMatrix", &this->m_viewProjectionMatrix);
-    this->addUniform ("g_PointerPosition", this->m_material->getImage ()->getScene ()->getMousePosition ());
-    this->addUniform ("g_PointerPositionLast", this->m_material->getImage ()->getScene ()->getMousePositionLast ());
+    this->addUniform ("g_PointerPosition", scene.getMousePosition ());
+    this->addUniform ("g_PointerPositionLast", scene.getMousePositionLast ());
     this->addUniform ("g_EffectTextureProjectionMatrix", glm::mat4 (1.0));
     this->addUniform ("g_EffectTextureProjectionMatrixInverse", glm::mat4 (1.0));
-    this->addUniform ("g_TexelSize", glm::vec2 (1.0 / projection->getWidth (), 1.0 / projection->getHeight ()));
-    this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / projection->getWidth (), 0.5 / projection->getHeight ()));
-    this->addUniform ("g_AudioSpectrum16Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
-    this->addUniform ("g_AudioSpectrum16Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio16, 16);
-    this->addUniform ("g_AudioSpectrum32Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
-    this->addUniform ("g_AudioSpectrum32Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio32, 32);
-    this->addUniform ("g_AudioSpectrum64Left",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
-    this->addUniform ("g_AudioSpectrum64Right",
-                      this->getMaterial ()->getImage ()->getScene ()->getAudioContext ().getRecorder ().audio64, 64);
+    this->addUniform ("g_TexelSize", glm::vec2 (1.0 / scene.getWidth (), 1.0 / scene.getHeight ()));
+    this->addUniform ("g_TexelSizeHalf", glm::vec2 (0.5 / scene.getWidth (), 0.5 / scene.getHeight ()));
+    this->addUniform ("g_AudioSpectrum16Left", recorder.audio16, 16);
+    this->addUniform ("g_AudioSpectrum16Right", recorder.audio16, 16);
+    this->addUniform ("g_AudioSpectrum32Left", recorder.audio32, 32);
+    this->addUniform ("g_AudioSpectrum32Right", recorder.audio32, 32);
+    this->addUniform ("g_AudioSpectrum64Left", recorder.audio64, 64);
+    this->addUniform ("g_AudioSpectrum64Right", recorder.audio64, 64);
 }
 
 void CPass::addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value) {
@@ -640,9 +673,8 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // free the uniform that's already registered if it's there already
-    const auto it = this->m_uniforms.find (name);
 
-    if (it != this->m_uniforms.end ()) {
+    if (const auto it = this->m_uniforms.find (name); it != this->m_uniforms.end ()) {
         delete it->second;
     }
 
@@ -659,9 +691,8 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // free the uniform that's already registered if it's there already
-    const auto it = this->m_uniforms.find (name);
 
-    if (it != this->m_uniforms.end ()) {
+    if (const auto it = this->m_uniforms.find (name); it != this->m_uniforms.end ()) {
         delete it->second;
     }
 
@@ -672,47 +703,47 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
 
 void CPass::setupShaderVariables () {
     for (const auto& cur : this->m_shader->getVertex ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+        if (!this->m_uniforms.contains (cur->getName ()))
             this->addUniform (cur);
 
     for (const auto& cur : this->m_shader->getFragment ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+        if (!this->m_uniforms.contains (cur->getName ()))
             this->addUniform (cur);
 
     // find variables in the shaders and set the value with the constants if possible
-    for (const auto& [name, value] : this->m_pass->getConstants ()) {
-        const auto parameters = this->m_shader->findParameter (name);
+    for (const auto& [name, value] : this->m_override.constants) {
+        const auto [vertex, fragment] = this->m_shader->findParameter (name);
 
         // variable not found, can be ignored
-        if (parameters.vertex == nullptr && parameters.fragment == nullptr)
+        if (vertex == nullptr && fragment == nullptr)
             continue;
 
         // get one instance of it
-        CShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
+        ShaderVariable* var = vertex == nullptr ? fragment : vertex;
 
         // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
         // of the underlying CDynamicValue used for the value
-        this->addUniform (var, value);
+        this->addUniform (var, value->value.get ());
     }
 }
 
 // define some basic methods for the template
-void CPass::addUniform (CShaderVariable* value) {
+void CPass::addUniform (ShaderVariable* value) {
     // no need to re-implement this, call the version that takes a CDynamicValue as second parameter
     // and that handles casting and everything
     this->addUniform (value, value);
 }
 
-void CPass::addUniform (CShaderVariable* value, const CDynamicValue* setting) {
-    if (value->is<CShaderVariableFloat> ()) {
+void CPass::addUniform (const ShaderVariable* value, const DynamicValue* setting) {
+    if (value->is<ShaderVariableFloat> ()) {
         this->addUniform (value->getName (), setting->getFloat ());
-    } else if (value->is<CShaderVariableInteger> ()) {
+    } else if (value->is<ShaderVariableInteger> ()) {
         this->addUniform (value->getName (), setting->getInt ());
-    } else if (value->is<CShaderVariableVector2> ()) {
+    } else if (value->is<ShaderVariableVector2> ()) {
         this->addUniform (value->getName (), setting->getVec2 ());
-    } else if (value->is<CShaderVariableVector3> ()) {
+    } else if (value->is<ShaderVariableVector3> ()) {
         this->addUniform (value->getName (), setting->getVec3 ());
-    } else if (value->is<CShaderVariableVector4> ()) {
+    } else if (value->is<ShaderVariableVector4> ()) {
         this->addUniform (value->getName (), setting->getVec4 ());
     } else {
         sLog.error ("Cannot convert setting dynamic value  to ", value->getName (), ". Using default value");

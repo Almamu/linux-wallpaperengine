@@ -1,7 +1,10 @@
 #include "CVideo.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <GL/glew.h>
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Model/Project.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -12,9 +15,9 @@ void* get_proc_address (void* ctx, const char* name) {
 }
 
 CVideo::CVideo (
-    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
+    const uint32_t& clampMode
 ) :
     CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
@@ -54,7 +57,7 @@ CVideo::CVideo (
         sLog.exception ("Failed to initialize MPV's GL context");
 
     const std::filesystem::path videopath =
-        this->getVideo ()->getProject ()->getContainer ()->resolveRealFile (this->getVideo ()->getFilename ());
+        this->getVideo ().project.assetLocator->physicalPath (this->getVideo ().filename);
 
     // build the path to the video file
     const char* command [] = {"loadfile", videopath.c_str (), nullptr};
@@ -72,7 +75,7 @@ CVideo::CVideo (
     this->setupFramebuffers ();
 }
 
-void CVideo::setSize (int width, int height) {
+void CVideo::setSize (const int width, const int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;
 
@@ -85,7 +88,7 @@ void CVideo::setSize (int width, int height) {
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 }
 
-void CVideo::renderFrame (glm::ivec4 viewport) {
+void CVideo::renderFrame (const glm::ivec4& viewport) {
     // read any and all the events available
     while (this->m_mpv) {
         const mpv_event* event = mpv_wait_event (this->m_mpv, 0);
@@ -118,8 +121,8 @@ void CVideo::renderFrame (glm::ivec4 viewport) {
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-const Core::Wallpapers::CVideo* CVideo::getVideo () const {
-    return this->getWallpaperData ()->as<Core::Wallpapers::CVideo> ();
+const Video& CVideo::getVideo () const {
+    return *this->getWallpaperData ().as<Video>();
 }
 
 void CVideo::setPause (bool newState) {

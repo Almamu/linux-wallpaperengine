@@ -1,8 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
-
-#include "WallpaperEngine/Audio/CAudioStream.h"
+#include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
@@ -11,11 +9,11 @@ namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
   public:
     CVideo (
-        std::shared_ptr<const Core::CWallpaper> video, CRenderContext& context, CAudioContext& audioContext,
-        const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+        const WallpaperState::TextureUVsScaling& scalingMode,
+        const uint32_t& clampMode);
 
-    const Core::Wallpapers::CVideo* getVideo () const;
+    const Video& getVideo () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
@@ -24,7 +22,7 @@ class CVideo final : public CWallpaper {
     void setSize (int width, int height);
 
   protected:
-    void renderFrame (glm::ivec4 viewport) override;
+    void renderFrame (const glm::ivec4& viewport) override;
 
     friend class CWallpaper;
 

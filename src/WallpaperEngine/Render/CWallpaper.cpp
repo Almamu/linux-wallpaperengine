@@ -1,8 +1,11 @@
 #include "CWallpaper.h"
-#include "WallpaperEngine/Logging/CLog.h"
+#include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
 #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Data/Model/Project.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -10,11 +13,12 @@
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
-    std::shared_ptr <const Core::CWallpaper> wallpaperData, CRenderContext& context,CAudioContext& audioContext,
-    const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+    const Wallpaper& wallpaperData, RenderContext& context,AudioContext& audioContext,
+    const WallpaperState::TextureUVsScaling& scalingMode,
+    const uint32_t& clampMode
 ) :
-    CContextAware (context),
+    ContextAware (context),
+    FBOProvider (nullptr),
     m_wallpaperData (wallpaperData),
     m_audioContext (audioContext),
     m_state (scalingMode, clampMode) {
@@ -24,11 +28,11 @@ CWallpaper::CWallpaper (
 
     this->setupShaders ();
 
-    const GLfloat texCoords [] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
+    constexpr GLfloat texCoords [] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
     // inverted positions so the final texture is rendered properly
-    const GLfloat position [] = {-1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
-                                 -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f};
+    constexpr GLfloat position [] = {-1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
+                                     -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f};
 
     glGenBuffers (1, &this->m_texCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
@@ -41,11 +45,11 @@ CWallpaper::CWallpaper (
 
 CWallpaper::~CWallpaper () = default;
 
-std::shared_ptr<const CContainer> CWallpaper::getContainer () const {
-    return this->m_wallpaperData->getProject ()->getContainer ();
+const AssetLocator& CWallpaper::getAssetLocator () const {
+    return *this->m_wallpaperData.project.assetLocator;
 }
 
-std::shared_ptr <const WallpaperEngine::Core::CWallpaper> CWallpaper::getWallpaperData () const {
+const Wallpaper& CWallpaper::getWallpaperData () const {
     return this->m_wallpaperData;
 }
 
@@ -83,7 +87,7 @@ void CWallpaper::setupShaders () {
     glGetShaderiv (vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -120,7 +124,7 @@ void CWallpaper::setupShaders () {
     glGetShaderiv (fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -147,7 +151,7 @@ void CWallpaper::setupShaders () {
     glGetProgramiv (this->m_shader, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -185,8 +189,15 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     }
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
+void CWallpaper::render (const glm::ivec4& viewport, const bool vflip) {
+#if !NDEBUG
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
+#endif /* !NDEBUG */
     this->renderFrame (viewport);
+#if !NDEBUG
+    glPopDebugGroup ();
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene to output");
+#endif /* !NDEBUG */
     // Update UVs coordinates according to scaling mode of this wallpaper
     updateUVs (viewport, vflip);
     auto [ustart, uend, vstart, vend] = this->m_state.getTextureUVs ();
@@ -203,6 +214,7 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
 
     glDisable (GL_BLEND);
     glDisable (GL_DEPTH_TEST);
+    glDisable (GL_CULL_FACE);
     // do not use any shader
     glUseProgram (this->m_shader);
     // activate scene texture
@@ -222,6 +234,10 @@ void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
     // write the framebuffer as is to the screen
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glDrawArrays (GL_TRIANGLES, 0, 6);
+
+#if !NDEBUG
+    glPopDebugGroup ();
+#endif /* !NDEBUG */
 }
 
 void CWallpaper::setPause (bool newState) {}
@@ -229,66 +245,52 @@ void CWallpaper::setPause (bool newState) {}
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();
-    const ITexture::TextureFlags clamp = this->m_state.getClampingMode ();
+    const uint32_t clamp = this->m_state.getClampingMode ();
 
     // create framebuffer for the scene
-    this->m_sceneFBO = this->createFBO (
-        "_rt_FullFrameBuffer", ITexture::TextureFormat::ARGB8888, clamp, 1.0, width,
-        height, width, height);
+    this->m_sceneFBO = this->create (
+        "_rt_FullFrameBuffer", TextureFormat_ARGB8888, clamp, 1.0, {width,
+        height}, {width, height});
 
-    this->aliasFBO ("_rt_MipMappedFrameBuffer", this->m_sceneFBO);
+    this->alias ("_rt_MipMappedFrameBuffer", "_rt_FullFrameBuffer");
 }
 
-CAudioContext& CWallpaper::getAudioContext () {
+AudioContext& CWallpaper::getAudioContext () const {
     return this->m_audioContext;
 }
 
-std::shared_ptr<const CFBO> CWallpaper::createFBO (
-    const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
-    uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight
-) {
-    std::shared_ptr<const CFBO> fbo = std::make_shared <CFBO> (name, format, flags, scale, realWidth, realHeight, textureWidth, textureHeight);
-
-    this->m_fbos.emplace (name, fbo);
-
-    return fbo;
-}
-
-void CWallpaper::aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original) {
-    this->m_fbos.emplace (alias, original);
-}
-
-const std::map<std::string, std::shared_ptr<const CFBO>>& CWallpaper::getFBOs () const {
-    return this->m_fbos;
-}
-
 std::shared_ptr<const CFBO> CWallpaper::findFBO (const std::string& name) const {
-    const auto it = this->m_fbos.find (name);
+    const auto fbo = this->find (name);
 
-    if (it == this->m_fbos.end ())
+    if (fbo == nullptr)
         sLog.exception ("Cannot find FBO ", name);
 
-    return it->second;
+    return fbo;
 }
 
 std::shared_ptr<const CFBO> CWallpaper::getFBO () const {
     return this->m_sceneFBO;
 }
 
-std::shared_ptr<CWallpaper> CWallpaper::fromWallpaper (
-    std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-    WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-    const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode
+std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+    WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
+    const uint32_t& clampMode
 ) {
-    if (wallpaper->is<Core::Wallpapers::CScene> ()) {
-        return std::make_shared <WallpaperEngine::Render::Wallpapers::CScene> (
+    if (wallpaper.is<Scene> ()) {
+        return std::make_unique <WallpaperEngine::Render::Wallpapers::CScene> (
             wallpaper, context, audioContext, scalingMode, clampMode);
-    } else if (wallpaper->is<Core::Wallpapers::CVideo> ()) {
-        return std::make_shared<WallpaperEngine::Render::Wallpapers::CVideo> (
+    }
+
+    if (wallpaper.is<Video> ()) {
+        return std::make_unique<WallpaperEngine::Render::Wallpapers::CVideo> (
             wallpaper, context, audioContext, scalingMode, clampMode);
-    } else if (wallpaper->is<Core::Wallpapers::CWeb> ()) {
-        return std::make_shared<WallpaperEngine::Render::Wallpapers::CWeb> (
+    }
+
+    if (wallpaper.is<Web> ()) {
+        return std::make_unique<WallpaperEngine::Render::Wallpapers::CWeb> (
             wallpaper, context, audioContext, *browserContext, scalingMode, clampMode);
-    } else
-        sLog.exception ("Unsupported wallpaper type");
+    }
+
+    sLog.exception ("Unsupported wallpaper type");
 }

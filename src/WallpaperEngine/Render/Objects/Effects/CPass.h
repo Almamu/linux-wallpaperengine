@@ -3,45 +3,50 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
-#include "WallpaperEngine/Assets/ITexture.h"
-#include "WallpaperEngine/Core/Objects/Effects/Constants/CShaderConstant.h"
-#include "WallpaperEngine/Core/Objects/Images/Materials/CPass.h"
+#include "../../TextureProvider.h"
+#include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Render/CFBO.h"
-#include "WallpaperEngine/Render/Objects/Effects/CMaterial.h"
-#include "WallpaperEngine/Render/Shaders/CShader.h"
-#include "WallpaperEngine/Render/Shaders/Variables/CShaderVariable.h"
-#include "WallpaperEngine/Core/UserSettings/CUserSettingValue.h"
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+#include "WallpaperEngine/Render/FBOProvider.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
+#include "WallpaperEngine/Render/Shaders/Shader.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
+
+namespace WallpaperEngine::Render::Objects {
+class CImage;
+}
 
 namespace WallpaperEngine::Render::Objects::Effects {
-using namespace WallpaperEngine::Assets;
+using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Render::Shaders::Variables;
-using namespace WallpaperEngine::Core::Projects;
-using namespace WallpaperEngine::Core::Objects::Effects::Constants;
+using namespace WallpaperEngine::Data::Model;
 
-class CMaterial;
-
-class CPass final : public Helpers::CContextAware {
+class CPass final : public Helpers::ContextAware {
   public:
-    CPass (CMaterial* material, const Core::Objects::Images::Materials::CPass* pass);
+    CPass (
+        CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+        std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
+        std::optional<std::reference_wrapper<const TextureMap>> binds,
+        std::optional<std::reference_wrapper<std::string>> target);
 
     void render ();
 
     void setDestination (std::shared_ptr<const CFBO> drawTo);
-    void setInput (std::shared_ptr<const ITexture> input);
+    void setInput (std::shared_ptr<const TextureProvider> input);
     void setTexCoord (GLuint texcoord);
     void setPosition (GLuint position);
     void setModelViewProjectionMatrix (const glm::mat4* projection);
     void setModelViewProjectionMatrixInverse (const glm::mat4* projection);
     void setModelMatrix (const glm::mat4* model);
     void setViewProjectionMatrix (const glm::mat4* viewProjection);
-    void setBlendingMode (std::string blendingmode);
-    [[nodiscard]] const std::string& getBlendingMode () const;
+    void setBlendingMode (BlendingMode blendingmode);
+    [[nodiscard]] BlendingMode getBlendingMode () const;
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
-    [[nodiscard]] const CMaterial* getMaterial () const;
-    [[nodiscard]] const Core::Objects::Images::Materials::CPass* getPass () const;
-    [[nodiscard]] Render::Shaders::CShader* getShader () const;
+    [[nodiscard]] std::shared_ptr<const FBOProvider> getFBOProvider () const;
+    [[nodiscard]] const CImage& getImage () const;
+    [[nodiscard]] const MaterialPass& getPass () const;
+    [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
+    [[nodiscard]] Render::Shaders::Shader* getShader () const;
 
   private:
     enum UniformType {
@@ -108,8 +113,8 @@ class CPass final : public Helpers::CContextAware {
     void setupTextureUniforms ();
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
-    void addUniform (CShaderVariable* value);
-    void addUniform (CShaderVariable* value, const CDynamicValue* setting);
+    void addUniform (ShaderVariable* value);
+    void addUniform (const ShaderVariable* value, const DynamicValue* setting);
     void addUniform (const std::string& name, int value);
     void addUniform (const std::string& name, double value);
     void addUniform (const std::string& name, float value);
@@ -138,24 +143,28 @@ class CPass final : public Helpers::CContextAware {
     template <typename T> void addUniform (const std::string& name, UniformType type, T* value, int count = 1);
     template <typename T> void addUniform (const std::string& name, UniformType type, T** value);
 
-    void setupRenderFramebuffer ();
+    void setupRenderFramebuffer () const;
     void setupRenderTexture ();
     void setupRenderUniforms ();
     void setupRenderReferenceUniforms ();
-    void setupRenderAttributes ();
+    void setupRenderAttributes () const;
     void renderGeometry () const;
     void cleanupRenderSetup ();
 
-    std::shared_ptr<const ITexture> resolveTexture (std::shared_ptr<const ITexture> expected, int index, std::shared_ptr<const ITexture> previous = nullptr);
+    std::shared_ptr<const TextureProvider> resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous = nullptr);
 
-    CMaterial* m_material = nullptr;
-    const Core::Objects::Images::Materials::CPass* m_pass;
+    CImage& m_image;
+    std::shared_ptr<const FBOProvider> m_fboProvider;
+    const MaterialPass& m_pass;
+    const TextureMap& m_binds;
+    const ImageEffectPassOverride& m_override;
+    std::optional<std::reference_wrapper<std::string>> m_target;
     std::map<int, std::shared_ptr<const CFBO>> m_fbos = {};
     std::map<std::string, int> m_combos = {};
     std::vector<AttribEntry*> m_attribs = {};
     std::map<std::string, UniformEntry*> m_uniforms = {};
     std::map<std::string, ReferenceUniformEntry*> m_referenceUniforms = {};
-    std::string m_blendingmode = "";
+    BlendingMode m_blendingmode = BlendingMode_Normal;
     const glm::mat4* m_modelViewProjectionMatrix;
     const glm::mat4* m_modelViewProjectionMatrixInverse;
     const glm::mat4* m_modelMatrix;
@@ -164,12 +173,12 @@ class CPass final : public Helpers::CContextAware {
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, std::shared_ptr<const ITexture>> m_textures = {};
+    std::map<int, std::shared_ptr<const TextureProvider>> m_textures = {};
 
-    Render::Shaders::CShader* m_shader = nullptr;
+    Render::Shaders::Shader* m_shader = nullptr;
 
     std::shared_ptr<const CFBO> m_drawTo = nullptr;
-    std::shared_ptr<const ITexture> m_input = nullptr;
+    std::shared_ptr<const TextureProvider> m_input = nullptr;
 
     GLuint m_programID;
 

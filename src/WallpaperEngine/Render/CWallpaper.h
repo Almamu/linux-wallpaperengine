@@ -3,32 +3,37 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "WallpaperEngine/Assets/CContainer.h"
-#include "WallpaperEngine/Audio/CAudioContext.h"
-
-#include "WallpaperEngine/Core/CWallpaper.h"
-#include "WallpaperEngine/Core/Wallpapers/CScene.h"
-#include "WallpaperEngine/Core/Wallpapers/CVideo.h"
+#include "WallpaperEngine/Audio/AudioContext.h"
 
 #include "WallpaperEngine/Render/CFBO.h"
-#include "WallpaperEngine/Render/CRenderContext.h"
-#include "WallpaperEngine/Render/Helpers/CContextAware.h"
+#include "WallpaperEngine/Render/Helpers/ContextAware.h"
+#include "WallpaperEngine/Render/RenderContext.h"
 
-#include "CWallpaperState.h"
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
-using namespace WallpaperEngine::Assets;
-using namespace WallpaperEngine::Audio;
+#include "FBOProvider.h"
+#include "WallpaperState.h"
+
+namespace WallpaperEngine::Application {
+class WallpaperApplication;
+}
 
 namespace WallpaperEngine::WebBrowser {
-class CWebBrowserContext;
+class WebBrowserContext;
 }
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
-class CContextAware;
+class ContextAware;
 }
 
-class CWallpaper : public Helpers::CContextAware {
+using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Audio;
+using namespace WallpaperEngine::Data::Model;
+using namespace WallpaperEngine::FileSystem;
+
+class CWallpaper : public Helpers::ContextAware, public FBOProvider {
+    friend class WallpaperEngine::Application::WallpaperApplication;
   public:
     template <class T> [[nodiscard]] const T* as () const {
         if (is <T> ()) {
@@ -55,7 +60,7 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * Performs a render pass of the wallpaper
      */
-    void render (glm::ivec4 viewport, bool vflip);
+    void render (const glm::ivec4& viewport, const bool vflip);
 
     /**
      * Pause the renderer
@@ -65,12 +70,12 @@ class CWallpaper : public Helpers::CContextAware {
     /**
      * @return The container to resolve files for this wallpaper
      */
-    [[nodiscard]] std::shared_ptr<const CContainer> getContainer () const;
+    [[nodiscard]] const AssetLocator& getAssetLocator () const;
 
     /**
      * @return The current audio context for this wallpaper
      */
-    CAudioContext& getAudioContext ();
+    AudioContext& getAudioContext () const;
 
     /**
      * @return The scene's framebuffer
@@ -80,34 +85,6 @@ class CWallpaper : public Helpers::CContextAware {
      * @return The scene's texture
      */
     [[nodiscard]] virtual GLuint getWallpaperTexture () const;
-    /**
-     * Creates a new FBO for this wallpaper
-     *
-     * @param name The name of the FBO
-     * @param format
-     * @param flags
-     * @param scale
-     * @param realWidth
-     * @param realHeight
-     * @param textureWidth
-     * @param textureHeight
-     * @return
-     */
-    std::shared_ptr<const CFBO> createFBO (
-        const std::string& name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
-        uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
-
-    /**
-     * Creates an alias of an existing fbo
-     * @param alias
-     * @param original
-     */
-    void aliasFBO (const std::string& alias, const std::shared_ptr<const CFBO>& original);
-
-    /**
-     * @return The full FBO list to work with
-     */
-    [[nodiscard]] const std::map<std::string, std::shared_ptr<const CFBO>>& getFBOs () const;
     /**
      * Searches the FBO list for the given FBO
      *
@@ -153,30 +130,30 @@ class CWallpaper : public Helpers::CContextAware {
      *
      * @return
      */
-    static std::shared_ptr<CWallpaper> fromWallpaper (
-        std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-        WebBrowser::CWebBrowserContext* browserContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+    static std::unique_ptr<CWallpaper> fromWallpaper (
+        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+        WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
+        const uint32_t& clampMode);
 
   protected:
     CWallpaper (
-        std::shared_ptr <const WallpaperEngine::Core::CWallpaper> wallpaperData, CRenderContext& context,
-        CAudioContext& audioContext, const CWallpaperState::TextureUVsScaling& scalingMode,
-        const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+        const Wallpaper& wallpaperData, RenderContext& context,
+        AudioContext& audioContext, const WallpaperState::TextureUVsScaling& scalingMode,
+        const uint32_t& clampMode);
 
     /**
      * Renders a frame of the wallpaper
      */
-    virtual void renderFrame (glm::ivec4 viewport) = 0;
+    virtual void renderFrame (const glm::ivec4& viewport) = 0;
 
     /**
      * Setups OpenGL's framebuffers for ping-pong and scene rendering
      */
     void setupFramebuffers ();
 
-    std::shared_ptr <const WallpaperEngine::Core::CWallpaper> m_wallpaperData;
+    const Wallpaper& m_wallpaperData;
 
-    [[nodiscard]] std::shared_ptr <const WallpaperEngine::Core::CWallpaper> getWallpaperData () const;
+    [[nodiscard]] const Wallpaper& getWallpaperData () const;
 
     /** The FBO used for scene output */
     std::shared_ptr<const CFBO> m_sceneFBO = nullptr;
@@ -198,8 +175,8 @@ class CWallpaper : public Helpers::CContextAware {
     /** List of FBOs registered for this wallpaper */
     std::map<std::string, std::shared_ptr<const CFBO>> m_fbos = {};
     /** Audio context that is using this wallpaper */
-    CAudioContext& m_audioContext;
+    AudioContext& m_audioContext;
     /** Current Wallpaper state */
-    CWallpaperState m_state;
+    WallpaperState m_state;
 };
 } // namespace WallpaperEngine::Render

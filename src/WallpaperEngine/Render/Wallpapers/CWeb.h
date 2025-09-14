@@ -10,14 +10,15 @@
 #include <memory>
 #include <algorithm>
 
-#include "WallpaperEngine/Audio/CAudioStream.h"
-#include "WallpaperEngine/Core/Wallpapers/CWeb.h"
+#include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include "WallpaperEngine/WebBrowser/CEF/CBrowserClient.h"
-#include "WallpaperEngine/WebBrowser/CEF/CRenderHandler.h"
+#include "WallpaperEngine/WebBrowser/CEF/BrowserClient.h"
+#include "WallpaperEngine/WebBrowser/CEF/RenderHandler.h"
+
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 namespace WallpaperEngine::WebBrowser::CEF {
-class CRenderHandler;
+class RenderHandler;
 }
 
 namespace WallpaperEngine::Render::Wallpapers {
@@ -25,10 +26,10 @@ class CWeb : public CWallpaper
 {
     public:
         CWeb (
-          std::shared_ptr<const Core::CWallpaper> wallpaper, CRenderContext& context, CAudioContext& audioContext,
-          WallpaperEngine::WebBrowser::CWebBrowserContext& browserContext,
-          const CWallpaperState::TextureUVsScaling& scalingMode,
-          const WallpaperEngine::Assets::ITexture::TextureFlags& clampMode);
+          const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+          WallpaperEngine::WebBrowser::WebBrowserContext& browserContext,
+          const WallpaperState::TextureUVsScaling& scalingMode,
+          const uint32_t& clampMode);
         ~CWeb() override;
         [[nodiscard]] int getWidth  () const override { return this->m_width; }
 
@@ -37,19 +38,19 @@ class CWeb : public CWallpaper
         void setSize (int width, int height);
 
     protected:
-        void renderFrame (glm::ivec4 viewport) override;
-        void updateMouse (glm::ivec4 viewport);
-        const Core::Wallpapers::CWeb* getWeb () const {
-            return this->getWallpaperData ()->as<Core::Wallpapers::CWeb> ();
+        void renderFrame (const glm::ivec4& viewport) override;
+        void updateMouse (const glm::ivec4& viewport);
+        const Web& getWeb () const {
+            return *this->getWallpaperData ().as<Web> ();
         }
 
         friend class CWallpaper;
 
     private:
-        WallpaperEngine::WebBrowser::CWebBrowserContext& m_browserContext;
+        WallpaperEngine::WebBrowser::WebBrowserContext& m_browserContext;
         CefRefPtr<CefBrowser> m_browser = nullptr;
-        CefRefPtr<WallpaperEngine::WebBrowser::CEF::CBrowserClient> m_client = nullptr;
-        WallpaperEngine::WebBrowser::CEF::CRenderHandler* m_renderHandler = nullptr;
+        CefRefPtr<WallpaperEngine::WebBrowser::CEF::BrowserClient> m_client = nullptr;
+        WallpaperEngine::WebBrowser::CEF::RenderHandler* m_renderHandler = nullptr;
 
         int m_width = 16;
         int m_height = 17;

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Core/Objects/CSound.h"
-
-#include "WallpaperEngine/Audio/CAudioStream.h"
+#include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CObject.h"
 
 using namespace WallpaperEngine;
@@ -12,9 +10,11 @@ class CScene;
 }
 
 namespace WallpaperEngine::Render::Objects {
+using namespace WallpaperEngine::Data::Model;
+
 class CSound final : public CObject {
   public:
-    CSound (Wallpapers::CScene* scene, const Core::Objects::CSound* sound);
+    CSound (Wallpapers::CScene& scene, const Sound& sound);
     ~CSound () override;
 
     void render () override;
@@ -23,9 +23,8 @@ class CSound final : public CObject {
     void load ();
 
   private:
-    std::vector<std::shared_ptr<const uint8_t[]>> m_soundBuffer = {};
-    std::vector<Audio::CAudioStream*> m_audioStreams = {};
+    std::vector<Audio::AudioStream*> m_audioStreams = {};
 
-    const Core::Objects::CSound* m_sound;
+    const Sound& m_sound;
 };
 } // namespace WallpaperEngine::Render::Objects

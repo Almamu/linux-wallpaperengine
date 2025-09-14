@@ -1,24 +1,22 @@
 #pragma once
 
-#include "WallpaperEngine/Assets/ITexture.h"
-#include "WallpaperEngine/Core/Objects/CImage.h"
-#include "WallpaperEngine/Core/Objects/Effects/CFBO.h"
+#include <string>
 
-using namespace WallpaperEngine::Assets;
+#include "TextureProvider.h"
+
+using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render {
-class CFBO final : public ITexture {
+class CFBO final : public TextureProvider {
   public:
-    CFBO (std::string name, ITexture::TextureFormat format, ITexture::TextureFlags flags, float scale,
+    CFBO (std::string name, const TextureFormat format, const uint32_t flags, const float scale,
           uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
     ~CFBO () override;
 
-    // TODO: ADD DESTRUCTOR TO FREE RESOURCES
-
     [[nodiscard]] const std::string& getName () const;
     [[nodiscard]] const float& getScale () const;
-    [[nodiscard]] ITexture::TextureFormat getFormat () const override;
-    [[nodiscard]] ITexture::TextureFlags getFlags () const override;
+    [[nodiscard]] TextureFormat getFormat () const override;
+    [[nodiscard]] uint32_t getFlags () const override;
     [[nodiscard]] GLuint getFramebuffer () const;
     [[nodiscard]] GLuint getDepthbuffer () const;
     [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
@@ -26,7 +24,7 @@ class CFBO final : public ITexture {
     [[nodiscard]] uint32_t getTextureHeight (uint32_t imageIndex) const override;
     [[nodiscard]] uint32_t getRealWidth () const override;
     [[nodiscard]] uint32_t getRealHeight () const override;
-    [[nodiscard]] const std::vector<std::shared_ptr<TextureFrame>>& getFrames () const override;
+    [[nodiscard]] const std::vector<FrameSharedPtr>& getFrames () const override;
     [[nodiscard]] const glm::vec4* getResolution () const override;
     [[nodiscard]] bool isAnimated () const override;
 
@@ -37,9 +35,9 @@ class CFBO final : public ITexture {
     glm::vec4 m_resolution = {};
     float m_scale = 0;
     std::string m_name = "";
-    ITexture::TextureFormat m_format = UNKNOWN;
-    ITexture::TextureFlags m_flags = NoFlags;
+    TextureFormat m_format = TextureFormat_UNKNOWN;
+    uint32_t m_flags = TextureFlags_NoFlags;
     /** Placeholder for frames, FBOs only have ONE */
-    std::vector<std::shared_ptr<TextureFrame>> m_frames = {};
+    std::vector<FrameSharedPtr> m_frames = {};
 };
 } // namespace WallpaperEngine::Render
