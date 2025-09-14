@@ -60,7 +60,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     /**
      * Performs a render pass of the wallpaper
      */
-    void render (glm::ivec4 viewport, bool vflip);
+    void render (const glm::ivec4& viewport, const bool vflip);
 
     /**
      * Pause the renderer
@@ -75,7 +75,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     /**
      * @return The current audio context for this wallpaper
      */
-    AudioContext& getAudioContext ();
+    AudioContext& getAudioContext () const;
 
     /**
      * @return The scene's framebuffer
@@ -144,7 +144,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     /**
      * Renders a frame of the wallpaper
      */
-    virtual void renderFrame (glm::ivec4 viewport) = 0;
+    virtual void renderFrame (const glm::ivec4& viewport) = 0;
 
     /**
      * Setups OpenGL's framebuffers for ping-pong and scene rendering

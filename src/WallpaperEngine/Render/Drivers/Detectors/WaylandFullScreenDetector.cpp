@@ -26,7 +26,7 @@ void toplevelHandleOutputLeave (void*, struct zwlr_foreign_toplevel_handle_v1*, 
 void toplevelHandleParent (void*, struct zwlr_foreign_toplevel_handle_v1*, struct zwlr_foreign_toplevel_handle_v1*) {}
 
 void toplevelHandleState (void* data, struct zwlr_foreign_toplevel_handle_v1* handle, struct wl_array* state) {
-    auto fullscreen = static_cast<FullscreenState*> (data);
+    const auto fullscreen = static_cast<FullscreenState*> (data);
     const auto begin = static_cast<uint32_t*> (state->data);
 
     fullscreen->pending = false;
@@ -36,7 +36,7 @@ void toplevelHandleState (void* data, struct zwlr_foreign_toplevel_handle_v1* ha
 }
 
 void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
-    auto fullscreen = static_cast<FullscreenState*> (data);
+    const auto fullscreen = static_cast<FullscreenState*> (data);
     if (fullscreen->current != fullscreen->pending) {
         fullscreen->current = fullscreen->pending;
         if (fullscreen->current) {
@@ -53,7 +53,7 @@ void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* han
 }
 
 void toplevelHandleClosed (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
-    auto fullscreen = static_cast<FullscreenState*> (data);
+    const auto fullscreen = static_cast<FullscreenState*> (data);
 
     if (fullscreen->current) {
         // sanity check
@@ -81,7 +81,7 @@ constexpr struct zwlr_foreign_toplevel_handle_v1_listener toplevelHandleListener
 
 void handleToplevel (void* data, struct zwlr_foreign_toplevel_manager_v1* manager,
                      struct zwlr_foreign_toplevel_handle_v1* handle) {
-    auto fullscreen = new FullscreenState {.count = static_cast<uint32_t*> (data)};
+    const auto fullscreen = new FullscreenState {.count = static_cast<uint32_t*> (data)};
     zwlr_foreign_toplevel_handle_v1_add_listener (handle, &toplevelHandleListener, fullscreen);
 }
 
@@ -123,7 +123,7 @@ WaylandFullScreenDetector::WaylandFullScreenDetector (Application::ApplicationCo
     if (!m_display)
         sLog.exception ("Failed to query wayland display");
 
-    auto registry = wl_display_get_registry (m_display);
+    const auto registry = wl_display_get_registry (m_display);
     wl_registry_add_listener (registry, &registryListener, this);
     wl_display_roundtrip (m_display); // load list of toplevels
     if (!m_toplevelManager) {

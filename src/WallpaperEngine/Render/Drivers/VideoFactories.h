@@ -59,7 +59,7 @@ class VideoFactories {
      * @return
      */
     [[nodiscard]] std::unique_ptr <Detectors::FullScreenDetector> createFullscreenDetector (
-        std::string xdgSessionType, ApplicationContext& context, VideoDriver& driver);
+        const std::string& xdgSessionType, ApplicationContext& context, VideoDriver& driver);
 
   private:
     using SessionTypeToFullscreenDetectorType = std::map <std::string, FullscreenDetectorConstructionFunc>;

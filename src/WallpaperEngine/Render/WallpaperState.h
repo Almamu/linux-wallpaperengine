@@ -60,7 +60,7 @@ class WallpaperState {
      * @return Texture UV coordinates for current viewport and projection
      */
     [[nodiscard]] auto getTextureUVs () const {
-        return UVs;
+        return m_UVs;
     };
 
     /**
@@ -116,22 +116,22 @@ class WallpaperState {
         float uend;
         float vstart;
         float vend;
-    } UVs;
+    } m_UVs {};
 
     // Viewport for which UVs were calculated
     struct {
         int width;
         int height;
-    } viewport {};
+    } m_viewport {};
 
     // Wallpaper dimensions
     struct {
         int width;
         int height;
-    } projection {};
+    } m_projection {};
 
     // Are Vs coordinates fliped
-    bool vflip = false;
+    bool m_vflip = false;
 
     // Texture scaling mode
     TextureUVsScaling m_textureUVsMode = TextureUVsScaling::DefaultUVs;

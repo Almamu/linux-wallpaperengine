@@ -30,7 +30,7 @@ ProjectUniquePtr ProjectParser::parse (const JSON& data, AssetLocatorUniquePtr c
     }
 
     // lowercase for consistency
-    std::transform (type.begin (), type.end (), type.begin (), tolower);
+    std::ranges::transform (type, type.begin (), tolower);
 
     auto result = std::make_unique <Project> (Project {
         .title = data.require <std::string> ("title", "Project title missing"),
@@ -49,9 +49,13 @@ ProjectUniquePtr ProjectParser::parse (const JSON& data, AssetLocatorUniquePtr c
 Project::Type ProjectParser::parseType (const std::string& type) {
     if (type == "scene") {
         return Project::Type_Scene;
-    } else if (type == "video") {
+    }
+
+    if (type == "video") {
         return Project::Type_Video;
-    } else if (type == "web") {
+    }
+
+    if (type == "web") {
         return Project::Type_Web;
     }
 

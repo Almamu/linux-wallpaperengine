@@ -154,9 +154,7 @@ Render::CObject* CScene::createObject (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
     // ensure the item is not loaded already
-    const auto current = this->m_objects.find (object.id);
-
-    if (current != this->m_objects.end ())
+    if (const auto current = this->m_objects.find (object.id); current != this->m_objects.end ())
         return current->second;
 
     // check dependencies too!
@@ -165,9 +163,7 @@ Render::CObject* CScene::createObject (const Object& object) {
         if (cur == object.id)
             continue;
 
-        const auto dep = std::find_if (
-            this->getScene ().objects.begin (),
-            this->getScene ().objects.end (),
+        const auto dep = std::ranges::find_if (this->getScene ().objects,
             [&cur] (const auto& o) {
                 return o->id == cur;
             }
@@ -199,7 +195,7 @@ Render::CObject* CScene::createObject (const Object& object) {
 }
 
 void CScene::addObjectToRenderOrder (const Object& object) {
-    auto obj = this->m_objects.find (object.id);
+    const auto obj = this->m_objects.find (object.id);
 
     // ignores not created objects like particle systems
     if (obj == this->m_objects.end ())
@@ -213,9 +209,7 @@ void CScene::addObjectToRenderOrder (const Object& object) {
         }
 
         // add the dependency to the list if it's created
-        auto depIt = std::find_if (
-            this->getScene ().objects.begin (),
-            this->getScene ().objects.end (),
+        auto depIt = std::ranges::find_if (this->getScene ().objects,
             [&dep] (const auto& o) {
                 return o->id == dep;
             }
@@ -229,9 +223,7 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 
     // ensure we're added only once to the render list
-    const auto renderIt = std::find_if (
-        this->m_objectsByRenderOrder.begin (),
-        this->m_objectsByRenderOrder.end (),
+    const auto renderIt = std::ranges::find_if (this->m_objectsByRenderOrder,
         [&object] (const auto& o) {
             return o->getId () == object.id;
         }
@@ -246,7 +238,7 @@ Camera& CScene::getCamera () const {
     return *this->m_camera;
 }
 
-void CScene::renderFrame (glm::ivec4 viewport) {
+void CScene::renderFrame (const glm::ivec4& viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
@@ -272,7 +264,7 @@ void CScene::renderFrame (glm::ivec4 viewport) {
         cur->render ();
 }
 
-void CScene::updateMouse (glm::ivec4 viewport) {
+void CScene::updateMouse (const glm::ivec4& viewport) {
     // update virtual mouse position first
     const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
     // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)

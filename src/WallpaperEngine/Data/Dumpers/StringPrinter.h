@@ -16,7 +16,7 @@ class StringPrinter {
     /**
      * @return The contents of the pretty printer buffer
      */
-    std::string str ();
+    std::string str () const;
 
     /**
      * Prints the information of the given wallpaper

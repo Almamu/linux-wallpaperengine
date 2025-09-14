@@ -16,7 +16,7 @@ TextureUniquePtr TextureParser::parse (const BinaryReader& file) {
     parseContainer (*result, file);
 
     for (uint32_t image = 0; image < result->imageCount; image++) {
-        uint32_t mipmapCount = file.nextUInt32 ();
+        const uint32_t mipmapCount = file.nextUInt32 ();
         MipmapList mipmaps;
 
         for (uint32_t mipmap = 0; mipmap < mipmapCount; mipmap++) {

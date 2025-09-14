@@ -9,7 +9,7 @@ using namespace WallpaperEngine::Render;
 namespace WallpaperEngine::Render {
 class CFBO final : public TextureProvider {
   public:
-    CFBO (std::string name, TextureFormat format, uint32_t flags, float scale,
+    CFBO (std::string name, const TextureFormat format, const uint32_t flags, const float scale,
           uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
     ~CFBO () override;
 

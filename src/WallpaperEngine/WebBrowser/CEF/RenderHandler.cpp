@@ -12,10 +12,10 @@ void RenderHandler::GetViewRect (CefRefPtr<CefBrowser> browser, CefRect& rect) {
 
 // Will be executed in CEF message loop
 void RenderHandler::OnPaint (CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects,
-                                   const void* buffer, int width, int height) {
+                                   const void* buffer, const int width, const int height) {
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, this->texture ());
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (unsigned char*) buffer);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
     glBindTexture (GL_TEXTURE_2D, 0);
 }
 

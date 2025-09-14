@@ -31,7 +31,7 @@ class AudioContext {
      *
      * @param stream
      */
-    void addStream (AudioStream* stream);
+    void addStream (AudioStream* stream) const;
 
     /**
      * TODO: MAYBE THIS SHOULD BE OUR OWN DEFINITIONS INSTEAD OF LIBRARY SPECIFIC ONES?
@@ -50,11 +50,11 @@ class AudioContext {
     /**
      * @return The application context under which the audio driver is initialized
      */
-    Application::ApplicationContext& getApplicationContext ();
+    Application::ApplicationContext& getApplicationContext () const;
     /**
      * @return The audio recorder to use to capture stereo mix data
      */
-    [[nodiscard]] Drivers::Recorders::PlaybackRecorder& getRecorder ();
+    [[nodiscard]] Drivers::Recorders::PlaybackRecorder& getRecorder () const;
 
   private:
     /** The audio driver in use */

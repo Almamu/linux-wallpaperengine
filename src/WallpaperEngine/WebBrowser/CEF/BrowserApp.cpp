@@ -16,7 +16,7 @@ void BrowserApp::OnContextInitialized () {
     for (const auto& [workshopId, factory] : this->getHandlerFactories ()) {
         CefRegisterSchemeHandlerFactory (
             WPSchemeHandlerFactory::generateSchemeName (workshopId),
-            (const char*) nullptr,
+            static_cast<const char*> (nullptr),
             factory
         );
     }

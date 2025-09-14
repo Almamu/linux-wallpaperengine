@@ -29,7 +29,7 @@ CWeb::CWeb (
     this->m_renderHandler = new WebBrowser::CEF::RenderHandler (this);
 
     CefBrowserSettings browserSettings;
-    // Documentaion says that 60 fps is maximum value
+    // documentaion says that 60 fps is maximum value
     browserSettings.windowless_frame_rate = std::max (60, context.getApp ().getContext ().settings.render.maximumFPS);
 
     this->m_client = new WebBrowser::CEF::BrowserClient (m_renderHandler);
@@ -42,7 +42,7 @@ CWeb::CWeb (
         CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);
 }
 
-void CWeb::setSize (int width, int height) {
+void CWeb::setSize (const int width, const int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;
 
@@ -59,7 +59,7 @@ void CWeb::setSize (int width, int height) {
     this->m_browser->GetHost ()->WasResized ();
 }
 
-void CWeb::renderFrame (glm::ivec4 viewport) {
+void CWeb::renderFrame (const glm::ivec4& viewport) {
     // ensure the viewport matches the window size, and resize if needed
     if (viewport.z != this->getWidth () || viewport.w != this->getHeight ()) {
         this->setSize (viewport.z, viewport.w);
@@ -83,18 +83,18 @@ void CWeb::renderFrame (glm::ivec4 viewport) {
     CefDoMessageLoopWork ();
 }
 
-void CWeb::updateMouse (glm::ivec4 viewport) {
+void CWeb::updateMouse (const glm::ivec4& viewport) {
     // update virtual mouse position first
     auto& input = this->getContext ().getInputContext ().getMouseInput ();
 
-    glm::dvec2 position = input.position ();
-    WallpaperEngine::Input::MouseClickStatus leftClick = input.leftClick();
-    WallpaperEngine::Input::MouseClickStatus rightClick = input.rightClick();
+    const glm::dvec2 position = input.position ();
+    const auto leftClick = input.leftClick();
+    const auto rightClick = input.rightClick();
 
     CefMouseEvent evt;
     // Set mouse current position. Maybe clamps are not needed
-    evt.x = std::clamp (int (position.x - viewport.x), 0, viewport.z);
-    evt.y = std::clamp (int (position.y - viewport.y), 0, viewport.w);
+    evt.x = std::clamp (static_cast<int> (position.x - viewport.x), 0, viewport.z);
+    evt.y = std::clamp (static_cast<int> (position.y - viewport.y), 0, viewport.w);
     // Send mouse position to cef
     this->m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
 

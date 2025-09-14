@@ -289,9 +289,7 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
                           GL_RGB, GL_UNSIGNED_BYTE, buffer);
         }
 
-        GLenum error = glGetError();
-
-        if (error != GL_NO_ERROR) {
+        if (const GLenum error = glGetError (); error != GL_NO_ERROR) {
             sLog.error ("Cannot obtain pixel data for screen ", screen, ". OpenGL error: ", error);
             delete [] buffer;
             continue;
@@ -300,8 +298,8 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
         // now get access to the pixels
         for (int y = 0; y < viewport->viewport.w; y++) {
             for (int x = 0; x < viewport->viewport.z; x++) {
-                int xfinal = x + xoffset;
-                int yfinal = vflip ? (viewport->viewport.w - y - 1) : y;
+                const int xfinal = x + xoffset;
+                const int yfinal = vflip ? (viewport->viewport.w - y - 1) : y;
 
                 bitmap [yfinal * width * 3 + xfinal * 3] = *pixel++;
                 bitmap [yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
@@ -316,9 +314,7 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
         delete [] buffer;
     }
 
-    auto extension = filename.extension ();
-
-    if (extension == ".bmp") {
+    if (const auto extension = filename.extension (); extension == ".bmp") {
         stbi_write_bmp (filename.c_str (), width, height, 3, bitmap);
     } else if (extension == ".png") {
         stbi_write_png (filename.c_str (), width, height, 3, bitmap, width * 3);
@@ -350,8 +346,8 @@ void WallpaperApplication::setupOutput () {
 
 void WallpaperApplication::setupAudio () {
     // ensure audioprocessing is required by any background, and we have it enabled
-    bool audioProcessingRequired = std::any_of (
-        this->m_backgrounds.begin (), this->m_backgrounds.end (),
+    const bool audioProcessingRequired = std::ranges::any_of (
+        this->m_backgrounds,
         [](const std::pair<const std::string, ProjectUniquePtr>& pair) -> bool {
             return pair.second->supportsAudioProcessing;
         }

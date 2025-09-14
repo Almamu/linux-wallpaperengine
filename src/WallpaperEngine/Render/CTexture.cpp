@@ -13,36 +13,32 @@ using namespace WallpaperEngine::Render;
 CTexture::CTexture (TextureUniquePtr header) : m_header (std::move(header)) {
     // ensure the header is parsed
     this->setupResolution ();
-    GLint internalFormat = this->setupInternalFormat();
+    const GLint internalFormat = this->setupInternalFormat();
 
     // allocate texture ids list
     this->m_textureID = new GLuint [this->m_header->imageCount];
     // ask opengl for the correct amount of textures
     glGenTextures (this->m_header->imageCount, this->m_textureID);
 
-    auto imgCur = this->m_header->images.begin ();
-    auto imgEnd = this->m_header->images.end ();
-
-    for (int index = 0; imgCur != imgEnd; ++imgCur, index++) {
+    for (const auto& [index, mipmaps] : this->m_header->images) {
         this->setupOpenGLParameters (index);
 
-        auto cur = imgCur->second.begin ();
-        auto end = imgCur->second.end ();
+        int level = 0;
 
-        for (int32_t level = 0; cur != end; ++cur, level++) {
+        for (const auto& mipmap : mipmaps) {
             stbi_uc* handle = nullptr;
-            void* dataptr = (*cur)->uncompressedData.get ();
-            int width = (*cur)->width;
-            int height = (*cur)->height;
-            uint32_t bufferSize = (*cur)->uncompressedSize;
+            const void* dataptr = mipmap->uncompressedData.get ();
+            int width = mipmap->width;
+            int height = mipmap->height;
+            const uint32_t bufferSize = mipmap->uncompressedSize;
             GLenum textureFormat = GL_RGBA;
 
             if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
                 int fileChannels;
 
                 dataptr = handle = stbi_load_from_memory (
-                    reinterpret_cast <unsigned char*> ((*cur)->uncompressedData.get ()),
-                    (*cur)->uncompressedSize,
+                    reinterpret_cast <unsigned char*> (mipmap->uncompressedData.get ()),
+                    mipmap->uncompressedSize,
                     &width,
                     &height,
                     &fileChannels,
@@ -79,6 +75,8 @@ CTexture::CTexture (TextureUniquePtr header) : m_header (std::move(header)) {
             if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
                 stbi_image_free (handle);
             }
+
+            level ++;
         }
     }
 }
@@ -93,10 +91,13 @@ void CTexture::setupResolution () {
         if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
             // wpengine-texture format always has one mipmap
             // get first image size
-            auto element = this->m_header->images.find (0)->second.begin ();
+            const auto element = this->m_header->images.find (0)->second.begin ();
 
             // set the texture resolution
-            this->m_resolution = {(*element)->width, (*element)->height, this->m_header->width, this->m_header->height};
+            this->m_resolution = {
+                (*element)->width, (*element)->height,
+                this->m_header->width, this->m_header->height
+            };
         } else {
             // set the texture resolution
             this->m_resolution = {
@@ -107,52 +108,59 @@ void CTexture::setupResolution () {
     }
 }
 
-GLint CTexture::setupInternalFormat () {
+GLint CTexture::setupInternalFormat () const {
     if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
         return GL_RGBA8;
     }
 
     // detect the image format and hand it to openGL to be used
     switch (this->m_header->format) {
-        case TextureFormat_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
-        case TextureFormat_DXT3: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-        case TextureFormat_DXT1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-        case TextureFormat_ARGB8888: return GL_RGBA8; break;
-        case TextureFormat_R8: return GL_R8; break;
-        case TextureFormat_RG88: return GL_RG8; break;
-        default: sLog.exception ("Cannot determine texture format");
+        case TextureFormat_DXT5:
+            return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+        case TextureFormat_DXT3:
+            return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+        case TextureFormat_DXT1:
+            return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+        case TextureFormat_ARGB8888:
+            return GL_RGBA8;
+        case TextureFormat_R8:
+            return GL_R8;
+        case TextureFormat_RG88:
+            return GL_RG8;
+        default:
+            sLog.exception ("Cannot determine texture format");
     }
 }
 
-void CTexture::setupOpenGLParameters (uint32_t textureID) {
-        // bind the texture to assign information to it
-        glBindTexture (GL_TEXTURE_2D, this->m_textureID [textureID]);
+void CTexture::setupOpenGLParameters (const uint32_t textureID) const {
+    // bind the texture to assign information to it
+    glBindTexture (GL_TEXTURE_2D, this->m_textureID [textureID]);
 
-        // set mipmap levels
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->images [textureID].size () - 1);
+    // set mipmap levels
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, this->m_header->images [textureID].size () - 1);
 
-        // setup texture wrapping and filtering
-        if (this->m_header->flags & TextureFlags_ClampUVs) {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        } else {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
+    // setup texture wrapping and filtering
+    if (this->m_header->flags & TextureFlags_ClampUVs) {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    } else {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
 
-        if (this->m_header->flags & TextureFlags_NoInterpolation) {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        } else {
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        }
+    if (this->m_header->flags & TextureFlags_NoInterpolation) {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    } else {
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    }
 
-        glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
+    glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
 }
 
-GLuint CTexture::getTextureID (uint32_t imageIndex) const {
+GLuint CTexture::getTextureID (const uint32_t imageIndex) const {
     // ensure we do not go out of bounds
     if (imageIndex >= this->m_header->imageCount)
         return this->m_textureID [0];
@@ -160,14 +168,14 @@ GLuint CTexture::getTextureID (uint32_t imageIndex) const {
     return this->m_textureID [imageIndex];
 }
 
-uint32_t CTexture::getTextureWidth (uint32_t imageIndex) const {
+uint32_t CTexture::getTextureWidth (const uint32_t imageIndex) const {
     if (imageIndex >= this->m_header->imageCount)
         return this->getHeader ().textureWidth;
 
     return (*this->m_header->images [imageIndex].begin ())->width;
 }
 
-uint32_t CTexture::getTextureHeight (uint32_t imageIndex) const {
+uint32_t CTexture::getTextureHeight (const uint32_t imageIndex) const {
     if (imageIndex >= this->m_header->imageCount)
         return this->getHeader ().textureHeight;
 

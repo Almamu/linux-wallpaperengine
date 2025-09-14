@@ -30,7 +30,7 @@ class WaylandOutputViewport final : public OutputViewport {
     /**
      * @return The wayland driver
      */
-    WaylandOpenGLDriver* getDriver ();
+    WaylandOpenGLDriver* getDriver () const;
 
     wl_output* output = nullptr;
     glm::ivec2 size = {};

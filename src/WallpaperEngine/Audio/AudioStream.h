@@ -39,7 +39,7 @@ using namespace WallpaperEngine::FileSystem;
 class AudioStream {
   public:
     AudioStream (AudioContext& context, const std::string& filename);
-    AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer, uint32_t length);
+    AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer);
     AudioStream (AudioContext& audioContext, AVCodecContext* context);
     ~AudioStream ();
 
@@ -62,11 +62,11 @@ class AudioStream {
     /**
      * @return to the codec context, which provides information on the audio stream's format
      */
-    AVCodecContext* getContext ();
+    AVCodecContext* getContext () const;
     /**
      * @returns the format context, which controls how data is read off the audio stream
      */
-    AVFormatContext* getFormatContext ();
+    AVFormatContext* getFormatContext () const;
     /**
      * @return The audio stream index of the given file
      */
@@ -92,37 +92,33 @@ class AudioStream {
      */
     [[nodiscard]] ReadStreamSharedPtr& getBuffer ();
     /**
-     * @return The length of the file data buffer
-     */
-    [[nodiscard]] uint32_t getLength () const;
-    /**
      * @return The SDL_cond used to signal waiting for data
      */
-    SDL_cond* getWaitCondition ();
+    SDL_cond* getWaitCondition () const;
     /**
      * @return The data queue size
      */
-    int getQueueSize ();
+    int getQueueSize () const;
     /**
      * @return The amount of packets ready to be converted and played
      */
-    int getQueuePacketCount ();
+    int getQueuePacketCount () const;
     /**
      * @return The duration (in seconds) of the queued data to be played
      */
-    int64_t getQueueDuration ();
+    int64_t getQueueDuration () const;
     /**
      * @return Time unit used for packet playback
      */
-    AVRational getTimeBase ();
+    AVRational getTimeBase () const;
     /**
      * @return If the data queue is empty or not
      */
-    bool isQueueEmpty ();
+    bool isQueueEmpty () const;
     /**
      * @return The SDL_mutex used for thread synchronization
      */
-    SDL_mutex* getMutex ();
+    SDL_mutex* getMutex () const;
 
     /**
      * Reads a frame from the audio stream, resamples it to the driver's settings

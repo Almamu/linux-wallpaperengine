@@ -28,11 +28,11 @@ CWallpaper::CWallpaper (
 
     this->setupShaders ();
 
-    const GLfloat texCoords [] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
+    constexpr GLfloat texCoords [] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
     // inverted positions so the final texture is rendered properly
-    const GLfloat position [] = {-1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
-                                 -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f};
+    constexpr GLfloat position [] = {-1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
+                                     -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f};
 
     glGenBuffers (1, &this->m_texCoordBuffer);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
@@ -87,7 +87,7 @@ void CWallpaper::setupShaders () {
     glGetShaderiv (vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -124,7 +124,7 @@ void CWallpaper::setupShaders () {
     glGetShaderiv (fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -151,7 +151,7 @@ void CWallpaper::setupShaders () {
     glGetProgramiv (this->m_shader, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -189,7 +189,7 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     }
 }
 
-void CWallpaper::render (glm::ivec4 viewport, bool vflip) {
+void CWallpaper::render (const glm::ivec4& viewport, const bool vflip) {
 #if !NDEBUG
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
 #endif /* !NDEBUG */
@@ -255,7 +255,7 @@ void CWallpaper::setupFramebuffers () {
     this->alias ("_rt_MipMappedFrameBuffer", "_rt_FullFrameBuffer");
 }
 
-AudioContext& CWallpaper::getAudioContext () {
+AudioContext& CWallpaper::getAudioContext () const {
     return this->m_audioContext;
 }
 

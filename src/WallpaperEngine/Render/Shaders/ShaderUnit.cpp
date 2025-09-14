@@ -53,7 +53,7 @@ using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Render::Shaders;
 
 ShaderUnit::ShaderUnit (
-    GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
+    const GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
     const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
     const ComboMap& combos, const ComboMap& overrideCombos
 ) :
@@ -80,8 +80,8 @@ void ShaderUnit::preprocess () {
     this->preprocessRequires ();
 
     // replace gl_FragColor with the equivalent
-    std::string from = "gl_FragColor";
-    std::string to = "out_FragColor";
+    const std::string from = "gl_FragColor";
+    const std::string to = "out_FragColor";
 
     size_t start_pos = 0;
     while ((start_pos = this->m_preprocessed.find (from, start_pos)) != std::string::npos) {
@@ -98,10 +98,10 @@ void ShaderUnit::preprocessVariables () {
     while ((end = this->m_preprocessed.find ('\n', start)) != std::string::npos) {
         // Extract a line from the string
         std::string line = this->m_preprocessed.substr (start, end - start);
-        size_t combo = line.find("// [COMBO] ");
-        size_t uniform = line.find("uniform ");
-        size_t comment = line.find("// ");
-        size_t semicolon = line.find(';');
+        const size_t combo = line.find("// [COMBO] ");
+        const size_t uniform = line.find("uniform ");
+        const size_t comment = line.find("// ");
+        const size_t semicolon = line.find(';');
 
         if (combo != std::string::npos) {
             this->parseComboConfiguration (line.substr(combo + strlen("// [COMBO] ")), 0);
@@ -113,10 +113,10 @@ void ShaderUnit::preprocessVariables () {
             // this needs further refining as it's not taking into account block comments
             semicolon < comment) {
             // uniforms with comments should never have a value assigned, use this fact to detect the required parts
-            size_t last_space = line.find_last_of (' ', semicolon);
+            const size_t last_space = line.find_last_of (' ', semicolon);
 
             if (last_space != std::string::npos) {
-                size_t previous_space = line.find_last_of (' ', last_space - 1);
+                const size_t previous_space = line.find_last_of (' ', last_space - 1);
 
                 if (previous_space != std::string::npos) {
                     // extract type and name
@@ -139,9 +139,9 @@ void ShaderUnit::preprocessIncludes () {
     // prepare the include content
     while((start = this->m_preprocessed.find("#include", end)) != std::string::npos) {
         // TODO: CHECK FOR ERRORS HERE, MALFORMED INCLUDES WILL NOT BE PROPERLY HANDLED
-        size_t quoteStart = this->m_preprocessed.find_first_of ('"', start) + 1;
-        size_t quoteEnd = this->m_preprocessed.find_first_of('"', quoteStart);
-        std::string filename = this->m_preprocessed.substr(quoteStart, quoteEnd - quoteStart);
+        const size_t quoteStart = this->m_preprocessed.find_first_of ('"', start) + 1;
+        const size_t quoteEnd = this->m_preprocessed.find_first_of('"', quoteStart);
+        const std::string filename = this->m_preprocessed.substr(quoteStart, quoteEnd - quoteStart);
 
         // some includes might not be present
         // and that should not be treated as an error mainly because these could come from
@@ -176,11 +176,11 @@ void ShaderUnit::preprocessIncludes () {
 
     // then apply includes in-place
     while((start = this->m_includes.find("#include", end)) != std::string::npos) {
-        size_t lineEnd = this->m_includes.find_first_of ('\n', start);
+        const size_t lineEnd = this->m_includes.find_first_of ('\n', start);
         // TODO: CHECK FOR ERRORS HERE, MALFORMED INCLUDES WILL NOT BE PROPERLY HANDLED
-        size_t quoteStart = this->m_includes.find_first_of ('"', start) + 1;
-        size_t quoteEnd = this->m_includes.find_first_of('"', quoteStart);
-        std::string filename = this->m_includes.substr(quoteStart, quoteEnd - quoteStart);
+        const size_t quoteStart = this->m_includes.find_first_of ('"', start) + 1;
+        const size_t quoteEnd = this->m_includes.find_first_of('"', quoteStart);
+        const std::string filename = this->m_includes.substr(quoteStart, quoteEnd - quoteStart);
 
         // some includes might not be present
         // and that should not be treated as an error mainly because these could come from
@@ -260,7 +260,7 @@ void ShaderUnit::preprocessIncludes () {
         // and use that as point
 
         // for this we'll use regex
-        std::regex ifdef (R"((#if|#endif))");
+        const std::regex ifdef (R"((#if|#endif))");
         std::smatch match;
         size_t current = 0;
 
@@ -321,7 +321,7 @@ void ShaderUnit::preprocessRequires () {
     }
 }
 
-void ShaderUnit::parseComboConfiguration (const std::string& content, int defaultValue) {
+void ShaderUnit::parseComboConfiguration (const std::string& content, const int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
     const auto data = JSON::parse (content);
     const auto combo = data.require <std::string> ("combo", "cannot parse combo information");
@@ -342,7 +342,7 @@ void ShaderUnit::parseComboConfiguration (const std::string& content, int defaul
         // if no combo is defined just load the default settings
         if (defvalue == data.end ()) {
             // TODO: PROPERLY SUPPORT EMPTY COMBOS
-            this->m_discoveredCombos.emplace (combo, (int) defaultValue);
+            this->m_discoveredCombos.emplace (combo, defaultValue);
         } else if (defvalue->is_number_float ()) {
             sLog.exception ("float combos are not supported in shader ", this->m_file, ". ", combo);
         } else if (defvalue->is_number_integer ()) {
@@ -413,7 +413,7 @@ void ShaderUnit::parseParameterConfiguration (
         if (combo != data.end ()) {
             // TODO: CLEANUP HOW THIS IS DETERMINED FIRST
             // if the texture exists (and is not null), add to the combo
-            auto textureSlotUsed = this->m_passTextures.find (index) != this->m_passTextures.end () || this->m_overrideTextures.find (index) != this->m_overrideTextures.end ();
+            const auto textureSlotUsed = this->m_passTextures.contains (index) || this->m_overrideTextures.contains (index);
             bool isRequired = false;
             int comboValue = 1;
 
@@ -428,10 +428,9 @@ void ShaderUnit::parseParameterConfiguration (
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
-                        const auto itOverride = this->m_overrideCombos.find (macro);
 
                         // if any of the values matched, this option is required
-                        if (it == this->m_combos.end () || itOverride != this->m_overrideCombos.end () || it->second != item.value ()) {
+                        if (it == this->m_combos.end () || this->m_overrideCombos.contains (macro) || it->second != item.value ()) {
                             isRequired = true;
                             break;
                         }
@@ -443,10 +442,9 @@ void ShaderUnit::parseParameterConfiguration (
                     for (const auto& item : require->items ()) {
                         const std::string& macro = item.key ();
                         const auto it = this->m_combos.find (macro);
-                        const auto itOverride = this->m_overrideCombos.find (macro);
 
                         // these can not exist and that'd be fine, we just care about the values
-                        if ((it != this->m_combos.end () || itOverride != this->m_overrideCombos.end ()) && it->second == item.value ()) {
+                        if ((it != this->m_combos.end () || this->m_overrideCombos.contains (macro)) && it->second == item.value ()) {
                             isRequired = false;
                             break;
                         }
@@ -460,11 +458,8 @@ void ShaderUnit::parseParameterConfiguration (
                 } else {
                     // is the combo registered already?
                     // if not, add it with the default value
-                    const auto combo_it = this->m_combos.find (*combo);
-                    const auto overridencombo_it = this->m_overrideCombos.find (*combo);
-
                     // there's already a combo providing this value, so it doesn't need to be added
-                    if (combo_it != this->m_combos.end () || overridencombo_it != this->m_overrideCombos.end ()) {
+                    if (this->m_combos.contains (*combo) || this->m_overrideCombos.contains (*combo)) {
                         isRequired = false;
                         // otherwise a default value must be used
                     } else if (defvalue->is_string ()) {
@@ -534,64 +529,63 @@ const std::string& ShaderUnit::compile () {
 
     std::map<std::string, bool> addedCombos;
 
-    for (const auto& combo : this->m_overrideCombos) {
-        if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            std::string name;
-            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+    for (const auto& [name, value] : this->m_overrideCombos) {
+        std::string uppercase;
+        std::ranges::transform (name, std::back_inserter (uppercase), ::toupper);
 
-            this->m_final += DEFINE_COMBO (name, combo.second);
+        if (!addedCombos.contains (uppercase)) {
+            this->m_final += DEFINE_COMBO (uppercase, value);
+            addedCombos.emplace (uppercase, true);
         }
-
-        addedCombos.emplace (combo.first, true);
     }
+
     // now add all the combos to the source
-    for (const auto& combo : this->m_combos) {
-        if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            std::string name;
-            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+    for (const auto& [name, value] : this->m_combos) {
+        std::string uppercase;
+        std::ranges::transform (name, std::back_inserter (uppercase), ::toupper);
 
-            this->m_final += DEFINE_COMBO (name, combo.second);
+        if (!addedCombos.contains (uppercase)) {
+            this->m_final += DEFINE_COMBO (uppercase, value);
+            addedCombos.emplace (uppercase, true);
         }
-
-        addedCombos.emplace (combo.first, true);
     }
-    for (const auto& combo : this->m_discoveredCombos) {
-        if (addedCombos.find (combo.first) == addedCombos.end ()) {
-            std::string name;
-            std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
 
-            this->m_final += DEFINE_COMBO (name, combo.second);
+    for (const auto& [name, value] : this->m_discoveredCombos) {
+        std::string uppercase;
+        std::ranges::transform (name, std::back_inserter (uppercase), ::toupper);
+
+        if (!addedCombos.contains (uppercase)) {
+            this->m_final += DEFINE_COMBO (uppercase, value);
+            addedCombos.emplace (uppercase, true);
         }
-
-        addedCombos.emplace (combo.first, true);
     }
+
     if (this->m_link != nullptr) {
-        for (const auto& combo : this->m_link->getCombos ()) {
-            if (addedCombos.find (combo.first) == addedCombos.end ()) {
-                std::string name;
-                std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
+        for (const auto& [name, value] : this->m_link->getCombos ()) {
+            std::string uppercase;
+            std::ranges::transform (name, std::back_inserter (uppercase), ::toupper);
 
-                this->m_final += DEFINE_COMBO (name, combo.second);
+            if (!addedCombos.contains (uppercase)) {
+                this->m_final += DEFINE_COMBO (uppercase, value);
+                addedCombos.emplace (uppercase, true);
             }
-
-            addedCombos.emplace (combo.first, true);
         }
-        for (const auto& combo : this->m_link->getDiscoveredCombos ()) {
-            if (addedCombos.find (combo.first) == addedCombos.end ()) {
-                std::string name;
-                std::transform (combo.first.begin (), combo.first.end (), std::back_inserter (name), ::toupper);
 
-                this->m_final += DEFINE_COMBO (name, combo.second);
+        for (const auto& [name, value] : this->m_link->getDiscoveredCombos ()) {
+            std::string uppercase;
+            std::ranges::transform (name, std::back_inserter (uppercase), ::toupper);
+
+            if (!addedCombos.contains (uppercase)) {
+                this->m_final += DEFINE_COMBO (uppercase, value);
+                addedCombos.emplace (uppercase, true);
             }
-
-            addedCombos.emplace (combo.first, true);
         }
     }
 
     // this should be the rest of the shader
     this->m_final += this->m_preprocessed;
 
-    // shader compilation is handled by the pass itself, the unit doesn't have enough information for this step
+    // the pass itself handles shader compilation, the unit doesn't have enough information for this step
     return this->m_final;
 }
 

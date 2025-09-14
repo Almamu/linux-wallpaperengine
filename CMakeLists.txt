@@ -415,7 +415,6 @@ add_executable(
     src/WallpaperEngine/Data/Model/DynamicValue.h
     src/WallpaperEngine/Data/Model/DynamicValue.cpp
     src/WallpaperEngine/Data/Model/Property.h
-    src/WallpaperEngine/Data/Utils/TypeCaster.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.h
     src/WallpaperEngine/Data/Utils/BinaryReader.cpp
     src/WallpaperEngine/Data/Utils/BinaryReader.h

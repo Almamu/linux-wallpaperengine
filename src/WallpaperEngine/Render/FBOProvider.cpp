@@ -8,7 +8,6 @@ using namespace WallpaperEngine::Data::Model;
 FBOProvider::FBOProvider (const FBOProvider* parent) :
     m_parent (parent) {}
 
-
 std::shared_ptr<CFBO> FBOProvider::create(const FBO& base, uint32_t flags, const glm::vec2 size) {
     return this->m_fbos[base.name] = std::make_shared <CFBO> (
         base.name,

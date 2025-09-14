@@ -53,7 +53,7 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
     // we should maybe use a better lib for handling command line arguments instead
     // or using C's version on some places and CefCommandLine on others
     // TODO: ANOTHER THING TO TAKE CARE OF BEFORE MERGING
-    CefRefPtr<CefCommandLine> commandLine = CefCommandLine::CreateCommandLine();
+    const CefRefPtr<CefCommandLine> commandLine = CefCommandLine::CreateCommandLine();
 
     commandLine->InitFromArgv (main_args.argc, main_args.argv);
 
@@ -64,7 +64,7 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
     }
 
     // this blocks for anything not-main-thread
-    int exit_code = CefExecuteProcess (
+    const int exit_code = CefExecuteProcess (
         main_args, this->m_browserApplication, nullptr);
 
     // this is needed to kill subprocesses after they're done
@@ -87,9 +87,8 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
 #endif
 
     // spawns two new processess
-    bool result = CefInitialize (main_args, settings, this->m_browserApplication, nullptr);
 
-    if (!result) {
+    if (!CefInitialize (main_args, settings, this->m_browserApplication, nullptr)) {
         sLog.exception ("CefInitialize: failed");
     }
 }

@@ -49,14 +49,14 @@ std::filesystem::path PackageAdapter::physicalPath (const std::filesystem::path&
 }
 
 bool PackageFactory::handlesMountpoint (const std::filesystem::path& path) const {
-    auto finalpath = std::filesystem::canonical (path);
-    auto status = std::filesystem::status (finalpath);
+    const auto finalpath = std::filesystem::canonical (path);
+    const auto status = std::filesystem::status (finalpath);
 
     return std::filesystem::exists (finalpath) && std::filesystem::is_regular_file (status) && finalpath.extension () == ".pkg";
 }
 
 AdapterSharedPtr PackageFactory::create (const std::filesystem::path& path) const {
-    auto stream = std::make_shared <std::ifstream> (path, std::ios::binary);
+    const auto stream = std::make_shared <std::ifstream> (path, std::ios::binary);
     auto package = Data::Parsers::PackageParser::parse (stream);
 
     return std::make_unique <PackageAdapter> (std::move (package));

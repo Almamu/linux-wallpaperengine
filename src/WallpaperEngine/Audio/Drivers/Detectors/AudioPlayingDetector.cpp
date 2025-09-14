@@ -11,7 +11,7 @@ bool AudioPlayingDetector::anythingPlaying () const {
     return this->m_isPlaying;
 }
 
-Application::ApplicationContext& AudioPlayingDetector::getApplicationContext () {
+Application::ApplicationContext& AudioPlayingDetector::getApplicationContext () const {
     return this->m_applicationContext;
 }
 
@@ -19,7 +19,7 @@ const Render::Drivers::Detectors::FullScreenDetector& AudioPlayingDetector::getF
     return this->m_fullscreenDetector;
 }
 
-void AudioPlayingDetector::setIsPlaying (bool newState) {
+void AudioPlayingDetector::setIsPlaying (const bool newState) {
     this->m_isPlaying = newState;
 }
 

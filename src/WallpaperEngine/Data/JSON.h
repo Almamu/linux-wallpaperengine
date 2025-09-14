@@ -58,7 +58,7 @@ class JsonExtensions {
     }
     [[nodiscard]] base_type require (const std::string& key, const std::string& message) const {
         auto base  =  this->base ();
-        auto it = base.find (key);
+        const auto it = base.find (key);
 
         if (it == base.end ()) {
             sLog.exception (message);
@@ -69,7 +69,7 @@ class JsonExtensions {
     template <typename T>
     [[nodiscard]] T require (const std::string& key, const std::string& message) const {
         auto base = this->base ();
-        auto it = base.find (key);
+        const auto it = base.find (key);
 
         if (it == base.end ()) {
             sLog.exception (message);
@@ -79,7 +79,7 @@ class JsonExtensions {
     }
     [[nodiscard]] std::optional <base_type> optional (const std::string& key) const noexcept {
         auto base = this->base ();
-        auto it = base.find (key);
+        const auto it = base.find (key);
         auto result = std::optional<base_type> {};
 
         if (it != base.end ()) {
@@ -91,7 +91,7 @@ class JsonExtensions {
     template <typename T>
     [[nodiscard]] std::optional <T> optional (const std::string& key) const noexcept {
         auto base = this->base ();
-        auto it = base.find (key);
+        const auto it = base.find (key);
 
         if (it == base.end ()) {
             return std::nullopt;
@@ -102,7 +102,7 @@ class JsonExtensions {
     template <typename T>
     [[nodiscard]] T optional (const std::string& key, T defaultValue) const noexcept {
         auto base = this->base ();
-        auto it = base.find (key);
+        const auto it = base.find (key);
 
         if (it == base.end ()) {
             return defaultValue;

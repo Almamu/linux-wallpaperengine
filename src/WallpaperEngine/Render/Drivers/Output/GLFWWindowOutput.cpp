@@ -30,7 +30,7 @@ GLFWWindowOutput::GLFWWindowOutput (ApplicationContext& context, VideoDriver& dr
     this->m_viewports ["default"] = new GLFWOutputViewport {{0, 0, this->m_fullWidth, this->m_fullHeight}, "default"};
 }
 
-void GLFWWindowOutput::repositionWindow () {
+void GLFWWindowOutput::repositionWindow () const {
     // reposition the window
     this->m_driver.resizeWindow (this->m_context.settings.render.window.geometry);
 }

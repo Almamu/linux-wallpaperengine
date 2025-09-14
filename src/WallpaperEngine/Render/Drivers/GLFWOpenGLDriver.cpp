@@ -60,9 +60,7 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (
     glfwMakeContextCurrent (this->m_window);
 
     // initialize glew for rendering
-    const GLenum result = glewInit ();
-
-    if (result != GLEW_OK)
+    if (const GLenum result = glewInit (); result != GLEW_OK)
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
 
     // setup output

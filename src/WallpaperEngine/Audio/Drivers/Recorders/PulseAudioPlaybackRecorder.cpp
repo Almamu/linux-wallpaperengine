@@ -44,18 +44,18 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
             return;
         }
     } else if (currentSize > 0 && data) {
-        size_t dataToCopy = std::min (currentSize, WAVE_BUFFER_SIZE - recorder->currentWritePointer);
+        const size_t dataToCopy = std::min (currentSize, WAVE_BUFFER_SIZE - recorder->currentWritePointer);
 
         // depending on the amount of data available, we might want to read one or multiple frames
-        size_t end = recorder->currentWritePointer + dataToCopy;
+        const size_t end = recorder->currentWritePointer + dataToCopy;
 
         // this packet will fill the buffer, perform some extra checks for extra full buffers and get the latest one
         if (end == WAVE_BUFFER_SIZE) {
-            size_t numberOfFullBuffers = (currentSize - dataToCopy) / WAVE_BUFFER_SIZE;
 
-            if (numberOfFullBuffers > 0) {
+            if (const size_t numberOfFullBuffers = (currentSize - dataToCopy) / WAVE_BUFFER_SIZE;
+                numberOfFullBuffers > 0) {
                 // calculate the start of the last block (we need the end of the previous block, hence the - 1)
-                size_t startOfLastBuffer = std::max(dataToCopy + (numberOfFullBuffers - 1) * WAVE_BUFFER_SIZE, currentSize - WAVE_BUFFER_SIZE);
+                const size_t startOfLastBuffer = std::max(dataToCopy + (numberOfFullBuffers - 1) * WAVE_BUFFER_SIZE, currentSize - WAVE_BUFFER_SIZE);
                 // copy directly into the final buffer
                 memcpy (recorder->audioBuffer, &data [startOfLastBuffer], WAVE_BUFFER_SIZE * sizeof (uint8_t));
                 // copy whatever is left to the read/write buffer

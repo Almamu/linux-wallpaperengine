@@ -12,9 +12,9 @@ StringPrinter::StringPrinter (std::string indentationCharacter) :
     m_indentationCharacter (std::move(indentationCharacter)) { }
 
 void StringPrinter::printWallpaper (const Wallpaper& wallpaper) {
-    bool isScene = wallpaper.is <Scene> ();
-    bool isVideo = wallpaper.is <Video> ();
-    bool isWeb = wallpaper.is <Web> ();
+    const bool isScene = wallpaper.is <Scene> ();
+    const bool isVideo = wallpaper.is <Video> ();
+    const bool isWeb = wallpaper.is <Web> ();
 
     if (isVideo) {
         const auto video = wallpaper.as <Video> ();
@@ -127,22 +127,22 @@ void StringPrinter::printModel (const ModelStruct& model) {
     this->decreaseIndentation ();
 }
 
-void StringPrinter::printImageEffect (const ImageEffect& effect) {
-    this->m_out << "Image effect " << effect.id << ":";
+void StringPrinter::printImageEffect (const ImageEffect& imageEffect) {
+    this->m_out << "Image effect " << imageEffect.id << ":";
 
     this->increaseIndentation ();
 
     this->lineEnd ();
-    this->m_out << "Default visibility status: " << effect.visible->value->getBool ();
+    this->m_out << "Default visibility status: " << imageEffect.visible->value->getBool ();
 
-    this->printEffect (*effect.effect);
+    this->printEffect (*imageEffect.effect);
 
     this->lineEnd ();
-    this->m_out << "Effect overrides count: " << effect.passOverrides.size ();
+    this->m_out << "Effect overrides count: " << imageEffect.passOverrides.size ();
 
     this->increaseIndentation ();
 
-    for (const auto& override : effect.passOverrides) {
+    for (const auto& override : imageEffect.passOverrides) {
         this->printImageEffectPassOverride (*override);
     }
 
@@ -161,9 +161,9 @@ void StringPrinter::printImageEffectPassOverride (const ImageEffectPassOverride&
     if (!imageEffectPass.textures.empty ()) {
         this->increaseIndentation ();
 
-        for (const auto& texture : imageEffectPass.textures) {
+        for (const auto& [index, texture] : imageEffectPass.textures) {
             this->lineEnd ();
-            this->m_out << "Texture " << texture.first << ": " << texture.second;
+            this->m_out << "Texture " << index << ": " << texture;
         }
 
         this->decreaseIndentation ();
@@ -175,9 +175,9 @@ void StringPrinter::printImageEffectPassOverride (const ImageEffectPassOverride&
     if (!imageEffectPass.combos.empty ()) {
         this->increaseIndentation ();
 
-        for (const auto& combo : imageEffectPass.combos) {
+        for (const auto& [name, value] : imageEffectPass.combos) {
             this->lineEnd ();
-            this->m_out << "Combo " << combo.first << "=" << combo.second;
+            this->m_out << "Combo " << name << "=" << value;
         }
 
         this->decreaseIndentation ();
@@ -189,9 +189,9 @@ void StringPrinter::printImageEffectPassOverride (const ImageEffectPassOverride&
     if (!imageEffectPass.constants.empty ()) {
         this->increaseIndentation ();
 
-        for (const auto& constant : imageEffectPass.constants) {
+        for (const auto& [name, value] : imageEffectPass.constants) {
             this->lineEnd ();
-            this->m_out << "Constant " << constant.first << "=" << constant.second->value->toString();
+            this->m_out << "Constant " << name << "=" << value->value->toString();
         }
 
         this->decreaseIndentation ();
@@ -292,9 +292,9 @@ void StringPrinter::printEffectPass (const EffectPass& effectPass) {
         this->m_out << "Binds count: " << effectPass.binds.size ();
         this->increaseIndentation ();
 
-        for (const auto& bind : effectPass.binds) {
+        for (const auto& [index, target] : effectPass.binds) {
             this->lineEnd ();
-            this->m_out << "Bind " << bind.first << ": " << bind.second;
+            this->m_out << "Bind " << index << ": " << target;
         }
 
         this->decreaseIndentation ();
@@ -355,9 +355,9 @@ void StringPrinter::printMaterialPass (const MaterialPass& materialPass) {
         this->m_out << "Textures count: " << materialPass.textures.size ();
         this->increaseIndentation ();
 
-        for (const auto& texture : materialPass.textures) {
+        for (const auto& [index, texture] : materialPass.textures) {
             this->lineEnd ();
-            this->m_out << "Texture " << texture.first << ": " << texture.second;
+            this->m_out << "Texture " << index << ": " << texture;
         }
 
         this->decreaseIndentation ();
@@ -368,9 +368,9 @@ void StringPrinter::printMaterialPass (const MaterialPass& materialPass) {
         this->m_out << "Combos count: " << materialPass.combos.size ();
         this->increaseIndentation ();
 
-        for (const auto& combo : materialPass.combos) {
+        for (const auto& [name, value] : materialPass.combos) {
             this->lineEnd ();
-            this->m_out << "Combo " << combo.first << ": " << combo.second;
+            this->m_out << "Combo " << name << ": " << value;
         }
 
         this->decreaseIndentation ();
@@ -397,6 +397,6 @@ void StringPrinter::decreaseIndentation () {
     this->m_level --;
 }
 
-std::string StringPrinter::str () {
+std::string StringPrinter::str () const {
     return this->m_buffer.str ();
 }

@@ -19,7 +19,7 @@ class Camera {
     Camera (Wallpapers::CScene& scene, const SceneData::Camera& camera);
     ~Camera ();
 
-    void setOrthogonalProjection (float width, float height);
+    void setOrthogonalProjection (const float width, const float height);
 
     [[nodiscard]] const glm::vec3& getCenter () const;
     [[nodiscard]] const glm::vec3& getEye () const;

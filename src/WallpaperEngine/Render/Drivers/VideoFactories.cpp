@@ -40,13 +40,13 @@ void VideoFactories::registerFullscreenDetector (std::string xdgSessionType, Ful
 std::vector<std::string> VideoFactories::getRegisteredDrivers () const {
     std::vector<std::string> result;
 
-    for (const auto& [windowMode, sessionTypeToFactory] : this->m_driverFactories) {
-        for (const auto& [xdgSessionType, _] : sessionTypeToFactory) {
+    for (const auto& sessionTypeToFactory : this->m_driverFactories | std::views::values) {
+        for (const auto& xdgSessionType : sessionTypeToFactory | std::views::keys) {
             result.push_back (xdgSessionType);
         }
     }
 
-    auto last = std::unique (result.begin (), result.end ());
+    const auto last = std::ranges::unique (result).begin ();
 
     result.erase (last, result.end ());
 
@@ -79,7 +79,7 @@ std::unique_ptr <VideoDriver> VideoFactories::createVideoDriver (
 }
 
 std::unique_ptr <Detectors::FullScreenDetector> VideoFactories::createFullscreenDetector (
-    std::string xdgSessionType, ApplicationContext& context, VideoDriver& driver
+    const std::string& xdgSessionType, ApplicationContext& context, VideoDriver& driver
 ) {
     const auto it = this->m_fullscreenFactories.find (xdgSessionType);
 

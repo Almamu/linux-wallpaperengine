@@ -63,15 +63,15 @@ class AudioDriver {
     /**
      * @return The application context under which the audio driver is initialized
      */
-    Application::ApplicationContext& getApplicationContext ();
+    Application::ApplicationContext& getApplicationContext () const;
     /**
      * @return The audio playing detector to use to stop playing sound when something else starts playing
      */
-    [[nodiscard]] Detectors::AudioPlayingDetector& getAudioDetector ();
+    [[nodiscard]] Detectors::AudioPlayingDetector& getAudioDetector () const;
     /**
      * @return The audio recorder to use to capture stereo mix data
      */
-    [[nodiscard]] Recorders::PlaybackRecorder& getRecorder ();
+    [[nodiscard]] Recorders::PlaybackRecorder& getRecorder () const;
 
   private:
     Application::ApplicationContext& m_applicationContext;

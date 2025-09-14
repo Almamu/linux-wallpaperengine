@@ -51,9 +51,7 @@ CPass::CPass (
 
 std::shared_ptr<const TextureProvider> CPass::resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous) {
     if (expected == nullptr) {
-        const auto it = this->m_fbos.find (index);
-
-        if (it != this->m_fbos.end ())
+        if (const auto it = this->m_fbos.find (index); it != this->m_fbos.end ())
             expected = it->second;
     }
 
@@ -81,7 +79,7 @@ std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
     return fbo;
 }
 
-void CPass::setupRenderFramebuffer () {
+void CPass::setupRenderFramebuffer () const {
     // set the framebuffer we're drawing to
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_drawTo->getFramebuffer ());
 
@@ -145,7 +143,7 @@ void CPass::setupRenderTexture () {
     glUseProgram (this->m_programID);
 
     // maybe we can do this when setting the texture?
-    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_input, 0, this->m_input);
+    auto texture = this->resolveTexture (this->m_input, 0, this->m_input);
 
     uint32_t currentTexture = 0;
     glm::vec2 translation = {0.0f, 0.0f};
@@ -204,7 +202,7 @@ void CPass::setupRenderTexture () {
 
 void CPass::setupRenderReferenceUniforms () {
     // add reference uniforms
-    for (const auto& [name, value] : this->m_referenceUniforms) {
+    for (const auto& value : this->m_referenceUniforms | std::views::values) {
         switch (value->type) {
             case Double: glUniform1d (value->id, *static_cast<const double*> (*value->value)); break;
             case Float: glUniform1f (value->id, *static_cast<const float*> (*value->value)); break;
@@ -232,7 +230,7 @@ void CPass::setupRenderReferenceUniforms () {
 
 void CPass::setupRenderUniforms () {
     // add uniforms
-    for (const auto& [name, value] : this->m_uniforms) {
+    for (const auto& value : this->m_uniforms | std::views::values) {
         switch (value->type) {
             case Double: glUniform1dv (value->id, value->count, static_cast<const double*> (value->value)); break;
             case Float: glUniform1fv (value->id, value->count, static_cast<const float*> (value->value)); break;
@@ -259,7 +257,7 @@ void CPass::setupRenderUniforms () {
     }
 }
 
-void CPass::setupRenderAttributes () {
+void CPass::setupRenderAttributes () const {
     for (const auto& cur : this->m_attribs) {
         glEnableVertexAttribArray (cur->id);
         glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
@@ -290,11 +288,9 @@ void CPass::cleanupRenderSetup () {
     glBindTexture (GL_TEXTURE_2D, 0);
 
     // continue on the map from the second texture
-    if (!this->m_textures.empty ()) {
-        for (const auto& [index, _] : this->m_textures) {
-            glActiveTexture (GL_TEXTURE0 + index);
-            glBindTexture (GL_TEXTURE_2D, 0);
-        }
+    for (const auto& index : this->m_textures | std::views::keys) {
+        glActiveTexture (GL_TEXTURE0 + index);
+        glBindTexture (GL_TEXTURE_2D, 0);
     }
 }
 
@@ -383,7 +379,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
     glGetShaderiv (shaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -408,7 +404,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    std::shared_ptr<const TextureProvider> texture0 = this->m_image.getTexture ();
+    const auto texture0 = this->m_image.getTexture ();
 
     // copy the combos from the pass
     this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
@@ -451,7 +447,7 @@ void CPass::setupShaders () {
     glGetProgramiv (this->m_programID, GL_INFO_LOG_LENGTH, &infoLogLength);
 
     if (infoLogLength > 0) {
-        char* logBuffer = new char [infoLogLength + 1];
+        const auto logBuffer = new char [infoLogLength + 1];
         // ensure logBuffer ends with a \0
         memset (logBuffer, 0, infoLogLength + 1);
         // get information about the error
@@ -677,9 +673,8 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // free the uniform that's already registered if it's there already
-    const auto it = this->m_uniforms.find (name);
 
-    if (it != this->m_uniforms.end ()) {
+    if (const auto it = this->m_uniforms.find (name); it != this->m_uniforms.end ()) {
         delete it->second;
     }
 
@@ -696,9 +691,8 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
         return;
 
     // free the uniform that's already registered if it's there already
-    const auto it = this->m_uniforms.find (name);
 
-    if (it != this->m_uniforms.end ()) {
+    if (const auto it = this->m_uniforms.find (name); it != this->m_uniforms.end ()) {
         delete it->second;
     }
 
@@ -709,23 +703,23 @@ template <typename T> void CPass::addUniform (const std::string& name, UniformTy
 
 void CPass::setupShaderVariables () {
     for (const auto& cur : this->m_shader->getVertex ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+        if (!this->m_uniforms.contains (cur->getName ()))
             this->addUniform (cur);
 
     for (const auto& cur : this->m_shader->getFragment ().getParameters ())
-        if (this->m_uniforms.find (cur->getName ()) == this->m_uniforms.end ())
+        if (!this->m_uniforms.contains (cur->getName ()))
             this->addUniform (cur);
 
     // find variables in the shaders and set the value with the constants if possible
     for (const auto& [name, value] : this->m_override.constants) {
-        const auto parameters = this->m_shader->findParameter (name);
+        const auto [vertex, fragment] = this->m_shader->findParameter (name);
 
         // variable not found, can be ignored
-        if (parameters.vertex == nullptr && parameters.fragment == nullptr)
+        if (vertex == nullptr && fragment == nullptr)
             continue;
 
         // get one instance of it
-        ShaderVariable* var = parameters.vertex == nullptr ? parameters.fragment : parameters.vertex;
+        ShaderVariable* var = vertex == nullptr ? fragment : vertex;
 
         // this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
         // of the underlying CDynamicValue used for the value
@@ -740,7 +734,7 @@ void CPass::addUniform (ShaderVariable* value) {
     this->addUniform (value, value);
 }
 
-void CPass::addUniform (ShaderVariable* value, const DynamicValue* setting) {
+void CPass::addUniform (const ShaderVariable* value, const DynamicValue* setting) {
     if (value->is<ShaderVariableFloat> ()) {
         this->addUniform (value->getName (), setting->getFloat ());
     } else if (value->is<ShaderVariableInteger> ()) {

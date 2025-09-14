@@ -114,7 +114,7 @@ class CPass final : public Helpers::ContextAware {
     void setupAttributes ();
     void addAttribute (const std::string& name, GLint type, GLint elements, const GLuint* value);
     void addUniform (ShaderVariable* value);
-    void addUniform (ShaderVariable* value, const DynamicValue* setting);
+    void addUniform (const ShaderVariable* value, const DynamicValue* setting);
     void addUniform (const std::string& name, int value);
     void addUniform (const std::string& name, double value);
     void addUniform (const std::string& name, float value);
@@ -143,11 +143,11 @@ class CPass final : public Helpers::ContextAware {
     template <typename T> void addUniform (const std::string& name, UniformType type, T* value, int count = 1);
     template <typename T> void addUniform (const std::string& name, UniformType type, T** value);
 
-    void setupRenderFramebuffer ();
+    void setupRenderFramebuffer () const;
     void setupRenderTexture ();
     void setupRenderUniforms ();
     void setupRenderReferenceUniforms ();
-    void setupRenderAttributes ();
+    void setupRenderAttributes () const;
     void renderGeometry () const;
     void cleanupRenderSetup ();
 

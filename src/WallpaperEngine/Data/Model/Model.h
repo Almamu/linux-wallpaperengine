@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <string>
+
 #include "Types.h"
 
 namespace WallpaperEngine::Data::Model {

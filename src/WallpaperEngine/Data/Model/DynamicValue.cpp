@@ -108,7 +108,7 @@ std::string DynamicValue::toString () const {
     }
 }
 
-void DynamicValue::update(float newValue) {
+void DynamicValue::update (const float newValue) {
     this->m_ivec4 = glm::ivec4(static_cast<int> (newValue));
     this->m_ivec3 = glm::ivec3(static_cast<int> (newValue));
     this->m_ivec2 = glm::ivec2(static_cast<int> (newValue));
@@ -123,7 +123,7 @@ void DynamicValue::update(float newValue) {
     this->propagate ();
 }
 
-void DynamicValue::update(int newValue) {
+void DynamicValue::update (const int newValue) {
     this->m_ivec4 = glm::ivec4(newValue);
     this->m_ivec3 = glm::ivec3(newValue);
     this->m_ivec2 = glm::ivec2(newValue);
@@ -138,7 +138,7 @@ void DynamicValue::update(int newValue) {
     this->propagate ();
 }
 
-void DynamicValue::update(bool newValue) {
+void DynamicValue::update (const bool newValue) {
     this->m_ivec4 = glm::ivec4(newValue);
     this->m_ivec3 = glm::ivec3(newValue);
     this->m_ivec2 = glm::ivec2(newValue);

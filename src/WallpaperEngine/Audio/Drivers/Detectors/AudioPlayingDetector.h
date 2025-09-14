@@ -45,7 +45,7 @@ class AudioPlayingDetector {
     /**
      * @return The application context using this detector
      */
-    [[nodiscard]] Application::ApplicationContext& getApplicationContext ();
+    [[nodiscard]] Application::ApplicationContext& getApplicationContext () const;
     /**
      * @return The fullscreen detector used
      */

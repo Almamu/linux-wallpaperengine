@@ -7,7 +7,7 @@
 
 WallpaperEngine::Application::WallpaperApplication* app;
 
-void signalhandler(int sig) {
+void signalhandler (const int sig) {
     if (app == nullptr)
         return;
 
@@ -20,17 +20,19 @@ void initLogging () {
 }
 
 int main (int argc, char* argv[]) {
-    //try {
+    try {
         // if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
         bool enableLogging = true;
-        std::string typeZygote = "--type=zygote";
-        std::string typeUtility = "--type=utility";
+        const std::string typeZygote = "--type=zygote";
+        const std::string typeUtility = "--type=utility";
 
         for (int i = 1; i < argc; i ++) {
             if (strncmp (typeZygote.c_str(), argv[i], typeZygote.size()) == 0) {
                 enableLogging = false;
                 break;
-            } else if (strncmp (typeUtility.c_str(), argv[i], typeUtility.size()) == 0) {
+            }
+
+            if (strncmp (typeUtility.c_str(), argv[i], typeUtility.size()) == 0) {
                 enableLogging = false;
                 break;
             }
@@ -64,8 +66,8 @@ int main (int argc, char* argv[]) {
         delete app;
 
         return 0;
-/*    } catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         std::cerr << e.what () << std::endl;
         return 1;
-    }*/
+    }
 }

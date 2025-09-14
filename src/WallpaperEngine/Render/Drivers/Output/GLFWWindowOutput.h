@@ -17,6 +17,6 @@ class GLFWWindowOutput final : public Output {
     void updateRender () const override;
 
   private:
-    void repositionWindow ();
+    void repositionWindow () const;
 };
 } // namespace WallpaperEngine::Render::Drivers::Output

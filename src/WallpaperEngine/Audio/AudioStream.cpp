@@ -89,7 +89,7 @@ AudioStream::AudioStream (AudioContext& context, const std::string& filename) :
     this->loadCustomContent (filename.c_str ());
 }
 
-AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer, uint32_t length) :
+AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer) :
     m_audioContext (context) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
@@ -98,7 +98,6 @@ AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buff
         sLog.exception ("Cannot allocate ffmpeg format context");
 
     this->m_buffer = buffer;
-    this->m_length = length;
 
     // setup custom io for it
     this->m_formatContext->pb = avio_alloc_context (static_cast<uint8_t*> (av_malloc (4096)), 4096, 0, this,
@@ -281,7 +280,7 @@ void AudioStream::dequeuePacket (AVPacket* output) {
         if (av_fifo_size (this->m_queue->packetList) >= static_cast <int> (sizeof (entry)))
             ret = av_fifo_generic_read (this->m_queue->packetList, &entry, sizeof (entry), nullptr);
 #else
-        int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
+        const int ret = av_fifo_read (this->m_queue->packetList, &entry, 1);
 #endif
 
         // enough data available, read it
@@ -303,11 +302,11 @@ void AudioStream::dequeuePacket (AVPacket* output) {
     SDL_UnlockMutex (this->m_queue->mutex);
 }
 
-AVCodecContext* AudioStream::getContext () {
+AVCodecContext* AudioStream::getContext () const {
     return this->m_context;
 }
 
-AVFormatContext* AudioStream::getFormatContext () {
+AVFormatContext* AudioStream::getFormatContext () const {
     return this->m_formatContext;
 }
 
@@ -319,7 +318,7 @@ bool AudioStream::isInitialized () const {
     return this->m_initialized;
 }
 
-void AudioStream::setRepeat (bool newRepeat) {
+void AudioStream::setRepeat (const bool newRepeat) {
     this->m_repeat = newRepeat;
 }
 
@@ -331,23 +330,19 @@ ReadStreamSharedPtr& AudioStream::getBuffer () {
     return this->m_buffer;
 }
 
-uint32_t AudioStream::getLength () const {
-    return this->m_length;
-}
-
-SDL_cond* AudioStream::getWaitCondition () {
+SDL_cond* AudioStream::getWaitCondition () const {
     return this->m_queue->wait;
 }
 
-int AudioStream::getQueueSize () {
+int AudioStream::getQueueSize () const {
     return this->m_queue->size;
 }
 
-int AudioStream::getQueuePacketCount () {
+int AudioStream::getQueuePacketCount () const {
     return this->m_queue->nb_packets;
 }
 
-AVRational AudioStream::getTimeBase () {
+AVRational AudioStream::getTimeBase () const {
     if (this->m_audioStream == NO_AUDIO_STREAM) {
         return {0, 0};
     }
@@ -355,15 +350,15 @@ AVRational AudioStream::getTimeBase () {
     return this->m_formatContext->streams [this->m_audioStream]->time_base;
 }
 
-int64_t AudioStream::getQueueDuration () {
+int64_t AudioStream::getQueueDuration () const {
     return this->m_queue->duration;
 }
 
-bool AudioStream::isQueueEmpty () {
+bool AudioStream::isQueueEmpty () const {
     return this->m_queue->nb_packets == 0;
 }
 
-SDL_mutex* AudioStream::getMutex () {
+SDL_mutex* AudioStream::getMutex () const {
     return this->m_queue->mutex;
 }
 
@@ -487,7 +482,7 @@ int AudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out
     return resampled_data_size;
 }
 
-int AudioStream::decodeFrame (uint8_t* audioBuffer, int bufferSize) {
+int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
     AVPacket* pkt = av_packet_alloc ();
     static uint8_t* audio_pkt_data = nullptr;
     static int audio_pkt_size = 0;

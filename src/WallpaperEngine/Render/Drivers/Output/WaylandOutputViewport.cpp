@@ -162,7 +162,7 @@ void WaylandOutputViewport::setupLS () {
     this->m_driver->getOutput ().reset ();
 }
 
-WaylandOpenGLDriver* WaylandOutputViewport::getDriver () {
+WaylandOpenGLDriver* WaylandOutputViewport::getDriver () const {
     return this->m_driver;
 }
 

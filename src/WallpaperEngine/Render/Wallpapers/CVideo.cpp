@@ -75,7 +75,7 @@ CVideo::CVideo (
     this->setupFramebuffers ();
 }
 
-void CVideo::setSize (int width, int height) {
+void CVideo::setSize (const int width, const int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;
 
@@ -88,7 +88,7 @@ void CVideo::setSize (int width, int height) {
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 }
 
-void CVideo::renderFrame (glm::ivec4 viewport) {
+void CVideo::renderFrame (const glm::ivec4& viewport) {
     // read any and all the events available
     while (this->m_mpv) {
         const mpv_event* event = mpv_wait_event (this->m_mpv, 0);

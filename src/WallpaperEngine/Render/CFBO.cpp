@@ -3,14 +3,14 @@
 
 using namespace WallpaperEngine::Render;
 
-CFBO::CFBO (std::string name, TextureFormat format, uint32_t flags, float scale,
+CFBO::CFBO (std::string name, const TextureFormat format, const uint32_t flags, const float scale,
             uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight) :
     m_scale (scale),
     m_name (std::move (name)),
     m_format (format),
     m_flags (flags) {
     // create an empty texture that'll be free'd so the FBO is transparent
-    const GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
+    constexpr GLenum drawBuffers [1] = {GL_COLOR_ATTACHMENT0};
     // create the main framebuffer
     glGenFramebuffers (1, &this->m_framebuffer);
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_framebuffer);
@@ -61,7 +61,7 @@ CFBO::CFBO (std::string name, TextureFormat format, uint32_t flags, float scale,
     this->m_resolution = {textureWidth, textureHeight, realWidth, realHeight};
 
     // create the textureframe entries
-    auto frame = std::make_shared<Frame> ();
+    const auto frame = std::make_shared<Frame> ();
 
     frame->frameNumber = 0;
     frame->frametime = 0;

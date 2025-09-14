@@ -22,7 +22,7 @@ class CVideo final : public CWallpaper {
     void setSize (int width, int height);
 
   protected:
-    void renderFrame (glm::ivec4 viewport) override;
+    void renderFrame (const glm::ivec4& viewport) override;
 
     friend class CWallpaper;
 

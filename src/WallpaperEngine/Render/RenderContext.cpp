@@ -39,9 +39,9 @@ void RenderContext::setWallpaper (const std::string& display, std::shared_ptr <C
     this->m_wallpapers.insert_or_assign (display, wallpaper);
 }
 
-void RenderContext::setPause (bool newState) {
-    for (auto&& wallpaper : this->m_wallpapers)
-        wallpaper.second->setPause (newState);
+void RenderContext::setPause (const bool newState) const {
+    for (const auto& wallpaper : this->m_wallpapers | std::views::values)
+        wallpaper->setPause (newState);
 }
 
 Input::InputContext& RenderContext::getInputContext () const {
@@ -60,7 +60,7 @@ const Drivers::Output::Output& RenderContext::getOutput () const {
     return this->m_driver.getOutput ();
 }
 
-std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std::string& name) {
+std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std::string& name) const {
     return this->m_textureCache->resolve (name);
 }
 

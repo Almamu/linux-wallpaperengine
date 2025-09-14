@@ -23,7 +23,7 @@ using namespace WallpaperEngine::Data::Model;
 class ShaderUnit {
   public:
     ShaderUnit (
-        GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
+        const GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
         const ShaderConstantMap& constants, const TextureMap& passTextures,
         const TextureMap& overrideTextures, const ComboMap& combos, const ComboMap& overrideCombos);
     ~ShaderUnit () = default;

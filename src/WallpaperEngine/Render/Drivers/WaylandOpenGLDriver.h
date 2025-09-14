@@ -72,7 +72,7 @@ class WaylandOpenGLDriver final : public VideoDriver {
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
     void onLayerClose (Output::WaylandOutputViewport*);
-    Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*);
+    Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 
     Output::WaylandOutputViewport* viewportInFocus = nullptr;
 

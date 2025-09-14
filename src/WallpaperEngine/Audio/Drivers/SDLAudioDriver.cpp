@@ -103,7 +103,10 @@ SDLAudioDriver::~SDLAudioDriver () {
     if (!this->m_initialized)
         return;
 
-    SDL_CloseAudioDevice (this->m_deviceID);
+    if (this->m_deviceID != 0) {
+        SDL_CloseAudioDevice (this->m_deviceID);
+    }
+
     SDL_QuitSubSystem (SDL_INIT_AUDIO);
 }
 
@@ -118,18 +121,22 @@ const std::vector<SDLAudioBuffer*>& SDLAudioDriver::getStreams () {
 AVSampleFormat SDLAudioDriver::getFormat () const {
     switch (this->m_audioSpec.format) {
         case AUDIO_U8:
-        case AUDIO_S8: return AV_SAMPLE_FMT_U8;
+        case AUDIO_S8:
+            return AV_SAMPLE_FMT_U8;
         case AUDIO_U16MSB:
         case AUDIO_U16LSB:
         case AUDIO_S16LSB:
-        case AUDIO_S16MSB: return AV_SAMPLE_FMT_S16;
+        case AUDIO_S16MSB:
+            return AV_SAMPLE_FMT_S16;
         case AUDIO_S32LSB:
-        case AUDIO_S32MSB: return AV_SAMPLE_FMT_S32;
+        case AUDIO_S32MSB:
+            return AV_SAMPLE_FMT_S32;
         case AUDIO_F32LSB:
-        case AUDIO_F32MSB: return AV_SAMPLE_FMT_FLT;
+        case AUDIO_F32MSB:
+            return AV_SAMPLE_FMT_FLT;
+        default:
+            sLog.exception ("Cannot convert from SDL format to ffmpeg format, aborting...");
     }
-
-    sLog.exception ("Cannot convert from SDL format to ffmpeg format, aborting...");
 }
 
 int SDLAudioDriver::getSampleRate () const {

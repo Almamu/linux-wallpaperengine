@@ -46,10 +46,9 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
     // actual value parsing
     if (valueIt.is_string ()) {
         std::string str = valueIt;
-        int size = VectorBuilder::preparseSize (str);
 
-        //TODO: VALIDATE THIS IS RIGHT?
-        if (size == 2) {
+        // TODO: VALIDATE THIS IS RIGHT?
+        if (int size = VectorBuilder::preparseSize (str); size == 2) {
             value->update (static_cast<glm::vec2> (valueIt));
         } else if (size == 3) {
             value->update (static_cast<glm::vec3> (valueIt));

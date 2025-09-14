@@ -7,26 +7,28 @@ using namespace WallpaperEngine::Render;
 
 WallpaperState::WallpaperState (
     const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode) :
-    m_textureUVsMode (textureUVsMode) {}
+    m_textureUVsMode (textureUVsMode),
+    m_clampingMode (clampMode) {}
 
 bool WallpaperState::hasChanged (
     const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,const int& projectionHeight
 ) const {
-    return this->viewport.width != viewport.z || this->viewport.height != viewport.w ||
-           this->projection.width != projectionWidth || this->projection.height != projectionHeight ||
-           this->vflip != vflip;
+    return this->m_viewport.width != viewport.z || this->m_viewport.height != viewport.w ||
+           this->m_projection.width != projectionWidth || this->m_projection.height != projectionHeight ||
+           this->m_vflip != vflip;
 }
 
 // Reset UVs to 0/1 values
 void WallpaperState::resetUVs () {
-    this->UVs.ustart = 0;
-    this->UVs.uend = 1;
-    if (vflip) {
-        this->UVs.vstart = 0.0f;
-        this->UVs.vend = 1.0f;
+    this->m_UVs.ustart = 0;
+    this->m_UVs.uend = 1;
+
+    if (m_vflip) {
+        this->m_UVs.vstart = 0.0f;
+        this->m_UVs.vend = 1.0f;
     } else {
-        this->UVs.vstart = 1.0f;
-        this->UVs.vend = 0.0f;
+        this->m_UVs.vstart = 1.0f;
+        this->m_UVs.vend = 0.0f;
     }
 }
 
@@ -41,8 +43,8 @@ void WallpaperState::updateUs (const int& projectionWidth, const int& projection
     const float left = newCenter - viewportCenter;
     const float right = newCenter + viewportCenter;
 
-    this->UVs.ustart = left / newWidth;
-    this->UVs.uend = right / newWidth;
+    this->m_UVs.ustart = left / newWidth;
+    this->m_UVs.uend = right / newWidth;
 }
 
 // Update Vs coordinates for current viewport and projection
@@ -56,12 +58,12 @@ void WallpaperState::updateVs (const int& projectionWidth, const int& projection
     const float down = newCenter - viewportCenter;
     const float up = newCenter + viewportCenter;
 
-    if (vflip) {
-        this->UVs.vstart = down / newHeight;
-        this->UVs.vend = up / newHeight;
+    if (m_vflip) {
+        this->m_UVs.vstart = down / newHeight;
+        this->m_UVs.vend = up / newHeight;
     } else {
-        this->UVs.vstart = up / newHeight;
-        this->UVs.vend = down / newHeight;
+        this->m_UVs.vstart = up / newHeight;
+        this->m_UVs.vend = down / newHeight;
     }
 }
 
@@ -149,28 +151,28 @@ void WallpaperState::setTextureUVsStrategy (WallpaperState::TextureUVsScaling st
 }
 
 int WallpaperState::getViewportWidth () const {
-    return this->viewport.width;
+    return this->m_viewport.width;
 }
 
 int WallpaperState::getViewportHeight () const {
-    return this->viewport.height;
+    return this->m_viewport.height;
 }
 
 int WallpaperState::getProjectionWidth () const {
-    return this->projection.width;
+    return this->m_projection.width;
 }
 
 int WallpaperState::getProjectionHeight () const {
-    return this->projection.height;
+    return this->m_projection.height;
 }
 
 void WallpaperState::updateState (const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,
                                    const int& projectionHeight) {
-    this->viewport.width = viewport.z;
-    this->viewport.height = viewport.w;
-    this->vflip = vflip;
-    this->projection.width = projectionWidth;
-    this->projection.height = projectionHeight;
+    this->m_viewport.width = viewport.z;
+    this->m_viewport.height = viewport.w;
+    this->m_vflip = vflip;
+    this->m_projection.width = projectionWidth;
+    this->m_projection.height = projectionHeight;
 
     // Set texture UVs according to choosen scaling mode for this wallpaper
     switch (this->getTextureUVsScaling ()) {

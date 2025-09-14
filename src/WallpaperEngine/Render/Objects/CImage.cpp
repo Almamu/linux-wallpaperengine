@@ -83,9 +83,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_pos.w = scene_height / 2 - this->m_pos.w;
 
     // detect texture (if any)
-    auto textures = (*this->m_image.model->material->passes.begin ())->textures;
 
-    if (!textures.empty ()) {
+    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; !textures.empty ()) {
         std::string textureName = textures.begin ()->second;
 
         if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
@@ -247,7 +246,7 @@ void CImage::setup () {
         );
     }
 
-    auto fboProvider = std::make_shared<FBOProvider> (this);
+    const auto fboProvider = std::make_shared<FBOProvider> (this);
 
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
@@ -271,7 +270,7 @@ void CImage::setup () {
             auto curOverride = cur->passOverrides.begin ();
             auto endOverride = cur->passOverrides.end ();
 
-            for (; curEffect != endEffect; curEffect++) {
+            for (; curEffect != endEffect; ++curEffect) {
                 if (!(*curEffect)->material.has_value ()) {
                     if (!(*curEffect)->command.has_value ()) {
                         sLog.error ("Pass without material and command not supported");
@@ -326,7 +325,7 @@ void CImage::setup () {
                     }
 
                     if (curOverride != endOverride) {
-                        curOverride++;
+                        ++curOverride;
                     }
                 }
             }
@@ -458,15 +457,17 @@ void CImage::pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::share
 void CImage::render () {
     // do not try to render something that did not initialize successfully
     // non-visible materials do need to be rendered
-    if (!this->m_initialized)
+    if (!this->m_initialized) {
         return;
+    }
 
     glColorMask (true, true, true, true);
 
     // update the position if required
     // TODO: There's more images that are not affected by parallax, autosize or fullscreen are not affected
-    if (this->getScene ().getScene ().camera.parallax.enabled && !this->getImage ().model->fullscreen)
+    if (this->getScene ().getScene ().camera.parallax.enabled && !this->getImage ().model->fullscreen) {
         this->updateScreenSpacePosition ();
+    }
 
 #if !NDEBUG
     std::string str = "Rendering ";
@@ -482,11 +483,11 @@ void CImage::render () {
 #endif /* DEBUG */
 
     auto cur = this->m_passes.begin ();
-    const auto end = this->m_passes.end ();
 
-    for (; cur != end; ++cur) {
-        if (std::next (cur) == end)
+    for (const auto end = this->m_passes.end (); cur != end; ++cur) {
+        if (std::next (cur) == end) {
             glColorMask (true, true, true, false);
+        }
 
         (*cur)->render ();
     }
@@ -536,8 +537,9 @@ const Effects::CMaterial* CImage::getMaterial () const {
 }
 
 glm::vec2 CImage::getSize () const {
-    if (this->m_texture == nullptr)
+    if (this->m_texture == nullptr) {
         return this->getImage ().size;
+    }
 
     return {this->m_texture->getRealWidth (), this->m_texture->getRealHeight ()};
 }

@@ -14,15 +14,15 @@ void AudioDriver::update () {
     this->m_detector.update ();
 }
 
-Application::ApplicationContext& AudioDriver::getApplicationContext () {
+Application::ApplicationContext& AudioDriver::getApplicationContext () const {
     return this->m_applicationContext;
 }
 
-Detectors::AudioPlayingDetector& AudioDriver::getAudioDetector () {
+Detectors::AudioPlayingDetector& AudioDriver::getAudioDetector () const {
     return this->m_detector;
 }
 
-Recorders::PlaybackRecorder& AudioDriver::getRecorder () {
+Recorders::PlaybackRecorder& AudioDriver::getRecorder () const {
     return this->m_recorder;
 }
 } // namespace WallpaperEngine::Audio::Drivers

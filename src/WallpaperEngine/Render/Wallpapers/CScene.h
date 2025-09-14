@@ -33,8 +33,8 @@ class CScene final : public CWallpaper {
     [[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
 
   protected:
-    void renderFrame (glm::ivec4 viewport) override;
-    void updateMouse (glm::ivec4 viewport);
+    void renderFrame (const glm::ivec4& viewport) override;
+    void updateMouse (const glm::ivec4& viewport);
 
     friend class CWallpaper;
 

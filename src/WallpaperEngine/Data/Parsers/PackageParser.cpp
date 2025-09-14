@@ -13,9 +13,9 @@ using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Utils;
 
 PackageUniquePtr PackageParser::parse (ReadStreamSharedPtr stream) {
-    BinaryReaderUniquePtr reader = std::make_unique <BinaryReader> (std::move (stream));
+    auto reader = std::make_unique <BinaryReader> (std::move (stream));
 
-    if (std::string header = reader->nextSizedString (); header.starts_with ("PKGV") == false) {
+    if (const std::string header = reader->nextSizedString (); header.starts_with ("PKGV") == false) {
         sLog.exception ("Expected header to start with PKGV, got ", header);
     }
 

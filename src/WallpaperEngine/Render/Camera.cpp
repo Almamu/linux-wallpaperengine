@@ -54,7 +54,7 @@ float Camera::getHeight () const {
     return this->m_height;
 }
 
-void Camera::setOrthogonalProjection (float width, float height) {
+void Camera::setOrthogonalProjection (const float width, const float height) {
     this->m_width = width;
     this->m_height = height;
 

@@ -42,11 +42,11 @@ class CTexture final : public TextureProvider {
     /**
      * Determines the texture's internal storage format
      */
-    GLint setupInternalFormat ();
+    GLint setupInternalFormat () const;
     /**
      * Prepares openGL parameters for loading texture data
      */
-    void setupOpenGLParameters (uint32_t textureID);
+    void setupOpenGLParameters (const uint32_t textureID) const;
 
     /** The texture header */
     TextureUniquePtr m_header;

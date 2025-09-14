@@ -31,17 +31,15 @@ bool WPSchemeHandler::Open(CefRefPtr<CefRequest> request,
         return false;
     }
 
-    std::string host = CefString(&parts.host);
-    std::string path = CefString(&parts.path);
+    const std::string host = CefString(&parts.host);
+    const std::string path = CefString(&parts.path);
 
-    std::string file = path.substr(1);
+    const std::string file = path.substr(1);
 
     try {
         // try to read the file on the current container, if the file doesn't exists
         // an exception will be thrown
-        const char* mime = MimeTypes::getType (file.c_str ());
-
-        if (!mime) {
+        if (const char* mime = MimeTypes::getType (file.c_str ()); !mime) {
             this->m_mimeType = "application/octet+stream";
         } else {
             this->m_mimeType = mime;

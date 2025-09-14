@@ -23,7 +23,7 @@ class Wallpaper : public TypeCaster, public WallpaperData {
     ~Wallpaper () override = default;
 };
 
-class Video : public Wallpaper {
+class Video final : public Wallpaper {
   public:
     explicit Video (WallpaperData data) noexcept : Wallpaper (std::move(data)) {}
 
@@ -31,7 +31,7 @@ class Video : public Wallpaper {
 };
 
 
-class Web : public Wallpaper {
+class Web final : public Wallpaper {
   public:
     explicit Web (WallpaperData data) noexcept : Wallpaper (std::move(data)) {}
 
@@ -106,7 +106,7 @@ struct SceneData {
     ObjectList objects;
 };
 
-class Scene : public Wallpaper, public SceneData {
+class Scene final : public Wallpaper, public SceneData {
   public:
     explicit Scene (WallpaperData data, SceneData sceneData) noexcept : Wallpaper (std::move (data)), SceneData (std::move (sceneData)) {}
 

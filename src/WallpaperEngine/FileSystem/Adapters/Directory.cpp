@@ -16,7 +16,7 @@ ReadStreamSharedPtr DirectoryAdapter::open (const std::filesystem::path& path) c
         throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
     }
 
-    auto status = std::filesystem::status (finalpath);
+    const auto status = std::filesystem::status (finalpath);
 
     if (!std::filesystem::exists (finalpath)) {
         throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
@@ -31,13 +31,13 @@ ReadStreamSharedPtr DirectoryAdapter::open (const std::filesystem::path& path) c
 
 bool DirectoryAdapter::exists (const std::filesystem::path& path) const {
     try {
-        auto finalpath = std::filesystem::canonical(this->basepath / path);
+        const auto finalpath = std::filesystem::canonical(this->basepath / path);
 
         if (finalpath.string ().find (this->basepath.string ()) != 0) {
             return false;
         }
 
-        auto status = std::filesystem::status (finalpath);
+        const auto status = std::filesystem::status (finalpath);
 
         if (!std::filesystem::exists (finalpath)) {
             return false;
@@ -65,15 +65,15 @@ std::filesystem::path DirectoryAdapter::physicalPath (const std::filesystem::pat
 
 
 bool DirectoryFactory::handlesMountpoint (const std::filesystem::path& path) const {
-    auto finalpath = std::filesystem::canonical (path);
-    auto status = std::filesystem::status (finalpath);
+    const auto finalpath = std::filesystem::canonical (path);
+    const auto status = std::filesystem::status (finalpath);
 
     return std::filesystem::exists (finalpath) && std::filesystem::is_directory (status);
 }
 
 AdapterSharedPtr DirectoryFactory::create (const std::filesystem::path& path) const {
     auto finalpath = std::filesystem::canonical (path);
-    auto status = std::filesystem::status (finalpath);
+    const auto status = std::filesystem::status (finalpath);
 
     if (!std::filesystem::exists (finalpath)) {
         throw std::filesystem::filesystem_error ("Cannot find directory", path, std::error_code ());

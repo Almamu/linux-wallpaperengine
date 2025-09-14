@@ -56,7 +56,7 @@ class DynamicValue {
     void update (const glm::ivec2& newValue);
     void update (const glm::ivec3& newValue);
     void update (const glm::ivec4& newValue);
-    void update (const DynamicValue& newValue);
+    void update (const DynamicValue& other);
 
     /**
      * Registers the given callback to be called when the value changes

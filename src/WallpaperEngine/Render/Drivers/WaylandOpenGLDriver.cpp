@@ -122,7 +122,7 @@ void WaylandOpenGLDriver::initEGL () {
     if (!CLIENT_EXTENSIONS)
         sLog.exception ("Failed to query EGL Extensions");
 
-    const std::string CLIENTEXTENSIONS = std::string (CLIENT_EXTENSIONS);
+    const auto CLIENTEXTENSIONS = std::string (CLIENT_EXTENSIONS);
 
     if (CLIENTEXTENSIONS.find ("EGL_EXT_platform_base") == std::string::npos)
         sLog.exception ("EGL_EXT_platform_base not supported by EGL!");
@@ -221,8 +221,7 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
         wl_surface_destroy (viewport->surface);
 
     // remove the output from the list
-    this->m_screens.erase (std::remove (this->m_screens.begin (), this->m_screens.end (), viewport),
-                           this->m_screens.end ());
+    std::erase (this->m_screens, viewport);
 
     // reset the viewports
     this->getOutput ().reset ();
@@ -258,9 +257,7 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
     bool any = false;
 
     for (const auto& o : this->m_screens) {
-        const auto cur = context.settings.general.screenBackgrounds.find (o->name);
-
-        if (cur == context.settings.general.screenBackgrounds.end ())
+        if (!context.settings.general.screenBackgrounds.contains (o->name))
             continue;
 
         o->setupLS ();
@@ -270,9 +267,7 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
     if (!any)
         sLog.exception ("No outputs could be initialized, please check the parameters and try again");
 
-    const GLenum result = glewInit ();
-
-    if (result != GLEW_OK)
+    if (const GLenum result = glewInit (); result != GLEW_OK)
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
 }
 
@@ -297,7 +292,7 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     if (!initialized) {
         initialized = true;
 
-        for (const auto& [screen, viewport] : this->getOutput ().getViewports ())
+        for (const auto& viewport : this->getOutput ().getViewports () | std::views::values)
             this->getApp ().update (viewport);
     }
 
@@ -365,7 +360,7 @@ WaylandOpenGLDriver::WaylandContext* WaylandOpenGLDriver::getWaylandContext () {
     return &this->m_waylandContext;
 }
 
-Output::WaylandOutputViewport* WaylandOpenGLDriver::surfaceToViewport (const wl_surface* surface) {
+Output::WaylandOutputViewport* WaylandOpenGLDriver::surfaceToViewport (const wl_surface* surface) const {
     for (const auto& o : m_screens) {
         if (o->surface == surface)
             return o;
