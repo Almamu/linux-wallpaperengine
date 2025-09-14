@@ -19,13 +19,10 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
     if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ())
         return found->second;
 
-    auto finalFilename = std::filesystem::path("materials") / filename;
-    finalFilename.replace_extension ("tex");
-
     // search for the texture in all the different containers just in case
     for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
         try {
-            const auto contents = project->assetLocator->read (finalFilename);
+            const auto contents = project->assetLocator->texture (filename);
             auto stream = BinaryReader (contents);
 
             auto parsedTexture = TextureParser::parse (stream);

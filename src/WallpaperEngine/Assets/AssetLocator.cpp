@@ -71,7 +71,7 @@ std::string AssetLocator::readString (const std::filesystem::path& filename) con
 
 
 ReadStreamSharedPtr AssetLocator::texture (const std::filesystem::path& filename) const {
-    auto final = filename;
+    auto final = std::filesystem::path("materials") / filename;
 
     final.replace_extension ("tex");
 
