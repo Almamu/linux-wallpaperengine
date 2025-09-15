@@ -1,6 +1,7 @@
 <p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
     <a href="https://github.com/Almamu/linux-wallpaperengine/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/Almamu/linux-wallpaperengine/cmake.yml?branch=main" /></a>
+    <img src="https://img.shields.io/coderabbit/prs/github/Almamu/linux-wallpaperengine?utm_source=oss&utm_medium=github&utm_campaign=Almamu%2Flinux-wallpaperengine&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews" />
     <a href="https://github.com/Almamu/linux-wallpaperengine/pulse"><img src="https://img.shields.io/tokei/lines/github/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://www.codefactor.io/repository/github/almamu/linux-wallpaperengine"><img src="https://img.shields.io/codefactor/grade/github/Almamu/linux-wallpaperengine" /></a>
 	<a href="https://github.com/Almamu/linux-wallpaperengine/graphs/commit-activity"><img src="https://img.shields.io/github/commit-activity/m/Almamu/linux-wallpaperengine" /></a>

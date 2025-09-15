@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
@@ -11,6 +12,7 @@ on:
     branches: [ "main" ]
   pull_request:
     paths:
+      - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
@@ -62,7 +64,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        language: ['cpp']
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -72,12 +73,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-          
+
       - name: Initialize CodeQL
         # Initializes the CodeQL tools for scanning.
         uses: github/codeql-action/init@v3
+        if: matrix.os == 'ubuntu-24.04'
         with:
-          languages: ${{ matrix.language }}
+          languages: 'cpp'
 
       - name: Install dependencies
         if: matrix.os == 'ubuntu-22.04'
@@ -97,6 +99,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Perform CodeQL Analysis
+        if: matrix.os == 'ubuntu-24.04'
         uses: github/codeql-action/analyze@v3
 
   build-wayland:
