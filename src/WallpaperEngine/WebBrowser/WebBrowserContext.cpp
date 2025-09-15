@@ -75,12 +75,13 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
 
     // Configurate Chromium
     CefSettings settings;
+    std::string cache_path = (std::filesystem::temp_directory_path() / uuid::generate_uuid_v4()).string();
     // CefString(&settings.locales_dir_path) = "OffScreenCEF/godot/locales";
     // CefString(&settings.resources_dir_path) = "OffScreenCEF/godot/";
     // CefString(&settings.framework_dir_path) = "OffScreenCEF/godot/";
     // CefString(&settings.cache_path) = "OffScreenCEF/godot/";
     //  CefString(&settings.browser_subprocess_path) = "path/to/client"
-    CefString(&settings.root_cache_path) = std::filesystem::temp_directory_path() / uuid::generate_uuid_v4();
+    cef_string_utf8_to_utf16(cache_path.c_str(), cache_path.length(), &settings.root_cache_path);
     settings.windowless_rendering_enabled = true;
 #if defined(CEF_NO_SANDBOX)
     settings.no_sandbox = true;
