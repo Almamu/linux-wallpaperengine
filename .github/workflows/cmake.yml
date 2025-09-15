@@ -86,7 +86,7 @@ jobs:
       - name: Initialize CodeQL
         # Initializes the CodeQL tools for scanning.
         uses: github/codeql-action/init@v3
-        if: matrix.os == 'ubuntu-24.04'
+        if: ${{ matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' }}
         with:
           languages: 'cpp'
 
@@ -108,7 +108,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}}
 
       - name: Perform CodeQL Analysis
-        if: matrix.os == 'ubuntu-24.04'
+        if: ${{ matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' }}
         uses: github/codeql-action/analyze@v3
 
   build-wayland:
