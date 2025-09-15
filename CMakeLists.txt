@@ -45,7 +45,16 @@ set(KISSFFT_TOOLS OFF)
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
 set(CEF_VERSION "135.0.17+gcbc1c5b+chromium-135.0.7049.52")
-set(CEF_DISTRIBUTION_TYPE "minimal" CACHE STRING "CEF distribution variant")
+# CEF_DISTRIBUTION_TYPE default value should be different based on the type of build
+# debug builds should use standard versions
+# while release version can do with the minimal version
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(default_cef_dist "standard")
+else()
+    set(default_cef_dist "minimal")
+endif()
+
+set(CEF_DISTRIBUTION_TYPE "${default_cef_dist}" CACHE STRING "CEF distribution variant")
 set_property(CACHE CEF_DISTRIBUTION_TYPE PROPERTY STRINGS "minimal" "standard")
 # Determine the platform.
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
