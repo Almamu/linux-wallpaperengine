@@ -45,6 +45,8 @@ set(KISSFFT_TOOLS OFF)
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
 set(CEF_VERSION "135.0.17+gcbc1c5b+chromium-135.0.7049.52")
+set(CEF_DISTRIBUTION_TYPE "minimal" CACHE STRING "CEF distribution variant")
+set_property(CACHE CEF_DISTRIBUTION_TYPE PROPERTY STRINGS "minimal" "standard")
 # Determine the platform.
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     if("${PROJECT_ARCH}" STREQUAL "arm64")
@@ -91,6 +93,10 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
         set(CEF_PLATFORM "windows32")
         set(CEF_ARCH_DETECTION "Default for Windows")
     endif()
+endif()
+
+if(CEF_DISTRIBUTION_TYPE AND NOT CEF_DISTRIBUTION_TYPE STREQUAL "standard")
+    set(CEF_PLATFORM "${CEF_PLATFORM}_${CEF_DISTRIBUTION_TYPE}")
 endif()
 message(STATUS "Using CEF for ${CMAKE_SYSTEM_NAME} - ${CEF_PLATFORM} (${CEF_ARCH_DETECTION})")
 include(DownloadCEF)
