@@ -71,7 +71,8 @@ yay -S linux-wallpaperengine-git
 
 You **must own and install Wallpaper Engine** via Steam. This provides the required assets used by many backgrounds.
 
-Good news: **you usually don’t need to copy anything manually.** The app will automatically look in these common install paths:
+Right now the application will automatically detect everything for you as long as the official Wallpaper Engine is installed
+in one of these locations:
 
 ```
 ~/.steam/steam/steamapps/common
@@ -86,11 +87,16 @@ Good news: **you usually don’t need to copy anything manually.** The app will 
 
 #### ❗ If Assets Aren’t Found Automatically
 
+If the assets are not detected automatically, you'll see a message like this:
+```
+Cannot find a valid assets folder, resolved to 'assets'
+```
+
 You can copy the `assets` folder manually:
 
 1. In Steam, right-click **Wallpaper Engine** → **Manage** → **Browse local files**
 2. Copy the `assets` folder
-3. Paste it into the same folder where the `linux-wallpaperengine` binary is located
+3. Paste it into the same folder where the `linux-wallpaperengine` binary is located (build/output if you followed the build instructions)
 
 ---
 
@@ -107,7 +113,7 @@ Build it:
 
 ```bash
 mkdir build && cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE='Release' ..
 make
 ```
 
