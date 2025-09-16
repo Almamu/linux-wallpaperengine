@@ -28,5 +28,6 @@ ModelUniquePtr ModelParser::parse (const JSON& file, const Project& project, con
         .nopadding = file.optional ("nopadding", false),
         .width = file.optional <int> ("width"),
         .height = file.optional <int> ("height"),
+        .puppet = file.optional <std::string> ("puppet"),
     });
 }

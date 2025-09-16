@@ -26,5 +26,7 @@ struct ModelStruct {
     std::optional<int> width;
     /** Not sure what's used for */
     std::optional<int> height;
+    /** Model file for puppet */
+    std::optional <std::string> puppet;
 };
 } // namespace WallpaperEngine::Data::Model

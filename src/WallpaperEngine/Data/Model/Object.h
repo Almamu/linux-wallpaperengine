@@ -71,6 +71,17 @@ struct ImageEffect {
     EffectUniquePtr effect;
 };
 
+/**
+ * Animation layers for the puppet warp
+ */
+struct ImageAnimationLayer {
+    int id;
+    float rate;
+    bool visible;
+    float blend;
+    int animation;
+};
+
 struct ImageData {
     /** The point of origin of the image */
     UserSettingUniquePtr origin;
@@ -99,6 +110,8 @@ struct ImageData {
     ModelUniquePtr model;
     /** The effects applied to this image after the material is rendered */
     std::vector <ImageEffectUniquePtr> effects;
+    /** The animation layers used in the puppet warp */
+    std::vector <ImageAnimationLayerUniquePtr> animationLayers;
 };
 
 class Image : public Object, public ImageData {

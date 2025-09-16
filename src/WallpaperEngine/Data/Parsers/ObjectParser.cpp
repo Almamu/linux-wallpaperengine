@@ -76,6 +76,7 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
 ImageUniquePtr ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image) {
     const auto& properties = project.properties;
     const auto& effects = it.optional ("effects");
+    const auto& animationLayers = it.optional ("animationlayers");
 
     auto result = std::make_unique <Image> (
         std::move (base),
@@ -93,6 +94,7 @@ ImageUniquePtr ObjectParser::parseImage (const JSON& it, const Project& project,
             .brightness = it.optional ("brightness", 1.0f),
             .model = ModelParser::load (project, image),
             .effects = effects.has_value () ? parseEffects (*effects, project) : std::vector <ImageEffectUniquePtr> {},
+            .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers) : std::vector <ImageAnimationLayerUniquePtr> {},
         }
     );
 
@@ -192,4 +194,28 @@ ComboMap ObjectParser::parseComboMap (const JSON& it) {
     }
 
     return result;
+}
+
+std::vector <ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (const JSON& it) {
+    if (!it.is_array ()) {
+        return {};
+    }
+
+    std::vector <ImageAnimationLayerUniquePtr> result = {};
+
+    for (const auto& cur : it.items ()) {
+        result.push_back (parseAnimationLayer (cur.value ()));
+    }
+
+    return result;
+}
+
+ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it) {
+    return std::make_unique <ImageAnimationLayer> (ImageAnimationLayer {
+        .id = it.require ("id", "Animation layer must have an id"),
+        .rate = it.require ("rate", "Animation layer must have a rate"),
+        .visible = it.require ("visible", "Animation layer must include visibility"),
+        .blend = it.require ("blend", "Animation layer must include blend"),
+        .animation = it.require ("animation", "Animation layer must include an animation"),
+    });
 }
