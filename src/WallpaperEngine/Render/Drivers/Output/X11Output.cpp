@@ -159,8 +159,23 @@ void X11Output::loadScreenInfo () {
         any = true;
     }
 
-    if (!any)
-        sLog.exception ("No outputs could be initialized, please check the parameters and try again");
+    if (!any) {
+        sLog.error ("No outputs could be initialized, please check the parameters and try again");
+        sLog.error ("Detected outputs:");
+
+        for (const auto& o : this->m_screens) {
+            sLog.error ("  ", o->name);
+        }
+
+        sLog.error ("Requested: ");
+
+        for (const auto& o : this->m_context.settings.general.screenBackgrounds | std::views::keys) {
+            sLog.error ("  ", o);
+        }
+
+        sLog.exception ("Cannot continue...");
+    }
+
 
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
