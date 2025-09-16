@@ -65,7 +65,8 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
         // null values are directly connected to the property
         value->connect (property.get());
     } else {
-        sLog.exception ("Unsupported user setting type ", valueIt.type_name ());
+        // null value with no connection to property
+        value->update ();
     }
 
     return std::make_unique <UserSetting> (UserSetting {

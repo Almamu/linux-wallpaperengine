@@ -258,6 +258,21 @@ void DynamicValue::update (const DynamicValue& other) {
     this->propagate ();
 }
 
+void DynamicValue::update () {
+    this->m_ivec4 = glm::ivec4(0);
+    this->m_ivec3 = glm::ivec3(0);
+    this->m_ivec2 = glm::ivec2(0);
+    this->m_vec2 = glm::vec2(0.0f);
+    this->m_vec3 = glm::vec3(0.0f);
+    this->m_vec4 = glm::vec4(0.0f);
+    this->m_float = 0.0f;
+    this->m_int = 0;
+    this->m_bool = false;
+    this->m_type = UnderlyingType::Null;
+
+    this->propagate ();
+}
+
 std::function<void ()> DynamicValue::listen (const std::function<void (const DynamicValue&)>& callback) {
     const auto it = this->m_listeners.insert (this->m_listeners.end (), callback);
 
@@ -267,12 +282,20 @@ std::function<void ()> DynamicValue::listen (const std::function<void (const Dyn
 }
 
 void DynamicValue::connect (DynamicValue* other) {
-    const auto deregisterFunction = other->listen ([this] (const DynamicValue& other) {
-        this->update (other);
-    });
+    const auto lambda = [this] (const DynamicValue& other) {
+        // null is a special case, copying everything to 0 is different,
+        // so calling the update without parameters is required
+        if (other.getType () == UnderlyingType::Null) {
+            this->update ();
+        } else {
+            this->update (other);
+        }
+    };
 
-    // update our value on connection
-    this->update (*other);
+    const auto deregisterFunction = other->listen (lambda);
+
+    // same update cycle has to happen as in the lambda, so trigger it
+    lambda (*other);
 
     this->m_connections.push_back (deregisterFunction);
 }

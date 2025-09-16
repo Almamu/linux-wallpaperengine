@@ -57,6 +57,10 @@ class DynamicValue {
     virtual void update (const glm::ivec3& newValue);
     virtual void update (const glm::ivec4& newValue);
     virtual void update (const DynamicValue& other);
+    /**
+     * Sets the current value to null
+     */
+    virtual void update ();
 
     /**
      * Registers the given callback to be called when the value changes
