@@ -58,9 +58,9 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                 },
                 .shake = {
                     .enabled = general.user ("camerashake", properties, false),
-                    .amplitude = general.optional ("camerashakeamplitude", 0.0f),
-                    .roughness = general.optional ("camerashakeroughness", 0.0f),
-                    .speed = general.optional ("camerashakespeed", 0.0f),
+                    .amplitude = general.user ("camerashakeamplitude", properties, 0.0f),
+                    .roughness = general.user ("camerashakeroughness", properties, 0.0f),
+                    .speed = general.user ("camerashakespeed", properties, 0.0f),
                 },
                 .configuration = {
                     .center = camera.require <glm::vec3> ("center", "Camera must have a center position"),

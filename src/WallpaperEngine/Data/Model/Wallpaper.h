@@ -79,9 +79,9 @@ struct SceneData {
          */
         struct {
             UserSettingUniquePtr enabled;
-            float amplitude;
-            float roughness;
-            float speed;
+            UserSettingUniquePtr amplitude;
+            UserSettingUniquePtr roughness;
+            UserSettingUniquePtr speed;
         } shake;
 
         /**
