@@ -234,7 +234,8 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
                     this->settings.general.properties [value] = "1";
                 else
                     this->settings.general.properties [value.substr (0, equals)] = value.substr (equals + 1);
-            });
+            })
+            .append ();
 
     auto& debuggingGroup = program.add_group ("Debugging options");
 
