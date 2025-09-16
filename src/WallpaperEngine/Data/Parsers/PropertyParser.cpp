@@ -5,7 +5,8 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name) {
-    const auto type = it.require <std::string> ("type", "Property type is required");
+    // type might not be included, in which case means the same as a group
+    const auto type = it.optional ("type");
 
     if (type == "color") {
         return parseColor (it, name);
@@ -25,8 +26,14 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name
     if (type == "scenetexture") {
         return parseSceneTexture (it, name);
     }
+    if (type == "file") {
+        return parseFile (it, name);
+    }
+    if (type == "textinput") {
+        return parseTextInput (it, name);
+    }
 
-    if (type != "group") {
+    if (type.has_value () && type != "group") {
         // show the error and ignore this property
         sLog.error ("Unexpected type for property: ", type);
         sLog.error (it.dump ());
@@ -105,4 +112,18 @@ PropertySharedPtr PropertyParser::parseSceneTexture (const JSON& it, const std::
         .name = name,
         .text = it.optional <std::string> ("text", ""),
     }, it.require ("value", "Property must have a value"));
+}
+
+PropertySharedPtr PropertyParser::parseFile (const JSON& it, const std::string& name) {
+    return std::make_shared <PropertyFile> (PropertyData {
+        .name = name,
+        .text = it.optional <std::string> ("text", ""),
+    }, it.optional <std::string> ("value", ""));
+}
+
+PropertySharedPtr PropertyParser::parseTextInput (const JSON& it, const std::string& name) {
+    return std::make_shared <PropertyTextInput> (PropertyData {
+        .name = name,
+        .text = it.optional <std::string> ("text", ""),
+    }, it.require ("value", "Property must have a value").dump ());
 }

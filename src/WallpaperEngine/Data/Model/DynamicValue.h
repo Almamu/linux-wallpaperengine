@@ -47,16 +47,16 @@ class DynamicValue {
     [[nodiscard]] UnderlyingType getType () const;
     [[nodiscard]] virtual std::string toString () const;
 
-    void update (float newValue);
-    void update (int newValue);
-    void update (bool newValue);
-    void update (const glm::vec2& newValue);
-    void update (const glm::vec3& newValue);
-    void update (const glm::vec4& newValue);
-    void update (const glm::ivec2& newValue);
-    void update (const glm::ivec3& newValue);
-    void update (const glm::ivec4& newValue);
-    void update (const DynamicValue& other);
+    virtual void update (float newValue);
+    virtual void update (int newValue);
+    virtual void update (bool newValue);
+    virtual void update (const glm::vec2& newValue);
+    virtual void update (const glm::vec3& newValue);
+    virtual void update (const glm::vec4& newValue);
+    virtual void update (const glm::ivec2& newValue);
+    virtual void update (const glm::ivec3& newValue);
+    virtual void update (const glm::ivec4& newValue);
+    virtual void update (const DynamicValue& other);
 
     /**
      * Registers the given callback to be called when the value changes

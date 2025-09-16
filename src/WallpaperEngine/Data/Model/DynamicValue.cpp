@@ -3,39 +3,39 @@
 using namespace WallpaperEngine::Data::Model;
 
 DynamicValue::DynamicValue (const glm::ivec4& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (const glm::ivec3& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (const glm::ivec2& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (const glm::vec4& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (const glm::vec3& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (const glm::vec2& value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (float value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (int value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::DynamicValue (bool value) {
-    this->update (value);
+    this->DynamicValue::update (value);
 }
 
 DynamicValue::~DynamicValue () {

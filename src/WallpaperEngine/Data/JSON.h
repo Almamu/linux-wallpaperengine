@@ -61,7 +61,7 @@ class JsonExtensions {
         const auto it = base.find (key);
 
         if (it == base.end ()) {
-            sLog.exception (message);
+            sLog.exception (message, ". Contents: ", base.dump ());
         }
 
         return *it;
@@ -72,7 +72,7 @@ class JsonExtensions {
         const auto it = base.find (key);
 
         if (it == base.end ()) {
-            sLog.exception (message);
+            sLog.exception (message, ". Contents: ", base.dump ());
         }
 
         return (*it);

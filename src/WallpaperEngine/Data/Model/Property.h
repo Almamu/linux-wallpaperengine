@@ -36,7 +36,7 @@ class Property : public DynamicValue, public TypeCaster, public PropertyData {
 class PropertySlider final : public Property, SliderData {
   public:
     PropertySlider (PropertyData data, SliderData sliderData, const float value) : Property (std::move(data)), SliderData (std::move (sliderData)) {
-        this->update (value);
+        this->Property::update (value);
     }
 
     using Property::update;
@@ -48,7 +48,7 @@ class PropertySlider final : public Property, SliderData {
 class PropertyBoolean final : public Property {
   public:
     explicit PropertyBoolean (PropertyData data, const bool value) : Property (std::move(data)) {
-        this->update (value);
+        this->Property::update (value);
     }
 
     using Property::update;
@@ -118,8 +118,17 @@ class PropertyCombo final : public Property, ComboData {
 
     using Property::update;
     void update(const std::string& value) override {
-        this->update (std::stoi (value));
+        // search for the value in the combo options
+        if (this->values.contains (value)) {
+            this->m_value = this->values.at (value);
+        } else {
+            // default to a textual value if it's not found
+            this->m_value = value;
+        }
     }
+
+  private:
+    std::string m_value;
 };
 
 class PropertyText final : public Property {
@@ -140,6 +149,34 @@ class PropertySceneTexture final : public Property {
   public:
     explicit PropertySceneTexture (PropertyData data, const std::string& value) : Property (std::move(data)) {
         this->PropertySceneTexture::update (value);
+    }
+
+    void update(const std::string& value) override {
+        this->m_value = value;
+    }
+
+  private:
+    std::string m_value;
+};
+
+class PropertyFile final : public Property {
+  public:
+    explicit PropertyFile (PropertyData data, const std::string& value) : Property (std::move(data)) {
+        this->PropertyFile::update (value);
+    }
+
+    void update(const std::string& value) override {
+        this->m_value = value;
+    }
+
+  private:
+    std::string m_value;
+};
+
+class PropertyTextInput final : public Property {
+  public:
+    explicit PropertyTextInput (PropertyData data, const std::string& value) : Property (std::move(data)) {
+        this->PropertyTextInput::update (value);
     }
 
     void update(const std::string& value) override {
