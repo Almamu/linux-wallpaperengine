@@ -1,20 +1,14 @@
 name: Arch Linux AUR Package Update
 
 on:
-  workflow_run:
-    workflows: [cmake]
-    branches: [main]
-    types: [completed]
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'packaging/archlinux/**'
-      - '.github/workflows/**'
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
 
@@ -24,7 +18,7 @@ jobs:
           submodules: true
 
       - name: Publish linux-wallpaperengine-git to the AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: linux-wallpaperengine-git
           pkgbuild: ./packaging/archlinux/PKGBUILD
