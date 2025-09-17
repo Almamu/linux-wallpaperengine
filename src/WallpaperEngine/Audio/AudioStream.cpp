@@ -42,10 +42,6 @@ int audio_read_thread (void* arg) {
             continue;
         }
 
-        if (ret != 0) {
-            sLog.error ("Cannot read audio packet: ", av_err2str (ret));
-        }
-
         // TODO: PROPERLY IMPLEMENT THIS
         if (packet->stream_index == stream->getAudioStream ())
             stream->queuePacket (packet);
