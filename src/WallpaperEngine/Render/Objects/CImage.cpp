@@ -503,7 +503,7 @@ void CImage::updateScreenSpacePosition () {
         return;
     }
 
-    const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount;
+    const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
     const glm::vec2 depth = this->getImage ().parallaxDepth;
     const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
 

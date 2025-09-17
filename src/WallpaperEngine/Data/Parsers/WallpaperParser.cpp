@@ -51,10 +51,10 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                     .threshold = general.user ("bloomthreshold", properties, 0.0f),
                 },
                 .parallax = {
-                    .enabled = general.optional ("cameraparallax", false),
-                    .amount = general.optional ("cameraparallaxamount", 1.0f),
-                    .delay = general.optional ("cameraparallaxdelay", 0.0f),
-                    .mouseInfluence = general.optional ("cameraparallaxmouseinfluence", 1.0f),
+                    .enabled = general.user ("cameraparallax", properties, false),
+                    .amount = general.user ("cameraparallaxamount", properties, 1.0f),
+                    .delay = general.user ("cameraparallaxdelay", properties, 0.0f),
+                    .mouseInfluence = general.user ("cameraparallaxmouseinfluence", properties, 1.0f),
                 },
                 .shake = {
                     .enabled = general.user ("camerashake", properties, false),

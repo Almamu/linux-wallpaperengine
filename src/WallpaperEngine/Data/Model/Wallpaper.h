@@ -68,10 +68,10 @@ struct SceneData {
          * Parallax effect configuration
          */
         struct {
-            bool enabled;
-            float amount;
-            float delay;
-            float mouseInfluence;
+            UserSettingUniquePtr enabled;
+            UserSettingUniquePtr amount;
+            UserSettingUniquePtr delay;
+            UserSettingUniquePtr mouseInfluence;
         } parallax;
 
         /**

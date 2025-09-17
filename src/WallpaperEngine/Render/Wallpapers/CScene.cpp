@@ -243,11 +243,11 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     this->updateMouse (viewport);
 
     // update the parallax position if required
-    if (this->getScene ().camera.parallax.enabled && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
-        const float influence = this->getScene ().camera.parallax.mouseInfluence;
-        const float amount = this->getScene ().camera.parallax.amount;
+    if (this->getScene ().camera.parallax.enabled->value->getBool () && !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+        const float influence = this->getScene ().camera.parallax.mouseInfluence->value->getFloat ();
+        const float amount = this->getScene ().camera.parallax.amount->value->getFloat ();
         const float delay =
-            glm::min (static_cast<float> (this->getScene ().camera.parallax.delay), g_Time - g_TimeLast);
+            glm::min (static_cast<float> (this->getScene ().camera.parallax.delay->value->getBool ()), g_Time - g_TimeLast);
 
         this->m_parallaxDisplacement =
             glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
