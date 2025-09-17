@@ -31,6 +31,7 @@ class Property : public DynamicValue, public TypeCaster, public PropertyData {
 
     using DynamicValue::update;
     virtual void update(const std::string& value) = 0;
+    virtual std::string dump () const = 0;
 };
 
 class PropertySlider final : public Property, SliderData {
@@ -43,6 +44,19 @@ class PropertySlider final : public Property, SliderData {
     void update(const std::string& value) override {
         this->update (std::stof (value));
     }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - slider" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tMin: " << this->min << std::endl
+           << "\tMax: " << this->max << std::endl
+           << "\tStep: " << this->step << std::endl
+           << "\tValue: " << this->toString () << std::endl;
+
+        return ss.str ();
+    }
 };
 
 class PropertyBoolean final : public Property {
@@ -54,6 +68,16 @@ class PropertyBoolean final : public Property {
     using Property::update;
     void update(const std::string& value) override {
         this->update (value == "true" || value == "1");
+    }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - boolean" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->toString () << std::endl;
+
+        return ss.str ();
     }
 };
 
@@ -108,6 +132,16 @@ class PropertyColor final : public Property {
         // finally parse the string as a float vector
         this->update (VectorBuilder::parse <glm::vec3> (copy));
     }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - color" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->toString () << std::endl;
+
+        return ss.str ();
+    }
 };
 
 class PropertyCombo final : public Property, ComboData {
@@ -127,6 +161,21 @@ class PropertyCombo final : public Property, ComboData {
         }
     }
 
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - combo" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->toString () << std::endl
+           << "Values: " << std::endl;
+
+        for (const auto& [key, value] : this->values) {
+            ss << "\t\t" << key << " = " << value << std::endl;
+        }
+
+        return ss.str ();
+    }
+
   private:
     std::string m_value;
 };
@@ -143,6 +192,16 @@ class PropertyText final : public Property {
     [[nodiscard]] std::string toString () const override {
         return this->text;
     }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - text" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->toString () << std::endl;
+
+        return ss.str ();
+    }
 };
 
 class PropertySceneTexture final : public Property {
@@ -153,6 +212,16 @@ class PropertySceneTexture final : public Property {
 
     void update(const std::string& value) override {
         this->m_value = value;
+    }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - scene texture" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->m_value << std::endl;
+
+        return ss.str ();
     }
 
   private:
@@ -169,6 +238,16 @@ class PropertyFile final : public Property {
         this->m_value = value;
     }
 
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - file" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->m_value << std::endl;
+
+        return ss.str ();
+    }
+
   private:
     std::string m_value;
 };
@@ -181,6 +260,16 @@ class PropertyTextInput final : public Property {
 
     void update(const std::string& value) override {
         this->m_value = value;
+    }
+
+    std::string dump () const override {
+        std::stringstream ss;
+
+        ss << this->name << " - textinput" << std::endl
+           << "\tText: " << this->text << std::endl
+           << "\tValue: " << this->m_value << std::endl;
+
+        return ss.str ();
     }
 
   private:

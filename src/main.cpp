@@ -20,7 +20,7 @@ void initLogging () {
 }
 
 int main (int argc, char* argv[]) {
-    //try {
+    try {
         // if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
         bool enableLogging = true;
         const std::string typeZygote = "--type=zygote";
@@ -44,11 +44,13 @@ int main (int argc, char* argv[]) {
 
         WallpaperEngine::Application::ApplicationContext appContext (argc, argv);
 
-        // halt if the list-properties option was specified
-        if (appContext.settings.general.onlyListProperties)
-            return 0;
-
         app = new WallpaperEngine::Application::WallpaperApplication (appContext);
+
+        // halt if the list-properties option was specified
+        if (appContext.settings.general.onlyListProperties) {
+            delete app;
+            return 0;
+        }
 
         // attach signals to gracefully stop
         std::signal (SIGINT, signalhandler);
@@ -66,8 +68,8 @@ int main (int argc, char* argv[]) {
         delete app;
 
         return 0;
-    /*} catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         std::cerr << e.what () << std::endl;
         return 1;
-    }*/
+    }
 }

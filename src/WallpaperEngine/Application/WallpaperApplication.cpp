@@ -233,8 +233,9 @@ void WallpaperApplication::setupPropertiesForProject (const Project& project) {
             cur->update (override->second);
         }
 
-        if (this->m_context.settings.general.onlyListProperties)
-            sLog.out (cur->toString ());
+        if (this->m_context.settings.general.onlyListProperties) {
+            sLog.out (cur->dump ());
+        }
     }
 }
 
