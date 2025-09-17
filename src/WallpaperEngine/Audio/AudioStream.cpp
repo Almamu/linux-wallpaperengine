@@ -42,6 +42,10 @@ int audio_read_thread (void* arg) {
             continue;
         }
 
+        if (ret != 0) {
+            sLog.error ("Cannot read audio packet: ", av_err2str (ret));
+        }
+
         // TODO: PROPERLY IMPLEMENT THIS
         if (packet->stream_index == stream->getAudioStream ())
             stream->queuePacket (packet);
@@ -62,7 +66,16 @@ int audio_read_thread (void* arg) {
 static int audio_read_data_callback (void* streamarg, uint8_t* buffer, int buffer_size) {
     const auto stream = static_cast<AudioStream*> (streamarg);
 
+    // check if we're at eof and return the right value
+    if (stream->getBuffer ()->eof ()) {
+        return AVERROR_EOF;
+    }
+
     stream->getBuffer ()->read (reinterpret_cast<std::istream::char_type*> (buffer), buffer_size);
+
+    if (stream->getBuffer ()->fail () && !stream->getBuffer ()->eof ()) {
+        return AVERROR_INVALIDDATA;
+    }
 
     // return read bytes only
     return stream->getBuffer ()->gcount ();
@@ -71,17 +84,24 @@ static int audio_read_data_callback (void* streamarg, uint8_t* buffer, int buffe
 int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
     const auto stream = static_cast<AudioStream*> (streamarg);
 
-    // this was supported before, now we don't as there's no easy way to tell length
-    // so returning <0 signals no support for it
-    if (whence & AVSEEK_SIZE)
-        return -1;
+    // reset error state
+    stream->getBuffer ()->clear ();
+
+    if (whence & AVSEEK_SIZE) {
+        const auto current = stream->getBuffer ()->tellg ();
+        stream->getBuffer ()->seekg (0, std::ios_base::end);
+        const auto end = stream->getBuffer ()->tellg ();
+        stream->getBuffer ()->seekg (current, std::ios_base::beg);
+        return end;
+    }
 
     switch (whence) {
         case SEEK_CUR: stream->getBuffer ()->seekg (offset, std::ios_base::cur); break;
         case SEEK_SET: stream->getBuffer ()->seekg (offset, std::ios_base::beg); break;
+        case SEEK_END: stream->getBuffer ()->seekg (offset, std::ios_base::end); break;
     }
 
-    return offset;
+    return 0;
 }
 
 AudioStream::AudioStream (AudioContext& context, const std::string& filename) :
