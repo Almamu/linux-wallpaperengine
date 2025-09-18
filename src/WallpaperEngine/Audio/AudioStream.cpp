@@ -446,7 +446,7 @@ int AudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out
 
     if (out_nb_samples > max_out_nb_samples) {
         // free memory block and set pointer to NULL
-        av_free (resampled_data [0]);
+        av_freep (&resampled_data [0]);
 
         // Allocate a samples buffer for out_nb_samples samples
         ret = av_samples_alloc (resampled_data, &out_linesize, out_nb_channels, out_nb_samples,
@@ -463,7 +463,7 @@ int AudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out
 
     // do the actual audio data resampling
     ret = swr_convert (this->m_swrctx, resampled_data, max_out_nb_samples,
-                       const_cast<const uint8_t**> (decoded_audio_frame->data), decoded_audio_frame->nb_samples);
+                       decoded_audio_frame->data, decoded_audio_frame->nb_samples);
 
     // check audio conversion was successful
     if (ret < 0) {
@@ -493,21 +493,19 @@ int AudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out
     }
 
     av_freep (&resampled_data);
-    resampled_data = nullptr;
 
     return resampled_data_size;
 }
 
 int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
-    AVPacket* pkt = av_packet_alloc ();
+    static AVPacket* pkt = av_packet_alloc ();
     static uint8_t* audio_pkt_data = nullptr;
     static int audio_pkt_size = 0;
 
     int len1, data_size;
 
     // allocate a new frame, used to decode audio packets
-    static AVFrame* avFrame = nullptr;
-    avFrame = av_frame_alloc ();
+    static AVFrame* avFrame = av_frame_alloc ();
     if (!avFrame) {
         sLog.error ("Could not allocate AVFrame.\n");
         return -1;
@@ -515,7 +513,7 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 
     // block until there's any data in the buffers
     while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
-        while (audio_pkt_size > 0) {
+        while (audio_pkt_size > 0 && this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
             int got_frame = 0;
             int ret = avcodec_receive_frame (this->getContext (), avFrame);
 
