@@ -463,7 +463,7 @@ int AudioStream::resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out
 
     // do the actual audio data resampling
     ret = swr_convert (this->m_swrctx, resampled_data, max_out_nb_samples,
-                       decoded_audio_frame->data, decoded_audio_frame->nb_samples);
+    const_cast<const uint8_t**> (decoded_audio_frame->data), decoded_audio_frame->nb_samples);
 
     // check audio conversion was successful
     if (ret < 0) {
