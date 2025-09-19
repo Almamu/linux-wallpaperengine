@@ -142,8 +142,14 @@ AudioStream::~AudioStream () {
         av_packet_free (&this->m_decodePacket);
     if (this->m_decodeFrame != nullptr)
         av_frame_free (&this->m_decodeFrame);
-    if (this->m_queue != nullptr && this->m_queue->packetList != nullptr)
+    if (this->m_queue != nullptr && this->m_queue->packetList != nullptr) {
+#if FF_API_FIFO_OLD_API
+        av_fifo_free (this->m_queue->packetList);
+        this->m_queue->packetList = nullptr;
+#else
         av_fifo_freep2 (&this->m_queue->packetList);
+#endif /* FF_API_FIFO_OLD_API */
+    }
 
     delete this->m_queue;
 
