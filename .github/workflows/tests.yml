@@ -1,18 +1,22 @@
 name: Unit tests
 
 on:
+  workflow_dispatch:
   push:
     paths:
+      - '.github/workflows/tests.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
+      - 'protocols/**'
     branches: [main]
-  workflow_dispatch:
   pull_request:
     paths:
+      - '.github/workflows/tests.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
+      - 'protocols/**'
     branches: [main]
 
 env:
@@ -33,6 +37,12 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: true
+
+    # cache some build information
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.os }}  # Eg. "some_build-ubuntu-latest"
 
     - name: Install dependencies
       if: matrix.os == 'ubuntu-24.04'

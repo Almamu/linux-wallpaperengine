@@ -26,6 +26,11 @@ class ApplicationContext {
   public:
     ApplicationContext (int argc, char* argv []);
 
+    /**
+     * Parses the given argc and argv and builds settings for the app
+     */
+    void loadSettingsFromArgv ();
+
     enum WINDOW_MODE {
         /** Default window mode */
         NORMAL_WINDOW = 0,

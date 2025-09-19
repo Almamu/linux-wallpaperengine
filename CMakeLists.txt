@@ -259,17 +259,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${X11_INCLUDES})
 
-if(BUILD_TESTING)
-    add_executable(
-        tests
-        src/WallpaperEngine/Testing/Cases/Example.cpp
-    )
-endif()
-
-add_executable(
-    linux-wallpaperengine
-    src/main.cpp
-
+set(COMMON_SOURCES
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h
 
@@ -467,6 +457,21 @@ add_executable(
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     src/WallpaperEngine/Data/Dumpers/StringPrinter.h
     src/WallpaperEngine/Data/JSON.cpp)
+
+if(BUILD_TESTING)
+    add_executable(
+        tests
+
+        ${COMMON_SOURCES}
+
+        src/WallpaperEngine/Testing/Cases/Example.cpp
+        src/WallpaperEngine/Testing/Render/TestingOpenGLDriver.cpp
+        src/WallpaperEngine/Testing/Render/TestingOpenGLDriver.h
+        src/WallpaperEngine/Testing/Input/TestingMouseInput.cpp
+        src/WallpaperEngine/Testing/Input/TestingMouseInput.h
+        src/WallpaperEngine/Testing/Harnesses/RenderHarness.cpp
+        src/WallpaperEngine/Testing/Harnesses/RenderHarness.h)
+endif()
 
 add_executable(
     linux-wallpaperengine

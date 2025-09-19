@@ -1,11 +1,11 @@
 #pragma once
 
-#include "WallpaperEngine/Input/CInputContext.h"
+#include "WallpaperEngine/Input/InputContext.h"
 
 namespace WallpaperEngine::Testing::Input {
 using namespace WallpaperEngine::Input;
 
-class CTestingMouseInput final : public CMouseInput {
+class TestingMouseInput final : public MouseInput {
   public:
     void update () override;
     [[nodiscard]] glm::dvec2 position () const override;
