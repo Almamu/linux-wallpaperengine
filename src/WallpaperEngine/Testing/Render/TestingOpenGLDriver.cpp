@@ -1,7 +1,7 @@
-#include "CTestingOpenGLDriver.h"
+#include "TestingOpenGLDriver.h"
 
-#include "WallpaperEngine/Logging/CLog.h"
-#include "WallpaperEngine/Render/Drivers/Output/CGLFWWindowOutput.h"
+#include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Render/Drivers/Output/GLFWWindowOutput.h"
 
 using namespace WallpaperEngine::Testing::Render;
 
@@ -9,9 +9,9 @@ void TestingCustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-CTestingOpenGLDriver::CTestingOpenGLDriver(CApplicationContext& context, CWallpaperApplication& app) :
+TestingOpenGLDriver::TestingOpenGLDriver(ApplicationContext& context, WallpaperApplication& app) :
     m_mouseInput (),
-    CVideoDriver (app, m_mouseInput),
+    VideoDriver (app, m_mouseInput),
     m_context (context) {
     glfwSetErrorCallback (TestingCustomGLFWErrorHandler);
 
@@ -47,52 +47,52 @@ CTestingOpenGLDriver::CTestingOpenGLDriver(CApplicationContext& context, CWallpa
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
 
     // setup output
-    if (context.settings.render.mode == CApplicationContext::EXPLICIT_WINDOW ||
-        context.settings.render.mode == CApplicationContext::NORMAL_WINDOW) {
-        m_output = new WallpaperEngine::Render::Drivers::Output::CGLFWWindowOutput (context, *this);
+    if (context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW ||
+        context.settings.render.mode == ApplicationContext::NORMAL_WINDOW) {
+        m_output = new WallpaperEngine::Render::Drivers::Output::GLFWWindowOutput (context, *this);
     }
 }
 
-CTestingOpenGLDriver::~CTestingOpenGLDriver () {
+TestingOpenGLDriver::~TestingOpenGLDriver () {
     glfwTerminate();
 }
 
 
-Output::COutput& CTestingOpenGLDriver::getOutput () {
+Output::Output& TestingOpenGLDriver::getOutput () {
     return *this->m_output;
 }
 
-void* CTestingOpenGLDriver::getProcAddress (const char* name) const {
+void* TestingOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-float CTestingOpenGLDriver::getRenderTime () const {
+float TestingOpenGLDriver::getRenderTime () const {
     return static_cast<float> (glfwGetTime ());
 }
 
 
-bool CTestingOpenGLDriver::closeRequested () {
+bool TestingOpenGLDriver::closeRequested () {
     return glfwWindowShouldClose (this->m_window);
 }
 
-void CTestingOpenGLDriver::resizeWindow (glm::ivec2 size) {
+void TestingOpenGLDriver::resizeWindow (glm::ivec2 size) {
     glfwSetWindowSize (this->m_window, size.x, size.y);
 }
 
-void CTestingOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
+void TestingOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
-void CTestingOpenGLDriver::showWindow () {
+void TestingOpenGLDriver::showWindow () {
     glfwShowWindow (this->m_window);
 }
 
-void CTestingOpenGLDriver::hideWindow () {
+void TestingOpenGLDriver::hideWindow () {
     glfwHideWindow (this->m_window);
 }
 
-glm::ivec2 CTestingOpenGLDriver::getFramebufferSize () const {
+glm::ivec2 TestingOpenGLDriver::getFramebufferSize () const {
     glm::ivec2 size;
 
     glfwGetFramebufferSize (this->m_window, &size.x, &size.y);
@@ -100,10 +100,10 @@ glm::ivec2 CTestingOpenGLDriver::getFramebufferSize () const {
     return size;
 }
 
-uint32_t CTestingOpenGLDriver::getFrameCounter () const {
+uint32_t TestingOpenGLDriver::getFrameCounter () const {
     return this->m_frameCounter;
 }
-void CTestingOpenGLDriver::dispatchEventQueue () {
+void TestingOpenGLDriver::dispatchEventQueue () {
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
     startTime = this->getRenderTime ();

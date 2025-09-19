@@ -1,10 +1,10 @@
 #pragma once
 
-#include "WallpaperEngine/Input/Drivers/CGLFWMouseInput.h"
-#include "WallpaperEngine/Render/Drivers/CVideoDriver.h"
-#include "WallpaperEngine/Application/CWallpaperApplication.h"
+#include "WallpaperEngine/Input/Drivers/GLFWMouseInput.h"
+#include "WallpaperEngine/Render/Drivers/VideoDriver.h"
+#include "WallpaperEngine/Application/WallpaperApplication.h"
 
-#include "WallpaperEngine/Testing/Input/CTestingMouseInput.h"
+#include "WallpaperEngine/Testing/Input/TestingMouseInput.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -13,12 +13,12 @@ namespace WallpaperEngine::Testing::Render {
 using namespace WallpaperEngine::Render::Drivers;
 using namespace WallpaperEngine::Testing::Input;
 
-class CTestingOpenGLDriver final  : public CVideoDriver {
+class TestingOpenGLDriver final  : public VideoDriver {
   public:
-    explicit CTestingOpenGLDriver (CApplicationContext& context, CWallpaperApplication& app);
-    ~CTestingOpenGLDriver () override;
+    explicit TestingOpenGLDriver (ApplicationContext& context, WallpaperApplication& app);
+    ~TestingOpenGLDriver () override;
 
-    [[nodiscard]] Output::COutput & getOutput() override;
+    [[nodiscard]] Output::Output & getOutput() override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
     [[nodiscard]] float getRenderTime () const override;
     bool closeRequested () override;
@@ -31,10 +31,10 @@ class CTestingOpenGLDriver final  : public CVideoDriver {
     void dispatchEventQueue () override;
 
   private:
-    Output::COutput* m_output = nullptr;
-    CApplicationContext& m_context;
+    Output::Output* m_output = nullptr;
+    ApplicationContext& m_context;
     GLFWwindow* m_window = nullptr;
-    CTestingMouseInput m_mouseInput;
+    TestingMouseInput m_mouseInput;
     uint32_t m_frameCounter = 0;
 };
 } // namespace WallpaperEngine::Testing::Render
