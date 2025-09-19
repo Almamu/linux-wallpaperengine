@@ -52,7 +52,7 @@ class AudioStream {
      *
      * @return
      */
-    void dequeuePacket (AVPacket* output);
+    void dequeuePacket ();
 
     /**
      * @return The audio context in use for this audio stream
@@ -62,11 +62,11 @@ class AudioStream {
     /**
      * @return to the codec context, which provides information on the audio stream's format
      */
-    AVCodecContext* getContext () const;
+    [[nodiscard]] AVCodecContext* getContext () const;
     /**
      * @returns the format context, which controls how data is read off the audio stream
      */
-    AVFormatContext* getFormatContext () const;
+    [[nodiscard]] AVFormatContext* getFormatContext () const;
     /**
      * @return The audio stream index of the given file
      */
@@ -94,31 +94,31 @@ class AudioStream {
     /**
      * @return The SDL_cond used to signal waiting for data
      */
-    SDL_cond* getWaitCondition () const;
+    [[nodiscard]] SDL_cond* getWaitCondition () const;
     /**
      * @return The data queue size
      */
-    int getQueueSize () const;
+    [[nodiscard]] size_t getQueueSize () const;
     /**
      * @return The amount of packets ready to be converted and played
      */
-    int getQueuePacketCount () const;
+    [[nodiscard]] int getQueuePacketCount () const;
     /**
      * @return The duration (in seconds) of the queued data to be played
      */
-    int64_t getQueueDuration () const;
+    [[nodiscard]] int64_t getQueueDuration () const;
     /**
      * @return Time unit used for packet playback
      */
-    AVRational getTimeBase () const;
+    [[nodiscard]] AVRational getTimeBase () const;
     /**
      * @return If the data queue is empty or not
      */
-    bool isQueueEmpty () const;
+    [[nodiscard]] bool isQueueEmpty () const;
     /**
      * @return The SDL_mutex used for thread synchronization
      */
-    SDL_mutex* getMutex () const;
+    [[nodiscard]] SDL_mutex* getMutex () const;
 
     /**
      * Reads a frame from the audio stream, resamples it to the driver's settings
@@ -141,11 +141,10 @@ class AudioStream {
     /**
      * Converts the audio frame from the original format to one supported by the audio driver
      *
-     * @param decoded_audio_frame
      * @param out_buf
      * @return
      */
-    int resampleAudio (const AVFrame* decoded_audio_frame, uint8_t* out_buf);
+    int resampleAudio (uint8_t* out_buf, const int out_size);
     /**
      * Queues a packet into the play queue
      *
@@ -181,6 +180,11 @@ class AudioStream {
         AVPacket* packet;
     };
 
+    /** The packet used while decoding this stream */
+    AVPacket* m_decodePacket = nullptr;
+    /** The AV frame used while decoding this stream */
+    AVFrame* m_decodeFrame = nullptr;
+
     /**
      * Packet queue information
      */
@@ -191,7 +195,7 @@ class AudioStream {
         AVFifo* packetList = nullptr;
 #endif
         int nb_packets = 0;
-        int size = 0;
+        size_t size = 0;
         int64_t duration = 0;
         SDL_mutex* mutex = nullptr;
         SDL_cond* wait = nullptr;
