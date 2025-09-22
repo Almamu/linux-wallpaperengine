@@ -44,9 +44,9 @@ int main (int argc, char* argv[]) {
 
         WallpaperEngine::Application::ApplicationContext appContext (argc, argv);
 
-        app = new WallpaperEngine::Application::WallpaperApplication (appContext);
-
         appContext.loadSettingsFromArgv ();
+
+        app = new WallpaperEngine::Application::WallpaperApplication (appContext);
 
         // halt if the list-properties option was specified
         if (appContext.settings.general.onlyListProperties) {
