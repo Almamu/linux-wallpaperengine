@@ -20,8 +20,8 @@ void WaylandOutput::updateViewports () {
         m_viewports [o->name] = o;
 
         fullw = fullw + glm::ivec2 {o->size.x * o->scale, 0};
-        if (o->size.y > fullw.y)
-            fullw.y = o->size.y;
+        if (o->size.y * o->scale > fullw.y)
+            fullw.y = o->size.y * o->scale;
     }
 
     m_fullWidth = fullw.x;
