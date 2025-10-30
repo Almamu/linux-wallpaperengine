@@ -823,18 +823,14 @@ void CParticle::renderSprites () {
         addVertex (0.0f, 1.0f);  // Bottom-left
     }
 
-    // Upload to GPU
-    glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
-    glBufferData (GL_ARRAY_BUFFER, vertices.size () * sizeof (float), vertices.data (), GL_DYNAMIC_DRAW);
-
     if (m_shaderProgram == 0) {
-        return; // Shader not available
+        return;
     }
 
     // Clear any existing GL errors before we start
     while (glGetError () != GL_NO_ERROR);
 
-    // Save current GL state
+    // Save current GL state before any modifications
     GLint prevProgram = 0;
     GLint prevVAO = 0;
     GLint prevTexture = 0;
@@ -856,6 +852,9 @@ void CParticle::renderSprites () {
     glGetIntegerv (GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
     glGetIntegerv (GL_ACTIVE_TEXTURE, &prevActiveTexture);
     glGetIntegerv (GL_ARRAY_BUFFER_BINDING, &prevArrayBuffer);
+
+    glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
+    glBufferData (GL_ARRAY_BUFFER, vertices.size () * sizeof (float), vertices.data (), GL_DYNAMIC_DRAW);
 
     // Use particle shader
     glUseProgram (m_shaderProgram);
