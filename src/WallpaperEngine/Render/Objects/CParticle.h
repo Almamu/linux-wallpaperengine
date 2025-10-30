@@ -154,6 +154,9 @@ class CParticle final : public CObject {
     Data::Model::BlendingMode m_blendingMode {Data::Model::BlendingMode_Translucent};
     Data::Assets::TextureFormat m_textureFormat {Data::Assets::TextureFormat_ARGB8888};
 
+    // Transformed origin (screen space to centered space conversion)
+    glm::vec3 m_transformedOrigin {0.0f};
+
     // Random number generator
     std::mt19937 m_rng;
 

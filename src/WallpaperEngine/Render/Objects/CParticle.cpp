@@ -70,7 +70,7 @@ void CParticle::setup () {
     glm::vec3 origin = m_particle.origin->value->getVec3 ();
     origin.x -= screenWidth / 2.0f;
     origin.y = screenHeight / 2.0f - origin.y;
-    m_particle.origin->value->update (origin);
+    m_transformedOrigin = origin;
 
     // Load particle material texture and blending mode
     if (m_particle.material && m_particle.material->material && !m_particle.material->material->passes.empty ()) {
@@ -859,12 +859,11 @@ void CParticle::renderSprites () {
     }
 
     // Build model matrix from particle object transform
-    glm::vec3 origin = m_particle.origin->value->getVec3 ();
     glm::vec3 scale = m_particle.scale->value->getVec3 ();
     glm::vec3 angles = m_particle.angles->value->getVec3 ();
 
     glm::mat4 model = glm::mat4 (1.0f);
-    model = glm::translate (model, origin);
+    model = glm::translate (model, m_transformedOrigin);
     model = glm::rotate (model, glm::radians (angles.z), glm::vec3 (0, 0, 1));
     model = glm::rotate (model, glm::radians (angles.y), glm::vec3 (0, 1, 0));
     model = glm::rotate (model, glm::radians (angles.x), glm::vec3 (1, 0, 0));
