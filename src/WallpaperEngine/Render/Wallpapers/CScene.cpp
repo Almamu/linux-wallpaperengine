@@ -1,5 +1,6 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
+#include "WallpaperEngine/Render/Objects/CParticle.h"
 
 #include "WallpaperEngine/Render/WallpaperState.h"
 
@@ -186,6 +187,16 @@ Render::CObject* CScene::createObject (const Object& object) {
         renderObject = image;
     } else if (object.is<Sound> ()) {
         renderObject = new Objects::CSound (*this, *object.as<Sound> ());
+    } else if (object.is<Particle> ()) {
+        auto* particle = new Objects::CParticle (*this, *object.as<Particle> ());
+
+        try {
+            particle->setup ();
+        } catch (std::runtime_error&) {
+            sLog.error ("Cannot setup particle ", particle->getParticle ().name);
+        }
+
+        renderObject = particle;
     }
 
     if (renderObject != nullptr)
