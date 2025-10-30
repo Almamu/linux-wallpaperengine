@@ -287,7 +287,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             p.position = emitter.origin + randomPos;
 
             // Velocity pointing outward from sphere center
-            glm::vec3 direction = glm::normalize (randomPos);
+            glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
             float speed = randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
             p.velocity = direction * speed * emitter.directions;
 
