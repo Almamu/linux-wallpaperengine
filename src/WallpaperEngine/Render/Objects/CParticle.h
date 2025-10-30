@@ -91,6 +91,7 @@ class CParticle final : public CObject {
 
   public:
     CParticle (Wallpapers::CScene& scene, const Particle& particle);
+    ~CParticle ();
 
     void setup ();
     void render () override;

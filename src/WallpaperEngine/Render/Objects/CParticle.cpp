@@ -57,6 +57,18 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     m_particles.resize (std::min (particle.maxCount, MAX_PARTICLES));
 }
 
+CParticle::~CParticle () {
+    if (m_vao != 0) {
+        glDeleteVertexArrays (1, &m_vao);
+    }
+    if (m_vbo != 0) {
+        glDeleteBuffers (1, &m_vbo);
+    }
+    if (m_shaderProgram != 0) {
+        glDeleteProgram (m_shaderProgram);
+    }
+}
+
 void CParticle::setup () {
     if (m_initialized)
         return;
