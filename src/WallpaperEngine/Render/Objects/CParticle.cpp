@@ -827,9 +827,12 @@ void CParticle::renderSprites () {
     GLint prevProgram = 0;
     GLint prevVAO = 0;
     GLint prevTexture = 0;
+    GLboolean prevBlendEnabled = glIsEnabled (GL_BLEND);
+    GLboolean prevDepthMask = GL_TRUE;
     glGetIntegerv (GL_CURRENT_PROGRAM, &prevProgram);
     glGetIntegerv (GL_VERTEX_ARRAY_BINDING, &prevVAO);
     glGetIntegerv (GL_TEXTURE_BINDING_2D, &prevTexture);
+    glGetBooleanv (GL_DEPTH_WRITEMASK, &prevDepthMask);
 
     // Use particle shader
     glUseProgram (m_shaderProgram);
@@ -898,8 +901,12 @@ void CParticle::renderSprites () {
     glBindVertexArray (0);
 
     // Restore state
-    glDepthMask (GL_TRUE);
-    glDisable (GL_BLEND);
+    glDepthMask (prevDepthMask);
+    if (prevBlendEnabled) {
+        glEnable (GL_BLEND);
+    } else {
+        glDisable (GL_BLEND);
+    }
     glUseProgram (prevProgram);
     glBindTexture (GL_TEXTURE_2D, prevTexture);
     glBindVertexArray (prevVAO);
