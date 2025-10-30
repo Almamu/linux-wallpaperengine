@@ -152,7 +152,7 @@ void CParticle::update (float dt) {
 
     // Apply operators to living particles
     for (auto& op : m_operators) {
-        op (m_particles, m_controlPoints, static_cast<float> (m_time), dt);
+        op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
 }
 
@@ -447,14 +447,13 @@ OperatorFunc CParticle::createMovementOperator (const JSON& json) {
 
     return [drag, gravity, speed](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float dt
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             // Apply drag force
             glm::vec3 dragForce = -drag * p.velocity;
@@ -475,14 +474,13 @@ OperatorFunc CParticle::createAngularMovementOperator (const JSON& json) {
 
     return [drag, force](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float dt
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             glm::vec3 dragForce = -drag * p.angularVelocity;
             glm::vec3 totalAccel = dragForce + force;
@@ -499,14 +497,13 @@ OperatorFunc CParticle::createAlphaFadeOperator (const JSON& json) {
 
     return [fadeInTime, fadeOutTime](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             float life = p.getLifetimePos ();
 
@@ -531,14 +528,13 @@ OperatorFunc CParticle::createSizeChangeOperator (const JSON& json) {
 
     return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             float life = p.getLifetimePos ();
             float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
@@ -555,14 +551,13 @@ OperatorFunc CParticle::createAlphaChangeOperator (const JSON& json) {
 
     return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             float life = p.getLifetimePos ();
             float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
@@ -579,14 +574,13 @@ OperatorFunc CParticle::createColorChangeOperator (const JSON& json) {
 
     return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
+        uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
-        for (uint32_t i = 0; i < particles.size (); i++) {
+        for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
-            if (!p.alive)
-                continue;
 
             float life = p.getLifetimePos ();
 

@@ -84,7 +84,7 @@ using InitializerFunc = std::function<void(ParticleInstance&)>;
 /**
  * Particle operator function
  */
-using OperatorFunc = std::function<void(std::vector<ParticleInstance>&, const std::vector<ControlPointData>&, float, float)>;
+using OperatorFunc = std::function<void(std::vector<ParticleInstance>&, uint32_t, const std::vector<ControlPointData>&, float, float)>;
 
 class CParticle final : public CObject {
     friend CObject;
