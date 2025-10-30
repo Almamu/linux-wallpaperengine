@@ -327,6 +327,8 @@ void CParticle::setupInitializers () {
             func = createRotationRandomInitializer (json);
         } else if (name == "angularvelocityrandom") {
             func = createAngularVelocityRandomInitializer (json);
+        } else {
+            sLog.out ("Unknown initializer type: ", name);
         }
 
         if (func) {
@@ -428,6 +430,8 @@ void CParticle::setupOperators () {
             func = createAlphaChangeOperator (json);
         } else if (name == "colorchange") {
             func = createColorChangeOperator (json);
+        } else {
+            sLog.out ("Unknown operator type: ", name);
         }
 
         if (func) {
