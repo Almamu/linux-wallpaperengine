@@ -118,7 +118,8 @@ void CParticle::render () {
     float dt = g_Time - static_cast<float> (m_time);
     m_time = g_Time;
 
-    if (dt > 0.0f && dt < 1.0f) {
+    if (dt > 0.0f) {
+        dt = std::min (dt, 0.1f);
         update (dt);
     }
 
