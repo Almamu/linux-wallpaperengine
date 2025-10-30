@@ -12,9 +12,11 @@
 #include "Model.h"
 #include "Effect.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
+#include "WallpaperEngine/Data/JSON.h"
 
 namespace WallpaperEngine::Data::Model {
 using namespace WallpaperEngine::Data::Utils;
+using JSON = WallpaperEngine::Data::JSON::JSON;
 
 struct ObjectData {
     int id;
@@ -131,5 +133,129 @@ class Sound : public Object, public SoundData {
   public:
     explicit Sound (ObjectData data, SoundData soundData) noexcept : Object (std::move(data)), SoundData (std::move (soundData)) {};
     ~Sound () override = default;
+};
+
+/**
+ * Particle control points for forces and positions
+ */
+struct ParticleControlPoint {
+    int id;
+    uint32_t flags;
+    glm::vec3 offset;
+};
+
+/**
+ * Particle emitter configuration
+ */
+struct ParticleEmitter {
+    int id;
+    std::string name;
+    glm::vec3 directions;
+    glm::vec3 distanceMin;
+    glm::vec3 distanceMax;
+    glm::vec3 origin;
+    glm::ivec3 sign;
+    uint32_t instantaneous;
+    float speedMin;
+    float speedMax;
+    float rate;
+    int controlPoint;
+    uint32_t flags;
+};
+
+/**
+ * Particle initializer - sets initial particle properties
+ */
+struct ParticleInitializer {
+    std::string name;
+    JSON json; // Store full JSON for flexible parsing
+};
+
+/**
+ * Particle operator - modifies particles over time
+ */
+struct ParticleOperator {
+    std::string name;
+    JSON json; // Store full JSON for flexible parsing
+};
+
+/**
+ * Particle renderer configuration
+ */
+struct ParticleRenderer {
+    std::string name;
+    float length;
+    float maxLength;
+    float subdivision;
+};
+
+/**
+ * Child particle system
+ */
+struct ParticleChild {
+    std::string type;
+    std::string name;
+    int maxCount;
+    int controlPointStartIndex;
+    float probability;
+    glm::vec3 angles;
+    glm::vec3 origin;
+    glm::vec3 scale;
+    std::string particleFile;
+};
+
+/**
+ * Instance override values
+ */
+struct ParticleInstanceOverride {
+    bool enabled;
+    float alpha;
+    float size;
+    float lifetime;
+    float rate;
+    float speed;
+    float count;
+    glm::vec3 color;
+};
+
+struct ParticleData {
+    /** Position and transformation */
+    UserSettingUniquePtr origin;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr angles;
+    UserSettingUniquePtr visible;
+
+    /** Parallax depth */
+    glm::vec2 parallaxDepth;
+
+    /** Reference to particle definition file */
+    std::string particleFile;
+
+    /** Particle system configuration */
+    std::string animationMode;
+    float sequenceMultiplier;
+    uint32_t maxCount;
+    uint32_t startTime;
+    uint32_t flags;
+
+    /** Material for rendering */
+    ModelUniquePtr material;
+
+    /** Emitters, initializers, operators, renderers */
+    std::vector<ParticleEmitter> emitters;
+    std::vector<ParticleInitializer> initializers;
+    std::vector<ParticleOperator> operators;
+    std::vector<ParticleRenderer> renderers;
+    std::vector<ParticleControlPoint> controlPoints;
+    std::vector<ParticleChild> children;
+
+    /** Instance override */
+    ParticleInstanceOverride instanceOverride;
+};
+
+class Particle : public Object, public ParticleData {
+  public:
+    explicit Particle (ObjectData data, ParticleData particleData) noexcept : Object (std::move(data)), ParticleData (std::move (particleData)) {};
+    ~Particle () override = default;
 };
 } // namespace WallpaperEngine::Data::Model
