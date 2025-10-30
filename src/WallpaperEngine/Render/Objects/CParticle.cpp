@@ -840,14 +840,22 @@ void CParticle::renderSprites () {
     GLint prevTexture = 0;
     GLboolean prevBlendEnabled = glIsEnabled (GL_BLEND);
     GLboolean prevDepthMask = GL_TRUE;
-    GLint prevBlendSrc = GL_ONE;
-    GLint prevBlendDst = GL_ZERO;
+    GLint prevBlendSrcRGB = GL_ONE;
+    GLint prevBlendDstRGB = GL_ZERO;
+    GLint prevBlendSrcAlpha = GL_ONE;
+    GLint prevBlendDstAlpha = GL_ZERO;
+    GLint prevActiveTexture = GL_TEXTURE0;
+    GLint prevArrayBuffer = 0;
     glGetIntegerv (GL_CURRENT_PROGRAM, &prevProgram);
     glGetIntegerv (GL_VERTEX_ARRAY_BINDING, &prevVAO);
     glGetIntegerv (GL_TEXTURE_BINDING_2D, &prevTexture);
     glGetBooleanv (GL_DEPTH_WRITEMASK, &prevDepthMask);
-    glGetIntegerv (GL_BLEND_SRC_ALPHA, &prevBlendSrc);
-    glGetIntegerv (GL_BLEND_DST_ALPHA, &prevBlendDst);
+    glGetIntegerv (GL_BLEND_SRC_RGB, &prevBlendSrcRGB);
+    glGetIntegerv (GL_BLEND_DST_RGB, &prevBlendDstRGB);
+    glGetIntegerv (GL_BLEND_SRC_ALPHA, &prevBlendSrcAlpha);
+    glGetIntegerv (GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
+    glGetIntegerv (GL_ACTIVE_TEXTURE, &prevActiveTexture);
+    glGetIntegerv (GL_ARRAY_BUFFER_BINDING, &prevArrayBuffer);
 
     // Use particle shader
     glUseProgram (m_shaderProgram);
@@ -916,13 +924,15 @@ void CParticle::renderSprites () {
 
     // Restore state
     glDepthMask (prevDepthMask);
-    glBlendFunc (prevBlendSrc, prevBlendDst);
+    glBlendFuncSeparate (prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha);
     if (prevBlendEnabled) {
         glEnable (GL_BLEND);
     } else {
         glDisable (GL_BLEND);
     }
     glUseProgram (prevProgram);
+    glActiveTexture (prevActiveTexture);
     glBindTexture (GL_TEXTURE_2D, prevTexture);
+    glBindBuffer (GL_ARRAY_BUFFER, prevArrayBuffer);
     glBindVertexArray (prevVAO);
 }
