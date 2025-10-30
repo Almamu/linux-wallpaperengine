@@ -140,8 +140,6 @@ class CParticle final : public CObject {
 
     std::vector<ControlPointData> m_controlPoints;
 
-    // Emission timing
-    float m_emissionTimer {0.0f};
     double m_time {0.0f};
 
     // OpenGL buffers
