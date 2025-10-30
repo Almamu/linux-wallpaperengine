@@ -185,14 +185,14 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate;
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
 
-    return [this, emitter, rate, lifetime](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) {
+    return [this, emitter, rate, lifetime, emissionTimer = 0.0f](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
-        m_emissionTimer += dt * rate;
+        emissionTimer += dt * rate;
 
-        uint32_t toEmit = static_cast<uint32_t> (m_emissionTimer);
-        m_emissionTimer -= static_cast<float> (toEmit);
+        uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
+        emissionTimer -= static_cast<float> (toEmit);
 
         if (emitter.instantaneous > 0) {
             toEmit = emitter.instantaneous;
@@ -203,7 +203,7 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
 
             // Spawn at random position within box volume
             glm::vec3 randomPos = randomVec3 (m_rng, emitter.distanceMin, emitter.distanceMax);
-            p.position = randomPos;
+            p.position = emitter.origin + randomPos;
 
             // Velocity based on position direction and emitter settings
             glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0, 1, 0);
@@ -245,14 +245,14 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate;
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
 
-    return [this, emitter, rate, lifetime](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) {
+    return [this, emitter, rate, lifetime, emissionTimer = 0.0f](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
-        m_emissionTimer += dt * rate;
+        emissionTimer += dt * rate;
 
-        uint32_t toEmit = static_cast<uint32_t> (m_emissionTimer);
-        m_emissionTimer -= static_cast<float> (toEmit);
+        uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
+        emissionTimer -= static_cast<float> (toEmit);
 
         if (emitter.instantaneous > 0) {
             toEmit = emitter.instantaneous;
@@ -271,7 +271,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
                 radius * std::sin (phi) * std::sin (theta),
                 radius * std::cos (phi)
             );
-            p.position = randomPos;
+            p.position = emitter.origin + randomPos;
 
             // Velocity pointing outward from sphere center
             glm::vec3 direction = glm::normalize (randomPos);
