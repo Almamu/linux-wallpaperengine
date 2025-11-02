@@ -752,6 +752,12 @@ void CParticle::setupBuffers () {
         return;
     }
 
+    // Cache uniform locations
+    m_uniformTexture = glGetUniformLocation (m_shaderProgram, "g_Texture0");
+    m_uniformHasTexture = glGetUniformLocation (m_shaderProgram, "u_HasTexture");
+    m_uniformTextureFormat = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
+    m_uniformSpritesheetSize = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
+
     glGenVertexArrays (1, &m_vao);
     glGenBuffers (1, &m_vbo);
 
@@ -879,10 +885,6 @@ void CParticle::renderSprites () {
     glUseProgram (m_shaderProgram);
 
     // Bind particle texture
-    GLint hasTextureLoc = glGetUniformLocation (m_shaderProgram, "u_HasTexture");
-    GLint texFormatLoc = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
-    GLint spritesheetSizeLoc = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
-
     if (m_texture) {
         glActiveTexture (GL_TEXTURE0);
         glBindTexture (GL_TEXTURE_2D, m_texture->getTextureID (0));
@@ -891,26 +893,25 @@ void CParticle::renderSprites () {
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        GLint texLoc = glGetUniformLocation (m_shaderProgram, "g_Texture0");
-        if (texLoc != -1) {
-            glUniform1i (texLoc, 0);
+        if (m_uniformTexture != -1) {
+            glUniform1i (m_uniformTexture, 0);
         }
-        if (hasTextureLoc != -1) {
-            glUniform1i (hasTextureLoc, 1);
+        if (m_uniformHasTexture != -1) {
+            glUniform1i (m_uniformHasTexture, 1);
         }
-        if (texFormatLoc != -1) {
-            glUniform1i (texFormatLoc, static_cast<int> (m_textureFormat));
+        if (m_uniformTextureFormat != -1) {
+            glUniform1i (m_uniformTextureFormat, static_cast<int> (m_textureFormat));
         }
         // Set spritesheet size (cols, rows)
-        if (spritesheetSizeLoc != -1) {
-            glUniform2f (spritesheetSizeLoc, static_cast<float>(m_spritesheetCols), static_cast<float>(m_spritesheetRows));
+        if (m_uniformSpritesheetSize != -1) {
+            glUniform2f (m_uniformSpritesheetSize, static_cast<float>(m_spritesheetCols), static_cast<float>(m_spritesheetRows));
         }
     } else {
-        if (hasTextureLoc != -1) {
-            glUniform1i (hasTextureLoc, 0);
+        if (m_uniformHasTexture != -1) {
+            glUniform1i (m_uniformHasTexture, 0);
         }
-        if (spritesheetSizeLoc != -1) {
-            glUniform2f (spritesheetSizeLoc, 0.0f, 0.0f);
+        if (m_uniformSpritesheetSize != -1) {
+            glUniform2f (m_uniformSpritesheetSize, 0.0f, 0.0f);
         }
     }
 

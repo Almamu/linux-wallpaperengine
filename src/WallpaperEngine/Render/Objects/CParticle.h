@@ -149,6 +149,12 @@ class CParticle final : public CObject {
     GLuint m_vbo {0};
     GLuint m_shaderProgram {0};
 
+    // Cached uniform locations
+    GLint m_uniformTexture {-1};
+    GLint m_uniformHasTexture {-1};
+    GLint m_uniformTextureFormat {-1};
+    GLint m_uniformSpritesheetSize {-1};
+
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
     Data::Model::BlendingMode m_blendingMode {Data::Model::BlendingMode_Translucent};
