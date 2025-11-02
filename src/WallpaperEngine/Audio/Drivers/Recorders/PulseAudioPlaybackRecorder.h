@@ -35,7 +35,9 @@ class PulseAudioPlaybackRecorder final : public PlaybackRecorder {
     PulseAudioData m_captureData;
 
     float m_audioFFTbuffer [WAVE_BUFFER_SIZE] = {0.0f};
-    kiss_fft_cpx m_FFTinfo [WAVE_BUFFER_SIZE / 2 + 1] = {0};
+    kiss_fft_cpx m_FFTinfo [WAVE_BUFFER_SIZE / 2 + 1] = {
+        {.r = 0.0f, .i = 0.0f}
+    };
     float m_FFTdestination64 [64] = {0};
     float m_FFTdestination32 [32] = {0};
     float m_FFTdestination16 [16] = {0};
