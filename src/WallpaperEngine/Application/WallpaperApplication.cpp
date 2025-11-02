@@ -447,7 +447,7 @@ void WallpaperApplication::show () {
         // wait for a full render cycle before actually starting
         // this gives some extra time for video and web decoders to set themselves up
         // because of size changes
-        if (m_videoDriver->getFrameCounter () > this->m_context.settings.render.maximumFPS) {
+        if (m_videoDriver->getFrameCounter () > (uint32_t) this->m_context.settings.render.maximumFPS) {
             if (!initialized) {
                 width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
                 height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
