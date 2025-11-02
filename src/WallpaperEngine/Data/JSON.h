@@ -82,7 +82,7 @@ class JsonExtensions {
         const auto it = base.find (key);
         auto result = std::optional<base_type> {};
 
-        if (it != base.end ()) {
+        if (it != base.end () && !it->is_null ()) {
             result.emplace (*it);
         }
 
@@ -93,7 +93,7 @@ class JsonExtensions {
         auto base = this->base ();
         const auto it = base.find (key);
 
-        if (it == base.end ()) {
+        if (it == base.end () || it->is_null ()) {
             return std::nullopt;
         }
 
@@ -104,7 +104,7 @@ class JsonExtensions {
         auto base = this->base ();
         const auto it = base.find (key);
 
-        if (it == base.end ()) {
+        if (it == base.end () || it->is_null ()) {
             return defaultValue;
         }
 

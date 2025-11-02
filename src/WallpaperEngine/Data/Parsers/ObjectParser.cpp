@@ -58,7 +58,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
         sLog.error ("Light objects are not supported yet");
     } else {
         // dump the object for now, might want to change later
-        sLog.exception ("Unknown object type found: ", it.dump ());
+        sLog.error ("Unknown object type found: ", it.dump ());
     }
 
     return std::make_unique <Object> (basedata);
