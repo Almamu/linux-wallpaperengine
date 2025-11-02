@@ -8,6 +8,7 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <glm/gtc/constants.hpp>
 #include <sstream>
 
 using namespace WallpaperEngine::Data::Parsers;
@@ -566,7 +567,7 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
     } else if (name == "rotationrandom") {
         return std::make_unique<RotationRandomInitializer> (
             it.optional ("min", glm::vec3 (0.0f)),
-            it.optional ("max", glm::vec3 (0.0f, 0.0f, 2.0f * M_PI))
+            it.optional ("max", glm::vec3 (0.0f, 0.0f, glm::two_pi<float>()))
         );
     } else if (name == "angularvelocityrandom") {
         return std::make_unique<AngularVelocityRandomInitializer> (

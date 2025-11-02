@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
@@ -301,8 +302,8 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             auto& p = particles [count];
 
             // Spawn at random position within sphere volume
-            float theta = randomFloat (m_rng, 0.0f, 2.0f * M_PI);
-            float phi = randomFloat (m_rng, 0.0f, M_PI);
+            float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
+            float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
             float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
 
             glm::vec3 randomPos (
