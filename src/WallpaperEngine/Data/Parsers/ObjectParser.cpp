@@ -588,11 +588,22 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
     std::string name = it.optional<std::string> ("name", "");
 
     if (name == "colorrandom") {
-        // Note: Color values are divided by 255 to convert from 0-255 range to 0-1 range
+        // Only normalize if there's no property connection or values are > 1.0
         auto minSetting = it.user ("min", properties, glm::vec3 (0.0f));
         auto maxSetting = it.user ("max", properties, glm::vec3 (255.0f));
-        minSetting->value->update (minSetting->value->getVec3 () / 255.0f);
-        maxSetting->value->update (maxSetting->value->getVec3 () / 255.0f);
+
+        auto minVec = minSetting->value->getVec3 ();
+        if (minSetting->property == nullptr &&
+            (minVec.x > 1.0f || minVec.y > 1.0f || minVec.z > 1.0f)) {
+            minSetting->value->update (minVec / 255.0f);
+        }
+
+        auto maxVec = maxSetting->value->getVec3 ();
+        if (maxSetting->property == nullptr &&
+            (maxVec.x > 1.0f || maxVec.y > 1.0f || maxVec.z > 1.0f)) {
+            maxSetting->value->update (maxVec / 255.0f);
+        }
+
         return std::make_unique<ColorRandomInitializer> (std::move (minSetting), std::move (maxSetting));
     } else if (name == "sizerandom") {
         return std::make_unique<SizeRandomInitializer> (
