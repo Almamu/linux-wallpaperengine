@@ -33,8 +33,8 @@ class ObjectParser {
 
     // Particle parsing helpers
     static ParticleEmitter parseParticleEmitter (const JSON& it);
-    static ParticleInitializer parseParticleInitializer (const JSON& it);
-    static ParticleOperator parseParticleOperator (const JSON& it);
+    static ParticleInitializerUniquePtr parseParticleInitializer (const JSON& it);
+    static ParticleOperatorUniquePtr parseParticleOperator (const JSON& it);
     static ParticleRenderer parseParticleRenderer (const JSON& it);
     static ParticleControlPoint parseParticleControlPoint (const JSON& it);
     static ParticleChild parseParticleChild (const JSON& it, const Project& project);

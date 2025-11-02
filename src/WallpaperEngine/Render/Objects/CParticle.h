@@ -109,21 +109,21 @@ class CParticle final : public CObject {
     EmitterFunc createSphereEmitter (const ParticleEmitter& emitter);
 
     // Initializer creators
-    InitializerFunc createColorRandomInitializer (const JSON& json);
-    InitializerFunc createSizeRandomInitializer (const JSON& json);
-    InitializerFunc createAlphaRandomInitializer (const JSON& json);
-    InitializerFunc createLifetimeRandomInitializer (const JSON& json);
-    InitializerFunc createVelocityRandomInitializer (const JSON& json);
-    InitializerFunc createRotationRandomInitializer (const JSON& json);
-    InitializerFunc createAngularVelocityRandomInitializer (const JSON& json);
+    InitializerFunc createColorRandomInitializer (const ColorRandomInitializer& init);
+    InitializerFunc createSizeRandomInitializer (const SizeRandomInitializer& init);
+    InitializerFunc createAlphaRandomInitializer (const AlphaRandomInitializer& init);
+    InitializerFunc createLifetimeRandomInitializer (const LifetimeRandomInitializer& init);
+    InitializerFunc createVelocityRandomInitializer (const VelocityRandomInitializer& init);
+    InitializerFunc createRotationRandomInitializer (const RotationRandomInitializer& init);
+    InitializerFunc createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init);
 
     // Operator creators
-    OperatorFunc createMovementOperator (const JSON& json);
-    OperatorFunc createAngularMovementOperator (const JSON& json);
-    OperatorFunc createAlphaFadeOperator (const JSON& json);
-    OperatorFunc createSizeChangeOperator (const JSON& json);
-    OperatorFunc createAlphaChangeOperator (const JSON& json);
-    OperatorFunc createColorChangeOperator (const JSON& json);
+    OperatorFunc createMovementOperator (const MovementOperator& op);
+    OperatorFunc createAngularMovementOperator (const AngularMovementOperator& op);
+    OperatorFunc createAlphaFadeOperator (const AlphaFadeOperator& op);
+    OperatorFunc createSizeChangeOperator (const SizeChangeOperator& op);
+    OperatorFunc createAlphaChangeOperator (const AlphaChangeOperator& op);
+    OperatorFunc createColorChangeOperator (const ColorChangeOperator& op);
 
     // Rendering
     void renderSprites ();

@@ -12,11 +12,10 @@
 #include "Model.h"
 #include "Effect.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
-#include "WallpaperEngine/Data/JSON.h"
+#include <memory>
 
 namespace WallpaperEngine::Data::Model {
 using namespace WallpaperEngine::Data::Utils;
-using JSON = WallpaperEngine::Data::JSON::JSON;
 
 struct ObjectData {
     int id;
@@ -164,20 +163,124 @@ struct ParticleEmitter {
 };
 
 /**
- * Particle initializer - sets initial particle properties
+ * Particle initializer base and implementations
  */
-struct ParticleInitializer {
-    std::string name;
-    JSON json; // Store full JSON for flexible parsing
+class ParticleInitializerBase : public TypeCaster {
+  public:
+    virtual ~ParticleInitializerBase () = default;
 };
 
-/**
- * Particle operator - modifies particles over time
- */
-struct ParticleOperator {
-    std::string name;
-    JSON json; // Store full JSON for flexible parsing
+class ColorRandomInitializer : public ParticleInitializerBase {
+  public:
+    ColorRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
+    glm::vec3 min;
+    glm::vec3 max;
 };
+
+class SizeRandomInitializer : public ParticleInitializerBase {
+  public:
+    SizeRandomInitializer (float min, float max) : min (min), max (max) {}
+    float min;
+    float max;
+};
+
+class AlphaRandomInitializer : public ParticleInitializerBase {
+  public:
+    AlphaRandomInitializer (float min, float max) : min (min), max (max) {}
+    float min;
+    float max;
+};
+
+class LifetimeRandomInitializer : public ParticleInitializerBase {
+  public:
+    LifetimeRandomInitializer (float min, float max) : min (min), max (max) {}
+    float min;
+    float max;
+};
+
+class VelocityRandomInitializer : public ParticleInitializerBase {
+  public:
+    VelocityRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
+    glm::vec3 min;
+    glm::vec3 max;
+};
+
+class RotationRandomInitializer : public ParticleInitializerBase {
+  public:
+    RotationRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
+    glm::vec3 min;
+    glm::vec3 max;
+};
+
+class AngularVelocityRandomInitializer : public ParticleInitializerBase {
+  public:
+    AngularVelocityRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
+    glm::vec3 min;
+    glm::vec3 max;
+};
+
+using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;
+
+/**
+ * Particle operator base and implementations
+ */
+class ParticleOperatorBase : public TypeCaster {
+  public:
+    virtual ~ParticleOperatorBase () = default;
+};
+
+class MovementOperator : public ParticleOperatorBase {
+  public:
+    MovementOperator (float drag, glm::vec3 gravity) : drag (drag), gravity (gravity) {}
+    float drag;
+    glm::vec3 gravity;
+};
+
+class AngularMovementOperator : public ParticleOperatorBase {
+  public:
+    AngularMovementOperator (float drag, glm::vec3 force) : drag (drag), force (force) {}
+    float drag;
+    glm::vec3 force;
+};
+
+class AlphaFadeOperator : public ParticleOperatorBase {
+  public:
+    AlphaFadeOperator (float fadeInTime, float fadeOutTime) : fadeInTime (fadeInTime), fadeOutTime (fadeOutTime) {}
+    float fadeInTime;
+    float fadeOutTime;
+};
+
+class SizeChangeOperator : public ParticleOperatorBase {
+  public:
+    SizeChangeOperator (float startTime, float endTime, float startValue, float endValue)
+        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
+    float startTime;
+    float endTime;
+    float startValue;
+    float endValue;
+};
+
+class AlphaChangeOperator : public ParticleOperatorBase {
+  public:
+    AlphaChangeOperator (float startTime, float endTime, float startValue, float endValue)
+        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
+    float startTime;
+    float endTime;
+    float startValue;
+    float endValue;
+};
+
+class ColorChangeOperator : public ParticleOperatorBase {
+  public:
+    ColorChangeOperator (float startTime, float endTime, glm::vec3 startValue, glm::vec3 endValue)
+        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
+    float startTime;
+    float endTime;
+    glm::vec3 startValue;
+    glm::vec3 endValue;
+};
+
+using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
 
 /**
  * Particle renderer configuration
@@ -243,8 +346,8 @@ struct ParticleData {
 
     /** Emitters, initializers, operators, renderers */
     std::vector<ParticleEmitter> emitters;
-    std::vector<ParticleInitializer> initializers;
-    std::vector<ParticleOperator> operators;
+    std::vector<ParticleInitializerUniquePtr> initializers;
+    std::vector<ParticleOperatorUniquePtr> operators;
     std::vector<ParticleRenderer> renderers;
     std::vector<ParticleControlPoint> controlPoints;
     std::vector<ParticleChild> children;

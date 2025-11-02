@@ -321,27 +321,28 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 
 void CParticle::setupInitializers () {
     for (const auto& initializer : m_particle.initializers) {
+        if (!initializer) {
+            continue;
+        }
+
         InitializerFunc func;
 
-        const auto& name = initializer.name;
-        const auto& json = initializer.json;
-
-        if (name == "colorrandom") {
-            func = createColorRandomInitializer (json);
-        } else if (name == "sizerandom") {
-            func = createSizeRandomInitializer (json);
-        } else if (name == "alpharandom") {
-            func = createAlphaRandomInitializer (json);
-        } else if (name == "lifetimerandom") {
-            func = createLifetimeRandomInitializer (json);
-        } else if (name == "velocityrandom") {
-            func = createVelocityRandomInitializer (json);
-        } else if (name == "rotationrandom") {
-            func = createRotationRandomInitializer (json);
-        } else if (name == "angularvelocityrandom") {
-            func = createAngularVelocityRandomInitializer (json);
+        if (initializer->is<ColorRandomInitializer> ()) {
+            func = createColorRandomInitializer (*initializer->as<ColorRandomInitializer> ());
+        } else if (initializer->is<SizeRandomInitializer> ()) {
+            func = createSizeRandomInitializer (*initializer->as<SizeRandomInitializer> ());
+        } else if (initializer->is<AlphaRandomInitializer> ()) {
+            func = createAlphaRandomInitializer (*initializer->as<AlphaRandomInitializer> ());
+        } else if (initializer->is<LifetimeRandomInitializer> ()) {
+            func = createLifetimeRandomInitializer (*initializer->as<LifetimeRandomInitializer> ());
+        } else if (initializer->is<VelocityRandomInitializer> ()) {
+            func = createVelocityRandomInitializer (*initializer->as<VelocityRandomInitializer> ());
+        } else if (initializer->is<RotationRandomInitializer> ()) {
+            func = createRotationRandomInitializer (*initializer->as<RotationRandomInitializer> ());
+        } else if (initializer->is<AngularVelocityRandomInitializer> ()) {
+            func = createAngularVelocityRandomInitializer (*initializer->as<AngularVelocityRandomInitializer> ());
         } else {
-            sLog.out ("Unknown initializer type: ", name);
+            sLog.out ("Unknown initializer type");
         }
 
         if (func) {
@@ -350,75 +351,50 @@ void CParticle::setupInitializers () {
     }
 }
 
-InitializerFunc CParticle::createColorRandomInitializer (const JSON& json) {
-    glm::vec3 min = json.optional ("min", glm::vec3 (0.0f));
-    glm::vec3 max = json.optional ("max", glm::vec3 (255.0f));
-
-    // Convert from 0-255 to 0-1
-    min /= 255.0f;
-    max /= 255.0f;
-
-    return [this, min, max](ParticleInstance& p) {
-        p.color = randomVec3 (m_rng, min, max);
+InitializerFunc CParticle::createColorRandomInitializer (const ColorRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.color = randomVec3 (m_rng, init.min, init.max);
         p.initial.color = p.color;
     };
 }
 
-InitializerFunc CParticle::createSizeRandomInitializer (const JSON& json) {
-    float min = json.optional ("min", 0.0f);
-    float max = json.optional ("max", 20.0f);
-
-    return [this, min, max](ParticleInstance& p) {
-        p.size = randomFloat (m_rng, min, max) * m_particle.instanceOverride.size;
+InitializerFunc CParticle::createSizeRandomInitializer (const SizeRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.size = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.size;
         p.initial.size = p.size;
     };
 }
 
-InitializerFunc CParticle::createAlphaRandomInitializer (const JSON& json) {
-    float min = json.optional ("min", 0.05f);
-    float max = json.optional ("max", 1.0f);
-
-    return [this, min, max](ParticleInstance& p) {
-        p.alpha = randomFloat (m_rng, min, max) * m_particle.instanceOverride.alpha;
+InitializerFunc CParticle::createAlphaRandomInitializer (const AlphaRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.alpha = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.alpha;
         p.initial.alpha = p.alpha;
     };
 }
 
-InitializerFunc CParticle::createLifetimeRandomInitializer (const JSON& json) {
-    float min = json.optional ("min", 0.0f);
-    float max = json.optional ("max", 1.0f);
-
-    return [this, min, max](ParticleInstance& p) {
-        p.lifetime = randomFloat (m_rng, min, max) * m_particle.instanceOverride.lifetime;
+InitializerFunc CParticle::createLifetimeRandomInitializer (const LifetimeRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.lifetime = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.lifetime;
         p.initial.lifetime = p.lifetime;
     };
 }
 
-InitializerFunc CParticle::createVelocityRandomInitializer (const JSON& json) {
-    glm::vec3 min = json.optional ("min", glm::vec3 (-32.0f));
-    glm::vec3 max = json.optional ("max", glm::vec3 (32.0f));
-
-    return [this, min, max](ParticleInstance& p) {
-        glm::vec3 vel = randomVec3 (m_rng, min, max);
+InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        glm::vec3 vel = randomVec3 (m_rng, init.min, init.max);
         p.velocity += vel * m_particle.instanceOverride.speed;
     };
 }
 
-InitializerFunc CParticle::createRotationRandomInitializer (const JSON& json) {
-    glm::vec3 min = json.optional ("min", glm::vec3 (0.0f));
-    glm::vec3 max = json.optional ("max", glm::vec3 (0.0f, 0.0f, 2.0f * M_PI));
-
-    return [this, min, max](ParticleInstance& p) {
-        p.rotation = randomVec3 (m_rng, min, max);
+InitializerFunc CParticle::createRotationRandomInitializer (const RotationRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.rotation = randomVec3 (m_rng, init.min, init.max);
     };
 }
 
-InitializerFunc CParticle::createAngularVelocityRandomInitializer (const JSON& json) {
-    glm::vec3 min = json.optional ("min", glm::vec3 (0.0f, 0.0f, -5.0f));
-    glm::vec3 max = json.optional ("max", glm::vec3 (0.0f, 0.0f, 5.0f));
-
-    return [this, min, max](ParticleInstance& p) {
-        p.angularVelocity = randomVec3 (m_rng, min, max);
+InitializerFunc CParticle::createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        p.angularVelocity = randomVec3 (m_rng, init.min, init.max);
     };
 }
 
@@ -426,25 +402,26 @@ InitializerFunc CParticle::createAngularVelocityRandomInitializer (const JSON& j
 
 void CParticle::setupOperators () {
     for (const auto& op : m_particle.operators) {
+        if (!op) {
+            continue;
+        }
+
         OperatorFunc func;
 
-        const auto& name = op.name;
-        const auto& json = op.json;
-
-        if (name == "movement") {
-            func = createMovementOperator (json);
-        } else if (name == "angularmovement") {
-            func = createAngularMovementOperator (json);
-        } else if (name == "alphafade") {
-            func = createAlphaFadeOperator (json);
-        } else if (name == "sizechange") {
-            func = createSizeChangeOperator (json);
-        } else if (name == "alphachange") {
-            func = createAlphaChangeOperator (json);
-        } else if (name == "colorchange") {
-            func = createColorChangeOperator (json);
+        if (op->is<MovementOperator> ()) {
+            func = createMovementOperator (*op->as<MovementOperator> ());
+        } else if (op->is<AngularMovementOperator> ()) {
+            func = createAngularMovementOperator (*op->as<AngularMovementOperator> ());
+        } else if (op->is<AlphaFadeOperator> ()) {
+            func = createAlphaFadeOperator (*op->as<AlphaFadeOperator> ());
+        } else if (op->is<SizeChangeOperator> ()) {
+            func = createSizeChangeOperator (*op->as<SizeChangeOperator> ());
+        } else if (op->is<AlphaChangeOperator> ()) {
+            func = createAlphaChangeOperator (*op->as<AlphaChangeOperator> ());
+        } else if (op->is<ColorChangeOperator> ()) {
+            func = createColorChangeOperator (*op->as<ColorChangeOperator> ());
         } else {
-            sLog.out ("Unknown operator type: ", name);
+            sLog.out ("Unknown operator type");
         }
 
         if (func) {
@@ -453,12 +430,10 @@ void CParticle::setupOperators () {
     }
 }
 
-OperatorFunc CParticle::createMovementOperator (const JSON& json) {
-    float drag = json.optional ("drag", 0.0f);
-    glm::vec3 gravity = json.optional ("gravity", glm::vec3 (0.0f));
+OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
     float speed = m_particle.instanceOverride.speed;
 
-    return [drag, gravity, speed](
+    return [op, speed](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -469,10 +444,10 @@ OperatorFunc CParticle::createMovementOperator (const JSON& json) {
             auto& p = particles [i];
 
             // Apply drag force
-            glm::vec3 dragForce = -drag * p.velocity;
+            glm::vec3 dragForce = -op.drag * p.velocity;
 
             // Total acceleration
-            glm::vec3 totalAccel = (dragForce + gravity) * speed;
+            glm::vec3 totalAccel = (dragForce + op.gravity) * speed;
 
             // Update velocity and position
             p.velocity += totalAccel * dt;
@@ -481,11 +456,8 @@ OperatorFunc CParticle::createMovementOperator (const JSON& json) {
     };
 }
 
-OperatorFunc CParticle::createAngularMovementOperator (const JSON& json) {
-    float drag = json.optional ("drag", 0.0f);
-    glm::vec3 force = json.optional ("force", glm::vec3 (0.0f));
-
-    return [drag, force](
+OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOperator& op) {
+    return [op](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -495,8 +467,8 @@ OperatorFunc CParticle::createAngularMovementOperator (const JSON& json) {
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            glm::vec3 dragForce = -drag * p.angularVelocity;
-            glm::vec3 totalAccel = dragForce + force;
+            glm::vec3 dragForce = -op.drag * p.angularVelocity;
+            glm::vec3 totalAccel = dragForce + op.force;
 
             p.angularVelocity += totalAccel * dt;
             p.rotation += p.angularVelocity * dt;
@@ -504,11 +476,8 @@ OperatorFunc CParticle::createAngularMovementOperator (const JSON& json) {
     };
 }
 
-OperatorFunc CParticle::createAlphaFadeOperator (const JSON& json) {
-    float fadeInTime = json.optional ("fadeintime", 0.5f);
-    float fadeOutTime = json.optional ("fadeouttime", 0.5f);
-
-    return [fadeInTime, fadeOutTime](
+OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
+    return [op](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -520,11 +489,11 @@ OperatorFunc CParticle::createAlphaFadeOperator (const JSON& json) {
 
             float life = p.getLifetimePos ();
 
-            if (life <= fadeInTime) {
-                float fade = fadeValue (life, 0.0f, fadeInTime, 0.0f, 1.0f);
+            if (life <= op.fadeInTime) {
+                float fade = fadeValue (life, 0.0f, op.fadeInTime, 0.0f, 1.0f);
                 p.alpha = p.initial.alpha * fade;
-            } else if (life > fadeOutTime) {
-                float fade = 1.0f - fadeValue (life, fadeOutTime, 1.0f, 0.0f, 1.0f);
+            } else if (life > op.fadeOutTime) {
+                float fade = 1.0f - fadeValue (life, op.fadeOutTime, 1.0f, 0.0f, 1.0f);
                 p.alpha = p.initial.alpha * fade;
             } else {
                 p.alpha = p.initial.alpha;
@@ -533,13 +502,8 @@ OperatorFunc CParticle::createAlphaFadeOperator (const JSON& json) {
     };
 }
 
-OperatorFunc CParticle::createSizeChangeOperator (const JSON& json) {
-    float startTime = json.optional ("starttime", 0.0f);
-    float endTime = json.optional ("endtime", 1.0f);
-    float startValue = json.optional ("startvalue", 1.0f);
-    float endValue = json.optional ("endvalue", 0.0f);
-
-    return [startTime, endTime, startValue, endValue](
+OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) {
+    return [op](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -550,19 +514,14 @@ OperatorFunc CParticle::createSizeChangeOperator (const JSON& json) {
             auto& p = particles [i];
 
             float life = p.getLifetimePos ();
-            float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
+            float multiplier = fadeValue (life, op.startTime, op.endTime, op.startValue, op.endValue);
             p.size = p.initial.size * multiplier;
         }
     };
 }
 
-OperatorFunc CParticle::createAlphaChangeOperator (const JSON& json) {
-    float startTime = json.optional ("starttime", 0.0f);
-    float endTime = json.optional ("endtime", 1.0f);
-    float startValue = json.optional ("startvalue", 1.0f);
-    float endValue = json.optional ("endvalue", 0.0f);
-
-    return [startTime, endTime, startValue, endValue](
+OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op) {
+    return [op](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -573,19 +532,14 @@ OperatorFunc CParticle::createAlphaChangeOperator (const JSON& json) {
             auto& p = particles [i];
 
             float life = p.getLifetimePos ();
-            float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
+            float multiplier = fadeValue (life, op.startTime, op.endTime, op.startValue, op.endValue);
             p.alpha = p.initial.alpha * multiplier;
         }
     };
 }
 
-OperatorFunc CParticle::createColorChangeOperator (const JSON& json) {
-    float startTime = json.optional ("starttime", 0.0f);
-    float endTime = json.optional ("endtime", 1.0f);
-    glm::vec3 startValue = json.optional ("startvalue", glm::vec3 (1.0f));
-    glm::vec3 endValue = json.optional ("endvalue", glm::vec3 (1.0f));
-
-    return [startTime, endTime, startValue, endValue](
+OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op) {
+    return [op](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -598,9 +552,9 @@ OperatorFunc CParticle::createColorChangeOperator (const JSON& json) {
             float life = p.getLifetimePos ();
 
             glm::vec3 color;
-            color.r = fadeValue (life, startTime, endTime, startValue.r, endValue.r);
-            color.g = fadeValue (life, startTime, endTime, startValue.g, endValue.g);
-            color.b = fadeValue (life, startTime, endTime, startValue.b, endValue.b);
+            color.r = fadeValue (life, op.startTime, op.endTime, op.startValue.r, op.endValue.r);
+            color.g = fadeValue (life, op.startTime, op.endTime, op.startValue.g, op.endValue.g);
+            color.b = fadeValue (life, op.startTime, op.endTime, op.startValue.b, op.endValue.b);
 
             p.color = p.initial.color * color;
         }

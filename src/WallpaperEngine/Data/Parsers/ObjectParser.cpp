@@ -303,20 +303,26 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
     }
 
     // Parse initializers (note: field is named "initializer" not "initializers")
-    std::vector<ParticleInitializer> initializers;
+    std::vector<ParticleInitializerUniquePtr> initializers;
     const auto initializersIt = particleJson.find ("initializer");
     if (initializersIt != particleJson.end () && initializersIt->is_array ()) {
         for (const auto& initializer : *initializersIt) {
-            initializers.push_back (parseParticleInitializer (initializer));
+            auto init = parseParticleInitializer (initializer);
+            if (init) {
+                initializers.push_back (std::move (init));
+            }
         }
     }
 
     // Parse operators (note: field is named "operator" not "operators")
-    std::vector<ParticleOperator> operators;
+    std::vector<ParticleOperatorUniquePtr> operators;
     const auto operatorsIt = particleJson.find ("operator");
     if (operatorsIt != particleJson.end () && operatorsIt->is_array ()) {
         for (const auto& op : *operatorsIt) {
-            operators.push_back (parseParticleOperator (op));
+            auto oper = parseParticleOperator (op);
+            if (oper) {
+                operators.push_back (std::move (oper));
+            }
         }
     }
 
@@ -530,30 +536,90 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
     }
 }
 
-ParticleInitializer ObjectParser::parseParticleInitializer (const JSON& it) {
-    std::string name = "";
-    const auto nameIt = it.find ("name");
-    if (nameIt != it.end () && nameIt->is_string ()) {
-        name = nameIt->get<std::string> ();
+ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON& it) {
+    std::string name = it.optional<std::string> ("name", "");
+
+    if (name == "colorrandom") {
+        glm::vec3 min = it.optional ("min", glm::vec3 (0.0f)) / 255.0f;
+        glm::vec3 max = it.optional ("max", glm::vec3 (255.0f)) / 255.0f;
+        return std::make_unique<ColorRandomInitializer> (min, max);
+    } else if (name == "sizerandom") {
+        return std::make_unique<SizeRandomInitializer> (
+            it.optional ("min", 0.0f),
+            it.optional ("max", 20.0f)
+        );
+    } else if (name == "alpharandom") {
+        return std::make_unique<AlphaRandomInitializer> (
+            it.optional ("min", 0.05f),
+            it.optional ("max", 1.0f)
+        );
+    } else if (name == "lifetimerandom") {
+        return std::make_unique<LifetimeRandomInitializer> (
+            it.optional ("min", 0.0f),
+            it.optional ("max", 1.0f)
+        );
+    } else if (name == "velocityrandom") {
+        return std::make_unique<VelocityRandomInitializer> (
+            it.optional ("min", glm::vec3 (-32.0f)),
+            it.optional ("max", glm::vec3 (32.0f))
+        );
+    } else if (name == "rotationrandom") {
+        return std::make_unique<RotationRandomInitializer> (
+            it.optional ("min", glm::vec3 (0.0f)),
+            it.optional ("max", glm::vec3 (0.0f, 0.0f, 2.0f * M_PI))
+        );
+    } else if (name == "angularvelocityrandom") {
+        return std::make_unique<AngularVelocityRandomInitializer> (
+            it.optional ("min", glm::vec3 (0.0f, 0.0f, -5.0f)),
+            it.optional ("max", glm::vec3 (0.0f, 0.0f, 5.0f))
+        );
     }
 
-    return ParticleInitializer {
-        .name = name,
-        .json = it,
-    };
+    return nullptr;
 }
 
-ParticleOperator ObjectParser::parseParticleOperator (const JSON& it) {
-    std::string name = "";
-    const auto nameIt = it.find ("name");
-    if (nameIt != it.end () && nameIt->is_string ()) {
-        name = nameIt->get<std::string> ();
+ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it) {
+    std::string name = it.optional<std::string> ("name", "");
+
+    if (name == "movement") {
+        return std::make_unique<MovementOperator> (
+            it.optional ("drag", 0.0f),
+            it.optional ("gravity", glm::vec3 (0.0f))
+        );
+    } else if (name == "angularmovement") {
+        return std::make_unique<AngularMovementOperator> (
+            it.optional ("drag", 0.0f),
+            it.optional ("force", glm::vec3 (0.0f))
+        );
+    } else if (name == "alphafade") {
+        return std::make_unique<AlphaFadeOperator> (
+            it.optional ("fadeintime", 0.5f),
+            it.optional ("fadeouttime", 0.5f)
+        );
+    } else if (name == "sizechange") {
+        return std::make_unique<SizeChangeOperator> (
+            it.optional ("starttime", 0.0f),
+            it.optional ("endtime", 1.0f),
+            it.optional ("startvalue", 1.0f),
+            it.optional ("endvalue", 0.0f)
+        );
+    } else if (name == "alphachange") {
+        return std::make_unique<AlphaChangeOperator> (
+            it.optional ("starttime", 0.0f),
+            it.optional ("endtime", 1.0f),
+            it.optional ("startvalue", 1.0f),
+            it.optional ("endvalue", 0.0f)
+        );
+    } else if (name == "colorchange") {
+        return std::make_unique<ColorChangeOperator> (
+            it.optional ("starttime", 0.0f),
+            it.optional ("endtime", 1.0f),
+            it.optional ("startvalue", glm::vec3 (1.0f)),
+            it.optional ("endvalue", glm::vec3 (1.0f))
+        );
     }
 
-    return ParticleOperator {
-        .name = name,
-        .json = it,
-    };
+    return nullptr;
 }
 
 ParticleRenderer ObjectParser::parseParticleRenderer (const JSON& it) {
