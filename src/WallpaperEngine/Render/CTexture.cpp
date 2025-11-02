@@ -213,3 +213,19 @@ const std::vector<FrameSharedPtr>& CTexture::getFrames () const {
 bool CTexture::isAnimated () const {
     return this->getHeader ().isAnimated ();
 }
+
+uint32_t CTexture::getSpritesheetCols () const {
+    return this->getHeader ().spritesheetCols;
+}
+
+uint32_t CTexture::getSpritesheetRows () const {
+    return this->getHeader ().spritesheetRows;
+}
+
+uint32_t CTexture::getSpritesheetFrames () const {
+    return this->getHeader ().spritesheetFrames;
+}
+
+float CTexture::getSpritesheetDuration () const {
+    return this->getHeader ().spritesheetDuration;
+}

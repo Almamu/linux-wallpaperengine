@@ -36,6 +36,7 @@ struct ParticleInstance {
     glm::vec3 color {1.0f};
     float alpha {1.0f};
     float size {20.0f};
+    float frame {0.0f};         // Current animation frame
 
     // Lifetime
     float lifetime {1.0f};      // Total lifetime in seconds
@@ -152,6 +153,12 @@ class CParticle final : public CObject {
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
     Data::Model::BlendingMode m_blendingMode {Data::Model::BlendingMode_Translucent};
     Data::Assets::TextureFormat m_textureFormat {Data::Assets::TextureFormat_ARGB8888};
+
+    // Spritesheet animation data
+    int m_spritesheetCols {0};
+    int m_spritesheetRows {0};
+    int m_spritesheetFrames {0};
+    float m_spritesheetDuration {1.0f};
 
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};

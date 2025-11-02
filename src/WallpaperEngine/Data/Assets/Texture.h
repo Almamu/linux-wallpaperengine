@@ -164,8 +164,18 @@ struct Texture {
     /** List of animation frames */
     std::vector<FrameSharedPtr> frames {};
 
+    /** Spritesheet grid data (from .tex-json metadata) */
+    uint32_t spritesheetCols = 0;
+    uint32_t spritesheetRows = 0;
+    uint32_t spritesheetFrames = 0;
+    float spritesheetDuration = 0.0f;
+
     [[nodiscard]] bool isAnimated () const {
         return (flags & TextureFlags_IsGif) == TextureFlags_IsGif;
+    }
+
+    [[nodiscard]] bool hasSpritesheet () const {
+        return spritesheetFrames > 0;
     }
 };
 }

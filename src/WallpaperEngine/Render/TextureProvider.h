@@ -62,5 +62,21 @@ class TextureProvider {
      * @return If the texture is animated or not
      */
     [[nodiscard]] virtual bool isAnimated () const = 0;
+    /**
+     * @return Number of columns in spritesheet grid (0 if not a spritesheet)
+     */
+    [[nodiscard]] virtual uint32_t getSpritesheetCols () const = 0;
+    /**
+     * @return Number of rows in spritesheet grid (0 if not a spritesheet)
+     */
+    [[nodiscard]] virtual uint32_t getSpritesheetRows () const = 0;
+    /**
+     * @return Total number of frames in spritesheet (0 if not a spritesheet)
+     */
+    [[nodiscard]] virtual uint32_t getSpritesheetFrames () const = 0;
+    /**
+     * @return Duration of spritesheet animation in seconds
+     */
+    [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
 };
 } // namespace WallpaperEngine::Assets

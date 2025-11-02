@@ -100,6 +100,12 @@ void CParticle::setup () {
             }
             if (m_texture) {
                 m_textureFormat = m_texture->getFormat ();
+
+                // Get spritesheet data from texture (parsed in TextureParser)
+                m_spritesheetCols = static_cast<int> (m_texture->getSpritesheetCols ());
+                m_spritesheetRows = static_cast<int> (m_texture->getSpritesheetRows ());
+                m_spritesheetFrames = static_cast<int> (m_texture->getSpritesheetFrames ());
+                m_spritesheetDuration = m_texture->getSpritesheetDuration ();
             }
         }
     }
@@ -151,6 +157,26 @@ void CParticle::update (float dt) {
     for (uint32_t i = 0; i < m_particleCount; ) {
         auto& p = m_particles [i];
         p.age += dt;
+
+        // Update animation frame if we have a spritesheet
+        if (m_spritesheetFrames > 0) {
+            // Calculate frame based on particle lifetime
+            float lifetimePos = p.getLifetimePos();
+
+            // Apply sequence multiplier if present
+            float animSpeed = m_particle.sequenceMultiplier > 0.0f ? m_particle.sequenceMultiplier : 1.0f;
+
+            // Calculate frame based on animation mode
+            if (m_particle.animationMode == "once") {
+                // Play animation once over particle lifetime
+                p.frame = std::min(lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float>(m_spritesheetFrames - 1));
+            } else {
+                // Default to "loop" mode - loop animation based on duration
+                float timeInCycle = std::fmod(p.age * animSpeed, m_spritesheetDuration);
+                float cyclePos = m_spritesheetDuration > 0.0f ? (timeInCycle / m_spritesheetDuration) : 0.0f;
+                p.frame = std::fmod(cyclePos * m_spritesheetFrames, static_cast<float>(m_spritesheetFrames));
+            }
+        }
 
         if (!p.isAlive ()) {
             // Swap with last particle and reduce count
@@ -587,9 +613,11 @@ GLuint CParticle::createShaderProgram () {
         layout (location = 2) in float aRotation;
         layout (location = 3) in float aSize;
         layout (location = 4) in vec4 aColor;
+        layout (location = 5) in float aFrame;
 
         out vec2 vTexCoord;
         out vec4 vColor;
+        out float vFrame;
 
         uniform mat4 g_ModelViewProjectionMatrix;
 
@@ -612,6 +640,7 @@ GLuint CParticle::createShaderProgram () {
             gl_Position = g_ModelViewProjectionMatrix * vec4(billboardPos, 1.0);
             vTexCoord = aTexCoord;
             vColor = aColor;
+            vFrame = aFrame;
         }
     )";
 
@@ -619,18 +648,41 @@ GLuint CParticle::createShaderProgram () {
         #version 330 core
         in vec2 vTexCoord;
         in vec4 vColor;
+        in float vFrame;
 
         out vec4 FragColor;
 
         uniform sampler2D g_Texture0;
         uniform int u_HasTexture;
-        uniform int u_TextureFormat; // 8 = RG88
+        uniform int u_TextureFormat; // 8 = RG88, 9 = R8
+        uniform vec2 u_SpritesheetSize; // x=cols, y=rows
 
         void main() {
             vec4 texColor;
             if (u_HasTexture == 1) {
+                // Calculate UV coordinates for spritesheet frame
+                vec2 uv = vTexCoord;
+                if (u_SpritesheetSize.x > 0.0) {
+                    // Spritesheet: adjust UVs to sample only the current frame
+                    float cols = u_SpritesheetSize.x;
+                    float rows = u_SpritesheetSize.y;
+                    float frameIndex = floor(vFrame);
+
+                    float frameX = mod(frameIndex, cols);
+                    float frameY = floor(frameIndex / cols);
+
+                    float frameWidth = 1.0 / cols;
+                    float frameHeight = 1.0 / rows;
+
+                    // Calculate UV coordinates for the current frame
+                    uv = vec2(
+                        frameX * frameWidth + vTexCoord.x * frameWidth,
+                        frameY * frameHeight + vTexCoord.y * frameHeight
+                    );
+                }
+
                 // Sample texture
-                vec4 sample = texture(g_Texture0, vTexCoord);
+                vec4 sample = texture(g_Texture0, uv);
 
                 // Convert texture format like common_fragment.h does
                 if (u_TextureFormat == 8) {
@@ -698,8 +750,8 @@ void CParticle::setupBuffers () {
     glBindVertexArray (m_vao);
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
 
-    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) = 11 floats
-    const int stride = sizeof (float) * 11;
+    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) + frame(1) = 12 floats
+    const int stride = sizeof (float) * 12;
 
     // Position (location 0)
     glEnableVertexAttribArray (0);
@@ -721,6 +773,10 @@ void CParticle::setupBuffers () {
     glEnableVertexAttribArray (4);
     glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7));
 
+    // Frame (location 5)
+    glEnableVertexAttribArray (5);
+    glVertexAttribPointer (5, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11));
+
     glBindVertexArray (0);
 }
 
@@ -738,9 +794,9 @@ void CParticle::renderSprites () {
         return;
 
     // Prepare vertex data - 6 vertices per particle (2 triangles forming a quad)
-    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) = 11 floats per vertex
+    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) + frame(1) = 12 floats per vertex
     std::vector<float> vertices;
-    vertices.reserve (aliveCount * 6 * 11);
+    vertices.reserve (aliveCount * 6 * 12);
 
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
@@ -764,6 +820,7 @@ void CParticle::renderSprites () {
             vertices.push_back (p.color.g);
             vertices.push_back (p.color.b);
             vertices.push_back (p.alpha);
+            vertices.push_back (p.frame);
         };
 
         // Triangle 1
@@ -816,9 +873,16 @@ void CParticle::renderSprites () {
     // Bind particle texture
     GLint hasTextureLoc = glGetUniformLocation (m_shaderProgram, "u_HasTexture");
     GLint texFormatLoc = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
+    GLint spritesheetSizeLoc = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
+
     if (m_texture) {
         glActiveTexture (GL_TEXTURE0);
         glBindTexture (GL_TEXTURE_2D, m_texture->getTextureID (0));
+
+        // Set texture wrapping mode
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
         GLint texLoc = glGetUniformLocation (m_shaderProgram, "g_Texture0");
         if (texLoc != -1) {
             glUniform1i (texLoc, 0);
@@ -829,9 +893,16 @@ void CParticle::renderSprites () {
         if (texFormatLoc != -1) {
             glUniform1i (texFormatLoc, static_cast<int> (m_textureFormat));
         }
+        // Set spritesheet size (cols, rows)
+        if (spritesheetSizeLoc != -1) {
+            glUniform2f (spritesheetSizeLoc, static_cast<float>(m_spritesheetCols), static_cast<float>(m_spritesheetRows));
+        }
     } else {
         if (hasTextureLoc != -1) {
             glUniform1i (hasTextureLoc, 0);
+        }
+        if (spritesheetSizeLoc != -1) {
+            glUniform2f (spritesheetSizeLoc, 0.0f, 0.0f);
         }
     }
 
