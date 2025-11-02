@@ -16,6 +16,7 @@ using namespace WallpaperEngine::Data::Model;
 namespace {
     // Helper: Random float in range
     inline float randomFloat (std::mt19937& rng, float min, float max) {
+        if (max < min) std::swap (min, max);
         std::uniform_real_distribution<float> dist (min, max);
         return dist (rng);
     }
