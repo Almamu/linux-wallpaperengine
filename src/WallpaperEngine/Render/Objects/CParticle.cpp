@@ -174,9 +174,13 @@ void CParticle::update (float dt) {
                 p.frame = std::min(lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float>(m_spritesheetFrames - 1));
             } else {
                 // Default to "loop" mode - loop animation based on duration
-                float timeInCycle = std::fmod(p.age * animSpeed, m_spritesheetDuration);
-                float cyclePos = m_spritesheetDuration > 0.0f ? (timeInCycle / m_spritesheetDuration) : 0.0f;
-                p.frame = std::fmod(cyclePos * m_spritesheetFrames, static_cast<float>(m_spritesheetFrames));
+                if (m_spritesheetDuration > 0.0f) {
+                    float timeInCycle = std::fmod(p.age * animSpeed, m_spritesheetDuration);
+                    float cyclePos = timeInCycle / m_spritesheetDuration;
+                    p.frame = std::fmod(cyclePos * m_spritesheetFrames, static_cast<float>(m_spritesheetFrames));
+                } else {
+                    p.frame = 0.0f;
+                }
             }
         }
 
