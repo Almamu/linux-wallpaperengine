@@ -79,4 +79,4 @@ class TextureProvider {
      */
     [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
 };
-} // namespace WallpaperEngine::Assets
+} // namespace WallpaperEngine::Render
