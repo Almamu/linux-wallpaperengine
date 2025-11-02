@@ -33,11 +33,11 @@ class ObjectParser {
 
     // Particle parsing helpers
     static ParticleEmitter parseParticleEmitter (const JSON& it);
-    static ParticleInitializerUniquePtr parseParticleInitializer (const JSON& it);
-    static ParticleOperatorUniquePtr parseParticleOperator (const JSON& it);
+    static ParticleInitializerUniquePtr parseParticleInitializer (const JSON& it, const Properties& properties);
+    static ParticleOperatorUniquePtr parseParticleOperator (const JSON& it, const Properties& properties);
     static ParticleRenderer parseParticleRenderer (const JSON& it);
     static ParticleControlPoint parseParticleControlPoint (const JSON& it);
     static ParticleChild parseParticleChild (const JSON& it, const Project& project);
-    static ParticleInstanceOverride parseParticleInstanceOverride (const JSON& it);
+    static ParticleInstanceOverride parseParticleInstanceOverride (const JSON& it, const Properties& properties);
 };
 } // namespace WallpaperEngine::Data::Parsers

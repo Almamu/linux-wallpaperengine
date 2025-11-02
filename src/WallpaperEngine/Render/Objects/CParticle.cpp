@@ -1,5 +1,6 @@
 #include "CParticle.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Data/Model/Property.h"
 
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -108,6 +109,10 @@ void CParticle::setup () {
                 m_spritesheetRows = static_cast<int> (m_texture->getSpritesheetRows ());
                 m_spritesheetFrames = static_cast<int> (m_texture->getSpritesheetFrames ());
                 m_spritesheetDuration = m_texture->getSpritesheetDuration ();
+
+                sLog.out ("Particle '", m_particle.name, "' texture: ", textureName,
+                          " | cols=", m_spritesheetCols, " rows=", m_spritesheetRows,
+                          " frames=", m_spritesheetFrames, " duration=", m_spritesheetDuration);
             }
         }
     }
@@ -227,8 +232,8 @@ void CParticle::setupEmitters () {
 }
 
 EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
-    float rate = emitter.rate * m_particle.instanceOverride.rate;
-    float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
+    float rate = emitter.rate * m_particle.instanceOverride.rate->value->getFloat ();
+    float lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
 
     return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
@@ -264,9 +269,9 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
             p.angularAcceleration = glm::vec3 (0.0f);
 
             // Default properties (will be overridden by initializers)
-            p.color = glm::vec3 (1.0f);
-            p.alpha = 1.0f;
-            p.size = 20.0f;
+            p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
+            p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
+            p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
             p.lifetime = lifetime;
             p.age = 0.0f;
             p.alive = true;
@@ -288,8 +293,8 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
 }
 
 EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
-    float rate = emitter.rate * m_particle.instanceOverride.rate;
-    float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
+    float rate = emitter.rate * m_particle.instanceOverride.rate->value->getFloat ();
+    float lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
 
     return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
@@ -330,9 +335,9 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             p.angularVelocity = glm::vec3 (0.0f);
             p.angularAcceleration = glm::vec3 (0.0f);
 
-            p.color = glm::vec3 (1.0f);
-            p.alpha = 1.0f;
-            p.size = 20.0f;
+            p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
+            p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
+            p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
             p.lifetime = lifetime;
             p.age = 0.0f;
             p.alive = true;
@@ -386,49 +391,70 @@ void CParticle::setupInitializers () {
 }
 
 InitializerFunc CParticle::createColorRandomInitializer (const ColorRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.color = randomVec3 (m_rng, init.min, init.max);
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.color = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * m_particle.instanceOverride.colorn->value->getVec3 ();
         p.initial.color = p.color;
     };
 }
 
 InitializerFunc CParticle::createSizeRandomInitializer (const SizeRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.size = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.size;
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.size = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * m_particle.instanceOverride.size->value->getFloat ();
         p.initial.size = p.size;
     };
 }
 
 InitializerFunc CParticle::createAlphaRandomInitializer (const AlphaRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.alpha = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.alpha;
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.alpha = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * m_particle.instanceOverride.alpha->value->getFloat ();
         p.initial.alpha = p.alpha;
     };
 }
 
 InitializerFunc CParticle::createLifetimeRandomInitializer (const LifetimeRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.lifetime = randomFloat (m_rng, init.min, init.max) * m_particle.instanceOverride.lifetime;
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.lifetime = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * m_particle.instanceOverride.lifetime->value->getFloat ();
         p.initial.lifetime = p.lifetime;
     };
 }
 
 InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        glm::vec3 vel = randomVec3 (m_rng, init.min, init.max);
-        p.velocity += vel * m_particle.instanceOverride.speed;
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        glm::vec3 vel = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
+        p.velocity += vel * m_particle.instanceOverride.speed->value->getFloat ();
     };
 }
 
 InitializerFunc CParticle::createRotationRandomInitializer (const RotationRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.rotation = randomVec3 (m_rng, init.min, init.max);
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.rotation = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
     };
 }
 
 InitializerFunc CParticle::createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
-        p.angularVelocity = randomVec3 (m_rng, init.min, init.max);
+    DynamicValue* minValue = init.min->value.get ();
+    DynamicValue* maxValue = init.max->value.get ();
+
+    return [this, minValue, maxValue](ParticleInstance& p) {
+        p.angularVelocity = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
     };
 }
 
@@ -465,9 +491,11 @@ void CParticle::setupOperators () {
 }
 
 OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
-    float speed = m_particle.instanceOverride.speed;
+    float speed = m_particle.instanceOverride.speed->value->getFloat ();
+    float drag = op.drag->value->getFloat ();
+    glm::vec3 gravity = op.gravity->value->getVec3 ();
 
-    return [op, speed](
+    return [drag, gravity, speed](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -478,10 +506,10 @@ OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
             auto& p = particles [i];
 
             // Apply drag force
-            glm::vec3 dragForce = -op.drag * p.velocity;
+            glm::vec3 dragForce = -drag * p.velocity;
 
             // Total acceleration
-            glm::vec3 totalAccel = (dragForce + op.gravity) * speed;
+            glm::vec3 totalAccel = (dragForce + gravity) * speed;
 
             // Update velocity and position
             p.velocity += totalAccel * dt;
@@ -491,7 +519,10 @@ OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
 }
 
 OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOperator& op) {
-    return [op](
+    float drag = op.drag->value->getFloat ();
+    glm::vec3 force = op.force->value->getVec3 ();
+
+    return [drag, force](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -501,8 +532,8 @@ OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOper
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            glm::vec3 dragForce = -op.drag * p.angularVelocity;
-            glm::vec3 totalAccel = dragForce + op.force;
+            glm::vec3 dragForce = -drag * p.angularVelocity;
+            glm::vec3 totalAccel = dragForce + force;
 
             p.angularVelocity += totalAccel * dt;
             p.rotation += p.angularVelocity * dt;
@@ -511,7 +542,10 @@ OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOper
 }
 
 OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
-    return [op](
+    float fadeInTime = op.fadeInTime->value->getFloat ();
+    float fadeOutTime = op.fadeOutTime->value->getFloat ();
+
+    return [fadeInTime, fadeOutTime](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -523,11 +557,11 @@ OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
 
             float life = p.getLifetimePos ();
 
-            if (life <= op.fadeInTime) {
-                float fade = fadeValue (life, 0.0f, op.fadeInTime, 0.0f, 1.0f);
+            if (life <= fadeInTime) {
+                float fade = fadeValue (life, 0.0f, fadeInTime, 0.0f, 1.0f);
                 p.alpha = p.initial.alpha * fade;
-            } else if (life > op.fadeOutTime) {
-                float fade = 1.0f - fadeValue (life, op.fadeOutTime, 1.0f, 0.0f, 1.0f);
+            } else if (life > fadeOutTime) {
+                float fade = 1.0f - fadeValue (life, fadeOutTime, 1.0f, 0.0f, 1.0f);
                 p.alpha = p.initial.alpha * fade;
             } else {
                 p.alpha = p.initial.alpha;
@@ -537,7 +571,12 @@ OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
 }
 
 OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) {
-    return [op](
+    float startTime = op.startTime->value->getFloat ();
+    float endTime = op.endTime->value->getFloat ();
+    float startValue = op.startValue->value->getFloat ();
+    float endValue = op.endValue->value->getFloat ();
+
+    return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -548,14 +587,19 @@ OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) 
             auto& p = particles [i];
 
             float life = p.getLifetimePos ();
-            float multiplier = fadeValue (life, op.startTime, op.endTime, op.startValue, op.endValue);
+            float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
             p.size = p.initial.size * multiplier;
         }
     };
 }
 
 OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op) {
-    return [op](
+    float startTime = op.startTime->value->getFloat ();
+    float endTime = op.endTime->value->getFloat ();
+    float startValue = op.startValue->value->getFloat ();
+    float endValue = op.endValue->value->getFloat ();
+
+    return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -566,14 +610,19 @@ OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op
             auto& p = particles [i];
 
             float life = p.getLifetimePos ();
-            float multiplier = fadeValue (life, op.startTime, op.endTime, op.startValue, op.endValue);
+            float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
             p.alpha = p.initial.alpha * multiplier;
         }
     };
 }
 
 OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op) {
-    return [op](
+    float startTime = op.startTime->value->getFloat ();
+    float endTime = op.endTime->value->getFloat ();
+    glm::vec3 startValue = op.startValue->value->getVec3 ();
+    glm::vec3 endValue = op.endValue->value->getVec3 ();
+
+    return [startTime, endTime, startValue, endValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -586,9 +635,9 @@ OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op
             float life = p.getLifetimePos ();
 
             glm::vec3 color;
-            color.r = fadeValue (life, op.startTime, op.endTime, op.startValue.r, op.endValue.r);
-            color.g = fadeValue (life, op.startTime, op.endTime, op.startValue.g, op.endValue.g);
-            color.b = fadeValue (life, op.startTime, op.endTime, op.startValue.b, op.endValue.b);
+            color.r = fadeValue (life, startTime, endTime, startValue.r, endValue.r);
+            color.g = fadeValue (life, startTime, endTime, startValue.g, endValue.g);
+            color.b = fadeValue (life, startTime, endTime, startValue.b, endValue.b);
 
             p.color = p.initial.color * color;
         }

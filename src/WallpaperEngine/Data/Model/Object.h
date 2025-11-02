@@ -172,51 +172,51 @@ class ParticleInitializerBase : public TypeCaster {
 
 class ColorRandomInitializer : public ParticleInitializerBase {
   public:
-    ColorRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
-    glm::vec3 min;
-    glm::vec3 max;
+    ColorRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class SizeRandomInitializer : public ParticleInitializerBase {
   public:
-    SizeRandomInitializer (float min, float max) : min (min), max (max) {}
-    float min;
-    float max;
+    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class AlphaRandomInitializer : public ParticleInitializerBase {
   public:
-    AlphaRandomInitializer (float min, float max) : min (min), max (max) {}
-    float min;
-    float max;
+    AlphaRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class LifetimeRandomInitializer : public ParticleInitializerBase {
   public:
-    LifetimeRandomInitializer (float min, float max) : min (min), max (max) {}
-    float min;
-    float max;
+    LifetimeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class VelocityRandomInitializer : public ParticleInitializerBase {
   public:
-    VelocityRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
-    glm::vec3 min;
-    glm::vec3 max;
+    VelocityRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class RotationRandomInitializer : public ParticleInitializerBase {
   public:
-    RotationRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
-    glm::vec3 min;
-    glm::vec3 max;
+    RotationRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 class AngularVelocityRandomInitializer : public ParticleInitializerBase {
   public:
-    AngularVelocityRandomInitializer (glm::vec3 min, glm::vec3 max) : min (min), max (max) {}
-    glm::vec3 min;
-    glm::vec3 max;
+    AngularVelocityRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
 };
 
 using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;
@@ -231,53 +231,53 @@ class ParticleOperatorBase : public TypeCaster {
 
 class MovementOperator : public ParticleOperatorBase {
   public:
-    MovementOperator (float drag, glm::vec3 gravity) : drag (drag), gravity (gravity) {}
-    float drag;
-    glm::vec3 gravity;
+    MovementOperator (UserSettingUniquePtr drag, UserSettingUniquePtr gravity) : drag (std::move (drag)), gravity (std::move (gravity)) {}
+    UserSettingUniquePtr drag;
+    UserSettingUniquePtr gravity;
 };
 
 class AngularMovementOperator : public ParticleOperatorBase {
   public:
-    AngularMovementOperator (float drag, glm::vec3 force) : drag (drag), force (force) {}
-    float drag;
-    glm::vec3 force;
+    AngularMovementOperator (UserSettingUniquePtr drag, UserSettingUniquePtr force) : drag (std::move (drag)), force (std::move (force)) {}
+    UserSettingUniquePtr drag;
+    UserSettingUniquePtr force;
 };
 
 class AlphaFadeOperator : public ParticleOperatorBase {
   public:
-    AlphaFadeOperator (float fadeInTime, float fadeOutTime) : fadeInTime (fadeInTime), fadeOutTime (fadeOutTime) {}
-    float fadeInTime;
-    float fadeOutTime;
+    AlphaFadeOperator (UserSettingUniquePtr fadeInTime, UserSettingUniquePtr fadeOutTime) : fadeInTime (std::move (fadeInTime)), fadeOutTime (std::move (fadeOutTime)) {}
+    UserSettingUniquePtr fadeInTime;
+    UserSettingUniquePtr fadeOutTime;
 };
 
 class SizeChangeOperator : public ParticleOperatorBase {
   public:
-    SizeChangeOperator (float startTime, float endTime, float startValue, float endValue)
-        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
-    float startTime;
-    float endTime;
-    float startValue;
-    float endValue;
+    SizeChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
 };
 
 class AlphaChangeOperator : public ParticleOperatorBase {
   public:
-    AlphaChangeOperator (float startTime, float endTime, float startValue, float endValue)
-        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
-    float startTime;
-    float endTime;
-    float startValue;
-    float endValue;
+    AlphaChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
 };
 
 class ColorChangeOperator : public ParticleOperatorBase {
   public:
-    ColorChangeOperator (float startTime, float endTime, glm::vec3 startValue, glm::vec3 endValue)
-        : startTime (startTime), endTime (endTime), startValue (startValue), endValue (endValue) {}
-    float startTime;
-    float endTime;
-    glm::vec3 startValue;
-    glm::vec3 endValue;
+    ColorChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
 };
 
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
@@ -311,14 +311,15 @@ struct ParticleChild {
  * Instance override values
  */
 struct ParticleInstanceOverride {
-    bool enabled;
-    float alpha;
-    float size;
-    float lifetime;
-    float rate;
-    float speed;
-    float count;
-    glm::vec3 color;
+    UserSettingUniquePtr enabled;
+    UserSettingUniquePtr alpha;
+    UserSettingUniquePtr size;
+    UserSettingUniquePtr lifetime;
+    UserSettingUniquePtr rate;
+    UserSettingUniquePtr speed;
+    UserSettingUniquePtr count;
+    UserSettingUniquePtr color;   // Replaces particle color
+    UserSettingUniquePtr colorn;  // Multiplies particle color
 };
 
 struct ParticleData {
