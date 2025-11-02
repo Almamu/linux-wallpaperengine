@@ -300,14 +300,14 @@ void TextureParser::parseSpritesheetMetadata (Texture& header, const std::string
             if (!sequences.empty ()) {
                 auto& firstSeq = sequences[0];
                 int frames = firstSeq.value ("frames", 0);
-                int width = firstSeq.value ("width", 0);
-                int height = firstSeq.value ("height", 0);
+                float frameWidth = firstSeq.value ("width", 0.0f);
+                float frameHeight = firstSeq.value ("height", 0.0f);
                 float duration = firstSeq.value ("duration", 1.0f);
 
-                if (frames > 0 && width > 0 && height > 0) {
-                    // Calculate grid dimensions from frame count
-                    header.spritesheetCols = static_cast<uint32_t> (std::sqrt (frames));
-                    header.spritesheetRows = (frames + header.spritesheetCols - 1) / header.spritesheetCols;
+                if (frames > 0 && frameWidth > 0.0f && frameHeight > 0.0f && header.width > 0 && header.height > 0) {
+                    // Calculate grid dimensions from texture size and frame size
+                    header.spritesheetCols = static_cast<uint32_t> (std::round (header.width / frameWidth));
+                    header.spritesheetRows = static_cast<uint32_t> (std::round (header.height / frameHeight));
                     header.spritesheetFrames = static_cast<uint32_t> (frames);
                     header.spritesheetDuration = duration;
                 }
