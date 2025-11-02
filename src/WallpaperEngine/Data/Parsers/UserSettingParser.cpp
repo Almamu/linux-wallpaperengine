@@ -61,12 +61,15 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
         value->update (valueIt.get <float> ());
     } else if (valueIt.is_boolean ()) {
         value->update (valueIt.get <bool> ());
-    } else if (valueIt.is_null () && property != nullptr) {
-        // null values are directly connected to the property
-        value->connect (property.get());
-    } else {
+    } else if (valueIt.is_null ()) {
         // null value with no connection to property
         value->update ();
+    }
+
+    // TODO: This might need to be removed if it causes issues with default values
+    // Connect to property if one is specified (this allows property overrides to propagate)
+    if (property != nullptr) {
+        value->connect (property.get());
     }
 
     return std::make_unique <UserSetting> (UserSetting {

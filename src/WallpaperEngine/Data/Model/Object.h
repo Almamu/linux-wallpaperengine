@@ -12,6 +12,7 @@
 #include "Model.h"
 #include "Effect.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
+#include <memory>
 
 namespace WallpaperEngine::Data::Model {
 using namespace WallpaperEngine::Data::Utils;
@@ -131,5 +132,234 @@ class Sound : public Object, public SoundData {
   public:
     explicit Sound (ObjectData data, SoundData soundData) noexcept : Object (std::move(data)), SoundData (std::move (soundData)) {};
     ~Sound () override = default;
+};
+
+/**
+ * Particle control points for forces and positions
+ */
+struct ParticleControlPoint {
+    int id;
+    uint32_t flags;
+    glm::vec3 offset;
+};
+
+/**
+ * Particle emitter configuration
+ */
+struct ParticleEmitter {
+    int id;
+    std::string name;
+    glm::vec3 directions;
+    glm::vec3 distanceMin;
+    glm::vec3 distanceMax;
+    glm::vec3 origin;
+    glm::ivec3 sign;
+    uint32_t instantaneous;
+    float speedMin;
+    float speedMax;
+    float rate;
+    int controlPoint;
+    uint32_t flags;
+};
+
+/**
+ * Particle initializer base and implementations
+ */
+class ParticleInitializerBase : public TypeCaster {
+  public:
+    virtual ~ParticleInitializerBase () = default;
+};
+
+class ColorRandomInitializer : public ParticleInitializerBase {
+  public:
+    ColorRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class SizeRandomInitializer : public ParticleInitializerBase {
+  public:
+    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class AlphaRandomInitializer : public ParticleInitializerBase {
+  public:
+    AlphaRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class LifetimeRandomInitializer : public ParticleInitializerBase {
+  public:
+    LifetimeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class VelocityRandomInitializer : public ParticleInitializerBase {
+  public:
+    VelocityRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class RotationRandomInitializer : public ParticleInitializerBase {
+  public:
+    RotationRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+class AngularVelocityRandomInitializer : public ParticleInitializerBase {
+  public:
+    AngularVelocityRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    UserSettingUniquePtr min;
+    UserSettingUniquePtr max;
+};
+
+using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;
+
+/**
+ * Particle operator base and implementations
+ */
+class ParticleOperatorBase : public TypeCaster {
+  public:
+    virtual ~ParticleOperatorBase () = default;
+};
+
+class MovementOperator : public ParticleOperatorBase {
+  public:
+    MovementOperator (UserSettingUniquePtr drag, UserSettingUniquePtr gravity) : drag (std::move (drag)), gravity (std::move (gravity)) {}
+    UserSettingUniquePtr drag;
+    UserSettingUniquePtr gravity;
+};
+
+class AngularMovementOperator : public ParticleOperatorBase {
+  public:
+    AngularMovementOperator (UserSettingUniquePtr drag, UserSettingUniquePtr force) : drag (std::move (drag)), force (std::move (force)) {}
+    UserSettingUniquePtr drag;
+    UserSettingUniquePtr force;
+};
+
+class AlphaFadeOperator : public ParticleOperatorBase {
+  public:
+    AlphaFadeOperator (UserSettingUniquePtr fadeInTime, UserSettingUniquePtr fadeOutTime) : fadeInTime (std::move (fadeInTime)), fadeOutTime (std::move (fadeOutTime)) {}
+    UserSettingUniquePtr fadeInTime;
+    UserSettingUniquePtr fadeOutTime;
+};
+
+class SizeChangeOperator : public ParticleOperatorBase {
+  public:
+    SizeChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
+};
+
+class AlphaChangeOperator : public ParticleOperatorBase {
+  public:
+    AlphaChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
+};
+
+class ColorChangeOperator : public ParticleOperatorBase {
+  public:
+    ColorChangeOperator (UserSettingUniquePtr startTime, UserSettingUniquePtr endTime, UserSettingUniquePtr startValue, UserSettingUniquePtr endValue)
+        : startTime (std::move (startTime)), endTime (std::move (endTime)), startValue (std::move (startValue)), endValue (std::move (endValue)) {}
+    UserSettingUniquePtr startTime;
+    UserSettingUniquePtr endTime;
+    UserSettingUniquePtr startValue;
+    UserSettingUniquePtr endValue;
+};
+
+using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
+
+/**
+ * Particle renderer configuration
+ */
+struct ParticleRenderer {
+    std::string name;
+    float length;
+    float maxLength;
+    float subdivision;
+};
+
+/**
+ * Child particle system
+ */
+struct ParticleChild {
+    std::string type;
+    std::string name;
+    int maxCount;
+    int controlPointStartIndex;
+    float probability;
+    glm::vec3 angles;
+    glm::vec3 origin;
+    glm::vec3 scale;
+    std::string particleFile;
+};
+
+/**
+ * Instance override values
+ */
+struct ParticleInstanceOverride {
+    UserSettingUniquePtr enabled;
+    UserSettingUniquePtr alpha;
+    UserSettingUniquePtr size;
+    UserSettingUniquePtr lifetime;
+    UserSettingUniquePtr rate;
+    UserSettingUniquePtr speed;
+    UserSettingUniquePtr count;
+    UserSettingUniquePtr color;   // Replaces particle color
+    UserSettingUniquePtr colorn;  // Multiplies particle color
+};
+
+struct ParticleData {
+    /** Position and transformation */
+    UserSettingUniquePtr origin;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr angles;
+    UserSettingUniquePtr visible;
+
+    /** Parallax depth */
+    glm::vec2 parallaxDepth;
+
+    /** Reference to particle definition file */
+    std::string particleFile;
+
+    /** Particle system configuration */
+    std::string animationMode;
+    float sequenceMultiplier;
+    uint32_t maxCount;
+    uint32_t startTime;
+    uint32_t flags;
+
+    /** Material for rendering */
+    ModelUniquePtr material;
+
+    /** Emitters, initializers, operators, renderers */
+    std::vector<ParticleEmitter> emitters;
+    std::vector<ParticleInitializerUniquePtr> initializers;
+    std::vector<ParticleOperatorUniquePtr> operators;
+    std::vector<ParticleRenderer> renderers;
+    std::vector<ParticleControlPoint> controlPoints;
+    std::vector<ParticleChild> children;
+
+    /** Instance override */
+    ParticleInstanceOverride instanceOverride;
+};
+
+class Particle : public Object, public ParticleData {
+  public:
+    explicit Particle (ObjectData data, ParticleData particleData) noexcept : Object (std::move(data)), ParticleData (std::move (particleData)) {};
+    ~Particle () override = default;
 };
 } // namespace WallpaperEngine::Data::Model

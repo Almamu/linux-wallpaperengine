@@ -1,6 +1,8 @@
 #include <cstring>
+#include <cmath>
 
 #include <lz4.h>
+#include <nlohmann/json.hpp>
 
 #include "TextureParser.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
@@ -270,5 +272,48 @@ FIF TextureParser::parseFIF (uint32_t value) {
 
         default:
             sLog.exception ("unknown free image format: ", value);
+    }
+}
+
+TextureUniquePtr TextureParser::parse (const BinaryReader& file, const std::string& filename,
+                                       std::function<std::string(const std::string&)> metadataLoader) {
+    // Parse the binary .tex file first
+    auto result = parse (file);
+
+    // Try to load optional .tex-json metadata for spritesheet data
+    if (metadataLoader) {
+        parseSpritesheetMetadata (*result, filename, metadataLoader);
+    }
+
+    return result;
+}
+
+void TextureParser::parseSpritesheetMetadata (Texture& header, const std::string& filename,
+                                              std::function<std::string(const std::string&)> metadataLoader) {
+    try {
+        std::string texJsonContent = metadataLoader (filename + ".tex-json");
+        nlohmann::json texJson = nlohmann::json::parse (texJsonContent);
+
+        // Check for spritesheet sequences
+        if (texJson.contains ("spritesheetsequences") && texJson["spritesheetsequences"].is_array ()) {
+            auto& sequences = texJson["spritesheetsequences"];
+            if (!sequences.empty ()) {
+                auto& firstSeq = sequences[0];
+                int frames = firstSeq.value ("frames", 0);
+                float frameWidth = firstSeq.value ("width", 0.0f);
+                float frameHeight = firstSeq.value ("height", 0.0f);
+                float duration = firstSeq.value ("duration", 1.0f);
+
+                if (frames > 0 && frameWidth > 0.0f && frameHeight > 0.0f && header.width > 0 && header.height > 0) {
+                    // Calculate grid dimensions from texture size and frame size
+                    header.spritesheetCols = static_cast<uint32_t> (std::round (header.width / frameWidth));
+                    header.spritesheetRows = static_cast<uint32_t> (std::round (header.height / frameHeight));
+                    header.spritesheetFrames = static_cast<uint32_t> (frames);
+                    header.spritesheetDuration = duration;
+                }
+            }
+        }
+    } catch (const std::exception&) {
+        // .tex-json file is optional, only used for spritesheet data
     }
 }

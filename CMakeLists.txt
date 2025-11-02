@@ -395,6 +395,8 @@ add_executable(
     src/WallpaperEngine/Render/Objects/CImage.cpp
     src/WallpaperEngine/Render/Objects/CSound.h
     src/WallpaperEngine/Render/Objects/CSound.cpp
+    src/WallpaperEngine/Render/Objects/CParticle.h
+    src/WallpaperEngine/Render/Objects/CParticle.cpp
 
     src/WallpaperEngine/Render/CFBO.h
     src/WallpaperEngine/Render/CFBO.cpp
