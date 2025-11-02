@@ -230,7 +230,7 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate;
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
 
-    return [this, emitter, rate, lifetime, emissionTimer = 0.0f](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
@@ -239,8 +239,9 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
         uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
         emissionTimer -= static_cast<float> (toEmit);
 
-        if (emitter.instantaneous > 0) {
-            toEmit = emitter.instantaneous;
+        if (remaining > 0) {
+            toEmit = remaining;
+            remaining = 0;
         }
 
         for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
@@ -290,7 +291,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate;
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime;
 
-    return [this, emitter, rate, lifetime, emissionTimer = 0.0f](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
@@ -299,8 +300,9 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
         uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
         emissionTimer -= static_cast<float> (toEmit);
 
-        if (emitter.instantaneous > 0) {
-            toEmit = emitter.instantaneous;
+        if (remaining > 0) {
+            toEmit = remaining;
+            remaining = 0;
         }
 
         for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
