@@ -142,7 +142,7 @@ class CParticle final : public CObject {
 
     std::vector<ControlPointData> m_controlPoints;
 
-    double m_time {0.0f};
+    double m_time {0.0};
 
     // OpenGL buffers
     GLuint m_vao {0};
