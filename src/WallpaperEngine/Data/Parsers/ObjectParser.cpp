@@ -527,7 +527,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
         name = nameIt->get<std::string> ();
     }
 
-    // Helper lambda to parse vec3 fields that might be strings, arrays, or missing
+    // Helper lambda to parse vec3 fields that might be strings, arrays, single numbers, or missing
     auto parseVec3 = [&](const char* fieldName, const glm::vec3& defaultValue) -> glm::vec3 {
         const auto fieldIt = it.find (fieldName);
         if (fieldIt == it.end ()) {
@@ -535,6 +535,11 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
         }
         if (fieldIt->is_string ()) {
             return it.optional (fieldName, defaultValue);
+        }
+        if (fieldIt->is_number ()) {
+            // Single number - use for all components (common for distancemax/distancemin)
+            float val = fieldIt->get<float> ();
+            return glm::vec3 (val, val, val);
         }
         if (fieldIt->is_array () && fieldIt->size () >= 3) {
             return glm::vec3 (
@@ -745,7 +750,7 @@ ParticleChild ObjectParser::parseParticleChild (const JSON& it, const Project& p
         name = nameIt->get<std::string> ();
     }
 
-    // Helper lambda to parse vec3 fields
+    // Helper lambda to parse vec3 fields that might be strings, arrays, single numbers, or missing
     auto parseVec3 = [&](const char* fieldName, const glm::vec3& defaultValue) -> glm::vec3 {
         const auto fieldIt = it.find (fieldName);
         if (fieldIt == it.end ()) {
@@ -753,6 +758,11 @@ ParticleChild ObjectParser::parseParticleChild (const JSON& it, const Project& p
         }
         if (fieldIt->is_string ()) {
             return it.optional (fieldName, defaultValue);
+        }
+        if (fieldIt->is_number ()) {
+            // Single number - use for all components
+            float val = fieldIt->get<float> ();
+            return glm::vec3 (val, val, val);
         }
         if (fieldIt->is_array () && fieldIt->size () >= 3) {
             return glm::vec3 (
