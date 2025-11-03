@@ -237,7 +237,21 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate->value->getFloat ();
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
 
-    return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    // Convert emitter origin from screen space (Y down) to centered space (Y up)
+    glm::vec3 transformedEmitterOrigin = emitter.origin;
+    transformedEmitterOrigin.y = -transformedEmitterOrigin.y;
+
+    int controlPointIndex = emitter.controlPoint;
+
+    // Auto-detect control point 0 usage if controlPoint field not specified and CP0 has linkMouse
+    if (controlPointIndex == -1 && !m_particle.controlPoints.empty()) {
+        const auto& cp0 = m_particle.controlPoints[0];
+        if ((cp0.flags & 1) != 0) {  // Bit 0: linkMouse flag
+            controlPointIndex = 0;
+        }
+    }
+
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
@@ -254,9 +268,17 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
         for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
             auto& p = particles [count];
 
+            // Determine spawn origin (control point or emitter origin)
+            glm::vec3 spawnOrigin = transformedEmitterOrigin;
+            if (controlPointIndex >= 0 && controlPointIndex < static_cast<int>(m_controlPoints.size())) {
+                spawnOrigin = m_controlPoints[controlPointIndex].position;
+            }
+
             // Spawn at random position within box volume
             glm::vec3 randomPos = randomVec3 (m_rng, emitter.distanceMin, emitter.distanceMax);
-            p.position = emitter.origin + randomPos;
+            // Flip Y to convert random offset from screen space to centered space
+            randomPos.y = -randomPos.y;
+            p.position = spawnOrigin + randomPos;
 
             // Velocity based on position direction and emitter settings
             glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0, 1, 0);
@@ -298,7 +320,21 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     float rate = emitter.rate * m_particle.instanceOverride.rate->value->getFloat ();
     float lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
 
-    return [this, emitter, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    // Convert emitter origin from screen space (Y down) to centered space (Y up)
+    glm::vec3 transformedEmitterOrigin = emitter.origin;
+    transformedEmitterOrigin.y = -transformedEmitterOrigin.y;
+
+    int controlPointIndex = emitter.controlPoint;
+
+    // Auto-detect control point 0 usage if controlPoint field not specified and CP0 has linkMouse
+    if (controlPointIndex == -1 && !m_particle.controlPoints.empty()) {
+        const auto& cp0 = m_particle.controlPoints[0];
+        if ((cp0.flags & 1) != 0) {  // Bit 0: linkMouse flag
+            controlPointIndex = 0;
+        }
+    }
+
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
@@ -315,6 +351,12 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
         for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
             auto& p = particles [count];
 
+            // Determine spawn origin (control point or emitter origin)
+            glm::vec3 spawnOrigin = transformedEmitterOrigin;
+            if (controlPointIndex >= 0 && controlPointIndex < static_cast<int>(m_controlPoints.size())) {
+                spawnOrigin = m_controlPoints[controlPointIndex].position;
+            }
+
             // Spawn at random position within sphere volume
             float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
             float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
@@ -325,7 +367,9 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
                 radius * std::sin (phi) * std::sin (theta),
                 radius * std::cos (phi)
             );
-            p.position = emitter.origin + randomPos;
+            // Flip Y to convert random offset from screen space to centered space
+            randomPos.y = -randomPos.y;
+            p.position = spawnOrigin + randomPos;
 
             // Velocity pointing outward from sphere center
             glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);

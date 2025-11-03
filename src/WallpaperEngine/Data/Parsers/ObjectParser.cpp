@@ -579,7 +579,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
             .speedMin = it.optional ("speedmin", 0.0f),
             .speedMax = it.optional ("speedmax", 0.0f),
             .rate = it.optional ("rate", 5.0f),
-            .controlPoint = it.optional ("controlpoint", 0),
+            .controlPoint = it.optional ("controlpoint", -1),
             .flags = it.optional ("flags", 0u),
         };
     } catch (nlohmann::json::exception& e) {
