@@ -238,19 +238,6 @@ void CParticle::update (float dt) {
     for (auto& op : m_operators) {
         op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
-
-    // Wrap rotation to prevent floating-point precision issues
-    const float pi = glm::pi<float>();
-    const float two_pi = glm::two_pi<float>();
-    for (uint32_t i = 0; i < m_particleCount; i++) {
-        auto& p = m_particles[i];
-        if (!p.alive) continue;
-
-        for (int j = 0; j < 3; j++) {
-            while (p.rotation[j] > pi) p.rotation[j] -= two_pi;
-            while (p.rotation[j] < -pi) p.rotation[j] += two_pi;
-        }
-    }
 }
 
 const Particle& CParticle::getParticle () const {
@@ -537,6 +524,8 @@ InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandom
 
     return [this, minValue, maxValue](ParticleInstance& p) {
         glm::vec3 vel = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
+        // Flip Y velocity for centered space
+        vel.y = -vel.y;
         p.velocity += vel * m_particle.instanceOverride.speed->value->getFloat ();
     };
 }
@@ -615,6 +604,8 @@ OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
     float speed = m_particle.instanceOverride.speed->value->getFloat ();
     float drag = op.drag->value->getFloat ();
     glm::vec3 gravity = op.gravity->value->getVec3 ();
+    // Flip gravity Y for centered space
+    gravity.y = -gravity.y;
 
     return [drag, gravity, speed](
         std::vector<ParticleInstance>& particles,
@@ -658,6 +649,14 @@ OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOper
 
             p.angularVelocity += totalAccel * dt;
             p.rotation += p.angularVelocity * dt;
+
+            // Wrap rotation to prevent floating-point precision issues
+            const float pi = glm::pi<float>();
+            const float two_pi = glm::two_pi<float>();
+            for (int j = 0; j < 3; j++) {
+                while (p.rotation[j] > pi) p.rotation[j] -= two_pi;
+                while (p.rotation[j] < -pi) p.rotation[j] += two_pi;
+            }
         }
     };
 }
