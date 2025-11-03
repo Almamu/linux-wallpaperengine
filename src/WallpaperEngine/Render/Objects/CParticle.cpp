@@ -176,17 +176,21 @@ void CParticle::update (float dt) {
             float animSpeed = m_particle.sequenceMultiplier > 0.0f ? m_particle.sequenceMultiplier : 1.0f;
 
             // Calculate frame based on animation mode
-            if (m_particle.animationMode == "once") {
+            if (m_particle.animationMode == "randomframe") {
+                // Random frame mode: each particle gets a fixed random frame based on initial lifetime
+                p.frame = std::fmod(std::floor(p.initial.lifetime), static_cast<float>(m_spritesheetFrames));
+            } else if (m_particle.animationMode == "once") {
                 // Play animation once over particle lifetime
                 p.frame = std::min(lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float>(m_spritesheetFrames - 1));
             } else {
-                // Default to "loop" mode - loop animation based on duration
+                // Default to "loop" or "sequence" mode - loop animation based on duration
                 if (m_spritesheetDuration > 0.0f) {
                     float timeInCycle = std::fmod(p.age * animSpeed, m_spritesheetDuration);
                     float cyclePos = timeInCycle / m_spritesheetDuration;
                     p.frame = std::fmod(cyclePos * m_spritesheetFrames, static_cast<float>(m_spritesheetFrames));
                 } else {
-                    p.frame = 0.0f;
+                    // No duration, use lifetime-based for sequence mode
+                    p.frame = std::fmod(lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float>(m_spritesheetFrames));
                 }
             }
         }
