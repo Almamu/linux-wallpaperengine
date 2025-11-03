@@ -56,8 +56,10 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     std::random_device rd;
     m_rng.seed (rd ());
 
-    // Reserve particle pool
-    m_particles.resize (std::min (particle.maxCount, MAX_PARTICLES));
+    // Apply count instance override to particle pool size
+    float countMultiplier = particle.instanceOverride.count->value->getFloat ();
+    uint32_t adjustedMaxCount = static_cast<uint32_t>(particle.maxCount * countMultiplier);
+    m_particles.resize (std::min (adjustedMaxCount, MAX_PARTICLES));
 }
 
 CParticle::~CParticle () {
