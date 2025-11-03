@@ -206,6 +206,19 @@ void CParticle::update (float dt) {
     for (auto& op : m_operators) {
         op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
+
+    // Wrap rotation to prevent floating-point precision issues
+    const float pi = glm::pi<float>();
+    const float two_pi = glm::two_pi<float>();
+    for (uint32_t i = 0; i < m_particleCount; i++) {
+        auto& p = m_particles[i];
+        if (!p.alive) continue;
+
+        for (int j = 0; j < 3; j++) {
+            while (p.rotation[j] > pi) p.rotation[j] -= two_pi;
+            while (p.rotation[j] < -pi) p.rotation[j] += two_pi;
+        }
+    }
 }
 
 const Particle& CParticle::getParticle () const {
@@ -713,7 +726,7 @@ GLuint CParticle::createShaderProgram () {
         #version 330 core
         layout (location = 0) in vec3 aPos;
         layout (location = 1) in vec2 aTexCoord;
-        layout (location = 2) in float aRotation;
+        layout (location = 2) in vec3 aRotation;
         layout (location = 3) in float aSize;
         layout (location = 4) in vec4 aColor;
         layout (location = 5) in float aFrame;
@@ -729,16 +742,40 @@ GLuint CParticle::createShaderProgram () {
             // Offset from center: (0,0)-(1,1) becomes (-0.5,-0.5)-(0.5,0.5)
             vec2 offset = aTexCoord - 0.5;
 
-            // Apply rotation around Z axis
-            float c = cos(aRotation);
-            float s = sin(aRotation);
-            vec2 rotated = vec2(
-                offset.x * c - offset.y * s,
-                offset.x * s + offset.y * c
+            // Apply 3D rotation with numerical stability
+            float cx = cos(aRotation.x);
+            float sx = sin(aRotation.x);
+            float cy = cos(aRotation.y);
+            float sy = sin(aRotation.y);
+            float cz = cos(aRotation.z);
+            float sz = sin(aRotation.z);
+
+            // Combined rotation matrix optimized for billboards
+            vec3 offset3d = vec3(offset, 0.0);
+
+            // Rotate around X axis
+            vec3 rotX = vec3(
+                offset3d.x,
+                offset3d.y * cx - offset3d.z * sx,
+                offset3d.y * sx + offset3d.z * cx
+            );
+
+            // Rotate around Y axis
+            vec3 rotY = vec3(
+                rotX.x * cy + rotX.z * sy,
+                rotX.y,
+                -rotX.x * sy + rotX.z * cy
+            );
+
+            // Rotate around Z axis
+            vec3 rotated = vec3(
+                rotY.x * cz - rotY.y * sz,
+                rotY.x * sz + rotY.y * cz,
+                rotY.z
             );
 
             // Scale by particle size
-            vec3 billboardPos = aPos + vec3(rotated * aSize, 0.0);
+            vec3 billboardPos = aPos + rotated * aSize;
 
             gl_Position = g_ModelViewProjectionMatrix * vec4(billboardPos, 1.0);
             vTexCoord = aTexCoord;
@@ -859,8 +896,8 @@ void CParticle::setupBuffers () {
     glBindVertexArray (m_vao);
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
 
-    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) + frame(1) = 12 floats
-    const int stride = sizeof (float) * 12;
+    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) = 14 floats
+    const int stride = sizeof (float) * 14;
 
     // Position (location 0)
     glEnableVertexAttribArray (0);
@@ -870,21 +907,21 @@ void CParticle::setupBuffers () {
     glEnableVertexAttribArray (1);
     glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3));
 
-    // Rotation (location 2)
+    // Rotation (location 2) - now vec3 instead of float
     glEnableVertexAttribArray (2);
-    glVertexAttribPointer (2, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 5));
+    glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 5));
 
     // Size (location 3)
     glEnableVertexAttribArray (3);
-    glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 6));
+    glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8));
 
     // Color (location 4) - includes alpha as 4th component
     glEnableVertexAttribArray (4);
-    glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7));
+    glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 9));
 
     // Frame (location 5)
     glEnableVertexAttribArray (5);
-    glVertexAttribPointer (5, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11));
+    glVertexAttribPointer (5, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 13));
 
     glBindVertexArray (0);
 }
@@ -903,17 +940,27 @@ void CParticle::renderSprites () {
         return;
 
     // Prepare vertex data - 6 vertices per particle (2 triangles forming a quad)
-    // Vertex format: pos(3) + texcoord(2) + rotation(1) + size(1) + color(4) + frame(1) = 12 floats per vertex
+    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) = 14 floats per vertex
     std::vector<float> vertices;
-    vertices.reserve (aliveCount * 6 * 12);
+    vertices.reserve (aliveCount * 6 * 14);
+
+    // Get object scale to apply to particle sizes
+    glm::vec3 objectScale = m_particle.scale->value->getVec3 ();
+    float sizeScale = (std::abs(objectScale.x) + std::abs(objectScale.y)) / 2.0f;
 
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
         if (!p.alive)
             continue;
 
-        float size = p.size / 2.0f;
-        float rz = p.rotation.z;
+        // Skip particles with invalid values (NaN, infinity, or extreme size)
+        if (!std::isfinite(p.position.x) || !std::isfinite(p.position.y) || !std::isfinite(p.position.z) ||
+            !std::isfinite(p.rotation.x) || !std::isfinite(p.rotation.y) || !std::isfinite(p.rotation.z) ||
+            !std::isfinite(p.size) || p.size <= 0.0f || p.size > 10000.0f) {
+            continue;
+        }
+
+        float size = (p.size / 2.0f) * sizeScale;
 
         // Create 6 vertices forming 2 triangles (GL_QUADS not available in core profile)
 
@@ -923,7 +970,9 @@ void CParticle::renderSprites () {
             vertices.push_back (p.position.z);
             vertices.push_back (u);
             vertices.push_back (v);
-            vertices.push_back (rz);
+            vertices.push_back (p.rotation.x);
+            vertices.push_back (p.rotation.y);
+            vertices.push_back (p.rotation.z);
             vertices.push_back (size);
             vertices.push_back (p.color.r);
             vertices.push_back (p.color.g);
