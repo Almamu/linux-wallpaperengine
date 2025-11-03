@@ -550,6 +550,7 @@ InitializerFunc CParticle::createAngularVelocityRandomInitializer (const Angular
 
 InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init) {
     return [this, init](ParticleInstance& p) {
+        // Random speed in specified range
         float speed = randomFloat (m_rng, init.speedMin, init.speedMax);
 
         // Initialize random position in noise field (0-10 range for good variety)
@@ -561,10 +562,36 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
         // Normalize for consistent velocity magnitude
         if (glm::length(direction) > 0.0001f) {
             direction = glm::normalize(direction);
+        } else {
+            // Fallback to random direction if noise returns zero
+            float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
+            float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
+            direction = glm::vec3(
+                std::sin(phi) * std::cos(theta),
+                std::sin(phi) * std::sin(theta),
+                std::cos(phi)
+            );
         }
 
-        // Apply speed and scale
-        p.velocity = direction * speed * init.scale;
+        // Apply scale to control turbulence intensity
+        direction *= init.scale;
+
+        // Apply offset as rotation around Z-axis
+        float c = std::cos(init.offset);
+        float s = std::sin(init.offset);
+        glm::vec3 rotated (
+            direction.x * c - direction.y * s,
+            direction.x * s + direction.y * c,
+            direction.z
+        );
+
+        // Apply speed and instance override
+        glm::vec3 turbulentVel = rotated * speed * m_particle.instanceOverride.speed->value->getFloat ();
+
+        // Flip Y for centered space (like velocity initializer does)
+        turbulentVel.y = -turbulentVel.y;
+
+        p.velocity += turbulentVel;
     };
 }
 
