@@ -641,6 +641,13 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
             it.user ("min", properties, glm::vec3 (0.0f, 0.0f, -5.0f)),
             it.user ("max", properties, glm::vec3 (0.0f, 0.0f, 5.0f))
         );
+    } else if (name == "turbulentvelocityrandom") {
+        return std::make_unique<TurbulentVelocityRandomInitializer> (
+            it.optional ("speedmin", 0.0f),
+            it.optional ("speedmax", 100.0f),
+            it.optional ("scale", 1.0f),
+            it.optional ("offset", 0.0f)
+        );
     }
 
     return nullptr;

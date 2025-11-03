@@ -42,6 +42,9 @@ struct ParticleInstance {
     float lifetime {1.0f};      // Total lifetime in seconds
     float age {0.0f};           // Current age in seconds
 
+    // Turbulent velocity state
+    glm::vec3 noisePos {0.0f};  // Position in noise field for turbulent velocity
+
     // Initial values for resets/multipliers
     struct {
         glm::vec3 color {1.0f};
@@ -117,6 +120,7 @@ class CParticle final : public CObject {
     InitializerFunc createVelocityRandomInitializer (const VelocityRandomInitializer& init);
     InitializerFunc createRotationRandomInitializer (const RotationRandomInitializer& init);
     InitializerFunc createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init);
+    InitializerFunc createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init);
 
     // Operator creators
     OperatorFunc createMovementOperator (const MovementOperator& op);

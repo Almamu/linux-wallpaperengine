@@ -1,6 +1,7 @@
 #include "CParticle.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Render/Utils/NoiseUtils.h"
 
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,6 +13,7 @@
 extern float g_Time;
 
 using namespace WallpaperEngine::Render::Objects;
+using namespace WallpaperEngine::Render::Utils;
 using namespace WallpaperEngine::Data::Model;
 
 namespace {
@@ -443,6 +445,8 @@ void CParticle::setupInitializers () {
             func = createRotationRandomInitializer (*initializer->as<RotationRandomInitializer> ());
         } else if (initializer->is<AngularVelocityRandomInitializer> ()) {
             func = createAngularVelocityRandomInitializer (*initializer->as<AngularVelocityRandomInitializer> ());
+        } else if (initializer->is<TurbulentVelocityRandomInitializer> ()) {
+            func = createTurbulentVelocityRandomInitializer (*initializer->as<TurbulentVelocityRandomInitializer> ());
         } else {
             sLog.out ("Unknown initializer type");
         }
@@ -526,6 +530,26 @@ InitializerFunc CParticle::createAngularVelocityRandomInitializer (const Angular
 
     return [this, minValue, maxValue](ParticleInstance& p) {
         p.angularVelocity = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
+    };
+}
+
+InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init) {
+    return [this, init](ParticleInstance& p) {
+        float speed = randomFloat (m_rng, init.speedMin, init.speedMax);
+
+        // Initialize random position in noise field (0-10 range for good variety)
+        p.noisePos = randomVec3 (m_rng, glm::vec3(0.0f), glm::vec3(10.0f));
+
+        // Sample curl noise to get turbulent direction
+        glm::vec3 direction = curlNoise(p.noisePos);
+
+        // Normalize for consistent velocity magnitude
+        if (glm::length(direction) > 0.0001f) {
+            direction = glm::normalize(direction);
+        }
+
+        // Apply speed and scale
+        p.velocity = direction * speed * init.scale;
     };
 }
 
