@@ -613,7 +613,8 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
     } else if (name == "sizerandom") {
         return std::make_unique<SizeRandomInitializer> (
             it.user ("min", properties, 0.0f),
-            it.user ("max", properties, 20.0f)
+            it.user ("max", properties, 20.0f),
+            it.user ("exponent", properties, 1.0f)
         );
     } else if (name == "alpharandom") {
         return std::make_unique<AlphaRandomInitializer> (

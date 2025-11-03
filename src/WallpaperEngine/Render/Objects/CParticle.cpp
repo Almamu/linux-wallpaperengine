@@ -466,9 +466,17 @@ InitializerFunc CParticle::createColorRandomInitializer (const ColorRandomInitia
 InitializerFunc CParticle::createSizeRandomInitializer (const SizeRandomInitializer& init) {
     DynamicValue* minValue = init.min->value.get ();
     DynamicValue* maxValue = init.max->value.get ();
+    DynamicValue* exponentValue = init.exponent->value.get ();
 
-    return [this, minValue, maxValue](ParticleInstance& p) {
-        p.size = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * m_particle.instanceOverride.size->value->getFloat ();
+    return [this, minValue, maxValue, exponentValue](ParticleInstance& p) {
+        float t = randomFloat (m_rng, 0.0f, 1.0f);
+        float exponent = exponentValue->getFloat ();
+        float min = minValue->getFloat ();
+        float max = maxValue->getFloat ();
+
+        // Apply exponent for non-linear distribution
+        float adjustedT = std::pow (t, exponent);
+        p.size = (min + adjustedT * (max - min)) * m_particle.instanceOverride.size->value->getFloat ();
         p.initial.size = p.size;
     };
 }

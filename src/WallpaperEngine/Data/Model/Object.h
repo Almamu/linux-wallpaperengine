@@ -179,9 +179,11 @@ class ColorRandomInitializer : public ParticleInitializerBase {
 
 class SizeRandomInitializer : public ParticleInitializerBase {
   public:
-    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max, UserSettingUniquePtr exponent)
+        : min (std::move (min)), max (std::move (max)), exponent (std::move (exponent)) {}
     UserSettingUniquePtr min;
     UserSettingUniquePtr max;
+    UserSettingUniquePtr exponent;
 };
 
 class AlphaRandomInitializer : public ParticleInitializerBase {
