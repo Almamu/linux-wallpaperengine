@@ -159,6 +159,32 @@ void CParticle::render () {
 }
 
 void CParticle::update (float dt) {
+    // Update control points with mouse position
+    const glm::vec2* mousePos = getScene().getMousePosition();
+    if (mousePos) {
+        float screenWidth = static_cast<float>(getScene().getWidth());
+        float screenHeight = static_cast<float>(getScene().getHeight());
+
+        for (auto& cp : m_controlPoints) {
+            if (cp.linkMouse) {
+                if (cp.worldSpace) {
+                    // World space: use normalized [0,1] mouse coordinates scaled to screen dimensions
+                    cp.position.x = mousePos->x * screenWidth;
+                    cp.position.y = mousePos->y * screenHeight;
+                    cp.position.z = 0.0f;
+                } else {
+                    // Centered space: convert from [0,1] to scene coordinates with origin at center
+                    cp.position.x = (mousePos->x * screenWidth) - (screenWidth / 2.0f);
+                    cp.position.y = (mousePos->y * screenHeight) - (screenHeight / 2.0f);
+                    cp.position.z = 0.0f;
+                }
+
+                // Apply control point offset
+                cp.position += cp.offset;
+            }
+        }
+    }
+
     // Emit particles
     for (auto& emitter : m_emitters) {
         emitter (m_particles, m_particleCount, dt);
