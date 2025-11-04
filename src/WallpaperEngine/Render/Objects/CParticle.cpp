@@ -556,8 +556,11 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
         // Initialize random position in noise field (0-10 range for good variety)
         p.noisePos = randomVec3 (m_rng, glm::vec3(0.0f), glm::vec3(10.0f));
 
+        // Apply offset to noise position (shifts sampling region in noise field)
+        glm::vec3 noisePosWithOffset = p.noisePos + glm::vec3(init.offset);
+
         // Sample curl noise to get turbulent direction
-        glm::vec3 direction = curlNoise(p.noisePos);
+        glm::vec3 direction = curlNoise(noisePosWithOffset);
 
         // Normalize for consistent velocity magnitude
         if (glm::length(direction) > 0.0001f) {
@@ -576,17 +579,8 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
         // Apply scale to control turbulence intensity
         direction *= init.scale;
 
-        // Apply offset as rotation around Z-axis
-        float c = std::cos(init.offset);
-        float s = std::sin(init.offset);
-        glm::vec3 rotated (
-            direction.x * c - direction.y * s,
-            direction.x * s + direction.y * c,
-            direction.z
-        );
-
         // Apply speed and instance override
-        glm::vec3 turbulentVel = rotated * speed * m_particle.instanceOverride.speed->value->getFloat ();
+        glm::vec3 turbulentVel = direction * speed * m_particle.instanceOverride.speed->value->getFloat ();
 
         // Flip Y for centered space (like velocity initializer does)
         turbulentVel.y = -turbulentVel.y;
