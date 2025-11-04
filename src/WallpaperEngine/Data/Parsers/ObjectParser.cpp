@@ -643,10 +643,10 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
         );
     } else if (name == "turbulentvelocityrandom") {
         return std::make_unique<TurbulentVelocityRandomInitializer> (
-            it.optional ("speedmin", 0.0f),
-            it.optional ("speedmax", 100.0f),
-            it.optional ("scale", 1.0f),
-            it.optional ("offset", 0.0f)
+            it.user ("speedmin", properties, 0.0f),
+            it.user ("speedmax", properties, 100.0f),
+            it.user ("scale", properties, 1.0f),
+            it.user ("offset", properties, 0.0f)
         );
     }
 

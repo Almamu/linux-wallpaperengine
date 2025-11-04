@@ -223,12 +223,12 @@ class AngularVelocityRandomInitializer : public ParticleInitializerBase {
 
 class TurbulentVelocityRandomInitializer : public ParticleInitializerBase {
   public:
-    TurbulentVelocityRandomInitializer (float speedMin, float speedMax, float scale, float offset)
-        : speedMin (speedMin), speedMax (speedMax), scale (scale), offset (offset) {}
-    float speedMin;
-    float speedMax;
-    float scale;
-    float offset;
+    TurbulentVelocityRandomInitializer (UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr scale, UserSettingUniquePtr offset)
+        : speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), scale (std::move (scale)), offset (std::move (offset)) {}
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr offset;
 };
 
 using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;

@@ -554,15 +554,20 @@ InitializerFunc CParticle::createAngularVelocityRandomInitializer (const Angular
 }
 
 InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init) {
-    return [this, init](ParticleInstance& p) {
+    DynamicValue* speedMin = init.speedMin->value.get ();
+    DynamicValue* speedMax = init.speedMax->value.get ();
+    DynamicValue* offset = init.offset->value.get ();
+    DynamicValue* scale = init.scale->value.get ();
+
+    return [this, speedMin, speedMax, offset, scale](ParticleInstance& p) {
         // Random speed in specified range
-        float speed = randomFloat (m_rng, init.speedMin, init.speedMax);
+        float speed = randomFloat (m_rng, speedMin->getFloat (), speedMax->getFloat ());
 
         // Initialize random position in noise field (0-10 range for good variety)
         p.noisePos = randomVec3 (m_rng, glm::vec3(0.0f), glm::vec3(10.0f));
 
         // Apply offset to noise position (shifts sampling region in noise field)
-        glm::vec3 noisePosWithOffset = p.noisePos + glm::vec3(init.offset);
+        glm::vec3 noisePosWithOffset = p.noisePos + glm::vec3(offset->getFloat ());
 
         // Sample curl noise to get turbulent direction
         glm::vec3 direction = curlNoise(noisePosWithOffset);
@@ -582,7 +587,7 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
         }
 
         // Apply scale to control turbulence intensity
-        direction *= init.scale;
+        direction *= scale->getFloat ();
 
         // Apply speed and instance override
         glm::vec3 turbulentVel = direction * speed * m_particle.instanceOverride.speed->value->getFloat ();
@@ -627,19 +632,23 @@ void CParticle::setupOperators () {
 }
 
 OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
-    float speed = m_particle.instanceOverride.speed->value->getFloat ();
-    float drag = op.drag->value->getFloat ();
-    glm::vec3 gravity = op.gravity->value->getVec3 ();
-    // Flip gravity Y for centered space
-    gravity.y = -gravity.y;
+    DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
+    DynamicValue* dragValue = op.drag->value.get ();
+    DynamicValue* gravityValue = op.gravity->value.get ();
 
-    return [drag, gravity, speed](
+    return [dragValue, gravityValue, speedOverride](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float dt
     ) {
+        float speed = speedOverride->getFloat ();
+        float drag = dragValue->getFloat ();
+        glm::vec3 gravity = gravityValue->getVec3 ();
+        // Flip gravity Y for centered space
+        gravity.y = -gravity.y;
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
@@ -657,16 +666,19 @@ OperatorFunc CParticle::createMovementOperator (const MovementOperator& op) {
 }
 
 OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOperator& op) {
-    float drag = op.drag->value->getFloat ();
-    glm::vec3 force = op.force->value->getVec3 ();
+    DynamicValue* dragValue = op.drag->value.get ();
+    DynamicValue* forceValue = op.force->value.get ();
 
-    return [drag, force](
+    return [dragValue, forceValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float dt
     ) {
+        float drag = dragValue->getFloat ();
+        glm::vec3 force = forceValue->getVec3 ();
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
@@ -688,16 +700,19 @@ OperatorFunc CParticle::createAngularMovementOperator (const AngularMovementOper
 }
 
 OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
-    float fadeInTime = op.fadeInTime->value->getFloat ();
-    float fadeOutTime = op.fadeOutTime->value->getFloat ();
+    DynamicValue* fadeInTimeValue = op.fadeInTime->value.get ();
+    DynamicValue* fadeOutTimeValue = op.fadeOutTime->value.get ();
 
-    return [fadeInTime, fadeOutTime](
+    return [fadeInTimeValue, fadeOutTimeValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
+        float fadeInTime = fadeInTimeValue->getFloat ();
+        float fadeOutTime = fadeOutTimeValue->getFloat ();
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
@@ -717,18 +732,23 @@ OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
 }
 
 OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) {
-    float startTime = op.startTime->value->getFloat ();
-    float endTime = op.endTime->value->getFloat ();
-    float startValue = op.startValue->value->getFloat ();
-    float endValue = op.endValue->value->getFloat ();
+    DynamicValue* startTimeValue = op.startTime->value.get ();
+    DynamicValue* endTimeValue = op.endTime->value.get ();
+    DynamicValue* startValueValue = op.startValue->value.get ();
+    DynamicValue* endValueValue = op.endValue->value.get ();
 
-    return [startTime, endTime, startValue, endValue](
+    return [startTimeValue, endTimeValue, startValueValue, endValueValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
+        float startTime = startTimeValue->getFloat ();
+        float endTime = endTimeValue->getFloat ();
+        float startValue = startValueValue->getFloat ();
+        float endValue = endValueValue->getFloat ();
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
@@ -740,18 +760,23 @@ OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) 
 }
 
 OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op) {
-    float startTime = op.startTime->value->getFloat ();
-    float endTime = op.endTime->value->getFloat ();
-    float startValue = op.startValue->value->getFloat ();
-    float endValue = op.endValue->value->getFloat ();
+    DynamicValue* startTimeValue = op.startTime->value.get ();
+    DynamicValue* endTimeValue = op.endTime->value.get ();
+    DynamicValue* startValueValue = op.startValue->value.get ();
+    DynamicValue* endValueValue = op.endValue->value.get ();
 
-    return [startTime, endTime, startValue, endValue](
+    return [startTimeValue, endTimeValue, startValueValue, endValueValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
+        float startTime = startTimeValue->getFloat ();
+        float endTime = endTimeValue->getFloat ();
+        float startValue = startValueValue->getFloat ();
+        float endValue = endValueValue->getFloat ();
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
@@ -763,18 +788,23 @@ OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op
 }
 
 OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op) {
-    float startTime = op.startTime->value->getFloat ();
-    float endTime = op.endTime->value->getFloat ();
-    glm::vec3 startValue = op.startValue->value->getVec3 ();
-    glm::vec3 endValue = op.endValue->value->getVec3 ();
+    DynamicValue* startTimeValue = op.startTime->value.get ();
+    DynamicValue* endTimeValue = op.endTime->value.get ();
+    DynamicValue* startValueValue = op.startValue->value.get ();
+    DynamicValue* endValueValue = op.endValue->value.get ();
 
-    return [startTime, endTime, startValue, endValue](
+    return [startTimeValue, endTimeValue, startValueValue, endValueValue](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
         float,
         float
     ) {
+        float startTime = startTimeValue->getFloat ();
+        float endTime = endTimeValue->getFloat ();
+        glm::vec3 startValue = startValueValue->getVec3 ();
+        glm::vec3 endValue = endValueValue->getVec3 ();
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
