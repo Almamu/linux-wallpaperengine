@@ -143,6 +143,11 @@ void CParticle::render () {
     if (!m_initialized || !m_particle.visible->value->getBool ())
         return;
 
+    // Initialize time on first render to avoid huge dt spike
+    if (m_time == 0.0) {
+        m_time = g_Time;
+    }
+
     // Update particles
     float dt = g_Time - static_cast<float> (m_time);
     m_time = g_Time;
