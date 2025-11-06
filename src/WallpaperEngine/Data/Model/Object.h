@@ -315,6 +315,16 @@ class VortexOperator : public ParticleOperatorBase {
     UserSettingUniquePtr speedOuter;
 };
 
+class ControlPointAttractOperator : public ParticleOperatorBase {
+  public:
+    ControlPointAttractOperator (int controlPoint, UserSettingUniquePtr origin, UserSettingUniquePtr scale, UserSettingUniquePtr threshold)
+        : controlPoint (controlPoint), origin (std::move (origin)), scale (std::move (scale)), threshold (std::move (threshold)) {}
+    int controlPoint;
+    UserSettingUniquePtr origin;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr threshold;
+};
+
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
 
 /**

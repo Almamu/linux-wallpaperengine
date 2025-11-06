@@ -131,6 +131,7 @@ class CParticle final : public CObject {
     OperatorFunc createColorChangeOperator (const ColorChangeOperator& op);
     OperatorFunc createTurbulenceOperator (const TurbulenceOperator& op);
     OperatorFunc createVortexOperator (const VortexOperator& op);
+    OperatorFunc createControlPointAttractOperator (const ControlPointAttractOperator& op);
 
     // Rendering
     void renderSprites ();

@@ -648,6 +648,8 @@ void CParticle::setupOperators () {
             func = createTurbulenceOperator (*op->as<TurbulenceOperator> ());
         } else if (op->is<VortexOperator> ()) {
             func = createVortexOperator (*op->as<VortexOperator> ());
+        } else if (op->is<ControlPointAttractOperator> ()) {
+            func = createControlPointAttractOperator (*op->as<ControlPointAttractOperator> ());
         } else {
             sLog.out ("Unknown operator type");
         }
@@ -962,6 +964,53 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
 
             // Apply spiral acceleration
             p.velocity += spiralDirection * speed * dt;
+        }
+    };
+}
+
+OperatorFunc CParticle::createControlPointAttractOperator (const ControlPointAttractOperator& op) {
+    int controlPoint = op.controlPoint;
+    DynamicValue* originValue = op.origin->value.get ();
+    DynamicValue* scaleValue = op.scale->value.get ();
+    DynamicValue* thresholdValue = op.threshold->value.get ();
+
+    return [this, controlPoint, originValue, scaleValue, thresholdValue]
+           (std::vector<ParticleInstance>& particles, uint32_t count,
+            const std::vector<ControlPointData>& controlPoints, float currentTime, float dt) {
+
+        // Get dynamic values
+        glm::vec3 origin = originValue->getVec3 ();
+        float scale = scaleValue->getFloat ();
+        float threshold = thresholdValue->getFloat ();
+
+        // Get control point position
+        if (controlPoint < 0 || controlPoint >= static_cast<int>(controlPoints.size())) {
+            return;
+        }
+
+        glm::vec3 center = controlPoints[controlPoint].position + origin;
+
+        // Apply attraction force to all particles within threshold
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles [i];
+            if (!p.alive) continue;
+
+            // Calculate distance and direction to control point
+            glm::vec3 toCenter = center - p.position;
+            float distance = glm::length (toCenter);
+
+            // Only apply force if within threshold
+            if (distance > 0.001f && distance < threshold) {
+                // Normalize direction
+                glm::vec3 direction = toCenter / distance;
+
+                // Calculate force (inversely proportional to distance)
+                // Scale can be negative for repulsion
+                float force = scale / distance;
+
+                // Apply force as velocity change
+                p.velocity += direction * force * dt;
+            }
         }
     };
 }
