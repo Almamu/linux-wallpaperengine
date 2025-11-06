@@ -61,7 +61,12 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     // Apply count instance override to particle pool size
     float countMultiplier = particle.instanceOverride.count->value->getFloat ();
     uint32_t adjustedMaxCount = static_cast<uint32_t>(particle.maxCount * countMultiplier);
-    m_particles.resize (std::min (adjustedMaxCount, MAX_PARTICLES));
+    // Use wallpaper's specified count, or default if maxCount is 0
+    m_maxParticles = (adjustedMaxCount > 0) ? adjustedMaxCount : DEFAULT_MAX_PARTICLES;
+    m_particles.resize (m_maxParticles);
+
+    sLog.out ("Particle '", particle.name, "' max particles: ", m_maxParticles,
+              " (maxCount=", particle.maxCount, " * countMultiplier=", countMultiplier, ")");
 }
 
 CParticle::~CParticle () {
@@ -96,6 +101,13 @@ void CParticle::setup () {
         auto& firstPass = *m_particle.material->material->passes.begin ();
 
         m_blendingMode = firstPass->blending;
+
+        // Read overbright constant (brightness multiplier for additive particles)
+        auto overbrightIt = firstPass->constants.find ("ui_editor_properties_overbright");
+        if (overbrightIt != firstPass->constants.end ()) {
+            m_overbright = overbrightIt->second->value->getFloat ();
+            sLog.out ("Particle '", m_particle.name, "' overbright: ", m_overbright);
+        }
 
         auto& textures = firstPass->textures;
         if (!textures.empty ()) {
@@ -621,6 +633,8 @@ void CParticle::setupOperators () {
             func = createAlphaChangeOperator (*op->as<AlphaChangeOperator> ());
         } else if (op->is<ColorChangeOperator> ()) {
             func = createColorChangeOperator (*op->as<ColorChangeOperator> ());
+        } else if (op->is<TurbulenceOperator> ()) {
+            func = createTurbulenceOperator (*op->as<TurbulenceOperator> ());
         } else {
             sLog.out ("Unknown operator type");
         }
@@ -820,6 +834,47 @@ OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op
     };
 }
 
+OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) {
+    DynamicValue* scaleValue = op.scale->value.get ();
+    DynamicValue* speedMinValue = op.speedMin->value.get ();
+    DynamicValue* speedMaxValue = op.speedMax->value.get ();
+    DynamicValue* timeScaleValue = op.timeScale->value.get ();
+
+    // Random phase and speed for this turbulence instance
+    float phase = randomFloat (m_rng, 0.0f, 100.0f);
+    float speed = randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
+
+    return [this, scaleValue, timeScaleValue, phase, speed](
+        std::vector<ParticleInstance>& particles,
+        uint32_t count,
+        const std::vector<ControlPointData>&,
+        float currentTime,
+        float dt
+    ) {
+        float scale = scaleValue->getFloat ();
+        float timeScale = timeScaleValue->getFloat ();
+
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles [i];
+
+            // Apply time-based phase shift to noise position
+            glm::vec3 noisePos = p.position * scale * 2.0f;
+            noisePos.x += phase + timeScale * currentTime;
+
+            // Get curl noise acceleration
+            glm::vec3 acceleration = curlNoise (noisePos);
+
+            // Normalize and scale by speed
+            if (glm::length (acceleration) > 0.0f) {
+                acceleration = glm::normalize (acceleration) * speed;
+            }
+
+            // Apply acceleration (convert to velocity change over dt)
+            p.velocity += acceleration * dt;
+        }
+    };
+}
+
 // ========== RENDERING ==========
 
 GLuint CParticle::compileShader (GLenum type, const char* source) {
@@ -913,6 +968,7 @@ GLuint CParticle::createShaderProgram () {
         uniform int u_HasTexture;
         uniform int u_TextureFormat; // 8 = RG88, 9 = R8
         uniform vec2 u_SpritesheetSize; // x=cols, y=rows
+        uniform float u_Overbright; // Brightness multiplier for additive particles
 
         void main() {
             vec4 texColor;
@@ -960,7 +1016,11 @@ GLuint CParticle::createShaderProgram () {
                 float alpha = 1.0 - dist;
                 texColor = vec4(1.0, 1.0, 1.0, alpha);
             }
-            FragColor = vColor * texColor;
+
+            // Apply overbright multiplier
+            vec4 finalColor = vColor * texColor;
+            finalColor.rgb *= u_Overbright;
+            FragColor = finalColor;
         }
     )";
 
@@ -1006,6 +1066,7 @@ void CParticle::setupBuffers () {
     m_uniformHasTexture = glGetUniformLocation (m_shaderProgram, "u_HasTexture");
     m_uniformTextureFormat = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
     m_uniformSpritesheetSize = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
+    m_uniformOverbright = glGetUniformLocation (m_shaderProgram, "u_Overbright");
 
     glGenVertexArrays (1, &m_vao);
     glGenBuffers (1, &m_vbo);
@@ -1061,10 +1122,6 @@ void CParticle::renderSprites () {
     std::vector<float> vertices;
     vertices.reserve (aliveCount * 6 * 14);
 
-    // Get object scale to apply to particle sizes
-    glm::vec3 objectScale = m_particle.scale->value->getVec3 ();
-    float sizeScale = (std::abs(objectScale.x) + std::abs(objectScale.y)) / 2.0f;
-
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
         if (!p.alive)
@@ -1077,7 +1134,8 @@ void CParticle::renderSprites () {
             continue;
         }
 
-        float size = (p.size / 2.0f) * sizeScale;
+        // Particle size is already scaled by instance override, don't apply object scale
+        float size = p.size / 2.0f;
 
         // Create 6 vertices forming 2 triangles (GL_QUADS not available in core profile)
 
@@ -1174,6 +1232,11 @@ void CParticle::renderSprites () {
         if (m_uniformSpritesheetSize != -1) {
             glUniform2f (m_uniformSpritesheetSize, 0.0f, 0.0f);
         }
+    }
+
+    // Set overbright multiplier (brightness control for additive particles)
+    if (m_uniformOverbright != -1) {
+        glUniform1f (m_uniformOverbright, m_overbright);
     }
 
     // Build model matrix from particle object transform

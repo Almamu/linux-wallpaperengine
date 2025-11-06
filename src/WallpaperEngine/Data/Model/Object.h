@@ -292,6 +292,16 @@ class ColorChangeOperator : public ParticleOperatorBase {
     UserSettingUniquePtr endValue;
 };
 
+class TurbulenceOperator : public ParticleOperatorBase {
+  public:
+    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale)
+        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)) {}
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
+    UserSettingUniquePtr timeScale;
+};
+
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
 
 /**

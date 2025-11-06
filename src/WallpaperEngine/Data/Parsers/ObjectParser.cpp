@@ -692,6 +692,13 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("startvalue", properties, glm::vec3 (1.0f)),
             it.user ("endvalue", properties, glm::vec3 (1.0f))
         );
+    } else if (name == "turbulence") {
+        return std::make_unique<TurbulenceOperator> (
+            it.user ("scale", properties, 0.005f),
+            it.user ("speedmin", properties, 0.0f),
+            it.user ("speedmax", properties, 1000.0f),
+            it.user ("timescale", properties, 1.0f)
+        );
     }
 
     return nullptr;

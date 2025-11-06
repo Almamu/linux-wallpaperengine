@@ -85,7 +85,7 @@ class CImage final : public CObject, public FBOProvider {
     Effects::CMaterial* m_material = nullptr;
     Effects::CMaterial* m_colorBlendMaterial = nullptr;
     std::vector<Effects::CPass*> m_passes = {};
-    std::vector<MaterialPass> m_virtualPassess = {};
+    std::vector<MaterialPassUniquePtr> m_virtualPassess = {};
 
     glm::vec4 m_pos = {};
 

@@ -16,7 +16,7 @@ using namespace WallpaperEngine::Data::Model;
 
 namespace WallpaperEngine::Render::Objects {
 
-constexpr uint32_t MAX_PARTICLES = 10000;
+constexpr uint32_t DEFAULT_MAX_PARTICLES = 1000;
 
 /**
  * Runtime particle instance state
@@ -129,6 +129,7 @@ class CParticle final : public CObject {
     OperatorFunc createSizeChangeOperator (const SizeChangeOperator& op);
     OperatorFunc createAlphaChangeOperator (const AlphaChangeOperator& op);
     OperatorFunc createColorChangeOperator (const ColorChangeOperator& op);
+    OperatorFunc createTurbulenceOperator (const TurbulenceOperator& op);
 
     // Rendering
     void renderSprites ();
@@ -139,6 +140,7 @@ class CParticle final : public CObject {
 
     std::vector<ParticleInstance> m_particles;
     uint32_t m_particleCount {0};
+    uint32_t m_maxParticles {DEFAULT_MAX_PARTICLES};
 
     std::vector<EmitterFunc> m_emitters;
     std::vector<InitializerFunc> m_initializers;
@@ -158,6 +160,7 @@ class CParticle final : public CObject {
     GLint m_uniformHasTexture {-1};
     GLint m_uniformTextureFormat {-1};
     GLint m_uniformSpritesheetSize {-1};
+    GLint m_uniformOverbright {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
@@ -169,6 +172,9 @@ class CParticle final : public CObject {
     int m_spritesheetRows {0};
     int m_spritesheetFrames {0};
     float m_spritesheetDuration {1.0f};
+
+    // Material shader constants
+    float m_overbright {1.0f};  // Brightness multiplier for additive particles
 
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};
