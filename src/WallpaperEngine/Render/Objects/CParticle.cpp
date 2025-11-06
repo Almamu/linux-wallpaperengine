@@ -635,6 +635,8 @@ void CParticle::setupOperators () {
             func = createColorChangeOperator (*op->as<ColorChangeOperator> ());
         } else if (op->is<TurbulenceOperator> ()) {
             func = createTurbulenceOperator (*op->as<TurbulenceOperator> ());
+        } else if (op->is<VortexOperator> ()) {
+            func = createVortexOperator (*op->as<VortexOperator> ());
         } else {
             sLog.out ("Unknown operator type");
         }
@@ -871,6 +873,84 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
 
             // Apply acceleration (convert to velocity change over dt)
             p.velocity += acceleration * dt;
+        }
+    };
+}
+
+OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
+    int controlPoint = op.controlPoint;
+    DynamicValue* axisValue = op.axis->value.get ();
+    DynamicValue* offsetValue = op.offset->value.get ();
+    DynamicValue* distanceInnerValue = op.distanceInner->value.get ();
+    DynamicValue* distanceOuterValue = op.distanceOuter->value.get ();
+    DynamicValue* speedInnerValue = op.speedInner->value.get ();
+    DynamicValue* speedOuterValue = op.speedOuter->value.get ();
+
+    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue](
+        std::vector<ParticleInstance>& particles,
+        uint32_t count,
+        const std::vector<ControlPointData>& controlPoints,
+        float,
+        float dt
+    ) {
+        glm::vec3 axis = axisValue->getVec3 ();
+        glm::vec3 offset = offsetValue->getVec3 ();
+        float distanceInner = distanceInnerValue->getFloat ();
+        float distanceOuter = distanceOuterValue->getFloat ();
+        float speedInner = speedInnerValue->getFloat ();
+        float speedOuter = speedOuterValue->getFloat ();
+
+        // Get vortex center from control point
+        glm::vec3 center = glm::vec3 (0.0f);
+        if (controlPoint >= 0 && controlPoint < static_cast<int>(controlPoints.size ())) {
+            center = controlPoints [controlPoint].position + offset;
+        } else {
+            center = offset;
+        }
+
+        // Normalize axis
+        if (glm::length (axis) > 0.0f) {
+            axis = glm::normalize (axis);
+        } else {
+            axis = glm::vec3 (0.0f, 0.0f, 1.0f); // Default to Z-axis
+        }
+
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles [i];
+
+            // Vector from center to particle
+            glm::vec3 toParticle = p.position - center;
+            float distance = glm::length (toParticle);
+
+            // Skip if distance is zero to avoid division by zero
+            if (distance < 0.001f) {
+                continue;
+            }
+
+            // Compute spiral direction using cross product
+            // Negative axis to match WE behavior (particles swirl around axis)
+            glm::vec3 spiralDirection = glm::cross (-axis, toParticle);
+
+            if (glm::length (spiralDirection) > 0.0f) {
+                spiralDirection = glm::normalize (spiralDirection);
+            } else {
+                continue; // Particle is on the axis
+            }
+
+            // Determine speed based on distance
+            float speed = 0.0f;
+            if (distance < distanceInner) {
+                // Inside inner radius - use inner speed
+                speed = speedInner;
+            } else if (distance < distanceOuter) {
+                // Between inner and outer - interpolate
+                float t = (distance - distanceInner) / (distanceOuter - distanceInner);
+                speed = glm::mix (speedInner, speedOuter, t);
+            }
+            // Outside outer radius - no effect (speed stays 0)
+
+            // Apply spiral acceleration
+            p.velocity += spiralDirection * speed * dt;
         }
     };
 }

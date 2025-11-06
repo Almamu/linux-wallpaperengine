@@ -699,6 +699,16 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("speedmax", properties, 1000.0f),
             it.user ("timescale", properties, 1.0f)
         );
+    } else if (name == "vortex") {
+        return std::make_unique<VortexOperator> (
+            it.optional ("controlpoint", 0),
+            it.user ("axis", properties, glm::vec3 (0.0f, 0.0f, 1.0f)),
+            it.user ("offset", properties, glm::vec3 (0.0f)),
+            it.user ("distanceinner", properties, 0.0f),
+            it.user ("distanceouter", properties, 1000.0f),
+            it.user ("speedinner", properties, 100.0f),
+            it.user ("speedouter", properties, 0.0f)
+        );
     }
 
     return nullptr;

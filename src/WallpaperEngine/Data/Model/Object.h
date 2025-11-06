@@ -302,6 +302,19 @@ class TurbulenceOperator : public ParticleOperatorBase {
     UserSettingUniquePtr timeScale;
 };
 
+class VortexOperator : public ParticleOperatorBase {
+  public:
+    VortexOperator (int controlPoint, UserSettingUniquePtr axis, UserSettingUniquePtr offset, UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter, UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter)
+        : controlPoint (controlPoint), axis (std::move (axis)), offset (std::move (offset)), distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)), speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)) {}
+    int controlPoint;
+    UserSettingUniquePtr axis;
+    UserSettingUniquePtr offset;
+    UserSettingUniquePtr distanceInner;
+    UserSettingUniquePtr distanceOuter;
+    UserSettingUniquePtr speedInner;
+    UserSettingUniquePtr speedOuter;
+};
+
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
 
 /**
