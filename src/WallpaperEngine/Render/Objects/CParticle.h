@@ -162,6 +162,9 @@ class CParticle final : public CObject {
     GLint m_uniformTextureFormat {-1};
     GLint m_uniformSpritesheetSize {-1};
     GLint m_uniformOverbright {-1};
+    GLint m_uniformUseTrailRenderer {-1};
+    GLint m_uniformTrailLength {-1};
+    GLint m_uniformTrailMaxLength {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
@@ -176,6 +179,11 @@ class CParticle final : public CObject {
 
     // Material shader constants
     float m_overbright {1.0f};  // Brightness multiplier for additive particles
+
+    // Renderer configuration
+    bool m_useTrailRenderer {false};
+    float m_trailLength {0.05f};
+    float m_trailMaxLength {10.0f};
 
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};

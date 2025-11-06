@@ -133,6 +133,17 @@ void CParticle::setup () {
         }
     }
 
+    // Read renderer configuration
+    if (!m_particle.renderers.empty ()) {
+        const auto& renderer = m_particle.renderers[0];
+        if (renderer.name == "spritetrail" || renderer.name == "ropetrail") {
+            m_useTrailRenderer = true;
+            m_trailLength = renderer.length;
+            m_trailMaxLength = renderer.maxLength;
+            sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength, " maxLength=", m_trailMaxLength);
+        }
+    }
+
     setupEmitters ();
     setupInitializers ();
     setupOperators ();
@@ -982,52 +993,86 @@ GLuint CParticle::createShaderProgram () {
         layout (location = 3) in float aSize;
         layout (location = 4) in vec4 aColor;
         layout (location = 5) in float aFrame;
+        layout (location = 6) in vec3 aVelocity;
 
         out vec2 vTexCoord;
         out vec4 vColor;
         out float vFrame;
 
         uniform mat4 g_ModelViewProjectionMatrix;
+        uniform int u_UseTrailRenderer;
+        uniform float u_TrailLength;
+        uniform float u_TrailMaxLength;
 
         void main() {
-            // Calculate billboard offset based on texture coordinates
-            // Offset from center: (0,0)-(1,1) becomes (-0.5,-0.5)-(0.5,0.5)
             vec2 offset = aTexCoord - 0.5;
+            vec3 billboardPos;
 
-            // Apply 3D rotation with numerical stability
-            float cx = cos(aRotation.x);
-            float sx = sin(aRotation.x);
-            float cy = cos(aRotation.y);
-            float sy = sin(aRotation.y);
-            float cz = cos(aRotation.z);
-            float sz = sin(aRotation.z);
+            if (u_UseTrailRenderer == 1) {
+                // Trail rendering: stretch particle along velocity
+                vec3 right, up;
+                float speed = length(aVelocity);
 
-            // Combined rotation matrix optimized for billboards
-            vec3 offset3d = vec3(offset, 0.0);
+                if (speed > 0.001) {
+                    // Compute trail direction from velocity
+                    up = normalize(aVelocity);
 
-            // Rotate around X axis
-            vec3 rotX = vec3(
-                offset3d.x,
-                offset3d.y * cx - offset3d.z * sx,
-                offset3d.y * sx + offset3d.z * cx
-            );
+                    // Calculate trail length based on speed
+                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
 
-            // Rotate around Y axis
-            vec3 rotY = vec3(
-                rotX.x * cy + rotX.z * sy,
-                rotX.y,
-                -rotX.x * sy + rotX.z * cy
-            );
+                    // Compute perpendicular right vector (billboard facing camera)
+                    vec3 viewDir = vec3(0.0, 0.0, -1.0); // Simplified view direction
+                    right = normalize(cross(viewDir, up));
 
-            // Rotate around Z axis
-            vec3 rotated = vec3(
-                rotY.x * cz - rotY.y * sz,
-                rotY.x * sz + rotY.y * cz,
-                rotY.z
-            );
+                    // If cross product is zero, use alternate perpendicular
+                    if (length(right) < 0.001) {
+                        right = vec3(1.0, 0.0, 0.0);
+                    }
 
-            // Scale by particle size
-            vec3 billboardPos = aPos + rotated * aSize;
+                    // Scale vectors
+                    up = up * trailLen;
+                } else {
+                    // Fallback to rotation if velocity is too small
+                    right = vec3(1.0, 0.0, 0.0);
+                    up = vec3(0.0, 1.0, 0.0);
+                }
+
+                // Apply billboard transformation with size scaling
+                billboardPos = aPos + right * offset.x * aSize + up * offset.y * aSize;
+            } else {
+                // Standard rotation-based rendering
+                float cx = cos(aRotation.x);
+                float sx = sin(aRotation.x);
+                float cy = cos(aRotation.y);
+                float sy = sin(aRotation.y);
+                float cz = cos(aRotation.z);
+                float sz = sin(aRotation.z);
+
+                vec3 offset3d = vec3(offset, 0.0);
+
+                // Rotate around X axis
+                vec3 rotX = vec3(
+                    offset3d.x,
+                    offset3d.y * cx - offset3d.z * sx,
+                    offset3d.y * sx + offset3d.z * cx
+                );
+
+                // Rotate around Y axis
+                vec3 rotY = vec3(
+                    rotX.x * cy + rotX.z * sy,
+                    rotX.y,
+                    -rotX.x * sy + rotX.z * cy
+                );
+
+                // Rotate around Z axis
+                vec3 rotated = vec3(
+                    rotY.x * cz - rotY.y * sz,
+                    rotY.x * sz + rotY.y * cz,
+                    rotY.z
+                );
+
+                billboardPos = aPos + rotated * aSize;
+            }
 
             gl_Position = g_ModelViewProjectionMatrix * vec4(billboardPos, 1.0);
             vTexCoord = aTexCoord;
@@ -1097,9 +1142,10 @@ GLuint CParticle::createShaderProgram () {
                 texColor = vec4(1.0, 1.0, 1.0, alpha);
             }
 
-            // Apply overbright multiplier
+            // Apply overbright multiplier (only for additive blending)
+            // Overbright controls brightness for additive particles to prevent over-saturation
+            // For translucent blending, overbright is not applied
             vec4 finalColor = vColor * texColor;
-            finalColor.rgb *= u_Overbright;
             FragColor = finalColor;
         }
     )";
@@ -1147,6 +1193,9 @@ void CParticle::setupBuffers () {
     m_uniformTextureFormat = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
     m_uniformSpritesheetSize = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
     m_uniformOverbright = glGetUniformLocation (m_shaderProgram, "u_Overbright");
+    m_uniformUseTrailRenderer = glGetUniformLocation (m_shaderProgram, "u_UseTrailRenderer");
+    m_uniformTrailLength = glGetUniformLocation (m_shaderProgram, "u_TrailLength");
+    m_uniformTrailMaxLength = glGetUniformLocation (m_shaderProgram, "u_TrailMaxLength");
 
     glGenVertexArrays (1, &m_vao);
     glGenBuffers (1, &m_vbo);
@@ -1154,8 +1203,8 @@ void CParticle::setupBuffers () {
     glBindVertexArray (m_vao);
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
 
-    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) = 14 floats
-    const int stride = sizeof (float) * 14;
+    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats
+    const int stride = sizeof (float) * 17;
 
     // Position (location 0)
     glEnableVertexAttribArray (0);
@@ -1165,7 +1214,7 @@ void CParticle::setupBuffers () {
     glEnableVertexAttribArray (1);
     glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3));
 
-    // Rotation (location 2) - now vec3 instead of float
+    // Rotation (location 2)
     glEnableVertexAttribArray (2);
     glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 5));
 
@@ -1181,6 +1230,10 @@ void CParticle::setupBuffers () {
     glEnableVertexAttribArray (5);
     glVertexAttribPointer (5, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 13));
 
+    // Velocity (location 6)
+    glEnableVertexAttribArray (6);
+    glVertexAttribPointer (6, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 14));
+
     glBindVertexArray (0);
 }
 
@@ -1194,13 +1247,29 @@ void CParticle::renderSprites () {
         if (m_particles[i].alive) aliveCount++;
     }
 
+    // Debug: Log particle count and position periodically
+    static int frameCounter = 0;
+    if (++frameCounter % 60 == 0 && m_particle.name == "cherry blossoms on cursor") {
+        sLog.out ("Cherry blossom particles: ", aliveCount, " alive out of ", m_particleCount, " total");
+        if (aliveCount > 0) {
+            // Log first alive particle's position for debugging
+            for (uint32_t i = 0; i < m_particleCount; i++) {
+                if (m_particles[i].alive) {
+                    sLog.out ("  First particle: pos=(", m_particles[i].position.x, ",", m_particles[i].position.y, ",", m_particles[i].position.z,
+                              ") size=", m_particles[i].size, " alpha=", m_particles[i].alpha);
+                    break;
+                }
+            }
+        }
+    }
+
     if (aliveCount == 0)
         return;
 
     // Prepare vertex data - 6 vertices per particle (2 triangles forming a quad)
-    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) = 14 floats per vertex
+    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats per vertex
     std::vector<float> vertices;
-    vertices.reserve (aliveCount * 6 * 14);
+    vertices.reserve (aliveCount * 6 * 17);
 
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
@@ -1234,6 +1303,9 @@ void CParticle::renderSprites () {
             vertices.push_back (p.color.b);
             vertices.push_back (p.alpha);
             vertices.push_back (p.frame);
+            vertices.push_back (p.velocity.x);
+            vertices.push_back (p.velocity.y);
+            vertices.push_back (p.velocity.z);
         };
 
         // Triangle 1
@@ -1317,6 +1389,17 @@ void CParticle::renderSprites () {
     // Set overbright multiplier (brightness control for additive particles)
     if (m_uniformOverbright != -1) {
         glUniform1f (m_uniformOverbright, m_overbright);
+    }
+
+    // Set trail renderer uniforms
+    if (m_uniformUseTrailRenderer != -1) {
+        glUniform1i (m_uniformUseTrailRenderer, m_useTrailRenderer ? 1 : 0);
+    }
+    if (m_uniformTrailLength != -1) {
+        glUniform1f (m_uniformTrailLength, m_trailLength);
+    }
+    if (m_uniformTrailMaxLength != -1) {
+        glUniform1f (m_uniformTrailMaxLength, m_trailMaxLength);
     }
 
     // Build model matrix from particle object transform
