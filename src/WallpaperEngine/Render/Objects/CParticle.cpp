@@ -1049,6 +1049,7 @@ GLuint CParticle::createShaderProgram () {
         out float vFrame;
 
         uniform mat4 g_ModelViewProjectionMatrix;
+        uniform vec3 g_EyePosition;
         uniform int u_UseTrailRenderer;
         uniform float u_TrailLength;
         uniform float u_TrailMaxLength;
@@ -1063,31 +1064,42 @@ GLuint CParticle::createShaderProgram () {
                 float speed = length(aVelocity);
 
                 if (speed > 0.001) {
-                    // Compute trail direction from velocity
-                    up = normalize(aVelocity);
+                    // Normalize velocity for direction
+                    vec3 velocityDir = aVelocity / speed;
 
-                    // Calculate trail length based on speed
-                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
+                    // Compute eye direction: vector from particle to camera (matches official implementation)
+                    // For 2D ortho projection, camera is at (0, 0, far_distance) looking down -Z
+                    vec3 eyeDirection = aPos - g_EyePosition;
 
-                    // Compute perpendicular right vector (billboard facing camera)
-                    vec3 viewDir = vec3(0.0, 0.0, -1.0); // Simplified view direction
-                    right = normalize(cross(viewDir, up));
+                    // Compute right vector: perpendicular to both eye direction and velocity
+                    // This ensures the trail billboard properly faces the camera
+                    right = cross(eyeDirection, velocityDir);
 
-                    // If cross product is zero, use alternate perpendicular
+                    // If cross product is near zero (velocity parallel to eye direction), use fallback
                     if (length(right) < 0.001) {
                         right = vec3(1.0, 0.0, 0.0);
+                    } else {
+                        right = normalize(right);
                     }
 
-                    // Scale vectors
-                    up = up * trailLen;
+                    // Calculate trail length and scale up vector
+                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
+                    up = velocityDir * trailLen;
                 } else {
-                    // Fallback to rotation if velocity is too small
+                    // Fallback to standard billboard if velocity is too small
                     right = vec3(1.0, 0.0, 0.0);
                     up = vec3(0.0, 1.0, 0.0);
                 }
 
-                // Apply billboard transformation with size scaling
-                billboardPos = aPos + right * offset.x * aSize + up * offset.y * aSize;
+                // Apply billboard transformation (matches official ComputeParticlePosition)
+                // offset is already centered (aTexCoord - 0.5)
+                // Both right and up are scaled by particle size, up is also scaled by trail length
+                // textureRatio maintains aspect ratio - for trails this is typically 1.0 since
+                // trails stretch regardless of texture dimensions
+                float textureRatio = 1.0;
+                billboardPos = aPos +
+                    aSize * right * offset.x -
+                    aSize * up * offset.y * textureRatio;
             } else {
                 // Standard rotation-based rendering
                 float cx = cos(aRotation.x);
@@ -1191,10 +1203,12 @@ GLuint CParticle::createShaderProgram () {
                 texColor = vec4(1.0, 1.0, 1.0, alpha);
             }
 
-            // Apply overbright multiplier (only for additive blending)
-            // Overbright controls brightness for additive particles to prevent over-saturation
-            // For translucent blending, overbright is not applied
+            // Apply vertex color and texture
             vec4 finalColor = vColor * texColor;
+
+            // Apply overbright multiplier to RGB channels (controls brightness for additive particles)
+            finalColor.rgb *= u_Overbright;
+
             FragColor = finalColor;
         }
     )";
@@ -1467,6 +1481,14 @@ void CParticle::renderSprites () {
     GLint mvpLoc = glGetUniformLocation (m_shaderProgram, "g_ModelViewProjectionMatrix");
     if (mvpLoc != -1) {
         glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, &mvp[0][0]);
+    }
+
+    // Set eye position for proper trail billboard orientation
+    // For 2D ortho projection, camera is typically at (0, 0, distance)
+    GLint eyePosLoc = glGetUniformLocation (m_shaderProgram, "g_EyePosition");
+    if (eyePosLoc != -1) {
+        glm::vec3 eyePos = getScene ().getCamera ().getEye ();
+        glUniform3f (eyePosLoc, eyePos.x, eyePos.y, eyePos.z);
     }
 
     // Enable blending for particles
