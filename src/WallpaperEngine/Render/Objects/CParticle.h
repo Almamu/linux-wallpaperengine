@@ -166,6 +166,7 @@ class CParticle final : public CObject {
     GLint m_uniformUseTrailRenderer {-1};
     GLint m_uniformTrailLength {-1};
     GLint m_uniformTrailMaxLength {-1};
+    GLint m_uniformTextureRatio {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};

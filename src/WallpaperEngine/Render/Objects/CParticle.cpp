@@ -1054,6 +1054,7 @@ GLuint CParticle::createShaderProgram () {
         uniform int u_UseTrailRenderer;
         uniform float u_TrailLength;
         uniform float u_TrailMaxLength;
+        uniform float u_TextureRatio;
 
         void main() {
             vec2 offset = aTexCoord - 0.5;
@@ -1096,12 +1097,10 @@ GLuint CParticle::createShaderProgram () {
                 // Apply billboard transformation (matches official ComputeParticlePosition)
                 // offset is already centered (aTexCoord - 0.5)
                 // Both right and up are scaled by particle size, up is also scaled by trail length
-                // textureRatio maintains aspect ratio - for trails this is typically 1.0 since
-                // trails stretch regardless of texture dimensions
-                float textureRatio = 1.0;
+                // textureRatio maintains texture aspect ratio (height/width)
                 billboardPos = aPos +
                     aSize * right * offset.x -
-                    aSize * up * offset.y * textureRatio;
+                    aSize * up * offset.y * u_TextureRatio;
             } else {
                 // Standard rotation-based rendering
                 float cx = cos(aRotation.x);
@@ -1261,6 +1260,7 @@ void CParticle::setupBuffers () {
     m_uniformUseTrailRenderer = glGetUniformLocation (m_shaderProgram, "u_UseTrailRenderer");
     m_uniformTrailLength = glGetUniformLocation (m_shaderProgram, "u_TrailLength");
     m_uniformTrailMaxLength = glGetUniformLocation (m_shaderProgram, "u_TrailMaxLength");
+    m_uniformTextureRatio = glGetUniformLocation (m_shaderProgram, "u_TextureRatio");
 
     glGenVertexArrays (1, &m_vao);
     glGenBuffers (1, &m_vbo);
@@ -1442,12 +1442,23 @@ void CParticle::renderSprites () {
         if (m_uniformSpritesheetSize != -1) {
             glUniform2f (m_uniformSpritesheetSize, static_cast<float>(m_spritesheetCols), static_cast<float>(m_spritesheetRows));
         }
+        // Set texture aspect ratio (height / width)
+        if (m_uniformTextureRatio != -1) {
+            float width = static_cast<float>(m_texture->getRealWidth());
+            float height = static_cast<float>(m_texture->getRealHeight());
+            float textureRatio = (width > 0.0f) ? (height / width) : 1.0f;
+            glUniform1f (m_uniformTextureRatio, textureRatio);
+        }
     } else {
         if (m_uniformHasTexture != -1) {
             glUniform1i (m_uniformHasTexture, 0);
         }
         if (m_uniformSpritesheetSize != -1) {
             glUniform2f (m_uniformSpritesheetSize, 0.0f, 0.0f);
+        }
+        // Default texture ratio for no texture
+        if (m_uniformTextureRatio != -1) {
+            glUniform1f (m_uniformTextureRatio, 1.0f);
         }
     }
 
