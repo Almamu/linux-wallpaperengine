@@ -221,20 +221,19 @@ void CParticle::update (float dt) {
 
         for (auto& cp : m_controlPoints) {
             if (cp.linkMouse) {
-                if (cp.worldSpace) {
-                    // World space: use normalized [0,1] mouse coordinates scaled to screen dimensions
-                    cp.position.x = mousePos->x * screenWidth;
-                    cp.position.y = mousePos->y * screenHeight;
-                    cp.position.z = 0.0f;
-                } else {
-                    // Centered space: convert from [0,1] to scene coordinates with origin at center
-                    cp.position.x = (mousePos->x * screenWidth) - (screenWidth / 2.0f);
-                    cp.position.y = (mousePos->y * screenHeight) - (screenHeight / 2.0f);
-                    cp.position.z = 0.0f;
-                }
+                // Convert mouse position from normalized [0,1] to centered screen space
+                glm::vec3 position;
+                position.x = (mousePos->x * screenWidth) - (screenWidth / 2.0f);
+                position.y = (screenHeight / 2.0f) - (mousePos->y * screenHeight);
+                position.z = 0.0f;
 
                 // Apply control point offset
-                cp.position += cp.offset;
+                position += cp.offset;
+                position.y = -position.y;
+
+                // Convert to particle local space to prevent double transformation by model matrix
+                // Both world-space and local-space CPs are handled the same way now
+                cp.position = position - m_transformedOrigin;
             }
         }
     }
