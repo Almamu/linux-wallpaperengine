@@ -1382,13 +1382,13 @@ void CParticle::renderSprites () {
             trailLength *= size; // Scale trail length by particle size
 
             // Compute trail directions
-            // Since particles move in 2D (XY plane), always use 2D perpendicular calculation
-            // even if the camera is 3D - the trail should follow the 2D motion
+            // trailDir: perpendicular to velocity - direction to march segments along (creates the trail shape)
+            // widthDir: along velocity direction - offset left/right to create ribbon width
             glm::vec2 perpendicular2D = speed > 0.001f ? glm::vec2(velocity2D.y, -velocity2D.x) / speed : glm::vec2(1.0f, 0.0f);
             glm::vec3 trailDir = glm::vec3(perpendicular2D, 0.0f);
 
             glm::vec2 velocityDir2D = speed > 0.001f ? glm::normalize(velocity2D) : glm::vec2(0.0f, 1.0f);
-            glm::vec3 rightDir = glm::vec3(velocityDir2D, 0.0f);
+            glm::vec3 widthDir = glm::vec3(velocityDir2D, 0.0f);
 
             // Generate ribbon strip: vertices alternate left/right along the trail
             // Pre-compute actual positions on CPU (no shader transformation needed)
@@ -1405,11 +1405,11 @@ void CParticle::renderSprites () {
                 float v = t;
 
                 // Compute actual left and right positions
-                // rightDir is along velocity, so make width scale with trailLength (velocity-based)
+                // widthDir is along velocity, so make width scale with trailLength (velocity-based)
                 // This makes fast particles have long trails, slow particles have short trails
                 float velocityBasedWidth = trailLength;
-                glm::vec3 leftPos = centerPos - rightDir * velocityBasedWidth;
-                glm::vec3 rightPos = centerPos + rightDir * velocityBasedWidth;
+                glm::vec3 leftPos = centerPos - widthDir * velocityBasedWidth;
+                glm::vec3 rightPos = centerPos + widthDir * velocityBasedWidth;
 
                 // Lambda to add a vertex pair (left and right side of ribbon)
                 auto addVertexPair = [&]() {
