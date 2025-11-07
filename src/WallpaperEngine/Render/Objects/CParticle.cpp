@@ -908,12 +908,23 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            // Apply time-based phase shift to noise position
-            glm::vec3 noisePos = p.position * scale * 2.0f;
-            noisePos.x += phase + timeScale * currentTime;
+            // Initialize noise position if not set (for particles without turbulentvelocityrandom initializer)
+            if (glm::length(p.noisePos) < 0.001f && p.age < 0.001f) {
+                // Use particle's world position as initial noise position for uniqueness
+                p.noisePos = p.position * scale * 2.0f;
+            }
+
+            // Advance noise position based on particle's current velocity direction
+            // This creates per-particle turbulence paths instead of uniform motion
+            glm::vec3 noiseVelocity = glm::normalize(p.velocity + glm::vec3(0.001f)) * speed * scale;
+            p.noisePos += noiseVelocity * dt;
+
+            // Apply time-based phase shift
+            glm::vec3 sampledNoisePos = p.noisePos;
+            sampledNoisePos.x += phase + timeScale * currentTime;
 
             // Get curl noise acceleration
-            glm::vec3 acceleration = curlNoise (noisePos);
+            glm::vec3 acceleration = curlNoise (sampledNoisePos);
 
             // Normalize and scale by speed
             if (glm::length (acceleration) > 0.0f) {
