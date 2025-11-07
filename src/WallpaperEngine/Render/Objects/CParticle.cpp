@@ -61,6 +61,16 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     // Apply count instance override to particle pool size
     float countMultiplier = particle.instanceOverride.count->value->getFloat ();
     uint32_t adjustedMaxCount = static_cast<uint32_t>(particle.maxCount * countMultiplier);
+
+    // For trail renderers, Wallpaper Engine counts segments toward maxCount
+    // Reduce effective particle count by subdivision factor
+    if (m_useTrailRenderer && m_trailSubdivision > 1) {
+        adjustedMaxCount = adjustedMaxCount / m_trailSubdivision;
+        sLog.out ("Particle '", particle.name, "' using trail renderer - reducing maxCount from ",
+                  static_cast<uint32_t>(particle.maxCount * countMultiplier), " to ", adjustedMaxCount,
+                  " (divided by subdivision=", m_trailSubdivision, ")");
+    }
+
     // Use wallpaper's specified count, or default if maxCount is 0
     m_maxParticles = (adjustedMaxCount > 0) ? adjustedMaxCount : DEFAULT_MAX_PARTICLES;
     m_particles.resize (m_maxParticles);
@@ -143,7 +153,10 @@ void CParticle::setup () {
             m_useTrailRenderer = true;
             m_trailLength = renderer.length;
             m_trailMaxLength = renderer.maxLength;
-            sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength, " maxLength=", m_trailMaxLength);
+            m_trailSubdivision = static_cast<int>(renderer.subdivision);
+            if (m_trailSubdivision < 1) m_trailSubdivision = 1; // At least 1 segment
+            sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength,
+                      " maxLength=", m_trailMaxLength, " subdivision=", m_trailSubdivision);
         }
     }
 
@@ -172,6 +185,10 @@ void CParticle::render () {
     // Initialize time on first render to avoid huge dt spike
     if (m_time == 0.0) {
         m_time = g_Time;
+        // Skip update on first frame to avoid weird initial burst
+        // This ensures all particles start from a clean state
+        renderSprites ();
+        return;
     }
 
     // Update particles
@@ -179,6 +196,8 @@ void CParticle::render () {
     m_time = g_Time;
 
     if (dt > 0.0f) {
+        // Cap dt to prevent simulation instability
+        // Also provides more consistent behavior across different FPS
         dt = std::min (dt, 0.1f);
         update (dt);
     }
@@ -1062,39 +1081,10 @@ GLuint CParticle::createShaderProgram () {
             vec3 billboardPos;
 
             if (u_UseTrailRenderer == 1) {
-                // Trail rendering: stretch particle along velocity
-                vec3 right, up;
-                float speed = length(aVelocity);
-
-                if (speed > 0.001) {
-                    // Compute trail direction from velocity
-                    up = normalize(aVelocity);
-
-                    // Calculate trail length based on speed
-                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
-
-                    // Compute perpendicular right vector (billboard facing camera)
-                    vec3 viewDir = vec3(0.0, 0.0, -1.0); // Simplified view direction
-                    right = normalize(cross(viewDir, up));
-
-                    // If cross product is zero, use alternate perpendicular
-                    if (length(right) < 0.001) {
-                        right = vec3(1.0, 0.0, 0.0);
-                    }
-
-                    // Scale vectors
-                    up = up * trailLen;
-                } else {
-                    // Fallback to rotation if velocity is too small
-                    right = vec3(1.0, 0.0, 0.0);
-                    up = vec3(0.0, 1.0, 0.0);
-                }
-
-                // Apply billboard transformation with size scaling
-                // textureRatio maintains texture aspect ratio (height/width)
-                billboardPos = aPos +
-                    aSize * right * offset.x -
-                    aSize * up * offset.y * u_TextureRatio;
+                // Trail rendering: positions are pre-computed on CPU
+                // Vertices already have left/right positions baked in
+                // Just pass through without transformation
+                billboardPos = aPos;
             } else {
                 // Standard rotation-based rendering
                 float cx = cos(aRotation.x);
@@ -1327,16 +1317,23 @@ void CParticle::renderSprites () {
     if (aliveCount == 0)
         return;
 
-    // Prepare vertex data - 4 vertices per particle with indexed rendering
+    // Calculate buffer sizes
+    // Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
+    // Normal particles: 4 vertices, 6 indices
+    int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
+    int verticesPerParticle = m_useTrailRenderer ? (segmentsPerParticle + 1) * 2 : 4;
+    int indicesPerParticle = m_useTrailRenderer ? segmentsPerParticle * 6 : 6;
+
+    // Prepare vertex data
     // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats per vertex
     std::vector<float> vertices;
-    vertices.reserve (aliveCount * 4 * 17);
+    vertices.reserve (aliveCount * verticesPerParticle * 17);
 
-    // Prepare index data - 6 indices per particle (2 triangles forming a quad)
+    // Prepare index data
     std::vector<uint32_t> indices;
-    indices.reserve (aliveCount * 6);
+    indices.reserve (aliveCount * indicesPerParticle);
 
-    uint32_t particleIndex = 0;
+    uint32_t vertexIndex = 0; // Tracks total vertices written (not particles)
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
         if (!p.alive)
@@ -1352,46 +1349,149 @@ void CParticle::renderSprites () {
         // Particle size is already scaled by instance override, don't apply object scale
         float size = p.size / 2.0f;
 
-        // Create 4 vertices for this particle (one for each corner of the quad)
-        auto addVertex = [&](float u, float v) {
-            vertices.push_back (p.position.x);
-            vertices.push_back (p.position.y);
-            vertices.push_back (p.position.z);
-            vertices.push_back (u);
-            vertices.push_back (v);
-            vertices.push_back (p.rotation.x);
-            vertices.push_back (p.rotation.y);
-            vertices.push_back (p.rotation.z);
-            vertices.push_back (size);
-            vertices.push_back (p.color.r);
-            vertices.push_back (p.color.g);
-            vertices.push_back (p.color.b);
-            vertices.push_back (p.alpha);
-            vertices.push_back (p.frame);
-            vertices.push_back (p.velocity.x);
-            vertices.push_back (p.velocity.y);
-            vertices.push_back (p.velocity.z);
-        };
+        // For trail particles, generate multiple segments along velocity direction
+        if (m_useTrailRenderer && segmentsPerParticle > 1) {
+            // Calculate trail parameters using 2D velocity (XY plane only for orthographic rendering)
+            glm::vec2 velocity2D = glm::vec2(p.velocity.x, p.velocity.y);
+            float speed = glm::length(velocity2D);
+            float trailLength = speed > 0.001f ? std::max(0.0f, std::min(speed * m_trailLength, m_trailMaxLength)) : 0.0f;
 
-        // 4 vertices for quad corners
-        uint32_t baseVertex = particleIndex * 4;
-        addVertex (0.0f, 1.0f);  // 0: Bottom-left
-        addVertex (1.0f, 1.0f);  // 1: Bottom-right
-        addVertex (1.0f, 0.0f);  // 2: Top-right
-        addVertex (0.0f, 0.0f);  // 3: Top-left
+            // After testing: perpendicular for trail extent, velocity for width (counterintuitive but correct!)
+            // Segments positioned along perpendicular, width extends along velocity creates correct appearance
+            glm::vec2 perpendicular2D = speed > 0.001f ? glm::vec2(velocity2D.y, -velocity2D.x) / speed : glm::vec2(1.0f, 0.0f);
+            glm::vec3 trailDir = glm::vec3(perpendicular2D, 0.0f);
 
-        // 6 indices forming 2 triangles (counter-clockwise winding)
-        // Triangle 1: bottom-left, bottom-right, top-right
-        indices.push_back (baseVertex + 0);
-        indices.push_back (baseVertex + 1);
-        indices.push_back (baseVertex + 2);
+            glm::vec2 velocityDir2D = speed > 0.001f ? glm::normalize(velocity2D) : glm::vec2(0.0f, 1.0f);
+            glm::vec3 rightDir = glm::vec3(velocityDir2D, 0.0f);
 
-        // Triangle 2: top-right, top-left, bottom-left
-        indices.push_back (baseVertex + 2);
-        indices.push_back (baseVertex + 3);
-        indices.push_back (baseVertex + 0);
+            // Debug: log first particle's trail info
+            static int debugCounter = 0;
+            if (m_particle.name == "Ember" && ++debugCounter % 120 == 0 && i == 0) {
+                sLog.out("[TRAIL DEBUG] pos=(", p.position.x, ",", p.position.y, ") ",
+                         "vel2D=(", velocity2D.x, ",", velocity2D.y, ") ",
+                         "trailDir=(", trailDir.x, ",", trailDir.y, ") ",
+                         "rightDir=(", rightDir.x, ",", rightDir.y, ") ",
+                         "trailLen=", trailLength);
+            }
 
-        particleIndex++;
+            // Generate ribbon strip: vertices alternate left/right along the trail
+            // Pre-compute actual positions on CPU (no shader transformation needed)
+            for (int seg = 0; seg <= segmentsPerParticle; seg++) {
+                // Position this vertex along the trail
+                // seg=0 is at particle position (head), seg=N is at the tail
+                float t = segmentsPerParticle > 0 ? static_cast<float>(seg) / static_cast<float>(segmentsPerParticle) : 0.0f;
+                glm::vec3 centerPos = p.position - trailDir * (trailLength * t);
+
+                // Alpha fade toward tail (but don't go to zero to avoid sudden disappearance)
+                float segmentAlpha = p.alpha * (1.0f - t * 0.5f); // Fade to 50% at tail
+
+                // V coordinate: 0 at head, 1 at tail (texture flows along trail)
+                float v = t;
+
+                // Compute actual left and right positions
+                // rightDir is along velocity, so make width scale with trailLength (velocity-based)
+                // This makes fast particles have long trails, slow particles have short trails
+                float velocityBasedWidth = trailLength;
+                glm::vec3 leftPos = centerPos - rightDir * velocityBasedWidth;
+                glm::vec3 rightPos = centerPos + rightDir * velocityBasedWidth;
+
+                // Lambda to add a vertex pair (left and right side of ribbon)
+                auto addVertexPair = [&]() {
+                    // Left vertex (u=0)
+                    vertices.push_back (leftPos.x);
+                    vertices.push_back (leftPos.y);
+                    vertices.push_back (leftPos.z);
+                    vertices.push_back (0.0f);  // u = 0 (left edge)
+                    vertices.push_back (v);     // v varies along trail
+                    vertices.push_back (0.0f);  // No rotation for trail
+                    vertices.push_back (0.0f);
+                    vertices.push_back (0.0f);
+                    vertices.push_back (size);
+                    vertices.push_back (p.color.r);
+                    vertices.push_back (p.color.g);
+                    vertices.push_back (p.color.b);
+                    vertices.push_back (segmentAlpha);
+                    vertices.push_back (p.frame);
+                    vertices.push_back (0.0f);  // Zero velocity to disable shader transformation
+                    vertices.push_back (0.0f);
+                    vertices.push_back (0.0f);
+
+                    // Right vertex (u=1)
+                    vertices.push_back (rightPos.x);
+                    vertices.push_back (rightPos.y);
+                    vertices.push_back (rightPos.z);
+                    vertices.push_back (1.0f);  // u = 1 (right edge)
+                    vertices.push_back (v);     // v varies along trail
+                    vertices.push_back (0.0f);  // No rotation for trail
+                    vertices.push_back (0.0f);
+                    vertices.push_back (0.0f);
+                    vertices.push_back (size);
+                    vertices.push_back (p.color.r);
+                    vertices.push_back (p.color.g);
+                    vertices.push_back (p.color.b);
+                    vertices.push_back (segmentAlpha);
+                    vertices.push_back (p.frame);
+                    vertices.push_back (0.0f);  // Zero velocity to disable shader transformation
+                    vertices.push_back (0.0f);
+                    vertices.push_back (0.0f);
+                };
+
+                addVertexPair();
+
+                // Create triangles connecting this segment to the previous one
+                if (seg > 0) {
+                    uint32_t base = vertexIndex + (seg - 1) * 2;
+                    // Triangle 1: [prevLeft, prevRight, currRight]
+                    indices.push_back (base + 0);
+                    indices.push_back (base + 1);
+                    indices.push_back (base + 3);
+                    // Triangle 2: [prevLeft, currRight, currLeft]
+                    indices.push_back (base + 0);
+                    indices.push_back (base + 3);
+                    indices.push_back (base + 2);
+                }
+            }
+
+            vertexIndex += (segmentsPerParticle + 1) * 2;
+        } else {
+            // Normal particle: single quad
+            auto addVertex = [&](float u, float v) {
+                vertices.push_back (p.position.x);
+                vertices.push_back (p.position.y);
+                vertices.push_back (p.position.z);
+                vertices.push_back (u);
+                vertices.push_back (v);
+                vertices.push_back (p.rotation.x);
+                vertices.push_back (p.rotation.y);
+                vertices.push_back (p.rotation.z);
+                vertices.push_back (size);
+                vertices.push_back (p.color.r);
+                vertices.push_back (p.color.g);
+                vertices.push_back (p.color.b);
+                vertices.push_back (p.alpha);
+                vertices.push_back (p.frame);
+                vertices.push_back (p.velocity.x);
+                vertices.push_back (p.velocity.y);
+                vertices.push_back (p.velocity.z);
+            };
+
+            // 4 vertices for quad corners
+            uint32_t baseVertex = vertexIndex;
+            addVertex (0.0f, 1.0f);  // 0: Bottom-left
+            addVertex (1.0f, 1.0f);  // 1: Bottom-right
+            addVertex (1.0f, 0.0f);  // 2: Top-right
+            addVertex (0.0f, 0.0f);  // 3: Top-left
+
+            // 6 indices forming 2 triangles
+            indices.push_back (baseVertex + 0);
+            indices.push_back (baseVertex + 1);
+            indices.push_back (baseVertex + 2);
+            indices.push_back (baseVertex + 2);
+            indices.push_back (baseVertex + 3);
+            indices.push_back (baseVertex + 0);
+
+            vertexIndex += 4;
+        }
     }
 
     if (m_shaderProgram == 0) {
@@ -1526,9 +1626,10 @@ void CParticle::renderSprites () {
     }
     glDepthMask (GL_FALSE); // Don't write to depth buffer for transparent particles
 
-    // Render triangles using indexed rendering (4 vertices + 6 indices per particle)
+    // Render triangles using indexed rendering
+    // Use actual index count (accounts for trail segments and filtered particles)
     glBindVertexArray (m_vao);
-    glDrawElements (GL_TRIANGLES, aliveCount * 6, GL_UNSIGNED_INT, nullptr);
+    glDrawElements (GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray (0);
 
     // Restore state

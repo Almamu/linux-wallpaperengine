@@ -187,6 +187,7 @@ class CParticle final : public CObject {
     bool m_useTrailRenderer {false};
     float m_trailLength {0.05f};
     float m_trailMaxLength {10.0f};
+    int m_trailSubdivision {3}; // Number of segments per trail
 
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};
