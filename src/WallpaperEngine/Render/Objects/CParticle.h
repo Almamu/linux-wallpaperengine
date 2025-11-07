@@ -192,6 +192,10 @@ class CParticle final : public CObject {
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};
 
+    // Last known resolution for detecting changes
+    float m_lastScreenWidth {0.0f};
+    float m_lastScreenHeight {0.0f};
+
     // Random number generator
     std::mt19937 m_rng;
 

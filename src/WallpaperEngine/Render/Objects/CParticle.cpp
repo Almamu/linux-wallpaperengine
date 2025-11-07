@@ -113,12 +113,12 @@ void CParticle::setup () {
     // Convert origin from screen space to centered space
     // Projection uses ortho(-width/2, width/2, -height/2, height/2)
     // but particle origins are in screen space where (0,0) is top-left
-    float screenWidth = getScene ().getCamera ().getWidth ();
-    float screenHeight = getScene ().getCamera ().getHeight ();
+    m_lastScreenWidth = getScene ().getCamera ().getWidth ();
+    m_lastScreenHeight = getScene ().getCamera ().getHeight ();
 
     glm::vec3 origin = m_particle.origin->value->getVec3 ();
-    origin.x -= screenWidth / 2.0f;
-    origin.y = screenHeight / 2.0f - origin.y;
+    origin.x -= m_lastScreenWidth / 2.0f;
+    origin.y = m_lastScreenHeight / 2.0f - origin.y;
     m_transformedOrigin = origin;
 
     // Load particle material texture and blending mode
@@ -213,11 +213,24 @@ void CParticle::render () {
 }
 
 void CParticle::update (float dt) {
+    // Detect resolution changes and recalculate transformed origin
+    float screenWidth = static_cast<float>(getScene().getWidth());
+    float screenHeight = static_cast<float>(getScene().getHeight());
+
+    if (screenWidth != m_lastScreenWidth || screenHeight != m_lastScreenHeight) {
+        // Resolution changed - recalculate transformed origin
+        glm::vec3 origin = m_particle.origin->value->getVec3 ();
+        origin.x -= screenWidth / 2.0f;
+        origin.y = screenHeight / 2.0f - origin.y;
+        m_transformedOrigin = origin;
+
+        m_lastScreenWidth = screenWidth;
+        m_lastScreenHeight = screenHeight;
+    }
+
     // Update control points with mouse position
     const glm::vec2* mousePos = getScene().getMousePosition();
     if (mousePos) {
-        float screenWidth = static_cast<float>(getScene().getWidth());
-        float screenHeight = static_cast<float>(getScene().getHeight());
 
         for (auto& cp : m_controlPoints) {
             if (cp.linkMouse) {
