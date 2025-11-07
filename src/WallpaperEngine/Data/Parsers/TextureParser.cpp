@@ -227,17 +227,23 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
         float frameHeight = firstFrame.height1;
 
         if (frameWidth > 0.0f && frameHeight > 0.0f) {
-            // Calculate grid dimensions from texture size and frame size
-            header.spritesheetCols = static_cast<uint32_t> (std::round (static_cast<double>(header.width) / frameWidth));
-            header.spritesheetRows = static_cast<uint32_t> (std::round (static_cast<double>(header.height) / frameHeight));
-            header.spritesheetFrames = static_cast<uint32_t> (header.frames.size ());
+            const uint32_t cols = static_cast<uint32_t> (std::round (static_cast<double> (header.width) / frameWidth));
+            const uint32_t rows = static_cast<uint32_t> (std::round (static_cast<double> (header.height) / frameHeight));
+            const uint32_t frameCount = static_cast<uint32_t> (header.frames.size ());
 
-            // Calculate total duration from all frame times
-            float totalDuration = 0.0f;
-            for (const auto& frame : header.frames) {
-                totalDuration += frame->frametime;
+            // Only populate spritesheet metadata if the inferred grid can actually hold all frames
+            // This prevents GIFs (where frameWidth == textureWidth) from being treated as 1×1 spritesheets
+            if (cols > 0 && rows > 0 && cols * rows >= frameCount) {
+                header.spritesheetCols = cols;
+                header.spritesheetRows = rows;
+                header.spritesheetFrames = frameCount;
+
+                float totalDuration = 0.0f;
+                for (const auto& frame : header.frames) {
+                    totalDuration += frame->frametime;
+                }
+                header.spritesheetDuration = totalDuration;
             }
-            header.spritesheetDuration = totalDuration;
         }
     }
 }
