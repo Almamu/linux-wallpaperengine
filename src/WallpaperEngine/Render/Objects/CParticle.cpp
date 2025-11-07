@@ -1049,8 +1049,6 @@ GLuint CParticle::createShaderProgram () {
         out float vFrame;
 
         uniform mat4 g_ModelViewProjectionMatrix;
-        uniform mat4 g_ModelMatrixInverse;
-        uniform vec3 g_EyePosition;
         uniform int u_UseTrailRenderer;
         uniform float u_TrailLength;
         uniform float u_TrailMaxLength;
@@ -1066,37 +1064,30 @@ GLuint CParticle::createShaderProgram () {
                 float speed = length(aVelocity);
 
                 if (speed > 0.001) {
-                    // Normalize velocity for direction
-                    vec3 velocityDir = aVelocity / speed;
+                    // Compute trail direction from velocity
+                    up = normalize(aVelocity);
 
-                    // Compute eye direction: vector from particle to camera (matches official implementation)
-                    // Transform eye position from world space to local/object space
-                    vec3 localEyePos = (g_ModelMatrixInverse * vec4(g_EyePosition, 1.0)).xyz;
-                    vec3 eyeDirection = aPos - localEyePos;
+                    // Calculate trail length based on speed
+                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
 
-                    // Compute right vector: perpendicular to both eye direction and velocity
-                    // This ensures the trail billboard properly faces the camera
-                    right = cross(eyeDirection, velocityDir);
+                    // Compute perpendicular right vector (billboard facing camera)
+                    vec3 viewDir = vec3(0.0, 0.0, -1.0); // Simplified view direction
+                    right = normalize(cross(viewDir, up));
 
-                    // If cross product is near zero (velocity parallel to eye direction), use fallback
+                    // If cross product is zero, use alternate perpendicular
                     if (length(right) < 0.001) {
                         right = vec3(1.0, 0.0, 0.0);
-                    } else {
-                        right = normalize(right);
                     }
 
-                    // Calculate trail length and scale up vector
-                    float trailLen = max(0.0, min(speed * u_TrailLength, u_TrailMaxLength));
-                    up = velocityDir * trailLen;
+                    // Scale vectors
+                    up = up * trailLen;
                 } else {
-                    // Fallback to standard billboard if velocity is too small
+                    // Fallback to rotation if velocity is too small
                     right = vec3(1.0, 0.0, 0.0);
                     up = vec3(0.0, 1.0, 0.0);
                 }
 
-                // Apply billboard transformation (matches official ComputeParticlePosition)
-                // offset is already centered (aTexCoord - 0.5)
-                // Both right and up are scaled by particle size, up is also scaled by trail length
+                // Apply billboard transformation with size scaling
                 // textureRatio maintains texture aspect ratio (height/width)
                 billboardPos = aPos +
                     aSize * right * offset.x -
@@ -1494,20 +1485,6 @@ void CParticle::renderSprites () {
     GLint mvpLoc = glGetUniformLocation (m_shaderProgram, "g_ModelViewProjectionMatrix");
     if (mvpLoc != -1) {
         glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, &mvp[0][0]);
-    }
-
-    // Set model matrix inverse for coordinate space transforms
-    glm::mat4 modelInverse = glm::inverse (model);
-    GLint modelInvLoc = glGetUniformLocation (m_shaderProgram, "g_ModelMatrixInverse");
-    if (modelInvLoc != -1) {
-        glUniformMatrix4fv (modelInvLoc, 1, GL_FALSE, &modelInverse[0][0]);
-    }
-
-    // Set eye position for proper trail billboard orientation
-    GLint eyePosLoc = glGetUniformLocation (m_shaderProgram, "g_EyePosition");
-    if (eyePosLoc != -1) {
-        glm::vec3 eyePos = getScene ().getCamera ().getEye ();
-        glUniform3f (eyePosLoc, eyePos.x, eyePos.y, eyePos.z);
     }
 
     // Enable blending for particles
