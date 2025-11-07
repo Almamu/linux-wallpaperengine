@@ -218,6 +218,28 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
         header.gifWidth = (*header.frames.begin ())->width1;
         header.gifHeight = (*header.frames.begin ())->height1;
     }
+
+    // Calculate spritesheet grid dimensions from animation frames
+    // Spritesheets are grid-based textures where each frame is at a specific position
+    if (!header.frames.empty () && header.width > 0 && header.height > 0) {
+        auto& firstFrame = *header.frames.front ();
+        float frameWidth = firstFrame.width1;
+        float frameHeight = firstFrame.height1;
+
+        if (frameWidth > 0.0f && frameHeight > 0.0f) {
+            // Calculate grid dimensions from texture size and frame size
+            header.spritesheetCols = static_cast<uint32_t> (std::round (static_cast<double>(header.width) / frameWidth));
+            header.spritesheetRows = static_cast<uint32_t> (std::round (static_cast<double>(header.height) / frameHeight));
+            header.spritesheetFrames = static_cast<uint32_t> (header.frames.size ());
+
+            // Calculate total duration from all frame times
+            float totalDuration = 0.0f;
+            for (const auto& frame : header.frames) {
+                totalDuration += frame->frametime;
+            }
+            header.spritesheetDuration = totalDuration;
+        }
+    }
 }
 
 uint32_t TextureParser::parseTextureFlags (uint32_t value) {
