@@ -281,14 +281,12 @@ void CParticle::update (float dt) {
             // Calculate frame based on animation mode
             if (m_particle.animationMode == "randomframe") {
                 // Random frame mode: frame is set once at spawn and never changes
-                // Only set if frame is uninitialized (0.0 from spawn)
-                if (p.age < 0.001f && p.frame == 0.0f) {
+                if (p.frame < 0.0f) {
                     // Use particle memory address as seed for deterministic randomness per particle
-                    std::mt19937 particleRng(reinterpret_cast<uintptr_t>(&p));
+                    std::mt19937 particleRng(static_cast<std::mt19937::result_type>(reinterpret_cast<uintptr_t>(&p)));
                     std::uniform_int_distribution<int> dist(0, m_spritesheetFrames - 1);
                     p.frame = static_cast<float>(dist(particleRng));
                 }
-                // Otherwise keep the same frame (don't update)
             } else if (m_particle.animationMode == "once") {
                 // Play animation once over particle lifetime
                 p.frame = std::min(lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float>(m_spritesheetFrames - 1));
@@ -408,6 +406,7 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
             p.lifetime = lifetime;
             p.age = 0.0f;
             p.alive = true;
+            p.frame = -1.0f;
 
             // Store initial values
             p.initial.color = p.color;
@@ -496,6 +495,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             p.lifetime = lifetime;
             p.age = 0.0f;
             p.alive = true;
+            p.frame = -1.0f;
 
             p.initial.color = p.color;
             p.initial.alpha = p.alpha;
