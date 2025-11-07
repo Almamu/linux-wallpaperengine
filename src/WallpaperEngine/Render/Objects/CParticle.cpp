@@ -1049,6 +1049,7 @@ GLuint CParticle::createShaderProgram () {
         out float vFrame;
 
         uniform mat4 g_ModelViewProjectionMatrix;
+        uniform mat4 g_ModelMatrixInverse;
         uniform vec3 g_EyePosition;
         uniform int u_UseTrailRenderer;
         uniform float u_TrailLength;
@@ -1068,8 +1069,9 @@ GLuint CParticle::createShaderProgram () {
                     vec3 velocityDir = aVelocity / speed;
 
                     // Compute eye direction: vector from particle to camera (matches official implementation)
-                    // For 2D ortho projection, camera is at (0, 0, far_distance) looking down -Z
-                    vec3 eyeDirection = aPos - g_EyePosition;
+                    // Transform eye position from world space to local/object space
+                    vec3 localEyePos = (g_ModelMatrixInverse * vec4(g_EyePosition, 1.0)).xyz;
+                    vec3 eyeDirection = aPos - localEyePos;
 
                     // Compute right vector: perpendicular to both eye direction and velocity
                     // This ensures the trail billboard properly faces the camera
@@ -1483,8 +1485,14 @@ void CParticle::renderSprites () {
         glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, &mvp[0][0]);
     }
 
+    // Set model matrix inverse for coordinate space transforms
+    glm::mat4 modelInverse = glm::inverse (model);
+    GLint modelInvLoc = glGetUniformLocation (m_shaderProgram, "g_ModelMatrixInverse");
+    if (modelInvLoc != -1) {
+        glUniformMatrix4fv (modelInvLoc, 1, GL_FALSE, &modelInverse[0][0]);
+    }
+
     // Set eye position for proper trail billboard orientation
-    // For 2D ortho projection, camera is typically at (0, 0, distance)
     GLint eyePosLoc = glGetUniformLocation (m_shaderProgram, "g_EyePosition");
     if (eyePosLoc != -1) {
         glm::vec3 eyePos = getScene ().getCamera ().getEye ();
