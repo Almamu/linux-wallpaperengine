@@ -58,6 +58,18 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     std::random_device rd;
     m_rng.seed (rd ());
 
+    // Read renderer configuration early to determine if trails are used
+    if (!m_particle.renderers.empty ()) {
+        const auto& renderer = m_particle.renderers[0];
+        if (renderer.name == "spritetrail" || renderer.name == "ropetrail") {
+            m_useTrailRenderer = true;
+            m_trailLength = renderer.length;
+            m_trailMaxLength = renderer.maxLength;
+            m_trailSubdivision = static_cast<int>(renderer.subdivision);
+            if (m_trailSubdivision < 1) m_trailSubdivision = 1;
+        }
+    }
+
     // Apply count instance override to particle pool size
     float countMultiplier = particle.instanceOverride.count->value->getFloat ();
     uint32_t adjustedMaxCount = static_cast<uint32_t>(particle.maxCount * countMultiplier);
@@ -146,18 +158,10 @@ void CParticle::setup () {
         }
     }
 
-    // Read renderer configuration
-    if (!m_particle.renderers.empty ()) {
-        const auto& renderer = m_particle.renderers[0];
-        if (renderer.name == "spritetrail" || renderer.name == "ropetrail") {
-            m_useTrailRenderer = true;
-            m_trailLength = renderer.length;
-            m_trailMaxLength = renderer.maxLength;
-            m_trailSubdivision = static_cast<int>(renderer.subdivision);
-            if (m_trailSubdivision < 1) m_trailSubdivision = 1; // At least 1 segment
-            sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength,
-                      " maxLength=", m_trailMaxLength, " subdivision=", m_trailSubdivision);
-        }
+    // Renderer configuration already read in constructor
+    if (m_useTrailRenderer) {
+        sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength,
+                  " maxLength=", m_trailMaxLength, " subdivision=", m_trailSubdivision);
     }
 
     setupEmitters ();
@@ -1356,22 +1360,24 @@ void CParticle::renderSprites () {
             float speed = glm::length(velocity2D);
             float trailLength = speed > 0.001f ? std::max(0.0f, std::min(speed * m_trailLength, m_trailMaxLength)) : 0.0f;
 
-            // After testing: perpendicular for trail extent, velocity for width (counterintuitive but correct!)
-            // Segments positioned along perpendicular, width extends along velocity creates correct appearance
+            // Compute trail directions
+            // Since particles move in 2D (XY plane), always use 2D perpendicular calculation
+            // even if the camera is 3D - the trail should follow the 2D motion
             glm::vec2 perpendicular2D = speed > 0.001f ? glm::vec2(velocity2D.y, -velocity2D.x) / speed : glm::vec2(1.0f, 0.0f);
             glm::vec3 trailDir = glm::vec3(perpendicular2D, 0.0f);
 
             glm::vec2 velocityDir2D = speed > 0.001f ? glm::normalize(velocity2D) : glm::vec2(0.0f, 1.0f);
             glm::vec3 rightDir = glm::vec3(velocityDir2D, 0.0f);
 
-            // Debug: log first particle's trail info
+            // Debug: log trail info for debugging
             static int debugCounter = 0;
-            if (m_particle.name == "Ember" && ++debugCounter % 120 == 0 && i == 0) {
-                sLog.out("[TRAIL DEBUG] pos=(", p.position.x, ",", p.position.y, ") ",
-                         "vel2D=(", velocity2D.x, ",", velocity2D.y, ") ",
-                         "trailDir=(", trailDir.x, ",", trailDir.y, ") ",
-                         "rightDir=(", rightDir.x, ",", rightDir.y, ") ",
-                         "trailLen=", trailLength);
+            bool isCherry = m_particle.name.find("cherry") != std::string::npos || m_particle.name.find("Cherry") != std::string::npos;
+            if ((m_particle.name == "Ember" || isCherry) && ++debugCounter % 120 == 0 && i == 0) {
+                sLog.out("[TRAIL DEBUG ", m_particle.name, "] pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ") ",
+                         "vel2D=(", velocity2D.x, ",", velocity2D.y, ") speed=", speed, " ",
+                         "trailDir=(", trailDir.x, ",", trailDir.y, ",", trailDir.z, ") ",
+                         "rightDir=(", rightDir.x, ",", rightDir.y, ",", rightDir.z, ") ",
+                         "trailLen=", trailLength, " size=", size, " alpha=", p.alpha);
             }
 
             // Generate ribbon strip: vertices alternate left/right along the trail
@@ -1496,6 +1502,18 @@ void CParticle::renderSprites () {
 
     if (m_shaderProgram == 0) {
         return;
+    }
+
+    // Debug: log buffer sizes for cherry blossoms
+    if (m_particle.name.find("cherry") != std::string::npos || m_particle.name.find("Cherry") != std::string::npos) {
+        static int frameCount = 0;
+        if (++frameCount % 300 == 0) {
+            float screenW = getScene().getCamera().getWidth();
+            float screenH = getScene().getCamera().getHeight();
+            sLog.out("[TRAIL BUFFER ", m_particle.name, "] vertices=", vertices.size() / 17, " indices=", indices.size(),
+                     " alive=", aliveCount, " segmentsPerParticle=", segmentsPerParticle,
+                     " screen=", screenW, "x", screenH, " origin=", m_transformedOrigin.x, ",", m_transformedOrigin.y);
+        }
     }
 
     // Clear any existing GL errors before we start
