@@ -244,10 +244,19 @@ void CParticle::update (float dt) {
         emitter (m_particles, m_particleCount, dt);
     }
 
-    // Update particle lifetime and remove dead particles
+    // Update particle age
+    for (uint32_t i = 0; i < m_particleCount; i++) {
+        m_particles[i].age += dt;
+    }
+
+    // Apply operators to living particles (including alphafade)
+    for (auto& op : m_operators) {
+        op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
+    }
+
+    // Update animation frames and remove dead particles
     for (uint32_t i = 0; i < m_particleCount; ) {
         auto& p = m_particles [i];
-        p.age += dt;
 
         // Update animation frame if we have a spritesheet
         if (m_spritesheetFrames > 0) {
@@ -286,11 +295,6 @@ void CParticle::update (float dt) {
         } else {
             i++;
         }
-    }
-
-    // Apply operators to living particles
-    for (auto& op : m_operators) {
-        op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
 }
 
@@ -1302,22 +1306,6 @@ void CParticle::renderSprites () {
         if (m_particles[i].alive) aliveCount++;
     }
 
-    // Debug: Log particle count and position periodically
-    static int frameCounter = 0;
-    if (++frameCounter % 60 == 0 && m_particle.name == "cherry blossoms on cursor") {
-        sLog.out ("Cherry blossom particles: ", aliveCount, " alive out of ", m_particleCount, " total");
-        if (aliveCount > 0) {
-            // Log first alive particle's position for debugging
-            for (uint32_t i = 0; i < m_particleCount; i++) {
-                if (m_particles[i].alive) {
-                    sLog.out ("  First particle: pos=(", m_particles[i].position.x, ",", m_particles[i].position.y, ",", m_particles[i].position.z,
-                              ") size=", m_particles[i].size, " alpha=", m_particles[i].alpha);
-                    break;
-                }
-            }
-        }
-    }
-
     if (aliveCount == 0)
         return;
 
@@ -1358,7 +1346,10 @@ void CParticle::renderSprites () {
             // Calculate trail parameters using 2D velocity (XY plane only for orthographic rendering)
             glm::vec2 velocity2D = glm::vec2(p.velocity.x, p.velocity.y);
             float speed = glm::length(velocity2D);
+
+            // Trail length is scaled by particle size to match normal particle rendering
             float trailLength = speed > 0.001f ? std::max(0.0f, std::min(speed * m_trailLength, m_trailMaxLength)) : 0.0f;
+            trailLength *= size; // Scale trail length by particle size
 
             // Compute trail directions
             // Since particles move in 2D (XY plane), always use 2D perpendicular calculation
@@ -1368,17 +1359,6 @@ void CParticle::renderSprites () {
 
             glm::vec2 velocityDir2D = speed > 0.001f ? glm::normalize(velocity2D) : glm::vec2(0.0f, 1.0f);
             glm::vec3 rightDir = glm::vec3(velocityDir2D, 0.0f);
-
-            // Debug: log trail info for debugging
-            static int debugCounter = 0;
-            bool isCherry = m_particle.name.find("cherry") != std::string::npos || m_particle.name.find("Cherry") != std::string::npos;
-            if ((m_particle.name == "Ember" || isCherry) && ++debugCounter % 120 == 0 && i == 0) {
-                sLog.out("[TRAIL DEBUG ", m_particle.name, "] pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ") ",
-                         "vel2D=(", velocity2D.x, ",", velocity2D.y, ") speed=", speed, " ",
-                         "trailDir=(", trailDir.x, ",", trailDir.y, ",", trailDir.z, ") ",
-                         "rightDir=(", rightDir.x, ",", rightDir.y, ",", rightDir.z, ") ",
-                         "trailLen=", trailLength, " size=", size, " alpha=", p.alpha);
-            }
 
             // Generate ribbon strip: vertices alternate left/right along the trail
             // Pre-compute actual positions on CPU (no shader transformation needed)
@@ -1502,18 +1482,6 @@ void CParticle::renderSprites () {
 
     if (m_shaderProgram == 0) {
         return;
-    }
-
-    // Debug: log buffer sizes for cherry blossoms
-    if (m_particle.name.find("cherry") != std::string::npos || m_particle.name.find("Cherry") != std::string::npos) {
-        static int frameCount = 0;
-        if (++frameCount % 300 == 0) {
-            float screenW = getScene().getCamera().getWidth();
-            float screenH = getScene().getCamera().getHeight();
-            sLog.out("[TRAIL BUFFER ", m_particle.name, "] vertices=", vertices.size() / 17, " indices=", indices.size(),
-                     " alive=", aliveCount, " segmentsPerParticle=", segmentsPerParticle,
-                     " screen=", screenW, "x", screenH, " origin=", m_transformedOrigin.x, ",", m_transformedOrigin.y);
-        }
     }
 
     // Clear any existing GL errors before we start
