@@ -155,6 +155,7 @@ class CParticle final : public CObject {
     // OpenGL buffers
     GLuint m_vao {0};
     GLuint m_vbo {0};
+    GLuint m_ebo {0}; // Element Buffer Object for indexed rendering
     GLuint m_shaderProgram {0};
 
     // Cached uniform locations

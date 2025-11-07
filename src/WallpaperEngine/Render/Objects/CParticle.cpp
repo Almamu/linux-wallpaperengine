@@ -76,6 +76,9 @@ CParticle::~CParticle () {
     if (m_vbo != 0) {
         glDeleteBuffers (1, &m_vbo);
     }
+    if (m_ebo != 0) {
+        glDeleteBuffers (1, &m_ebo);
+    }
     if (m_shaderProgram != 0) {
         glDeleteProgram (m_shaderProgram);
     }
@@ -1255,9 +1258,11 @@ void CParticle::setupBuffers () {
 
     glGenVertexArrays (1, &m_vao);
     glGenBuffers (1, &m_vbo);
+    glGenBuffers (1, &m_ebo);
 
     glBindVertexArray (m_vao);
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
+    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
 
     // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats
     const int stride = sizeof (float) * 17;
@@ -1322,11 +1327,16 @@ void CParticle::renderSprites () {
     if (aliveCount == 0)
         return;
 
-    // Prepare vertex data - 6 vertices per particle (2 triangles forming a quad)
+    // Prepare vertex data - 4 vertices per particle with indexed rendering
     // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats per vertex
     std::vector<float> vertices;
-    vertices.reserve (aliveCount * 6 * 17);
+    vertices.reserve (aliveCount * 4 * 17);
 
+    // Prepare index data - 6 indices per particle (2 triangles forming a quad)
+    std::vector<uint32_t> indices;
+    indices.reserve (aliveCount * 6);
+
+    uint32_t particleIndex = 0;
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
         if (!p.alive)
@@ -1342,8 +1352,7 @@ void CParticle::renderSprites () {
         // Particle size is already scaled by instance override, don't apply object scale
         float size = p.size / 2.0f;
 
-        // Create 6 vertices forming 2 triangles (GL_QUADS not available in core profile)
-
+        // Create 4 vertices for this particle (one for each corner of the quad)
         auto addVertex = [&](float u, float v) {
             vertices.push_back (p.position.x);
             vertices.push_back (p.position.y);
@@ -1364,15 +1373,25 @@ void CParticle::renderSprites () {
             vertices.push_back (p.velocity.z);
         };
 
-        // Triangle 1
-        addVertex (0.0f, 1.0f);  // Bottom-left
-        addVertex (1.0f, 1.0f);  // Bottom-right
-        addVertex (1.0f, 0.0f);  // Top-right
+        // 4 vertices for quad corners
+        uint32_t baseVertex = particleIndex * 4;
+        addVertex (0.0f, 1.0f);  // 0: Bottom-left
+        addVertex (1.0f, 1.0f);  // 1: Bottom-right
+        addVertex (1.0f, 0.0f);  // 2: Top-right
+        addVertex (0.0f, 0.0f);  // 3: Top-left
 
-        // Triangle 2
-        addVertex (1.0f, 0.0f);  // Top-right
-        addVertex (0.0f, 0.0f);  // Top-left
-        addVertex (0.0f, 1.0f);  // Bottom-left
+        // 6 indices forming 2 triangles (counter-clockwise winding)
+        // Triangle 1: bottom-left, bottom-right, top-right
+        indices.push_back (baseVertex + 0);
+        indices.push_back (baseVertex + 1);
+        indices.push_back (baseVertex + 2);
+
+        // Triangle 2: top-right, top-left, bottom-left
+        indices.push_back (baseVertex + 2);
+        indices.push_back (baseVertex + 3);
+        indices.push_back (baseVertex + 0);
+
+        particleIndex++;
     }
 
     if (m_shaderProgram == 0) {
@@ -1407,6 +1426,9 @@ void CParticle::renderSprites () {
 
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
     glBufferData (GL_ARRAY_BUFFER, vertices.size () * sizeof (float), vertices.data (), GL_DYNAMIC_DRAW);
+
+    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size () * sizeof (uint32_t), indices.data (), GL_DYNAMIC_DRAW);
 
     // Use particle shader
     glUseProgram (m_shaderProgram);
@@ -1504,9 +1526,9 @@ void CParticle::renderSprites () {
     }
     glDepthMask (GL_FALSE); // Don't write to depth buffer for transparent particles
 
-    // Render triangles (6 vertices per particle, 2 triangles forming a quad)
+    // Render triangles using indexed rendering (4 vertices + 6 indices per particle)
     glBindVertexArray (m_vao);
-    glDrawArrays (GL_TRIANGLES, 0, aliveCount * 6);
+    glDrawElements (GL_TRIANGLES, aliveCount * 6, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray (0);
 
     // Restore state
