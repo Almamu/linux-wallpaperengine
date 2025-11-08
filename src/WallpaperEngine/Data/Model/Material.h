@@ -51,6 +51,8 @@ struct MaterialPass {
     TextureMap usertextures;
     /** The combos and their values to pass onto the shader */
     ComboMap combos;
+    /** Constant shader values (e.g., overbright, bloom settings) */
+    ShaderConstantMap constants;
 };
 
 struct Material {

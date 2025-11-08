@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Parsers/ShaderConstantParser.h"
 #include "WallpaperEngine/FileSystem/Container.h"
 
 using namespace WallpaperEngine::Data::Parsers;
@@ -10,17 +11,17 @@ using namespace WallpaperEngine::Data::Model;
 MaterialUniquePtr MaterialParser::load (const Project& project, const std::string& filename) {
     const auto materialJson = JSON::parse (project.assetLocator->readString (filename));
 
-    return parse (materialJson, filename);
+    return parse (materialJson, filename, project);
 }
 
-MaterialUniquePtr MaterialParser::parse (const JSON& it, const std::string& filename) {
+MaterialUniquePtr MaterialParser::parse (const JSON& it, const std::string& filename, const Project& project) {
     return std::make_unique <Material> (Material {
         .filename = filename,
-        .passes = parsePasses (it.require ("passes", "Material must have passes to render")),
+        .passes = parsePasses (it.require ("passes", "Material must have passes to render"), project),
     });
 }
 
-std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it) {
+std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it, const Project& project) {
     std::vector <MaterialPassUniquePtr> result = {};
 
     if (!it.is_array ()) {
@@ -28,17 +29,17 @@ std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it)
     }
 
     for (const auto& cur : it) {
-        result.push_back (parsePass (cur));
+        result.push_back (parsePass (cur, project));
     }
 
     return result;
 }
 
-MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it) {
+MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const Project& project) {
     const auto textures = it.optional ("textures");
     const auto usertextures = it.optional ("usertextures");
     const auto combos = it.optional ("combos");
-    const auto constants = it.optional ("constants");
+    const auto constants = it.optional ("constantshadervalues");
 
     return std::make_unique <MaterialPass>(MaterialPass {
         //TODO: REMOVE THIS UGLY STD::STRING CREATION
@@ -50,6 +51,7 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it) {
         .textures = textures.has_value () ? parseTextures (*textures) : TextureMap {},
         .usertextures = usertextures.has_value () ? parseTextures (*usertextures) : TextureMap {},
         .combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
+        .constants = constants.has_value () ? ShaderConstantParser::parse (*constants, project) : ShaderConstantMap {},
     });
 }
 

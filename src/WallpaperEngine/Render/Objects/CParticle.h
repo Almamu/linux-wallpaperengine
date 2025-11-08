@@ -16,7 +16,7 @@ using namespace WallpaperEngine::Data::Model;
 
 namespace WallpaperEngine::Render::Objects {
 
-constexpr uint32_t MAX_PARTICLES = 10000;
+constexpr uint32_t DEFAULT_MAX_PARTICLES = 1000;
 
 /**
  * Runtime particle instance state
@@ -41,6 +41,9 @@ struct ParticleInstance {
     // Lifetime
     float lifetime {1.0f};      // Total lifetime in seconds
     float age {0.0f};           // Current age in seconds
+
+    // Turbulent velocity state
+    glm::vec3 noisePos {0.0f};  // Position in noise field for turbulent velocity
 
     // Initial values for resets/multipliers
     struct {
@@ -117,6 +120,8 @@ class CParticle final : public CObject {
     InitializerFunc createVelocityRandomInitializer (const VelocityRandomInitializer& init);
     InitializerFunc createRotationRandomInitializer (const RotationRandomInitializer& init);
     InitializerFunc createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init);
+    InitializerFunc createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init);
+    InitializerFunc createMapSequenceAroundControlPointInitializer (const MapSequenceAroundControlPointInitializer& init);
 
     // Operator creators
     OperatorFunc createMovementOperator (const MovementOperator& op);
@@ -125,6 +130,9 @@ class CParticle final : public CObject {
     OperatorFunc createSizeChangeOperator (const SizeChangeOperator& op);
     OperatorFunc createAlphaChangeOperator (const AlphaChangeOperator& op);
     OperatorFunc createColorChangeOperator (const ColorChangeOperator& op);
+    OperatorFunc createTurbulenceOperator (const TurbulenceOperator& op);
+    OperatorFunc createVortexOperator (const VortexOperator& op);
+    OperatorFunc createControlPointAttractOperator (const ControlPointAttractOperator& op);
 
     // Rendering
     void renderSprites ();
@@ -135,6 +143,7 @@ class CParticle final : public CObject {
 
     std::vector<ParticleInstance> m_particles;
     uint32_t m_particleCount {0};
+    uint32_t m_maxParticles {DEFAULT_MAX_PARTICLES};
 
     std::vector<EmitterFunc> m_emitters;
     std::vector<InitializerFunc> m_initializers;
@@ -147,6 +156,7 @@ class CParticle final : public CObject {
     // OpenGL buffers
     GLuint m_vao {0};
     GLuint m_vbo {0};
+    GLuint m_ebo {0}; // Element Buffer Object for indexed rendering
     GLuint m_shaderProgram {0};
 
     // Cached uniform locations
@@ -154,6 +164,11 @@ class CParticle final : public CObject {
     GLint m_uniformHasTexture {-1};
     GLint m_uniformTextureFormat {-1};
     GLint m_uniformSpritesheetSize {-1};
+    GLint m_uniformOverbright {-1};
+    GLint m_uniformUseTrailRenderer {-1};
+    GLint m_uniformTrailLength {-1};
+    GLint m_uniformTrailMaxLength {-1};
+    GLint m_uniformTextureRatio {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
@@ -166,8 +181,21 @@ class CParticle final : public CObject {
     int m_spritesheetFrames {0};
     float m_spritesheetDuration {1.0f};
 
+    // Material shader constants
+    float m_overbright {1.0f};  // Brightness multiplier for additive particles
+
+    // Renderer configuration
+    bool m_useTrailRenderer {false};
+    float m_trailLength {0.05f};
+    float m_trailMaxLength {10.0f};
+    int m_trailSubdivision {3}; // Number of segments per trail
+
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin {0.0f};
+
+    // Last known resolution for detecting changes
+    float m_lastScreenWidth {0.0f};
+    float m_lastScreenHeight {0.0f};
 
     // Random number generator
     std::mt19937 m_rng;
