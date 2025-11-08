@@ -1171,17 +1171,21 @@ OperatorFunc CParticle::createControlPointAttractOperator (const ControlPointAtt
 
             // Only apply force if within threshold
             if (distance > 0.001f && distance < threshold) {
-                particlesAffected++;
-
                 // Normalize direction
                 glm::vec3 direction = toCenter / distance;
 
-                // Calculate force (inversely proportional to distance)
-                // Scale can be negative for repulsion
-                float force = scale / distance;
+                // Apply constant force (scale value) in direction of control point
+                // Scale can be negative for repulsion, positive for attraction
+                glm::vec3 forceVec = direction * scale * dt;
+                p.velocity += forceVec;
 
-                // Apply force as velocity change
-                p.velocity += direction * force * dt;
+                // For attraction (positive scale), apply velocity damping near center
+                // This slows particles down as they approach the control point
+                if (scale > 0 && distance < threshold * 0.1f) {
+                    // Damping factor increases as particle gets closer (0.0 at threshold*0.1, 0.75 at distance 0)
+                    float dampingFactor = 1.0f - (distance / (threshold * 0.1f)) * 0.75f;
+                    p.velocity *= (1.0f - dampingFactor * dt);
+                }
             }
         }
     };
