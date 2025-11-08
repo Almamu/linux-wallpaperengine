@@ -1505,7 +1505,7 @@ void CParticle::renderSprites () {
         float size = p.size / 2.0f;
 
         // For trail particles, generate multiple segments along velocity direction
-        if (m_useTrailRenderer && segmentsPerParticle > 1) {
+        if (m_useTrailRenderer && segmentsPerParticle >= 1) {
             // Calculate trail parameters using 2D velocity (XY plane only for orthographic rendering)
             glm::vec2 velocity2D = glm::vec2(p.velocity.x, p.velocity.y);
             float speed = glm::length(velocity2D);
