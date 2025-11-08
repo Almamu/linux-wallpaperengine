@@ -266,6 +266,22 @@ void CParticle::update (float dt) {
         op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
 
+    // Debug: Log particle positions after operators have run
+    static int updateFrameCount = 0;
+    static int particlePositionDebugCount = 0;
+    updateFrameCount++;
+    if (updateFrameCount == 60 && particlePositionDebugCount < 5 && m_particleCount > 0) {  // After 1 second (60 frames)
+        sLog.out("[PARTICLE POSITION DEBUG] After 1 second of simulation:");
+        for (uint32_t i = 0; i < std::min(5u, m_particleCount); i++) {
+            auto& p = m_particles[i];
+            float dist = glm::length(p.position);
+            sLog.out("  Particle ", i, " position (local): (", p.position.x, ", ", p.position.y, ", ", p.position.z, ")");
+            sLog.out("    Distance from local origin: ", dist);
+            sLog.out("    Velocity: (", p.velocity.x, ", ", p.velocity.y, ", ", p.velocity.z, ")");
+        }
+        particlePositionDebugCount = 5;
+    }
+
     // Update animation frames and remove dead particles
     for (uint32_t i = 0; i < m_particleCount; ) {
         auto& p = m_particles [i];
@@ -442,7 +458,10 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
         }
     }
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    // Capture scale for debug logging only
+    glm::vec3 scale = m_particle.scale->value->getVec3();
+
+    return [this, emitter, transformedEmitterOrigin, scale, controlPointIndex, rate, lifetime, emissionTimer = 0.0f, remaining = emitter.instantaneous](std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
         if (count >= particles.size ())
             return;
 
@@ -465,19 +484,46 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
                 spawnOrigin = m_controlPoints[controlPointIndex].position;
             }
 
-            // Spawn at random position within sphere volume
+            // Spawn at random position on sphere surface
+            // Generate spherical coordinates
             float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
             float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
             float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
 
+            // Generate 3D position on unit sphere, then scale by radius
             glm::vec3 randomPos (
-                radius * std::sin (phi) * std::cos (theta),
-                radius * std::sin (phi) * std::sin (theta),
-                radius * std::cos (phi)
+                std::sin (phi) * std::cos (theta),
+                std::sin (phi) * std::sin (theta),
+                std::cos (phi)
             );
+
+            // Apply directions scaling (e.g., "1 1 0" squashes to X/Y plane, "1 1 2" stretches Z)
+            randomPos *= emitter.directions;
+
+            // Normalize back to unit sphere, then scale by radius
+            if (glm::length(randomPos) > 0.001f) {
+                randomPos = glm::normalize(randomPos) * radius;
+            }
+
             // Flip Y to convert random offset from screen space to centered space
             randomPos.y = -randomPos.y;
             p.position = spawnOrigin + randomPos;
+
+            // Debug spawn positions for first few particles
+            static int spawnDebugCount = 0;
+            if (spawnDebugCount < 10) {
+                float localDist = glm::length(randomPos);
+                sLog.out("[SPAWN DEBUG] Particle ", spawnDebugCount);
+                sLog.out("  distanceMin/Max: ", emitter.distanceMin.x, " / ", emitter.distanceMax.x);
+                sLog.out("  Emitter directions: (", emitter.directions.x, ", ", emitter.directions.y, ", ", emitter.directions.z, ")");
+                sLog.out("  Particle system scale: (", scale.x, ", ", scale.y, ", ", scale.z, ")");
+                sLog.out("  Sampled local radius: ", radius);
+                sLog.out("  Actual local distance from origin: ", localDist);
+                sLog.out("  randomPos (local offset): (", randomPos.x, ", ", randomPos.y, ", ", randomPos.z, ")");
+                sLog.out("  spawnOrigin: (", spawnOrigin.x, ", ", spawnOrigin.y, ", ", spawnOrigin.z, ")");
+                sLog.out("  p.position (local space): (", p.position.x, ", ", p.position.y, ", ", p.position.z, ")");
+                spawnDebugCount++;
+            }
 
             // Velocity pointing outward from sphere center
             glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
@@ -603,7 +649,18 @@ InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandom
         glm::vec3 vel = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ());
         // Flip Y velocity for centered space
         vel.y = -vel.y;
-        p.velocity += vel * m_particle.instanceOverride.speed->value->getFloat ();
+        float speedMultiplier = m_particle.instanceOverride.speed->value->getFloat ();
+
+        static int velDebugCount = 0;
+        if (velDebugCount < 3) {
+            sLog.out("[VELOCITY INIT DEBUG] Particle ", velDebugCount);
+            sLog.out("  Random velocity (before speed mult): (", vel.x, ", ", vel.y, ", ", vel.z, ")");
+            sLog.out("  Speed multiplier: ", speedMultiplier);
+            sLog.out("  Final velocity: (", vel.x * speedMultiplier, ", ", vel.y * speedMultiplier, ", ", vel.z * speedMultiplier, ")");
+            velDebugCount++;
+        }
+
+        p.velocity += vel * speedMultiplier;
     };
 }
 
@@ -967,95 +1024,63 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
 }
 
 OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
-    int controlPoint = op.controlPoint;
-    DynamicValue* axisValue = op.axis->value.get ();
-    DynamicValue* offsetValue = op.offset->value.get ();
-    DynamicValue* distanceInnerValue = op.distanceInner->value.get ();
-    DynamicValue* distanceOuterValue = op.distanceOuter->value.get ();
     DynamicValue* speedInnerValue = op.speedInner->value.get ();
-    DynamicValue* speedOuterValue = op.speedOuter->value.get ();
     DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
-    // DynamicValue* audioBoundsValue = op.audioProcessingBounds->value.get ();
 
     // Check if audio processing is enabled
     int audioMode = static_cast<int>(audioModeValue->getFloat());
 
-    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue, audioMode](
+    // Random phase offset for noise field variation
+    float phase = randomFloat (m_rng, 0.0f, 100.0f);
+
+    // Use speedInner as the base curl strength
+    // When audio is implemented, this will be modulated by audio amplitude
+    float baseStrength = speedInnerValue->getFloat();
+    if (baseStrength == 0.0f) {
+        baseStrength = 100.0f; // Default strength if not specified
+    }
+
+    return [this, audioMode, phase, baseStrength](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
-        const std::vector<ControlPointData>& controlPoints,
-        float,
+        const std::vector<ControlPointData>&,
+        float currentTime,
         float dt
     ) {
-        glm::vec3 axis = axisValue->getVec3 ();
-        glm::vec3 offset = offsetValue->getVec3 ();
-        float distanceInner = distanceInnerValue->getFloat ();
-        float distanceOuter = distanceOuterValue->getFloat ();
-        float speedInner = speedInnerValue->getFloat ();
-        float speedOuter = speedOuterValue->getFloat ();
-
         // Audio modulation (when implemented, this will sample from audio context)
         float audioAmplitude = 0.0f; // TODO: Sample from AudioContext when audio processing is implemented
 
-        // Apply audio modulation if audio mode is enabled
+        // If audio mode is enabled but no audio, skip vortex entirely
+        if (audioMode > 0 && audioAmplitude == 0.0f) {
+            return;
+        }
+
+        // Apply audio modulation to strength
+        float strength = baseStrength;
         if (audioMode > 0) {
-            // When audio processing is active, modulate speeds by audio amplitude
-            // audioAmplitude ranges from 0 to 1, where 0 means use base speeds
-            speedInner *= (1.0f + audioAmplitude);
-            speedOuter *= (1.0f + audioAmplitude);
+            strength *= (1.0f + audioAmplitude);
         }
 
-        // Get vortex center from control point
-        glm::vec3 center = glm::vec3 (0.0f);
-        if (controlPoint >= 0 && controlPoint < static_cast<int>(controlPoints.size ())) {
-            center = controlPoints [controlPoint].position + offset;
-        } else {
-            center = offset;
-        }
-
-        // Normalize axis
-        if (glm::length (axis) > 0.0f) {
-            axis = glm::normalize (axis);
-        } else {
-            axis = glm::vec3 (0.0f, 0.0f, 1.0f); // Default to Z-axis
-        }
+        // Scale factor for curl noise sampling (smaller = larger vortices)
+        float scale = 0.003f;
 
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            // Vector from center to particle
-            glm::vec3 toParticle = p.position - center;
-            float distance = glm::length (toParticle);
+            // Sample curl noise at particle position with time-based phase
+            glm::vec3 samplePos = p.position * scale;
+            samplePos.x += phase + currentTime * 0.1f; // Slow time evolution
 
-            // Skip if distance is zero to avoid division by zero
-            if (distance < 0.001f) {
-                continue;
+            // Get curl noise (rotational flow field)
+            glm::vec3 curlForce = curlNoise (samplePos);
+
+            // Normalize and scale by strength
+            if (glm::length (curlForce) > 0.0f) {
+                curlForce = glm::normalize (curlForce) * strength;
             }
 
-            // Compute spiral direction using cross product
-            // Negative axis to match WE behavior (particles swirl around axis)
-            glm::vec3 spiralDirection = glm::cross (-axis, toParticle);
-
-            if (glm::length (spiralDirection) > 0.0f) {
-                spiralDirection = glm::normalize (spiralDirection);
-            } else {
-                continue; // Particle is on the axis
-            }
-
-            // Determine speed based on distance
-            float speed = 0.0f;
-            if (distance < distanceInner) {
-                // Inside inner radius - use inner speed
-                speed = speedInner;
-            } else if (distance < distanceOuter) {
-                // Between inner and outer - interpolate
-                float t = (distance - distanceInner) / (distanceOuter - distanceInner);
-                speed = glm::mix (speedInner, speedOuter, t);
-            }
-            // Outside outer radius - no effect (speed stays 0)
-
-            // Apply spiral acceleration
-            p.velocity += spiralDirection * speed * dt;
+            // Apply curl force as velocity change
+            p.velocity += curlForce * dt;
         }
     };
 }
@@ -1642,6 +1667,31 @@ void CParticle::renderSprites () {
     // Build model matrix from particle object transform
     glm::vec3 scale = m_particle.scale->value->getVec3 ();
     glm::vec3 angles = m_particle.angles->value->getVec3 ();
+
+    static bool modelDebugLogged = false;
+    if (!modelDebugLogged) {
+        float screenWidth = static_cast<float>(getScene().getWidth());
+        float screenHeight = static_cast<float>(getScene().getHeight());
+        glm::vec3 rawOrigin = m_particle.origin->value->getVec3();
+        sLog.out("[MODEL MATRIX DEBUG]");
+        sLog.out("  Screen size: ", screenWidth, " x ", screenHeight);
+        sLog.out("  Particle system raw origin: (", rawOrigin.x, ", ", rawOrigin.y, ", ", rawOrigin.z, ")");
+        sLog.out("  Particle system transformed origin: (", m_transformedOrigin.x, ", ", m_transformedOrigin.y, ", ", m_transformedOrigin.z, ")");
+        sLog.out("  Particle system scale: (", scale.x, ", ", scale.y, ", ", scale.z, ")");
+        sLog.out("  Particle system angles: (", angles.x, ", ", angles.y, ", ", angles.z, ")");
+
+        // Test transformation of particle at emitter distance 256
+        sLog.out("  Emitter spawn test (2D circle):");
+        glm::vec4 testLocalPos(256.0f, 0.0f, 0.0f, 1.0f);
+        glm::mat4 testModel = glm::mat4(1.0f);
+        testModel = glm::translate(testModel, m_transformedOrigin);
+        testModel = glm::scale(testModel, scale);
+        glm::vec4 testWorldPos = testModel * testLocalPos;
+        sLog.out("    local (256, 0, 0) -> world (", testWorldPos.x, ", ", testWorldPos.y, ", ", testWorldPos.z, ")");
+        sLog.out("    -> screen (", testWorldPos.x + 960, ", ", testWorldPos.y + 540, ")");
+        sLog.out("    (1920x1080 screen edges: X ±960, Y ±540)");
+        modelDebugLogged = true;
+    }
 
     glm::mat4 model = glm::mat4 (1.0f);
     model = glm::translate (model, m_transformedOrigin);
