@@ -232,6 +232,16 @@ class TurbulentVelocityRandomInitializer : public ParticleInitializerBase {
     UserSettingUniquePtr offset;
 };
 
+class MapSequenceAroundControlPointInitializer : public ParticleInitializerBase {
+  public:
+    MapSequenceAroundControlPointInitializer (UserSettingUniquePtr controlPoint, UserSettingUniquePtr count, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax)
+        : controlPoint (std::move (controlPoint)), count (std::move (count)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)) {}
+    UserSettingUniquePtr controlPoint;
+    UserSettingUniquePtr count;
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
+};
+
 using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;
 
 /**

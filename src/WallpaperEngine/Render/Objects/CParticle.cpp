@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
+#include <unordered_map>
+#include <string>
 
 extern float g_Time;
 
@@ -174,7 +176,8 @@ void CParticle::setup () {
     for (const auto& cp : m_particle.controlPoints) {
         if (cp.id >= 0 && cp.id < 8) {
             m_controlPoints [cp.id].offset = cp.offset;
-            m_controlPoints [cp.id].linkMouse = (cp.flags & 1) != 0;
+            // Link to mouse if either flags bit 0 is set OR lockToPointer is true
+            m_controlPoints [cp.id].linkMouse = ((cp.flags & 1) != 0) || cp.lockToPointer;
             m_controlPoints [cp.id].worldSpace = (cp.flags & 2) != 0;
         }
     }
@@ -264,22 +267,6 @@ void CParticle::update (float dt) {
     // Apply operators to living particles (including alphafade)
     for (auto& op : m_operators) {
         op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
-    }
-
-    // Debug: Log particle positions after operators have run
-    static int updateFrameCount = 0;
-    static int particlePositionDebugCount = 0;
-    updateFrameCount++;
-    if (updateFrameCount == 60 && particlePositionDebugCount < 5 && m_particleCount > 0) {  // After 1 second (60 frames)
-        sLog.out("[PARTICLE POSITION DEBUG] After 1 second of simulation:");
-        for (uint32_t i = 0; i < std::min(5u, m_particleCount); i++) {
-            auto& p = m_particles[i];
-            float dist = glm::length(p.position);
-            sLog.out("  Particle ", i, " position (local): (", p.position.x, ", ", p.position.y, ", ", p.position.z, ")");
-            sLog.out("    Distance from local origin: ", dist);
-            sLog.out("    Velocity: (", p.velocity.x, ", ", p.velocity.y, ", ", p.velocity.z, ")");
-        }
-        particlePositionDebugCount = 5;
     }
 
     // Update animation frames and remove dead particles
@@ -516,22 +503,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             randomPos.y = -randomPos.y;
             p.position = spawnOrigin + randomPos;
 
-            // Debug spawn positions for first few particles
-            static int spawnDebugCount = 0;
-            if (spawnDebugCount < 10) {
-                float localDist = glm::length(randomPos);
-                sLog.out("[SPAWN DEBUG] Particle ", spawnDebugCount);
-                sLog.out("  distanceMin/Max: ", emitter.distanceMin.x, " / ", emitter.distanceMax.x);
-                sLog.out("  Emitter directions: (", emitter.directions.x, ", ", emitter.directions.y, ", ", emitter.directions.z, ")");
-                sLog.out("  Particle system scale: (", scale.x, ", ", scale.y, ", ", scale.z, ")");
-                sLog.out("  Sampled local radius: ", radius);
-                sLog.out("  Actual local distance from origin: ", localDist);
-                sLog.out("  randomPos (local offset): (", randomPos.x, ", ", randomPos.y, ", ", randomPos.z, ")");
-                sLog.out("  spawnOrigin: (", spawnOrigin.x, ", ", spawnOrigin.y, ", ", spawnOrigin.z, ")");
-                sLog.out("  p.position (local space): (", p.position.x, ", ", p.position.y, ", ", p.position.z, ")");
-                spawnDebugCount++;
-            }
-
             // Velocity pointing outward from sphere center
             glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
             float speed = randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
@@ -590,6 +561,8 @@ void CParticle::setupInitializers () {
             func = createAngularVelocityRandomInitializer (*initializer->as<AngularVelocityRandomInitializer> ());
         } else if (initializer->is<TurbulentVelocityRandomInitializer> ()) {
             func = createTurbulentVelocityRandomInitializer (*initializer->as<TurbulentVelocityRandomInitializer> ());
+        } else if (initializer->is<MapSequenceAroundControlPointInitializer> ()) {
+            func = createMapSequenceAroundControlPointInitializer (*initializer->as<MapSequenceAroundControlPointInitializer> ());
         } else {
             sLog.out ("Unknown initializer type");
         }
@@ -657,16 +630,6 @@ InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandom
         // Flip Y velocity for centered space
         vel.y = -vel.y;
         float speedMultiplier = m_particle.instanceOverride.speed->value->getFloat ();
-
-        static int velDebugCount = 0;
-        if (velDebugCount < 3) {
-            sLog.out("[VELOCITY INIT DEBUG] Particle ", velDebugCount);
-            sLog.out("  Random velocity (before speed mult): (", vel.x, ", ", vel.y, ", ", vel.z, ")");
-            sLog.out("  Speed multiplier: ", speedMultiplier);
-            sLog.out("  Final velocity: (", vel.x * speedMultiplier, ", ", vel.y * speedMultiplier, ", ", vel.z * speedMultiplier, ")");
-            velDebugCount++;
-        }
-
         p.velocity += vel * speedMultiplier;
     };
 }
@@ -732,6 +695,55 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
         turbulentVel.y = -turbulentVel.y;
 
         p.velocity += turbulentVel;
+    };
+}
+
+InitializerFunc CParticle::createMapSequenceAroundControlPointInitializer (const MapSequenceAroundControlPointInitializer& init) {
+    DynamicValue* controlPointValue = init.controlPoint->value.get ();
+    DynamicValue* countValue = init.count->value.get ();
+    DynamicValue* speedMinValue = init.speedMin->value.get ();
+    DynamicValue* speedMaxValue = init.speedMax->value.get ();
+
+    // Sequence counter shared across all particles spawned with this initializer
+    // This creates the circular distribution pattern
+    int sequenceIndex = 0;
+
+    return [this, controlPointValue, countValue, speedMinValue, speedMaxValue, sequenceIndex](ParticleInstance& p) mutable {
+        int controlPoint = static_cast<int>(controlPointValue->getFloat());
+        int count = static_cast<int>(countValue->getFloat());
+
+        // Calculate angle for this particle in the sequence (evenly distributed around circle)
+        float angle = (static_cast<float>(sequenceIndex) / static_cast<float>(count)) * glm::two_pi<float>();
+        sequenceIndex = (sequenceIndex + 1) % count; // Wrap around after reaching count
+
+        // Get control point position to spawn around
+        glm::vec3 centerPos = glm::vec3(0.0f);
+        if (controlPoint >= 0 && controlPoint < static_cast<int>(m_controlPoints.size())) {
+            centerPos = m_controlPoints[controlPoint].position;
+        }
+
+        // Set particle position in circular pattern around control point
+        // This creates the natural clustering seen in the original
+        p.position = centerPos;
+
+        // Set velocity based on angle and speed range
+        glm::vec3 speedMin = speedMinValue->getVec3();
+        glm::vec3 speedMax = speedMaxValue->getVec3();
+        glm::vec3 speed = randomVec3(m_rng, speedMin, speedMax);
+
+        // Rotate velocity based on sequence angle (creates outward spiral pattern)
+        glm::mat3 rotationMatrix = glm::mat3(
+            std::cos(angle), -std::sin(angle), 0.0f,
+            std::sin(angle),  std::cos(angle), 0.0f,
+            0.0f,            0.0f,            1.0f
+        );
+        glm::vec3 rotatedSpeed = rotationMatrix * speed;
+
+        // Flip Y for centered space
+        rotatedSpeed.y = -rotatedSpeed.y;
+
+        // Apply speed multiplier and add to velocity
+        p.velocity += rotatedSpeed * m_particle.instanceOverride.speed->value->getFloat();
     };
 }
 
@@ -1159,6 +1171,8 @@ OperatorFunc CParticle::createControlPointAttractOperator (const ControlPointAtt
 
             // Only apply force if within threshold
             if (distance > 0.001f && distance < threshold) {
+                particlesAffected++;
+
                 // Normalize direction
                 glm::vec3 direction = toCenter / distance;
 
@@ -1708,31 +1722,6 @@ void CParticle::renderSprites () {
     // Build model matrix from particle object transform
     glm::vec3 scale = m_particle.scale->value->getVec3 ();
     glm::vec3 angles = m_particle.angles->value->getVec3 ();
-
-    static bool modelDebugLogged = false;
-    if (!modelDebugLogged) {
-        float screenWidth = static_cast<float>(getScene().getWidth());
-        float screenHeight = static_cast<float>(getScene().getHeight());
-        glm::vec3 rawOrigin = m_particle.origin->value->getVec3();
-        sLog.out("[MODEL MATRIX DEBUG]");
-        sLog.out("  Screen size: ", screenWidth, " x ", screenHeight);
-        sLog.out("  Particle system raw origin: (", rawOrigin.x, ", ", rawOrigin.y, ", ", rawOrigin.z, ")");
-        sLog.out("  Particle system transformed origin: (", m_transformedOrigin.x, ", ", m_transformedOrigin.y, ", ", m_transformedOrigin.z, ")");
-        sLog.out("  Particle system scale: (", scale.x, ", ", scale.y, ", ", scale.z, ")");
-        sLog.out("  Particle system angles: (", angles.x, ", ", angles.y, ", ", angles.z, ")");
-
-        // Test transformation of particle at emitter distance 256
-        sLog.out("  Emitter spawn test (2D circle):");
-        glm::vec4 testLocalPos(256.0f, 0.0f, 0.0f, 1.0f);
-        glm::mat4 testModel = glm::mat4(1.0f);
-        testModel = glm::translate(testModel, m_transformedOrigin);
-        testModel = glm::scale(testModel, scale);
-        glm::vec4 testWorldPos = testModel * testLocalPos;
-        sLog.out("    local (256, 0, 0) -> world (", testWorldPos.x, ", ", testWorldPos.y, ", ", testWorldPos.z, ")");
-        sLog.out("    -> screen (", testWorldPos.x + 960, ", ", testWorldPos.y + 540, ")");
-        sLog.out("    (1920x1080 screen edges: X ±960, Y ±540)");
-        modelDebugLogged = true;
-    }
 
     glm::mat4 model = glm::mat4 (1.0f);
     model = glm::translate (model, m_transformedOrigin);

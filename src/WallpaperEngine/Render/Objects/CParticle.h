@@ -121,6 +121,7 @@ class CParticle final : public CObject {
     InitializerFunc createRotationRandomInitializer (const RotationRandomInitializer& init);
     InitializerFunc createAngularVelocityRandomInitializer (const AngularVelocityRandomInitializer& init);
     InitializerFunc createTurbulentVelocityRandomInitializer (const TurbulentVelocityRandomInitializer& init);
+    InitializerFunc createMapSequenceAroundControlPointInitializer (const MapSequenceAroundControlPointInitializer& init);
 
     // Operator creators
     OperatorFunc createMovementOperator (const MovementOperator& op);
