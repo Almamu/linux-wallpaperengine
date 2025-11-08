@@ -697,7 +697,10 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("scale", properties, 0.005f),
             it.user ("speedmin", properties, 0.0f),
             it.user ("speedmax", properties, 1000.0f),
-            it.user ("timescale", properties, 1.0f)
+            it.user ("timescale", properties, 1.0f),
+            it.user ("audioprocessingmode", properties, 0),  // 0 = no audio processing
+            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f)),
+            it.user ("audioprocessingfrequencyend", properties, 64)  // Default to full spectrum
         );
     } else if (name == "vortex") {
         return std::make_unique<VortexOperator> (
@@ -707,7 +710,9 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("distanceinner", properties, 0.0f),
             it.user ("distanceouter", properties, 1000.0f),
             it.user ("speedinner", properties, 100.0f),
-            it.user ("speedouter", properties, 0.0f)
+            it.user ("speedouter", properties, 0.0f),
+            it.user ("audioprocessingmode", properties, 0),
+            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f))
         );
     } else if (name == "controlpointattract") {
         return std::make_unique<ControlPointAttractOperator> (
@@ -760,6 +765,7 @@ ParticleControlPoint ObjectParser::parseParticleControlPoint (const JSON& it) {
         .id = it.optional ("id", -1),
         .flags = it.optional ("flags", 0u),
         .offset = offset,
+        .lockToPointer = it.optional ("locktopointer", false),
     };
 }
 

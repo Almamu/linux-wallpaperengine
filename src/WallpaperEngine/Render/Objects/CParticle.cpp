@@ -903,12 +903,27 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     DynamicValue* speedMinValue = op.speedMin->value.get ();
     DynamicValue* speedMaxValue = op.speedMax->value.get ();
     DynamicValue* timeScaleValue = op.timeScale->value.get ();
+    DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
+    // DynamicValue* audioBoundsValue = op.audioProcessingBounds->value.get ();
+    // DynamicValue* audioFreqEndValue = op.audioProcessingFrequencyEnd->value.get ();
 
-    // Random phase and speed for this turbulence instance
+    // Random phase for noise offset
     float phase = randomFloat (m_rng, 0.0f, 100.0f);
-    float speed = randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
 
-    return [this, scaleValue, timeScaleValue, phase, speed](
+    // Check if audio processing is enabled
+    int audioMode = static_cast<int>(audioModeValue->getFloat());
+
+    // For non-audio mode, randomize speed once; for audio mode, use speedmin as default
+    float fixedSpeed;
+    if (audioMode == 0) {
+        fixedSpeed = randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
+    } else {
+        // TODO: Implement audio processing support (audioprocessingbounds, audioprocessingfrequencyend)
+        // For now, use speedmin as baseline (assume no audio input)
+        fixedSpeed = speedMinValue->getFloat();
+    }
+
+    return [this, scaleValue, timeScaleValue, phase, fixedSpeed](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -917,6 +932,7 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     ) {
         float scale = scaleValue->getFloat ();
         float timeScale = timeScaleValue->getFloat ();
+        float speed = fixedSpeed;
 
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
@@ -958,8 +974,13 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
     DynamicValue* distanceOuterValue = op.distanceOuter->value.get ();
     DynamicValue* speedInnerValue = op.speedInner->value.get ();
     DynamicValue* speedOuterValue = op.speedOuter->value.get ();
+    DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
+    // DynamicValue* audioBoundsValue = op.audioProcessingBounds->value.get ();
 
-    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue](
+    // Check if audio processing is enabled
+    int audioMode = static_cast<int>(audioModeValue->getFloat());
+
+    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue, audioMode](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>& controlPoints,
@@ -972,6 +993,17 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
         float distanceOuter = distanceOuterValue->getFloat ();
         float speedInner = speedInnerValue->getFloat ();
         float speedOuter = speedOuterValue->getFloat ();
+
+        // Audio modulation (when implemented, this will sample from audio context)
+        float audioAmplitude = 0.0f; // TODO: Sample from AudioContext when audio processing is implemented
+
+        // Apply audio modulation if audio mode is enabled
+        if (audioMode > 0) {
+            // When audio processing is active, modulate speeds by audio amplitude
+            // audioAmplitude ranges from 0 to 1, where 0 means use base speeds
+            speedInner *= (1.0f + audioAmplitude);
+            speedOuter *= (1.0f + audioAmplitude);
+        }
 
         // Get vortex center from control point
         glm::vec3 center = glm::vec3 (0.0f);

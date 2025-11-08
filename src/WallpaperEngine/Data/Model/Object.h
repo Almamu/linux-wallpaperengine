@@ -141,6 +141,7 @@ struct ParticleControlPoint {
     int id;
     uint32_t flags;
     glm::vec3 offset;
+    bool lockToPointer;
 };
 
 /**
@@ -294,18 +295,21 @@ class ColorChangeOperator : public ParticleOperatorBase {
 
 class TurbulenceOperator : public ParticleOperatorBase {
   public:
-    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale)
-        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)) {}
+    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds, UserSettingUniquePtr audioProcessingFrequencyEnd)
+        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)), audioProcessingFrequencyEnd(std::move(audioProcessingFrequencyEnd)) {}
     UserSettingUniquePtr scale;
     UserSettingUniquePtr speedMin;
     UserSettingUniquePtr speedMax;
     UserSettingUniquePtr timeScale;
+    UserSettingUniquePtr audioProcessingMode;
+    UserSettingUniquePtr audioProcessingBounds;      // Min/max audio amplitude range (e.g., "0.8 1")
+    UserSettingUniquePtr audioProcessingFrequencyEnd; // Max frequency bin to sample (e.g., 15)
 };
 
 class VortexOperator : public ParticleOperatorBase {
   public:
-    VortexOperator (int controlPoint, UserSettingUniquePtr axis, UserSettingUniquePtr offset, UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter, UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter)
-        : controlPoint (controlPoint), axis (std::move (axis)), offset (std::move (offset)), distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)), speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)) {}
+    VortexOperator (int controlPoint, UserSettingUniquePtr axis, UserSettingUniquePtr offset, UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter, UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds)
+        : controlPoint (controlPoint), axis (std::move (axis)), offset (std::move (offset)), distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)), speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)) {}
     int controlPoint;
     UserSettingUniquePtr axis;
     UserSettingUniquePtr offset;
@@ -313,6 +317,8 @@ class VortexOperator : public ParticleOperatorBase {
     UserSettingUniquePtr distanceOuter;
     UserSettingUniquePtr speedInner;
     UserSettingUniquePtr speedOuter;
+    UserSettingUniquePtr audioProcessingMode;
+    UserSettingUniquePtr audioProcessingBounds;
 };
 
 class ControlPointAttractOperator : public ParticleOperatorBase {
