@@ -490,7 +490,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
             float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
 
-            // Generate 3D position on unit sphere, then scale by radius
+            // Generate 3D position on unit sphere
             glm::vec3 randomPos (
                 std::sin (phi) * std::cos (theta),
                 std::sin (phi) * std::sin (theta),
@@ -500,10 +500,17 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             // Apply directions scaling (e.g., "1 1 0" squashes to X/Y plane, "1 1 2" stretches Z)
             randomPos *= emitter.directions;
 
-            // Normalize back to unit sphere, then scale by radius
-            if (glm::length(randomPos) > 0.001f) {
-                randomPos = glm::normalize(randomPos) * radius;
+            // Check if the masked position is too close to zero (invalid spawn point)
+            float maskedLength = glm::length(randomPos);
+            if (maskedLength < 0.001f) {
+                // This spawn point is invalid (e.g., pole of sphere with Z-direction masked)
+                // Skip this particle and decrement counter to retry
+                i--;
+                continue;
             }
+
+            // Normalize back to unit sphere, then scale by radius
+            randomPos = glm::normalize(randomPos) * radius;
 
             // Flip Y to convert random offset from screen space to centered space
             randomPos.y = -randomPos.y;
@@ -1024,27 +1031,23 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
 }
 
 OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
+    int controlPoint = op.controlPoint;
+    DynamicValue* axisValue = op.axis->value.get ();
+    DynamicValue* offsetValue = op.offset->value.get ();
+    DynamicValue* distanceInnerValue = op.distanceInner->value.get ();
+    DynamicValue* distanceOuterValue = op.distanceOuter->value.get ();
     DynamicValue* speedInnerValue = op.speedInner->value.get ();
+    DynamicValue* speedOuterValue = op.speedOuter->value.get ();
     DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
 
     // Check if audio processing is enabled
     int audioMode = static_cast<int>(audioModeValue->getFloat());
 
-    // Random phase offset for noise field variation
-    float phase = randomFloat (m_rng, 0.0f, 100.0f);
-
-    // Use speedInner as the base curl strength
-    // When audio is implemented, this will be modulated by audio amplitude
-    float baseStrength = speedInnerValue->getFloat();
-    if (baseStrength == 0.0f) {
-        baseStrength = 100.0f; // Default strength if not specified
-    }
-
-    return [this, audioMode, phase, baseStrength](
+    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue, audioMode](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
-        const std::vector<ControlPointData>&,
-        float currentTime,
+        const std::vector<ControlPointData>& controlPoints,
+        float,
         float dt
     ) {
         // Audio modulation (when implemented, this will sample from audio context)
@@ -1055,32 +1058,70 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
             return;
         }
 
-        // Apply audio modulation to strength
-        float strength = baseStrength;
+        glm::vec3 axis = axisValue->getVec3 ();
+        glm::vec3 offset = offsetValue->getVec3 ();
+        float distanceInner = distanceInnerValue->getFloat ();
+        float distanceOuter = distanceOuterValue->getFloat ();
+        float speedInner = speedInnerValue->getFloat ();
+        float speedOuter = speedOuterValue->getFloat ();
+
+        // Apply audio modulation to speeds
         if (audioMode > 0) {
-            strength *= (1.0f + audioAmplitude);
+            speedInner *= (1.0f + audioAmplitude);
+            speedOuter *= (1.0f + audioAmplitude);
         }
 
-        // Scale factor for curl noise sampling (smaller = larger vortices)
-        float scale = 0.003f;
+        // Get vortex center from control point
+        glm::vec3 center = glm::vec3 (0.0f);
+        if (controlPoint >= 0 && controlPoint < static_cast<int>(controlPoints.size ())) {
+            center = controlPoints [controlPoint].position + offset;
+        } else {
+            center = offset;
+        }
+
+        // Normalize axis
+        if (glm::length (axis) > 0.0f) {
+            axis = glm::normalize (axis);
+        } else {
+            axis = glm::vec3 (0.0f, 0.0f, 1.0f); // Default to Z-axis
+        }
 
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            // Sample curl noise at particle position with time-based phase
-            glm::vec3 samplePos = p.position * scale;
-            samplePos.x += phase + currentTime * 0.1f; // Slow time evolution
+            // Vector from center to particle
+            glm::vec3 toParticle = p.position - center;
+            float distance = glm::length (toParticle);
 
-            // Get curl noise (rotational flow field)
-            glm::vec3 curlForce = curlNoise (samplePos);
-
-            // Normalize and scale by strength
-            if (glm::length (curlForce) > 0.0f) {
-                curlForce = glm::normalize (curlForce) * strength;
+            // Skip if distance is zero to avoid division by zero
+            if (distance < 0.001f) {
+                continue;
             }
 
-            // Apply curl force as velocity change
-            p.velocity += curlForce * dt;
+            // Compute tangent direction (perpendicular to both axis and toParticle)
+            // This creates circular motion around the axis
+            glm::vec3 tangent = glm::cross (axis, toParticle);
+
+            if (glm::length (tangent) > 0.0f) {
+                tangent = glm::normalize (tangent);
+            } else {
+                continue; // Particle is on the axis
+            }
+
+            // Determine speed based on distance
+            float speed = 0.0f;
+            if (distance < distanceInner) {
+                // Inside inner radius - use inner speed
+                speed = speedInner;
+            } else if (distance < distanceOuter) {
+                // Between inner and outer - interpolate
+                float t = (distance - distanceInner) / (distanceOuter - distanceInner);
+                speed = glm::mix (speedInner, speedOuter, t);
+            }
+            // Outside outer radius - no effect (speed stays 0)
+
+            // Apply tangential velocity (spinning around axis)
+            p.velocity += tangent * speed * dt;
         }
     };
 }
