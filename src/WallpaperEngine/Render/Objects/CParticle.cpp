@@ -1098,42 +1098,40 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
             axis = glm::vec3 (0.0f, 0.0f, 1.0f); // Default to Z-axis
         }
 
+        float disMid = distanceOuter - distanceInner + 0.1f;
+
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            // Vector from center to particle
+            // Calculate distance from vortex center
             glm::vec3 toParticle = p.position - center;
-            float distance = glm::length (toParticle);
+            float distance = glm::length(toParticle);
 
-            // Skip if distance is zero to avoid division by zero
-            if (distance < 0.001f) {
-                continue;
-            }
-
-            // Compute tangent direction (perpendicular to both axis and toParticle)
-            // This creates circular motion around the axis
-            glm::vec3 tangent = glm::cross (axis, toParticle);
-
-            if (glm::length (tangent) > 0.0f) {
-                tangent = glm::normalize (tangent);
+            // Compute tangent direction (perpendicular to both axis and position vector)
+            // Negative cross product to match rotation direction
+            glm::vec3 direct = -glm::cross(axis, toParticle);
+            if (glm::length(direct) > 0.001f) {
+                direct = glm::normalize(direct);
             } else {
                 continue; // Particle is on the axis
             }
 
-            // Determine speed based on distance
+            // Determine speed based on distance (matching KDE logic)
             float speed = 0.0f;
-            if (distance < distanceInner) {
-                // Inside inner radius - use inner speed
+            if (disMid < 0 || distance < distanceInner) {
+                // Inside inner radius or invalid range - use inner speed
                 speed = speedInner;
-            } else if (distance < distanceOuter) {
+            } else if (distance > distanceOuter) {
+                // Outside outer radius - use outer speed
+                speed = speedOuter;
+            } else {
                 // Between inner and outer - interpolate
-                float t = (distance - distanceInner) / (distanceOuter - distanceInner);
-                speed = glm::mix (speedInner, speedOuter, t);
+                float t = (distance - distanceInner) / disMid;
+                speed = glm::mix(speedInner, speedOuter, t);
             }
-            // Outside outer radius - no effect (speed stays 0)
 
-            // Apply tangential velocity (spinning around axis)
-            p.velocity += tangent * speed * dt;
+            // Apply tangential velocity (spinning)
+            p.velocity += direct * speed * dt;
         }
     };
 }
