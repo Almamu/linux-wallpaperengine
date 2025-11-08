@@ -1012,7 +1012,7 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
         fixedSpeed = speedMinValue->getFloat();
     }
 
-    return [this, scaleValue, timeScaleValue, phase, fixedSpeed](
+    return [this, scaleValue, timeScaleValue, phase, fixedSpeed, &rng = m_rng](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -1028,8 +1028,14 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
 
             // Initialize noise position if not set (for particles without turbulentvelocityrandom initializer)
             if (glm::length(p.noisePos) < 0.001f && p.age < 0.001f) {
-                // Use particle's world position as initial noise position for uniqueness
-                p.noisePos = p.position * scale * 2.0f;
+                // Use particle position plus small random offset to break clustering
+                // for particles spawned at the same location
+                glm::vec3 randomOffset(
+                    randomFloat(rng, -5.0f, 5.0f),
+                    randomFloat(rng, -5.0f, 5.0f),
+                    randomFloat(rng, -5.0f, 5.0f)
+                );
+                p.noisePos = p.position * scale * 2.0f + randomOffset;
             }
 
             // Advance noise position based on particle's current velocity direction
