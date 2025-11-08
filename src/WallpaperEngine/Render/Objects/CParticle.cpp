@@ -472,32 +472,45 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             }
 
             // Spawn at random position on sphere surface
-            // Generate spherical coordinates
-            float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
-            float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
-            float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
+            int retryCount = 0;
+            const int maxRetries = 10;
+            glm::vec3 randomPos;
 
-            // Generate 3D position on unit sphere
-            glm::vec3 randomPos (
-                std::sin (phi) * std::cos (theta),
-                std::sin (phi) * std::sin (theta),
-                std::cos (phi)
-            );
+            // Try to find a valid spawn point, with fallback to prevent infinite loop
+            while (retryCount < maxRetries) {
+                // Generate spherical coordinates
+                float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
+                float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
 
-            // Apply directions scaling (e.g., "1 1 0" squashes to X/Y plane, "1 1 2" stretches Z)
-            randomPos *= emitter.directions;
+                // Generate 3D position on unit sphere
+                randomPos = glm::vec3 (
+                    std::sin (phi) * std::cos (theta),
+                    std::sin (phi) * std::sin (theta),
+                    std::cos (phi)
+                );
 
-            // Check if the masked position is too close to zero (invalid spawn point)
-            float maskedLength = glm::length(randomPos);
-            if (maskedLength < 0.001f) {
-                // This spawn point is invalid (e.g., pole of sphere with Z-direction masked)
-                // Skip this particle and decrement counter to retry
-                i--;
-                continue;
+                // Apply directions scaling (e.g., "1 1 0" squashes to X/Y plane, "1 1 2" stretches Z)
+                glm::vec3 maskedPos = randomPos * emitter.directions;
+                float maskedLength = glm::length(maskedPos);
+
+                if (maskedLength > 0.001f) {
+                    // Valid spawn point found
+                    randomPos = glm::normalize(maskedPos);
+                    break;
+                }
+
+                retryCount++;
             }
 
-            // Normalize back to unit sphere, then scale by radius
-            randomPos = glm::normalize(randomPos) * radius;
+            // If all retries failed (directions is all zeros), use unmasked direction as fallback
+            if (retryCount >= maxRetries) {
+                // randomPos already contains last unmasked random direction, just normalize it
+                randomPos = glm::normalize(randomPos);
+            }
+
+            // Scale by radius
+            float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
+            randomPos *= radius;
 
             // Flip Y to convert random offset from screen space to centered space
             randomPos.y = -randomPos.y;
