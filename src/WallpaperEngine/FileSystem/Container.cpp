@@ -17,37 +17,10 @@ using namespace WallpaperEngine::FileSystem::Adapters;
  * Normalizes a file path to get rid of relative stuff as most as possible
  * This is not a security measure but helps keep adapters that do not really have an actual filesystem
  * behind to trust the input data without much validation
- *
- * Normalization is handled by going up a level on ".." when there's a previous level
- * or keeping it when there's none, this will most likely not be a valid path, but
- * the filesystem might resolve it into a file that's inside it's root, so this has to be taken into account
- *
- * @param input_path The path to normalize
- * @return The normalized path
+ * @see https://en.cppreference.com/w/cpp/filesystem/path/lexically_normal
  */
 std::filesystem::path normalize_path(const std::filesystem::path& input_path) {
-    std::filesystem::path result;
-
-    for (const auto& part : input_path) {
-        std::string part_str = part.string();
-        if (part_str == ".") {
-            // Skip
-        } else if (part_str == "..") {
-            // Go up one level if possible
-            if (!result.empty() && *--result.end() != "..") {
-                result = result.parent_path();
-            } else {
-                // If we're already at root or have ".." segments,
-                // keep the ".." (for relative paths)
-                result /= part;
-            }
-        } else {
-            // Add regular segment
-            result /= part;
-        }
-    }
-
-    return result;
+    return input_path.lexically_normal ();
 }
 
 Container::Container () {
