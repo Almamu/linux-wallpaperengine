@@ -527,7 +527,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
         name = nameIt->get<std::string> ();
     }
 
-    // Helper lambda to parse vec3 fields that might be strings, arrays, or missing
+    // Helper lambda to parse vec3 fields that might be strings, arrays, single numbers, or missing
     auto parseVec3 = [&](const char* fieldName, const glm::vec3& defaultValue) -> glm::vec3 {
         const auto fieldIt = it.find (fieldName);
         if (fieldIt == it.end ()) {
@@ -535,6 +535,11 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
         }
         if (fieldIt->is_string ()) {
             return it.optional (fieldName, defaultValue);
+        }
+        if (fieldIt->is_number ()) {
+            // Single number - use for all components (common for distancemax/distancemin)
+            float val = fieldIt->get<float> ();
+            return glm::vec3 (val, val, val);
         }
         if (fieldIt->is_array () && fieldIt->size () >= 3) {
             return glm::vec3 (
@@ -574,7 +579,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
             .speedMin = it.optional ("speedmin", 0.0f),
             .speedMax = it.optional ("speedmax", 0.0f),
             .rate = it.optional ("rate", 5.0f),
-            .controlPoint = it.optional ("controlpoint", 0),
+            .controlPoint = it.optional ("controlpoint", -1),
             .flags = it.optional ("flags", 0u),
         };
     } catch (nlohmann::json::exception& e) {
@@ -608,7 +613,8 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
     } else if (name == "sizerandom") {
         return std::make_unique<SizeRandomInitializer> (
             it.user ("min", properties, 0.0f),
-            it.user ("max", properties, 20.0f)
+            it.user ("max", properties, 20.0f),
+            it.user ("exponent", properties, 1.0f)
         );
     } else if (name == "alpharandom") {
         return std::make_unique<AlphaRandomInitializer> (
@@ -634,6 +640,20 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
         return std::make_unique<AngularVelocityRandomInitializer> (
             it.user ("min", properties, glm::vec3 (0.0f, 0.0f, -5.0f)),
             it.user ("max", properties, glm::vec3 (0.0f, 0.0f, 5.0f))
+        );
+    } else if (name == "turbulentvelocityrandom") {
+        return std::make_unique<TurbulentVelocityRandomInitializer> (
+            it.user ("speedmin", properties, 0.0f),
+            it.user ("speedmax", properties, 100.0f),
+            it.user ("scale", properties, 1.0f),
+            it.user ("offset", properties, 0.0f)
+        );
+    } else if (name == "mapsequencearoundcontrolpoint") {
+        return std::make_unique<MapSequenceAroundControlPointInitializer> (
+            it.user ("controlpoint", properties, 0),
+            it.user ("count", properties, 1),
+            it.user ("speedmin", properties, glm::vec3 (0.0f)),
+            it.user ("speedmax", properties, glm::vec3 (100.0f))
         );
     }
 
@@ -679,6 +699,35 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("startvalue", properties, glm::vec3 (1.0f)),
             it.user ("endvalue", properties, glm::vec3 (1.0f))
         );
+    } else if (name == "turbulence") {
+        return std::make_unique<TurbulenceOperator> (
+            it.user ("scale", properties, 0.005f),
+            it.user ("speedmin", properties, 0.0f),
+            it.user ("speedmax", properties, 1000.0f),
+            it.user ("timescale", properties, 1.0f),
+            it.user ("audioprocessingmode", properties, 0),  // 0 = no audio processing
+            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f)),
+            it.user ("audioprocessingfrequencyend", properties, 64)  // Default to full spectrum
+        );
+    } else if (name == "vortex") {
+        return std::make_unique<VortexOperator> (
+            it.optional ("controlpoint", 0),
+            it.user ("axis", properties, glm::vec3 (0.0f, 0.0f, 1.0f)),
+            it.user ("offset", properties, glm::vec3 (0.0f)),
+            it.user ("distanceinner", properties, 0.0f),
+            it.user ("distanceouter", properties, 1000.0f),
+            it.user ("speedinner", properties, 100.0f),
+            it.user ("speedouter", properties, 0.0f),
+            it.user ("audioprocessingmode", properties, 0),
+            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f))
+        );
+    } else if (name == "controlpointattract") {
+        return std::make_unique<ControlPointAttractOperator> (
+            it.optional ("controlpoint", 0),
+            it.user ("origin", properties, glm::vec3 (0.0f)),
+            it.user ("scale", properties, 100.0f),
+            it.user ("threshold", properties, 1000.0f)
+        );
     }
 
     return nullptr;
@@ -723,6 +772,7 @@ ParticleControlPoint ObjectParser::parseParticleControlPoint (const JSON& it) {
         .id = it.optional ("id", -1),
         .flags = it.optional ("flags", 0u),
         .offset = offset,
+        .lockToPointer = it.optional ("locktopointer", false),
     };
 }
 
@@ -745,7 +795,7 @@ ParticleChild ObjectParser::parseParticleChild (const JSON& it, const Project& p
         name = nameIt->get<std::string> ();
     }
 
-    // Helper lambda to parse vec3 fields
+    // Helper lambda to parse vec3 fields that might be strings, arrays, single numbers, or missing
     auto parseVec3 = [&](const char* fieldName, const glm::vec3& defaultValue) -> glm::vec3 {
         const auto fieldIt = it.find (fieldName);
         if (fieldIt == it.end ()) {
@@ -753,6 +803,11 @@ ParticleChild ObjectParser::parseParticleChild (const JSON& it, const Project& p
         }
         if (fieldIt->is_string ()) {
             return it.optional (fieldName, defaultValue);
+        }
+        if (fieldIt->is_number ()) {
+            // Single number - use for all components
+            float val = fieldIt->get<float> ();
+            return glm::vec3 (val, val, val);
         }
         if (fieldIt->is_array () && fieldIt->size () >= 3) {
             return glm::vec3 (

@@ -278,16 +278,22 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 void CScene::updateMouse (const glm::ivec4& viewport) {
     // update virtual mouse position first
     const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
-    // TODO: PROPERLY TRANSLATE THESE TO WHAT'S VISIBLE ON SCREEN (FOR BACKGROUNDS THAT DO NOT EXACTLY FIT ON SCREEN)
 
     // rollover the position to the last
     this->m_mousePositionLast = this->m_mousePosition;
 
-    // calculate the current position of the mouse
-    this->m_mousePosition.x = glm::clamp ((position.x - viewport.x) / viewport.z, 0.0, 1.0);
-    this->m_mousePosition.y = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
+    // calculate the current position of the mouse in viewport space [0, 1]
+    double mouseX = glm::clamp ((position.x - viewport.x) / viewport.z, 0.0, 1.0);
+    double mouseY = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
 
-    // screen-space positions have to be transposed to what the screen will actually show
+    // Account for UV cropping when using fill/fit scaling modes
+    // The scene may be rendered larger than viewport and cropped via UVs
+    const auto uvs = this->getState ().getTextureUVs ();
+
+    // Map mouse position from viewport space to scene UV space
+    // UVs define what portion of the scene texture is visible
+    this->m_mousePosition.x = uvs.ustart + mouseX * (uvs.uend - uvs.ustart);
+    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
 }
 
 const Scene& CScene::getScene () const {

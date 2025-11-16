@@ -78,6 +78,11 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     AudioContext& getAudioContext () const;
 
     /**
+     * @return The wallpaper state
+     */
+    [[nodiscard]] const WallpaperState& getState () const;
+
+    /**
      * @return The scene's framebuffer
      */
     [[nodiscard]] virtual GLuint getWallpaperFramebuffer () const;

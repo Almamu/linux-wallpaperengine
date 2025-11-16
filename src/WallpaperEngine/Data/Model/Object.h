@@ -141,6 +141,7 @@ struct ParticleControlPoint {
     int id;
     uint32_t flags;
     glm::vec3 offset;
+    bool lockToPointer;
 };
 
 /**
@@ -179,9 +180,11 @@ class ColorRandomInitializer : public ParticleInitializerBase {
 
 class SizeRandomInitializer : public ParticleInitializerBase {
   public:
-    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
+    SizeRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max, UserSettingUniquePtr exponent)
+        : min (std::move (min)), max (std::move (max)), exponent (std::move (exponent)) {}
     UserSettingUniquePtr min;
     UserSettingUniquePtr max;
+    UserSettingUniquePtr exponent;
 };
 
 class AlphaRandomInitializer : public ParticleInitializerBase {
@@ -217,6 +220,26 @@ class AngularVelocityRandomInitializer : public ParticleInitializerBase {
     AngularVelocityRandomInitializer (UserSettingUniquePtr min, UserSettingUniquePtr max) : min (std::move (min)), max (std::move (max)) {}
     UserSettingUniquePtr min;
     UserSettingUniquePtr max;
+};
+
+class TurbulentVelocityRandomInitializer : public ParticleInitializerBase {
+  public:
+    TurbulentVelocityRandomInitializer (UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr scale, UserSettingUniquePtr offset)
+        : speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), scale (std::move (scale)), offset (std::move (offset)) {}
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr offset;
+};
+
+class MapSequenceAroundControlPointInitializer : public ParticleInitializerBase {
+  public:
+    MapSequenceAroundControlPointInitializer (UserSettingUniquePtr controlPoint, UserSettingUniquePtr count, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax)
+        : controlPoint (std::move (controlPoint)), count (std::move (count)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)) {}
+    UserSettingUniquePtr controlPoint;
+    UserSettingUniquePtr count;
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
 };
 
 using ParticleInitializerUniquePtr = std::unique_ptr<ParticleInitializerBase>;
@@ -278,6 +301,44 @@ class ColorChangeOperator : public ParticleOperatorBase {
     UserSettingUniquePtr endTime;
     UserSettingUniquePtr startValue;
     UserSettingUniquePtr endValue;
+};
+
+class TurbulenceOperator : public ParticleOperatorBase {
+  public:
+    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds, UserSettingUniquePtr audioProcessingFrequencyEnd)
+        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)), audioProcessingFrequencyEnd(std::move(audioProcessingFrequencyEnd)) {}
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr speedMin;
+    UserSettingUniquePtr speedMax;
+    UserSettingUniquePtr timeScale;
+    UserSettingUniquePtr audioProcessingMode;
+    UserSettingUniquePtr audioProcessingBounds;      // Min/max audio amplitude range (e.g., "0.8 1")
+    UserSettingUniquePtr audioProcessingFrequencyEnd; // Max frequency bin to sample (e.g., 15)
+};
+
+class VortexOperator : public ParticleOperatorBase {
+  public:
+    VortexOperator (int controlPoint, UserSettingUniquePtr axis, UserSettingUniquePtr offset, UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter, UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds)
+        : controlPoint (controlPoint), axis (std::move (axis)), offset (std::move (offset)), distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)), speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)) {}
+    int controlPoint;
+    UserSettingUniquePtr axis;
+    UserSettingUniquePtr offset;
+    UserSettingUniquePtr distanceInner;
+    UserSettingUniquePtr distanceOuter;
+    UserSettingUniquePtr speedInner;
+    UserSettingUniquePtr speedOuter;
+    UserSettingUniquePtr audioProcessingMode;
+    UserSettingUniquePtr audioProcessingBounds;
+};
+
+class ControlPointAttractOperator : public ParticleOperatorBase {
+  public:
+    ControlPointAttractOperator (int controlPoint, UserSettingUniquePtr origin, UserSettingUniquePtr scale, UserSettingUniquePtr threshold)
+        : controlPoint (controlPoint), origin (std::move (origin)), scale (std::move (scale)), threshold (std::move (threshold)) {}
+    int controlPoint;
+    UserSettingUniquePtr origin;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr threshold;
 };
 
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;

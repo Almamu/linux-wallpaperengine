@@ -259,6 +259,10 @@ AudioContext& CWallpaper::getAudioContext () const {
     return this->m_audioContext;
 }
 
+const WallpaperState& CWallpaper::getState () const {
+    return this->m_state;
+}
+
 std::shared_ptr<const CFBO> CWallpaper::findFBO (const std::string& name) const {
     const auto fbo = this->find (name);
 

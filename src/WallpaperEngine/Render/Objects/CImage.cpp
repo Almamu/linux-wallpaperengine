@@ -292,7 +292,7 @@ void CImage::setup () {
                         continue;
                     }
 
-                    const auto virtualPass = MaterialPass {
+                    auto virtualPass = std::make_unique<MaterialPass>(MaterialPass {
                         .blending = BlendingMode_Normal,
                         .cullmode = CullingMode_Disable,
                         .depthtest = DepthtestMode_Disabled,
@@ -301,10 +301,11 @@ void CImage::setup () {
                         .textures = {
                             {0, *(*curEffect)->source}
                         },
-                        .combos = {}
-                    };
+                        .combos = {},
+                        .constants = {}
+                    });
 
-                    const auto& config = this->m_virtualPassess.emplace_back (virtualPass);
+                    const auto& config = *this->m_virtualPassess.emplace_back (std::move(virtualPass));
 
                     // build a pass for a copy shader
                     this->m_passes.push_back (
