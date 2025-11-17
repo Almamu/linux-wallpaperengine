@@ -17,6 +17,9 @@ using namespace WallpaperEngine::Application;
 ApplicationContext::ApplicationContext (int argc, char* argv []) :
     m_argc (argc),
     m_argv (argv) {
+}
+
+void ApplicationContext::loadSettingsFromArgv () {
     std::string lastScreen;
 
     argparse::ArgumentParser program ("linux-wallpaperengine", "0.0", argparse::default_arguments::help);
@@ -257,7 +260,7 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
     );
 
     try {
-        program.parse_known_args (argc, argv);
+        program.parse_known_args (this->m_argc, this->m_argv);
 
         if (this->settings.general.defaultBackground.empty ()) {
             throw std::runtime_error ("At least one background ID must be specified");
@@ -272,8 +275,8 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
 
         bufferStream << "Running with: ";
 
-        for (int i = 0; i < argc; i ++) {
-            bufferStream << argv [i];
+        for (int i = 0; i < this->m_argc; i ++) {
+            bufferStream << this->m_argv [i];
             bufferStream << " ";
         }
 
@@ -296,7 +299,7 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
         this->settings.render.pauseOnFullscreen = false;
 #endif /* DEMOMODE */
    } catch (const std::runtime_error& e) {
-       throw std::runtime_error (std::string (e.what()) + ". Use " + std::string (argv[0]) + " --help for more information");
+       throw std::runtime_error (std::string (e.what()) + ". Use " + std::string (this->m_argv[0]) + " --help for more information");
    }
 }
 
