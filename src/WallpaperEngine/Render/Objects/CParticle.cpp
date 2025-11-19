@@ -190,8 +190,8 @@ void CParticle::setup () {
     for (const auto& cp : m_particle.controlPoints) {
         if (cp.id >= 0 && cp.id < 8) {
             m_controlPoints [cp.id].offset = cp.offset;
-            // Link to mouse if either flags bit 0 is set OR lockToPointer is true
-            m_controlPoints [cp.id].linkMouse = ((cp.flags & 1) != 0) || cp.lockToPointer;
+            // Link to mouse if either flags bit 0 is set
+            m_controlPoints [cp.id].linkMouse = (cp.flags & 1) != 0;
             m_controlPoints [cp.id].worldSpace = (cp.flags & 2) != 0;
         }
     }
@@ -485,55 +485,74 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
                 spawnOrigin = m_controlPoints[controlPointIndex].position;
             }
 
-            // Spawn at random position on sphere surface
-            int retryCount = 0;
-            const int maxRetries = 10;
+            // Spawn at random position on ellipsoid surface
             glm::vec3 randomPos;
 
-            // Try to find a valid spawn point, with fallback to prevent infinite loop
-            while (retryCount < maxRetries) {
-                // Generate spherical coordinates
-                float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float>());
-                float phi = randomFloat (m_rng, 0.0f, glm::pi<float>());
+            // Orthographic particles (flags & 4 == 0): use 2D disk distribution in X/Y plane
+            // Perspective particles (flags & 4 != 0): use 3D spherical shell distribution
+            if ((m_particle.flags & 4) == 0) {
+                // 2D disk distribution with random Z offset
+                float angle = randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
+                float minRadius = emitter.distanceMin.x;
+                float maxRadius = emitter.distanceMax.x;
 
-                // Generate 3D position on unit sphere
+                // Use sqrt for uniform area distribution in annulus
+                float minRadiusSq = minRadius * minRadius;
+                float maxRadiusSq = maxRadius * maxRadius;
+                float radiusXY = std::sqrt (randomFloat (m_rng, minRadiusSq, maxRadiusSq));
+
                 randomPos = glm::vec3 (
-                    std::sin (phi) * std::cos (theta),
-                    std::sin (phi) * std::sin (theta),
-                    std::cos (phi)
+                    radiusXY * std::cos (angle),
+                    radiusXY * std::sin (angle),
+                    randomFloat (m_rng, -maxRadius, maxRadius)
                 );
 
-                // Apply directions scaling (e.g., "1 1 0" squashes to X/Y plane, "1 1 2" stretches Z)
-                glm::vec3 maskedPos = randomPos * emitter.directions;
-                float maskedLength = glm::length(maskedPos);
+                randomPos *= emitter.directions;
+            } else {
+                // 3D spherical shell distribution
+                float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
+                float cosTheta = randomFloat (m_rng, -1.0f, 1.0f);
+                float sinTheta = std::sqrt (1.0f - cosTheta * cosTheta);
 
-                if (maskedLength > 0.001f) {
-                    // Valid spawn point found
-                    randomPos = glm::normalize(maskedPos);
-                    break;
+                randomPos = glm::vec3 (
+                    sinTheta * std::cos (theta),
+                    sinTheta * std::sin (theta),
+                    cosTheta
+                );
+
+                // Use cubic root for uniform volume distribution
+                float minRadius = emitter.distanceMin.x;
+                float maxRadius = emitter.distanceMax.x;
+                float minRadiusCubed = minRadius * minRadius * minRadius;
+                float maxRadiusCubed = maxRadius * maxRadius * maxRadius;
+                float radius = std::cbrt (randomFloat (m_rng, minRadiusCubed, maxRadiusCubed));
+
+                randomPos *= radius;
+                randomPos *= emitter.directions;
+            }
+
+            // Apply sign property to force positive/negative values per axis
+            // 0 = both, 1 = positive only, -1 = negative only
+            for (int i = 0; i < 3; i++) {
+                if (emitter.sign[i] == 1) {
+                    randomPos[i] = std::abs(randomPos[i]);  // Force positive
+                } else if (emitter.sign[i] == -1) {
+                    randomPos[i] = -std::abs(randomPos[i]); // Force negative
                 }
-
-                retryCount++;
+                // If sign[i] == 0, leave as-is (both positive and negative possible)
             }
-
-            // If all retries failed (directions is all zeros), use unmasked direction as fallback
-            if (retryCount >= maxRetries) {
-                // randomPos already contains last unmasked random direction, just normalize it
-                randomPos = glm::normalize(randomPos);
-            }
-
-            // Scale by radius
-            float radius = randomFloat (m_rng, emitter.distanceMin.x, emitter.distanceMax.x);
-            randomPos *= radius;
-
-            // Flip Y to convert random offset from screen space to centered space
-            randomPos.y = -randomPos.y;
             p.position = spawnOrigin + randomPos;
 
-            // Velocity pointing outward from sphere center
-            glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
-            float speed = randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
-            p.velocity = direction * speed * emitter.directions;
+            // Set velocity only if emitter specifies speed (otherwise use initializers)
+            if (emitter.speedMax > 0.0f || emitter.speedMin != 0.0f) {
+                // Velocity pointing outward from ellipsoid (randomPos already includes directions scaling)
+                glm::vec3 direction = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
+                float speed = randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
+                p.velocity = direction * speed;
+            } else {
+                // No emitter speed specified, velocity will be set by initializers
+                p.velocity = glm::vec3(0.0f);
+            }
 
             p.acceleration = glm::vec3 (0.0f);
             p.rotation = glm::vec3 (0.0f);
@@ -1149,7 +1168,7 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
                 continue; // Particle is on the axis
             }
 
-            // Determine speed based on distance (matching KDE logic)
+            // Determine speed based on distance
             float speed = 0.0f;
             if (disMid < 0 || distance < distanceInner) {
                 // Inside inner radius or invalid range - use inner speed
@@ -1253,7 +1272,7 @@ GLuint CParticle::createShaderProgram () {
 
         out vec2 vTexCoord;
         out vec4 vColor;
-        out float vFrame;
+        flat out float vFrame;  // flat prevents interpolation across triangle
 
         uniform mat4 g_ModelViewProjectionMatrix;
         uniform int u_UseTrailRenderer;
@@ -1316,7 +1335,7 @@ GLuint CParticle::createShaderProgram () {
         #version 330 core
         in vec2 vTexCoord;
         in vec4 vColor;
-        in float vFrame;
+        flat in float vFrame;
 
         out vec4 FragColor;
 
@@ -1343,10 +1362,13 @@ GLuint CParticle::createShaderProgram () {
                     float frameWidth = 1.0 / cols;
                     float frameHeight = 1.0 / rows;
 
+                    // Clamp UVs to [0,1] to prevent sampling outside frame bounds
+                    vec2 clampedUV = clamp(vTexCoord, 0.0, 1.0);
+
                     // Calculate UV coordinates for the current frame
                     uv = vec2(
-                        frameX * frameWidth + vTexCoord.x * frameWidth,
-                        frameY * frameHeight + vTexCoord.y * frameHeight
+                        frameX * frameWidth + clampedUV.x * frameWidth,
+                        frameY * frameHeight + clampedUV.y * frameHeight
                     );
                 }
 
@@ -1748,8 +1770,35 @@ void CParticle::renderSprites () {
     model = glm::rotate (model, glm::radians (angles.x), glm::vec3 (1, 0, 0));
     model = glm::scale (model, scale);
 
-    // Apply camera transform
-    glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
+    // Build model-view-projection matrix
+    glm::mat4 mvp;
+
+    // Perspective particles (flags & 4) use a dedicated perspective projection
+    // This creates depth effect where particles closer to camera appear larger
+    if ((m_particle.flags & 4) != 0) {
+        float width = getScene ().getCamera ().getWidth ();
+        float height = getScene ().getCamera ().getHeight ();
+        const float cameraDistance = 1000.0f;
+
+        // Calculate FOV to match orthographic viewport size at Z=0
+        float k = height / cameraDistance / 2.0f;
+        float fov = std::atan (k) * 2.0f;
+        float aspect = width / height;
+
+        glm::mat4 perspectiveProj = glm::perspective (fov, aspect, 0.1f, 10000.0f);
+
+        // Camera positioned at Z=cameraDistance looking at origin
+        glm::vec3 cameraPos = glm::vec3 (0.0f, 0.0f, cameraDistance);
+        glm::vec3 lookTarget = glm::vec3 (0.0f, 0.0f, 0.0f);
+        glm::vec3 upVec = glm::vec3 (0.0f, 1.0f, 0.0f);
+        glm::mat4 perspectiveView = glm::lookAt (cameraPos, lookTarget, upVec);
+
+        mvp = perspectiveProj * perspectiveView * model;
+    } else {
+        // Orthographic projection from scene camera
+        mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
+    }
+
     GLint mvpLoc = glGetUniformLocation (m_shaderProgram, "g_ModelViewProjectionMatrix");
     if (mvpLoc != -1) {
         glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, &mvp[0][0]);
