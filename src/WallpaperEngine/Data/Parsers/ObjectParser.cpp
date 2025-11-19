@@ -710,17 +710,23 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("audioprocessingbounds", properties, glm::vec2 (0.0f, 1.0f)),
             it.user ("audioprocessingfrequencyend", properties, 64)  // Default to full spectrum
         );
-    } else if (name == "vortex") {
+    } else if (name == "vortex" || name == "vortex_v2") {
         return std::make_unique<VortexOperator> (
             it.optional ("controlpoint", 0),
+            it.optional ("flags", 0),  // 1 = infinite axis, 2 = maintain distance, 4 = ring shape
             it.user ("axis", properties, glm::vec3 (0.0f, 0.0f, 1.0f)),
             it.user ("offset", properties, glm::vec3 (0.0f)),
-            it.user ("distanceinner", properties, 0.0f),
-            it.user ("distanceouter", properties, 1000.0f),
-            it.user ("speedinner", properties, 100.0f),
+            it.user ("distanceinner", properties, 500.0f),
+            it.user ("distanceouter", properties, 650.0f),
+            it.user ("speedinner", properties, 2500.0f),
             it.user ("speedouter", properties, 0.0f),
+            it.user ("centerforce", properties, 1.0f),
+            it.user ("ringradius", properties, 300.0f),
+            it.user ("ringwidth", properties, 50.0f),
+            it.user ("ringpulldistance", properties, 50.0f),
+            it.user ("ringpullforce", properties, 10.0f),
             it.user ("audioprocessingmode", properties, 0),
-            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f))
+            it.user ("audioprocessingbounds", properties, glm::vec2 (0.0f, 1.0f))
         );
     } else if (name == "controlpointattract") {
         return std::make_unique<ControlPointAttractOperator> (

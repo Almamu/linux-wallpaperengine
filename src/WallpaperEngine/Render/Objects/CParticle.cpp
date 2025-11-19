@@ -1107,18 +1107,31 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
 
 OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
     int controlPoint = op.controlPoint;
+    int flags = op.flags;
     DynamicValue* axisValue = op.axis->value.get ();
     DynamicValue* offsetValue = op.offset->value.get ();
     DynamicValue* distanceInnerValue = op.distanceInner->value.get ();
     DynamicValue* distanceOuterValue = op.distanceOuter->value.get ();
     DynamicValue* speedInnerValue = op.speedInner->value.get ();
     DynamicValue* speedOuterValue = op.speedOuter->value.get ();
+    DynamicValue* centerForceValue = op.centerForce->value.get ();
+    DynamicValue* ringRadiusValue = op.ringRadius->value.get ();
+    DynamicValue* ringWidthValue = op.ringWidth->value.get ();
+    DynamicValue* ringPullDistanceValue = op.ringPullDistance->value.get ();
+    DynamicValue* ringPullForceValue = op.ringPullForce->value.get ();
     DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
 
     // Check if audio processing is enabled
-    int audioMode = static_cast<int>(audioModeValue->getFloat());
+    int audioMode = static_cast<int> (audioModeValue->getFloat ());
 
-    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue, speedOuterValue, audioMode](
+    // Extract flag bits
+    bool infiniteAxis = (flags & 1) != 0;
+    bool maintainDistance = (flags & 2) != 0;
+    bool ringShape = (flags & 4) != 0;
+
+    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue,
+            speedInnerValue, speedOuterValue, centerForceValue, ringRadiusValue, ringWidthValue,
+            ringPullDistanceValue, ringPullForceValue, audioMode, infiniteAxis, maintainDistance, ringShape](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>& controlPoints,
@@ -1139,6 +1152,11 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
         float distanceOuter = distanceOuterValue->getFloat ();
         float speedInner = speedInnerValue->getFloat ();
         float speedOuter = speedOuterValue->getFloat ();
+        float centerForce = centerForceValue->getFloat ();
+        float ringRadius = ringRadiusValue->getFloat ();
+        float ringWidth = ringWidthValue->getFloat ();
+        float ringPullDistance = ringPullDistanceValue->getFloat ();
+        float ringPullForce = ringPullForceValue->getFloat ();
 
         // Apply audio modulation to speeds
         if (audioMode > 0) {
@@ -1148,7 +1166,7 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
 
         // Get vortex center from control point
         glm::vec3 center = glm::vec3 (0.0f);
-        if (controlPoint >= 0 && controlPoint < static_cast<int>(controlPoints.size ())) {
+        if (controlPoint >= 0 && controlPoint < static_cast<int> (controlPoints.size ())) {
             center = controlPoints [controlPoint].position + offset;
         } else {
             center = offset;
@@ -1161,40 +1179,86 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
             axis = glm::vec3 (0.0f, 0.0f, 1.0f); // Default to Z-axis
         }
 
-        float disMid = distanceOuter - distanceInner + 0.1f;
-
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
-            // Calculate distance from vortex center
+            // Calculate vector from center to particle
             glm::vec3 toParticle = p.position - center;
-            float distance = glm::length(toParticle);
 
-            // Compute tangent direction (perpendicular to both axis and position vector)
-            // Negative cross product to match rotation direction
-            glm::vec3 direct = -glm::cross(axis, toParticle);
-            if (glm::length(direct) > 0.001f) {
-                direct = glm::normalize(direct);
+            // For infinite axis mode, project onto plane perpendicular to axis (cylinder shape)
+            // Otherwise use full 3D distance (sphere shape)
+            float axialDistance = 0.0f;
+            glm::vec3 radialVector = toParticle;
+            if (infiniteAxis) {
+                // Project out the axis component
+                axialDistance = glm::dot (toParticle, axis);
+                radialVector = toParticle - axis * axialDistance;
+            }
+
+            float distance = glm::length (radialVector);
+
+            // Compute tangent direction (perpendicular to both axis and radial vector)
+            glm::vec3 tangent = -glm::cross (axis, radialVector);
+            if (glm::length (tangent) > 0.001f) {
+                tangent = glm::normalize (tangent);
             } else {
                 continue; // Particle is on the axis
             }
 
-            // Determine speed based on distance
+            // Calculate spin speed and apply forces based on mode
             float speed = 0.0f;
-            if (disMid < 0 || distance < distanceInner) {
-                // Inside inner radius or invalid range - use inner speed
-                speed = speedInner;
-            } else if (distance > distanceOuter) {
-                // Outside outer radius - use outer speed
-                speed = speedOuter;
+            glm::vec3 radialForce = glm::vec3 (0.0f);
+
+            if (ringShape) {
+                // Ring mode: hollow center with ring-shaped influence zone
+                float ringInner = ringRadius - ringWidth * 0.5f;
+                float ringOuter = ringRadius + ringWidth * 0.5f;
+
+                if (distance < ringInner) {
+                    // Inside the ring's hollow center - no spin, but may be pulled outward
+                    speed = 0.0f;
+                } else if (distance <= ringOuter) {
+                    // Inside the ring - full effect
+                    float t = (distance - ringInner) / ringWidth;
+                    speed = glm::mix (speedInner, speedOuter, t);
+                } else if (distance <= ringOuter + ringPullDistance) {
+                    // Outside ring but within pull distance - attract toward ring
+                    float pullT = (distance - ringOuter) / ringPullDistance;
+                    speed = speedOuter * (1.0f - pullT);
+                    // Pull toward ring
+                    if (distance > 0.001f) {
+                        glm::vec3 towardRing = -glm::normalize (radialVector);
+                        radialForce = towardRing * ringPullForce * pullT;
+                    }
+                } else {
+                    // Too far from ring - no effect
+                    speed = 0.0f;
+                }
             } else {
-                // Between inner and outer - interpolate
-                float t = (distance - distanceInner) / disMid;
-                speed = glm::mix(speedInner, speedOuter, t);
+                // Standard vortex mode
+                float disMid = distanceOuter - distanceInner + 0.1f;
+
+                if (disMid < 0 || distance < distanceInner) {
+                    speed = speedInner;
+                } else if (distance > distanceOuter) {
+                    speed = speedOuter;
+                } else {
+                    float t = (distance - distanceInner) / disMid;
+                    speed = glm::mix (speedInner, speedOuter, t);
+                }
             }
 
             // Apply tangential velocity (spinning)
-            p.velocity += direct * speed * dt;
+            p.velocity += tangent * speed * dt;
+
+            // Apply radial force (ring pull or center force)
+            p.velocity += radialForce * dt;
+
+            // Apply center force if maintain distance is enabled
+            if (maintainDistance && distance > 0.001f) {
+                glm::vec3 towardCenter = -glm::normalize (radialVector);
+                p.velocity += towardCenter * centerForce * dt;
+            }
         }
     };
 }

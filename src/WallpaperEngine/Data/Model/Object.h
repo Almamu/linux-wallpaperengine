@@ -319,15 +319,33 @@ class TurbulenceOperator : public ParticleOperatorBase {
 
 class VortexOperator : public ParticleOperatorBase {
   public:
-    VortexOperator (int controlPoint, UserSettingUniquePtr axis, UserSettingUniquePtr offset, UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter, UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds)
-        : controlPoint (controlPoint), axis (std::move (axis)), offset (std::move (offset)), distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)), speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)) {}
+    VortexOperator (int controlPoint, int flags, UserSettingUniquePtr axis, UserSettingUniquePtr offset,
+                    UserSettingUniquePtr distanceInner, UserSettingUniquePtr distanceOuter,
+                    UserSettingUniquePtr speedInner, UserSettingUniquePtr speedOuter,
+                    UserSettingUniquePtr centerForce,
+                    UserSettingUniquePtr ringRadius, UserSettingUniquePtr ringWidth,
+                    UserSettingUniquePtr ringPullDistance, UserSettingUniquePtr ringPullForce,
+                    UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds)
+        : controlPoint (controlPoint), flags (flags), axis (std::move (axis)), offset (std::move (offset)),
+          distanceInner (std::move (distanceInner)), distanceOuter (std::move (distanceOuter)),
+          speedInner (std::move (speedInner)), speedOuter (std::move (speedOuter)),
+          centerForce (std::move (centerForce)),
+          ringRadius (std::move (ringRadius)), ringWidth (std::move (ringWidth)),
+          ringPullDistance (std::move (ringPullDistance)), ringPullForce (std::move (ringPullForce)),
+          audioProcessingMode (std::move (audioProcessingMode)), audioProcessingBounds (std::move (audioProcessingBounds)) {}
     int controlPoint;
+    int flags;                                  // 1 = infinite axis, 2 = maintain distance to center, 4 = ring shape
     UserSettingUniquePtr axis;
     UserSettingUniquePtr offset;
-    UserSettingUniquePtr distanceInner;
-    UserSettingUniquePtr distanceOuter;
+    UserSettingUniquePtr distanceInner;         // Standard vortex inner radius
+    UserSettingUniquePtr distanceOuter;         // Standard vortex outer radius
     UserSettingUniquePtr speedInner;
     UserSettingUniquePtr speedOuter;
+    UserSettingUniquePtr centerForce;           // Strength to pull particles toward center
+    UserSettingUniquePtr ringRadius;            // Ring mode: radius of the ring
+    UserSettingUniquePtr ringWidth;             // Ring mode: width of the ring
+    UserSettingUniquePtr ringPullDistance;      // Ring mode: distance at which ring attracts particles
+    UserSettingUniquePtr ringPullForce;         // Ring mode: strength of ring attraction
     UserSettingUniquePtr audioProcessingMode;
     UserSettingUniquePtr audioProcessingBounds;
 };
