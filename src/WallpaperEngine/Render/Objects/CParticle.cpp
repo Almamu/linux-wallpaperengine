@@ -821,6 +821,12 @@ void CParticle::setupOperators () {
             func = createVortexOperator (*op->as<VortexOperator> ());
         } else if (op->is<ControlPointAttractOperator> ()) {
             func = createControlPointAttractOperator (*op->as<ControlPointAttractOperator> ());
+        } else if (op->is<OscillateAlphaOperator> ()) {
+            func = createOscillateAlphaOperator (*op->as<OscillateAlphaOperator> ());
+        } else if (op->is<OscillateSizeOperator> ()) {
+            func = createOscillateSizeOperator (*op->as<OscillateSizeOperator> ());
+        } else if (op->is<OscillatePositionOperator> ()) {
+            func = createOscillatePositionOperator (*op->as<OscillatePositionOperator> ());
         } else {
             sLog.out ("Unknown operator type");
         }
@@ -1237,6 +1243,148 @@ OperatorFunc CParticle::createControlPointAttractOperator (const ControlPointAtt
                     p.velocity *= (1.0f - dampingFactor * dt);
                 }
             }
+        }
+    };
+}
+
+OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperator& op) {
+    DynamicValue* freqMinValue = op.frequencyMin->value.get ();
+    DynamicValue* freqMaxValue = op.frequencyMax->value.get ();
+    DynamicValue* scaleMinValue = op.scaleMin->value.get ();
+    DynamicValue* scaleMaxValue = op.scaleMax->value.get ();
+    DynamicValue* phaseMinValue = op.phaseMin->value.get ();
+    DynamicValue* phaseMaxValue = op.phaseMax->value.get ();
+
+    return [this, freqMinValue, freqMaxValue, scaleMinValue, scaleMaxValue, phaseMinValue, phaseMaxValue](
+        std::vector<ParticleInstance>& particles,
+        uint32_t count,
+        const std::vector<ControlPointData>&,
+        float,
+        float
+    ) {
+        float freqMin = freqMinValue->getFloat ();
+        float freqMax = freqMaxValue->getFloat ();
+        float scaleMin = scaleMinValue->getFloat ();
+        float scaleMax = scaleMaxValue->getFloat ();
+        float phaseMin = phaseMinValue->getFloat ();
+        float phaseMax = phaseMaxValue->getFloat ();
+
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles[i];
+
+            // Initialize per-particle oscillator values on first use
+            if (!p.oscillateAlpha.initialized) {
+                p.oscillateAlpha.frequency = randomFloat (m_rng, freqMin, freqMax);
+                p.oscillateAlpha.scale = randomFloat (m_rng, scaleMin, scaleMax);
+                p.oscillateAlpha.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+                p.oscillateAlpha.initialized = true;
+            }
+
+            // Calculate oscillation: interpolate between scaleMin and scaleMax using cosine wave
+            float w = 2.0f * glm::pi<float> () * p.oscillateAlpha.frequency / (2.0f * glm::pi<float> ());
+            float t = p.age;
+            float cosVal = (std::cos (w * t + p.oscillateAlpha.phase) + 1.0f) * 0.5f;
+            float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
+
+            p.alpha *= multiplier;
+        }
+    };
+}
+
+OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator& op) {
+    DynamicValue* freqMinValue = op.frequencyMin->value.get ();
+    DynamicValue* freqMaxValue = op.frequencyMax->value.get ();
+    DynamicValue* scaleMinValue = op.scaleMin->value.get ();
+    DynamicValue* scaleMaxValue = op.scaleMax->value.get ();
+    DynamicValue* phaseMinValue = op.phaseMin->value.get ();
+    DynamicValue* phaseMaxValue = op.phaseMax->value.get ();
+
+    return [this, freqMinValue, freqMaxValue, scaleMinValue, scaleMaxValue, phaseMinValue, phaseMaxValue](
+        std::vector<ParticleInstance>& particles,
+        uint32_t count,
+        const std::vector<ControlPointData>&,
+        float,
+        float
+    ) {
+        float freqMin = freqMinValue->getFloat ();
+        float freqMax = freqMaxValue->getFloat ();
+        float scaleMin = scaleMinValue->getFloat ();
+        float scaleMax = scaleMaxValue->getFloat ();
+        float phaseMin = phaseMinValue->getFloat ();
+        float phaseMax = phaseMaxValue->getFloat ();
+
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles[i];
+
+            // Initialize per-particle oscillator values on first use
+            if (!p.oscillateSize.initialized) {
+                p.oscillateSize.frequency = randomFloat (m_rng, freqMin, freqMax);
+                p.oscillateSize.scale = randomFloat (m_rng, scaleMin, scaleMax);
+                p.oscillateSize.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+                p.oscillateSize.initialized = true;
+            }
+
+            // Calculate oscillation: interpolate between scaleMin and scaleMax using cosine wave
+            float w = 2.0f * glm::pi<float> () * p.oscillateSize.frequency / (2.0f * glm::pi<float> ());
+            float t = p.age;
+            float cosVal = (std::cos (w * t + p.oscillateSize.phase) + 1.0f) * 0.5f;
+            float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
+
+            p.size *= multiplier;
+        }
+    };
+}
+
+OperatorFunc CParticle::createOscillatePositionOperator (const OscillatePositionOperator& op) {
+    DynamicValue* freqMinValue = op.frequencyMin->value.get ();
+    DynamicValue* freqMaxValue = op.frequencyMax->value.get ();
+    DynamicValue* scaleMinValue = op.scaleMin->value.get ();
+    DynamicValue* scaleMaxValue = op.scaleMax->value.get ();
+    DynamicValue* phaseMinValue = op.phaseMin->value.get ();
+    DynamicValue* phaseMaxValue = op.phaseMax->value.get ();
+    DynamicValue* maskValue = op.mask->value.get ();
+
+    return [this, freqMinValue, freqMaxValue, scaleMinValue, scaleMaxValue, phaseMinValue, phaseMaxValue, maskValue](
+        std::vector<ParticleInstance>& particles,
+        uint32_t count,
+        const std::vector<ControlPointData>&,
+        float,
+        float dt
+    ) {
+        float freqMin = freqMinValue->getFloat ();
+        float freqMax = freqMaxValue->getFloat ();
+        float scaleMin = scaleMinValue->getFloat ();
+        float scaleMax = scaleMaxValue->getFloat ();
+        float phaseMin = phaseMinValue->getFloat ();
+        float phaseMax = phaseMaxValue->getFloat ();
+        glm::vec3 mask = maskValue->getVec3 ();
+
+        for (uint32_t i = 0; i < count; i++) {
+            auto& p = particles[i];
+
+            // Initialize per-particle oscillator values on first use (per axis)
+            if (!p.oscillatePosition.initialized) {
+                for (int axis = 0; axis < 3; axis++) {
+                    p.oscillatePosition.frequency[axis] = randomFloat (m_rng, freqMin, freqMax);
+                    p.oscillatePosition.scale[axis] = randomFloat (m_rng, scaleMin, scaleMax);
+                    p.oscillatePosition.phase[axis] = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+                }
+                p.oscillatePosition.initialized = true;
+            }
+
+            // Calculate position delta for each axis
+            float t = p.age;
+            glm::vec3 delta (0.0f);
+
+            for (int axis = 0; axis < 3; axis++) {
+                float w = 2.0f * glm::pi<float> () * p.oscillatePosition.frequency[axis] / (2.0f * glm::pi<float> ());
+                // Derivative of cos is -sin, multiply by dt for position change
+                float move = -p.oscillatePosition.scale[axis] * w * std::sin (w * t + p.oscillatePosition.phase[axis]) * dt;
+                // Apply mask as bias multiplier for this axis
+                delta[axis] = move * mask[axis];
+            }
+
+            p.position += delta;
         }
     };
 }

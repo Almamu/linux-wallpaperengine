@@ -341,6 +341,43 @@ class ControlPointAttractOperator : public ParticleOperatorBase {
     UserSettingUniquePtr threshold;
 };
 
+class OscillateAlphaOperator : public ParticleOperatorBase {
+  public:
+    OscillateAlphaOperator (UserSettingUniquePtr frequencyMin, UserSettingUniquePtr frequencyMax, UserSettingUniquePtr scaleMin, UserSettingUniquePtr scaleMax, UserSettingUniquePtr phaseMin, UserSettingUniquePtr phaseMax)
+        : frequencyMin (std::move (frequencyMin)), frequencyMax (std::move (frequencyMax)), scaleMin (std::move (scaleMin)), scaleMax (std::move (scaleMax)), phaseMin (std::move (phaseMin)), phaseMax (std::move (phaseMax)) {}
+    UserSettingUniquePtr frequencyMin;
+    UserSettingUniquePtr frequencyMax;
+    UserSettingUniquePtr scaleMin;
+    UserSettingUniquePtr scaleMax;
+    UserSettingUniquePtr phaseMin;
+    UserSettingUniquePtr phaseMax;
+};
+
+class OscillateSizeOperator : public ParticleOperatorBase {
+  public:
+    OscillateSizeOperator (UserSettingUniquePtr frequencyMin, UserSettingUniquePtr frequencyMax, UserSettingUniquePtr scaleMin, UserSettingUniquePtr scaleMax, UserSettingUniquePtr phaseMin, UserSettingUniquePtr phaseMax)
+        : frequencyMin (std::move (frequencyMin)), frequencyMax (std::move (frequencyMax)), scaleMin (std::move (scaleMin)), scaleMax (std::move (scaleMax)), phaseMin (std::move (phaseMin)), phaseMax (std::move (phaseMax)) {}
+    UserSettingUniquePtr frequencyMin;
+    UserSettingUniquePtr frequencyMax;
+    UserSettingUniquePtr scaleMin;
+    UserSettingUniquePtr scaleMax;
+    UserSettingUniquePtr phaseMin;
+    UserSettingUniquePtr phaseMax;
+};
+
+class OscillatePositionOperator : public ParticleOperatorBase {
+  public:
+    OscillatePositionOperator (UserSettingUniquePtr frequencyMin, UserSettingUniquePtr frequencyMax, UserSettingUniquePtr scaleMin, UserSettingUniquePtr scaleMax, UserSettingUniquePtr phaseMin, UserSettingUniquePtr phaseMax, UserSettingUniquePtr mask)
+        : frequencyMin (std::move (frequencyMin)), frequencyMax (std::move (frequencyMax)), scaleMin (std::move (scaleMin)), scaleMax (std::move (scaleMax)), phaseMin (std::move (phaseMin)), phaseMax (std::move (phaseMax)), mask (std::move (mask)) {}
+    UserSettingUniquePtr frequencyMin;
+    UserSettingUniquePtr frequencyMax;
+    UserSettingUniquePtr scaleMin;
+    UserSettingUniquePtr scaleMax;
+    UserSettingUniquePtr phaseMin;
+    UserSettingUniquePtr phaseMax;
+    UserSettingUniquePtr mask;
+};
+
 using ParticleOperatorUniquePtr = std::unique_ptr<ParticleOperatorBase>;
 
 /**
