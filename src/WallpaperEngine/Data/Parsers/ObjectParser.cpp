@@ -705,8 +705,9 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("speedmin", properties, 0.0f),
             it.user ("speedmax", properties, 1000.0f),
             it.user ("timescale", properties, 1.0f),
+            it.user ("mask", properties, glm::vec3 (1.0f, 1.0f, 0.0f)),
             it.user ("audioprocessingmode", properties, 0),  // 0 = no audio processing
-            it.user ("audioprocessingbounds", properties, glm::vec2(0.0f, 1.0f)),
+            it.user ("audioprocessingbounds", properties, glm::vec2 (0.0f, 1.0f)),
             it.user ("audioprocessingfrequencyend", properties, 64)  // Default to full spectrum
         );
     } else if (name == "vortex") {

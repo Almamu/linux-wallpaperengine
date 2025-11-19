@@ -305,12 +305,13 @@ class ColorChangeOperator : public ParticleOperatorBase {
 
 class TurbulenceOperator : public ParticleOperatorBase {
   public:
-    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds, UserSettingUniquePtr audioProcessingFrequencyEnd)
-        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)), audioProcessingFrequencyEnd(std::move(audioProcessingFrequencyEnd)) {}
+    TurbulenceOperator (UserSettingUniquePtr scale, UserSettingUniquePtr speedMin, UserSettingUniquePtr speedMax, UserSettingUniquePtr timeScale, UserSettingUniquePtr mask, UserSettingUniquePtr audioProcessingMode, UserSettingUniquePtr audioProcessingBounds, UserSettingUniquePtr audioProcessingFrequencyEnd)
+        : scale (std::move (scale)), speedMin (std::move (speedMin)), speedMax (std::move (speedMax)), timeScale (std::move (timeScale)), mask (std::move (mask)), audioProcessingMode(std::move(audioProcessingMode)), audioProcessingBounds(std::move(audioProcessingBounds)), audioProcessingFrequencyEnd(std::move(audioProcessingFrequencyEnd)) {}
     UserSettingUniquePtr scale;
     UserSettingUniquePtr speedMin;
     UserSettingUniquePtr speedMax;
     UserSettingUniquePtr timeScale;
+    UserSettingUniquePtr mask;                       // Bias multiplier per axis (e.g., "1 1 0" for X/Y only)
     UserSettingUniquePtr audioProcessingMode;
     UserSettingUniquePtr audioProcessingBounds;      // Min/max audio amplitude range (e.g., "0.8 1")
     UserSettingUniquePtr audioProcessingFrequencyEnd; // Max frequency bin to sample (e.g., 15)

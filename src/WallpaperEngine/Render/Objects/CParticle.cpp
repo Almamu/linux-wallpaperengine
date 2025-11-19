@@ -1031,6 +1031,7 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     DynamicValue* speedMinValue = op.speedMin->value.get ();
     DynamicValue* speedMaxValue = op.speedMax->value.get ();
     DynamicValue* timeScaleValue = op.timeScale->value.get ();
+    DynamicValue* maskValue = op.mask->value.get ();
     DynamicValue* audioModeValue = op.audioProcessingMode->value.get ();
     // DynamicValue* audioBoundsValue = op.audioProcessingBounds->value.get ();
     // DynamicValue* audioFreqEndValue = op.audioProcessingFrequencyEnd->value.get ();
@@ -1039,7 +1040,7 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     float phase = randomFloat (m_rng, 0.0f, 100.0f);
 
     // Check if audio processing is enabled
-    int audioMode = static_cast<int>(audioModeValue->getFloat());
+    int audioMode = static_cast<int> (audioModeValue->getFloat ());
 
     // For non-audio mode, randomize speed once; for audio mode, use speedmin as default
     float fixedSpeed;
@@ -1048,10 +1049,10 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     } else {
         // TODO: Implement audio processing support (audioprocessingbounds, audioprocessingfrequencyend)
         // For now, use speedmin as baseline (assume no audio input)
-        fixedSpeed = speedMinValue->getFloat();
+        fixedSpeed = speedMinValue->getFloat ();
     }
 
-    return [this, scaleValue, timeScaleValue, phase, fixedSpeed, &rng = m_rng](
+    return [this, scaleValue, timeScaleValue, maskValue, phase, fixedSpeed, &rng = m_rng](
         std::vector<ParticleInstance>& particles,
         uint32_t count,
         const std::vector<ControlPointData>&,
@@ -1060,26 +1061,27 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     ) {
         float scale = scaleValue->getFloat ();
         float timeScale = timeScaleValue->getFloat ();
+        glm::vec3 mask = maskValue->getVec3 ();
         float speed = fixedSpeed;
 
         for (uint32_t i = 0; i < count; i++) {
             auto& p = particles [i];
 
             // Initialize noise position if not set (for particles without turbulentvelocityrandom initializer)
-            if (glm::length(p.noisePos) < 0.001f && p.age < 0.001f) {
+            if (glm::length (p.noisePos) < 0.001f && p.age < 0.001f) {
                 // Use particle position plus small random offset to break clustering
                 // for particles spawned at the same location
-                glm::vec3 randomOffset(
-                    randomFloat(rng, -5.0f, 5.0f),
-                    randomFloat(rng, -5.0f, 5.0f),
-                    randomFloat(rng, -5.0f, 5.0f)
+                glm::vec3 randomOffset (
+                    randomFloat (rng, -5.0f, 5.0f),
+                    randomFloat (rng, -5.0f, 5.0f),
+                    randomFloat (rng, -5.0f, 5.0f)
                 );
                 p.noisePos = p.position * scale * 2.0f + randomOffset;
             }
 
             // Advance noise position based on particle's current velocity direction
             // This creates per-particle turbulence paths instead of uniform motion
-            glm::vec3 noiseVelocity = glm::normalize(p.velocity + glm::vec3(0.001f)) * speed * scale;
+            glm::vec3 noiseVelocity = glm::normalize (p.velocity + glm::vec3 (0.001f)) * speed * scale;
             p.noisePos += noiseVelocity * dt;
 
             // Apply time-based phase shift
@@ -1093,6 +1095,9 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
             if (glm::length (acceleration) > 0.0f) {
                 acceleration = glm::normalize (acceleration) * speed;
             }
+
+            // Apply mask as per-axis bias multiplier
+            acceleration *= mask;
 
             // Apply acceleration (convert to velocity change over dt)
             p.velocity += acceleration * dt;
