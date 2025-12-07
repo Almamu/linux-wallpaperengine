@@ -191,7 +191,7 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
     options.es = false;
     fragmentCompiler .set_common_options(options);
 
-    return {vertexCompiler.compile() + "#if 0\n" + vertex + "#endif", fragmentCompiler.compile() + "#if 0\n" + fragment + "#endif"};
+    return {vertexCompiler.compile() + "#if 0\n" + vertex + "\n#endif", fragmentCompiler.compile() + "#if 0\n" + fragment + "\n#endif"};
 }
 
 
