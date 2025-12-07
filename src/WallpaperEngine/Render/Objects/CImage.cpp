@@ -43,6 +43,42 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ().scale->value->getVec3 ();
 
+    // detect texture (if any)
+
+    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; !textures.empty ()) {
+        std::string textureName = textures.begin ()->second;
+
+        if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+            this->m_texture = this->getScene ().findFBO (textureName);
+        } else {
+            // get the first texture on the first pass (this one represents the image assigned to this object)
+            this->m_texture = this->getContext ().resolveTexture (textureName);
+        }
+    } else {
+        if (this->m_image.model->solidlayer) {
+            size.x = scene_width;
+            size.y = scene_height;
+        }
+        // if (this->m_image->isSolid ()) // layer receives cursor events: https://docs.wallpaperengine.io/en/scene/scenescript/reference/event/cursor.html
+        // same applies to effects
+        // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
+        // handled
+        this->m_texture = std::make_shared<CFBO> (
+            "", TextureFormat_ARGB8888, TextureFlags_NoFlags, 1, size.x,
+                  size.y, size.x, size.y);
+    }
+
+    // If the wallpaper doesn't specify a size, fall back to the texture or model dimensions
+    if ((size.x == 0.0f || size.y == 0.0f) && this->m_texture != nullptr) {
+        size.x = static_cast<float> (this->m_texture->getRealWidth ());
+        size.y = static_cast<float> (this->m_texture->getRealHeight ());
+    } else if ((size.x == 0.0f || size.y == 0.0f) &&
+               this->getImage ().model->width.has_value () &&
+               this->getImage ().model->height.has_value ()) {
+        size.x = static_cast<float> (this->getImage ().model->width.value ());
+        size.y = static_cast<float> (this->getImage ().model->height.value ());
+    }
+
     // fullscreen layers should use the whole projection's size
     // TODO: WHAT SHOULD AUTOSIZE DO?
     if (this->getImage ().model->fullscreen) {
@@ -81,31 +117,6 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_pos.y = scene_height / 2 - this->m_pos.y;
     this->m_pos.z -= scene_width / 2;
     this->m_pos.w = scene_height / 2 - this->m_pos.w;
-
-    // detect texture (if any)
-
-    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; !textures.empty ()) {
-        std::string textureName = textures.begin ()->second;
-
-        if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-            this->m_texture = this->getScene ().findFBO (textureName);
-        } else {
-            // get the first texture on the first pass (this one represents the image assigned to this object)
-            this->m_texture = this->getContext ().resolveTexture (textureName);
-        }
-    } else {
-        if (this->m_image.model->solidlayer) {
-            size.x = scene_width;
-            size.y = scene_height;
-        }
-        // if (this->m_image->isSolid ()) // layer receives cursor events: https://docs.wallpaperengine.io/en/scene/scenescript/reference/event/cursor.html
-        // same applies to effects
-        // TODO: create a dummy texture of correct size, fbo constructors should be enough, but this should be properly
-        // handled
-        this->m_texture = std::make_shared<CFBO> (
-            "", TextureFormat_ARGB8888, TextureFlags_NoFlags, 1, size.x,
-                  size.y, size.x, size.y);
-    }
 
     // register both FBOs into the scene
     std::ostringstream nameA, nameB;
