@@ -140,16 +140,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     else if (this->getTexture () != nullptr &&
              (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth () ||
               this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())) {
-        uint32_t x = 1;
-        uint32_t y = 1;
-
-        while (x < size.x)
-            x <<= 1;
-        while (y < size.y)
-            y <<= 1;
-
-        width = scaledSize.x / x;
-        height = scaledSize.y / y;
+        // Account for padding in non-power-of-two textures: clamp UVs to the real content
+        width = static_cast<float> (this->getTexture ()->getRealWidth ()) /
+                static_cast<float> (this->getTexture ()->getTextureWidth (0));
+        height = static_cast<float> (this->getTexture ()->getRealHeight ()) /
+                 static_cast<float> (this->getTexture ()->getTextureHeight (0));
     }
 
     // TODO: RECALCULATE THESE POSITIONS FOR PASSTHROUGH SO THEY TAKE THE RIGHT PART OF THE TEXTURE
