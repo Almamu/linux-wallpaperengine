@@ -3,8 +3,14 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <functional>
+#include <optional>
 
 namespace WallpaperEngine::Data::Model {
+struct ConditionInfo {
+    std::string name;
+    std::string condition;
+};
+
 /**
  * Class that represents different types of dynamic values
  */
@@ -20,7 +26,8 @@ class DynamicValue {
         Vec2 = 6,
         Float = 7,
         Int = 8,
-        Boolean = 9
+        Boolean = 9,
+        String = 10
     };
 
     DynamicValue () = default;
@@ -44,6 +51,7 @@ class DynamicValue {
     [[nodiscard]] const float& getFloat () const;
     [[nodiscard]] const int& getInt () const;
     [[nodiscard]] const bool& getBool () const;
+    [[nodiscard]] const std::string& getString () const;
     [[nodiscard]] UnderlyingType getType () const;
     [[nodiscard]] virtual std::string toString () const;
 
@@ -56,6 +64,7 @@ class DynamicValue {
     virtual void update (const glm::ivec2& newValue);
     virtual void update (const glm::ivec3& newValue);
     virtual void update (const glm::ivec4& newValue);
+    virtual void update (const std::string& newValue);
     virtual void update (const DynamicValue& other);
     /**
      * Sets the current value to null
@@ -86,6 +95,13 @@ class DynamicValue {
      */
     void disconnect ();
 
+    /**
+     * Associates a condition with the dynamic value to apply proper checks
+     *
+     * @param condition
+     */
+    void attachCondition (const ConditionInfo& condition);
+
   private:
     /**
      * Notifies any listeners that the value has changed
@@ -104,6 +120,8 @@ class DynamicValue {
     float m_float = 0.0f;
     int m_int = 0;
     bool m_bool = false;
+    std::string m_string = "";
     UnderlyingType m_type = Null;
+    std::optional<ConditionInfo> m_condition = std::nullopt;
 };
 }

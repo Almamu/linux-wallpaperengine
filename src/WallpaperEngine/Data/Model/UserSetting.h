@@ -7,11 +7,6 @@
 #include "Types.h"
 
 namespace WallpaperEngine::Data::Model {
-struct ConditionInfo {
-    std::string name;
-    std::string condition;
-};
-
 struct UserSetting {
     /**
      * The value of this setting, can be a few different things:

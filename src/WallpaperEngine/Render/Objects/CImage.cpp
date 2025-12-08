@@ -55,7 +55,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
             this->m_texture = this->getContext ().resolveTexture (textureName);
         }
     } else {
-        if (this->m_image.model->solidlayer) {
+        if (this->m_image.model->solidlayer && size.x == 0.0f && size.y == 0.0f) {
             size.x = scene_width;
             size.y = scene_height;
         }

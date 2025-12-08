@@ -31,7 +31,7 @@ class Property : public DynamicValue, public TypeCaster, public PropertyData {
 
     using DynamicValue::update;
     virtual void update(const std::string& value) = 0;
-    virtual std::string dump () const = 0;
+    [[nodiscard]] virtual std::string dump () const = 0;
 };
 
 class PropertySlider final : public Property, SliderData {
@@ -45,7 +45,7 @@ class PropertySlider final : public Property, SliderData {
         this->update (std::stof (value));
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - slider" << std::endl
@@ -70,7 +70,7 @@ class PropertyBoolean final : public Property {
         this->update (value == "true" || value == "1");
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - boolean" << std::endl
@@ -133,7 +133,7 @@ class PropertyColor final : public Property {
         this->update (VectorBuilder::parse <glm::vec3> (copy));
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - color" << std::endl
@@ -152,16 +152,11 @@ class PropertyCombo final : public Property, ComboData {
 
     using Property::update;
     void update(const std::string& value) override {
-        // search for the value in the combo options
-        if (this->values.contains (value)) {
-            this->m_value = this->values.at (value);
-        } else {
-            // default to a textual value if it's not found
-            this->m_value = value;
-        }
+        // search for the value in the combo options or default to the textual value
+        this->DynamicValue::update (this->values.contains (value) ? this->values.at (value) : value);
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - combo" << std::endl
@@ -175,9 +170,6 @@ class PropertyCombo final : public Property, ComboData {
 
         return ss.str ();
     }
-
-  private:
-    std::string m_value;
 };
 
 class PropertyText final : public Property {
@@ -193,7 +185,7 @@ class PropertyText final : public Property {
         return this->text;
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - text" << std::endl
@@ -214,7 +206,7 @@ class PropertySceneTexture final : public Property {
         this->m_value = value;
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - scene texture" << std::endl
@@ -238,7 +230,7 @@ class PropertyFile final : public Property {
         this->m_value = value;
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - file" << std::endl
@@ -262,7 +254,7 @@ class PropertyTextInput final : public Property {
         this->m_value = value;
     }
 
-    std::string dump () const override {
+    [[nodiscard]] std::string dump () const override {
         std::stringstream ss;
 
         ss << this->name << " - textinput" << std::endl

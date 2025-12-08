@@ -79,6 +79,10 @@ const bool& DynamicValue::getBool () const {
     return this->m_bool;
 }
 
+const std::string& DynamicValue::getString () const {
+    return this->m_string;
+}
+
 DynamicValue::UnderlyingType DynamicValue::getType () const {
     return this->m_type;
 }
@@ -118,6 +122,7 @@ void DynamicValue::update (const float newValue) {
     this->m_float = newValue;
     this->m_int = static_cast<int> (newValue);
     this->m_bool = static_cast<int> (newValue) != 0;
+    this->m_string = "";
     this->m_type = UnderlyingType::Float;
 
     this->propagate ();
@@ -133,6 +138,7 @@ void DynamicValue::update (const int newValue) {
     this->m_float = static_cast<float> (newValue);
     this->m_int = newValue;
     this->m_bool = newValue != 0;
+    this->m_string = "";
     this->m_type = UnderlyingType::Int;
 
     this->propagate ();
@@ -148,6 +154,7 @@ void DynamicValue::update (const bool newValue) {
     this->m_float = newValue;
     this->m_int = newValue;
     this->m_bool = newValue;
+    this->m_string = "";
     this->m_type = UnderlyingType::Boolean;
 
     this->propagate ();
@@ -163,6 +170,7 @@ void DynamicValue::update(const glm::vec2& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_string = "";
     this->m_type = UnderlyingType::Vec2;
 
     this->propagate ();
@@ -178,6 +186,7 @@ void DynamicValue::update(const glm::vec3& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_string = "";
     this->m_type = UnderlyingType::Vec3;
 
     this->propagate ();
@@ -193,6 +202,7 @@ void DynamicValue::update(const glm::vec4& newValue) {
     this->m_float = newValue.x;
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
+    this->m_string = "";
     this->m_type = UnderlyingType::Vec4;
 
     this->propagate ();
@@ -208,6 +218,7 @@ void DynamicValue::update(const glm::ivec2& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_string = "";
     this->m_type = UnderlyingType::IVec2;
 
     this->propagate ();
@@ -223,6 +234,7 @@ void DynamicValue::update(const glm::ivec3& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_string = "";
     this->m_type = UnderlyingType::IVec3;
 
     this->propagate ();
@@ -238,9 +250,24 @@ void DynamicValue::update(const glm::ivec4& newValue) {
     this->m_float = static_cast<float> (newValue.x);
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0;
+    this->m_string = "";
     this->m_type = UnderlyingType::IVec4;
 
     this->propagate ();
+}
+
+void DynamicValue::update (const std::string& newValue) {
+    this->m_ivec4 = glm::ivec4(0);
+    this->m_ivec3 = glm::ivec3(0);
+    this->m_ivec2 = glm::ivec2(0);
+    this->m_vec2 = glm::vec2(0.0f);
+    this->m_vec3 = glm::vec3(0.0f);
+    this->m_vec4 = glm::vec4(0.0f);
+    this->m_float = 0.0f;
+    this->m_int = 0;
+    this->m_bool = false;
+    this->m_string = newValue;
+    this->m_type = UnderlyingType::String;
 }
 
 void DynamicValue::update (const DynamicValue& other) {
@@ -254,6 +281,11 @@ void DynamicValue::update (const DynamicValue& other) {
     this->m_int = other.getInt ();
     this->m_bool = other.getBool ();
     this->m_type = other.getType ();
+
+    if (this->m_condition.has_value () && other.getType () == UnderlyingType::String) {
+        // TODO: DOES THIS NEED TO HAPPEN WITH OTHER TYPES TOO?
+        this->m_bool = this->m_condition.value ().condition == other.getString ();
+    }
 
     this->propagate ();
 }
@@ -307,6 +339,11 @@ void DynamicValue::disconnect () {
 
     this->m_connections.clear ();
 }
+
+void DynamicValue::attachCondition (const ConditionInfo& condition) {
+    this->m_condition = condition;
+}
+
 
 void DynamicValue::propagate () const {
     for (const auto& callback : this->m_listeners) {
