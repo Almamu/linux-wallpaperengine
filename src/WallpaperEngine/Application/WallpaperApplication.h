@@ -1,5 +1,8 @@
 #pragma once
 
+#include <chrono>
+#include <random>
+
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
 
@@ -15,6 +18,8 @@
 #include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
 
 #include "WallpaperEngine/Data/Model/Types.h"
+
+#include <set>
 
 namespace WallpaperEngine::Application {
 using namespace WallpaperEngine::Assets;
@@ -104,10 +109,30 @@ class WallpaperApplication {
      */
     void takeScreenshot (const std::filesystem::path& filename) const;
 
+    struct ActivePlaylist {
+        ApplicationContext::PlaylistDefinition definition;
+        std::vector<std::size_t> order;
+        std::size_t orderIndex = 0;
+        std::chrono::steady_clock::time_point nextSwitch;
+        std::chrono::steady_clock::time_point lastUpdate;
+        std::set<std::size_t> failedIndices;
+    };
+
+    void initializePlaylists ();
+    void updatePlaylists ();
+    void advancePlaylist (const std::string& screen, ActivePlaylist& playlist,
+                          const std::chrono::steady_clock::time_point& now);
+    bool selectNextCandidate (ActivePlaylist& playlist, std::size_t& outOrderIndex);
+    bool preflightWallpaper (const std::string& path);
+    std::vector<std::size_t> buildPlaylistOrder (const ApplicationContext::PlaylistDefinition& definition);
+    void ensureBrowserForProject (const Project& project);
+    bool makeAnyViewportCurrent () const;
+
     /** The application context that contains the current app settings */
     ApplicationContext& m_context;
     /** Maps screens to backgrounds */
     std::map<std::string, ProjectUniquePtr> m_backgrounds {};
+    std::map<std::string, ActivePlaylist> m_activePlaylists {};
 
     std::unique_ptr <WallpaperEngine::Audio::Drivers::Detectors::AudioPlayingDetector> m_audioDetector = nullptr;
     std::unique_ptr <WallpaperEngine::Audio::AudioContext> m_audioContext = nullptr;
@@ -117,5 +142,7 @@ class WallpaperApplication {
     std::unique_ptr <WallpaperEngine::Render::Drivers::VideoDriver> m_videoDriver = nullptr;
     std::unique_ptr <WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> m_fullScreenDetector = nullptr;
     std::unique_ptr <WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
+    std::mt19937 m_playlistRng {std::random_device {} ()};
+    bool m_isPaused = false;
 };
 } // namespace WallpaperEngine::Application

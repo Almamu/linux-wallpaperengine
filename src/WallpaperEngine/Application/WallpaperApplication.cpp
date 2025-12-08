@@ -19,6 +19,8 @@
 #include "recording.h"
 #endif /* DEMOMODE */
 
+#include <algorithm>
+#include <numeric>
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -39,6 +41,7 @@ WallpaperApplication::WallpaperApplication (ApplicationContext& context) :
     this->loadBackgrounds ();
     this->setupProperties ();
     this->setupBrowser();
+    this->initializePlaylists ();
 }
 
 AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string& bg) const {
@@ -200,7 +203,14 @@ AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string
 void WallpaperApplication::loadBackgrounds () {
     if (this->m_context.settings.render.mode == ApplicationContext::NORMAL_WINDOW ||
         this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW) {
-        this->m_backgrounds ["default"] = this->loadBackground (this->m_context.settings.general.defaultBackground);
+        auto path = this->m_context.settings.general.defaultBackground;
+
+        if (this->m_context.settings.general.defaultPlaylist.has_value () &&
+            !this->m_context.settings.general.defaultPlaylist->items.empty ()) {
+            path = this->m_context.settings.general.defaultPlaylist->items.front ();
+        }
+
+        this->m_backgrounds ["default"] = this->loadBackground (path);
         return;
     }
 
@@ -219,6 +229,247 @@ ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
     auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
 
     return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move(container));
+}
+
+std::vector<std::size_t> WallpaperApplication::buildPlaylistOrder (
+    const ApplicationContext::PlaylistDefinition& definition) {
+    std::vector<std::size_t> order (definition.items.size ());
+    std::iota (order.begin (), order.end (), 0);
+
+    if (definition.settings.order == "random") {
+        std::shuffle (order.begin (), order.end (), this->m_playlistRng);
+    }
+
+    return order;
+}
+
+void WallpaperApplication::initializePlaylists () {
+    const bool hasDefaultPlaylist = this->m_context.settings.general.defaultPlaylist.has_value ();
+    const bool hasScreenPlaylists = !this->m_context.settings.general.screenPlaylists.empty ();
+
+    if (!hasDefaultPlaylist && !hasScreenPlaylists)
+        return;
+
+    const auto now = std::chrono::steady_clock::now ();
+
+    auto registerPlaylist = [this, now](const std::string& key, const ApplicationContext::PlaylistDefinition& playlist,
+                                        std::optional<std::filesystem::path> currentPath) {
+        if (playlist.items.empty ())
+            return;
+
+        ActivePlaylist state;
+
+        state.definition = playlist;
+        state.order = this->buildPlaylistOrder (playlist);
+
+        if (state.order.empty ())
+            return;
+
+        if (currentPath.has_value ()) {
+            state.orderIndex = 0;
+
+            for (std::size_t i = 0; i < state.order.size (); i ++) {
+                if (playlist.items [state.order [i]] == currentPath.value ()) {
+                    state.orderIndex = i;
+                    break;
+                }
+            }
+        }
+
+        const uint32_t delayMinutes = std::max<uint32_t> (1, state.definition.settings.delayMinutes);
+        state.nextSwitch = now + std::chrono::minutes (delayMinutes);
+        state.lastUpdate = now;
+
+        this->m_activePlaylists.insert_or_assign (key, std::move (state));
+    };
+
+    if (hasDefaultPlaylist &&
+        (this->m_context.settings.render.mode == ApplicationContext::NORMAL_WINDOW ||
+         this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW)) {
+        registerPlaylist ("default", this->m_context.settings.general.defaultPlaylist.value (),
+                          this->m_context.settings.general.defaultBackground);
+    }
+
+    for (const auto& [screen, playlist] : this->m_context.settings.general.screenPlaylists) {
+        const auto current = this->m_context.settings.general.screenBackgrounds.find (screen);
+        const auto currentPath = current != this->m_context.settings.general.screenBackgrounds.end ()
+            ? std::optional<std::filesystem::path> {current->second}
+            : std::nullopt;
+        registerPlaylist (screen, playlist, currentPath);
+    }
+}
+
+void WallpaperApplication::ensureBrowserForProject (const Project& project) {
+    if (!project.wallpaper->is<Web> ())
+        return;
+
+    if (!this->m_browserContext) {
+        this->m_browserContext = std::make_unique <WebBrowser::WebBrowserContext> (*this);
+    }
+}
+
+bool WallpaperApplication::makeAnyViewportCurrent () const {
+    if (!this->m_renderContext)
+        return false;
+
+    const auto& viewports = this->m_renderContext->getOutput ().getViewports ();
+
+    if (viewports.empty ())
+        return false;
+
+    viewports.begin ()->second->makeCurrent ();
+    return true;
+}
+
+bool WallpaperApplication::preflightWallpaper (const std::string& path) {
+    try {
+        // avoid mutating state, just ensure project.json parses
+        auto container = this->setupAssetLocator (path);
+        const auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
+        (void) json;
+        return true;
+    } catch (const std::exception& e) {
+        sLog.error ("Preflight failed for ", path, ": ", e.what ());
+        return false;
+    }
+}
+
+bool WallpaperApplication::selectNextCandidate (ActivePlaylist& playlist, std::size_t& outOrderIndex) {
+    if (playlist.order.empty ())
+        return false;
+
+    std::size_t attempts = 0;
+    std::size_t candidateOrderIndex = outOrderIndex;
+
+    while (attempts < playlist.order.size ()) {
+        const auto candidateIndex = playlist.order [candidateOrderIndex];
+
+        if (!playlist.failedIndices.contains (candidateIndex)) {
+            outOrderIndex = candidateOrderIndex;
+            return true;
+        }
+
+        attempts++;
+        candidateOrderIndex = (candidateOrderIndex + 1) % playlist.order.size ();
+    }
+
+    return false;
+}
+
+void WallpaperApplication::advancePlaylist (
+    const std::string& screen, ActivePlaylist& playlist,
+    const std::chrono::steady_clock::time_point& now) {
+    if (playlist.order.empty ())
+        return;
+
+    playlist.orderIndex = (playlist.orderIndex + 1) % playlist.order.size ();
+
+    if (playlist.orderIndex == 0 && playlist.definition.settings.order == "random") {
+        std::shuffle (playlist.order.begin (), playlist.order.end (), this->m_playlistRng);
+    }
+
+    std::size_t candidateOrderIndex = playlist.orderIndex;
+
+    if (!this->selectNextCandidate (playlist, candidateOrderIndex)) {
+        sLog.error ("All playlist items failed for ", screen, ", keeping current wallpaper");
+        const uint32_t delayMinutes = std::max<uint32_t> (1, playlist.definition.settings.delayMinutes);
+        playlist.nextSwitch = now + std::chrono::minutes (delayMinutes);
+        return;
+    }
+
+    const auto candidateIndex = playlist.order [candidateOrderIndex];
+    const auto& candidatePath = playlist.definition.items [candidateIndex];
+
+    if (!this->preflightWallpaper (candidatePath.string ())) {
+        playlist.failedIndices.insert (candidateIndex);
+
+        if (!this->selectNextCandidate (playlist, candidateOrderIndex)) {
+            sLog.error ("All playlist items failed for ", screen, ", keeping current wallpaper");
+            const uint32_t delayMinutes = std::max<uint32_t> (1, playlist.definition.settings.delayMinutes);
+            playlist.nextSwitch = now + std::chrono::minutes (delayMinutes);
+            return;
+        }
+    }
+
+    playlist.orderIndex = candidateOrderIndex;
+    const auto& nextPath = playlist.definition.items [playlist.order [playlist.orderIndex]];
+
+    bool loaded = false;
+
+    try {
+        if (!this->makeAnyViewportCurrent ()) {
+            sLog.error ("Cannot switch playlist on ", screen, ": no active viewport");
+            throw std::runtime_error ("No viewport available");
+        }
+
+        auto project = this->loadBackground (nextPath.string ());
+
+        this->setupPropertiesForProject (*project);
+        this->ensureBrowserForProject (*project);
+
+        this->m_backgrounds [screen] = std::move (project);
+
+        if (this->m_renderContext) {
+            this->m_renderContext->setWallpaper (
+                screen,
+                WallpaperEngine::Render::CWallpaper::fromWallpaper (
+                    *this->m_backgrounds [screen]->wallpaper,
+                    *this->m_renderContext, *this->m_audioContext, this->m_browserContext.get (),
+                    this->m_context.settings.general.screenScalings [screen],
+                    this->m_context.settings.general.screenClamps [screen]
+                )
+            );
+        }
+
+        this->m_context.settings.general.screenBackgrounds [screen] = nextPath;
+        loaded = true;
+    } catch (const std::exception& e) {
+        sLog.error ("Failed to advance playlist on ", screen, ": ", e.what ());
+    }
+
+    if (!loaded) {
+        playlist.failedIndices.insert (playlist.order [playlist.orderIndex]);
+
+        std::size_t candidateAfterFailure = (playlist.orderIndex + 1) % playlist.order.size ();
+
+        if (!this->selectNextCandidate (playlist, candidateAfterFailure)) {
+            sLog.error ("All playlist items failed for ", screen, ", keeping current wallpaper");
+            playlist.orderIndex = playlist.orderIndex == 0 ? 0 : playlist.orderIndex - 1;
+        } else {
+            playlist.orderIndex = candidateAfterFailure;
+        }
+    }
+
+    const uint32_t delayMinutes = std::max<uint32_t> (1, playlist.definition.settings.delayMinutes);
+    playlist.nextSwitch = now + std::chrono::minutes (delayMinutes);
+}
+
+void WallpaperApplication::updatePlaylists () {
+    if (this->m_activePlaylists.empty ())
+        return;
+
+    const auto now = std::chrono::steady_clock::now ();
+
+    for (auto& [screen, playlist] : this->m_activePlaylists) {
+        const auto elapsed = now - playlist.lastUpdate;
+        playlist.lastUpdate = now;
+
+        if (!playlist.definition.settings.updateOnPause && this->m_isPaused) {
+            playlist.nextSwitch += elapsed;
+            continue;
+        }
+
+        if (playlist.definition.settings.mode != "timer")
+            continue;
+
+        if (playlist.definition.items.size () <= 1)
+            continue;
+
+        if (now < playlist.nextSwitch)
+            continue;
+
+        this->advancePlaylist (screen, playlist, now);
+    }
 }
 
 void WallpaperApplication::setupPropertiesForProject (const Project& project) {
@@ -253,7 +504,7 @@ void WallpaperApplication::setupBrowser () {
     );
 
     // do not perform any initialization if no web background is present
-    if (!anyWebProject) {
+    if (!anyWebProject || this->m_browserContext) {
         return;
     }
 
@@ -471,11 +722,15 @@ void WallpaperApplication::show () {
 #endif /* DEMOMODE */
         // check for fullscreen windows and wait until there's none fullscreen
         if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+            this->m_isPaused = true;
             m_renderContext->setPause (true);
             while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
                 usleep (FULLSCREEN_CHECK_WAIT_TIME);
             m_renderContext->setPause (false);
+            this->m_isPaused = false;
         }
+
+        this->updatePlaylists ();
 
         if (!this->m_context.settings.screenshot.take || m_videoDriver->getFrameCounter () < this->m_context.settings.screenshot.delay)
             continue;
