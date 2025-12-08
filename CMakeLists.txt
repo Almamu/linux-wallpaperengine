@@ -472,7 +472,7 @@ add_executable(
 
 target_link_libraries (linux-wallpaperengine PUBLIC
     ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
+    GLEW::GLEW
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${LZ4_LIBRARY}
