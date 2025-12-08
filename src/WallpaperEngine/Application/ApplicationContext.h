@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <string>
+#include <optional>
 #include <vector>
 
 #include <glm/vec4.hpp>
@@ -32,6 +34,20 @@ class ApplicationContext {
         EXPLICIT_WINDOW = 2,
     };
 
+    struct PlaylistSettings {
+        uint32_t delayMinutes;
+        std::string mode;
+        std::string order;
+        bool updateOnPause;
+        bool videoSequence;
+    };
+
+    struct PlaylistDefinition {
+        std::string name;
+        std::vector<std::filesystem::path> items;
+        PlaylistSettings settings;
+    };
+
     struct {
         /**
          * General settings
@@ -53,6 +69,10 @@ class ApplicationContext {
             std::map<std::string, WallpaperEngine::Render::WallpaperState::TextureUVsScaling> screenScalings;
             /** The clamping mode for different screens */
             std::map<std::string, TextureFlags> screenClamps;
+            /** Playlists selected per screen */
+            std::map<std::string, PlaylistDefinition> screenPlaylists;
+            /** Playlist used in window mode */
+            std::optional<PlaylistDefinition> defaultPlaylist;
         } general;
 
         /**
@@ -119,6 +139,8 @@ class ApplicationContext {
             .properties = {},
             .screenScalings = {},
             .screenClamps = {},
+            .screenPlaylists = {},
+            .defaultPlaylist = std::nullopt,
         },
         .render = {
             .mode = NORMAL_WINDOW,
@@ -175,5 +197,12 @@ class ApplicationContext {
      * @return
      */
     static std::filesystem::path translateBackground (const std::string& bgIdOrPath);
+
+    void loadPlaylistsFromConfig ();
+    std::filesystem::path resolvePlaylistItemPath (const std::string& raw) const;
+    [[nodiscard]] const PlaylistDefinition& getPlaylistFromConfig (const std::string& name);
+
+    std::map<std::string, PlaylistDefinition> m_configPlaylists;
+    bool m_loadedConfigPlaylists = false;
 };
 } // namespace WallpaperEngine::Application
