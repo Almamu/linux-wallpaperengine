@@ -1,9 +1,11 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <string>
 #include <functional>
+#include <glm/glm.hpp>
+#include <list>
+#include <memory>
 #include <optional>
+#include <string>
 
 namespace WallpaperEngine::Data::Model {
 struct ConditionInfo {
@@ -108,7 +110,8 @@ class DynamicValue {
      */
     void propagate () const;
 
-    std::vector<std::function<void (const DynamicValue&)>> m_listeners = {};
+    std::shared_ptr<bool> m_aliveFlag = std::make_shared<bool> (true);
+    std::list<std::function<void (const DynamicValue&)>> m_listeners = {};
     std::vector<std::function<void ()>> m_connections = {};
 
     glm::ivec4 m_ivec4 = {};

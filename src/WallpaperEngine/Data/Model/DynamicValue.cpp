@@ -39,6 +39,8 @@ DynamicValue::DynamicValue (bool value) {
 }
 
 DynamicValue::~DynamicValue () {
+    if (this->m_aliveFlag)
+        *this->m_aliveFlag = false;
     this->disconnect ();
     this->m_listeners.clear ();
 }
@@ -307,8 +309,11 @@ void DynamicValue::update () {
 
 std::function<void ()> DynamicValue::listen (const std::function<void (const DynamicValue&)>& callback) {
     const auto it = this->m_listeners.insert (this->m_listeners.end (), callback);
+    auto alive = this->m_aliveFlag;
 
-    return [this, it] {
+    return [this, it, alive] {
+        if (!alive || !*alive)
+            return;
         this->m_listeners.erase (it);
     };
 }
@@ -334,7 +339,12 @@ void DynamicValue::connect (DynamicValue* other) {
 
 void DynamicValue::disconnect () {
     for (const auto& deregister : this->m_connections) {
-        deregister ();
+        if (!deregister)
+            continue;
+        try {
+            deregister ();
+        } catch (...) {
+        }
     }
 
     this->m_connections.clear ();
