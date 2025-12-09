@@ -451,11 +451,6 @@ void WallpaperApplication::updatePlaylists () {
         const auto elapsed = now - playlist.lastUpdate;
         playlist.lastUpdate = now;
 
-        if (!playlist.definition.settings.updateOnPause && this->m_isPaused) {
-            playlist.nextSwitch += elapsed;
-            continue;
-        }
-
         if (playlist.definition.settings.mode != "timer")
             continue;
 
@@ -732,8 +727,10 @@ void WallpaperApplication::show () {
             const auto pausedDuration = pausedNow - this->m_pauseStart;
 
             for (auto& [_, playlist] : this->m_activePlaylists) {
-                playlist.nextSwitch += pausedDuration;
-                playlist.lastUpdate += pausedDuration;
+                if (!playlist.definition.settings.updateOnPause) {
+                    playlist.nextSwitch += pausedDuration;
+                    playlist.lastUpdate += pausedDuration;
+                }
             }
 
             this->m_isPaused = false;
