@@ -412,14 +412,23 @@ void WallpaperApplication::advancePlaylist (
 
         this->m_backgrounds [screen] = std::move (project);
 
+        const auto scalingIt = this->m_context.settings.general.screenScalings.find (screen);
+        const auto clampIt = this->m_context.settings.general.screenClamps.find (screen);
+        const auto scaling = scalingIt != this->m_context.settings.general.screenScalings.end ()
+                                 ? scalingIt->second
+                                 : this->m_context.settings.render.window.scalingMode;
+        const auto clamp = clampIt != this->m_context.settings.general.screenClamps.end ()
+                               ? clampIt->second
+                               : this->m_context.settings.render.window.clamp;
+
         if (this->m_renderContext) {
             this->m_renderContext->setWallpaper (
                 screen,
                 WallpaperEngine::Render::CWallpaper::fromWallpaper (
                     *this->m_backgrounds [screen]->wallpaper,
                     *this->m_renderContext, *this->m_audioContext, this->m_browserContext.get (),
-                    this->m_context.settings.general.screenScalings [screen],
-                    this->m_context.settings.general.screenClamps [screen]
+                    scaling,
+                    clamp
                 )
             );
         }
@@ -622,12 +631,21 @@ void WallpaperApplication::prepareOutputs () {
 
     // set all the specific wallpapers required
     for (const auto& [background, info] : this->m_backgrounds) {
+        const auto scalingIt = this->m_context.settings.general.screenScalings.find (background);
+        const auto clampIt = this->m_context.settings.general.screenClamps.find (background);
+        const auto scaling = scalingIt != this->m_context.settings.general.screenScalings.end ()
+                                 ? scalingIt->second
+                                 : this->m_context.settings.render.window.scalingMode;
+        const auto clamp = clampIt != this->m_context.settings.general.screenClamps.end ()
+                               ? clampIt->second
+                               : this->m_context.settings.render.window.clamp;
+
         m_renderContext->setWallpaper (
             background,
             WallpaperEngine::Render::CWallpaper::fromWallpaper (
                 *info->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (),
-                this->m_context.settings.general.screenScalings [background],
-                this->m_context.settings.general.screenClamps [background]
+                scaling,
+                clamp
             )
         );
     }
