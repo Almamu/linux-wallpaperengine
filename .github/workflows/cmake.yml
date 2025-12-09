@@ -1,26 +1,15 @@
 name: CMake
 
 on:
+  workflow_run:
+    workflows: [tests]
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/cmake.yml'
-      - 'src/**'
-      - 'CMakeModules/**'
-      - CMakeLists.txt
-      - 'protocols/**'
-    branches: [ "main" ]
-  pull_request:
-    paths:
-      - '.github/workflows/cmake.yml'
-      - 'src/**'
-      - 'CMakeModules/**'
-      - CMakeLists.txt
-      - 'protocols/**'
-    branches: [ "main" ]
 
 jobs:
   build-x11:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
@@ -59,6 +48,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}}
 
   build-x11-wayland:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       actions: read
       contents: read
@@ -112,6 +102,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
 
   build-wayland:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]

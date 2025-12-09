@@ -12,19 +12,17 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# puts the app in demomode, which records a 5 second webm video and quits
 if(NOT DEMOMODE)
     set(DEMOMODE 0)
 endif()
 
+# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 if(NOT ERRORONLY)
     set(ERRORONLY 0)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
-
-# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
-add_compile_definitions(ERRORONLY=${ERRORONLY})
-add_compile_definitions(DEMOMODE=${DEMOMODE})
 
 find_package(X11)
 find_package(OpenGL REQUIRED)
@@ -133,7 +131,9 @@ add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft kissfft)
 add_subdirectory(src/External/argparse argparse)
-
+if(BUILD_TESTING)
+    add_subdirectory(src/External/Catch2)
+endif()
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
 
@@ -164,7 +164,6 @@ if(WAYLAND_SUPPORT_FOUND)
     add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
         COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
 
-    add_compile_definitions(ENABLE_WAYLAND)
     include_directories(${WAYLAND_SUPPORT_INCLUDE_DIRS})
     include_directories(${WAYLAND_OUTPUT_DIR})
     set(WAYLAND_LIBRARIES
@@ -207,7 +206,6 @@ endif()
 
 if(X11_SUPPORT_FOUND)
     include_directories(${X11_INCLUDE_DIR} ${XRANDR_INCLUDE_DIR})
-    add_compile_definitions(ENABLE_X11)
 
     set(X11_LIBRARIES
         ${X11_LIBRARIES}
@@ -221,13 +219,6 @@ if(X11_SUPPORT_FOUND)
         ${X11_INCLUDE_DIR}
         ${XRANDR_INCLUDE_DIR})
     set(CMAKE_REQUIRED_LIBRARIES ${X11_LIBRARIES})
-
-    # make sure some of the X11 functions we'll use are available
-    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
-
-    if(HAVE_XSETIOERROREXITHANDLER)
-        add_compile_definitions(HAVE_XSETIOERROREXITHANDLER=1)
-    endif()
 endif()
 
 if(DEMOMODE)
@@ -265,10 +256,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${X11_INCLUDES})
 
-add_executable(
-    linux-wallpaperengine
-    src/main.cpp
-
+set(COMMON_SOURCES
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h
 
@@ -465,8 +453,29 @@ add_executable(
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     src/WallpaperEngine/Data/Dumpers/StringPrinter.h
-    src/WallpaperEngine/Data/JSON.cpp
+    src/WallpaperEngine/Data/JSON.cpp)
 
+if(BUILD_TESTING)
+    add_executable(
+        tests
+
+        ${COMMON_SOURCES}
+
+        src/WallpaperEngine/Testing/Cases/Example.cpp
+        src/WallpaperEngine/Testing/Render/TestingOpenGLDriver.cpp
+        src/WallpaperEngine/Testing/Render/TestingOpenGLDriver.h
+        src/WallpaperEngine/Testing/Input/TestingMouseInput.cpp
+        src/WallpaperEngine/Testing/Input/TestingMouseInput.h
+        src/WallpaperEngine/Testing/Harnesses/RenderHarness.cpp
+        src/WallpaperEngine/Testing/Harnesses/RenderHarness.h
+        src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp)
+endif()
+
+add_executable(
+    linux-wallpaperengine
+    src/main.cpp
+
+    ${COMMON_SOURCES}
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES})
@@ -492,6 +501,51 @@ target_link_libraries (linux-wallpaperengine PUBLIC
     libcef_dll_wrapper
     argparse)
 
+if (BUILD_TESTING)
+    target_link_libraries (tests PRIVATE
+        Catch2::Catch2WithMain
+        ${OPENGL_LIBRARIES}
+        GLEW::GLEW
+        ${GLUT_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${LZ4_LIBRARY}
+        ${SDL2_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
+        ${MPV_LIBRARY}
+        ${PULSEAUDIO_LIBRARY}
+        ${WAYLAND_LIBRARIES}
+        ${X11_LIBRARIES}
+        kissfft
+        glslang
+        spirv-cross-core
+        spirv-cross-glsl
+        glfw
+        libcef_lib
+        libcef_dll_wrapper
+        argparse)
+endif()
+
+target_compile_definitions(linux-wallpaperengine PUBLIC ERRORONLY=${ERRORONLY})
+target_compile_definitions(linux-wallpaperengine PUBLIC DEMOMODE=${DEMOMODE})
+# tests should give as much output as possible
+target_compile_definitions(tests PRIVATE ERRORONLY=0)
+target_compile_definitions(tests PRIVATE DEMOMODE=0)
+
+if(X11_SUPPORT_FOUND)
+    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_X11)
+
+    # make sure some of the X11 functions we'll use are available
+    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+    if(HAVE_XSETIOERROREXITHANDLER)
+        target_compile_definitions(linux-wallpaperengine PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
+    endif()
+endif()
+
+if(WAYLAND_SUPPORT_FOUND)
+    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_WAYLAND)
+endif()
+
 COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 # remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
@@ -504,15 +558,3 @@ REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
 # set some install parameters if not in debug mode
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)
 install(FILES ${TARGET_OUTPUT_DIRECTORY}/${PROJECT_NAME} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ DESTINATION .)
-
-# Unit tests for mouse coordinate conversions
-enable_testing()
-add_executable(test_mouse_coordinates
-    src/WallpaperEngine/Input/Drivers/test_mouse_coordinates.cpp
-)
-target_include_directories(test_mouse_coordinates PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-# GLM is header-only, no linking needed
-add_test(NAME input_mouse_coordinates COMMAND test_mouse_coordinates)
