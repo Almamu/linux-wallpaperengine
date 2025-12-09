@@ -286,8 +286,11 @@ void WallpaperApplication::initializePlaylists () {
     if (hasDefaultPlaylist &&
         (this->m_context.settings.render.mode == ApplicationContext::NORMAL_WINDOW ||
          this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW)) {
-        registerPlaylist ("default", this->m_context.settings.general.defaultPlaylist.value (),
-                          this->m_context.settings.general.defaultBackground);
+        const auto& playlist = this->m_context.settings.general.defaultPlaylist.value ();
+        const auto currentPath = playlist.items.empty ()
+            ? std::optional<std::filesystem::path> {this->m_context.settings.general.defaultBackground}
+            : std::optional<std::filesystem::path> {playlist.items.front ()};
+        registerPlaylist ("default", playlist, currentPath);
     }
 
     for (const auto& [screen, playlist] : this->m_context.settings.general.screenPlaylists) {
