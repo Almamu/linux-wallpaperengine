@@ -504,7 +504,7 @@ if (BUILD_TESTING)
     target_link_libraries (tests PRIVATE
         Catch2::Catch2WithMain
         ${OPENGL_LIBRARIES}
-        GLEW:GLEW
+        GLEW::GLEW
         ${GLUT_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${LZ4_LIBRARY}
