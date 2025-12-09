@@ -515,4 +515,4 @@ target_include_directories(test_mouse_coordinates PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 # GLM is header-only, no linking needed
-add_test(NAME mouse_coordinate_conversions COMMAND test_mouse_coordinates)
+add_test(NAME input_mouse_coordinates COMMAND test_mouse_coordinates)
