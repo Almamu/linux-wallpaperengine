@@ -35,11 +35,11 @@ class ApplicationContext {
     };
 
     struct PlaylistSettings {
-        uint32_t delayMinutes;
-        std::string mode;
-        std::string order;
-        bool updateOnPause;
-        bool videoSequence;
+        uint32_t delayMinutes = 60;
+        std::string mode = "timer";
+        std::string order = "sequential";
+        bool updateOnPause = false;
+        bool videoSequence = false;
     };
 
     struct PlaylistDefinition {

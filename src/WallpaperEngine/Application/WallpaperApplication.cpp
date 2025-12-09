@@ -326,7 +326,10 @@ bool WallpaperApplication::preflightWallpaper (const std::string& path) {
         // avoid mutating state, just ensure project.json parses
         auto container = this->setupAssetLocator (path);
         const auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
-        (void) json;
+        if (!json.contains ("type") || !json.contains ("file")) {
+            sLog.error ("Preflight failed for ", path, ": missing required fields");
+            return false;
+        }
         return true;
     } catch (const std::exception& e) {
         sLog.error ("Preflight failed for ", path, ": ", e.what ());
@@ -430,14 +433,8 @@ void WallpaperApplication::advancePlaylist (
     if (!loaded) {
         playlist.failedIndices.insert (playlist.order [playlist.orderIndex]);
 
-        std::size_t candidateAfterFailure = (playlist.orderIndex + 1) % playlist.order.size ();
-
-        if (!this->selectNextCandidate (playlist, candidateAfterFailure)) {
-            sLog.error ("All playlist items failed for ", screen, ", keeping current wallpaper");
-            playlist.orderIndex = playlist.orderIndex == 0 ? 0 : playlist.orderIndex - 1;
-        } else {
-            playlist.orderIndex = candidateAfterFailure;
-        }
+        // Keep current position; next timer tick will retry advancement
+        sLog.error ("Failed to load wallpaper for ", screen, ", will retry on next cycle");
     }
 
     const uint32_t delayMinutes = std::max<uint32_t> (1, playlist.definition.settings.delayMinutes);

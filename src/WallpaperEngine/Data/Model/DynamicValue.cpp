@@ -1,4 +1,5 @@
 #include "DynamicValue.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Model;
 
@@ -344,6 +345,7 @@ void DynamicValue::disconnect () {
         try {
             deregister ();
         } catch (...) {
+            sLog.error ("Exception during listener deregistration");
         }
     }
 

@@ -100,9 +100,6 @@ void ApplicationContext::loadPlaylistsFromConfig () {
             if (resolvedPath.empty ())
                 continue;
 
-            if (std::filesystem::is_regular_file (resolvedPath))
-                resolvedPath = resolvedPath.parent_path ();
-
             if (!std::filesystem::exists (resolvedPath)) {
                 sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
                 continue;
