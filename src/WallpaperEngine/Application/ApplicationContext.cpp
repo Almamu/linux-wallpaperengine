@@ -25,12 +25,14 @@ std::filesystem::path ApplicationContext::resolvePlaylistItemPath (const std::st
 
     std::string cleaned = raw;
 
-    std::replace (cleaned.begin (), cleaned.end (), '\\', '/');
+    
 
     constexpr std::string_view windowsPrefix = "\\\\?\\";
 
     if (cleaned.rfind (windowsPrefix, 0) == 0)
         cleaned = cleaned.substr (windowsPrefix.length ());
+
+    std::replace (cleaned.begin (), cleaned.end (), '\\', '/');
 
     if (cleaned.size () > 1 && cleaned[1] == ':')
         cleaned = cleaned.substr (2);
