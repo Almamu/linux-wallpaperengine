@@ -527,6 +527,9 @@ endif()
 
 target_compile_definitions(linux-wallpaperengine PUBLIC ERRORONLY=${ERRORONLY})
 target_compile_definitions(linux-wallpaperengine PUBLIC DEMOMODE=${DEMOMODE})
+# tests should give as much output as possible
+target_compile_definitions(tests PRIVATE ERRORONLY=0)
+target_compile_definitions(tests PRIVATE DEMOMODE=0)
 
 if(X11_SUPPORT_FOUND)
     target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_X11)
