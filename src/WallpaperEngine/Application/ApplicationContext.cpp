@@ -301,7 +301,9 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
                     }
                 } else {
                     this->settings.general.screenPlaylists [lastScreen] = playlist;
-                    this->settings.general.screenBackgrounds [lastScreen] = playlist.items.front ();
+                    if (!playlist.items.empty ()) {
+                        this->settings.general.screenBackgrounds [lastScreen] = playlist.items.front ();
+                    }
 
                     if (this->settings.general.defaultBackground.empty () && !playlist.items.empty ()) {
                         this->settings.general.defaultBackground = playlist.items.front ();
