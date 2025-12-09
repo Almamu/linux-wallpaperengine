@@ -144,5 +144,6 @@ class WallpaperApplication {
     std::unique_ptr <WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
     std::mt19937 m_playlistRng {std::random_device {} ()};
     bool m_isPaused = false;
+    std::chrono::steady_clock::time_point m_pauseStart {};
 };
 } // namespace WallpaperEngine::Application

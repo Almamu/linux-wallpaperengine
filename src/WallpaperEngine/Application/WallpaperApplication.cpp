@@ -720,10 +720,22 @@ void WallpaperApplication::show () {
         // check for fullscreen windows and wait until there's none fullscreen
         if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
             this->m_isPaused = true;
+            this->m_pauseStart = std::chrono::steady_clock::now ();
+
             m_renderContext->setPause (true);
             while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning)
                 usleep (FULLSCREEN_CHECK_WAIT_TIME);
             m_renderContext->setPause (false);
+
+            // account for paused duration in playlist timers
+            const auto pausedNow = std::chrono::steady_clock::now ();
+            const auto pausedDuration = pausedNow - this->m_pauseStart;
+
+            for (auto& [_, playlist] : this->m_activePlaylists) {
+                playlist.nextSwitch += pausedDuration;
+                playlist.lastUpdate += pausedDuration;
+            }
+
             this->m_isPaused = false;
         }
 
