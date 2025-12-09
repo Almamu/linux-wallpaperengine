@@ -206,6 +206,7 @@ ApplicationContext::getPlaylistFromConfig (const std::string& name) {
         const std::string availableText = available.empty () ? "" : std::string (". Available: ") + available;
 
         sLog.exception ("Playlist not found in config.json: ", name, availableText);
+        throw std::runtime_error ("Playlist not found: " + name);
     }
 
     return cur->second;
