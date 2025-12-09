@@ -203,6 +203,9 @@ class ApplicationContext {
     std::filesystem::path resolvePlaylistItemPath (const std::string& raw) const;
     std::filesystem::path configFilePath () const;
     std::optional<WallpaperEngine::Data::JSON::JSON> parseConfigJson (const std::filesystem::path& path) const;
+    PlaylistSettings parsePlaylistSettings (const WallpaperEngine::Data::JSON::JSON& playlistJson) const;
+    std::vector<std::filesystem::path> collectPlaylistItems (const WallpaperEngine::Data::JSON::JSON& playlistJson,
+                                                             const std::string& name) const;
     std::optional<PlaylistDefinition> buildPlaylistDefinition (const WallpaperEngine::Data::JSON::JSON& playlistJson,
                                                                const std::string& fallbackName) const;
     void registerPlaylist (PlaylistDefinition&& definition);

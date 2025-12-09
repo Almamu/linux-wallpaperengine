@@ -80,41 +80,10 @@ std::optional<ApplicationContext::PlaylistDefinition>
 ApplicationContext::buildPlaylistDefinition (const JSON& playlistJson, const std::string& fallbackName) const {
     PlaylistDefinition definition;
     definition.name = playlistJson.optional<std::string> ("name", fallbackName);
-
-    const auto settings = playlistJson.optional ("settings");
-    definition.settings.delayMinutes = settings ? settings->optional<uint32_t> ("delay", 60) : 60;
-    definition.settings.mode = settings ? settings->optional<std::string> ("mode", "timer") : "timer";
-    definition.settings.order = settings ? settings->optional<std::string> ("order", "sequential") : "sequential";
-    definition.settings.updateOnPause = settings ? settings->optional<bool> ("updateonpause", false) : false;
-    definition.settings.videoSequence = settings ? settings->optional<bool> ("videosequence", false) : false;
-
-    const auto items = playlistJson.optional ("items");
-
-    if (!items.has_value () || !items->is_array ()) {
-        sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name, ": missing items");
-        return std::nullopt;
-    }
-
-    for (const auto& rawItem : *items) {
-        if (!rawItem.is_string ())
-            continue;
-
-        auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
-
-        if (resolvedPath.empty ())
-            continue;
-
-        if (!std::filesystem::exists (resolvedPath)) {
-            sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
-            continue;
-        }
-
-        definition.items.push_back (resolvedPath);
-    }
+    definition.settings = this->parsePlaylistSettings (playlistJson);
+    definition.items = this->collectPlaylistItems (playlistJson, definition.name.empty () ? fallbackName : definition.name);
 
     if (definition.items.empty ()) {
-        sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name,
-                    ": no usable items found");
         return std::nullopt;
     }
 
@@ -128,6 +97,51 @@ ApplicationContext::buildPlaylistDefinition (const JSON& playlistJson, const std
     }
 
     return definition;
+}
+
+ApplicationContext::PlaylistSettings ApplicationContext::parsePlaylistSettings (const JSON& playlistJson) const {
+    PlaylistSettings settings;
+    const auto settingsJson = playlistJson.optional ("settings");
+    settings.delayMinutes = settingsJson ? settingsJson->optional<uint32_t> ("delay", 60) : 60;
+    settings.mode = settingsJson ? settingsJson->optional<std::string> ("mode", "timer") : "timer";
+    settings.order = settingsJson ? settingsJson->optional<std::string> ("order", "sequential") : "sequential";
+    settings.updateOnPause = settingsJson ? settingsJson->optional<bool> ("updateonpause", false) : false;
+    settings.videoSequence = settingsJson ? settingsJson->optional<bool> ("videosequence", false) : false;
+    return settings;
+}
+
+std::vector<std::filesystem::path>
+ApplicationContext::collectPlaylistItems (const JSON& playlistJson, const std::string& name) const {
+    std::vector<std::filesystem::path> items;
+    const auto jsonItems = playlistJson.optional ("items");
+
+    if (!jsonItems.has_value () || !jsonItems->is_array ()) {
+        sLog.error ("Skipping playlist ", name, ": missing items");
+        return items;
+    }
+
+    for (const auto& rawItem : *jsonItems) {
+        if (!rawItem.is_string ())
+            continue;
+
+        auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
+
+        if (resolvedPath.empty ())
+            continue;
+
+        if (!std::filesystem::exists (resolvedPath)) {
+            sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
+            continue;
+        }
+
+        items.push_back (resolvedPath);
+    }
+
+    if (items.empty ()) {
+        sLog.error ("Skipping playlist ", name, ": no usable items found");
+    }
+
+    return items;
 }
 
 void ApplicationContext::registerPlaylist (PlaylistDefinition&& definition) {
