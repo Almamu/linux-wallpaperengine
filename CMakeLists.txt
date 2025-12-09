@@ -165,6 +165,7 @@ if(WAYLAND_SUPPORT_FOUND)
         COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
 
     add_compile_definitions(ENABLE_WAYLAND)
+    include_directories(${WAYLAND_SUPPORT_INCLUDE_DIRS})
     include_directories(${WAYLAND_OUTPUT_DIR})
     set(WAYLAND_LIBRARIES
         pthread
