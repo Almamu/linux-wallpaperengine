@@ -1,13 +1,16 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <string>
+#include <optional>
 #include <vector>
 
 #include <glm/vec4.hpp>
 
 #include "ApplicationState.h"
+#include "WallpaperEngine/Data/JSON.h"
 
 #include "../Render/TextureProvider.h"
 #include "WallpaperEngine/Render/WallpaperState.h"
@@ -32,6 +35,20 @@ class ApplicationContext {
         EXPLICIT_WINDOW = 2,
     };
 
+    struct PlaylistSettings {
+        uint32_t delayMinutes = 60;
+        std::string mode = "timer";
+        std::string order = "sequential";
+        bool updateOnPause = false;
+        bool videoSequence = false;
+    };
+
+    struct PlaylistDefinition {
+        std::string name;
+        std::vector<std::filesystem::path> items;
+        PlaylistSettings settings;
+    };
+
     struct {
         /**
          * General settings
@@ -53,6 +70,10 @@ class ApplicationContext {
             std::map<std::string, WallpaperEngine::Render::WallpaperState::TextureUVsScaling> screenScalings;
             /** The clamping mode for different screens */
             std::map<std::string, TextureFlags> screenClamps;
+            /** Playlists selected per screen */
+            std::map<std::string, PlaylistDefinition> screenPlaylists;
+            /** Playlist used in window mode */
+            std::optional<PlaylistDefinition> defaultPlaylist;
         } general;
 
         /**
@@ -119,6 +140,8 @@ class ApplicationContext {
             .properties = {},
             .screenScalings = {},
             .screenClamps = {},
+            .screenPlaylists = {},
+            .defaultPlaylist = std::nullopt,
         },
         .render = {
             .mode = NORMAL_WINDOW,
@@ -175,5 +198,20 @@ class ApplicationContext {
      * @return
      */
     static std::filesystem::path translateBackground (const std::string& bgIdOrPath);
+
+    void loadPlaylistsFromConfig ();
+    std::filesystem::path resolvePlaylistItemPath (const std::string& raw) const;
+    std::filesystem::path configFilePath () const;
+    std::optional<WallpaperEngine::Data::JSON::JSON> parseConfigJson (const std::filesystem::path& path) const;
+    PlaylistSettings parsePlaylistSettings (const WallpaperEngine::Data::JSON::JSON& playlistJson) const;
+    std::vector<std::filesystem::path> collectPlaylistItems (const WallpaperEngine::Data::JSON::JSON& playlistJson,
+                                                             const std::string& name) const;
+    std::optional<PlaylistDefinition> buildPlaylistDefinition (const WallpaperEngine::Data::JSON::JSON& playlistJson,
+                                                               const std::string& fallbackName) const;
+    void registerPlaylist (PlaylistDefinition&& definition);
+    [[nodiscard]] const PlaylistDefinition& getPlaylistFromConfig (const std::string& name);
+
+    std::map<std::string, PlaylistDefinition> m_configPlaylists;
+    bool m_loadedConfigPlaylists = false;
 };
 } // namespace WallpaperEngine::Application

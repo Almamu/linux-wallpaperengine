@@ -2,10 +2,14 @@
 
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Data/JSON.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
+#include <string_view>
 
 #include <argparse/argparse.hpp>
 
@@ -13,6 +17,216 @@
 #define APP_DIRECTORY "wallpaper_engine"
 
 using namespace WallpaperEngine::Application;
+using WallpaperEngine::Data::JSON::JSON;
+
+std::filesystem::path ApplicationContext::resolvePlaylistItemPath (const std::string& raw) const {
+    if (raw.empty ())
+        return {};
+
+    std::string cleaned = raw;
+
+    
+
+    constexpr std::string_view windowsPrefix = "\\\\?\\";
+
+    if (cleaned.rfind (windowsPrefix, 0) == 0)
+        cleaned = cleaned.substr (windowsPrefix.length ());
+
+    std::replace (cleaned.begin (), cleaned.end (), '\\', '/');
+
+    if (cleaned.size () > 1 && cleaned[1] == ':')
+        cleaned = cleaned.substr (2);
+
+    if (!cleaned.empty () && cleaned.front () != '/')
+        cleaned.insert (cleaned.begin (), '/');
+
+    std::filesystem::path path = std::filesystem::path (cleaned).lexically_normal ();
+
+    if (std::filesystem::is_regular_file (path))
+        path = path.parent_path ();
+
+    return path;
+}
+
+std::filesystem::path ApplicationContext::configFilePath () const {
+    try {
+        return Steam::FileSystem::appDirectory (APP_DIRECTORY, "") / "config.json";
+    } catch (std::runtime_error&) {
+        sLog.exception ("Cannot locate wallpaper engine installation to read config.json");
+        return {};
+    }
+}
+
+std::optional<JSON> ApplicationContext::parseConfigJson (const std::filesystem::path& path) const {
+    if (path.empty ())
+        return std::nullopt;
+
+    std::ifstream configFile (path);
+
+    if (!configFile.is_open ()) {
+        sLog.exception ("Cannot open wallpaper engine config file at ", path);
+        return std::nullopt;
+    }
+
+    try {
+        return JSON::parse (configFile);
+    } catch (const std::exception& e) {
+        sLog.error ("Failed parsing wallpaper engine config.json: ", e.what ());
+        return std::nullopt;
+    }
+}
+
+std::optional<ApplicationContext::PlaylistDefinition>
+ApplicationContext::buildPlaylistDefinition (const JSON& playlistJson, const std::string& fallbackName) const {
+    PlaylistDefinition definition;
+    definition.name = playlistJson.optional<std::string> ("name", fallbackName);
+    definition.settings = this->parsePlaylistSettings (playlistJson);
+    definition.items = this->collectPlaylistItems (playlistJson, definition.name.empty () ? fallbackName : definition.name);
+
+    if (definition.items.empty ()) {
+        return std::nullopt;
+    }
+
+    if (definition.name.empty ()) {
+        if (fallbackName.empty ()) {
+            sLog.error ("Skipping playlist with no name");
+            return std::nullopt;
+        }
+
+        definition.name = fallbackName;
+    }
+
+    return definition;
+}
+
+ApplicationContext::PlaylistSettings ApplicationContext::parsePlaylistSettings (const JSON& playlistJson) const {
+    PlaylistSettings settings;
+    const auto settingsJson = playlistJson.optional ("settings");
+    settings.delayMinutes = settingsJson ? settingsJson->optional<uint32_t> ("delay", 60) : 60;
+    settings.mode = settingsJson ? settingsJson->optional<std::string> ("mode", "timer") : "timer";
+    settings.order = settingsJson ? settingsJson->optional<std::string> ("order", "sequential") : "sequential";
+    settings.updateOnPause = settingsJson ? settingsJson->optional<bool> ("updateonpause", false) : false;
+    settings.videoSequence = settingsJson ? settingsJson->optional<bool> ("videosequence", false) : false;
+    return settings;
+}
+
+std::vector<std::filesystem::path>
+ApplicationContext::collectPlaylistItems (const JSON& playlistJson, const std::string& name) const {
+    std::vector<std::filesystem::path> items;
+    const auto jsonItems = playlistJson.optional ("items");
+
+    if (!jsonItems.has_value () || !jsonItems->is_array ()) {
+        sLog.error ("Skipping playlist ", name, ": missing items");
+        return items;
+    }
+
+    for (const auto& rawItem : *jsonItems) {
+        if (!rawItem.is_string ())
+            continue;
+
+        auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
+
+        if (resolvedPath.empty ())
+            continue;
+
+        if (!std::filesystem::exists (resolvedPath)) {
+            sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
+            continue;
+        }
+
+        items.push_back (resolvedPath);
+    }
+
+    if (items.empty ()) {
+        sLog.error ("Skipping playlist ", name, ": no usable items found");
+    }
+
+    return items;
+}
+
+void ApplicationContext::registerPlaylist (PlaylistDefinition&& definition) {
+    this->m_configPlaylists.insert_or_assign (definition.name, std::move (definition));
+}
+
+void ApplicationContext::loadPlaylistsFromConfig () {
+    if (this->m_loadedConfigPlaylists)
+        return;
+
+    this->m_loadedConfigPlaylists = true;
+
+    const auto configPath = this->configFilePath ();
+    const auto root = this->parseConfigJson (configPath);
+    if (!root.has_value ())
+        return;
+
+    const auto steamUser = root->optional ("steamuser");
+
+    if (!steamUser.has_value ()) {
+        sLog.exception ("Cannot find steamuser section in config.json");
+    }
+
+    auto addPlaylist = [this](const JSON& playlistJson, const std::string& fallbackName) {
+        auto definition = this->buildPlaylistDefinition (playlistJson, fallbackName);
+        if (!definition)
+            return;
+        this->registerPlaylist (std::move (*definition));
+    };
+
+    if (const auto general = steamUser->optional ("general")) {
+        if (const auto playlists = general->optional ("playlists")) {
+            for (const auto& playlist : *playlists) {
+                try {
+                    addPlaylist (playlist, playlist.optional<std::string> ("name", ""));
+                } catch (const std::exception& e) {
+                    sLog.error ("Failed parsing playlist: ", e.what ());
+                }
+            }
+        }
+    }
+
+    if (const auto wallpaperConfig = steamUser->optional ("wallpaperconfig")) {
+        if (const auto selected = wallpaperConfig->optional ("selectedwallpapers")) {
+            for (const auto& entry : selected->items ()) {
+                const auto playlist = entry.value ().optional ("playlist");
+
+                if (!playlist.has_value ())
+                    continue;
+
+                try {
+                    addPlaylist (*playlist, entry.key ());
+                } catch (const std::exception& e) {
+                    sLog.error ("Failed parsing playlist for ", entry.key (), ": ", e.what ());
+                }
+            }
+        }
+    }
+}
+
+const ApplicationContext::PlaylistDefinition&
+ApplicationContext::getPlaylistFromConfig (const std::string& name) {
+    if (!this->m_loadedConfigPlaylists) {
+        this->loadPlaylistsFromConfig ();
+    }
+
+    const auto cur = this->m_configPlaylists.find (name);
+
+    if (cur == this->m_configPlaylists.end ()) {
+        std::string available;
+
+        for (auto it = this->m_configPlaylists.begin (); it != this->m_configPlaylists.end (); ++it) {
+            available += it->first;
+            if (std::next (it) != this->m_configPlaylists.end ())
+                available += ", ";
+        }
+
+        const std::string availableText = available.empty () ? "" : std::string (". Available: ") + available;
+
+        sLog.exception ("Playlist not found in config.json: ", name, availableText);
+        throw std::runtime_error ("Playlist not found: " + name);
+    }
+
+    return cur->second;
+}
 
 ApplicationContext::ApplicationContext (int argc, char* argv []) :
     m_argc (argc),
@@ -87,6 +301,28 @@ ApplicationContext::ApplicationContext (int argc, char* argv []) :
                 this->settings.general.screenBackgrounds [lastScreen] = translateBackground (value);
                 // set the default background to the last one used
                 this->settings.general.defaultBackground = translateBackground (value);
+            })
+            .append ();
+        backgroundGroup.add_argument ("--playlist")
+            .help ("Uses a playlist from wallpaper engine's config.json. If used after --screen-root it is applied to that screen, otherwise it is used in window mode.")
+            .action ([this, &lastScreen](const std::string& value) -> void {
+                const auto& playlist = this->getPlaylistFromConfig (value);
+
+                if (lastScreen.empty ()) {
+                    this->settings.general.defaultPlaylist = playlist;
+                    if (this->settings.general.defaultBackground.empty () && !playlist.items.empty ()) {
+                        this->settings.general.defaultBackground = playlist.items.front ();
+                    }
+                } else {
+                    this->settings.general.screenPlaylists [lastScreen] = playlist;
+                    if (!playlist.items.empty ()) {
+                        this->settings.general.screenBackgrounds [lastScreen] = playlist.items.front ();
+                    }
+
+                    if (this->settings.general.defaultBackground.empty () && !playlist.items.empty ()) {
+                        this->settings.general.defaultBackground = playlist.items.front ();
+                    }
+                }
             })
             .append ();
         backgroundGroup.add_argument ("--scaling")
