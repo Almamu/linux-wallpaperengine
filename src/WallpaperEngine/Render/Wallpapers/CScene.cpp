@@ -284,6 +284,8 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
 
     // calculate the current position of the mouse in viewport space [0, 1]
     double mouseX = glm::clamp ((position.x - viewport.x) / viewport.z, 0.0, 1.0);
+    // Normalize Y coordinate (OpenGL convention: 0=bottom, 1=top)
+    // Particle code expects this convention: 0=bottom results in negative Y (down), 1=top results in positive Y (up)
     double mouseY = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
 
     // Account for UV cropping when using fill/fit scaling modes

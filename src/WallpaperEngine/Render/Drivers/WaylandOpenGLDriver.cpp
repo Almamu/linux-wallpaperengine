@@ -42,10 +42,14 @@ static void handlePointerMotion (void* data, struct wl_pointer* wl_pointer, uint
     const auto driver = static_cast<WaylandOpenGLDriver*> (data);
 
     const auto x = wl_fixed_to_double (surface_x);
-    const auto y = wl_fixed_to_double (surface_y);
+    auto y = wl_fixed_to_double (surface_y);
 
     if (!driver->viewportInFocus)
         return;
+
+    // Convert from Wayland coordinate system (Y=0 at top) to OpenGL coordinate system (Y=0 at bottom)
+    const double viewportHeight = static_cast<double> (driver->viewportInFocus->size.y);
+    y = viewportHeight - y;
 
     driver->viewportInFocus->mousePos = {x * driver->viewportInFocus->scale, y * driver->viewportInFocus->scale};
 }

@@ -94,7 +94,8 @@ void CWeb::updateMouse (const glm::ivec4& viewport) {
     CefMouseEvent evt;
     // Set mouse current position. Maybe clamps are not needed
     evt.x = std::clamp (static_cast<int> (position.x - viewport.x), 0, viewport.z);
-    evt.y = std::clamp (static_cast<int> (position.y - viewport.y), 0, viewport.w);
+    // Convert from OpenGL coordinates (Y=0 at bottom) to CEF coordinates (Y=0 at top)
+    evt.y = viewport.w - std::clamp (static_cast<int> (position.y - viewport.y), 0, viewport.w);
     // Send mouse position to cef
     this->m_browser->GetHost ()->SendMouseMoveEvent (evt, false);
 
