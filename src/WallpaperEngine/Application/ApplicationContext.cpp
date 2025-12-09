@@ -46,85 +46,114 @@ std::filesystem::path ApplicationContext::resolvePlaylistItemPath (const std::st
     return path;
 }
 
+std::filesystem::path ApplicationContext::configFilePath () const {
+    try {
+        return Steam::FileSystem::appDirectory (APP_DIRECTORY, "") / "config.json";
+    } catch (std::runtime_error&) {
+        sLog.exception ("Cannot locate wallpaper engine installation to read config.json");
+        return {};
+    }
+}
+
+std::optional<JSON> ApplicationContext::parseConfigJson (const std::filesystem::path& path) const {
+    if (path.empty ())
+        return std::nullopt;
+
+    std::ifstream configFile (path);
+
+    if (!configFile.is_open ()) {
+        sLog.exception ("Cannot open wallpaper engine config file at ", path);
+        return std::nullopt;
+    }
+
+    try {
+        return JSON::parse (configFile);
+    } catch (const std::exception& e) {
+        sLog.error ("Failed parsing wallpaper engine config.json: ", e.what ());
+        return std::nullopt;
+    }
+}
+
+std::optional<ApplicationContext::PlaylistDefinition>
+ApplicationContext::buildPlaylistDefinition (const JSON& playlistJson, const std::string& fallbackName) const {
+    PlaylistDefinition definition;
+    definition.name = playlistJson.optional<std::string> ("name", fallbackName);
+
+    const auto settings = playlistJson.optional ("settings");
+    definition.settings.delayMinutes = settings ? settings->optional<uint32_t> ("delay", 60) : 60;
+    definition.settings.mode = settings ? settings->optional<std::string> ("mode", "timer") : "timer";
+    definition.settings.order = settings ? settings->optional<std::string> ("order", "sequential") : "sequential";
+    definition.settings.updateOnPause = settings ? settings->optional<bool> ("updateonpause", false) : false;
+    definition.settings.videoSequence = settings ? settings->optional<bool> ("videosequence", false) : false;
+
+    const auto items = playlistJson.optional ("items");
+
+    if (!items.has_value () || !items->is_array ()) {
+        sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name, ": missing items");
+        return std::nullopt;
+    }
+
+    for (const auto& rawItem : *items) {
+        if (!rawItem.is_string ())
+            continue;
+
+        auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
+
+        if (resolvedPath.empty ())
+            continue;
+
+        if (!std::filesystem::exists (resolvedPath)) {
+            sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
+            continue;
+        }
+
+        definition.items.push_back (resolvedPath);
+    }
+
+    if (definition.items.empty ()) {
+        sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name,
+                    ": no usable items found");
+        return std::nullopt;
+    }
+
+    if (definition.name.empty ()) {
+        if (fallbackName.empty ()) {
+            sLog.error ("Skipping playlist with no name");
+            return std::nullopt;
+        }
+
+        definition.name = fallbackName;
+    }
+
+    return definition;
+}
+
+void ApplicationContext::registerPlaylist (PlaylistDefinition&& definition) {
+    this->m_configPlaylists.insert_or_assign (definition.name, std::move (definition));
+}
+
 void ApplicationContext::loadPlaylistsFromConfig () {
     if (this->m_loadedConfigPlaylists)
         return;
 
     this->m_loadedConfigPlaylists = true;
 
-    std::filesystem::path configPath;
+    const auto configPath = this->configFilePath ();
+    const auto root = this->parseConfigJson (configPath);
+    if (!root.has_value ())
+        return;
 
-    try {
-        configPath = Steam::FileSystem::appDirectory (APP_DIRECTORY, "") / "config.json";
-    } catch (std::runtime_error&) {
-        sLog.exception ("Cannot locate wallpaper engine installation to read config.json");
-    }
-
-    std::ifstream configFile (configPath);
-
-    if (!configFile.is_open ()) {
-        sLog.exception ("Cannot open wallpaper engine config file at ", configPath);
-    }
-
-    const auto root = JSON::parse (configFile);
-    const auto steamUser = root.optional ("steamuser");
+    const auto steamUser = root->optional ("steamuser");
 
     if (!steamUser.has_value ()) {
         sLog.exception ("Cannot find steamuser section in config.json");
     }
 
-    auto addPlaylist = [this](const JSON& playlistJson, const std::string& fallbackName) -> bool {
-        PlaylistDefinition definition;
-        definition.name = playlistJson.optional<std::string> ("name", fallbackName);
-
-        const auto settings = playlistJson.optional ("settings");
-        definition.settings.delayMinutes = settings ? settings->optional<uint32_t> ("delay", 60) : 60;
-        definition.settings.mode = settings ? settings->optional<std::string> ("mode", "timer") : "timer";
-        definition.settings.order = settings ? settings->optional<std::string> ("order", "sequential") : "sequential";
-        definition.settings.updateOnPause = settings ? settings->optional<bool> ("updateonpause", false) : false;
-        definition.settings.videoSequence = settings ? settings->optional<bool> ("videosequence", false) : false;
-
-        const auto items = playlistJson.optional ("items");
-
-        if (!items.has_value () || !items->is_array ()) {
-            sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name, ": missing items");
-            return false;
-        }
-
-        for (const auto& rawItem : *items) {
-            if (!rawItem.is_string ())
-                continue;
-
-            auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
-
-            if (resolvedPath.empty ())
-                continue;
-
-            if (!std::filesystem::exists (resolvedPath)) {
-                sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
-                continue;
-            }
-
-            definition.items.push_back (resolvedPath);
-        }
-
-        if (definition.items.empty ()) {
-            sLog.error ("Skipping playlist ", definition.name.empty () ? fallbackName : definition.name,
-                        ": no usable items found");
-            return false;
-        }
-
-        if (definition.name.empty ()) {
-            if (fallbackName.empty ()) {
-                sLog.error ("Skipping playlist with no name");
-                return false;
-            }
-
-            definition.name = fallbackName;
-        }
-
-        this->m_configPlaylists.insert_or_assign (definition.name, std::move (definition));
-        return true;
+    auto addPlaylist = [this](const JSON& playlistJson, const std::string& fallbackName) {
+        auto definition = this->buildPlaylistDefinition (playlistJson, fallbackName);
+        if (!definition)
+            return;
+        this->registerPlaylist (std::move (*definition));
     };
 
     if (const auto general = steamUser->optional ("general")) {

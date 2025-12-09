@@ -10,6 +10,7 @@
 #include <glm/vec4.hpp>
 
 #include "ApplicationState.h"
+#include "WallpaperEngine/Data/JSON.h"
 
 #include "../Render/TextureProvider.h"
 #include "WallpaperEngine/Render/WallpaperState.h"
@@ -200,6 +201,11 @@ class ApplicationContext {
 
     void loadPlaylistsFromConfig ();
     std::filesystem::path resolvePlaylistItemPath (const std::string& raw) const;
+    std::filesystem::path configFilePath () const;
+    std::optional<WallpaperEngine::Data::JSON::JSON> parseConfigJson (const std::filesystem::path& path) const;
+    std::optional<PlaylistDefinition> buildPlaylistDefinition (const WallpaperEngine::Data::JSON::JSON& playlistJson,
+                                                               const std::string& fallbackName) const;
+    void registerPlaylist (PlaylistDefinition&& definition);
     [[nodiscard]] const PlaylistDefinition& getPlaylistFromConfig (const std::string& name);
 
     std::map<std::string, PlaylistDefinition> m_configPlaylists;
