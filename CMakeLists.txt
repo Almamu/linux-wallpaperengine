@@ -504,3 +504,15 @@ REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
 # set some install parameters if not in debug mode
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)
 install(FILES ${TARGET_OUTPUT_DIRECTORY}/${PROJECT_NAME} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ DESTINATION .)
+
+# Unit tests for mouse coordinate conversions
+enable_testing()
+add_executable(test_mouse_coordinates
+    src/WallpaperEngine/Input/Drivers/test_mouse_coordinates.cpp
+)
+target_include_directories(test_mouse_coordinates PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+# GLM is header-only, no linking needed
+add_test(NAME mouse_coordinate_conversions COMMAND test_mouse_coordinates)
