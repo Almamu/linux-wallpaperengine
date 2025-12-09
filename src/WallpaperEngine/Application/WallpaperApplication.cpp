@@ -460,7 +460,6 @@ void WallpaperApplication::updatePlaylists () {
     const auto now = std::chrono::steady_clock::now ();
 
     for (auto& [screen, playlist] : this->m_activePlaylists) {
-        const auto elapsed = now - playlist.lastUpdate;
         playlist.lastUpdate = now;
 
         if (playlist.definition.settings.mode != "timer")
