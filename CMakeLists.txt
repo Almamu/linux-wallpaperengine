@@ -12,6 +12,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# puts the app in demomode, which records a 5 second webm video and quits
 if(NOT DEMOMODE)
     set(DEMOMODE 0)
 endif()
@@ -22,10 +23,6 @@ if(NOT ERRORONLY)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
-
-# if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
-add_compile_definitions(ERRORONLY=${ERRORONLY})
-add_compile_definitions(DEMOMODE=${DEMOMODE})
 
 find_package(X11)
 find_package(OpenGL REQUIRED)
@@ -505,9 +502,9 @@ target_link_libraries (linux-wallpaperengine PUBLIC
 
 if (BUILD_TESTING)
     target_link_libraries (tests PRIVATE
-        Catch2::Catch2WithMain PUBLIC
+        Catch2::Catch2WithMain
         ${OPENGL_LIBRARIES}
-        ${GLEW_LIBRARIES}
+        GLEW:GLEW
         ${GLUT_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${LZ4_LIBRARY}

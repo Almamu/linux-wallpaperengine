@@ -50,10 +50,13 @@ TestingOpenGLDriver::TestingOpenGLDriver(ApplicationContext& context, WallpaperA
     if (context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW ||
         context.settings.render.mode == ApplicationContext::NORMAL_WINDOW) {
         m_output = new WallpaperEngine::Render::Drivers::Output::GLFWWindowOutput (context, *this);
+    } else {
+        throw std::runtime_error ("Invalid render mode");
     }
 }
 
 TestingOpenGLDriver::~TestingOpenGLDriver () {
+    delete this->m_output;
     glfwTerminate();
 }
 
