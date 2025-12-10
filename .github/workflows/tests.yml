@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '.github/workflows/tests.yml'
+      - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/tests.yml'
+      - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
@@ -24,7 +26,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  testing:
+  tests:
     strategy:
       matrix:
         os: [ubuntu-24.04]
