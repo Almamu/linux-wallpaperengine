@@ -89,6 +89,17 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     m_maxParticles = (adjustedMaxCount > 0) ? adjustedMaxCount : DEFAULT_MAX_PARTICLES;
     m_particles.resize (m_maxParticles);
 
+
+    // Calculate buffer sizes
+    // Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
+    // Normal particles: 4 vertices, 6 indices
+    const int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
+    const int verticesPerParticle = m_useTrailRenderer ? (segmentsPerParticle + 1) * 2 : 4;
+    const int indicesPerParticle = m_useTrailRenderer ? segmentsPerParticle * 6 : 6;
+
+    m_vertices.resize (m_maxParticles * verticesPerParticle * 17);
+    m_indices.resize (m_maxParticles * indicesPerParticle);
+
     sLog.out ("Particle '", particle.name, "' max particles: ", m_maxParticles,
               " (maxCount=", particle.maxCount, " * countMultiplier=", countMultiplier, ")");
 }
@@ -106,6 +117,9 @@ CParticle::~CParticle () {
     if (m_shaderProgram != 0) {
         glDeleteProgram (m_shaderProgram);
     }
+
+    m_vertices.clear();
+    m_indices.clear();
 }
 
 void CParticle::setup () {
@@ -1472,22 +1486,10 @@ void CParticle::renderSprites () {
     if (aliveCount == 0)
         return;
 
-    // Calculate buffer sizes
-    // Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
-    // Normal particles: 4 vertices, 6 indices
-    int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
-    int verticesPerParticle = m_useTrailRenderer ? (segmentsPerParticle + 1) * 2 : 4;
-    int indicesPerParticle = m_useTrailRenderer ? segmentsPerParticle * 6 : 6;
+    const int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
 
-    // Prepare vertex data
-    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats per vertex
-    std::vector<float> vertices;
-    vertices.reserve (aliveCount * verticesPerParticle * 17);
-
-    // Prepare index data
-    std::vector<uint32_t> indices;
-    indices.reserve (aliveCount * indicesPerParticle);
-
+    uint32_t writtenVertexValues = 0;
+    uint32_t writtenIndexValues = 0;
     uint32_t vertexIndex = 0; // Tracks total vertices written (not particles)
     for (uint32_t i = 0; i < m_particleCount; i++) {
         const auto& p = m_particles [i];
@@ -1544,60 +1546,55 @@ void CParticle::renderSprites () {
                 glm::vec3 leftPos = centerPos - widthDir * velocityBasedWidth;
                 glm::vec3 rightPos = centerPos + widthDir * velocityBasedWidth;
 
-                // Lambda to add a vertex pair (left and right side of ribbon)
-                auto addVertexPair = [&]() {
-                    // Left vertex (u=0)
-                    vertices.push_back (leftPos.x);
-                    vertices.push_back (leftPos.y);
-                    vertices.push_back (leftPos.z);
-                    vertices.push_back (0.0f);  // u = 0 (left edge)
-                    vertices.push_back (v);     // v varies along trail
-                    vertices.push_back (0.0f);  // No rotation for trail
-                    vertices.push_back (0.0f);
-                    vertices.push_back (0.0f);
-                    vertices.push_back (size);
-                    vertices.push_back (p.color.r);
-                    vertices.push_back (p.color.g);
-                    vertices.push_back (p.color.b);
-                    vertices.push_back (segmentAlpha);
-                    vertices.push_back (p.frame);
-                    vertices.push_back (0.0f);  // Zero velocity to disable shader transformation
-                    vertices.push_back (0.0f);
-                    vertices.push_back (0.0f);
+                // Left vertex (u=0)
+                m_vertices[writtenVertexValues++] = leftPos.x;
+                m_vertices[writtenVertexValues++] = leftPos.y;
+                m_vertices[writtenVertexValues++] = leftPos.z;
+                m_vertices[writtenVertexValues++] = 0.0f;  // u = 0 (left edge)
+                m_vertices[writtenVertexValues++] = v;     // v varies along trail
+                m_vertices[writtenVertexValues++] = 0.0f;  // No rotation for trail
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = size;
+                m_vertices[writtenVertexValues++] = p.color.r;
+                m_vertices[writtenVertexValues++] = p.color.g;
+                m_vertices[writtenVertexValues++] = p.color.b;
+                m_vertices[writtenVertexValues++] = segmentAlpha;
+                m_vertices[writtenVertexValues++] = p.frame;
+                m_vertices[writtenVertexValues++] = 0.0f;  // Zero velocity to disable shader transformation
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = 0.0f;
 
-                    // Right vertex (u=1)
-                    vertices.push_back (rightPos.x);
-                    vertices.push_back (rightPos.y);
-                    vertices.push_back (rightPos.z);
-                    vertices.push_back (1.0f);  // u = 1 (right edge)
-                    vertices.push_back (v);     // v varies along trail
-                    vertices.push_back (0.0f);  // No rotation for trail
-                    vertices.push_back (0.0f);
-                    vertices.push_back (0.0f);
-                    vertices.push_back (size);
-                    vertices.push_back (p.color.r);
-                    vertices.push_back (p.color.g);
-                    vertices.push_back (p.color.b);
-                    vertices.push_back (segmentAlpha);
-                    vertices.push_back (p.frame);
-                    vertices.push_back (0.0f);  // Zero velocity to disable shader transformation
-                    vertices.push_back (0.0f);
-                    vertices.push_back (0.0f);
-                };
-
-                addVertexPair();
+                // Right vertex (u=1)
+                m_vertices[writtenVertexValues++] = rightPos.x;
+                m_vertices[writtenVertexValues++] = rightPos.y;
+                m_vertices[writtenVertexValues++] = rightPos.z;
+                m_vertices[writtenVertexValues++] = 1.0f;  // u = 1 (right edge)
+                m_vertices[writtenVertexValues++] = v;     // v varies along trail
+                m_vertices[writtenVertexValues++] = 0.0f;  // No rotation for trail
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = size;
+                m_vertices[writtenVertexValues++] = p.color.r;
+                m_vertices[writtenVertexValues++] = p.color.g;
+                m_vertices[writtenVertexValues++] = p.color.b;
+                m_vertices[writtenVertexValues++] = segmentAlpha;
+                m_vertices[writtenVertexValues++] = p.frame;
+                m_vertices[writtenVertexValues++] = 0.0f;  // Zero velocity to disable shader transformation
+                m_vertices[writtenVertexValues++] = 0.0f;
+                m_vertices[writtenVertexValues++] = 0.0f;
 
                 // Create triangles connecting this segment to the previous one
                 if (seg > 0) {
                     uint32_t base = vertexIndex + (seg - 1) * 2;
                     // Triangle 1: [prevLeft, prevRight, currRight]
-                    indices.push_back (base + 0);
-                    indices.push_back (base + 1);
-                    indices.push_back (base + 3);
+                    m_indices[writtenIndexValues++] = base + 0;
+                    m_indices[writtenIndexValues++] = base + 1;
+                    m_indices[writtenIndexValues++] = base + 3;
                     // Triangle 2: [prevLeft, currRight, currLeft]
-                    indices.push_back (base + 0);
-                    indices.push_back (base + 3);
-                    indices.push_back (base + 2);
+                    m_indices[writtenIndexValues++] = base + 0;
+                    m_indices[writtenIndexValues++] = base + 3;
+                    m_indices[writtenIndexValues++] = base + 2;
                 }
             }
 
@@ -1605,23 +1602,23 @@ void CParticle::renderSprites () {
         } else {
             // Normal particle: single quad
             auto addVertex = [&](float u, float v) {
-                vertices.push_back (p.position.x);
-                vertices.push_back (p.position.y);
-                vertices.push_back (p.position.z);
-                vertices.push_back (u);
-                vertices.push_back (v);
-                vertices.push_back (p.rotation.x);
-                vertices.push_back (p.rotation.y);
-                vertices.push_back (p.rotation.z);
-                vertices.push_back (size);
-                vertices.push_back (p.color.r);
-                vertices.push_back (p.color.g);
-                vertices.push_back (p.color.b);
-                vertices.push_back (p.alpha);
-                vertices.push_back (p.frame);
-                vertices.push_back (p.velocity.x);
-                vertices.push_back (p.velocity.y);
-                vertices.push_back (p.velocity.z);
+                m_vertices[writtenVertexValues++] = p.position.x;
+                m_vertices[writtenVertexValues++] = p.position.y;
+                m_vertices[writtenVertexValues++] = p.position.z;
+                m_vertices[writtenVertexValues++] = u;
+                m_vertices[writtenVertexValues++] = v;
+                m_vertices[writtenVertexValues++] = p.rotation.x;
+                m_vertices[writtenVertexValues++] = p.rotation.y;
+                m_vertices[writtenVertexValues++] = p.rotation.z;
+                m_vertices[writtenVertexValues++] = size;
+                m_vertices[writtenVertexValues++] = p.color.r;
+                m_vertices[writtenVertexValues++] = p.color.g;
+                m_vertices[writtenVertexValues++] = p.color.b;
+                m_vertices[writtenVertexValues++] = p.alpha;
+                m_vertices[writtenVertexValues++] = p.frame;
+                m_vertices[writtenVertexValues++] = p.velocity.x;
+                m_vertices[writtenVertexValues++] = p.velocity.y;
+                m_vertices[writtenVertexValues++] = p.velocity.z;
             };
 
             // 4 vertices for quad corners
@@ -1632,12 +1629,12 @@ void CParticle::renderSprites () {
             addVertex (0.0f, 0.0f);  // 3: Top-left
 
             // 6 indices forming 2 triangles
-            indices.push_back (baseVertex + 0);
-            indices.push_back (baseVertex + 1);
-            indices.push_back (baseVertex + 2);
-            indices.push_back (baseVertex + 2);
-            indices.push_back (baseVertex + 3);
-            indices.push_back (baseVertex + 0);
+            m_indices[writtenIndexValues++] = baseVertex + 0;
+            m_indices[writtenIndexValues++] = baseVertex + 1;
+            m_indices[writtenIndexValues++] = baseVertex + 2;
+            m_indices[writtenIndexValues++] = baseVertex + 2;
+            m_indices[writtenIndexValues++] = baseVertex + 3;
+            m_indices[writtenIndexValues++] = baseVertex + 0;
 
             vertexIndex += 4;
         }
@@ -1674,10 +1671,10 @@ void CParticle::renderSprites () {
     glGetIntegerv (GL_ARRAY_BUFFER_BINDING, &prevArrayBuffer);
 
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
-    glBufferData (GL_ARRAY_BUFFER, vertices.size () * sizeof (float), vertices.data (), GL_DYNAMIC_DRAW);
+    glBufferData (GL_ARRAY_BUFFER, writtenVertexValues * sizeof (float), m_vertices.data (), GL_DYNAMIC_DRAW);
 
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size () * sizeof (uint32_t), indices.data (), GL_DYNAMIC_DRAW);
+    glBufferData (GL_ELEMENT_ARRAY_BUFFER, writtenIndexValues * sizeof (uint32_t), m_indices.data (), GL_DYNAMIC_DRAW);
 
     // Use particle shader
     glUseProgram (m_shaderProgram);
@@ -1778,7 +1775,7 @@ void CParticle::renderSprites () {
     // Render triangles using indexed rendering
     // Use actual index count (accounts for trail segments and filtered particles)
     glBindVertexArray (m_vao);
-    glDrawElements (GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
+    glDrawElements (GL_TRIANGLES, writtenIndexValues, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray (0);
 
     // Restore state

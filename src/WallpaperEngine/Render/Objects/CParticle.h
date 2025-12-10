@@ -151,6 +151,9 @@ class CParticle final : public CObject {
 
     std::vector<ControlPointData> m_controlPoints;
 
+    std::vector<float> m_vertices;
+    std::vector<uint32_t> m_indices;
+
     double m_time {0.0};
 
     // OpenGL buffers
