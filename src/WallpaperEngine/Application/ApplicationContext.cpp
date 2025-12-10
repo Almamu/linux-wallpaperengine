@@ -445,6 +445,13 @@ void ApplicationContext::loadSettingsFromArgv () {
 
     auto& configurationGroup = program.add_group ("Wallpaper configuration options");
 
+        configurationGroup.add_argument ("--disable-particles")
+            .help ("Disables particles for the backgrounds")
+            .flag()
+            .action([this](const std::string& value) -> void {
+                this->settings.general.disableParticles = true;
+            });
+
         configurationGroup.add_argument ("--disable-mouse")
             .help ("Disables mouse interaction with the backgrounds")
             .flag ()

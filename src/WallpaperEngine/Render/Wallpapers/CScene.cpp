@@ -188,6 +188,11 @@ Render::CObject* CScene::createObject (const Object& object) {
     } else if (object.is<Sound> ()) {
         renderObject = new Objects::CSound (*this, *object.as<Sound> ());
     } else if (object.is<Particle> ()) {
+        if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+            sLog.debug("Ignoring particle system (disabled in settings): ", object.as<Particle> ()->name);
+            return nullptr;
+        }
+
         auto* particle = new Objects::CParticle (*this, *object.as<Particle> ());
 
         try {

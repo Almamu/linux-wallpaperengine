@@ -63,6 +63,8 @@ class ApplicationContext {
             bool onlyListProperties;
             /** If the user requested a dump of the background structure */
             bool dumpStructure;
+            /** If the user requested the particles to be deactivated */
+            bool disableParticles;
             /** The path to the assets folder */
             std::filesystem::path assets;
             /** Background to load (provided as the final argument) as fallback for multi-screen setups */
