@@ -12,8 +12,9 @@
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
 #include "WallpaperEngine/Data/Parsers/ProjectParser.h"
 
-#include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Debugging/CallStack.h"
 
 #if DEMOMODE
 #include "recording.h"
@@ -35,6 +36,34 @@ using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Application;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::FileSystem;
+
+void CustomGLDebugCallback(GLenum source,
+            GLenum type,
+            GLuint id,
+            GLenum severity,
+            GLsizei length,
+            const GLchar *message,
+            const void *userParam) {
+    if (severity != GL_DEBUG_SEVERITY_HIGH) {
+        return;
+    }
+
+    sLog.error("OpenGL error: ", message, ", type: ", type, ", id: ", id);
+
+    std::vector<WallpaperEngine::Debugging::CallStack::CallInfo> callInfo;
+
+    WallpaperEngine::Debugging::CallStack::GetCalls(callInfo);
+
+    for(std::vector<WallpaperEngine::Debugging::CallStack::CallInfo>::size_type i = 0; i < callInfo.size(); ++i) {
+        fprintf(stderr,
+            "[%3lu] %15lu: %s in %s\n",
+            callInfo.size()-i,
+            callInfo[i].offset,
+            callInfo[i].function.c_str(),
+            callInfo[i].module.c_str()
+        );
+    }
+}
 
 WallpaperApplication::WallpaperApplication (ApplicationContext& context) :
     m_context (context) {
@@ -653,10 +682,19 @@ void WallpaperApplication::prepareOutputs () {
     }
 }
 
+void WallpaperApplication::setupOpenGLDebugging () {
+#if !NDEBUG
+    glDebugMessageCallback(CustomGLDebugCallback, nullptr);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+}
+
+
 void WallpaperApplication::show () {
     this->setupOutput ();
     this->setupAudio ();
     this->prepareOutputs ();
+    this->setupOpenGLDebugging ();
 
     static time_t seconds;
     static struct tm* timeinfo;

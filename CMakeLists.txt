@@ -118,7 +118,11 @@ find_package(CEF REQUIRED)
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-exceptions)
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -fno-rtti)
 list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -std=c++17)
+list(REMOVE_ITEM CEF_COMPILER_FLAGS -fvisibility=hidden)
+list(REMOVE_ITEM CEF_COMPILER_FLAGS -fvisibility-inlines-hidden)
 list(APPEND CEF_CXX_COMPILER_FLAGS -std=c++20)
+list(APPEND CEF_COMPILER_FLAGS -rdynamic)
+list(APPEND CEF_EXE_LINKER_FLAGS -rdynamic)
 # remove the vulkan library from the files to copy so it doesn't fail after removing it
 list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
 
@@ -265,6 +269,9 @@ set(COMMON_SOURCES
 
     src/WallpaperEngine/Logging/Log.cpp
     src/WallpaperEngine/Logging/Log.h
+
+    src/WallpaperEngine/Debugging/CallStack.cpp
+    src/WallpaperEngine/Debugging/CallStack.h
 
     src/WallpaperEngine/Application/ApplicationContext.cpp
     src/WallpaperEngine/Application/ApplicationContext.h

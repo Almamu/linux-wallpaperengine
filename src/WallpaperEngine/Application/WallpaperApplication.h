@@ -103,6 +103,10 @@ class WallpaperApplication {
      */
     void prepareOutputs ();
     /**
+     * Prepares output debugging for all opengl errors
+     */
+    void setupOpenGLDebugging ();
+    /**
      * Takes an screenshot of the background and saves it to the specified path
      *
      * @param filename

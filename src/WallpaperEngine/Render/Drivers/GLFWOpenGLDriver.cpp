@@ -7,6 +7,8 @@
 #endif
 
 #define GLFW_EXPOSE_NATIVE_X11
+#include "WallpaperEngine/Debugging/CallStack.h"
+
 #include <GLFW/glfw3native.h>
 
 #include <unistd.h>
@@ -15,16 +17,6 @@ using namespace WallpaperEngine::Render::Drivers;
 
 void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
-}
-
-void CustomGLErrorCallback(GLenum source,
-            GLenum type,
-            GLuint id,
-            GLenum severity,
-            GLsizei length,
-            const GLchar *message,
-            const void *userParam) {
-    sLog.error("OpenGL error: ", message, ", type: ", type, ", id: ", id);
 }
 
 GLFWOpenGLDriver::GLFWOpenGLDriver (
@@ -58,8 +50,6 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (
 
 #if !NDEBUG
     glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    glDebugMessageCallback(CustomGLErrorCallback, nullptr);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif /* DEBUG */
 
     // create window, size doesn't matter as long as we don't show it
