@@ -20,6 +20,16 @@ extern "C" {
 
 using namespace WallpaperEngine::Render::Drivers;
 
+void CustomGLEWErrorCallback(GLenum source,
+            GLenum type,
+            GLuint id,
+            GLenum severity,
+            GLsizei length,
+            const GLchar *message,
+            const void *userParam) {
+    sLog.error("OpenGL error: ", message, ", type: ", type, ", id: ", id);
+}
+
 static void handlePointerEnter (void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface,
                                 wl_fixed_t surface_x, wl_fixed_t surface_y) {
     const auto driver = static_cast<WaylandOpenGLDriver*> (data);
@@ -287,6 +297,9 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 
     if (const GLenum result = glewInit (); result != GLEW_OK)
         sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
+
+    glDebugMessageCallback(CustomGLEWErrorCallback, nullptr);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {

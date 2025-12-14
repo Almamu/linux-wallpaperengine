@@ -17,6 +17,16 @@ void CustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
+void CustomGLErrorCallback(GLenum source,
+            GLenum type,
+            GLuint id,
+            GLenum severity,
+            GLsizei length,
+            const GLchar *message,
+            const void *userParam) {
+    sLog.error("OpenGL error: ", message, ", type: ", type, ", id: ", id);
+}
+
 GLFWOpenGLDriver::GLFWOpenGLDriver (
     const char* windowTitle, ApplicationContext& context, WallpaperApplication& app
 ) :
@@ -48,6 +58,8 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (
 
 #if !NDEBUG
     glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glDebugMessageCallback(CustomGLErrorCallback, nullptr);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif /* DEBUG */
 
     // create window, size doesn't matter as long as we don't show it
