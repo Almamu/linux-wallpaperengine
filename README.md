@@ -173,6 +173,8 @@ You can use either:
 | `--disable-mouse` | Disable mouse interaction |
 | `--disable-parallax` | Disable parallax effect on backgrounds that support it |
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
+| `--fullscreen-pause-only-active` | Wayland only: pause only when a fullscreen window is active |
+| `--fullscreen-pause-ignore-appid <val>` | Wayland only: ignore fullscreen windows whose app_id contains `<val>` (repeatable) |
 
 ---
 

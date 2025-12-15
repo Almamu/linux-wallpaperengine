@@ -390,6 +390,22 @@ void ApplicationContext::loadSettingsFromArgv () {
                 this->settings.render.pauseOnFullscreen = false;
             });
 
+        performanceGroup.add_argument ("--fullscreen-pause-only-active")
+            .help ("Wayland only: pause only when a fullscreen window is active (activated)")
+            .flag ()
+            .action ([this](const std::string& value) -> void {
+                this->settings.render.pauseOnFullscreenOnlyWhenActive = true;
+            });
+
+        performanceGroup.add_argument ("--fullscreen-pause-ignore-appid")
+            .help ("Wayland only: ignore fullscreen windows whose app_id contains this value (repeatable)")
+            .action ([this](const std::string& value) -> void {
+                if (!value.empty ()) {
+                    this->settings.render.fullscreenPauseIgnoreAppIds.push_back (value);
+                }
+            })
+            .append ();
+
     auto& audioGroup = program.add_group ("Sound settings");
     auto& audioSettingsGroup = audioGroup.add_mutually_exclusive_group (false);
 

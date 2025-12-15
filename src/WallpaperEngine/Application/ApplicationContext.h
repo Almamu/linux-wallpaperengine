@@ -93,6 +93,16 @@ class ApplicationContext {
             int maximumFPS;
             /** Indicates if pausing should happen when something goes fullscreen */
             bool pauseOnFullscreen;
+            /**
+             * Wayland-only: if true, only consider fullscreen toplevels that are also activated.
+             * Useful for compositors with "virtual" fullscreen windows (e.g. scrollable tiling).
+             */
+            bool pauseOnFullscreenOnlyWhenActive;
+            /**
+             * Wayland-only: list of app_id substrings to ignore for fullscreen pause.
+             * Example: "firefox" will match "org.mozilla.firefox".
+             */
+            std::vector<std::string> fullscreenPauseIgnoreAppIds;
 
             struct {
                 /** The window size used in explicit window */
@@ -154,6 +164,8 @@ class ApplicationContext {
             .mode = NORMAL_WINDOW,
             .maximumFPS = 30,
             .pauseOnFullscreen = true,
+            .pauseOnFullscreenOnlyWhenActive = false,
+            .fullscreenPauseIgnoreAppIds = {},
             .window = {
                 .geometry = {},
                 .clamp = TextureFlags_ClampUVs,
