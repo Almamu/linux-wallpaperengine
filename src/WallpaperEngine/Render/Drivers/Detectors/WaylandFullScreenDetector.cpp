@@ -91,6 +91,8 @@ bool isRelevant (
 
     if (!appId.empty ()) {
         for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
+            if (ignore.empty ())
+                continue;
             if (icontains (appId, ignore))
                 return false;
         }
