@@ -96,24 +96,30 @@ bool isFullscreenRelevant (const FullscreenState& toplevel) {
     return true;
 }
 
+bool isCurrentlyRelevant (const FullscreenState& toplevel) {
+    if (!toplevel.current)
+        return false;
+
+    const auto& ctx = toplevel.data->detector->getApplicationContext ();
+
+    if (ctx.settings.render.pauseOnFullscreenOnlyWhenActive && !toplevel.currentActivated)
+        return false;
+
+    if (!toplevel.appId.empty ()) {
+        for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
+            if (icontains (toplevel.appId, ignore))
+                return false;
+        }
+    }
+
+    return true;
+}
+
 void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
     const auto toplevel = static_cast<FullscreenState*> (data);
 
     const bool pendingRelevant = isFullscreenRelevant (*toplevel);
-    const bool currentRelevant = toplevel->current &&
-                                 (!toplevel->data->detector->getApplicationContext ().settings.render
-                                          .pauseOnFullscreenOnlyWhenActive ||
-                                  toplevel->currentActivated) &&
-                                 ([&] {
-                                     if (toplevel->appId.empty ())
-                                         return true;
-                                     const auto& ctx = toplevel->data->detector->getApplicationContext ();
-                                     for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
-                                         if (icontains (toplevel->appId, ignore))
-                                             return false;
-                                     }
-                                     return true;
-                                 })();
+    const bool currentRelevant = isCurrentlyRelevant (*toplevel);
 
     if (currentRelevant != pendingRelevant) {
         if (pendingRelevant) {
@@ -135,20 +141,7 @@ void toplevelHandleClosed (void* data, struct zwlr_foreign_toplevel_handle_v1* h
     const auto toplevel = static_cast<FullscreenState*> (data);
 
     // If it was counted as relevant fullscreen, remove it.
-    const bool currentRelevant = toplevel->current &&
-                                 (!toplevel->data->detector->getApplicationContext ().settings.render
-                                          .pauseOnFullscreenOnlyWhenActive ||
-                                  toplevel->currentActivated) &&
-                                 ([&] {
-                                     if (toplevel->appId.empty ())
-                                         return true;
-                                     const auto& ctx = toplevel->data->detector->getApplicationContext ();
-                                     for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
-                                         if (icontains (toplevel->appId, ignore))
-                                             return false;
-                                     }
-                                     return true;
-                                 })();
+    const bool currentRelevant = isCurrentlyRelevant (*toplevel);
 
     if (currentRelevant) {
         if (*toplevel->data->fullscreenCount == 0) {
