@@ -11,6 +11,14 @@ struct wl_registry;
 struct zwlr_foreign_toplevel_manager_v1;
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
+
+class WaylandFullScreenDetector;
+
+struct WaylandFullscreenDetectorCallbackData {
+    WaylandFullScreenDetector* detector;
+    uint32_t* fullscreenCount;
+};
+
 class WaylandFullScreenDetector final : public FullScreenDetector {
   public:
     explicit WaylandFullScreenDetector (Application::ApplicationContext& appContext);
@@ -24,6 +32,8 @@ class WaylandFullScreenDetector final : public FullScreenDetector {
     zwlr_foreign_toplevel_manager_v1* m_toplevelManager = nullptr;
 
     uint32_t m_fullscreenCount = 0;
+
+    WaylandFullscreenDetectorCallbackData m_callbackData {};
 
     friend void handleGlobal (
         void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t version);
