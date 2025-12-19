@@ -152,6 +152,14 @@ You can use either:
 
 ---
 
+### What about a GUI?
+
+Implementing a GUI is out of scope for now.
+There's a few developers that decided to focus on this and created their own.
+If you're one of those developers, feel free to open an issue to get your project included here!
+
+- @Maxnights' GUI: https://github.com/Maxnights/simple-linux-wallpaperengine-gui
+
 ### 🔧 Common Options
 
 | Option | Description |
