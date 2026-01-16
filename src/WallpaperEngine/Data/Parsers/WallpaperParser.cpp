@@ -70,7 +70,10 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                 .projection = {
                     .width = projection.require <int> ("width", "Projection must have a width"),
                     .height = projection.require <int> ("height", "Projection must have a height"),
-                    .isAuto = projection.optional ("auto", false)
+                    .isAuto = projection.optional ("auto", false),
+                    .nearz = camera.optional <float> ("nearz", 0.0f),
+                    .farz = camera.optional <float> ("farz", 1000.0f),
+                    .fov = camera.optional <float> ("fov", 50.0f)
                 }
             },
             .objects = parseObjects (objects, project),

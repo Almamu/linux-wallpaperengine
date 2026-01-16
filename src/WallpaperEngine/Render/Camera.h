@@ -30,6 +30,9 @@ class Camera {
     [[nodiscard]] bool isOrthogonal () const;
     [[nodiscard]] float getWidth () const;
     [[nodiscard]] float getHeight () const;
+    [[nodiscard]] float getFov () const;
+    [[nodiscard]] float getNearZ () const;
+    [[nodiscard]] float getFarZ () const;
 
   private:
     float m_width;

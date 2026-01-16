@@ -352,7 +352,8 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
             .name = "sprite",
             .length = 0.05f,
             .maxLength = 10.0f,
-            .subdivision = 3.0f,
+            .minLength = 0.0f,
+            .subdivision = 1.0f,
         });
     }
 
@@ -566,21 +567,50 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
         return defaultValue;
     };
 
+    auto parseVec2 = [&](const char* fieldName, const glm::vec2& defaultValue) -> glm::vec2 {
+        const auto fieldIt = it.find (fieldName);
+        if (fieldIt == it.end ()) {
+            return defaultValue;
+        }
+        if (fieldIt->is_string ()) {
+            return it.optional (fieldName, defaultValue);
+        }
+        if (fieldIt->is_array () && fieldIt->size () >= 2) {
+            return glm::vec2 (
+                (*fieldIt)[0].get<float> (),
+                (*fieldIt)[1].get<float> ()
+            );
+        }
+        return defaultValue;
+    };
+
     try {
         return ParticleEmitter {
             .id = it.optional ("id", -1),
             .name = name,
             .directions = parseVec3 ("directions", glm::vec3 (1.0f, 1.0f, 0.0f)),
-            .distanceMin = parseVec3 ("distancemin", glm::vec3 (0.0f)),
-            .distanceMax = parseVec3 ("distancemax", glm::vec3 (256.0f)),
+            .distanceMin = parseVec3 ("distancemin", glm::vec3 (0.0f, 0.0f, 0.0f)),
+            .distanceMax = parseVec3 ("distancemax", glm::vec3 (256.0f, 256.0f, 0.0f)),
             .origin = parseVec3 ("origin", glm::vec3 (0.0f)),
             .sign = parseIVec3 ("sign", glm::ivec3 (0)),
             .instantaneous = it.optional ("instantaneous", 0u),
             .speedMin = it.optional ("speedmin", 0.0f),
             .speedMax = it.optional ("speedmax", 0.0f),
-            .rate = it.optional ("rate", 5.0f),
-            .controlPoint = it.optional ("controlpoint", -1),
+            .rate = it.optional ("rate", 10.0f),
+            .controlPoint = it.optional ("controlpoint", 0),
             .flags = it.optional ("flags", 0u),
+            .cone = it.optional ("cone", 0.0f),
+            .delay = it.optional ("delay", 0.0f),
+            .duration = it.optional ("duration", 0.0f),
+            .audioProcessingBounds = parseVec2 ("audioprocessingbounds", glm::vec2 (0.8f, 1.0f)),
+            .audioProcessingExponent = it.optional ("audioprocessingexponent", 2),
+            .audioProcessingFrequencyStart = it.optional ("audioprocessingfrequencystart", 0),
+            .audioProcessingFrequencyEnd = it.optional ("audioprocessingfrequencyend", 1),
+            .audioProcessingMode = it.optional ("audioprocessingmode", 0),
+            .minPeriodicDelay = it.optional ("minperiodicdelay", 1.0f),
+            .maxPeriodicDelay = it.optional ("maxperiodicdelay", 2.0f),
+            .minPeriodicDuration = it.optional ("minperiodicduration", 2.0f),
+            .maxPeriodicDuration = it.optional ("maxperiodicduration", 3.0f),
         };
     } catch (nlohmann::json::exception& e) {
         sLog.error ("Error parsing emitter: ", e.what ());
@@ -639,14 +669,20 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
     } else if (name == "angularvelocityrandom") {
         return std::make_unique<AngularVelocityRandomInitializer> (
             it.user ("min", properties, glm::vec3 (0.0f, 0.0f, -5.0f)),
-            it.user ("max", properties, glm::vec3 (0.0f, 0.0f, 5.0f))
+            it.user ("max", properties, glm::vec3 (0.0f, 0.0f, 5.0f)),
+            it.user ("exponent", properties, 1.0f)
         );
     } else if (name == "turbulentvelocityrandom") {
         return std::make_unique<TurbulentVelocityRandomInitializer> (
-            it.user ("speedmin", properties, 0.0f),
-            it.user ("speedmax", properties, 100.0f),
+            it.user ("speedmin", properties, 100.0f),
+            it.user ("speedmax", properties, 250.0f),
             it.user ("scale", properties, 1.0f),
-            it.user ("offset", properties, 0.0f)
+            it.user ("offset", properties, 0.0f),
+            it.user ("forward", properties, glm::vec3 (0.0f, 1.0f, 0.0f)),
+            it.user ("timescale", properties, 1.0f),
+            it.user ("phasemin", properties, 0.0f),
+            it.user ("phasemax", properties, 0.1f),
+            it.user ("right", properties, glm::vec3 (0.0f, 0.0f, 1.0f))
         );
     } else if (name == "mapsequencearoundcontrolpoint") {
         return std::make_unique<MapSequenceAroundControlPointInitializer> (
@@ -702,13 +738,17 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
     } else if (name == "turbulence") {
         return std::make_unique<TurbulenceOperator> (
             it.user ("scale", properties, 0.005f),
-            it.user ("speedmin", properties, 0.0f),
+            it.user ("speedmin", properties, 500.0f),
             it.user ("speedmax", properties, 1000.0f),
-            it.user ("timescale", properties, 1.0f),
+            it.user ("timescale", properties, 0.01f),
             it.user ("mask", properties, glm::vec3 (1.0f, 1.0f, 0.0f)),
-            it.user ("audioprocessingmode", properties, 0),  // 0 = no audio processing
+            it.user ("phasemin", properties, 0.0f),
+            it.user ("phasemax", properties, 0.0f),
+            it.user ("audioprocessingmode", properties, 0),
             it.user ("audioprocessingbounds", properties, glm::vec2 (0.0f, 1.0f)),
-            it.user ("audioprocessingfrequencyend", properties, 64)  // Default to full spectrum
+            it.user ("audioprocessingexponent", properties, 1.0f),
+            it.user ("audioprocessingfrequencystart", properties, 0),
+            it.user ("audioprocessingfrequencyend", properties, 15)
         );
     } else if (name == "vortex" || name == "vortex_v2") {
         return std::make_unique<VortexOperator> (
@@ -779,6 +819,7 @@ ParticleRenderer ObjectParser::parseParticleRenderer (const JSON& it) {
         .name = name,
         .length = it.optional ("length", 0.05f),
         .maxLength = it.optional ("maxlength", 10.0f),
+        .minLength = it.optional ("minlength", 0.0f),
         .subdivision = it.optional ("subdivision", 3.0f),
     };
 }

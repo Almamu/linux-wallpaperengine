@@ -42,9 +42,6 @@ struct ParticleInstance {
     float lifetime {1.0f};      // Total lifetime in seconds
     float age {0.0f};           // Current age in seconds
 
-    // Turbulent velocity state
-    glm::vec3 noisePos {0.0f};  // Position in noise field for turbulent velocity
-
     // Oscillator state (per-particle random values)
     struct {
         float frequency {0.0f};
@@ -187,9 +184,12 @@ class CParticle final : public CObject {
     GLint m_uniformSpritesheetSize {-1};
     GLint m_uniformOverbright {-1};
     GLint m_uniformUseTrailRenderer {-1};
+    GLint m_uniformPerspective {-1};
     GLint m_uniformTrailLength {-1};
     GLint m_uniformTrailMaxLength {-1};
+    GLint m_uniformTrailMinLength {-1};
     GLint m_uniformTextureRatio {-1};
+    GLint m_uniformCameraPos {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
@@ -209,6 +209,7 @@ class CParticle final : public CObject {
     bool m_useTrailRenderer {false};
     float m_trailLength {0.05f};
     float m_trailMaxLength {10.0f};
+    float m_trailMinLength {0.0f};
     int m_trailSubdivision {3}; // Number of segments per trail
 
     // Transformed origin (screen space to centered space conversion)
