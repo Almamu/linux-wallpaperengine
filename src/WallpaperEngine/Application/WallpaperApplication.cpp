@@ -93,6 +93,11 @@ AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string
         sLog.exception ("Cannot find a valid assets folder, resolved to ", this->m_context.settings.general.assets);
     }
 
+    // mount the current directory as root
+    try {
+        container->mount (std::filesystem::current_path (), "/");
+    } catch (std::runtime_error&) { }
+
     auto& vfs = container->getVFS ();
 
     //

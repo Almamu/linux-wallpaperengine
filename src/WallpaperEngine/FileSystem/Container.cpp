@@ -31,8 +31,6 @@ Container::Container () {
 
     this->m_vfs = std::make_shared<VirtualAdapter> ();
     this->m_mountpoints.emplace_back ("/", this->m_vfs);
-    // mount the current directory as root
-    this->mount (std::filesystem::current_path (), "/");
 }
 
 ReadStreamSharedPtr Container::read (const std::filesystem::path& path) const {
