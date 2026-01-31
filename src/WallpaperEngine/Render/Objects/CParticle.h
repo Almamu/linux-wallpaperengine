@@ -190,6 +190,7 @@ class CParticle final : public CObject {
     GLint m_uniformTrailMinLength {-1};
     GLint m_uniformTextureRatio {-1};
     GLint m_uniformCameraPos {-1};
+    GLint m_uniformVelocityRotation {-1};
 
     // Particle material texture
     std::shared_ptr<const TextureProvider> m_texture {nullptr};
