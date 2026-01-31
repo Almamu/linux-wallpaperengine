@@ -88,10 +88,6 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
 
     m_vertices.resize (m_maxParticles * verticesPerParticle * 17);
     m_indices.resize (m_maxParticles * indicesPerParticle);
-
-    sLog.out ("Particle '", particle.name, "' max particles: ", m_maxParticles,
-              " (maxCount=", particle.maxCount, " * countMultiplier=", countMultiplier, 
-              "speedoverride=", particle.instanceOverride.speed->value->getFloat (), ")");
 }
 
 CParticle::~CParticle () {
@@ -137,7 +133,6 @@ void CParticle::setup () {
         auto overbrightIt = firstPass->constants.find ("ui_editor_properties_overbright");
         if (overbrightIt != firstPass->constants.end ()) {
             m_overbright = overbrightIt->second->value->getFloat ();
-            sLog.out ("Particle '", m_particle.name, "' overbright: ", m_overbright);
         }
 
         auto& textures = firstPass->textures;
@@ -156,18 +151,8 @@ void CParticle::setup () {
                 m_spritesheetRows = static_cast<int> (m_texture->getSpritesheetRows ());
                 m_spritesheetFrames = static_cast<int> (m_texture->getSpritesheetFrames ());
                 m_spritesheetDuration = m_texture->getSpritesheetDuration ();
-
-                sLog.out ("Particle '", m_particle.name, "' texture: ", textureName,
-                          " | cols=", m_spritesheetCols, " rows=", m_spritesheetRows,
-                          " frames=", m_spritesheetFrames, " duration=", m_spritesheetDuration);
             }
         }
-    }
-
-    // Renderer configuration already read in constructor
-    if (m_useTrailRenderer) {
-        sLog.out ("Particle '", m_particle.name, "' using trail renderer: length=", m_trailLength,
-                  " maxLength=", m_trailMaxLength, " minLength=", m_trailMinLength, " subdivision=", m_trailSubdivision);
     }
 
     setupEmitters ();
