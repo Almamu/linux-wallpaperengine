@@ -47,6 +47,7 @@ struct ParticleInstance {
         float frequency {0.0f};
         float scale {1.0f};
         float phase {0.0f};
+        float base {1.0f};  // Base value to oscillate around (captured on init)
         bool initialized {false};
     } oscillateAlpha, oscillateSize;
 

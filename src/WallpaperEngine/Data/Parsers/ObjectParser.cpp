@@ -782,7 +782,7 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("scalemin", properties, 0.0f),
             it.user ("scalemax", properties, 1.0f),
             it.user ("phasemin", properties, 0.0f),
-            it.user ("phasemax", properties, static_cast<float> (2.0 * M_PI))
+            it.user ("phasemax", properties, glm::two_pi<float> ())
         );
     } else if (name == "oscillatesize") {
         return std::make_unique<OscillateSizeOperator> (
@@ -791,7 +791,7 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("scalemin", properties, 0.8f),
             it.user ("scalemax", properties, 1.2f),
             it.user ("phasemin", properties, 0.0f),
-            it.user ("phasemax", properties, static_cast<float> (2.0 * M_PI))
+            it.user ("phasemax", properties, glm::two_pi<float> ())
         );
     } else if (name == "oscillateposition") {
         return std::make_unique<OscillatePositionOperator> (
@@ -800,7 +800,7 @@ ParticleOperatorUniquePtr ObjectParser::parseParticleOperator (const JSON& it, c
             it.user ("scalemin", properties, 0.0f),
             it.user ("scalemax", properties, 10.0f),
             it.user ("phasemin", properties, 0.0f),
-            it.user ("phasemax", properties, static_cast<float> (2.0 * M_PI)),
+            it.user ("phasemax", properties, glm::two_pi<float> ()),
             it.user ("mask", properties, glm::vec3 (1.0f, 1.0f, 0.0f))
         );
     }

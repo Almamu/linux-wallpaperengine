@@ -1467,16 +1467,18 @@ OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperat
                 p.oscillateAlpha.frequency = randomFloat (m_rng, freqMin, freqMax);
                 p.oscillateAlpha.scale = randomFloat (m_rng, scaleMin, scaleMax);
                 p.oscillateAlpha.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+                p.oscillateAlpha.base = p.alpha;  // Capture base value before oscillation
                 p.oscillateAlpha.initialized = true;
             }
 
             // Calculate oscillation: interpolate between scaleMin and scaleMax using cosine wave
-            float w = 2.0f * glm::pi<float> () * p.oscillateAlpha.frequency / (2.0f * glm::pi<float> ());
+            float w = p.oscillateAlpha.frequency;
             float t = p.age;
             float cosVal = (std::cos (w * t + p.oscillateAlpha.phase) + 1.0f) * 0.5f;
             float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
 
-            p.alpha *= multiplier;
+            // Apply multiplier to base value (not current value) to prevent exponential drift
+            p.alpha = p.oscillateAlpha.base * multiplier;
         }
     };
 }
@@ -1511,16 +1513,18 @@ OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator
                 p.oscillateSize.frequency = randomFloat (m_rng, freqMin, freqMax);
                 p.oscillateSize.scale = randomFloat (m_rng, scaleMin, scaleMax);
                 p.oscillateSize.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+                p.oscillateSize.base = p.size;  // Capture base value before oscillation
                 p.oscillateSize.initialized = true;
             }
 
             // Calculate oscillation: interpolate between scaleMin and scaleMax using cosine wave
-            float w = 2.0f * glm::pi<float> () * p.oscillateSize.frequency / (2.0f * glm::pi<float> ());
+            float w = p.oscillateSize.frequency;
             float t = p.age;
             float cosVal = (std::cos (w * t + p.oscillateSize.phase) + 1.0f) * 0.5f;
             float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
 
-            p.size *= multiplier;
+            // Apply multiplier to base value (not current value) to prevent exponential drift
+            p.size = p.oscillateSize.base * multiplier;
         }
     };
 }
