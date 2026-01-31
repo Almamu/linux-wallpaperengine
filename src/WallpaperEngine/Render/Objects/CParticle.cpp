@@ -512,6 +512,11 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
             p.initial.size = p.size;
             p.initial.lifetime = p.lifetime;
 
+            // Reset oscillator state for reused particles
+            p.oscillateAlpha = {};
+            p.oscillateSize = {};
+            p.oscillatePosition = {};
+
             // Apply initializers
             for (auto& init : m_initializers) {
                 init(p);
@@ -649,6 +654,11 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
             p.initial.alpha = p.alpha;
             p.initial.size = p.size;
             p.initial.lifetime = p.lifetime;
+
+            // Reset oscillator state for reused particles
+            p.oscillateAlpha = {};
+            p.oscillateSize = {};
+            p.oscillatePosition = {};
 
             for (auto& init : m_initializers) {
                 init (p);
@@ -1079,6 +1089,9 @@ OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
             } else {
                 p.alpha = p.initial.alpha;
             }
+
+            // Update oscillator base so oscillateAlpha combines properly
+            p.oscillateAlpha.base = p.alpha;
         }
     };
 }
@@ -1108,6 +1121,9 @@ OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) 
             float life = p.getLifetimePos ();
             float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
             p.size = p.initial.size * multiplier;
+
+            // Update oscillator base so oscillateSize combines properly
+            p.oscillateSize.base = p.size;
         }
     };
 }
@@ -1137,6 +1153,9 @@ OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op
             float life = p.getLifetimePos ();
             float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
             p.alpha = p.initial.alpha * multiplier;
+
+            // Update oscillator base so oscillateAlpha combines properly
+            p.oscillateAlpha.base = p.alpha;
         }
     };
 }
@@ -1467,7 +1486,7 @@ OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperat
                 p.oscillateAlpha.frequency = randomFloat (m_rng, freqMin, freqMax);
                 p.oscillateAlpha.scale = randomFloat (m_rng, scaleMin, scaleMax);
                 p.oscillateAlpha.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
-                p.oscillateAlpha.base = p.alpha;  // Capture base value before oscillation
+                p.oscillateAlpha.base = p.alpha;  // Capture initial base
                 p.oscillateAlpha.initialized = true;
             }
 
@@ -1477,7 +1496,7 @@ OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperat
             float cosVal = (std::cos (w * t + p.oscillateAlpha.phase) + 1.0f) * 0.5f;
             float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
 
-            // Apply multiplier to base value (not current value) to prevent exponential drift
+            // Apply to base value (alphafade updates base each frame if present)
             p.alpha = p.oscillateAlpha.base * multiplier;
         }
     };
@@ -1513,7 +1532,7 @@ OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator
                 p.oscillateSize.frequency = randomFloat (m_rng, freqMin, freqMax);
                 p.oscillateSize.scale = randomFloat (m_rng, scaleMin, scaleMax);
                 p.oscillateSize.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
-                p.oscillateSize.base = p.size;  // Capture base value before oscillation
+                p.oscillateSize.base = p.size;  // Capture initial base
                 p.oscillateSize.initialized = true;
             }
 
@@ -1523,7 +1542,7 @@ OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator
             float cosVal = (std::cos (w * t + p.oscillateSize.phase) + 1.0f) * 0.5f;
             float multiplier = glm::mix (scaleMin, scaleMax, cosVal);
 
-            // Apply multiplier to base value (not current value) to prevent exponential drift
+            // Apply to base value (sizeChange updates base each frame if present)
             p.size = p.oscillateSize.base * multiplier;
         }
     };
@@ -1958,7 +1977,7 @@ void CParticle::renderSprites () {
             vertices.push_back (p.frame);
             vertices.push_back (p.velocity.x);
             vertices.push_back (p.velocity.y);
-            vertices.push_back (0.0f);
+            vertices.push_back (p.velocity.z);
         };
 
         // 4 vertices for quad corners

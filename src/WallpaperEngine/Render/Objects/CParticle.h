@@ -43,11 +43,12 @@ struct ParticleInstance {
     float age {0.0f};           // Current age in seconds
 
     // Oscillator state (per-particle random values)
+    // base is updated by alphafade/sizechange operators so oscillation combines properly
     struct {
         float frequency {0.0f};
         float scale {1.0f};
         float phase {0.0f};
-        float base {1.0f};  // Base value to oscillate around (captured on init)
+        float base {1.0f};
         bool initialized {false};
     } oscillateAlpha, oscillateSize;
 
