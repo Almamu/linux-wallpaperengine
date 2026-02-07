@@ -110,6 +110,8 @@ std::string DynamicValue::toString () const {
             return std::to_string (this->m_ivec3.x) + ", " + std::to_string (this->m_ivec3.y) + ", " + std::to_string (this->m_ivec3.z);
         case UnderlyingType::IVec4:
             return std::to_string (this->m_ivec4.x) + ", " + std::to_string (this->m_ivec4.y) + ", " + std::to_string (this->m_ivec4.z) + ", " + std::to_string (this->m_ivec4.w);
+        case UnderlyingType::String:
+            return this->m_string;
         default:
             return "Unknown conversion for dynamic value of type: " + std::to_string (static_cast<int> (this->m_type));
     }
