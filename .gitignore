@@ -3,7 +3,8 @@ cmake-build-*
 build/
 .vscode/
 third_party/
-
+packaging/archlinux/*
+!packaging/archlinux/PKGBUILD
 *-protocol.o
 *-protocol.c
 *-protocol.h
