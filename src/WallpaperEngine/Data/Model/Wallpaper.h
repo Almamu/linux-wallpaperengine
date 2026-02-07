@@ -100,6 +100,9 @@ struct SceneData {
             int width;
             int height;
             bool isAuto;
+            float nearz;
+            float farz;
+            float fov;
         } projection;
     } camera;
 
