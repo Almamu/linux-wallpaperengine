@@ -44,6 +44,7 @@ CVideo::CVideo (
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     if (!this->getContext ().getApp ().getContext ().settings.audio.enabled) {
+        this->m_muted = true;
         mpv_set_option_string (this->m_mpv, "mute", "yes");
     }
 
@@ -89,6 +90,18 @@ void CVideo::setSize (const int width, const int height) {
 }
 
 void CVideo::renderFrame (const glm::ivec4& viewport) {
+    // ensure the video's audio follows audio detection rules
+    if (this->getContext ().getApp ().getContext ().settings.audio.enabled &&
+        this->m_muted != this->getAudioContext ().getDriver ().getAudioDetector ().anythingPlaying ()) {
+        this->m_muted = !this->m_muted;
+
+        const char* mutecommand [] = {
+            "set", "mute", this->m_muted ? "yes" : "no", nullptr
+        };
+
+        mpv_command (this->m_mpv, mutecommand);
+    }
+
     // read any and all the events available
     while (this->m_mpv) {
         const mpv_event* event = mpv_wait_event (this->m_mpv, 0);

@@ -56,6 +56,11 @@ class AudioContext {
      */
     [[nodiscard]] Drivers::Recorders::PlaybackRecorder& getRecorder () const;
 
+    /**
+     * @return The audio driver used to playback and record audio
+     */
+    [[nodiscard]] Drivers::AudioDriver& getDriver () const;
+
   private:
     /** The audio driver in use */
     Drivers::AudioDriver& m_driver;

@@ -33,5 +33,6 @@ class CVideo final : public CWallpaper {
     bool m_paused = false;
     int64_t m_width = 16;
     int64_t m_height = 16;
+    bool m_muted = false;
 };
 } // namespace WallpaperEngine::Render::Wallpapers
