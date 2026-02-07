@@ -7,7 +7,11 @@ AudioDriver::AudioDriver (
 ) :
     m_applicationContext (applicationContext),
     m_detector (detector),
-    m_recorder (recorder) {}
+    m_recorder (recorder) {
+    // perform a few update cycles to ensure data is ready before anything actually uses the audio
+    this->AudioDriver::update ();
+    this->AudioDriver::update ();
+}
 
 void AudioDriver::update () {
     this->m_recorder.update ();
