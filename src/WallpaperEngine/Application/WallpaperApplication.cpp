@@ -549,10 +549,10 @@ void WallpaperApplication::setupBrowser () {
 }
 
 void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename) const {
-    // this should be getting called at the end of the frame, so the right thing should be bound already
     const int width = this->m_renderContext->getOutput ().getFullWidth ();
     const int height = this->m_renderContext->getOutput ().getFullHeight ();
     const bool vflip = this->m_renderContext->getOutput ().renderVFlip ();
+    const auto& wallpapers = this->m_renderContext->getWallpapers ();
 
     // build the output file with stbi_image_write
     auto* bitmap = new uint8_t [width * height * 3] {0};
@@ -561,22 +561,41 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
     for (const auto& [screen, viewport] : this->m_renderContext->getOutput ().getViewports ()) {
         // activate opengl context so we can read from the framebuffer
         viewport->makeCurrent ();
-        // make room for storing the pixel of this viewport
-        const auto bufferSize = (viewport->viewport.z - viewport->viewport.x) * (viewport->viewport.w - viewport->viewport.y) * 3;
-        auto* buffer = new uint8_t [bufferSize];
-        const uint8_t* pixel = buffer;
 
-        // read the viewport data into the pixel buffer
-        glPixelStorei (GL_PACK_ALIGNMENT, 1);
-        // 4.5 supports glReadnPixels, anything older doesn't...
-        if (GLEW_VERSION_4_5) {
-            glReadnPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w,
-                           GL_RGB, GL_UNSIGNED_BYTE, bufferSize, buffer);
-        } else {
-            // fallback to old version
-            glReadPixels (viewport->viewport.x, viewport->viewport.y, viewport->viewport.z, viewport->viewport.w,
-                          GL_RGB, GL_UNSIGNED_BYTE, buffer);
+        // find the wallpaper for this screen to read from its FBO
+        const auto wallpaperIt = wallpapers.find (screen);
+        if (wallpaperIt == wallpapers.end ()) {
+            sLog.error ("Cannot find wallpaper for screen ", screen);
+            continue;
         }
+
+        const auto& wallpaper = wallpaperIt->second;
+        const int vpWidth = viewport->viewport.z - viewport->viewport.x;
+        const int vpHeight = viewport->viewport.w - viewport->viewport.y;
+
+        // bind the wallpaper's FBO to read from it directly
+        // this is more reliable than the default framebuffer on some drivers (NVIDIA/Wayland)
+        glBindFramebuffer (GL_FRAMEBUFFER, wallpaper->getWallpaperFramebuffer ());
+
+        // ensure rendering is complete before reading
+        glFinish ();
+
+        // make room for storing the pixel of this viewport
+        const int readWidth = wallpaper->getWidth ();
+        const int readHeight = wallpaper->getHeight ();
+        const auto bufferSize = readWidth * readHeight * 3;
+        auto* buffer = new uint8_t [bufferSize];
+
+        // read the FBO data into the pixel buffer
+        glPixelStorei (GL_PACK_ALIGNMENT, 1);
+        if (GLEW_VERSION_4_5) {
+            glReadnPixels (0, 0, readWidth, readHeight, GL_RGB, GL_UNSIGNED_BYTE, bufferSize, buffer);
+        } else {
+            glReadPixels (0, 0, readWidth, readHeight, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+        }
+
+        // restore default framebuffer
+        glBindFramebuffer (GL_FRAMEBUFFER, 0);
 
         if (const GLenum error = glGetError (); error != GL_NO_ERROR) {
             sLog.error ("Cannot obtain pixel data for screen ", screen, ". OpenGL error: ", error);
@@ -584,20 +603,35 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
             continue;
         }
 
-        // now get access to the pixels
-        for (int y = 0; y < viewport->viewport.w; y++) {
-            for (int x = 0; x < viewport->viewport.z; x++) {
-                const int xfinal = x + xoffset;
-                const int yfinal = vflip ? (viewport->viewport.w - y - 1) : y;
+        // Get the UV coordinates which define the visible portion based on scaling mode
+        const auto [ustart, uend, vstart, vend] = wallpaper->getState ().getTextureUVs ();
 
-                bitmap [yfinal * width * 3 + xfinal * 3] = *pixel++;
-                bitmap [yfinal * width * 3 + xfinal * 3 + 1] = *pixel++;
-                bitmap [yfinal * width * 3 + xfinal * 3 + 2] = *pixel++;
+        // copy pixels to bitmap, sampling from the UV-defined region
+        for (int y = 0; y < vpHeight; y++) {
+            for (int x = 0; x < vpWidth; x++) {
+                // interpolate within the UV range to get source coordinates
+                const float u = ustart + (static_cast<float> (x) / vpWidth) * (uend - ustart);
+                const float v = vstart + (static_cast<float> (y) / vpHeight) * (vend - vstart);
+
+                // convert UV to pixel coordinates in the source buffer
+                const int srcX = std::clamp (static_cast<int> (u * readWidth), 0, readWidth - 1);
+                const int srcY = std::clamp (static_cast<int> (v * readHeight), 0, readHeight - 1);
+                const int srcIdx = (srcY * readWidth + srcX) * 3;
+
+                const int xfinal = x + xoffset;
+                // FBO content is not flipped like default framebuffer, so invert vflip logic
+                const int yfinal = vflip ? y : (vpHeight - y - 1);
+
+                if (yfinal >= 0 && yfinal < height && xfinal >= 0 && xfinal < width) {
+                    bitmap [yfinal * width * 3 + xfinal * 3] = buffer [srcIdx];
+                    bitmap [yfinal * width * 3 + xfinal * 3 + 1] = buffer [srcIdx + 1];
+                    bitmap [yfinal * width * 3 + xfinal * 3 + 2] = buffer [srcIdx + 2];
+                }
             }
         }
 
         if (viewport->single)
-            xoffset += viewport->viewport.z;
+            xoffset += vpWidth;
 
         // free the buffer allocated for the viewport
         delete [] buffer;
