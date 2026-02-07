@@ -112,9 +112,15 @@ You can copy the `assets` folder manually:
 2. Copy the `assets` folder
 3. Paste it into the same folder where the `linux-wallpaperengine` binary is located (build/output if you followed the build instructions)
 
+Another option is to specify the path manually with the `--assets-dir` option, like this:
+```bash
+linux-wallpaperengine --assets-dir /path/to/assets
+```
 ---
 
 ### 2. Build from Source
+
+> ⚠️ If you installed the AUR package mentioned before, you can skip this step.
 
 Clone the repo:
 
@@ -134,8 +140,6 @@ make
 Once the build process is finished, this should create a new `output` folder containing the app and all the required
 support files to run.
 
-> ✅ Remember: Place the `assets` folder next to the built binary if it isn’t detected automatically.
-
 ---
 
 ## 🧪 Usage
@@ -143,7 +147,7 @@ support files to run.
 Basic syntax:
 
 ```bash
-./linux-wallpaperengine [options] <background_id or path>
+linux-wallpaperengine [options] <background_id or path>
 ```
 
 You can use either:
@@ -190,34 +194,34 @@ If you're one of those developers, feel free to open an issue to get your projec
 
 #### Run a background by ID
 ```bash
-./linux-wallpaperengine 1845706469
+linux-wallpaperengine 1845706469
 ```
 
 #### Run a background from a folder
 ```bash
-./linux-wallpaperengine ~/backgrounds/1845706469/
+linux-wallpaperengine ~/backgrounds/1845706469/
 ```
 
 #### Assign backgrounds to screens with scaling
 ```bash
-./linux-wallpaperengine \
+linux-wallpaperengine \
   --scaling stretch --screen-root eDP-1 --bg 2667198601 \
   --scaling fill --screen-root HDMI-1 --bg 2667198602
 ```
 
 #### Run in a window
 ```bash
-./linux-wallpaperengine --window 0x0x1280x720 1845706469
+linux-wallpaperengine --window 0x0x1280x720 1845706469
 ```
 
 #### Limit FPS to save power
 ```bash
-./linux-wallpaperengine --fps 30 1845706469
+linux-wallpaperengine --fps 30 1845706469
 ```
 
 #### Take a screenshot
 ```bash
-./linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
+linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
 
 This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
@@ -225,7 +229,7 @@ to apply to your system.
 
 #### View and change properties
 ```bash
-./linux-wallpaperengine --list-properties 2370927443
+linux-wallpaperengine --list-properties 2370927443
 ```
 
 The output includes all the relevant information for each of the different properties:
@@ -280,7 +284,7 @@ visualizerwidth - slider
 
 Any of these values can be modified with the --set-property switch. Say you want to enable the bloom in this background, you would do so like this:
 ```
-./linux-wallpaperengine --set-property bloom=1 2370927443
+linux-wallpaperengine --set-property bloom=1 2370927443
 ```
 
 ---
