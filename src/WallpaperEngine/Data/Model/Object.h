@@ -78,7 +78,7 @@ struct ImageEffect {
 struct ImageAnimationLayer {
     int id;
     float rate;
-    bool visible;
+    UserSettingUniquePtr visible;
     float blend;
     int animation;
 };

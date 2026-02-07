@@ -28,8 +28,8 @@ class ObjectParser {
     static ImageEffectPassOverrideUniquePtr parseEffectPass (const JSON& it, const Project& project);
     static TextureMap parseTextureMap (const JSON& it);
     static ComboMap parseComboMap (const JSON& it);
-    static std::vector <ImageAnimationLayerUniquePtr> parseAnimationLayers (const JSON& it);
-    static ImageAnimationLayerUniquePtr parseAnimationLayer (const JSON& it);
+    static std::vector <ImageAnimationLayerUniquePtr> parseAnimationLayers (const JSON& it, const Project& project);
+    static ImageAnimationLayerUniquePtr parseAnimationLayer (const JSON& it, const Project& project);
 
     // Particle parsing helpers
     static ParticleEmitter parseParticleEmitter (const JSON& it);

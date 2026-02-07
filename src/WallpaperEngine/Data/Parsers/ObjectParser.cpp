@@ -118,7 +118,7 @@ ImageUniquePtr ObjectParser::parseImage (const JSON& it, const Project& project,
             .brightness = it.optional ("brightness", 1.0f),
             .model = ModelParser::load (project, image),
             .effects = effects.has_value () ? parseEffects (*effects, project) : std::vector <ImageEffectUniquePtr> {},
-            .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers) : std::vector <ImageAnimationLayerUniquePtr> {},
+            .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers, project) : std::vector <ImageAnimationLayerUniquePtr> {},
         }
     );
 
@@ -220,7 +220,7 @@ ComboMap ObjectParser::parseComboMap (const JSON& it) {
     return result;
 }
 
-std::vector <ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (const JSON& it) {
+std::vector <ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (const JSON& it, const Project& project) {
     if (!it.is_array ()) {
         return {};
     }
@@ -228,17 +228,17 @@ std::vector <ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (c
     std::vector <ImageAnimationLayerUniquePtr> result = {};
 
     for (const auto& cur : it.items ()) {
-        result.push_back (parseAnimationLayer (cur.value ()));
+        result.push_back (parseAnimationLayer (cur.value (), project));
     }
 
     return result;
 }
 
-ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it) {
+ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it, const Project& project) {
     return std::make_unique <ImageAnimationLayer> (ImageAnimationLayer {
         .id = it.require ("id", "Animation layer must have an id"),
         .rate = it.require ("rate", "Animation layer must have a rate"),
-        .visible = it.require ("visible", "Animation layer must include visibility"),
+        .visible = it.user ("visible", project.properties, false),
         .blend = it.require ("blend", "Animation layer must include blend"),
         .animation = it.require ("animation", "Animation layer must include an animation"),
     });
