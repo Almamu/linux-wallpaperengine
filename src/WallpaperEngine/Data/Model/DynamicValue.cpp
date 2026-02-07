@@ -273,6 +273,12 @@ void DynamicValue::update (const std::string& newValue) {
     this->m_bool = false;
     this->m_string = newValue;
     this->m_type = UnderlyingType::String;
+
+    if (this->m_condition.has_value ()) {
+        this->m_bool = this->m_condition.value ().condition == newValue;
+    }
+
+    this->propagate ();
 }
 
 void DynamicValue::update (const DynamicValue& other) {

@@ -60,8 +60,8 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
         const auto value = cur.require ("value", "Combo option must have a value");
 
         optionsMap.emplace (
-            cur.require ("label", "Combo option must have a label"),
-            value.is_number () ? std::to_string (value.get <int> ()) : value.get <std::string> ()
+            value.is_number () ? std::to_string (value.get <int> ()) : value.get <std::string> (),
+            cur.require ("label", "Combo option must have a label")
         );
     }
 

@@ -152,8 +152,13 @@ class PropertyCombo final : public Property, ComboData {
 
     using Property::update;
     void update(const std::string& value) override {
+        if (this->values.contains (value) == false) {
+            sLog.error ("Combo value not found in combo options: ", value);
+            return;
+        }
+
         // search for the value in the combo options or default to the textual value
-        this->DynamicValue::update (this->values.contains (value) ? this->values.at (value) : value);
+        this->DynamicValue::update (value);
     }
 
     [[nodiscard]] std::string dump () const override {
