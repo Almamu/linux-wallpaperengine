@@ -28,7 +28,11 @@ CVideo::CVideo (
     }
 
     mpv_set_option_string (this->m_mpv, "terminal", "yes");
+#if NDEBUG
+    mpv_set_option_string (this->m_mpv, "msg-level", "all=status,statusline=no");
+#else
     mpv_set_option_string (this->m_mpv, "msg-level", "all=v");
+#endif
     mpv_set_option_string (this->m_mpv, "input-cursor", "no");
     mpv_set_option_string (this->m_mpv, "cursor-autohide", "no");
     mpv_set_option_string (this->m_mpv, "config", "no");
