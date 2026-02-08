@@ -8,10 +8,10 @@ using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Model;
 
 class WallpaperParser {
-  public:
+public:
     static WallpaperUniquePtr parse (const JSON& file, Project& project);
 
-  private:
+private:
     static SceneUniquePtr parseScene (const JSON& file, Project& project);
     static VideoUniquePtr parseVideo (const JSON& file, Project& project);
     static WebUniquePtr parseWeb (const JSON& file, Project& project);

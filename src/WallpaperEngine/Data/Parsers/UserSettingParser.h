@@ -10,7 +10,7 @@ using json = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Model;
 
 class UserSettingParser {
-  public:
+public:
     static UserSettingUniquePtr parse (const json& data, const Properties& properties);
 };
 } // namespace WallpaperEngine::Data::Parsers

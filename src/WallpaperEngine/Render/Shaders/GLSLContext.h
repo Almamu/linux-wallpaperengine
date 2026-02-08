@@ -3,19 +3,16 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace WallpaperEngine::Render::Shaders {
 class GLSLContext {
-  public:
+public:
     /**
      * Types of shaders
      */
-    enum UnitType {
-        UnitType_Vertex = 0,
-        UnitType_Fragment = 1
-    };
+    enum UnitType { UnitType_Vertex = 0, UnitType_Fragment = 1 };
 
     GLSLContext ();
     ~GLSLContext ();
@@ -24,7 +21,7 @@ class GLSLContext {
 
     [[nodiscard]] static GLSLContext& get ();
 
-  private:
-    static std::unique_ptr <GLSLContext> sInstance;
+private:
+    static std::unique_ptr<GLSLContext> sInstance;
 };
 } // namespace WallpaperEngine::Render::Shaders

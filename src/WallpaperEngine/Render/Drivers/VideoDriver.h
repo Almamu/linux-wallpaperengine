@@ -18,11 +18,11 @@ class CWaylandMouseInput;
 
 namespace WallpaperEngine::Render::Drivers {
 namespace Detectors {
-class FullScreenDetector;
+    class FullScreenDetector;
 }
 
 class VideoDriver {
-  public:
+public:
     explicit VideoDriver (WallpaperApplication& app, Input::MouseInput& mouseInput);
     virtual ~VideoDriver () = default;
 
@@ -81,7 +81,7 @@ class VideoDriver {
      */
     [[nodiscard]] Input::InputContext& getInputContext ();
 
-  private:
+private:
     /** App that owns this driver */
     WallpaperApplication& m_app;
     Input::InputContext m_inputContext;

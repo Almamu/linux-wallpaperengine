@@ -7,10 +7,10 @@ using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Model;
 
 class PropertyParser {
-  public:
+public:
     static PropertySharedPtr parse (const JSON& it, const std::string& name);
 
-  private:
+private:
     static PropertySharedPtr parseCombo (const JSON& it, const std::string& name);
     static PropertySharedPtr parseColor (const JSON& it, const std::string& name);
     static PropertySharedPtr parseBoolean (const JSON& it, const std::string& name);

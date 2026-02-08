@@ -15,7 +15,7 @@ using namespace WallpaperEngine::Data::Assets;
  * A normal texture file in WallpaperEngine's format
  */
 class CTexture final : public TextureProvider {
-  public:
+public:
     explicit CTexture (TextureUniquePtr header);
 
     [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
@@ -33,7 +33,7 @@ class CTexture final : public TextureProvider {
     [[nodiscard]] uint32_t getSpritesheetFrames () const override;
     [[nodiscard]] float getSpritesheetDuration () const override;
 
-  private:
+private:
     /**
      * @return The texture header
      */

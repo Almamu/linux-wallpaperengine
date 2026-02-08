@@ -1,9 +1,9 @@
 #pragma once
 
 #include <map>
-#include <vector>
-#include <string>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include "Types.h"
 
@@ -16,11 +16,7 @@ enum BlendingMode {
     BlendingMode_Additive = 3,
 };
 
-enum CullingMode {
-    CullingMode_Unknown = 0,
-    CullingMode_Normal = 1,
-    CullingMode_Disable = 2
-};
+enum CullingMode { CullingMode_Unknown = 0, CullingMode_Normal = 1, CullingMode_Disable = 2 };
 
 enum DepthtestMode {
     DepthtestMode_Unknown = 0,
@@ -59,7 +55,7 @@ struct Material {
     /** The name of the file this material is defined in */
     std::string filename;
     /** The passes that compose this material */
-    std::vector <MaterialPassUniquePtr> passes;
+    std::vector<MaterialPassUniquePtr> passes;
 };
 
 } // namespace WallpaperEngine::Data::Model

@@ -14,12 +14,9 @@ using namespace WallpaperEngine::WebBrowser;
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 CWeb::CWeb (
-    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-    WebBrowserContext& browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
-    const uint32_t& clampMode
-) :
-    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
-    m_browserContext (browserContext) {
+    const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext, WebBrowserContext& browserContext,
+    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+) : CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode), m_browserContext (browserContext) {
     // setup framebuffers
     this->setupFramebuffers ();
 
@@ -34,12 +31,10 @@ CWeb::CWeb (
 
     this->m_client = new WebBrowser::CEF::BrowserClient (m_renderHandler);
     // use the custom scheme for the wallpaper's files
-    const std::string htmlURL =
-        WPSchemeHandlerFactory::generateSchemeName(this->getWeb ().project.workshopId) +
-        "://root/" +
-        this->getWeb().filename;
-    this->m_browser =
-        CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);
+    const std::string htmlURL = WPSchemeHandlerFactory::generateSchemeName (this->getWeb ().project.workshopId)
+	+ "://root/" + this->getWeb ().filename;
+    this->m_browser
+	= CefBrowserHost::CreateBrowserSync (window_info, this->m_client, htmlURL, browserSettings, nullptr, nullptr);
 }
 
 void CWeb::setSize (const int width, const int height) {
@@ -47,13 +42,15 @@ void CWeb::setSize (const int width, const int height) {
     this->m_height = height > 0 ? height : this->m_height;
 
     // do not refresh the texture if any of the sizes are invalid
-    if (this->m_width <= 0 || this->m_height <= 0)
-        return;
+    if (this->m_width <= 0 || this->m_height <= 0) {
+	return;
+    }
 
     // reconfigure the texture
     glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->getWidth (), this->getHeight (), 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                  nullptr);
+    glTexImage2D (
+	GL_TEXTURE_2D, 0, GL_RGBA8, this->getWidth (), this->getHeight (), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr
+    );
 
     // Notify cef that it was resized(maybe it's not even needed)
     this->m_browser->GetHost ()->WasResized ();
@@ -62,7 +59,7 @@ void CWeb::setSize (const int width, const int height) {
 void CWeb::renderFrame (const glm::ivec4& viewport) {
     // ensure the viewport matches the window size, and resize if needed
     if (viewport.z != this->getWidth () || viewport.w != this->getHeight ()) {
-        this->setSize (viewport.z, viewport.w);
+	this->setSize (viewport.z, viewport.w);
     }
 
     // ensure the virtual mouse position is up to date
@@ -88,8 +85,8 @@ void CWeb::updateMouse (const glm::ivec4& viewport) {
     auto& input = this->getContext ().getInputContext ().getMouseInput ();
 
     const glm::dvec2 position = input.position ();
-    const auto leftClick = input.leftClick();
-    const auto rightClick = input.rightClick();
+    const auto leftClick = input.leftClick ();
+    const auto rightClick = input.rightClick ();
 
     CefMouseEvent evt;
     // Set mouse current position. Maybe clamps are not needed
@@ -101,11 +98,17 @@ void CWeb::updateMouse (const glm::ivec4& viewport) {
 
     // TODO: ANY OTHER MOUSE EVENTS TO SEND?
     if (leftClick != this->m_leftClick) {
-        this->m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_LEFT, leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+	this->m_browser->GetHost ()->SendMouseClickEvent (
+	    evt, CefBrowserHost::MouseButtonType::MBT_LEFT,
+	    leftClick == WallpaperEngine::Input::MouseClickStatus::Released, 1
+	);
     }
 
     if (rightClick != this->m_rightClick) {
-        this->m_browser->GetHost ()->SendMouseClickEvent (evt, CefBrowserHost::MouseButtonType::MBT_RIGHT, rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1);
+	this->m_browser->GetHost ()->SendMouseClickEvent (
+	    evt, CefBrowserHost::MouseButtonType::MBT_RIGHT,
+	    rightClick == WallpaperEngine::Input::MouseClickStatus::Released, 1
+	);
     }
 
     this->m_leftClick = leftClick;

@@ -13,14 +13,14 @@ using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Utils;
 
 PackageUniquePtr PackageParser::parse (ReadStreamSharedPtr stream) {
-    auto reader = std::make_unique <BinaryReader> (std::move (stream));
+    auto reader = std::make_unique<BinaryReader> (std::move (stream));
 
     if (const std::string header = reader->nextSizedString (); header.starts_with ("PKGV") == false) {
-        sLog.exception ("Expected header to start with PKGV, got ", header);
+	sLog.exception ("Expected header to start with PKGV, got ", header);
     }
 
-    auto result =  std::make_unique <Package> (Package {
-        .file = std::move(reader),
+    auto result = std::make_unique<Package> (Package {
+	.file = std::move (reader),
     });
 
     result->files = parseFileList (*result->file);
@@ -36,13 +36,11 @@ FileEntryList PackageParser::parseFileList (const BinaryReader& stream) {
     result.reserve (filesCount);
 
     for (uint32_t i = 0; i < filesCount; i++) {
-        result.push_back (std::make_unique<FileEntry> (FileEntry {
-            .filename = stream.nextSizedString (),
-            .offset = stream.nextUInt32 (),
-            .length = stream.nextUInt32 ()
-        }));
+	result.push_back (
+	    std::make_unique<FileEntry> (FileEntry {
+		.filename = stream.nextSizedString (), .offset = stream.nextUInt32 (), .length = stream.nextUInt32 () })
+	);
     }
 
     return result;
 }
-

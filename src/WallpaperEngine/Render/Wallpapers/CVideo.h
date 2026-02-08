@@ -7,11 +7,11 @@
 
 namespace WallpaperEngine::Render::Wallpapers {
 class CVideo final : public CWallpaper {
-  public:
+public:
     CVideo (
-        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-        const WallpaperState::TextureUVsScaling& scalingMode,
-        const uint32_t& clampMode);
+	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+    );
 
     const Video& getVideo () const;
 
@@ -21,12 +21,12 @@ class CVideo final : public CWallpaper {
     void setPause (bool newState) override;
     void setSize (int width, int height);
 
-  protected:
+protected:
     void renderFrame (const glm::ivec4& viewport) override;
 
     friend class CWallpaper;
 
-  private:
+private:
     mpv_handle* m_mpv = nullptr;
     mpv_render_context* m_mpvGl = nullptr;
 

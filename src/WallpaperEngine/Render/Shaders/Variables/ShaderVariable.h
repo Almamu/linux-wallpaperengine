@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WallpaperEngine/Data/Utils/TypeCaster.h"
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
+#include "WallpaperEngine/Data/Utils/TypeCaster.h"
 #include <exception>
 #include <string>
 
@@ -10,7 +10,7 @@ using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Utils;
 
 class ShaderVariable : public DynamicValue, public TypeCaster {
-  public:
+public:
     using DynamicValue::DynamicValue;
 
     [[nodiscard]] const std::string& getIdentifierName () const;
@@ -19,7 +19,7 @@ class ShaderVariable : public DynamicValue, public TypeCaster {
     void setIdentifierName (std::string identifierName);
     void setName (const std::string& name);
 
-  private:
+private:
     std::string m_identifierName;
     std::string m_name;
 };

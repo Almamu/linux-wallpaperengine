@@ -13,35 +13,36 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::Data::Parsers;
 
-TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) {}
+TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) { }
 
 std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string& filename) {
-    if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ())
-        return found->second;
+    if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ()) {
+	return found->second;
+    }
 
     // search for the texture in all the different containers just in case
     for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
-        try {
-            const auto contents = project->assetLocator->texture (filename);
-            auto stream = BinaryReader (contents);
+	try {
+	    const auto contents = project->assetLocator->texture (filename);
+	    auto stream = BinaryReader (contents);
 
-            // Create metadata loader lambda that captures the assetLocator
-            // Note: Unlike texture() which prepends "materials/", readString() doesn't,
-            // so we need to construct the full path here
-            auto metadataLoader = [&project](const std::string& metaFilename) -> std::string {
-                std::filesystem::path fullPath = std::filesystem::path("materials") / metaFilename;
-                return project->assetLocator->readString (fullPath);
-            };
+	    // Create metadata loader lambda that captures the assetLocator
+	    // Note: Unlike texture() which prepends "materials/", readString() doesn't,
+	    // so we need to construct the full path here
+	    auto metadataLoader = [&project] (const std::string& metaFilename) -> std::string {
+		std::filesystem::path fullPath = std::filesystem::path ("materials") / metaFilename;
+		return project->assetLocator->readString (fullPath);
+	    };
 
-            auto parsedTexture = TextureParser::parse (stream, filename, metadataLoader);
-            auto texture = std::make_shared <CTexture> (std::move (parsedTexture));
+	    auto parsedTexture = TextureParser::parse (stream, filename, metadataLoader);
+	    auto texture = std::make_shared<CTexture> (std::move (parsedTexture));
 
-            this->store (filename, texture);
+	    this->store (filename, texture);
 
-            return texture;
-        } catch (AssetLoadException&) {
-            // ignored, this happens if we're looking at the wrong background
-        }
+	    return texture;
+	} catch (AssetLoadException&) {
+	    // ignored, this happens if we're looking at the wrong background
+	}
     }
 
     throw AssetLoadException ("Cannot find file", filename, std::error_code ());

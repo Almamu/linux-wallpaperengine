@@ -9,7 +9,7 @@ using ReadStream = std::istream;
 using ReadStreamSharedPtr = std::shared_ptr<ReadStream>;
 
 class BinaryReader {
-  public:
+public:
     explicit BinaryReader (ReadStreamSharedPtr file);
 
     [[nodiscard]] uint32_t nextUInt32 () const;
@@ -17,12 +17,12 @@ class BinaryReader {
     [[nodiscard]] float nextFloat () const;
     [[nodiscard]] std::string nextNullTerminatedString () const;
     [[nodiscard]] std::string nextSizedString () const;
-    void next(char* out, size_t size) const;
+    void next (char* out, size_t size) const;
     [[nodiscard]] char next () const;
 
     [[nodiscard]] std::istream& base () const;
 
-  private:
+private:
     ReadStreamSharedPtr m_input;
 };
 

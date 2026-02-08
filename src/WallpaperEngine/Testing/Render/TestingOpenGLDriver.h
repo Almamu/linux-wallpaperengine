@@ -1,8 +1,8 @@
 #pragma once
 
+#include "WallpaperEngine/Application/WallpaperApplication.h"
 #include "WallpaperEngine/Input/Drivers/GLFWMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/VideoDriver.h"
-#include "WallpaperEngine/Application/WallpaperApplication.h"
 
 #include "WallpaperEngine/Testing/Input/TestingMouseInput.h"
 
@@ -13,12 +13,12 @@ namespace WallpaperEngine::Testing::Render {
 using namespace WallpaperEngine::Render::Drivers;
 using namespace WallpaperEngine::Testing::Input;
 
-class TestingOpenGLDriver final  : public VideoDriver {
-  public:
+class TestingOpenGLDriver final : public VideoDriver {
+public:
     explicit TestingOpenGLDriver (ApplicationContext& context, WallpaperApplication& app);
     ~TestingOpenGLDriver () override;
 
-    [[nodiscard]] Output::Output & getOutput() override;
+    [[nodiscard]] Output::Output& getOutput () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
     [[nodiscard]] float getRenderTime () const override;
     bool closeRequested () override;
@@ -30,7 +30,7 @@ class TestingOpenGLDriver final  : public VideoDriver {
     [[nodiscard]] uint32_t getFrameCounter () const override;
     void dispatchEventQueue () override;
 
-  private:
+private:
     Output::Output* m_output = nullptr;
     ApplicationContext& m_context;
     GLFWwindow* m_window = nullptr;

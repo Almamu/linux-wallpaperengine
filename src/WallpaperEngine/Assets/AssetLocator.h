@@ -6,7 +6,7 @@ namespace WallpaperEngine::Assets {
 using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::Data::Model;
 class AssetLocator {
-  public:
+public:
     explicit AssetLocator (ContainerUniquePtr filesystem);
 
     std::string vertexShader (const std::filesystem::path& filename) const;
@@ -17,7 +17,7 @@ class AssetLocator {
     ReadStreamSharedPtr read (const std::filesystem::path& path) const;
     std::filesystem::path physicalPath (const std::filesystem::path& path) const;
 
-  private:
+private:
     std::string shader (const std::filesystem::path& filename) const;
 
     ContainerUniquePtr m_filesystem;

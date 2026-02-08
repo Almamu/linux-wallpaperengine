@@ -1,8 +1,8 @@
 #pragma once
 
 #include <functional>
-#include <memory>
 #include <map>
+#include <memory>
 
 #include "VideoDriver.h"
 
@@ -10,9 +10,11 @@
 
 namespace WallpaperEngine::Render::Drivers {
 class VideoFactories {
-  public:
-    using DriverConstructionFunc = std::function<std::unique_ptr<VideoDriver>(ApplicationContext&, WallpaperApplication&)>;
-    using FullscreenDetectorConstructionFunc = std::function<std::unique_ptr<Detectors::FullScreenDetector>(ApplicationContext&, VideoDriver&)>;
+public:
+    using DriverConstructionFunc
+	= std::function<std::unique_ptr<VideoDriver> (ApplicationContext&, WallpaperApplication&)>;
+    using FullscreenDetectorConstructionFunc
+	= std::function<std::unique_ptr<Detectors::FullScreenDetector> (ApplicationContext&, VideoDriver&)>;
     VideoFactories ();
 
     static VideoFactories& get ();
@@ -25,7 +27,8 @@ class VideoFactories {
      * @param factory
      */
     void registerDriver (
-        ApplicationContext::WINDOW_MODE forMode, std::string xdgSessionType, DriverConstructionFunc factory);
+	ApplicationContext::WINDOW_MODE forMode, std::string xdgSessionType, DriverConstructionFunc factory
+    );
 
     /**
      * Adds a new handler for the given XDG_SESSION_TYPE
@@ -49,22 +52,23 @@ class VideoFactories {
      * @param application
      * @return
      */
-    [[nodiscard]] std::unique_ptr <VideoDriver> createVideoDriver (
-        ApplicationContext::WINDOW_MODE mode, const std::string& xdgSessionType,
-        ApplicationContext& context, WallpaperApplication& application);
+    [[nodiscard]] std::unique_ptr<VideoDriver> createVideoDriver (
+	ApplicationContext::WINDOW_MODE mode, const std::string& xdgSessionType, ApplicationContext& context,
+	WallpaperApplication& application
+    );
 
     /**
      * Calls the factory and builds the requested fullscreen detector or provides a stub if not possible
      *
      * @return
      */
-    [[nodiscard]] std::unique_ptr <Detectors::FullScreenDetector> createFullscreenDetector (
-        const std::string& xdgSessionType, ApplicationContext& context, VideoDriver& driver);
+    [[nodiscard]] std::unique_ptr<Detectors::FullScreenDetector>
+    createFullscreenDetector (const std::string& xdgSessionType, ApplicationContext& context, VideoDriver& driver);
 
-  private:
-    using SessionTypeToFullscreenDetectorType = std::map <std::string, FullscreenDetectorConstructionFunc>;
-    using SessionTypeToFactoryType = std::map <std::string, DriverConstructionFunc>;
-    using WindowModeToSessionType = std::map <ApplicationContext::WINDOW_MODE, SessionTypeToFactoryType>;
+private:
+    using SessionTypeToFullscreenDetectorType = std::map<std::string, FullscreenDetectorConstructionFunc>;
+    using SessionTypeToFactoryType = std::map<std::string, DriverConstructionFunc>;
+    using WindowModeToSessionType = std::map<ApplicationContext::WINDOW_MODE, SessionTypeToFactoryType>;
 
     SessionTypeToFullscreenDetectorType m_fullscreenFactories = {};
     WindowModeToSessionType m_driverFactories = {};

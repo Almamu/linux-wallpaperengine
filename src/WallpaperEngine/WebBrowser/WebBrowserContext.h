@@ -13,14 +13,14 @@ class BrowserApp;
 }
 
 namespace WallpaperEngine::WebBrowser {
-    class WebBrowserContext {
-      public:
-        explicit WebBrowserContext (WallpaperEngine::Application::WallpaperApplication& wallpaperApplication);
-        ~WebBrowserContext();
+class WebBrowserContext {
+public:
+    explicit WebBrowserContext (WallpaperEngine::Application::WallpaperApplication& wallpaperApplication);
+    ~WebBrowserContext ();
 
-      private:
-        CefRefPtr<CefApp> m_browserApplication = nullptr;
-        CefRefPtr<CefCommandLine> m_commandLine = nullptr;
-        WallpaperEngine::Application::WallpaperApplication& m_wallpaperApplication;
-    };
+private:
+    CefRefPtr<CefApp> m_browserApplication = nullptr;
+    CefRefPtr<CefCommandLine> m_commandLine = nullptr;
+    WallpaperEngine::Application::WallpaperApplication& m_wallpaperApplication;
+};
 } // namespace WallpaperEngine::WebBrowser

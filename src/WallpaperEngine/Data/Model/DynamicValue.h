@@ -17,31 +17,31 @@ struct ConditionInfo {
  * Class that represents different types of dynamic values
  */
 class DynamicValue {
-  public:
+public:
     enum UnderlyingType {
-        Null = 0,
-        IVec4 = 1,
-        IVec3 = 2,
-        IVec2 = 3,
-        Vec4 = 4,
-        Vec3 = 5,
-        Vec2 = 6,
-        Float = 7,
-        Int = 8,
-        Boolean = 9,
-        String = 10
+	Null = 0,
+	IVec4 = 1,
+	IVec3 = 2,
+	IVec2 = 3,
+	Vec4 = 4,
+	Vec3 = 5,
+	Vec2 = 6,
+	Float = 7,
+	Int = 8,
+	Boolean = 9,
+	String = 10
     };
 
     DynamicValue () = default;
-    explicit DynamicValue(const glm::ivec4& value);
-    explicit DynamicValue(const glm::ivec3& value);
-    explicit DynamicValue(const glm::ivec2& value);
-    explicit DynamicValue(const glm::vec4& value);
-    explicit DynamicValue(const glm::vec3& value);
-    explicit DynamicValue(const glm::vec2& value);
-    explicit DynamicValue(float value);
-    explicit DynamicValue(int value);
-    explicit DynamicValue(bool value);
+    explicit DynamicValue (const glm::ivec4& value);
+    explicit DynamicValue (const glm::ivec3& value);
+    explicit DynamicValue (const glm::ivec2& value);
+    explicit DynamicValue (const glm::vec4& value);
+    explicit DynamicValue (const glm::vec3& value);
+    explicit DynamicValue (const glm::vec2& value);
+    explicit DynamicValue (float value);
+    explicit DynamicValue (int value);
+    explicit DynamicValue (bool value);
     virtual ~DynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;
@@ -104,7 +104,7 @@ class DynamicValue {
      */
     void attachCondition (const ConditionInfo& condition);
 
-  private:
+private:
     /**
      * Notifies any listeners that the value has changed
      */

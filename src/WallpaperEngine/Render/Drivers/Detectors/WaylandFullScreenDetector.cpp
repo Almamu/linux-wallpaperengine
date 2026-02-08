@@ -11,191 +11,205 @@ namespace WallpaperEngine::Render::Drivers::Detectors {
 
 namespace {
 
-bool icontains (std::string_view haystack, std::string_view needle) {
-    if (needle.empty ())
-        return true;
-    if (haystack.empty ())
-        return false;
+    bool icontains (std::string_view haystack, std::string_view needle) {
+	if (needle.empty ()) {
+	    return true;
+	}
+	if (haystack.empty ()) {
+	    return false;
+	}
 
-    auto toLower = [](unsigned char c) {
-        if (c >= 'A' && c <= 'Z')
-            return static_cast<unsigned char> (c - 'A' + 'a');
-        return c;
+	auto toLower = [] (unsigned char c) {
+	    if (c >= 'A' && c <= 'Z') {
+		return static_cast<unsigned char> (c - 'A' + 'a');
+	    }
+	    return c;
+	};
+
+	for (size_t i = 0; i + needle.size () <= haystack.size (); ++i) {
+	    bool match = true;
+	    for (size_t j = 0; j < needle.size (); ++j) {
+		if (toLower (static_cast<unsigned char> (haystack[i + j]))
+		    != toLower (static_cast<unsigned char> (needle[j]))) {
+		    match = false;
+		    break;
+		}
+	    }
+	    if (match) {
+		return true;
+	    }
+	}
+
+	return false;
+    }
+
+    struct FullscreenState {
+	bool pending = false;
+	bool current = false;
+	bool pendingActivated = false;
+	bool currentActivated = false;
+	std::string appId {};
+	WallpaperEngine::Render::Drivers::Detectors::WaylandFullscreenDetectorCallbackData* const data;
     };
 
-    for (size_t i = 0; i + needle.size () <= haystack.size (); ++i) {
-        bool match = true;
-        for (size_t j = 0; j < needle.size (); ++j) {
-            if (toLower (static_cast<unsigned char> (haystack[i + j])) !=
-                toLower (static_cast<unsigned char> (needle[j]))) {
-                match = false;
-                break;
-            }
-        }
-        if (match)
-            return true;
+    void toplevelHandleTitle (void*, struct zwlr_foreign_toplevel_handle_v1*, const char*) { }
+
+    void toplevelHandleAppId (void* data, struct zwlr_foreign_toplevel_handle_v1*, const char* appId) {
+	const auto state = static_cast<FullscreenState*> (data);
+	if (appId) {
+	    state->appId = appId;
+	}
     }
 
-    return false;
-}
+    void toplevelHandleOutputEnter (void*, struct zwlr_foreign_toplevel_handle_v1*, struct wl_output*) { }
 
-struct FullscreenState {
-    bool pending = false;
-    bool current = false;
-    bool pendingActivated = false;
-    bool currentActivated = false;
-    std::string appId {};
-    WallpaperEngine::Render::Drivers::Detectors::WaylandFullscreenDetectorCallbackData* const data;
-};
+    void toplevelHandleOutputLeave (void*, struct zwlr_foreign_toplevel_handle_v1*, struct wl_output*) { }
 
-void toplevelHandleTitle (void*, struct zwlr_foreign_toplevel_handle_v1*, const char*) {}
+    void
+    toplevelHandleParent (void*, struct zwlr_foreign_toplevel_handle_v1*, struct zwlr_foreign_toplevel_handle_v1*) { }
 
-void toplevelHandleAppId (void* data, struct zwlr_foreign_toplevel_handle_v1*, const char* appId) {
-    const auto state = static_cast<FullscreenState*> (data);
-    if (appId)
-        state->appId = appId;
-}
+    void toplevelHandleState (void* data, struct zwlr_foreign_toplevel_handle_v1*, struct wl_array* state) {
+	const auto toplevel = static_cast<FullscreenState*> (data);
+	const auto begin = static_cast<uint32_t*> (state->data);
 
-void toplevelHandleOutputEnter (void*, struct zwlr_foreign_toplevel_handle_v1*, struct wl_output*) {}
+	toplevel->pending = false;
+	toplevel->pendingActivated = false;
 
-void toplevelHandleOutputLeave (void*, struct zwlr_foreign_toplevel_handle_v1*, struct wl_output*) {}
-
-void toplevelHandleParent (void*, struct zwlr_foreign_toplevel_handle_v1*, struct zwlr_foreign_toplevel_handle_v1*) {}
-
-void toplevelHandleState (void* data, struct zwlr_foreign_toplevel_handle_v1*, struct wl_array* state) {
-    const auto toplevel = static_cast<FullscreenState*> (data);
-    const auto begin = static_cast<uint32_t*> (state->data);
-
-    toplevel->pending = false;
-    toplevel->pendingActivated = false;
-
-    for (auto it = begin; it < begin + state->size / sizeof (uint32_t); ++it) {
-        if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN)
-            toplevel->pending = true;
-        if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED)
-            toplevel->pendingActivated = true;
-    }
-}
-
-bool isRelevant (
-    const WallpaperEngine::Application::ApplicationContext& ctx,
-    const bool fullscreen,
-    const bool activated,
-    const std::string& appId
-) {
-    if (!fullscreen)
-        return false;
-
-    if (ctx.settings.render.pauseOnFullscreenOnlyWhenActive && !activated)
-        return false;
-
-    if (!appId.empty ()) {
-        for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
-            if (ignore.empty ())
-                continue;
-            if (icontains (appId, ignore))
-                return false;
-        }
+	for (auto it = begin; it < begin + state->size / sizeof (uint32_t); ++it) {
+	    if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN) {
+		toplevel->pending = true;
+	    }
+	    if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED) {
+		toplevel->pendingActivated = true;
+	    }
+	}
     }
 
-    return true;
-}
+    bool isRelevant (
+	const WallpaperEngine::Application::ApplicationContext& ctx, const bool fullscreen, const bool activated,
+	const std::string& appId
+    ) {
+	if (!fullscreen) {
+	    return false;
+	}
 
-bool isFullscreenRelevant (const FullscreenState& toplevel) {
-    const auto& ctx = toplevel.data->detector->getApplicationContext ();
-    return isRelevant (ctx, toplevel.pending, toplevel.pendingActivated, toplevel.appId);
-}
+	if (ctx.settings.render.pauseOnFullscreenOnlyWhenActive && !activated) {
+	    return false;
+	}
 
-bool isCurrentlyRelevant (const FullscreenState& toplevel) {
-    const auto& ctx = toplevel.data->detector->getApplicationContext ();
-    return isRelevant (ctx, toplevel.current, toplevel.currentActivated, toplevel.appId);
-}
+	if (!appId.empty ()) {
+	    for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
+		if (ignore.empty ()) {
+		    continue;
+		}
+		if (icontains (appId, ignore)) {
+		    return false;
+		}
+	    }
+	}
 
-void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
-    const auto toplevel = static_cast<FullscreenState*> (data);
-
-    const bool pendingRelevant = isFullscreenRelevant (*toplevel);
-    const bool currentRelevant = isCurrentlyRelevant (*toplevel);
-
-    if (currentRelevant != pendingRelevant) {
-        if (pendingRelevant) {
-            ++(*toplevel->data->fullscreenCount);
-        } else {
-            if (*toplevel->data->fullscreenCount == 0) {
-                sLog.error ("Fullscreen count underflow!!!");
-            } else {
-                --(*toplevel->data->fullscreenCount);
-            }
-        }
+	return true;
     }
 
-    toplevel->current = toplevel->pending;
-    toplevel->currentActivated = toplevel->pendingActivated;
-}
-
-void toplevelHandleClosed (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
-    const auto toplevel = static_cast<FullscreenState*> (data);
-
-    // If it was counted as relevant fullscreen, remove it.
-    const bool currentRelevant = isCurrentlyRelevant (*toplevel);
-
-    if (currentRelevant) {
-        if (*toplevel->data->fullscreenCount == 0) {
-            sLog.error ("Fullscreen count underflow!!!");
-        } else {
-            --(*toplevel->data->fullscreenCount);
-        }
+    bool isFullscreenRelevant (const FullscreenState& toplevel) {
+	const auto& ctx = toplevel.data->detector->getApplicationContext ();
+	return isRelevant (ctx, toplevel.pending, toplevel.pendingActivated, toplevel.appId);
     }
 
-    zwlr_foreign_toplevel_handle_v1_destroy (handle);
-    delete toplevel;
-}
+    bool isCurrentlyRelevant (const FullscreenState& toplevel) {
+	const auto& ctx = toplevel.data->detector->getApplicationContext ();
+	return isRelevant (ctx, toplevel.current, toplevel.currentActivated, toplevel.appId);
+    }
 
-constexpr struct zwlr_foreign_toplevel_handle_v1_listener toplevelHandleListener = {
-    .title = toplevelHandleTitle,
-    .app_id = toplevelHandleAppId,
-    .output_enter = toplevelHandleOutputEnter,
-    .output_leave = toplevelHandleOutputLeave,
-    .state = toplevelHandleState,
-    .done = toplevelHandleDone,
-    .closed = toplevelHandleClosed,
-    .parent = toplevelHandleParent,
-};
+    void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
+	const auto toplevel = static_cast<FullscreenState*> (data);
 
-void handleToplevel (void* data, struct zwlr_foreign_toplevel_manager_v1* manager,
-                     struct zwlr_foreign_toplevel_handle_v1* handle) {
-    const auto cb = static_cast<WallpaperEngine::Render::Drivers::Detectors::WaylandFullscreenDetectorCallbackData*> (data);
-    const auto toplevel = new FullscreenState {
-        .pending = false,
-        .current = false,
-        .pendingActivated = false,
-        .currentActivated = false,
-        .appId = {},
-        .data = cb,
+	const bool pendingRelevant = isFullscreenRelevant (*toplevel);
+	const bool currentRelevant = isCurrentlyRelevant (*toplevel);
+
+	if (currentRelevant != pendingRelevant) {
+	    if (pendingRelevant) {
+		++(*toplevel->data->fullscreenCount);
+	    } else {
+		if (*toplevel->data->fullscreenCount == 0) {
+		    sLog.error ("Fullscreen count underflow!!!");
+		} else {
+		    --(*toplevel->data->fullscreenCount);
+		}
+	    }
+	}
+
+	toplevel->current = toplevel->pending;
+	toplevel->currentActivated = toplevel->pendingActivated;
+    }
+
+    void toplevelHandleClosed (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
+	const auto toplevel = static_cast<FullscreenState*> (data);
+
+	// If it was counted as relevant fullscreen, remove it.
+	const bool currentRelevant = isCurrentlyRelevant (*toplevel);
+
+	if (currentRelevant) {
+	    if (*toplevel->data->fullscreenCount == 0) {
+		sLog.error ("Fullscreen count underflow!!!");
+	    } else {
+		--(*toplevel->data->fullscreenCount);
+	    }
+	}
+
+	zwlr_foreign_toplevel_handle_v1_destroy (handle);
+	delete toplevel;
+    }
+
+    constexpr struct zwlr_foreign_toplevel_handle_v1_listener toplevelHandleListener = {
+	.title = toplevelHandleTitle,
+	.app_id = toplevelHandleAppId,
+	.output_enter = toplevelHandleOutputEnter,
+	.output_leave = toplevelHandleOutputLeave,
+	.state = toplevelHandleState,
+	.done = toplevelHandleDone,
+	.closed = toplevelHandleClosed,
+	.parent = toplevelHandleParent,
     };
-    zwlr_foreign_toplevel_handle_v1_add_listener (handle, &toplevelHandleListener, toplevel);
-}
 
-void handleFinished (void* data, struct zwlr_foreign_toplevel_manager_v1* manager) {
-    zwlr_foreign_toplevel_manager_v1_destroy (manager);
-}
+    void handleToplevel (
+	void* data, struct zwlr_foreign_toplevel_manager_v1* manager, struct zwlr_foreign_toplevel_handle_v1* handle
+    ) {
+	const auto cb
+	    = static_cast<WallpaperEngine::Render::Drivers::Detectors::WaylandFullscreenDetectorCallbackData*> (data);
+	const auto toplevel = new FullscreenState {
+	    .pending = false,
+	    .current = false,
+	    .pendingActivated = false,
+	    .currentActivated = false,
+	    .appId = {},
+	    .data = cb,
+	};
+	zwlr_foreign_toplevel_handle_v1_add_listener (handle, &toplevelHandleListener, toplevel);
+    }
 
-zwlr_foreign_toplevel_manager_v1_listener toplevelManagerListener = {
-    .toplevel = handleToplevel,
-    .finished = handleFinished,
-};
+    void handleFinished (void* data, struct zwlr_foreign_toplevel_manager_v1* manager) {
+	zwlr_foreign_toplevel_manager_v1_destroy (manager);
+    }
+
+    zwlr_foreign_toplevel_manager_v1_listener toplevelManagerListener = {
+	.toplevel = handleToplevel,
+	.finished = handleFinished,
+    };
 
 }; // anonymous namespace
 
 void handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
     const auto detector = static_cast<WaylandFullScreenDetector*> (data);
     if (strcmp (interface, zwlr_foreign_toplevel_manager_v1_interface.name) == 0) {
-        detector->m_toplevelManager = static_cast<zwlr_foreign_toplevel_manager_v1*> (
-            wl_registry_bind (registry, name, &zwlr_foreign_toplevel_manager_v1_interface, 3));
-        if (detector->m_toplevelManager) {
-            zwlr_foreign_toplevel_manager_v1_add_listener (detector->m_toplevelManager, &toplevelManagerListener,
-                                                           &detector->m_callbackData);
-        }
+	detector->m_toplevelManager = static_cast<zwlr_foreign_toplevel_manager_v1*> (
+	    wl_registry_bind (registry, name, &zwlr_foreign_toplevel_manager_v1_interface, 3)
+	);
+	if (detector->m_toplevelManager) {
+	    zwlr_foreign_toplevel_manager_v1_add_listener (
+		detector->m_toplevelManager, &toplevelManagerListener, &detector->m_callbackData
+	    );
+	}
     }
 }
 
@@ -209,44 +223,43 @@ constexpr struct wl_registry_listener registryListener = {
 };
 
 WaylandFullScreenDetector::WaylandFullScreenDetector (Application::ApplicationContext& appContext) :
-    FullScreenDetector (appContext),
-    m_callbackData {.detector = this, .fullscreenCount = &m_fullscreenCount} {
+    FullScreenDetector (appContext), m_callbackData { .detector = this, .fullscreenCount = &m_fullscreenCount } {
     m_display = wl_display_connect (nullptr);
-    if (!m_display)
-        sLog.exception ("Failed to query wayland display");
+    if (!m_display) {
+	sLog.exception ("Failed to query wayland display");
+    }
 
     const auto registry = wl_display_get_registry (m_display);
     wl_registry_add_listener (registry, &registryListener, this);
     wl_display_roundtrip (m_display); // load list of toplevels
     if (!m_toplevelManager) {
-        sLog.out ("Fullscreen detection not supported by your Wayland compositor");
+	sLog.out ("Fullscreen detection not supported by your Wayland compositor");
     } else {
-        wl_display_roundtrip (m_display); // load toplevel details
+	wl_display_roundtrip (m_display); // load toplevel details
     }
 }
 
 WaylandFullScreenDetector::~WaylandFullScreenDetector () {
-    if (m_display)
-        wl_display_disconnect (m_display);
+    if (m_display) {
+	wl_display_disconnect (m_display);
+    }
 }
 
 bool WaylandFullScreenDetector::anythingFullscreen () const {
     if (!m_toplevelManager) {
-        return false;
+	return false;
     }
     wl_display_roundtrip (m_display);
     return m_fullscreenCount > 0;
 }
 
-void WaylandFullScreenDetector::reset () {}
+void WaylandFullScreenDetector::reset () { }
 
-
-__attribute__((constructor)) void registerWaylandFullscreenDetector () {
-    sVideoFactories.registerFullscreenDetector(
-        "wayland",
-        [](ApplicationContext& context, VideoDriver& driver) -> std::unique_ptr<FullScreenDetector> {
-            return std::make_unique <WaylandFullScreenDetector> (context);
-        }
+__attribute__ ((constructor)) void registerWaylandFullscreenDetector () {
+    sVideoFactories.registerFullscreenDetector (
+	"wayland", [] (ApplicationContext& context, VideoDriver& driver) -> std::unique_ptr<FullScreenDetector> {
+	    return std::make_unique<WaylandFullScreenDetector> (context);
+	}
     );
 }
 

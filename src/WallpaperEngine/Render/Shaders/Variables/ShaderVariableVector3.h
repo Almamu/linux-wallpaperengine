@@ -6,7 +6,7 @@
 
 namespace WallpaperEngine::Render::Shaders::Variables {
 class ShaderVariableVector3 final : public ShaderVariable {
-  public:
+public:
     using ShaderVariable::ShaderVariable;
 
     ShaderVariableVector3 (const glm::vec3& defaultValue, const std::string& name);

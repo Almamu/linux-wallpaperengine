@@ -8,7 +8,7 @@ class VideoDriver;
 
 namespace WallpaperEngine::Input {
 class InputContext {
-  public:
+public:
     explicit InputContext (MouseInput& mouseInput);
 
     /**
@@ -18,7 +18,7 @@ class InputContext {
 
     [[nodiscard]] const MouseInput& getMouseInput () const;
 
-  private:
+private:
     MouseInput& m_mouse;
 };
 } // namespace WallpaperEngine::Input

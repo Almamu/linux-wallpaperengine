@@ -5,8 +5,8 @@
 #include <string>
 
 #include "GLSLContext.h"
-#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
+#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 #include "nlohmann/json.hpp"
 
@@ -21,11 +21,12 @@ using namespace WallpaperEngine::Data::Model;
  * Represents a whole shader unit
  */
 class ShaderUnit {
-  public:
+public:
     ShaderUnit (
-        const GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
-        const ShaderConstantMap& constants, const TextureMap& passTextures,
-        const TextureMap& overrideTextures, const ComboMap& combos, const ComboMap& overrideCombos);
+	const GLSLContext::UnitType type, std::string file, std::string content, const AssetLocator& assetLocator,
+	const ShaderConstantMap& constants, const TextureMap& passTextures, const TextureMap& overrideTextures,
+	const ComboMap& combos, const ComboMap& overrideCombos
+    );
     ~ShaderUnit () = default;
 
     /**
@@ -61,7 +62,7 @@ class ShaderUnit {
      */
     [[nodiscard]] const ComboMap& getDiscoveredCombos () const;
 
-  protected:
+protected:
     /**
      * Extracts any and all possible shader combo configurations
      * available in this shader unit, prepares includes
@@ -69,7 +70,7 @@ class ShaderUnit {
      */
     void preprocess ();
 
-  private:
+private:
     /**
      * Parses the input shader looking for possible combo values that are required for it to properly work
      */

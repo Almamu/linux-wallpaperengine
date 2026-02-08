@@ -1,6 +1,6 @@
 #include "PlaybackRecorder.h"
 
 namespace WallpaperEngine::Audio::Drivers::Recorders {
-void PlaybackRecorder::update () {}
+void PlaybackRecorder::update () { }
 
 } // namespace WallpaperEngine::Audio::Drivers::Recorders

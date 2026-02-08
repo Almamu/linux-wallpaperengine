@@ -7,8 +7,8 @@
 #include "../TextureProvider.h"
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
-#include "ShaderUnit.h"
 #include "GLSLContext.h"
+#include "ShaderUnit.h"
 
 #include "WallpaperEngine/Data/Model/Types.h"
 
@@ -21,10 +21,10 @@ using namespace WallpaperEngine::Data::Model;
  * A basic shader loader that adds basic function definitions to every loaded shader
  */
 class Shader {
-  public:
+public:
     struct ParameterSearchResult {
-        Variables::ShaderVariable* vertex;
-        Variables::ShaderVariable* fragment;
+	Variables::ShaderVariable* vertex;
+	Variables::ShaderVariable* fragment;
     };
     /**
      * Compiler constructor, loads the given shader file and prepares
@@ -40,10 +40,9 @@ class Shader {
      * @param constants Default values for shader variables
      */
     Shader (
-        const AssetLocator& assetLocator, std::string filename,
-        const ComboMap& combos, const ComboMap& overrideCombos,
-        const TextureMap& textures, const TextureMap& overrideTextures,
-        const ShaderConstantMap& constants);
+	const AssetLocator& assetLocator, std::string filename, const ComboMap& combos, const ComboMap& overrideCombos,
+	const TextureMap& textures, const TextureMap& overrideTextures, const ShaderConstantMap& constants
+    );
     /**
      * @return The vertex's shader coude for OpenGL to use
      */
@@ -72,7 +71,7 @@ class Shader {
      */
     [[nodiscard]] ParameterSearchResult findParameter (const std::string& name) const;
 
-  private:
+private:
     /**
      * The vertex shader unit used in this shader
      */

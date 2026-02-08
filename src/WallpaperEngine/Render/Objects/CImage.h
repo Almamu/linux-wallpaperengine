@@ -24,7 +24,7 @@ class CEffect;
 class CImage final : public CObject, public FBOProvider {
     friend CObject;
 
-  public:
+public:
     CImage (Wallpapers::CScene& scene, const Image& image);
 
     void setup ();
@@ -51,12 +51,12 @@ class CImage final : public CObject, public FBOProvider {
      */
     void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const TextureProvider>* asInput);
 
-  protected:
+protected:
     void setupPasses ();
 
     void updateScreenSpacePosition ();
 
-  private:
+private:
     std::shared_ptr<const TextureProvider> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
@@ -94,10 +94,10 @@ class CImage final : public CObject, public FBOProvider {
     bool m_initialized = false;
 
     struct {
-        struct {
-            MaterialUniquePtr material;
-            ImageEffectPassOverrideUniquePtr override;
-        } colorBlending;
+	struct {
+	    MaterialUniquePtr material;
+	    ImageEffectPassOverrideUniquePtr override;
+	} colorBlending;
     } m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects

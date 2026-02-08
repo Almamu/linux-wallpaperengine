@@ -4,7 +4,7 @@
 
 namespace WallpaperEngine::Render::Shaders::Variables {
 class ShaderVariableInteger final : public ShaderVariable {
-  public:
+public:
     using ShaderVariable::ShaderVariable;
 
     ShaderVariableInteger (int defaultValue, const std::string& name);

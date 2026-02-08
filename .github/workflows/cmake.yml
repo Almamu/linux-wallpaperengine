@@ -20,7 +20,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  formatting:
+    name: Formatting check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run clang-format style check for C/C++ programs.
+        uses: jidicula/clang-format-action@v4.16.0
+        with:
+          check-path: "src"
+          exclude-regex: "(src/External)"
+      - run: echo "Formatted with clang-format version ${{ steps.clang-format.outputs.clang-format-version }}"
+
   tests:
+    needs: formatting
     env:
       BUILD_TYPE: Release
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "WallpaperEngine/Data/Model/Types.h"
 
@@ -9,7 +9,7 @@ namespace WallpaperEngine::Data::Dumpers {
 using namespace WallpaperEngine::Data::Model;
 
 class StringPrinter {
-  public:
+public:
     explicit StringPrinter (std::string indentationCharacter = "\t");
     ~StringPrinter () = default;
 
@@ -102,7 +102,7 @@ class StringPrinter {
      */
     void printEffectPass (const EffectPass& effectPass);
 
-  private:
+private:
     /**
      * Printss the current identation level
      */

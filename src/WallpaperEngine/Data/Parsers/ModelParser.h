@@ -8,7 +8,7 @@ using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Model;
 
 class ModelParser {
-  public:
+public:
     static ModelUniquePtr load (const Project& project, const std::string& filename);
     static ModelUniquePtr parse (const JSON& file, const Project& project, const std::string& filename);
 };

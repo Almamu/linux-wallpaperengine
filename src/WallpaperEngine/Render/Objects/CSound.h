@@ -13,16 +13,16 @@ namespace WallpaperEngine::Render::Objects {
 using namespace WallpaperEngine::Data::Model;
 
 class CSound final : public CObject {
-  public:
+public:
     CSound (Wallpapers::CScene& scene, const Sound& sound);
     ~CSound () override;
 
     void render () override;
 
-  protected:
+protected:
     void load ();
 
-  private:
+private:
     std::vector<Audio::AudioStream*> m_audioStreams = {};
 
     const Sound& m_sound;

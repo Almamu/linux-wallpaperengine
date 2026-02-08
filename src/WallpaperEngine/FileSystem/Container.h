@@ -11,7 +11,7 @@ using namespace WallpaperEngine::Data::Utils;
 using namespace WallpaperEngine::FileSystem::Adapters;
 
 class Container {
-  public:
+public:
     Container ();
     ~Container () = default;
 
@@ -52,7 +52,7 @@ class Container {
      */
     VirtualAdapter& getVFS () const;
 
-  private:
+private:
     /**
      * Searches for an adapter to handle the given file
      *

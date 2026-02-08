@@ -10,16 +10,16 @@ class WallpaperApplication;
 
 namespace WallpaperEngine::WebBrowser::CEF {
 class SubprocessApp : public CefApp {
-  public:
+public:
     explicit SubprocessApp (WallpaperEngine::Application::WallpaperApplication& application);
 
-    void OnRegisterCustomSchemes (CefRawPtr <CefSchemeRegistrar> registrar) override;
+    void OnRegisterCustomSchemes (CefRawPtr<CefSchemeRegistrar> registrar) override;
 
-  protected:
+protected:
     const WallpaperEngine::Application::WallpaperApplication& getApplication () const;
     const std::map<std::string, WPSchemeHandlerFactory*>& getHandlerFactories () const;
 
-  private:
+private:
     std::map<std::string, WPSchemeHandlerFactory*> m_handlerFactories = {};
     WallpaperEngine::Application::WallpaperApplication& m_application;
     IMPLEMENT_REFCOUNTING (SubprocessApp);

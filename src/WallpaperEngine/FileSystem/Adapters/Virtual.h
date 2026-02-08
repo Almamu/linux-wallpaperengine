@@ -5,8 +5,8 @@
 
 #include "Types.h"
 
-#include "WallpaperEngine/Data/Utils/MemoryStream.h"
 #include "WallpaperEngine/Data/JSON.h"
+#include "WallpaperEngine/Data/Utils/MemoryStream.h"
 #include <map>
 
 namespace WallpaperEngine::FileSystem::Adapters {
@@ -27,6 +27,6 @@ struct VirtualAdapter final : Adapter {
     void add (const std::filesystem::path& path, const std::string& data);
     void add (const std::filesystem::path& path, MemoryStreamSharedPtr stream);
 
-    std::map <std::filesystem::path, MemoryStreamSharedPtr> files;
+    std::map<std::filesystem::path, MemoryStreamSharedPtr> files;
 };
 }

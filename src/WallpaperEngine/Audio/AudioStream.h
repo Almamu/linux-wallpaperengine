@@ -18,10 +18,10 @@ extern "C" {
 
 // TODO: FIND A BETTER PLACE TO DO THIS? OLD_API MIGHT EXIST BUT THIS DEFINE MIGHT NOT BE DEFINED...
 #ifndef FF_API_FIFO_OLD_API
-#define 	FF_API_FIFO_OLD_API   (LIBAVUTIL_VERSION_MAJOR < 59)
+#define FF_API_FIFO_OLD_API (LIBAVUTIL_VERSION_MAJOR < 59)
 #endif
 #ifndef FF_API_OLD_CHANNEL_LAYOUT
-#define 	FF_API_OLD_CHANNEL_LAYOUT   (LIBAVUTIL_VERSION_MAJOR < 59)
+#define FF_API_OLD_CHANNEL_LAYOUT (LIBAVUTIL_VERSION_MAJOR < 59)
 #endif
 
 #define MAX_QUEUE_SIZE (5 * 1024 * 1024)
@@ -37,7 +37,7 @@ using namespace WallpaperEngine::FileSystem;
  * Represents a playable audio stream for the audio driver
  */
 class AudioStream {
-  public:
+public:
     AudioStream (AudioContext& context, const std::string& filename);
     AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer);
     AudioStream (AudioContext& audioContext, AVCodecContext* context);
@@ -131,7 +131,7 @@ class AudioStream {
      */
     int decodeFrame (uint8_t* audioBuffer, int bufferSize);
 
-  private:
+private:
     /**
      * Initializes ffmpeg to read the given file
      *
@@ -177,7 +177,7 @@ class AudioStream {
     uint32_t m_length = 0;
 
     struct MyAVPacketList {
-        AVPacket* packet;
+	AVPacket* packet;
     };
 
     /** The packet used while decoding this stream */
@@ -190,16 +190,16 @@ class AudioStream {
      */
     struct PacketQueue {
 #if FF_API_FIFO_OLD_API
-        AVFifoBuffer* packetList = nullptr;
+	AVFifoBuffer* packetList = nullptr;
 #else
-        AVFifo* packetList = nullptr;
+	AVFifo* packetList = nullptr;
 #endif
-        int nb_packets = 0;
-        size_t size = 0;
-        int64_t duration = 0;
-        SDL_mutex* mutex = nullptr;
-        SDL_cond* wait = nullptr;
-        SDL_cond* cond = nullptr;
+	int nb_packets = 0;
+	size_t size = 0;
+	int64_t duration = 0;
+	SDL_mutex* mutex = nullptr;
+	SDL_cond* wait = nullptr;
+	SDL_cond* cond = nullptr;
     }* m_queue {};
 };
 } // namespace WallpaperEngine::Audio

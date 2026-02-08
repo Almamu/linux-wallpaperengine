@@ -8,42 +8,41 @@ using namespace WallpaperEngine::Data::Dumpers;
 using namespace WallpaperEngine::Data::Model;
 
 StringPrinter::StringPrinter (std::string indentationCharacter) :
-    m_out (&this->m_buffer),
-    m_indentationCharacter (std::move(indentationCharacter)) { }
+    m_out (&this->m_buffer), m_indentationCharacter (std::move (indentationCharacter)) { }
 
 void StringPrinter::printWallpaper (const Wallpaper& wallpaper) {
-    const bool isScene = wallpaper.is <Scene> ();
-    const bool isVideo = wallpaper.is <Video> ();
-    const bool isWeb = wallpaper.is <Web> ();
+    const bool isScene = wallpaper.is<Scene> ();
+    const bool isVideo = wallpaper.is<Video> ();
+    const bool isWeb = wallpaper.is<Web> ();
 
     if (isVideo) {
-        const auto video = wallpaper.as <Video> ();
+	const auto video = wallpaper.as<Video> ();
 
-        this->m_out << "Video wallpaper: " << video->filename;
-        this->lineEnd ();
+	this->m_out << "Video wallpaper: " << video->filename;
+	this->lineEnd ();
     } else if (isWeb) {
-        const auto web = wallpaper.as <Web> ();
+	const auto web = wallpaper.as<Web> ();
 
-        this->m_out << "Web wallpaper: " << web->filename;
-        this->lineEnd ();
+	this->m_out << "Web wallpaper: " << web->filename;
+	this->lineEnd ();
     } else if (isScene) {
-        const auto scene = wallpaper.as <Scene> ();
+	const auto scene = wallpaper.as<Scene> ();
 
-        this->m_out << "Scene wallpaper: ";
-        this->increaseIndentation ();
-        this->lineEnd ();
+	this->m_out << "Scene wallpaper: ";
+	this->increaseIndentation ();
+	this->lineEnd ();
 
-        // TODO: IMPLEMENT FBO PRINTING, AS THIS WASN'T REALLY REFLECTION HOW IT ACTUALLY WORKS
-        this->m_out << "Objects count: " << scene->objects.size ();
-        this->increaseIndentation ();
+	// TODO: IMPLEMENT FBO PRINTING, AS THIS WASN'T REALLY REFLECTION HOW IT ACTUALLY WORKS
+	this->m_out << "Objects count: " << scene->objects.size ();
+	this->increaseIndentation ();
 
-        for (const auto& object : scene->objects) {
-            this->lineEnd ();
-            this->printObject (*object);
-            this->lineEnd ();
-        }
+	for (const auto& object : scene->objects) {
+	    this->lineEnd ();
+	    this->printObject (*object);
+	    this->lineEnd ();
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 }
 
@@ -55,15 +54,15 @@ void StringPrinter::printObject (const Object& object) {
     this->m_out << "Dependencies (" << object.dependencies.size () << "): ";
 
     for (const auto& dependency : object.dependencies) {
-        this->m_out << dependency << ", ";
+	this->m_out << dependency << ", ";
     }
 
-    if (object.is <Image> ()) {
-        this->lineEnd ();
-        this->printImage (*object.as <Image> ());
-    } else if (object.is <Sound> ()) {
-        this->lineEnd ();
-        this->printSound (*object.as <Sound> ());
+    if (object.is<Image> ()) {
+	this->lineEnd ();
+	this->printImage (*object.as<Image> ());
+    } else if (object.is<Sound> ()) {
+	this->lineEnd ();
+	this->printSound (*object.as<Sound> ());
     }
 
     this->decreaseIndentation ();
@@ -77,8 +76,8 @@ void StringPrinter::printImage (const Image& image) {
     this->increaseIndentation ();
 
     for (const auto& effect : image.effects) {
-        this->lineEnd ();
-        this->printImageEffect (*effect);
+	this->lineEnd ();
+	this->printImageEffect (*effect);
     }
 
     this->decreaseIndentation ();
@@ -89,8 +88,8 @@ void StringPrinter::printSound (const Sound& sound) {
     this->increaseIndentation ();
 
     for (const auto& filename : sound.sounds) {
-        this->lineEnd ();
-        this->m_out << "Filename " << filename;
+	this->lineEnd ();
+	this->m_out << "Filename " << filename;
     }
 
     this->decreaseIndentation ();
@@ -113,13 +112,13 @@ void StringPrinter::printModel (const ModelStruct& model) {
     this->lineEnd ();
 
     if (model.width.has_value ()) {
-        this->m_out << "Width: " << model.width.value ();
-        this->lineEnd ();
+	this->m_out << "Width: " << model.width.value ();
+	this->lineEnd ();
     }
 
     if (model.height.has_value ()) {
-        this->m_out << "Height: " << model.height.value ();
-        this->lineEnd ();
+	this->m_out << "Height: " << model.height.value ();
+	this->lineEnd ();
     }
 
     this->printMaterial (*model.material);
@@ -143,7 +142,7 @@ void StringPrinter::printImageEffect (const ImageEffect& imageEffect) {
     this->increaseIndentation ();
 
     for (const auto& override : imageEffect.passOverrides) {
-        this->printImageEffectPassOverride (*override);
+	this->printImageEffectPassOverride (*override);
     }
 
     this->decreaseIndentation ();
@@ -159,42 +158,42 @@ void StringPrinter::printImageEffectPassOverride (const ImageEffectPassOverride&
     this->m_out << "Textures count: " << imageEffectPass.textures.size ();
 
     if (!imageEffectPass.textures.empty ()) {
-        this->increaseIndentation ();
+	this->increaseIndentation ();
 
-        for (const auto& [index, texture] : imageEffectPass.textures) {
-            this->lineEnd ();
-            this->m_out << "Texture " << index << ": " << texture;
-        }
+	for (const auto& [index, texture] : imageEffectPass.textures) {
+	    this->lineEnd ();
+	    this->m_out << "Texture " << index << ": " << texture;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     this->lineEnd ();
     this->m_out << "Combos count: " << imageEffectPass.combos.size ();
 
     if (!imageEffectPass.combos.empty ()) {
-        this->increaseIndentation ();
+	this->increaseIndentation ();
 
-        for (const auto& [name, value] : imageEffectPass.combos) {
-            this->lineEnd ();
-            this->m_out << "Combo " << name << "=" << value;
-        }
+	for (const auto& [name, value] : imageEffectPass.combos) {
+	    this->lineEnd ();
+	    this->m_out << "Combo " << name << "=" << value;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     this->lineEnd ();
     this->m_out << "Constants count: " << imageEffectPass.constants.size ();
 
     if (!imageEffectPass.constants.empty ()) {
-        this->increaseIndentation ();
+	this->increaseIndentation ();
 
-        for (const auto& [name, value] : imageEffectPass.constants) {
-            this->lineEnd ();
-            this->m_out << "Constant " << name << "=" << value->value->toString();
-        }
+	for (const auto& [name, value] : imageEffectPass.constants) {
+	    this->lineEnd ();
+	    this->m_out << "Constant " << name << "=" << value->value->toString ();
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     this->decreaseIndentation ();
@@ -206,31 +205,31 @@ void StringPrinter::printEffect (const Effect& effect) {
     this->increaseIndentation ();
 
     if (!effect.description.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Description: " << effect.description;
+	this->lineEnd ();
+	this->m_out << "Description: " << effect.description;
     }
 
     if (!effect.dependencies.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Dependencies count: " << effect.dependencies.size ();
-        this->increaseIndentation ();
+	this->lineEnd ();
+	this->m_out << "Dependencies count: " << effect.dependencies.size ();
+	this->increaseIndentation ();
 
-        for (const auto& dependency : effect.dependencies) {
-            this->lineEnd ();
-            this->m_out << "Dependency: " << dependency;
-        }
+	for (const auto& dependency : effect.dependencies) {
+	    this->lineEnd ();
+	    this->m_out << "Dependency: " << dependency;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     if (!effect.group.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Group: " << effect.group;
+	this->lineEnd ();
+	this->m_out << "Group: " << effect.group;
     }
 
     if (!effect.preview.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Preview: " << effect.preview;
+	this->lineEnd ();
+	this->m_out << "Preview: " << effect.preview;
     }
 
     this->lineEnd ();
@@ -240,12 +239,12 @@ void StringPrinter::printEffect (const Effect& effect) {
     int passId = 0;
 
     for (const auto& pass : effect.passes) {
-        this->lineEnd ();
-        this->m_out << "Pass " << ++passId << ":";
-        this->increaseIndentation ();
-        this->lineEnd ();
-        this->printEffectPass (*pass);
-        this->decreaseIndentation ();
+	this->lineEnd ();
+	this->m_out << "Pass " << ++passId << ":";
+	this->increaseIndentation ();
+	this->lineEnd ();
+	this->printEffectPass (*pass);
+	this->decreaseIndentation ();
     }
 
     this->decreaseIndentation ();
@@ -255,8 +254,8 @@ void StringPrinter::printEffect (const Effect& effect) {
     this->increaseIndentation ();
 
     for (const auto& fbo : effect.fbos) {
-        this->lineEnd ();
-        this->printFBO (*fbo);
+	this->lineEnd ();
+	this->printFBO (*fbo);
     }
 
     this->decreaseIndentation ();
@@ -265,47 +264,47 @@ void StringPrinter::printEffect (const Effect& effect) {
 
 void StringPrinter::printEffectPass (const EffectPass& effectPass) {
     if (effectPass.command.has_value ()) {
-        this->m_out << "Command: " << (*effectPass.command == Command_Copy ? "copy" : "swap");
+	this->m_out << "Command: " << (*effectPass.command == Command_Copy ? "copy" : "swap");
 
-        if (effectPass.target.has_value () || effectPass.source.has_value ()) {
-            this->lineEnd ();
-        }
+	if (effectPass.target.has_value () || effectPass.source.has_value ()) {
+	    this->lineEnd ();
+	}
     }
 
     if (effectPass.target.has_value ()) {
-        this->m_out << "Target: " << effectPass.target.value ();
+	this->m_out << "Target: " << effectPass.target.value ();
 
-        if (effectPass.source.has_value ()) {
-            this->lineEnd ();
-        }
+	if (effectPass.source.has_value ()) {
+	    this->lineEnd ();
+	}
     }
 
     if (effectPass.source.has_value ()) {
-        this->m_out << "Source: " << effectPass.source.value ();
+	this->m_out << "Source: " << effectPass.source.value ();
     }
 
     if (!effectPass.binds.empty ()) {
-        if (effectPass.target.has_value ()) {
-            this->lineEnd ();
-        }
+	if (effectPass.target.has_value ()) {
+	    this->lineEnd ();
+	}
 
-        this->m_out << "Binds count: " << effectPass.binds.size ();
-        this->increaseIndentation ();
+	this->m_out << "Binds count: " << effectPass.binds.size ();
+	this->increaseIndentation ();
 
-        for (const auto& [index, target] : effectPass.binds) {
-            this->lineEnd ();
-            this->m_out << "Bind " << index << ": " << target;
-        }
+	for (const auto& [index, target] : effectPass.binds) {
+	    this->lineEnd ();
+	    this->m_out << "Bind " << index << ": " << target;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     if (effectPass.target.has_value () || !effectPass.binds.empty ()) {
-        this->lineEnd ();
+	this->lineEnd ();
     }
 
     if (effectPass.material.has_value ()) {
-        this->printMaterial (**effectPass.material);
+	this->printMaterial (**effectPass.material);
     }
 }
 
@@ -329,8 +328,8 @@ void StringPrinter::printMaterial (const Material& material) {
     this->increaseIndentation ();
 
     for (const auto& pass : material.passes) {
-        this->lineEnd ();
-        this->printMaterialPass (*pass);
+	this->lineEnd ();
+	this->printMaterialPass (*pass);
     }
 
     this->decreaseIndentation ();
@@ -351,37 +350,38 @@ void StringPrinter::printMaterialPass (const MaterialPass& materialPass) {
     this->m_out << "Culling mode: " << materialPass.cullmode;
 
     if (!materialPass.textures.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Textures count: " << materialPass.textures.size ();
-        this->increaseIndentation ();
+	this->lineEnd ();
+	this->m_out << "Textures count: " << materialPass.textures.size ();
+	this->increaseIndentation ();
 
-        for (const auto& [index, texture] : materialPass.textures) {
-            this->lineEnd ();
-            this->m_out << "Texture " << index << ": " << texture;
-        }
+	for (const auto& [index, texture] : materialPass.textures) {
+	    this->lineEnd ();
+	    this->m_out << "Texture " << index << ": " << texture;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     if (!materialPass.combos.empty ()) {
-        this->lineEnd ();
-        this->m_out << "Combos count: " << materialPass.combos.size ();
-        this->increaseIndentation ();
+	this->lineEnd ();
+	this->m_out << "Combos count: " << materialPass.combos.size ();
+	this->increaseIndentation ();
 
-        for (const auto& [name, value] : materialPass.combos) {
-            this->lineEnd ();
-            this->m_out << "Combo " << name << ": " << value;
-        }
+	for (const auto& [name, value] : materialPass.combos) {
+	    this->lineEnd ();
+	    this->m_out << "Combo " << name << ": " << value;
+	}
 
-        this->decreaseIndentation ();
+	this->decreaseIndentation ();
     }
 
     this->decreaseIndentation ();
 }
 
 void StringPrinter::indentation () {
-    for (int i = 0; i < this->m_level; i++)
-        this->m_out << this->m_indentationCharacter;
+    for (int i = 0; i < this->m_level; i++) {
+	this->m_out << this->m_indentationCharacter;
+    }
 }
 
 void StringPrinter::lineEnd () {
@@ -389,14 +389,8 @@ void StringPrinter::lineEnd () {
     this->indentation ();
 }
 
-void StringPrinter::increaseIndentation () {
-    this->m_level ++;
-}
+void StringPrinter::increaseIndentation () { this->m_level++; }
 
-void StringPrinter::decreaseIndentation () {
-    this->m_level --;
-}
+void StringPrinter::decreaseIndentation () { this->m_level--; }
 
-std::string StringPrinter::str () const {
-    return this->m_buffer.str ();
-}
+std::string StringPrinter::str () const { return this->m_buffer.str (); }

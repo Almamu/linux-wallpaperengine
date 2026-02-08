@@ -4,8 +4,8 @@
 #include <utility>
 
 #include "Types.h"
-#include "WallpaperEngine/Data/Assets/Types.h"
 #include "WallpaperEngine/Data/Assets/Package.h"
+#include "WallpaperEngine/Data/Assets/Types.h"
 
 namespace WallpaperEngine::FileSystem::Adapters {
 using namespace WallpaperEngine::Data::Assets;
@@ -18,7 +18,7 @@ struct PackageFactory final : Factory {
 };
 
 struct PackageAdapter final : Adapter {
-    explicit PackageAdapter (PackageUniquePtr package) : package (std::move(package)) {};
+    explicit PackageAdapter (PackageUniquePtr package) : package (std::move (package)) { };
 
     [[nodiscard]] ReadStreamSharedPtr open (const std::filesystem::path& path) const override;
     [[nodiscard]] bool exists (const std::filesystem::path& path) const override;

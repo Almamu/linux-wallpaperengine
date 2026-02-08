@@ -17,7 +17,7 @@ namespace WallpaperEngine::Render::Drivers {
 using namespace WallpaperEngine::Application;
 
 class GLFWOpenGLDriver final : public VideoDriver {
-  public:
+public:
     explicit GLFWOpenGLDriver (const char* windowTitle, ApplicationContext& context, WallpaperApplication& app);
     ~GLFWOpenGLDriver () override;
 
@@ -35,7 +35,7 @@ class GLFWOpenGLDriver final : public VideoDriver {
 
     GLFWwindow* getWindow () const;
 
-  private:
+private:
     ApplicationContext& m_context;
     Input::Drivers::GLFWMouseInput m_mouseInput;
     Output::Output* m_output = nullptr;

@@ -24,7 +24,7 @@ class WebBrowserContext;
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
-class ContextAware;
+    class ContextAware;
 }
 
 using namespace WallpaperEngine::Render;
@@ -34,26 +34,25 @@ using namespace WallpaperEngine::FileSystem;
 
 class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     friend class WallpaperEngine::Application::WallpaperApplication;
-  public:
-    template <class T> [[nodiscard]] const T* as () const {
-        if (is <T> ()) {
-            return static_cast <const T*> (this);
-        }
 
-        throw std::bad_cast ();
+public:
+    template <class T> [[nodiscard]] const T* as () const {
+	if (is<T> ()) {
+	    return static_cast<const T*> (this);
+	}
+
+	throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        if (is <T> ()) {
-            return static_cast <T*> (this);
-        }
+	if (is<T> ()) {
+	    return static_cast<T*> (this);
+	}
 
-        throw std::bad_cast ();
+	throw std::bad_cast ();
     }
 
-    template <class T> [[nodiscard]] bool is () const {
-        return typeid (*this) == typeid(T);
-    }
+    template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
 
     virtual ~CWallpaper () override;
 
@@ -136,15 +135,16 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
      * @return
      */
     static std::unique_ptr<CWallpaper> fromWallpaper (
-        const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-        WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
-        const uint32_t& clampMode);
+	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
+	WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
+	const uint32_t& clampMode
+    );
 
-  protected:
+protected:
     CWallpaper (
-        const Wallpaper& wallpaperData, RenderContext& context,
-        AudioContext& audioContext, const WallpaperState::TextureUVsScaling& scalingMode,
-        const uint32_t& clampMode);
+	const Wallpaper& wallpaperData, RenderContext& context, AudioContext& audioContext,
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+    );
 
     /**
      * Renders a frame of the wallpaper
@@ -163,7 +163,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     /** The FBO used for scene output */
     std::shared_ptr<const CFBO> m_sceneFBO = nullptr;
 
-  private:
+private:
     /** The texture used for the scene output */
     GLuint m_texCoordBuffer = GL_NONE;
     GLuint m_positionBuffer = GL_NONE;

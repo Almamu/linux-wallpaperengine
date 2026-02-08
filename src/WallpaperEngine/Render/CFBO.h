@@ -8,9 +8,11 @@ using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render {
 class CFBO final : public TextureProvider {
-  public:
-    CFBO (std::string name, const TextureFormat format, const uint32_t flags, const float scale,
-          uint32_t realWidth, uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight);
+public:
+    CFBO (
+	std::string name, const TextureFormat format, const uint32_t flags, const float scale, uint32_t realWidth,
+	uint32_t realHeight, uint32_t textureWidth, uint32_t textureHeight
+    );
     ~CFBO () override;
 
     [[nodiscard]] const std::string& getName () const;
@@ -32,7 +34,7 @@ class CFBO final : public TextureProvider {
     [[nodiscard]] uint32_t getSpritesheetFrames () const override;
     [[nodiscard]] float getSpritesheetDuration () const override;
 
-  private:
+private:
     GLuint m_framebuffer = GL_NONE;
     GLuint m_depthbuffer = GL_NONE;
     GLuint m_texture = GL_NONE;

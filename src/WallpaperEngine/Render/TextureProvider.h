@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
@@ -16,7 +16,7 @@ using namespace WallpaperEngine::Data::Assets;
  * to be displayed by the engine
  */
 class TextureProvider {
-  public:
+public:
     virtual ~TextureProvider () = default;
 
     /**

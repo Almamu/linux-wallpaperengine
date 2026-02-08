@@ -10,27 +10,25 @@ namespace WallpaperEngine::Data::Utils {
  * Uses typeid from C++17, so base types must have a virtual, default destructor
  */
 class TypeCaster {
-  public:
-    virtual ~TypeCaster() = default;
+public:
+    virtual ~TypeCaster () = default;
 
     template <class T> [[nodiscard]] const T* as () const {
-        if (is<T> ()) {
-            return static_cast <const T*> (this);
-        }
+	if (is<T> ()) {
+	    return static_cast<const T*> (this);
+	}
 
-        throw std::bad_cast ();
+	throw std::bad_cast ();
     }
 
     template <class T> [[nodiscard]] T* as () {
-        if (is<T> ()) {
-            return static_cast <T*> (this);
-        }
+	if (is<T> ()) {
+	    return static_cast<T*> (this);
+	}
 
-        throw std::bad_cast ();
+	throw std::bad_cast ();
     }
 
-    template <class T> [[nodiscard]] bool is () const {
-        return typeid(*this) == typeid(T);
-    }
+    template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
 };
 } // namespace WallpaperEngine::Data::Utils

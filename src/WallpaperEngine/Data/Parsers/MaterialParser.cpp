@@ -15,21 +15,21 @@ MaterialUniquePtr MaterialParser::load (const Project& project, const std::strin
 }
 
 MaterialUniquePtr MaterialParser::parse (const JSON& it, const std::string& filename, const Project& project) {
-    return std::make_unique <Material> (Material {
-        .filename = filename,
-        .passes = parsePasses (it.require ("passes", "Material must have passes to render"), project),
+    return std::make_unique<Material> (Material {
+	.filename = filename,
+	.passes = parsePasses (it.require ("passes", "Material must have passes to render"), project),
     });
 }
 
-std::vector <MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it, const Project& project) {
-    std::vector <MaterialPassUniquePtr> result = {};
+std::vector<MaterialPassUniquePtr> MaterialParser::parsePasses (const JSON& it, const Project& project) {
+    std::vector<MaterialPassUniquePtr> result = {};
 
     if (!it.is_array ()) {
-        return result;
+	return result;
     }
 
     for (const auto& cur : it) {
-        result.push_back (parsePass (cur, project));
+	result.push_back (parsePass (cur, project));
     }
 
     return result;
@@ -41,54 +41,54 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const Project& 
     const auto combos = it.optional ("combos");
     const auto constants = it.optional ("constantshadervalues");
 
-    return std::make_unique <MaterialPass>(MaterialPass {
-        //TODO: REMOVE THIS UGLY STD::STRING CREATION
-        .blending = parseBlendMode (it.optional ("blending", std::string ("normal"))),
-        .cullmode = parseCullMode (it.optional ("cullmode", std::string ("nocull"))),
-        .depthtest = parseDepthtestMode (it.optional ("depthtest", std::string ("disabled"))),
-        .depthwrite = parseDepthwriteMode (it.optional ("depthwrite", std::string ("disabled"))),
-        .shader = it.require <std::string> ("shader", "Material pass must have a shader"),
-        .textures = textures.has_value () ? parseTextures (*textures) : TextureMap {},
-        .usertextures = usertextures.has_value () ? parseTextures (*usertextures) : TextureMap {},
-        .combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
-        .constants = constants.has_value () ? ShaderConstantParser::parse (*constants, project) : ShaderConstantMap {},
+    return std::make_unique<MaterialPass> (MaterialPass {
+	// TODO: REMOVE THIS UGLY STD::STRING CREATION
+	.blending = parseBlendMode (it.optional ("blending", std::string ("normal"))),
+	.cullmode = parseCullMode (it.optional ("cullmode", std::string ("nocull"))),
+	.depthtest = parseDepthtestMode (it.optional ("depthtest", std::string ("disabled"))),
+	.depthwrite = parseDepthwriteMode (it.optional ("depthwrite", std::string ("disabled"))),
+	.shader = it.require<std::string> ("shader", "Material pass must have a shader"),
+	.textures = textures.has_value () ? parseTextures (*textures) : TextureMap {},
+	.usertextures = usertextures.has_value () ? parseTextures (*usertextures) : TextureMap {},
+	.combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
+	.constants = constants.has_value () ? ShaderConstantParser::parse (*constants, project) : ShaderConstantMap {},
     });
 }
 
-std::map <int, std::string> MaterialParser::parseTextures (const JSON& it) {
-    std::map <int, std::string> result = {};
+std::map<int, std::string> MaterialParser::parseTextures (const JSON& it) {
+    std::map<int, std::string> result = {};
 
     if (!it.is_array ()) {
-        return result;
+	return result;
     }
 
     int index = 0;
 
     for (const auto& cur : it) {
-        if (!cur.is_null ()) {
-            if (!cur.is_string ()) {
-                sLog.error ("Detected a non-string texture, most likely a special value: ", cur.dump ());
-                result.emplace (index, "");
-            } else {
-                result.emplace (index, cur);
-            }
-        }
+	if (!cur.is_null ()) {
+	    if (!cur.is_string ()) {
+		sLog.error ("Detected a non-string texture, most likely a special value: ", cur.dump ());
+		result.emplace (index, "");
+	    } else {
+		result.emplace (index, cur);
+	    }
+	}
 
-        index++;
+	index++;
     }
 
     return result;
 }
 
-std::map <std::string, int> MaterialParser::parseCombos (const JSON& it) {
-    std::map <std::string, int> result = {};
+std::map<std::string, int> MaterialParser::parseCombos (const JSON& it) {
+    std::map<std::string, int> result = {};
 
     if (!it.is_object ()) {
-        return result;
+	return result;
     }
 
     for (const auto& cur : it.items ()) {
-        result.emplace (cur.key (), cur.value ());
+	result.emplace (cur.key (), cur.value ());
     }
 
     return result;
@@ -96,15 +96,15 @@ std::map <std::string, int> MaterialParser::parseCombos (const JSON& it) {
 
 BlendingMode MaterialParser::parseBlendMode (const std::string& mode) {
     if (mode == "normal") {
-        return BlendingMode_Normal;
+	return BlendingMode_Normal;
     }
 
     if (mode == "additive") {
-        return BlendingMode_Additive;
+	return BlendingMode_Additive;
     }
 
     if (mode == "translucent") {
-        return BlendingMode_Translucent;
+	return BlendingMode_Translucent;
     }
 
     sLog.error ("Unknown blending mode: ", mode, " defaulting to normal");
@@ -113,11 +113,11 @@ BlendingMode MaterialParser::parseBlendMode (const std::string& mode) {
 
 CullingMode MaterialParser::parseCullMode (const std::string& mode) {
     if (mode == "nocull") {
-        return CullingMode_Disable;
+	return CullingMode_Disable;
     }
 
     if (mode == "normal") {
-        return CullingMode_Normal;
+	return CullingMode_Normal;
     }
 
     sLog.error ("Unknown culling mode: ", mode, " defaulting to nocull");
@@ -126,11 +126,11 @@ CullingMode MaterialParser::parseCullMode (const std::string& mode) {
 
 DepthtestMode MaterialParser::parseDepthtestMode (const std::string& mode) {
     if (mode == "disabled") {
-        return DepthtestMode_Disabled;
+	return DepthtestMode_Disabled;
     }
 
     if (mode == "enabled") {
-        return DepthtestMode_Enabled;
+	return DepthtestMode_Enabled;
     }
 
     sLog.error ("Unknown depthtest mode: ", mode, " defaulting to disabled");
@@ -139,11 +139,11 @@ DepthtestMode MaterialParser::parseDepthtestMode (const std::string& mode) {
 
 DepthwriteMode MaterialParser::parseDepthwriteMode (const std::string& mode) {
     if (mode == "disabled") {
-        return DepthwriteMode_Disabled;
+	return DepthwriteMode_Disabled;
     }
 
     if (mode == "enabled") {
-        return DepthwriteMode_Enabled;
+	return DepthwriteMode_Enabled;
     }
 
     sLog.error ("Unknown depthwrite mode: ", mode, " defaulting to disabled");

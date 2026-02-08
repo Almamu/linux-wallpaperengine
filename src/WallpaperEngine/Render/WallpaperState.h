@@ -12,17 +12,16 @@ using namespace WallpaperEngine::Data::Assets;
  * Represents current wallpaper state
  */
 class WallpaperState {
-  public:
+public:
     // Scaling modes. Defines how UVs coordinates are calculated.
     enum class TextureUVsScaling : uint8_t {
-        DefaultUVs,
-        ZoomFitUVs,
-        ZoomFillUVs,
-        StretchUVs,
+	DefaultUVs,
+	ZoomFitUVs,
+	ZoomFillUVs,
+	StretchUVs,
     };
 
-    WallpaperState (
-        const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode);
+    WallpaperState (const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode);
 
     /**
      * Checks if any of the given values has changed
@@ -33,7 +32,8 @@ class WallpaperState {
      * @return
      */
     [[nodiscard]] bool hasChanged (
-        const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth, const int& projectionHeight) const;
+	const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth, const int& projectionHeight
+    ) const;
 
     /**
      * Resets UVs to 0/1 values.
@@ -59,9 +59,7 @@ class WallpaperState {
     /**
      * @return Texture UV coordinates for current viewport and projection
      */
-    [[nodiscard]] auto getTextureUVs () const {
-        return m_UVs;
-    };
+    [[nodiscard]] auto getTextureUVs () const { return m_UVs; };
 
     /**
      * Updates UVs coordinates for current viewport and projection
@@ -69,8 +67,9 @@ class WallpaperState {
     template <WallpaperState::TextureUVsScaling> void updateTextureUVs ();
 
     // Updates state with provided values
-    void updateState (const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth,
-                      const int& projectionHeight);
+    void updateState (
+	const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth, const int& projectionHeight
+    );
 
     /**
      * @return The texture scaling mode
@@ -109,25 +108,25 @@ class WallpaperState {
      */
     [[nodiscard]] int getProjectionHeight () const;
 
-  private:
+private:
     // Cached UVs value for texture coordinates. No need to recalculate if viewport and projection haven't changed.
     struct {
-        float ustart;
-        float uend;
-        float vstart;
-        float vend;
+	float ustart;
+	float uend;
+	float vstart;
+	float vend;
     } m_UVs {};
 
     // Viewport for which UVs were calculated
     struct {
-        int width;
-        int height;
+	int width;
+	int height;
     } m_viewport {};
 
     // Wallpaper dimensions
     struct {
-        int width;
-        int height;
+	int width;
+	int height;
     } m_projection {};
 
     // Are Vs coordinates fliped

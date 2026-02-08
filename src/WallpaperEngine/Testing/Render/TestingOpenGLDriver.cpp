@@ -9,15 +9,14 @@ void TestingCustomGLFWErrorHandler (int errorCode, const char* reason) {
     sLog.error ("GLFW error ", errorCode, ": ", reason);
 }
 
-TestingOpenGLDriver::TestingOpenGLDriver(ApplicationContext& context, WallpaperApplication& app) :
-    m_mouseInput (),
-    VideoDriver (app, m_mouseInput),
-    m_context (context) {
+TestingOpenGLDriver::TestingOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
+    m_mouseInput (), VideoDriver (app, m_mouseInput), m_context (context) {
     glfwSetErrorCallback (TestingCustomGLFWErrorHandler);
 
     // initialize glfw
-    if (glfwInit () == GLFW_FALSE)
-        sLog.exception ("Failed to initialize glfw");
+    if (glfwInit () == GLFW_FALSE) {
+	sLog.exception ("Failed to initialize glfw");
+    }
 
     // set some window hints (opengl version to be used)
     glfwWindowHint (GLFW_SAMPLES, 4);
@@ -34,8 +33,9 @@ TestingOpenGLDriver::TestingOpenGLDriver(ApplicationContext& context, WallpaperA
     // create window, size doesn't matter as long as we don't show it
     this->m_window = glfwCreateWindow (640, 480, "linux-wallpaperengine debug window", nullptr, nullptr);
 
-    if (this->m_window == nullptr)
-        sLog.exception ("Cannot create window");
+    if (this->m_window == nullptr) {
+	sLog.exception ("Cannot create window");
+    }
 
     // make context current, required for glew initialization
     glfwMakeContextCurrent (this->m_window);
@@ -43,57 +43,44 @@ TestingOpenGLDriver::TestingOpenGLDriver(ApplicationContext& context, WallpaperA
     // initialize glew for rendering
     const GLenum result = glewInit ();
 
-    if (result != GLEW_OK)
-        sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
+    if (result != GLEW_OK) {
+	sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
+    }
 
     // setup output
-    if (context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW ||
-        context.settings.render.mode == ApplicationContext::NORMAL_WINDOW) {
-        m_output = new WallpaperEngine::Render::Drivers::Output::GLFWWindowOutput (context, *this);
+    if (context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW
+	|| context.settings.render.mode == ApplicationContext::NORMAL_WINDOW) {
+	m_output = new WallpaperEngine::Render::Drivers::Output::GLFWWindowOutput (context, *this);
     } else {
-        throw std::runtime_error ("Invalid render mode");
+	throw std::runtime_error ("Invalid render mode");
     }
 }
 
 TestingOpenGLDriver::~TestingOpenGLDriver () {
     delete this->m_output;
-    glfwTerminate();
+    glfwTerminate ();
 }
 
-
-Output::Output& TestingOpenGLDriver::getOutput () {
-    return *this->m_output;
-}
+Output::Output& TestingOpenGLDriver::getOutput () { return *this->m_output; }
 
 void* TestingOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-float TestingOpenGLDriver::getRenderTime () const {
-    return static_cast<float> (glfwGetTime ());
-}
+float TestingOpenGLDriver::getRenderTime () const { return static_cast<float> (glfwGetTime ()); }
 
+bool TestingOpenGLDriver::closeRequested () { return glfwWindowShouldClose (this->m_window); }
 
-bool TestingOpenGLDriver::closeRequested () {
-    return glfwWindowShouldClose (this->m_window);
-}
-
-void TestingOpenGLDriver::resizeWindow (glm::ivec2 size) {
-    glfwSetWindowSize (this->m_window, size.x, size.y);
-}
+void TestingOpenGLDriver::resizeWindow (glm::ivec2 size) { glfwSetWindowSize (this->m_window, size.x, size.y); }
 
 void TestingOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
 }
 
-void TestingOpenGLDriver::showWindow () {
-    glfwShowWindow (this->m_window);
-}
+void TestingOpenGLDriver::showWindow () { glfwShowWindow (this->m_window); }
 
-void TestingOpenGLDriver::hideWindow () {
-    glfwHideWindow (this->m_window);
-}
+void TestingOpenGLDriver::hideWindow () { glfwHideWindow (this->m_window); }
 
 glm::ivec2 TestingOpenGLDriver::getFramebufferSize () const {
     glm::ivec2 size;
@@ -103,9 +90,7 @@ glm::ivec2 TestingOpenGLDriver::getFramebufferSize () const {
     return size;
 }
 
-uint32_t TestingOpenGLDriver::getFrameCounter () const {
-    return this->m_frameCounter;
-}
+uint32_t TestingOpenGLDriver::getFrameCounter () const { return this->m_frameCounter; }
 void TestingOpenGLDriver::dispatchEventQueue () {
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
@@ -113,25 +98,31 @@ void TestingOpenGLDriver::dispatchEventQueue () {
     // clear the screen
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto& [screen, viewport] : this->m_output->getViewports ())
-        this->getApp ().update (viewport);
+    for (const auto& [screen, viewport] : this->m_output->getViewports ()) {
+	this->getApp ().update (viewport);
+    }
 
     // read the full texture into the image
     if (this->m_output->haveImageBuffer ()) {
-        // 4.5 supports glReadnPixels, anything older doesn't...
-        if (GLEW_VERSION_4_5) {
-            glReadnPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA,
-                           GL_UNSIGNED_BYTE, this->m_output->getImageBufferSize (), this->m_output->getImageBuffer ());
-        } else {
-            // fallback to old version
-            glReadPixels (0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE, this->m_output->getImageBuffer ());
-        }
+	// 4.5 supports glReadnPixels, anything older doesn't...
+	if (GLEW_VERSION_4_5) {
+	    glReadnPixels (
+		0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
+		this->m_output->getImageBufferSize (), this->m_output->getImageBuffer ()
+	    );
+	} else {
+	    // fallback to old version
+	    glReadPixels (
+		0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
+		this->m_output->getImageBuffer ()
+	    );
+	}
 
-        GLenum error = glGetError();
+	GLenum error = glGetError ();
 
-        if (error != GL_NO_ERROR) {
-            sLog.exception("OpenGL error when reading texture ", error);
-        }
+	if (error != GL_NO_ERROR) {
+	    sLog.exception ("OpenGL error when reading texture ", error);
+	}
     }
 
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED

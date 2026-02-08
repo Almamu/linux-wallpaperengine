@@ -1,8 +1,8 @@
 #pragma once
 
 #include <map>
-#include <string>
 #include <memory>
+#include <string>
 
 #include "TextureProvider.h"
 #include "WallpaperEngine/Render/Helpers/ContextAware.h"
@@ -12,13 +12,13 @@ using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render {
 namespace Helpers {
-class ContextAware;
+    class ContextAware;
 }
 
 class RenderContext;
 
 class TextureCache final : Helpers::ContextAware {
-  public:
+public:
     explicit TextureCache (RenderContext& context);
 
     /**
@@ -38,7 +38,7 @@ class TextureCache final : Helpers::ContextAware {
      */
     void store (const std::string& name, std::shared_ptr<const TextureProvider> texture);
 
-  private:
+private:
     /** Cached textures */
     std::map<std::string, std::shared_ptr<const TextureProvider>> m_textureCache = {};
 };

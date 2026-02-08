@@ -14,16 +14,16 @@ namespace WallpaperEngine::WebBrowser::CEF {
  * Provides custom protocol to contain everything under it
  */
 class BrowserApp : public SubprocessApp, public CefBrowserProcessHandler {
-  public:
+public:
     explicit BrowserApp (WallpaperEngine::Application::WallpaperApplication& application);
 
     [[nodiscard]] CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler () override;
 
     void OnContextInitialized () override;
     void OnBeforeCommandLineProcessing (const CefString& process_type, CefRefPtr<CefCommandLine> command_line) override;
-    void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
+    void OnBeforeChildProcessLaunch (CefRefPtr<CefCommandLine> command_line) override;
 
-  private:
+private:
     IMPLEMENT_REFCOUNTING (BrowserApp);
     DISALLOW_COPY_AND_ASSIGN (BrowserApp);
 };

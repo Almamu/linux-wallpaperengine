@@ -12,14 +12,15 @@ using namespace WallpaperEngine::Testing::Render;
  * IF YOU NEED TO USE ANY gl* CALLS IN YOUR TESTS
  */
 class RenderHarness {
-  public:
+public:
     static RenderHarness* build (std::filesystem::path base);
 
     ~RenderHarness ();
-  protected:
+
+protected:
     RenderHarness (ApplicationContext* context, WallpaperApplication* app);
 
-  private:
+private:
     TestingOpenGLDriver m_driver;
     ApplicationContext* m_context;
     WallpaperApplication* m_app;

@@ -5,7 +5,7 @@
 
 namespace WallpaperEngine::Render::Drivers::Output {
 class OutputViewport {
-  public:
+public:
     OutputViewport (glm::ivec4 viewport, std::string name, bool single = false);
     virtual ~OutputViewport () = default;
 

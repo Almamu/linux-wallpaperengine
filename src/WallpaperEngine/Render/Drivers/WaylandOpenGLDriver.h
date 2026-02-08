@@ -31,29 +31,29 @@ using namespace WallpaperEngine::Input::Drivers;
 class WaylandOpenGLDriver;
 
 namespace Output {
-class WaylandOutputViewport;
-class WaylandOutput;
+    class WaylandOutputViewport;
+    class WaylandOutput;
 } // namespace Output
 
 class WaylandOpenGLDriver final : public VideoDriver {
     friend class Output::WaylandOutput;
     friend class CWaylandMouseInput;
 
-  public:
+public:
     struct SEGLContext {
-        EGLDisplay display = nullptr;
-        EGLConfig config = nullptr;
-        EGLContext context = nullptr;
-        PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
+	EGLDisplay display = nullptr;
+	EGLConfig config = nullptr;
+	EGLContext context = nullptr;
+	PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT = nullptr;
     };
 
     struct WaylandContext {
-        wl_display* display = nullptr;
-        wl_registry* registry = nullptr;
-        wl_compositor* compositor = nullptr;
-        wl_shm* shm = nullptr;
-        zwlr_layer_shell_v1* layerShell = nullptr;
-        wl_seat* seat = nullptr;
+	wl_display* display = nullptr;
+	wl_registry* registry = nullptr;
+	wl_compositor* compositor = nullptr;
+	wl_shm* shm = nullptr;
+	zwlr_layer_shell_v1* layerShell = nullptr;
+	wl_seat* seat = nullptr;
     };
 
     explicit WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app);
@@ -82,7 +82,7 @@ class WaylandOpenGLDriver final : public VideoDriver {
     /** List of available screens */
     std::vector<Output::WaylandOutputViewport*> m_screens = {};
 
-  private:
+private:
     /** The output used by the driver */
     Output::WaylandOutput m_output;
     /** The EGL context in use */

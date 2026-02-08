@@ -15,7 +15,7 @@ namespace WallpaperEngine::Input::Drivers {
  * Handles mouse input for the background
  */
 class WaylandMouseInput final : public MouseInput {
-  public:
+public:
     explicit WaylandMouseInput (const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& driver);
 
     /**
@@ -38,7 +38,7 @@ class WaylandMouseInput final : public MouseInput {
      */
     [[nodiscard]] MouseClickStatus rightClick () const override;
 
-  private:
+private:
     /**
      * Wayland: Driver
      */

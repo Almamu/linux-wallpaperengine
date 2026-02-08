@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include "Types.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
@@ -12,12 +12,7 @@ using namespace WallpaperEngine::Assets;
  * Represents a wallpaper engine project
  */
 struct Project {
-    enum Type {
-        Type_Scene = 0,
-        Type_Web = 1,
-        Type_Video = 2,
-        Type_Unknown = 3
-    };
+    enum Type { Type_Scene = 0, Type_Web = 1, Type_Video = 2, Type_Unknown = 3 };
 
     /** Wallpapers title */
     std::string title;

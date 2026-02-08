@@ -8,7 +8,7 @@ using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Model;
 
 class ShaderConstantParser {
-  public:
+public:
     static ShaderConstantMap parse (const JSON& it, const Project& project);
 };
 } // namespace WallpaperEngine::Data::Parsers

@@ -15,7 +15,7 @@ namespace WallpaperEngine::Render {
 using namespace WallpaperEngine::Data::Model;
 
 class Camera {
-  public:
+public:
     Camera (Wallpapers::CScene& scene, const SceneData::Camera& camera);
     ~Camera ();
 
@@ -34,7 +34,7 @@ class Camera {
     [[nodiscard]] float getNearZ () const;
     [[nodiscard]] float getFarZ () const;
 
-  private:
+private:
     float m_width;
     float m_height;
     bool m_isOrthogonal = false;

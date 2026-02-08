@@ -4,7 +4,7 @@
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 class FullScreenDetector {
-  public:
+public:
     explicit FullScreenDetector (Application::ApplicationContext& appContext);
     virtual ~FullScreenDetector () = default;
 
@@ -21,7 +21,7 @@ class FullScreenDetector {
      */
     [[nodiscard]] Application::ApplicationContext& getApplicationContext () const;
 
-  private:
+private:
     Application::ApplicationContext& m_applicationContext;
 };
 } // namespace WallpaperEngine::Render::Drivers::Detectors

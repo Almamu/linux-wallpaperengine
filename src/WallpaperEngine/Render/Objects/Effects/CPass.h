@@ -21,12 +21,13 @@ using namespace WallpaperEngine::Render::Shaders::Variables;
 using namespace WallpaperEngine::Data::Model;
 
 class CPass final : public Helpers::ContextAware {
-  public:
+public:
     CPass (
-        CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
-        std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
-        std::optional<std::reference_wrapper<const TextureMap>> binds,
-        std::optional<std::reference_wrapper<std::string>> target);
+	CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+	std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
+	std::optional<std::reference_wrapper<const TextureMap>> binds,
+	std::optional<std::reference_wrapper<std::string>> target
+    );
 
     void render ();
 
@@ -48,62 +49,51 @@ class CPass final : public Helpers::ContextAware {
     [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::Shader* getShader () const;
 
-  private:
+private:
     enum UniformType {
-        Float = 0,
-        Matrix3 = 1,
-        Matrix4 = 2,
-        Integer = 3,
-        Vector2 = 4,
-        Vector3 = 5,
-        Vector4 = 6,
-        Double = 7
+	Float = 0,
+	Matrix3 = 1,
+	Matrix4 = 2,
+	Integer = 3,
+	Vector2 = 4,
+	Vector3 = 5,
+	Vector4 = 6,
+	Double = 7
     };
 
     class UniformEntry {
-      public:
-        UniformEntry (const GLint id, std::string name, UniformType type, const void* value, int count) :
-            id (id),
-            name (std::move (name)),
-            type (type),
-            value (value),
-            count (count) {}
+    public:
+	UniformEntry (const GLint id, std::string name, UniformType type, const void* value, int count) :
+	    id (id), name (std::move (name)), type (type), value (value), count (count) { }
 
-        const GLint id;
-        std::string name;
-        UniformType type;
-        const void* value;
-        int count;
+	const GLint id;
+	std::string name;
+	UniformType type;
+	const void* value;
+	int count;
     };
 
     class ReferenceUniformEntry {
-      public:
-        ReferenceUniformEntry (const GLint id, std::string name, UniformType type, const void** value) :
-            id (id),
-            name (std::move (name)),
-            type (type),
-            value (value) {}
+    public:
+	ReferenceUniformEntry (const GLint id, std::string name, UniformType type, const void** value) :
+	    id (id), name (std::move (name)), type (type), value (value) { }
 
-        const GLint id;
-        std::string name;
-        UniformType type;
-        const void** value;
+	const GLint id;
+	std::string name;
+	UniformType type;
+	const void** value;
     };
 
     class AttribEntry {
-      public:
-        AttribEntry (const GLint id, std::string name, GLint type, GLint elements, const GLuint* value) :
-            id (id),
-            name (std::move (name)),
-            type (type),
-            elements (elements),
-            value (value) {}
+    public:
+	AttribEntry (const GLint id, std::string name, GLint type, GLint elements, const GLuint* value) :
+	    id (id), name (std::move (name)), type (type), elements (elements), value (value) { }
 
-        const GLint id;
-        std::string name;
-        GLint type;
-        GLint elements;
-        const GLuint* value;
+	const GLint id;
+	std::string name;
+	GLint type;
+	GLint elements;
+	const GLuint* value;
     };
 
     static GLuint compileShader (const char* shader, GLuint type);
@@ -151,7 +141,10 @@ class CPass final : public Helpers::ContextAware {
     void renderGeometry () const;
     void cleanupRenderSetup ();
 
-    std::shared_ptr<const TextureProvider> resolveTexture (std::shared_ptr<const TextureProvider> expected, int index, std::shared_ptr<const TextureProvider> previous = nullptr);
+    std::shared_ptr<const TextureProvider> resolveTexture (
+	std::shared_ptr<const TextureProvider> expected, int index,
+	std::shared_ptr<const TextureProvider> previous = nullptr
+    );
 
     CImage& m_image;
     std::shared_ptr<const FBOProvider> m_fboProvider;

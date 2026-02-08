@@ -5,57 +5,58 @@
 
 namespace WallpaperEngine {
 namespace Application {
-class ApplicationContext;
+    class ApplicationContext;
 }
 
 namespace Render::Drivers::Detectors {
-class FullScreenDetector;
+    class FullScreenDetector;
 }
 
 namespace Audio::Drivers::Detectors {
-/**
- * Base class for any implementation of audio playing detection
- */
-class AudioPlayingDetector {
-  public:
-    AudioPlayingDetector (
-        Application::ApplicationContext& appContext,
-        const Render::Drivers::Detectors::FullScreenDetector& fullscreenDetector);
-
-    virtual ~AudioPlayingDetector () = default;
-
     /**
-     * @return If any kind of sound is currently playing on the default audio device
+     * Base class for any implementation of audio playing detection
      */
-    [[nodiscard]] bool anythingPlaying () const;
+    class AudioPlayingDetector {
+    public:
+	AudioPlayingDetector (
+	    Application::ApplicationContext& appContext,
+	    const Render::Drivers::Detectors::FullScreenDetector& fullscreenDetector
+	);
 
-    /**
-     * Updates the playing status to the specified value
-     *
-     * @param newState
-     */
-    void setIsPlaying (bool newState);
+	virtual ~AudioPlayingDetector () = default;
 
-    /**
-     * Checks if any audio is playing and updates state accordingly
-     */
-    virtual void update ();
+	/**
+	 * @return If any kind of sound is currently playing on the default audio device
+	 */
+	[[nodiscard]] bool anythingPlaying () const;
 
-  protected:
-    /**
-     * @return The application context using this detector
-     */
-    [[nodiscard]] Application::ApplicationContext& getApplicationContext () const;
-    /**
-     * @return The fullscreen detector used
-     */
-    [[nodiscard]] const Render::Drivers::Detectors::FullScreenDetector& getFullscreenDetector () const;
+	/**
+	 * Updates the playing status to the specified value
+	 *
+	 * @param newState
+	 */
+	void setIsPlaying (bool newState);
 
-  private:
-    bool m_isPlaying = false;
+	/**
+	 * Checks if any audio is playing and updates state accordingly
+	 */
+	virtual void update ();
 
-    Application::ApplicationContext& m_applicationContext;
-    const Render::Drivers::Detectors::FullScreenDetector& m_fullscreenDetector;
-};
+    protected:
+	/**
+	 * @return The application context using this detector
+	 */
+	[[nodiscard]] Application::ApplicationContext& getApplicationContext () const;
+	/**
+	 * @return The fullscreen detector used
+	 */
+	[[nodiscard]] const Render::Drivers::Detectors::FullScreenDetector& getFullscreenDetector () const;
+
+    private:
+	bool m_isPlaying = false;
+
+	Application::ApplicationContext& m_applicationContext;
+	const Render::Drivers::Detectors::FullScreenDetector& m_fullscreenDetector;
+    };
 } // namespace Audio::Drivers::Detectors
 } // namespace WallpaperEngine

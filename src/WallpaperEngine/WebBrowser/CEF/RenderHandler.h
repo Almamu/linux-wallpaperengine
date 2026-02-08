@@ -12,7 +12,7 @@ namespace WallpaperEngine::WebBrowser::CEF {
 //! \brief Private implementation to handle CEF events to draw the web page.
 // *************************************************************************
 class RenderHandler : public CefRenderHandler {
-  public:
+public:
     explicit RenderHandler (WallpaperEngine::Render::Wallpapers::CWeb* webdata);
 
     //! \brief
@@ -23,13 +23,15 @@ class RenderHandler : public CefRenderHandler {
 
     //! \brief CefRenderHandler interface
     //! Update the OpenGL texture.
-    void OnPaint (CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer,
-                  int width, int height) override;
+    void OnPaint (
+	CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width,
+	int height
+    ) override;
 
     //! \brief CefBase interface
     IMPLEMENT_REFCOUNTING (RenderHandler);
 
-  private:
+private:
     WallpaperEngine::Render::Wallpapers::CWeb* m_webdata = nullptr;
 
     [[nodiscard]] int getWidth () const;

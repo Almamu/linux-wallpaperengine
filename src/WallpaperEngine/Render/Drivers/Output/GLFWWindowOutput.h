@@ -5,7 +5,7 @@
 
 namespace WallpaperEngine::Render::Drivers::Output {
 class GLFWWindowOutput final : public Output {
-  public:
+public:
     GLFWWindowOutput (ApplicationContext& context, VideoDriver& driver);
 
     void reset () override;
@@ -16,7 +16,7 @@ class GLFWWindowOutput final : public Output {
     uint32_t getImageBufferSize () const override;
     void updateRender () const override;
 
-  private:
+private:
     void repositionWindow () const;
 };
 } // namespace WallpaperEngine::Render::Drivers::Output

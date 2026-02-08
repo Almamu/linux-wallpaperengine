@@ -23,13 +23,15 @@ std::vector<std::string> workshopDirectoryPaths = {
 std::filesystem::path detectHomepath () {
     char* home = getenv ("HOME");
 
-    if (home == nullptr)
-        sLog.exception ("Cannot find home directory for the current user");
+    if (home == nullptr) {
+	sLog.exception ("Cannot find home directory for the current user");
+    }
 
     const std::filesystem::path path = home;
 
-    if (!std::filesystem::is_directory (path))
-        sLog.exception ("Cannot find home directory for current user, ", home, " is not a directory");
+    if (!std::filesystem::is_directory (path)) {
+	sLog.exception ("Cannot find home directory for current user, ", home, " is not a directory");
+    }
 
     return path;
 }
@@ -38,12 +40,13 @@ std::filesystem::path Steam::FileSystem::workshopDirectory (int appID, const std
     auto homepath = detectHomepath ();
 
     for (const auto& current : workshopDirectoryPaths) {
-        auto currentpath = std::filesystem::path (homepath) / current / std::to_string (appID) / contentID;
+	auto currentpath = std::filesystem::path (homepath) / current / std::to_string (appID) / contentID;
 
-        if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
-            continue;
+	if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath)) {
+	    continue;
+	}
 
-        return currentpath;
+	return currentpath;
     }
 
     sLog.exception ("Cannot find workshop directory for steam app ", appID, " and content ", contentID);
@@ -53,12 +56,13 @@ std::filesystem::path Steam::FileSystem::appDirectory (const std::string& appDir
     auto homepath = detectHomepath ();
 
     for (const auto& current : appDirectoryPaths) {
-        auto currentpath = std::filesystem::path (homepath) / current / appDirectory / path;
+	auto currentpath = std::filesystem::path (homepath) / current / appDirectory / path;
 
-        if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath))
-            continue;
+	if (!std::filesystem::exists (currentpath) || !std::filesystem::is_directory (currentpath)) {
+	    continue;
+	}
 
-        return currentpath;
+	return currentpath;
     }
 
     sLog.exception ("Cannot find directory for steam app ", appDirectory, ": ", path);

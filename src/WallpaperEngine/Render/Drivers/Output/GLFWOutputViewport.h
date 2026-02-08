@@ -4,7 +4,7 @@
 
 namespace WallpaperEngine::Render::Drivers::Output {
 class GLFWOutputViewport final : public OutputViewport {
-  public:
+public:
     GLFWOutputViewport (glm::ivec4 viewport, std::string name);
 
     void makeCurrent () override;

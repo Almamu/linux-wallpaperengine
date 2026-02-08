@@ -13,7 +13,7 @@ namespace WallpaperEngine::Input::Drivers {
  * Handles mouse input for the background
  */
 class GLFWMouseInput final : public MouseInput {
-  public:
+public:
     explicit GLFWMouseInput (const Render::Drivers::GLFWOpenGLDriver& driver);
 
     /**
@@ -36,7 +36,7 @@ class GLFWMouseInput final : public MouseInput {
      */
     [[nodiscard]] MouseClickStatus rightClick () const override;
 
-  private:
+private:
     const Render::Drivers::GLFWOpenGLDriver& m_driver;
 
     /**

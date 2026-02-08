@@ -3,8 +3,8 @@
 
 #include <GL/glew.h>
 
-#include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -16,17 +16,16 @@ void* get_proc_address (void* ctx, const char* name) {
 
 CVideo::CVideo (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-    const WallpaperState::TextureUVsScaling& scalingMode,
-    const uint32_t& clampMode
-) :
-    CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
+    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+) : CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
     double volume = this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0;
 
     // create mpv contexts
     this->m_mpv = mpv_create ();
 
-    if (this->m_mpv == nullptr)
-        sLog.exception ("Could not create mpv context");
+    if (this->m_mpv == nullptr) {
+	sLog.exception ("Could not create mpv context");
+    }
 
     mpv_set_option_string (this->m_mpv, "terminal", "yes");
     mpv_set_option_string (this->m_mpv, "msg-level", "all=v");
@@ -36,40 +35,43 @@ CVideo::CVideo (
     mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
     mpv_set_option_string (this->m_mpv, "vo", "libmpv");
 
-    if (mpv_initialize (this->m_mpv) < 0)
-        sLog.exception ("Could not initialize mpv context");
+    if (mpv_initialize (this->m_mpv) < 0) {
+	sLog.exception ("Could not initialize mpv context");
+    }
 
     mpv_set_option_string (this->m_mpv, "hwdec", "auto");
     mpv_set_option_string (this->m_mpv, "loop", "inf");
     mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &volume);
 
     if (!this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-        this->m_muted = true;
-        mpv_set_option_string (this->m_mpv, "mute", "yes");
+	this->m_muted = true;
+	mpv_set_option_string (this->m_mpv, "mute", "yes");
     }
 
     // initialize gl context for mpv
-    mpv_opengl_init_params gl_init_params {get_proc_address, this};
-    mpv_render_param params [] {{MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL)},
-                                {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
-                                {MPV_RENDER_PARAM_INVALID, nullptr}};
+    mpv_opengl_init_params gl_init_params { get_proc_address, this };
+    mpv_render_param params[] { { MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL) },
+				{ MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params },
+				{ MPV_RENDER_PARAM_INVALID, nullptr } };
 
-    if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0)
-        sLog.exception ("Failed to initialize MPV's GL context");
+    if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0) {
+	sLog.exception ("Failed to initialize MPV's GL context");
+    }
 
-    const std::filesystem::path videopath =
-        this->getVideo ().project.assetLocator->physicalPath (this->getVideo ().filename);
+    const std::filesystem::path videopath
+	= this->getVideo ().project.assetLocator->physicalPath (this->getVideo ().filename);
 
     // build the path to the video file
-    const char* command [] = {"loadfile", videopath.c_str (), nullptr};
+    const char* command[] = { "loadfile", videopath.c_str (), nullptr };
 
-    if (mpv_command (this->m_mpv, command) < 0)
-        sLog.exception ("Cannot load video to play");
+    if (mpv_command (this->m_mpv, command) < 0) {
+	sLog.exception ("Cannot load video to play");
+    }
 
     if (!this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-        const char* mutecommand [] = {"set", "mute", "yes", nullptr};
+	const char* mutecommand[] = { "set", "mute", "yes", nullptr };
 
-        mpv_command (this->m_mpv, mutecommand);
+	mpv_command (this->m_mpv, mutecommand);
     }
 
     // setup framebuffers
@@ -81,8 +83,9 @@ void CVideo::setSize (const int width, const int height) {
     this->m_height = height > 0 ? height : this->m_height;
 
     // do not refresh the texture if any of the sizes are invalid
-    if (this->m_width <= 0 || this->m_height <= 0)
-        return;
+    if (this->m_width <= 0 || this->m_height <= 0) {
+	return;
+    }
 
     // reconfigure the texture
     glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
@@ -91,65 +94,61 @@ void CVideo::setSize (const int width, const int height) {
 
 void CVideo::renderFrame (const glm::ivec4& viewport) {
     // ensure the video's audio follows audio detection rules
-    if (this->getContext ().getApp ().getContext ().settings.audio.enabled &&
-        this->m_muted != this->getAudioContext ().getDriver ().getAudioDetector ().anythingPlaying ()) {
-        this->m_muted = !this->m_muted;
+    if (this->getContext ().getApp ().getContext ().settings.audio.enabled
+	&& this->m_muted != this->getAudioContext ().getDriver ().getAudioDetector ().anythingPlaying ()) {
+	this->m_muted = !this->m_muted;
 
-        const char* mutecommand [] = {
-            "set", "mute", this->m_muted ? "yes" : "no", nullptr
-        };
+	const char* mutecommand[] = { "set", "mute", this->m_muted ? "yes" : "no", nullptr };
 
-        mpv_command (this->m_mpv, mutecommand);
+	mpv_command (this->m_mpv, mutecommand);
     }
 
     // read any and all the events available
     while (this->m_mpv) {
-        const mpv_event* event = mpv_wait_event (this->m_mpv, 0);
+	const mpv_event* event = mpv_wait_event (this->m_mpv, 0);
 
-        if (event == nullptr || event->event_id == MPV_EVENT_NONE)
-            break;
+	if (event == nullptr || event->event_id == MPV_EVENT_NONE) {
+	    break;
+	}
 
-        // we do not care about any of the events
-        if (event->event_id == MPV_EVENT_VIDEO_RECONFIG) {
-            int64_t width, height;
+	// we do not care about any of the events
+	if (event->event_id == MPV_EVENT_VIDEO_RECONFIG) {
+	    int64_t width, height;
 
-            if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0 &&
-                mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0)
-                this->setSize (width, height);
-        }
+	    if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &width) >= 0
+		&& mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &height) >= 0) {
+		this->setSize (width, height);
+	    }
+	}
     }
 
     // render the next
     glViewport (0, 0, this->getWidth (), this->getHeight ());
 
-    mpv_opengl_fbo fbo {static_cast<int> (this->getWallpaperFramebuffer ()), static_cast<int> (this->m_width),
-                        static_cast<int> (this->m_height), GL_RGBA8};
+    mpv_opengl_fbo fbo { static_cast<int> (this->getWallpaperFramebuffer ()), static_cast<int> (this->m_width),
+			 static_cast<int> (this->m_height), GL_RGBA8 };
 
     // no need to flip as it'll be handled by the wallpaper rendering code
     int flip_y = 0;
 
-    mpv_render_param params [] = {
-        {MPV_RENDER_PARAM_OPENGL_FBO, &fbo}, {MPV_RENDER_PARAM_FLIP_Y, &flip_y}, {MPV_RENDER_PARAM_INVALID, nullptr}};
+    mpv_render_param params[] = { { MPV_RENDER_PARAM_OPENGL_FBO, &fbo },
+				  { MPV_RENDER_PARAM_FLIP_Y, &flip_y },
+				  { MPV_RENDER_PARAM_INVALID, nullptr } };
 
     mpv_render_context_render (this->m_mpvGl, params);
 }
 
-const Video& CVideo::getVideo () const {
-    return *this->getWallpaperData ().as<Video>();
-}
+const Video& CVideo::getVideo () const { return *this->getWallpaperData ().as<Video> (); }
 
 void CVideo::setPause (bool newState) {
-    if (m_paused == newState)
-        return;
+    if (m_paused == newState) {
+	return;
+    }
     m_paused = newState;
     int pause = newState;
     mpv_set_property (m_mpv, "pause", MPV_FORMAT_FLAG, &pause);
 }
 
-int CVideo::getWidth () const {
-    return this->m_width;
-}
+int CVideo::getWidth () const { return this->m_width; }
 
-int CVideo::getHeight () const {
-    return this->m_height;
-}
+int CVideo::getHeight () const { return this->m_height; }

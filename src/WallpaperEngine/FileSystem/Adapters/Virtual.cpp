@@ -11,49 +11,41 @@ ReadStreamSharedPtr VirtualAdapter::open (const std::filesystem::path& path) con
     const auto file = this->files.find (path);
 
     if (file == this->files.end ()) {
-        throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+	throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
     }
 
     return file->second;
 }
 
-bool VirtualAdapter::exists (const std::filesystem::path& path) const {
-    return this->files.contains (path);
-}
+bool VirtualAdapter::exists (const std::filesystem::path& path) const { return this->files.contains (path); }
 
 std::filesystem::path VirtualAdapter::physicalPath (const std::filesystem::path& path) const {
     throw std::filesystem::filesystem_error ("Virtual adapter does not support realpath", path, std::error_code ());
 }
 
-
 void VirtualAdapter::add (const std::filesystem::path& path, const char* data) {
     size_t length = strlen (data);
-    auto buffer = std::make_unique <char[]> (length);
+    auto buffer = std::make_unique<char[]> (length);
     std::memcpy (buffer.get (), data, length);
 
-    this->add (path, std::make_shared <MemoryStream> (std::move (buffer), length));
+    this->add (path, std::make_shared<MemoryStream> (std::move (buffer), length));
 }
 
-void VirtualAdapter::add (const std::filesystem::path& path, const JSON& data) {
-    this->add (path, data.dump ());
-}
+void VirtualAdapter::add (const std::filesystem::path& path, const JSON& data) { this->add (path, data.dump ()); }
 
 void VirtualAdapter::add (const std::filesystem::path& path, const std::string& data) {
-    auto buffer = std::make_unique <char[]> (data.size ());
+    auto buffer = std::make_unique<char[]> (data.size ());
     std::memcpy (buffer.get (), data.data (), data.size ());
 
-    this->add (path, std::make_shared <MemoryStream> (std::move (buffer), data.size ()));
+    this->add (path, std::make_shared<MemoryStream> (std::move (buffer), data.size ()));
 }
 
 void VirtualAdapter::add (const std::filesystem::path& path, MemoryStreamSharedPtr stream) {
     this->files.insert_or_assign (path, stream);
 }
 
-bool VirtualFactory::handlesMountpoint (const std::filesystem::path& path) const {
-    return path.string () == "virtual";
-}
+bool VirtualFactory::handlesMountpoint (const std::filesystem::path& path) const { return path.string () == "virtual"; }
 
 AdapterSharedPtr VirtualFactory::create (const std::filesystem::path& path) const {
     return std::make_unique<VirtualAdapter> ();
 }
-

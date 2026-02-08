@@ -11,7 +11,7 @@
 
 namespace WallpaperEngine::Render::Drivers::Output {
 class X11Output final : public Output {
-  public:
+public:
     X11Output (ApplicationContext& context, VideoDriver& driver);
     ~X11Output () override;
 
@@ -24,7 +24,7 @@ class X11Output final : public Output {
     uint32_t getImageBufferSize () const override;
     void updateRender () const override;
 
-  private:
+private:
     void loadScreenInfo ();
     void free ();
 

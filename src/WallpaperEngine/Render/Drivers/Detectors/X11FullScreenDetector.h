@@ -12,22 +12,22 @@ namespace WallpaperEngine::Render::Drivers {
 class GLFWOpenGLDriver;
 
 namespace Detectors {
-class X11FullScreenDetector final : public FullScreenDetector {
-  public:
-    X11FullScreenDetector (Application::ApplicationContext& appContext, VideoDriver& driver);
-    ~X11FullScreenDetector () override;
+    class X11FullScreenDetector final : public FullScreenDetector {
+    public:
+	X11FullScreenDetector (Application::ApplicationContext& appContext, VideoDriver& driver);
+	~X11FullScreenDetector () override;
 
-    [[nodiscard]] bool anythingFullscreen () const override;
-    void reset () override;
+	[[nodiscard]] bool anythingFullscreen () const override;
+	void reset () override;
 
-  private:
-    void initialize ();
-    void stop ();
+    private:
+	void initialize ();
+	void stop ();
 
-    Display* m_display = nullptr;
-    Window m_root;
-    std::map<std::string, glm::ivec4> m_screens = {};
-    VideoDriver& m_driver;
-};
+	Display* m_display = nullptr;
+	Window m_root;
+	std::map<std::string, glm::ivec4> m_screens = {};
+	VideoDriver& m_driver;
+    };
 } // namespace Detectors
 } // namespace WallpaperEngine::Render::Drivers

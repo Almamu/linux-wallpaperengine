@@ -4,7 +4,7 @@
 
 namespace WallpaperEngine::Render::Shaders::Variables {
 class ShaderVariableFloat final : public ShaderVariable {
-  public:
+public:
     using ShaderVariable::ShaderVariable;
 
     ShaderVariableFloat (float defaultValue, const std::string& name);
