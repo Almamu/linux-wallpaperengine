@@ -12,7 +12,7 @@
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 namespace WallpaperEngine::Render::Objects {
-class CImage;
+class CRenderable;
 }
 
 namespace WallpaperEngine::Render::Objects::Effects {
@@ -23,7 +23,7 @@ using namespace WallpaperEngine::Data::Model;
 class CPass final : public Helpers::ContextAware {
 public:
     CPass (
-	CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+	CRenderable& renderable, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
 	std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
 	std::optional<std::reference_wrapper<const TextureMap>> binds,
 	std::optional<std::reference_wrapper<std::string>> target
@@ -44,7 +44,7 @@ public:
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
     [[nodiscard]] std::shared_ptr<const FBOProvider> getFBOProvider () const;
-    [[nodiscard]] const CImage& getImage () const;
+    [[nodiscard]] const CRenderable& getRenderable () const;
     [[nodiscard]] const MaterialPass& getPass () const;
     [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::Shader* getShader () const;
@@ -146,7 +146,7 @@ private:
 	std::shared_ptr<const TextureProvider> previous = nullptr
     );
 
-    CImage& m_image;
+    CRenderable& m_renderable;
     std::shared_ptr<const FBOProvider> m_fboProvider;
     const MaterialPass& m_pass;
     const TextureMap& m_binds;

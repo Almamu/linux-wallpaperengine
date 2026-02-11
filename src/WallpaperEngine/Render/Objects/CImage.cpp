@@ -12,12 +12,12 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    Render::CObject (scene, image), Render::FBOProvider (&scene), m_texture (nullptr), m_sceneSpacePosition (GL_NONE),
+    CRenderable (scene, image), m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE),
     m_modelViewProjectionScreen (), m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (),
     m_modelViewProjectionScreenInverse (), m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
     m_modelViewProjectionCopyInverse (), m_modelMatrix (), m_viewProjectionMatrix (), m_image (image),
-    m_material (nullptr), m_colorBlendMaterial (nullptr), m_pos (), m_animationTime (0.0), m_initialized (false) {
+    m_material (nullptr), m_colorBlendMaterial (nullptr), m_pos (), m_initialized (false) {
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());
     auto scene_height = static_cast<float> (scene.getHeight ());
@@ -29,16 +29,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 
     // detect texture (if any)
 
-    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; !textures.empty ()) {
-	std::string textureName = textures.begin ()->second;
-
-	if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-	    this->m_texture = this->getScene ().findFBO (textureName);
-	} else {
-	    // get the first texture on the first pass (this one represents the image assigned to this object)
-	    this->m_texture = this->getContext ().resolveTexture (textureName);
-	}
-    } else {
+    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; textures.empty ()) {
 	if (this->m_image.model->solidlayer && size.x == 0.0f && size.y == 0.0f) {
 	    size.x = scene_width;
 	    size.y = scene_height;
@@ -348,12 +339,7 @@ void CImage::setup () {
 	(*first)->setBlendingMode (BlendingMode_Normal);
     }
 
-    // calculate full animation time (if any)
-    this->m_animationTime = 0.0f;
-
-    for (const auto& cur : this->getTexture ()->getFrames ()) {
-	this->m_animationTime += cur->frametime;
-    }
+    CRenderable::setup ();
 
     this->setupPasses ();
     this->m_initialized = true;
@@ -483,6 +469,31 @@ void CImage::render () {
 #endif /* DEBUG */
 }
 
+const float& CImage::getBrightness () const {
+    return this->m_image.brightness;
+}
+
+const float& CImage::getUserAlpha () const {
+    return this->m_image.alpha->value->getFloat ();
+}
+
+const float& CImage::getAlpha () const {
+    return this->m_image.alpha->value->getFloat ();
+}
+
+const glm::vec3& CImage::getColor () const {
+    return this->m_image.color->value->getVec3 ();
+}
+
+const glm::vec4& CImage::getColor4() const {
+    return this->m_image.color->value->getVec4 ();
+}
+
+const glm::vec3& CImage::getCompositeColor () const {
+    return this->m_image.color->value->getVec3 ();
+}
+
+
 void CImage::updateScreenSpacePosition () {
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
     if (this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
@@ -500,10 +511,6 @@ void CImage::updateScreenSpacePosition () {
 	this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt (), { x, y, 0.0f }
     );
 }
-
-std::shared_ptr<const TextureProvider> CImage::getTexture () const { return this->m_texture; }
-
-double CImage::getAnimationTime () const { return this->m_animationTime; }
 
 const Image& CImage::getImage () const { return this->m_image; }
 

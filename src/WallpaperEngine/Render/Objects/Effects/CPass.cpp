@@ -33,12 +33,12 @@ const TextureMap DEFAULT_BINDS = {};
 const ImageEffectPassOverride DEFAULT_OVERRIDE = {};
 
 CPass::CPass (
-    CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+    CRenderable& renderable, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
     std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
     std::optional<std::reference_wrapper<const TextureMap>> binds,
     std::optional<std::reference_wrapper<std::string>> target
 ) :
-    Helpers::ContextAware (image), m_image (image), m_fboProvider (std::move (fboProvider)), m_pass (pass),
+    Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)), m_pass (pass),
     m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE), m_target (target),
     m_blendingmode (pass.blending) {
@@ -153,7 +153,7 @@ void CPass::setupRenderTexture () {
     if (texture->isAnimated ()) {
 	// calculate current texture and frame
 	double currentRenderTime = fmod (
-	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_image.getAnimationTime ()
+	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_renderable.getAnimationTime ()
 	);
 
 	for (const auto& frameCur : texture->getFrames ()) {
@@ -286,7 +286,7 @@ void CPass::setupRenderAttributes () const {
 #if !NDEBUG
 	glObjectLabel (
 	    GL_BUFFER, *cur->value, -1,
-	    ("Image " + std::to_string (this->m_image.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
+	    ("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
 		.c_str ()
 	);
 #endif /* DEBUG */
@@ -328,7 +328,7 @@ void CPass::render () {
 
 std::shared_ptr<const FBOProvider> CPass::getFBOProvider () const { return this->m_fboProvider; }
 
-const CImage& CPass::getImage () const { return this->m_image; }
+const CRenderable& CPass::getRenderable () const { return this->m_renderable; }
 
 void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) { this->m_drawTo = std::move (drawTo); }
 
@@ -400,7 +400,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    const auto texture0 = this->m_image.getTexture ();
+    const auto texture0 = this->m_renderable.getTexture ();
 
     // copy the combos from the pass
     this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
@@ -419,7 +419,7 @@ void CPass::setupShaders () {
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
     this->m_shader = new Render::Shaders::Shader (
-	this->m_image.getAssetLocator (), this->m_pass.shader, this->m_combos, this->m_override.combos,
+	this->m_renderable.getAssetLocator (), this->m_pass.shader, this->m_combos, this->m_override.combos,
 	this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
@@ -566,7 +566,7 @@ void CPass::setupTextureUniforms () {
     }
 
     // resolve the main texture
-    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_image.getTexture (), 0);
+    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_renderable.getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -591,22 +591,22 @@ void CPass::setupTextureUniforms () {
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
 
-    const auto& image = this->m_image.getImage ();
-    const auto& scene = this->m_image.getScene ();
-    const auto& sceneData = this->m_image.getScene ().getScene ();
-    const auto& recorder = this->m_image.getScene ().getAudioContext ().getRecorder ();
+    const auto& renderable = this->m_renderable;
+    const auto& scene = this->m_renderable.getScene ();
+    const auto& sceneData = this->m_renderable.getScene ().getScene ();
+    const auto& recorder = this->m_renderable.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
     this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
     this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
     // register variables like brightness and alpha with some default value
-    this->addUniform ("g_Brightness", image.brightness);
-    this->addUniform ("g_UserAlpha", image.alpha->value->getFloat ());
-    this->addUniform ("g_Alpha", image.alpha->value->getFloat ());
-    this->addUniform ("g_Color", image.color->value->getVec3 ());
-    this->addUniform ("g_Color4", image.color->value->getVec4 ());
+    this->addUniform ("g_Brightness", renderable.getBrightness ());
+    this->addUniform ("g_UserAlpha", renderable.getUserAlpha ());
+    this->addUniform ("g_Alpha", renderable.getAlpha ());
+    this->addUniform ("g_Color", renderable.getColor ());
+    this->addUniform ("g_Color4", renderable.getColor4 ());
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
-    this->addUniform ("g_CompositeColor", image.color->value->getVec3 ());
+    this->addUniform ("g_CompositeColor", renderable.getCompositeColor ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     this->addUniform ("g_Daytime", &g_Daytime);

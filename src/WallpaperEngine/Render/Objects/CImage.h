@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CRenderable.h"
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
@@ -21,13 +22,13 @@ class CPass;
 namespace WallpaperEngine::Render::Objects {
 class CEffect;
 
-class CImage final : public CObject, public FBOProvider {
+class CImage final : public CRenderable {
     friend CObject;
 
 public:
     CImage (Wallpapers::CScene& scene, const Image& image);
 
-    void setup ();
+    void setup () override;
     void render () override;
 
     [[nodiscard]] const Image& getImage () const;
@@ -40,8 +41,13 @@ public:
     [[nodiscard]] GLuint getPassSpacePosition () const;
     [[nodiscard]] GLuint getTexCoordCopy () const;
     [[nodiscard]] GLuint getTexCoordPass () const;
-    [[nodiscard]] std::shared_ptr<const TextureProvider> getTexture () const;
-    [[nodiscard]] double getAnimationTime () const;
+
+    [[nodiscard]] const float& getBrightness () const override;
+    [[nodiscard]] const float& getUserAlpha () const override;
+    [[nodiscard]] const float& getAlpha () const override;
+    [[nodiscard]] const glm::vec3& getColor () const override;
+    [[nodiscard]] const glm::vec4& getColor4 () const override;
+    [[nodiscard]] const glm::vec3& getCompositeColor () const override;
 
     /**
      * Performs a ping-pong on the available framebuffers to be able to continue rendering things to them
@@ -57,7 +63,6 @@ protected:
     void updateScreenSpacePosition ();
 
 private:
-    std::shared_ptr<const TextureProvider> m_texture = nullptr;
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
@@ -88,8 +93,6 @@ private:
     std::vector<MaterialPassUniquePtr> m_virtualPassess = {};
 
     glm::vec4 m_pos = {};
-
-    double m_animationTime = 0.0;
 
     bool m_initialized = false;
 
