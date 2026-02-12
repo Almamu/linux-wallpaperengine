@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
@@ -48,6 +49,18 @@ public:
     [[nodiscard]] const MaterialPass& getPass () const;
     [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::Shader* getShader () const;
+    [[nodiscard]] GLuint getProgramID () const;
+
+    // Custom geometry rendering support (for particles, etc.)
+    using GeometryCallback = std::function<void ()>;
+    void setGeometryCallback (
+	GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
+    );
+
+    // Public uniform setters for external callers (pointer-based, updated per-frame)
+    void addUniform (const std::string& name, const glm::vec3* value);
+    void addUniform (const std::string& name, const glm::vec4* value);
+    void addUniform (const std::string& name, const glm::mat4* value);
 
 private:
     enum UniformType {
@@ -117,10 +130,7 @@ private:
     void addUniform (const std::string& name, const double* value, int count = 1);
     void addUniform (const std::string& name, const float* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec2* value);
-    void addUniform (const std::string& name, const glm::vec3* value);
-    void addUniform (const std::string& name, const glm::vec4* value);
     void addUniform (const std::string& name, const glm::mat3* value);
-    void addUniform (const std::string& name, const glm::mat4* value);
     void addUniform (const std::string& name, const int** value);
     void addUniform (const std::string& name, const double** value);
     void addUniform (const std::string& name, const float** value);
@@ -180,5 +190,10 @@ private:
     GLint g_Texture0Translation;
     GLuint a_TexCoord;
     GLuint a_Position;
+
+    // Custom geometry callbacks (for particles, etc.)
+    GeometryCallback m_setupAttribsCallback;
+    GeometryCallback m_drawGeometryCallback;
+    GeometryCallback m_cleanupAttribsCallback;
 };
 } // namespace WallpaperEngine::Render::Objects::Effects

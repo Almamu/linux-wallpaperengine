@@ -278,6 +278,11 @@ void CPass::setupRenderUniforms () {
 }
 
 void CPass::setupRenderAttributes () const {
+    if (this->m_setupAttribsCallback) {
+	this->m_setupAttribsCallback ();
+	return;
+    }
+
     for (const auto& cur : this->m_attribs) {
 	glEnableVertexAttribArray (cur->id);
 	glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
@@ -294,15 +299,24 @@ void CPass::setupRenderAttributes () const {
 }
 
 void CPass::renderGeometry () const {
+    if (this->m_drawGeometryCallback) {
+	this->m_drawGeometryCallback ();
+	return;
+    }
+
     // start actual rendering now
     glBindBuffer (GL_ARRAY_BUFFER, this->a_Position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
 void CPass::cleanupRenderSetup () {
-    // disable vertex attribs array and textures
-    for (const auto& cur : this->m_attribs) {
-	glDisableVertexAttribArray (cur->id);
+    if (this->m_cleanupAttribsCallback) {
+	this->m_cleanupAttribsCallback ();
+    } else {
+	// disable vertex attribs array
+	for (const auto& cur : this->m_attribs) {
+	    glDisableVertexAttribArray (cur->id);
+	}
     }
 
     // unbind all the used textures
@@ -359,6 +373,16 @@ const MaterialPass& CPass::getPass () const { return this->m_pass; }
 std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const { return this->m_target; }
 
 Render::Shaders::Shader* CPass::getShader () const { return this->m_shader; }
+
+GLuint CPass::getProgramID () const { return this->m_programID; }
+
+void CPass::setGeometryCallback (
+    GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
+) {
+    this->m_setupAttribsCallback = std::move (setupAttribs);
+    this->m_drawGeometryCallback = std::move (drawGeometry);
+    this->m_cleanupAttribsCallback = std::move (cleanupAttribs);
+}
 
 GLuint CPass::compileShader (const char* shader, GLuint type) {
     // reserve shaders in OpenGL
