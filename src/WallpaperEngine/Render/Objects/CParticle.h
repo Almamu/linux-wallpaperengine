@@ -1,7 +1,7 @@
 #pragma once
 
+#include "CRenderable.h"
 #include "WallpaperEngine/Data/Model/Object.h"
-#include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 #include <functional>
@@ -101,18 +101,25 @@ using InitializerFunc = std::function<void (ParticleInstance&)>;
 using OperatorFunc = std::function<
     void (std::vector<ParticleInstance>&, uint32_t, const std::vector<ControlPointData>&, float, float)>;
 
-class CParticle final : public CObject {
+class CParticle final : public CRenderable {
     friend CObject;
 
 public:
     CParticle (Wallpapers::CScene& scene, const Particle& particle);
     ~CParticle ();
 
-    void setup ();
+    void setup () override;
     void render () override;
     void update (float dt);
 
     [[nodiscard]] const Particle& getParticle () const;
+
+    [[nodiscard]] const float& getBrightness () const override;
+    [[nodiscard]] const float& getUserAlpha () const override;
+    [[nodiscard]] const float& getAlpha () const override;
+    [[nodiscard]] const glm::vec3& getColor () const override;
+    [[nodiscard]] const glm::vec4& getColor4 () const override;
+    [[nodiscard]] const glm::vec3& getCompositeColor () const override;
 
 protected:
     void setupEmitters ();
@@ -192,8 +199,7 @@ private:
     GLint m_uniformCameraPos { -1 };
     GLint m_uniformVelocityRotation { -1 };
 
-    // Particle material texture
-    std::shared_ptr<const TextureProvider> m_texture { nullptr };
+    // Particle material properties
     Data::Model::BlendingMode m_blendingMode { Data::Model::BlendingMode_Translucent };
     Data::Assets::TextureFormat m_textureFormat { Data::Assets::TextureFormat_ARGB8888 };
 

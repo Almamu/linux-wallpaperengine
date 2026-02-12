@@ -49,7 +49,7 @@ inline float fadeValue (float life, float startTime, float endTime, float startV
 }
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
-    CObject (scene, particle), m_particle (particle) {
+    CRenderable (scene, particle), m_particle (particle) {
     // Initialize random number generator with time-based seed
     std::random_device rd;
     m_rng.seed (rd ());
@@ -122,7 +122,7 @@ void CParticle::setup () {
     origin.y = m_lastScreenHeight / 2.0f - origin.y;
     m_transformedOrigin = origin;
 
-    // Load particle material texture and blending mode
+    // Load particle material blending mode and constants
     if (m_particle.material && m_particle.material->material && !m_particle.material->material->passes.empty ()) {
 	auto& firstPass = *m_particle.material->material->passes.begin ();
 
@@ -133,25 +133,16 @@ void CParticle::setup () {
 	if (overbrightIt != firstPass->constants.end ()) {
 	    m_overbright = overbrightIt->second->value->getFloat ();
 	}
+    }
 
-	auto& textures = firstPass->textures;
-	if (!textures.empty ()) {
-	    std::string textureName = textures.begin ()->second;
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		m_texture = getScene ().findFBO (textureName);
-	    } else {
-		m_texture = getContext ().resolveTexture (textureName);
-	    }
-	    if (m_texture) {
-		m_textureFormat = m_texture->getFormat ();
+    // Texture is resolved by CRenderable base class; read format and spritesheet data
+    if (const auto texture = getTexture ()) {
+	m_textureFormat = texture->getFormat ();
 
-		// Get spritesheet data from texture (parsed in TextureParser)
-		m_spritesheetCols = static_cast<int> (m_texture->getSpritesheetCols ());
-		m_spritesheetRows = static_cast<int> (m_texture->getSpritesheetRows ());
-		m_spritesheetFrames = static_cast<int> (m_texture->getSpritesheetFrames ());
-		m_spritesheetDuration = m_texture->getSpritesheetDuration ();
-	    }
-	}
+	m_spritesheetCols = static_cast<int> (texture->getSpritesheetCols ());
+	m_spritesheetRows = static_cast<int> (texture->getSpritesheetRows ());
+	m_spritesheetFrames = static_cast<int> (texture->getSpritesheetFrames ());
+	m_spritesheetDuration = texture->getSpritesheetDuration ();
     }
 
     setupEmitters ();
@@ -336,6 +327,30 @@ void CParticle::update (float dt) {
 }
 
 const Particle& CParticle::getParticle () const { return m_particle; }
+
+const float& CParticle::getBrightness () const { return m_overbright; }
+
+const float& CParticle::getUserAlpha () const { return m_particle.instanceOverride.alpha->value->getFloat (); }
+
+const float& CParticle::getAlpha () const { return m_particle.instanceOverride.alpha->value->getFloat (); }
+
+const glm::vec3& CParticle::getColor () const {
+    static const glm::vec3 defaultColor (1.0f);
+    if (m_particle.instanceOverride.color && m_particle.instanceOverride.color->value) {
+	return m_particle.instanceOverride.color->value->getVec3 ();
+    }
+    return defaultColor;
+}
+
+const glm::vec4& CParticle::getColor4 () const {
+    static const glm::vec4 defaultColor (1.0f);
+    if (m_particle.instanceOverride.color && m_particle.instanceOverride.color->value) {
+	return m_particle.instanceOverride.color->value->getVec4 ();
+    }
+    return defaultColor;
+}
+
+const glm::vec3& CParticle::getCompositeColor () const { return getColor (); }
 
 // ========== EMITTERS ==========
 
@@ -2037,9 +2052,10 @@ void CParticle::renderSprites () {
     glUseProgram (m_shaderProgram);
 
     // Bind particle texture
-    if (m_texture) {
+    const auto texture = getTexture ();
+    if (texture) {
 	glActiveTexture (GL_TEXTURE0);
-	glBindTexture (GL_TEXTURE_2D, m_texture->getTextureID (0));
+	glBindTexture (GL_TEXTURE_2D, texture->getTextureID (0));
 
 	// Set texture wrapping mode
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2062,8 +2078,8 @@ void CParticle::renderSprites () {
 	}
 	// Set texture aspect ratio (height / width)
 	if (m_uniformTextureRatio != -1) {
-	    float width = static_cast<float> (m_texture->getRealWidth ());
-	    float height = static_cast<float> (m_texture->getRealHeight ());
+	    float width = static_cast<float> (texture->getRealWidth ());
+	    float height = static_cast<float> (texture->getRealHeight ());
 	    float textureRatio = (width > 0.0f) ? (height / width) : 1.0f;
 	    glUniform1f (m_uniformTextureRatio, textureRatio);
 	}
