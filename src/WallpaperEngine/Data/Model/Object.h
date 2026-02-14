@@ -105,7 +105,7 @@ struct ImageData {
     /** The size of the image in pixels */
     glm::vec2 size;
     /** Parallax depth used for parallax scrolling */
-    glm::vec2 parallaxDepth;
+    UserSettingUniquePtr parallaxDepth;
     /** The color blending mode for this image */
     int colorBlendMode;
     /** The brightness of the image */
@@ -543,7 +543,7 @@ struct ParticleData {
     UserSettingUniquePtr visible;
 
     /** Parallax depth */
-    glm::vec2 parallaxDepth;
+    UserSettingUniquePtr parallaxDepth;
 
     /** Reference to particle definition file */
     std::string particleFile;
