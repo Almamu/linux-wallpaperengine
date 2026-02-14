@@ -204,9 +204,12 @@ TextureMap ObjectParser::parseTextureMap (const JSON& it) {
 	textureIndex++;
 
 	if (cur.is_null ()) {
-	    result.emplace (textureIndex, "");
+	    continue;
 	} else {
-	    result.emplace (textureIndex, cur);
+	    std::string texName = cur;
+	    if (!texName.empty ()) {
+		result.emplace (textureIndex, texName);
+	    }
 	}
     }
 
