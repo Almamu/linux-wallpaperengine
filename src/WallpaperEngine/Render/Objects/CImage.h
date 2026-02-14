@@ -94,6 +94,7 @@ private:
     std::vector<MaterialPassUniquePtr> m_virtualPassess = {};
 
     glm::vec4 m_pos = {};
+    glm::vec3 m_sceneCenter = {};
 
     bool m_initialized = false;
 

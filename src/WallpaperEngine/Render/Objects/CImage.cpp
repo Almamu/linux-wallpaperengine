@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
@@ -204,8 +206,24 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
+    // compute the center of the image in scene space for rotation
+    this->m_sceneCenter = glm::vec3 (
+	(this->m_pos.x + this->m_pos.z) / 2.0f,
+	(this->m_pos.y + this->m_pos.w) / 2.0f,
+	0.0f
+    );
+
+    // build the screen MVP with rotation from angles
+    glm::vec3 angles = this->getImage ().angles->value->getVec3 ();
+    glm::mat4 rotModel = glm::mat4 (1.0f);
+    rotModel = glm::translate (rotModel, this->m_sceneCenter);
+    rotModel = glm::rotate (rotModel, glm::radians (angles.z), glm::vec3 (0.0f, 0.0f, 1.0f));
+    rotModel = glm::rotate (rotModel, glm::radians (angles.y), glm::vec3 (0.0f, 1.0f, 0.0f));
+    rotModel = glm::rotate (rotModel, glm::radians (angles.x), glm::vec3 (1.0f, 0.0f, 0.0f));
+    rotModel = glm::translate (rotModel, -this->m_sceneCenter);
+
     this->m_modelViewProjectionScreen
-	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
+	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt () * rotModel;
 
     this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 
@@ -527,8 +545,18 @@ void CImage::updateScreenSpacePosition () {
     float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
     float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
 
+    // build rotation from angles around the image center
+    glm::vec3 angles = this->getImage ().angles->value->getVec3 ();
+    glm::mat4 rotModel = glm::mat4 (1.0f);
+    rotModel = glm::translate (rotModel, this->m_sceneCenter);
+    rotModel = glm::rotate (rotModel, glm::radians (angles.z), glm::vec3 (0.0f, 0.0f, 1.0f));
+    rotModel = glm::rotate (rotModel, glm::radians (angles.y), glm::vec3 (0.0f, 1.0f, 0.0f));
+    rotModel = glm::rotate (rotModel, glm::radians (angles.x), glm::vec3 (1.0f, 0.0f, 0.0f));
+    rotModel = glm::translate (rotModel, -this->m_sceneCenter);
+
     this->m_modelViewProjectionScreen = glm::translate (
-	this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt (), { x, y, 0.0f }
+	this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt () * rotModel,
+	{ x, y, 0.0f }
     );
 }
 
