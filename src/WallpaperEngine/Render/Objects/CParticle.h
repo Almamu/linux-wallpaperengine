@@ -2,11 +2,14 @@
 
 #include "CRenderable.h"
 #include "WallpaperEngine/Data/Model/Object.h"
+#include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 #include <functional>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -158,7 +161,10 @@ protected:
 
     // Rendering
     void renderSprites ();
-    void setupBuffers ();
+    void setupPass ();
+    void setupGeometryCallbacks ();
+    void setupParticleUniforms ();
+    void updateMatrices ();
 
 private:
     const Particle& m_particle;
@@ -178,30 +184,37 @@ private:
 
     double m_time { 0.0 };
 
+    // CPass-based rendering
+    Effects::CPass* m_pass { nullptr };
+    std::unique_ptr<ImageEffectPassOverride> m_passOverride;
+    std::shared_ptr<FBOProvider> m_passFBOProvider;
+    TextureMap m_passBinds;
+    GLsizei m_activeIndexCount { 0 };
+
+    // REFRACT support: copy of scene FBO to avoid read-write conflict
+    bool m_hasRefract { false };
+    std::shared_ptr<CFBO> m_refractFBO;
+
     // OpenGL buffers
     GLuint m_vao { 0 };
     GLuint m_vbo { 0 };
-    GLuint m_ebo { 0 }; // Element Buffer Object for indexed rendering
-    GLuint m_shaderProgram { 0 };
+    GLuint m_ebo { 0 };
+    GLint m_prevVAO { 0 };
 
-    // Cached uniform locations
-    GLint m_uniformTexture { -1 };
-    GLint m_uniformHasTexture { -1 };
-    GLint m_uniformTextureFormat { -1 };
-    GLint m_uniformSpritesheetSize { -1 };
-    GLint m_uniformOverbright { -1 };
-    GLint m_uniformUseTrailRenderer { -1 };
-    GLint m_uniformPerspective { -1 };
-    GLint m_uniformTrailLength { -1 };
-    GLint m_uniformTrailMaxLength { -1 };
-    GLint m_uniformTrailMinLength { -1 };
-    GLint m_uniformTextureRatio { -1 };
-    GLint m_uniformCameraPos { -1 };
-    GLint m_uniformVelocityRotation { -1 };
-
-    // Particle material properties
-    Data::Model::BlendingMode m_blendingMode { Data::Model::BlendingMode_Translucent };
-    Data::Assets::TextureFormat m_textureFormat { Data::Assets::TextureFormat_ARGB8888 };
+    // Particle-specific uniform data (stored here, pointed to by CPass)
+    glm::mat4 m_modelMatrix { 1.0f };
+    glm::mat4 m_modelMatrixInverse { 1.0f };
+    glm::mat4 m_mvpMatrix { 1.0f };
+    glm::mat4 m_mvpMatrixInverse { 1.0f };
+    glm::mat4 m_viewProjectionMatrix { 1.0f };
+    glm::vec3 m_orientationUp { 0.0f, 1.0f, 0.0f };
+    glm::vec3 m_orientationRight { 1.0f, 0.0f, 0.0f };
+    glm::vec3 m_orientationForward { 0.0f, 0.0f, 1.0f };
+    glm::vec3 m_viewUp { 0.0f, 1.0f, 0.0f };
+    glm::vec3 m_viewRight { 1.0f, 0.0f, 0.0f };
+    glm::vec3 m_eyePosition { 0.0f, 0.0f, 1000.0f };
+    glm::vec4 m_renderVar0 { 0.0f };
+    glm::vec4 m_renderVar1 { 0.0f };
 
     // Spritesheet animation data
     int m_spritesheetCols { 0 };
@@ -210,7 +223,8 @@ private:
     float m_spritesheetDuration { 1.0f };
 
     // Material shader constants
-    float m_overbright { 1.0f }; // Brightness multiplier for additive particles
+    float m_overbright { 1.0f };
+    float m_refractAmount { 0.05f }; // Default from shader annotation
 
     // Renderer configuration
     bool m_useTrailRenderer { false };
@@ -230,9 +244,5 @@ private:
     std::mt19937 m_rng;
 
     bool m_initialized { false };
-
-    // Helper methods
-    GLuint compileShader (GLenum type, const char* source);
-    GLuint createShaderProgram ();
 };
 } // namespace WallpaperEngine::Render::Objects

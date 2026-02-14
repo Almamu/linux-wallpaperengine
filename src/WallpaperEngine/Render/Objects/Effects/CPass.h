@@ -58,6 +58,7 @@ public:
     );
 
     // Public uniform setters for external callers (pointer-based, updated per-frame)
+    void addUniform (const std::string& name, const float* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec3* value);
     void addUniform (const std::string& name, const glm::vec4* value);
     void addUniform (const std::string& name, const glm::mat4* value);
@@ -128,7 +129,6 @@ private:
     void addUniform (const std::string& name, glm::mat4 value);
     void addUniform (const std::string& name, const int* value, int count = 1);
     void addUniform (const std::string& name, const double* value, int count = 1);
-    void addUniform (const std::string& name, const float* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec2* value);
     void addUniform (const std::string& name, const glm::mat3* value);
     void addUniform (const std::string& name, const int** value);

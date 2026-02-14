@@ -739,20 +739,27 @@ void CPass::setupShaderVariables () {
 	}
     }
 
-    // find variables in the shaders and set the value with the constants if possible
-    for (const auto& [name, value] : this->m_override.constants) {
+    // apply material pass constants (e.g. constantshadervalues from the material JSON)
+    for (const auto& [name, value] : this->m_pass.constants) {
 	const auto [vertex, fragment] = this->m_shader->findParameter (name);
 
-	// variable not found, can be ignored
 	if (vertex == nullptr && fragment == nullptr) {
 	    continue;
 	}
 
-	// get one instance of it
 	ShaderVariable* var = vertex == nullptr ? fragment : vertex;
+	this->addUniform (var, value->value.get ());
+    }
 
-	// this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
-	// of the underlying CDynamicValue used for the value
+    // apply override constants (highest priority, overrides both defaults and pass constants)
+    for (const auto& [name, value] : this->m_override.constants) {
+	const auto [vertex, fragment] = this->m_shader->findParameter (name);
+
+	if (vertex == nullptr && fragment == nullptr) {
+	    continue;
+	}
+
+	ShaderVariable* var = vertex == nullptr ? fragment : vertex;
 	this->addUniform (var, value->value.get ());
     }
 }
