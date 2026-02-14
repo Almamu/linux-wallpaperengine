@@ -176,13 +176,6 @@ void CParticle::setup () {
 	    m_spritesheetFrames = static_cast<int> (texture->getSpritesheetFrames ());
 	    m_spritesheetDuration = texture->getSpritesheetDuration ();
 	}
-
-	const glm::vec4* res = texture->getResolution ();
-	sLog.debug ("Particle ", m_particle.name, ": spritesheet=", m_spritesheetFrames,
-	    " (", m_spritesheetCols, "x", m_spritesheetRows, "), animated=", texture->isAnimated (),
-	    ", animMode=", m_particle.animationMode,
-	    ", texture=", texture->getRealWidth (), "x", texture->getRealHeight (),
-	    ", atlas=", res->x, "x", res->y);
     }
 
     setupEmitters ();
@@ -587,9 +580,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 	    isRope, particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous,
 	    lastSpawnTime = -1.0f, noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
-	    if (isRope) {
-		sLog.out ("[", particleName, "] FULL count=", count, "/", particles.size (), " dt=", dt);
-	    }
 	    return;
 	}
 
@@ -605,18 +595,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 	if (remaining > 0) {
 	    toEmit = remaining;
 	    remaining = 0;
-	}
-
-	if (isRope) {
-	    if (toEmit == 0) {
-		noEmitFrames++;
-		if (noEmitFrames % 30 == 0) {
-		    sLog.out ("[", particleName, "] no emit for ", noEmitFrames, " frames, timer=", emissionTimer,
-			" rate=", rate, " dt=", dt, " count=", count, "/", particles.size ());
-		}
-	    } else {
-		noEmitFrames = 0;
-	    }
 	}
 
 	for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
@@ -717,20 +695,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 
 	    for (auto& init : m_initializers) {
 		init (p);
-	    }
-
-	    if (isRope) {
-		float timeSinceLast = (lastSpawnTime >= 0.0f) ? static_cast<float> (m_time) - lastSpawnTime : -1.0f;
-		lastSpawnTime = static_cast<float> (m_time);
-		sLog.out ("[", particleName, "] EMIT #", count,
-		    " dt_spawn=", timeSinceLast,
-		    " pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ")",
-		    " vel=(", p.velocity.x, ",", p.velocity.y, ",", p.velocity.z, ")",
-		    " |vel|=", glm::length (p.velocity),
-		    " size=", p.size, " (initial=", p.initial.size, ")",
-		    " color=(", p.color.x, ",", p.color.y, ",", p.color.z, ") alpha=", p.alpha,
-		    " lifetime=", p.lifetime,
-		    " time=", m_time);
 	    }
 
 	    count++;
@@ -1885,7 +1849,13 @@ void CParticle::updateMatrices () {
     } else {
 	// Orthographic projection from scene camera
 	m_viewProjectionMatrix = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt ();
-	m_eyePosition = getScene ().getCamera ().getEye ();
+	// For 2D/orthographic scenes the camera eye is at (0,0,0). The shader's
+	// ComputeParticleTrailTangents uses cross(eyeDirection, velocity) to
+	// compute the trail ribbon width. With eye at z=0 and particles at z=0,
+	// eyeDirection is purely in XY — the cross product yields a Z-only vector
+	// that is invisible under orthographic projection. Place the eye at z=1000
+	// so the cross product produces a visible XY perpendicular direction.
+	m_eyePosition = glm::vec3 (0.0f, 0.0f, 1000.0f);
     }
 
     m_mvpMatrix = m_viewProjectionMatrix * m_modelMatrix;
@@ -2063,8 +2033,17 @@ void CParticle::renderSprites () {
 	glBlitFramebuffer (0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
+    // The shader's ComputeParticleTrailTangents produces a right vector with a Z component
+    // (from cross(eyeDirection, velocity) where eyeDirection has XY offset from model transform).
+    // For 2D/ortho particles at z≈0, the ortho near plane sits at ndc.z=-1 — any Z offset from
+    // the right vector pushes vertices past the near plane, causing half the quad to be clipped.
+    // GL_DEPTH_CLAMP prevents near/far clipping by clamping depth instead.
+    glEnable (GL_DEPTH_CLAMP);
+
     // CPass::render() handles: FBO binding, texture setup, uniforms, blending, draw call, cleanup
     m_pass->render ();
+
+    glDisable (GL_DEPTH_CLAMP);
 
 #if !NDEBUG
     glPopDebugGroup ();
@@ -2099,23 +2078,6 @@ void CParticle::renderRope () {
 
     const uint32_t numSegments = aliveCount - 1;
     const float trailLength = static_cast<float> (aliveCount);
-
-    // Debug: log particle state at render time (every 30 frames)
-    {
-	static uint32_t ropeRenderFrame = 0;
-	if (ropeRenderFrame++ % 30 == 0) {
-	    sLog.out ("[", m_particle.name, "] RENDER frame=", ropeRenderFrame - 1,
-		" alive=", aliveCount, " segs=", numSegments);
-	    for (uint32_t d = 0; d < aliveCount; d++) {
-		const auto& p = m_particles[d];
-		sLog.out ("  [", d, "] pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ")",
-		    " vel=(", p.velocity.x, ",", p.velocity.y, ",", p.velocity.z, ")",
-		    " size=", p.size, " alpha=", p.alpha,
-		    " age=", p.age, "/", p.lifetime,
-		    " life%=", (p.lifetime > 0 ? p.age / p.lifetime * 100.0f : 0.0f));
-	    }
-	}
-    }
 
     uint32_t vertexIndex = 0;
     uint32_t indexOffset = 0;
@@ -2230,7 +2192,9 @@ void CParticle::renderRope () {
 	glBlitFramebuffer (0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
+    glEnable (GL_DEPTH_CLAMP);
     m_pass->render ();
+    glDisable (GL_DEPTH_CLAMP);
 
 #if !NDEBUG
     glPopDebugGroup ();
