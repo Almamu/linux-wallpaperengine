@@ -150,32 +150,15 @@ void CParticle::setup () {
     }
 
     // Texture is resolved by CRenderable base class; read spritesheet data.
-    // The GL texture may be a full atlas (e.g. 256x1280 with 5 frames of 256x256),
-    // even for animated textures — getRealWidth/Height reports per-frame size but
-    // the actual GL texture contains all frames. We need SPRITESHEET to UV-select frames.
+    // TextureParser computes spritesheet grid from TEXS frame data (animated textures)
+    // or .tex-json metadata (static textures). For GIF-style animated textures (separate
+    // GL texture per frame), the parser returns 0 cols/rows since a 1x1 grid can't hold
+    // all frames — so no SPRITESHEET mode is needed (frame switching happens via texture ID).
     if (const auto texture = getTexture ()) {
-	if (texture->isAnimated ()) {
-	    // Animated texture: the GL texture is the full atlas, but getRealWidth/Height
-	    // reports per-frame dimensions. Compute grid from atlas vs per-frame ratio.
-	    const glm::vec4* res = texture->getResolution ();
-	    float atlasW = res->x;
-	    float atlasH = res->y;
-	    float frameW = static_cast<float> (texture->getRealWidth ());
-	    float frameH = static_cast<float> (texture->getRealHeight ());
-
-	    if (frameW > 0.0f && frameH > 0.0f) {
-		m_spritesheetCols = std::max (1, static_cast<int> (std::round (atlasW / frameW)));
-		m_spritesheetRows = std::max (1, static_cast<int> (std::round (atlasH / frameH)));
-		m_spritesheetFrames = m_spritesheetCols * m_spritesheetRows;
-	    }
-	    m_spritesheetDuration = texture->getSpritesheetDuration ();
-	} else {
-	    // Static texture: use spritesheet metadata from .tex-json if available
-	    m_spritesheetCols = static_cast<int> (texture->getSpritesheetCols ());
-	    m_spritesheetRows = static_cast<int> (texture->getSpritesheetRows ());
-	    m_spritesheetFrames = static_cast<int> (texture->getSpritesheetFrames ());
-	    m_spritesheetDuration = texture->getSpritesheetDuration ();
-	}
+	m_spritesheetCols = static_cast<int> (texture->getSpritesheetCols ());
+	m_spritesheetRows = static_cast<int> (texture->getSpritesheetRows ());
+	m_spritesheetFrames = static_cast<int> (texture->getSpritesheetFrames ());
+	m_spritesheetDuration = texture->getSpritesheetDuration ();
     }
 
     setupEmitters ();
@@ -1941,13 +1924,22 @@ void CParticle::renderSprites () {
 	}
 
 	// Compute the lifetime value for the WP shader's ComputeSpriteFrame.
-	// The shader computes: floor(frac(lifetime) * numFrames) to get current frame.
-	// Different animation modes need different lifetime encodings.
+	// The shader computes: floor(frac(lifetime) * numFrames) to get current frame,
+	// and frac(lifetime * numFrames) for the blend factor between frames.
+	// We encode the CPU-computed p.frame (which accounts for sequenceMultiplier
+	// and animation mode) into the lifetime value the shader expects.
 	float lifetime = p.getLifetimePos ();
 
-	if (m_spritesheetFrames > 0 && m_particle.animationMode == "randomframe" && p.frame >= 0.0f) {
-	    // Encode the fixed random frame so shader always picks the same one
-	    lifetime = (p.frame + 0.5f) / static_cast<float> (m_spritesheetFrames);
+	if (m_spritesheetFrames > 0 && p.frame >= 0.0f) {
+	    if (m_particle.animationMode == "randomframe") {
+		// Center within the frame to avoid floating-point edge cases
+		lifetime = (p.frame + 0.5f) / static_cast<float> (m_spritesheetFrames);
+	    } else {
+		// Encode frame index + fractional blend: shader reconstructs via
+		// floor(lifetime * numFrames) = current frame,
+		// frac(lifetime * numFrames) = blend toward next frame
+		lifetime = p.frame / static_cast<float> (m_spritesheetFrames);
+	    }
 	}
 
 	auto addVertex = [&] (float u, float v) {
