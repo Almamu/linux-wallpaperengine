@@ -442,8 +442,12 @@ void CPass::setupShaders () {
     // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
+    const std::string& shaderName = this->m_override.shaderOverride.has_value ()
+	? this->m_override.shaderOverride.value ()
+	: this->m_pass.shader;
+
     this->m_shader = new Render::Shaders::Shader (
-	this->m_renderable.getAssetLocator (), this->m_pass.shader, this->m_combos, this->m_override.combos,
+	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos,
 	this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
@@ -486,9 +490,9 @@ void CPass::setupShaders () {
     }
 
 #if !NDEBUG
-    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass.shader.c_str ());
-    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass.shader + ".vert").c_str ());
-    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass.shader + ".frag").c_str ());
+    glObjectLabel (GL_PROGRAM, this->m_programID, -1, shaderName.c_str ());
+    glObjectLabel (GL_SHADER, vertexShaderID, -1, (shaderName + ".vert").c_str ());
+    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (shaderName + ".frag").c_str ());
 #endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted

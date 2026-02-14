@@ -161,6 +161,7 @@ protected:
 
     // Rendering
     void renderSprites ();
+    void renderRope ();
     void setupPass ();
     void setupGeometryCallbacks ();
     void setupParticleUniforms ();
@@ -231,7 +232,17 @@ private:
     float m_trailLength { 0.05f };
     float m_trailMaxLength { 10.0f };
     float m_trailMinLength { 0.0f };
-    int m_trailSubdivision { 3 }; // Number of segments per trail
+    // Rope renderer (rope + ropetrail both use genericropeparticle shader)
+    bool m_useRopeRenderer { false };
+    int m_ropeSubdivision { 4 };     // Catmull-Rom subdivisions between points (smoothing)
+    int m_ropeSegments { 4 };        // ropetrail: historical position snapshots per particle
+    float m_ropeUVScale { 1.0f };
+    bool m_ropeUVScrolling { false };
+    bool m_ropeUVSmoothing { true };  // rope only
+
+    // Per-vertex float counts for different renderer types
+    static constexpr int SPRITE_FLOATS_PER_VERTEX = 17;
+    static constexpr int ROPE_FLOATS_PER_VERTEX = 26;
 
     // Transformed origin (screen space to centered space conversion)
     glm::vec3 m_transformedOrigin { 0.0f };

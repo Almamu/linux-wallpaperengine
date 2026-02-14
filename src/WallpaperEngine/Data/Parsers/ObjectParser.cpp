@@ -386,6 +386,12 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 		    .maxLength = 10.0f,
 		    .minLength = 0.0f,
 		    .subdivision = 1.0f,
+		    .segments = 4.0f,
+		    .uvScale = 1.0f,
+		    .uvScrolling = false,
+		    .uvSmoothing = true,
+		    .fadeAlpha = false,
+		    .fadeSize = false,
 		}
 	    );
 	}
@@ -772,12 +778,22 @@ ParticleRenderer ObjectParser::parseParticleRenderer (const JSON& it) {
 	name = nameIt->get<std::string> ();
     }
 
+    // Renderer-type-specific defaults
+    float subdivisionDefault = (name == "rope") ? 4.0f : 1.0f;
+    float lengthDefault = (name == "ropetrail") ? 1.0f : 0.05f;
+
     return ParticleRenderer {
 	.name = name,
-	.length = it.optional ("length", 0.05f),
+	.length = it.optional ("length", lengthDefault),
 	.maxLength = it.optional ("maxlength", 10.0f),
 	.minLength = it.optional ("minlength", 0.0f),
-	.subdivision = it.optional ("subdivision", 3.0f),
+	.subdivision = it.optional ("subdivision", subdivisionDefault),
+	.segments = it.optional ("segments", 4.0f),
+	.uvScale = it.optional ("uvscale", 1.0f),
+	.uvScrolling = it.optional ("uvscrolling", false),
+	.uvSmoothing = it.optional ("uvsmoothing", true),
+	.fadeAlpha = it.optional ("fadealpha", false),
+	.fadeSize = it.optional ("fadesize", false),
     };
 }
 

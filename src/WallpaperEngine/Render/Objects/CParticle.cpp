@@ -54,18 +54,28 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     std::random_device rd;
     m_rng.seed (rd ());
 
-    // Read renderer configuration early to determine if trails are used
+    // Read renderer configuration early to determine rendering mode
     if (!m_particle.renderers.empty ()) {
 	const auto& renderer = m_particle.renderers[0];
-	if (renderer.name == "spritetrail" || renderer.name == "ropetrail") {
+	if (renderer.name == "rope" || renderer.name == "ropetrail") {
+	    // Both rope and ropetrail use genericropeparticle shader
+	    m_useRopeRenderer = true;
+	    m_ropeSubdivision = std::max (0, static_cast<int> (renderer.subdivision));
+	    m_ropeUVScale = renderer.uvScale;
+	    m_ropeUVScrolling = renderer.uvScrolling;
+	    m_ropeUVSmoothing = renderer.uvSmoothing;
+
+	    if (renderer.name == "ropetrail") {
+		m_useTrailRenderer = true;
+		m_trailLength = renderer.length;
+		m_ropeSegments = std::max (2, static_cast<int> (renderer.segments));
+	    }
+	} else if (renderer.name == "spritetrail") {
+	    // spritetrail uses genericparticle with TRAILRENDERER combo
 	    m_useTrailRenderer = true;
 	    m_trailLength = renderer.length;
 	    m_trailMaxLength = renderer.maxLength;
 	    m_trailMinLength = renderer.minLength;
-	    m_trailSubdivision = static_cast<int> (renderer.subdivision);
-	    if (m_trailSubdivision < 1) {
-		m_trailSubdivision = 1;
-	    }
 	}
     }
 
@@ -75,17 +85,24 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
 
     // Use wallpaper's specified count, or default if maxCount is 0
     m_maxParticles = (adjustedMaxCount > 0) ? adjustedMaxCount : DEFAULT_MAX_PARTICLES;
+
     m_particles.resize (m_maxParticles);
 
-    // Calculate buffer sizes
-    // Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
-    // Normal particles: 4 vertices, 6 indices
-    const int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
-    const int verticesPerParticle = m_useTrailRenderer ? (segmentsPerParticle + 1) * 2 : 4;
-    const int indicesPerParticle = m_useTrailRenderer ? segmentsPerParticle * 6 : 6;
+    // Calculate buffer sizes based on renderer type
+    if (m_useRopeRenderer) {
+	// Rope: connects N particles with (N-1) segments, one quad per segment
+	const int maxSegments = std::max (1, static_cast<int> (m_maxParticles - 1));
+	m_vertices.resize (maxSegments * 4 * ROPE_FLOATS_PER_VERTEX);
+	m_indices.resize (maxSegments * 6);
+    } else {
+	// Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
+	// Normal particles: 4 vertices, 6 indices
+	const int verticesPerParticle = 4;
+	const int indicesPerParticle = 6;
 
-    m_vertices.resize (m_maxParticles * verticesPerParticle * 17);
-    m_indices.resize (m_maxParticles * indicesPerParticle);
+	m_vertices.resize (m_maxParticles * verticesPerParticle * SPRITE_FLOATS_PER_VERTEX);
+	m_indices.resize (m_maxParticles * indicesPerParticle);
+    }
 }
 
 CParticle::~CParticle () {
@@ -209,7 +226,10 @@ void CParticle::render () {
 	m_time = g_Time;
 	// Skip update on first frame to avoid weird initial burst
 	// This ensures all particles start from a clean state
-	renderSprites ();
+	if (m_useRopeRenderer)
+	    renderRope ();
+	else
+	    renderSprites ();
 	return;
     }
 
@@ -226,7 +246,10 @@ void CParticle::render () {
 
     // Render particles
     if (m_particleCount > 0 && m_particle.material) {
-	renderSprites ();
+	if (m_useRopeRenderer)
+	    renderRope ();
+	else
+	    renderSprites ();
     }
 }
 
@@ -292,23 +315,16 @@ void CParticle::update (float dt) {
 	op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
 
-    // Update animation frames and remove dead particles
-    for (uint32_t i = 0; i < m_particleCount;) {
+    // Update animation frames
+    for (uint32_t i = 0; i < m_particleCount; i++) {
 	auto& p = m_particles[i];
 
-	// Update animation frame if we have a spritesheet
 	if (m_spritesheetFrames > 0) {
-	    // Calculate frame based on particle lifetime
 	    float lifetimePos = p.getLifetimePos ();
-
-	    // Apply sequence multiplier if present
 	    float animSpeed = m_particle.sequenceMultiplier > 0.0f ? m_particle.sequenceMultiplier : 1.0f;
 
-	    // Calculate frame based on animation mode
 	    if (m_particle.animationMode == "randomframe") {
-		// Random frame mode: frame is set once at spawn and never changes
 		if (p.frame < 0.0f) {
-		    // Use particle memory address as seed for deterministic randomness per particle
 		    std::mt19937 particleRng (
 			static_cast<std::mt19937::result_type> (reinterpret_cast<uintptr_t> (&p))
 		    );
@@ -316,37 +332,37 @@ void CParticle::update (float dt) {
 		    p.frame = static_cast<float> (dist (particleRng));
 		}
 	    } else if (m_particle.animationMode == "once") {
-		// Play animation once over particle lifetime
 		p.frame = std::min (
 		    lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float> (m_spritesheetFrames - 1)
 		);
 	    } else {
-		// Default to "loop" or "sequence" mode - loop animation based on duration
 		if (m_spritesheetDuration > 0.0f) {
 		    float timeInCycle = std::fmod (p.age * animSpeed, m_spritesheetDuration);
 		    float cyclePos = timeInCycle / m_spritesheetDuration;
 		    p.frame = std::fmod (cyclePos * m_spritesheetFrames, static_cast<float> (m_spritesheetFrames));
 		} else {
-		    // No duration, use lifetime-based for sequence mode
 		    p.frame = std::fmod (
 			lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float> (m_spritesheetFrames)
 		    );
 		}
 	    }
 	}
+    }
 
-	// Consider particle dead if: not alive, OR size is zero/negative (from sizechange operator)
-	// This ensures invisible particles are removed from pool to make room for new ones
-	if (!p.isAlive () || p.size <= 0.0f) {
-	    // Swap with last particle and reduce count
-	    if (i < m_particleCount - 1) {
-		p = m_particles[m_particleCount - 1];
+    // Remove dead particles with order-preserving compaction.
+    // Particles only die from natural lifetime expiry (age >= lifetime).
+    // We never kill based on size — particles may fade in/out with oscillating size.
+    // Compaction preserves spawn order so array index 0 is always the oldest particle.
+    uint32_t writeIdx = 0;
+    for (uint32_t readIdx = 0; readIdx < m_particleCount; readIdx++) {
+	if (m_particles[readIdx].isAlive ()) {
+	    if (writeIdx != readIdx) {
+		m_particles[writeIdx] = m_particles[readIdx];
 	    }
-	    m_particleCount--;
-	} else {
-	    i++;
+	    writeIdx++;
 	}
     }
+    m_particleCount = writeIdx;
 }
 
 const Particle& CParticle::getParticle () const { return m_particle; }
@@ -419,8 +435,7 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
 	    randomPeriodicEmission, emissionTimer = 0.0f, elapsedTime = 0.0f, delayTimer = emitter.delay,
 	    durationTimer = 0.0f, periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
-	    instantaneousEmitted
-	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+	    instantaneousEmitted = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
@@ -472,17 +487,16 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
 	    instantaneousEmitted = true;
 	}
 
-	// Handle rate-based emission
-	if (emitter.rate > 0.0f && !limitOnePerFrame) {
+	// Rate-based emission with optional cap at 1 per frame
+	if (emitter.rate > 0.0f) {
 	    emissionTimer += dt * rate;
-	    toEmit += static_cast<uint32_t> (emissionTimer);
-	    emissionTimer -= static_cast<float> (static_cast<uint32_t> (emissionTimer));
-	}
-
-	// Handle limit one per frame (flags bit 1)
-	// Reset at start of each frame, then emit exactly one particle if rate > 0
-	if (limitOnePerFrame && emitter.rate > 0.0f) {
-	    toEmit += 1; // Always emit exactly 1 per frame
+	    uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
+	    emissionTimer -= static_cast<float> (rateEmit);
+	    // limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+	    if (limitOnePerFrame && rateEmit > 1) {
+		rateEmit = 1;
+	    }
+	    toEmit += rateEmit;
 	}
 
 	// Emit particles
@@ -565,21 +579,44 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 	}
     }
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, emissionTimer = 0.0f,
-	    remaining
-	    = emitter.instantaneous] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    bool limitOnePerFrame = (emitter.flags & 2) != 0;
+    bool isRope = m_useRopeRenderer;
+    std::string particleName = m_particle.name;
+
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame,
+	    isRope, particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous,
+	    lastSpawnTime = -1.0f, noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
+	    if (isRope) {
+		sLog.out ("[", particleName, "] FULL count=", count, "/", particles.size (), " dt=", dt);
+	    }
 	    return;
 	}
 
+	// Rate-based emission with optional cap at 1 per frame
 	emissionTimer += dt * rate;
-
 	uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
 	emissionTimer -= static_cast<float> (toEmit);
+	// limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+	if (limitOnePerFrame && toEmit > 1) {
+	    toEmit = 1;
+	}
 
 	if (remaining > 0) {
 	    toEmit = remaining;
 	    remaining = 0;
+	}
+
+	if (isRope) {
+	    if (toEmit == 0) {
+		noEmitFrames++;
+		if (noEmitFrames % 30 == 0) {
+		    sLog.out ("[", particleName, "] no emit for ", noEmitFrames, " frames, timer=", emissionTimer,
+			" rate=", rate, " dt=", dt, " count=", count, "/", particles.size ());
+		}
+	    } else {
+		noEmitFrames = 0;
+	    }
 	}
 
 	for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
@@ -680,6 +717,20 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 
 	    for (auto& init : m_initializers) {
 		init (p);
+	    }
+
+	    if (isRope) {
+		float timeSinceLast = (lastSpawnTime >= 0.0f) ? static_cast<float> (m_time) - lastSpawnTime : -1.0f;
+		lastSpawnTime = static_cast<float> (m_time);
+		sLog.out ("[", particleName, "] EMIT #", count,
+		    " dt_spawn=", timeSinceLast,
+		    " pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ")",
+		    " vel=(", p.velocity.x, ",", p.velocity.y, ",", p.velocity.z, ")",
+		    " |vel|=", glm::length (p.velocity),
+		    " size=", p.size, " (initial=", p.initial.size, ")",
+		    " color=(", p.color.x, ",", p.color.y, ",", p.color.z, ") alpha=", p.alpha,
+		    " lifetime=", p.lifetime,
+		    " time=", m_time);
 	    }
 
 	    count++;
@@ -833,13 +884,14 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
     DynamicValue* offsetVal = init.offset->value.get ();
     DynamicValue* scaleVal = init.scale->value.get ();
     DynamicValue* forwardVal = init.forward->value.get ();
+    DynamicValue* timeScaleVal = init.timeScale->value.get ();
     DynamicValue* phaseMinVal = init.phaseMin->value.get ();
     DynamicValue* phaseMaxVal = init.phaseMax->value.get ();
     DynamicValue* rightVal = init.right->value.get ();
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
-    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, phaseMinVal, phaseMaxVal, rightVal,
-	    speedOverride] (ParticleInstance& p) {
+    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, timeScaleVal, phaseMinVal, phaseMaxVal,
+	    rightVal, speedOverride] (ParticleInstance& p) {
 	// Get direction parameters
 	glm::vec3 forward = forwardVal->getVec3 ();
 	glm::vec3 right = rightVal->getVec3 ();
@@ -849,19 +901,29 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 
 	if (glm::length (forward) > 0.0001f) {
 	    forward = glm::normalize (forward);
+	} else {
+	    // Default forward direction when not specified (up in centered space)
+	    forward = glm::vec3 (0.0f, 1.0f, 0.0f);
 	}
 	if (glm::length (right) > 0.0001f) {
 	    right = glm::normalize (right);
+	} else {
+	    right = glm::vec3 (1.0f, 0.0f, 0.0f);
 	}
 
 	float speed = randomFloat (m_rng, speedMin->getFloat (), speedMax->getFloat ());
 	float scale = scaleVal->getFloat ();
 	float offset = offsetVal->getFloat ();
+	float timeScale = timeScaleVal->getFloat ();
 	float phaseMin = phaseMinVal->getFloat ();
 	float phaseMax = phaseMaxVal->getFloat ();
 
-	// Each particle gets its own random noise position (no shared state)
-	glm::vec3 noisePos = randomVec3 (m_rng, glm::vec3 (0.0f), glm::vec3 (10.0f));
+	// Sample noise at particle position + time-based offset.
+	// timescale shifts the noise field over time so particles spawned at different
+	// times get gradually changing directions (creates smooth evolving vapor stream).
+	// Position component provides spatial coherence for nearby particles.
+	glm::vec3 noisePos = p.position * 0.1f;
+	noisePos += glm::vec3 (static_cast<float> (m_time) * timeScale);
 
 	// Phase adds per-particle randomization to noise position
 	float phase = randomFloat (m_rng, phaseMin, phaseMax);
@@ -898,6 +960,17 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 	if (std::abs (offset) > 0.0001f) {
 	    glm::mat3 rot = glm::mat3 (glm::rotate (glm::mat4 (1.0f), -offset, right));
 	    result = rot * result;
+	}
+
+	// For 2D/orthographic particles (flags & 4 == 0), project direction onto XY plane.
+	// curlNoise is 3D but z-drift is meaningless for 2D particles and causes
+	// rope segments to diverge in depth, breaking visual connectivity.
+	if ((m_particle.flags & 4) == 0) {
+	    result.z = 0.0f;
+	    float len2d = glm::length (result);
+	    if (len2d > 0.0001f) {
+		result /= len2d;
+	    }
 	}
 
 	// Apply speed and instance override
@@ -1636,6 +1709,9 @@ void CParticle::setupPass () {
     // Build override with particle-specific combos
     m_passOverride = std::make_unique<ImageEffectPassOverride> ();
     m_passOverride->combos["THICKFORMAT"] = 1;
+    if (m_useRopeRenderer) {
+	m_passOverride->shaderOverride = "genericropeparticle";
+    }
     if (m_spritesheetFrames > 0) {
 	m_passOverride->combos["SPRITESHEET"] = 1;
     }
@@ -1695,35 +1771,45 @@ void CParticle::setupPass () {
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
 
-    // WP vertex layout: a_Position(3) + a_TexCoordVec4(4) + a_Color(4) + a_TexCoordVec4C1(4) + a_TexCoordC2(2) = 17
-    const GLsizei stride = sizeof (float) * 17;
     const GLuint program = m_pass->getProgramID ();
 
-    const GLint locPosition = glGetAttribLocation (program, "a_Position");
-    const GLint locTexCoordVec4 = glGetAttribLocation (program, "a_TexCoordVec4");
-    const GLint locColor = glGetAttribLocation (program, "a_Color");
-    const GLint locTexCoordVec4C1 = glGetAttribLocation (program, "a_TexCoordVec4C1");
-    const GLint locTexCoordC2 = glGetAttribLocation (program, "a_TexCoordC2");
+    if (m_useRopeRenderer) {
+	// Rope vertex layout: 7 attributes, 26 floats/vertex, stride=104 bytes
+	// a_PositionVec4(4) + a_TexCoordVec4(4) + a_TexCoordVec4C1(4) + a_TexCoordVec4C2(4)
+	// + a_TexCoordVec4C3(4) + a_TexCoordC4(2) + a_Color(4) = 26
+	const GLsizei stride = sizeof (float) * ROPE_FLOATS_PER_VERTEX;
 
-    if (locPosition >= 0) {
-	glEnableVertexAttribArray (locPosition);
-	glVertexAttribPointer (locPosition, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-    }
-    if (locTexCoordVec4 >= 0) {
-	glEnableVertexAttribArray (locTexCoordVec4);
-	glVertexAttribPointer (locTexCoordVec4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3));
-    }
-    if (locColor >= 0) {
-	glEnableVertexAttribArray (locColor);
-	glVertexAttribPointer (locColor, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7));
-    }
-    if (locTexCoordVec4C1 >= 0) {
-	glEnableVertexAttribArray (locTexCoordVec4C1);
-	glVertexAttribPointer (locTexCoordVec4C1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11));
-    }
-    if (locTexCoordC2 >= 0) {
-	glEnableVertexAttribArray (locTexCoordC2);
-	glVertexAttribPointer (locTexCoordC2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 15));
+	const GLint loc0 = glGetAttribLocation (program, "a_PositionVec4");
+	const GLint loc1 = glGetAttribLocation (program, "a_TexCoordVec4");
+	const GLint loc2 = glGetAttribLocation (program, "a_TexCoordVec4C1");
+	const GLint loc3 = glGetAttribLocation (program, "a_TexCoordVec4C2");
+	const GLint loc4 = glGetAttribLocation (program, "a_TexCoordVec4C3");
+	const GLint loc5 = glGetAttribLocation (program, "a_TexCoordC4");
+	const GLint loc6 = glGetAttribLocation (program, "a_Color");
+
+	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
+	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 4)); }
+	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8)); }
+	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 12)); }
+	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 16)); }
+	if (loc5 >= 0) { glEnableVertexAttribArray (loc5); glVertexAttribPointer (loc5, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 20)); }
+	if (loc6 >= 0) { glEnableVertexAttribArray (loc6); glVertexAttribPointer (loc6, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 22)); }
+    } else {
+	// Sprite vertex layout: 5 attributes, 17 floats/vertex, stride=68 bytes
+	// a_Position(3) + a_TexCoordVec4(4) + a_Color(4) + a_TexCoordVec4C1(4) + a_TexCoordC2(2) = 17
+	const GLsizei stride = sizeof (float) * SPRITE_FLOATS_PER_VERTEX;
+
+	const GLint loc0 = glGetAttribLocation (program, "a_Position");
+	const GLint loc1 = glGetAttribLocation (program, "a_TexCoordVec4");
+	const GLint loc2 = glGetAttribLocation (program, "a_Color");
+	const GLint loc3 = glGetAttribLocation (program, "a_TexCoordVec4C1");
+	const GLint loc4 = glGetAttribLocation (program, "a_TexCoordC2");
+
+	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
+	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3)); }
+	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7)); }
+	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11)); }
+	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 15)); }
     }
 
     glBindVertexArray (prevVAO);
@@ -1895,7 +1981,7 @@ void CParticle::renderSprites () {
 	}
 
 	auto addVertex = [&] (float u, float v) {
-	    const uint32_t base = vertexIndex * 17;
+	    const uint32_t base = vertexIndex * SPRITE_FLOATS_PER_VERTEX;
 	    // a_Position (vec3)
 	    m_vertices[base + 0] = p.position.x;
 	    m_vertices[base + 1] = p.position.y;
@@ -1952,7 +2038,8 @@ void CParticle::renderSprites () {
     // Upload vertex and index data
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
     glBufferData (
-	GL_ARRAY_BUFFER, static_cast<GLsizeiptr> (vertexIndex * 17 * sizeof (float)), m_vertices.data (), GL_DYNAMIC_DRAW
+	GL_ARRAY_BUFFER, static_cast<GLsizeiptr> (vertexIndex * SPRITE_FLOATS_PER_VERTEX * sizeof (float)),
+	m_vertices.data (), GL_DYNAMIC_DRAW
     );
 
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
@@ -1977,6 +2064,172 @@ void CParticle::renderSprites () {
     }
 
     // CPass::render() handles: FBO binding, texture setup, uniforms, blending, draw call, cleanup
+    m_pass->render ();
+
+#if !NDEBUG
+    glPopDebugGroup ();
+#endif
+}
+
+void CParticle::renderRope () {
+    if (m_particleCount < 2 || m_pass == nullptr) {
+	return;
+    }
+
+    // Array is already in spawn order (oldest at index 0) thanks to order-preserving
+    // compaction in update(). All particles in [0, m_particleCount) are alive.
+    const uint32_t aliveCount = m_particleCount;
+
+    // Build vertex data: one quad per consecutive particle pair.
+    // The shader handles ribbon expansion via the tangent (CP) vectors.
+    //
+    // Rope vertex layout (26 floats per vertex, THICKFORMAT):
+    // [0-3]   a_PositionVec4:   startPos.xyz, sizeStart
+    // [4-7]   a_TexCoordVec4:   endPos.xyz, trailLength
+    // [8-11]  a_TexCoordVec4C1: CP0.xyz, trailPosition
+    // [12-15] a_TexCoordVec4C2: CP1.xyz, sizeEnd
+    // [16-19] a_TexCoordVec4C3: colorEnd.rgba
+    // [20-21] a_TexCoordC4:     uvs.xy
+    // [22-25] a_Color:          colorStart.rgba
+    //
+    // Shader computes ribbon direction from control points:
+    //   CPStart = startPos - CP0  →  trailRightStart = cross(eye, trailDelta + CPStart) = cross(eye, endPos - CP0)
+    //   CPEnd   = endPos   - CP1  →  trailRightEnd   = cross(eye, trailDelta - CPEnd)   = cross(eye, CP1 - startPos)
+    // Using neighboring particle positions as CP0/CP1 gives proper tangent-based ribbon direction.
+
+    const uint32_t numSegments = aliveCount - 1;
+    const float trailLength = static_cast<float> (aliveCount);
+
+    // Debug: log particle state at render time (every 30 frames)
+    {
+	static uint32_t ropeRenderFrame = 0;
+	if (ropeRenderFrame++ % 30 == 0) {
+	    sLog.out ("[", m_particle.name, "] RENDER frame=", ropeRenderFrame - 1,
+		" alive=", aliveCount, " segs=", numSegments);
+	    for (uint32_t d = 0; d < aliveCount; d++) {
+		const auto& p = m_particles[d];
+		sLog.out ("  [", d, "] pos=(", p.position.x, ",", p.position.y, ",", p.position.z, ")",
+		    " vel=(", p.velocity.x, ",", p.velocity.y, ",", p.velocity.z, ")",
+		    " size=", p.size, " alpha=", p.alpha,
+		    " age=", p.age, "/", p.lifetime,
+		    " life%=", (p.lifetime > 0 ? p.age / p.lifetime * 100.0f : 0.0f));
+	    }
+	}
+    }
+
+    uint32_t vertexIndex = 0;
+    uint32_t indexOffset = 0;
+
+    for (uint32_t i = 0; i < numSegments; i++) {
+	const auto& pStart = m_particles[i];
+	const auto& pEnd = m_particles[i + 1];
+
+	// Neighboring particles for tangent direction (clamped at boundaries)
+	const auto& pPrev = (i > 0) ? m_particles[i - 1] : pStart;
+	const auto& pAfter = (i + 2 < aliveCount) ? m_particles[i + 2] : pEnd;
+
+	float trailPosition = static_cast<float> (i);
+
+	auto addRopeVertex = [&] (float uvX, float uvY) {
+	    const uint32_t base = vertexIndex * ROPE_FLOATS_PER_VERTEX;
+
+	    // a_PositionVec4: startPos.xyz, sizeStart
+	    m_vertices[base + 0] = pStart.position.x;
+	    m_vertices[base + 1] = pStart.position.y;
+	    m_vertices[base + 2] = pStart.position.z;
+	    m_vertices[base + 3] = pStart.size;
+
+	    // a_TexCoordVec4: endPos.xyz, trailLength
+	    m_vertices[base + 4] = pEnd.position.x;
+	    m_vertices[base + 5] = pEnd.position.y;
+	    m_vertices[base + 6] = pEnd.position.z;
+	    m_vertices[base + 7] = trailLength;
+
+	    // a_TexCoordVec4C1: CP0.xyz (neighbor before start), trailPosition
+	    m_vertices[base + 8] = pPrev.position.x;
+	    m_vertices[base + 9] = pPrev.position.y;
+	    m_vertices[base + 10] = pPrev.position.z;
+	    m_vertices[base + 11] = trailPosition;
+
+	    // a_TexCoordVec4C2: CP1.xyz (neighbor after end), sizeEnd
+	    m_vertices[base + 12] = pAfter.position.x;
+	    m_vertices[base + 13] = pAfter.position.y;
+	    m_vertices[base + 14] = pAfter.position.z;
+	    m_vertices[base + 15] = pEnd.size;
+
+	    // a_TexCoordVec4C3: colorEnd.rgba
+	    m_vertices[base + 16] = pEnd.color.r;
+	    m_vertices[base + 17] = pEnd.color.g;
+	    m_vertices[base + 18] = pEnd.color.b;
+	    m_vertices[base + 19] = pEnd.alpha;
+
+	    // a_TexCoordC4: uvs.xy
+	    m_vertices[base + 20] = uvX;
+	    m_vertices[base + 21] = uvY;
+
+	    // a_Color: colorStart.rgba
+	    m_vertices[base + 22] = pStart.color.r;
+	    m_vertices[base + 23] = pStart.color.g;
+	    m_vertices[base + 24] = pStart.color.b;
+	    m_vertices[base + 25] = pStart.alpha;
+
+	    vertexIndex++;
+	};
+
+	// Quad: 4 vertices (left/right at start/end of segment)
+	uint32_t baseVertex = vertexIndex;
+	addRopeVertex (0.0f, 0.0f); // left at start
+	addRopeVertex (1.0f, 0.0f); // right at start
+	addRopeVertex (1.0f, 1.0f); // right at end
+	addRopeVertex (0.0f, 1.0f); // left at end
+
+	// 2 triangles
+	m_indices[indexOffset++] = baseVertex + 0;
+	m_indices[indexOffset++] = baseVertex + 1;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 3;
+	m_indices[indexOffset++] = baseVertex + 0;
+    }
+
+    m_activeIndexCount = static_cast<GLsizei> (indexOffset);
+    if (m_activeIndexCount == 0) {
+	return;
+    }
+
+#if !NDEBUG
+    std::string str = "Rendering rope particles ";
+    str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
+	+ ")";
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+#endif
+
+    // Upload vertex and index data
+    glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
+    glBufferData (
+	GL_ARRAY_BUFFER, static_cast<GLsizeiptr> (vertexIndex * ROPE_FLOATS_PER_VERTEX * sizeof (float)),
+	m_vertices.data (), GL_DYNAMIC_DRAW
+    );
+
+    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBufferData (
+	GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr> (indexOffset * sizeof (uint32_t)), m_indices.data (),
+	GL_DYNAMIC_DRAW
+    );
+
+    // Update matrices and uniform data
+    updateMatrices ();
+
+    // For REFRACT: blit current scene content into the copy FBO before rendering
+    if (m_hasRefract && m_refractFBO) {
+	auto sceneFBO = getScene ().getFBO ();
+	GLint w = static_cast<GLint> (sceneFBO->getRealWidth ());
+	GLint h = static_cast<GLint> (sceneFBO->getRealHeight ());
+	glBindFramebuffer (GL_READ_FRAMEBUFFER, sceneFBO->getFramebuffer ());
+	glBindFramebuffer (GL_DRAW_FRAMEBUFFER, m_refractFBO->getFramebuffer ());
+	glBlitFramebuffer (0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+
     m_pass->render ();
 
 #if !NDEBUG
