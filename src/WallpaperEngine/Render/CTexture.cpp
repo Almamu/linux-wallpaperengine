@@ -79,6 +79,14 @@ CTexture::CTexture (TextureUniquePtr header) : m_header (std::move (header)) {
     }
 }
 
+CTexture::~CTexture () {
+    for (uint32_t i = 0; i < this->m_header->imageCount; i++) {
+        glDeleteTextures (1, &this->m_textureID[i]);
+    }
+
+    delete[] this->m_textureID;
+}
+
 void CTexture::setupResolution () {
     if (this->isAnimated ()) {
 	this->m_resolution = { this->m_header->textureWidth, this->m_header->textureHeight, this->m_header->gifWidth,

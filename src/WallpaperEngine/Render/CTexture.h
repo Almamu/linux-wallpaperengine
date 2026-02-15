@@ -17,6 +17,7 @@ using namespace WallpaperEngine::Data::Assets;
 class CTexture final : public TextureProvider {
 public:
     explicit CTexture (TextureUniquePtr header);
+    ~CTexture () override;
 
     [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
     [[nodiscard]] uint32_t getTextureWidth (uint32_t imageIndex) const override;
