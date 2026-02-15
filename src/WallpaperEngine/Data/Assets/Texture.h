@@ -90,9 +90,10 @@ enum TextureFlags {
     TextureFlags_ClampUVs = 2,
     TextureFlags_IsGif = 4,
     TextureFlags_ClampUVsBorder = 8,
+    TextureFlags_Video = 32,
     TextureFlags_AlphaChannelPriority = 524288, // Indicates RG88/R8 format where alpha is in G/R channel
     TextureFlags_All = TextureFlags_NoInterpolation | TextureFlags_ClampUVs | TextureFlags_IsGif
-	| TextureFlags_ClampUVsBorder | TextureFlags_AlphaChannelPriority,
+	| TextureFlags_ClampUVsBorder | TextureFlags_Video | TextureFlags_AlphaChannelPriority,
 };
 
 struct Mipmap {

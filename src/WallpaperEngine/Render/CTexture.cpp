@@ -33,6 +33,10 @@ CTexture::CTexture (TextureUniquePtr header) : m_header (std::move (header)) {
 	    const uint32_t bufferSize = mipmap->uncompressedSize;
 	    GLenum textureFormat = GL_RGBA;
 
+	    if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	        sLog.exception ("MP4 textures are not supported yet");
+	    }
+
 	    if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
 		int fileChannels;
 
