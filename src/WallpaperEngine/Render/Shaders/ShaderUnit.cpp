@@ -282,7 +282,11 @@ void ShaderUnit::preprocessIncludes () {
 	    ifdefStack.pop ();
 
 	    if (latest > stackStart && latest <= current) {
-		latest = this->m_preprocessed.find ('\n', current);
+		// The insertion point is inside a conditional block.
+		// Move to BEFORE the #if so includes are available to all branches
+		// (e.g. genericropeparticle.vert has #if GS_ENABLED wrapping two main() functions).
+		size_t beforeIfdef = this->m_preprocessed.rfind ('\n', stackStart);
+		latest = (beforeIfdef != std::string::npos) ? beforeIfdef : 0;
 	    }
 	}
 

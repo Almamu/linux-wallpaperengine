@@ -387,6 +387,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/CTexture.h
     src/WallpaperEngine/Render/TextureProvider.h
 
+    src/WallpaperEngine/Render/Objects/CRenderable.cpp
+    src/WallpaperEngine/Render/Objects/CRenderable.h
     src/WallpaperEngine/Render/Objects/CImage.h
     src/WallpaperEngine/Render/Objects/CImage.cpp
     src/WallpaperEngine/Render/Objects/CSound.h

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
@@ -12,7 +13,7 @@
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 namespace WallpaperEngine::Render::Objects {
-class CImage;
+class CRenderable;
 }
 
 namespace WallpaperEngine::Render::Objects::Effects {
@@ -23,7 +24,7 @@ using namespace WallpaperEngine::Data::Model;
 class CPass final : public Helpers::ContextAware {
 public:
     CPass (
-	CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+	CRenderable& renderable, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
 	std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
 	std::optional<std::reference_wrapper<const TextureMap>> binds,
 	std::optional<std::reference_wrapper<std::string>> target
@@ -44,10 +45,23 @@ public:
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
 
     [[nodiscard]] std::shared_ptr<const FBOProvider> getFBOProvider () const;
-    [[nodiscard]] const CImage& getImage () const;
+    [[nodiscard]] const CRenderable& getRenderable () const;
     [[nodiscard]] const MaterialPass& getPass () const;
     [[nodiscard]] std::optional<std::reference_wrapper<std::string>> getTarget () const;
     [[nodiscard]] Render::Shaders::Shader* getShader () const;
+    [[nodiscard]] GLuint getProgramID () const;
+
+    // Custom geometry rendering support (for particles, etc.)
+    using GeometryCallback = std::function<void ()>;
+    void setGeometryCallback (
+	GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
+    );
+
+    // Public uniform setters for external callers (pointer-based, updated per-frame)
+    void addUniform (const std::string& name, const float* value, int count = 1);
+    void addUniform (const std::string& name, const glm::vec3* value);
+    void addUniform (const std::string& name, const glm::vec4* value);
+    void addUniform (const std::string& name, const glm::mat4* value);
 
 private:
     enum UniformType {
@@ -115,12 +129,8 @@ private:
     void addUniform (const std::string& name, glm::mat4 value);
     void addUniform (const std::string& name, const int* value, int count = 1);
     void addUniform (const std::string& name, const double* value, int count = 1);
-    void addUniform (const std::string& name, const float* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec2* value);
-    void addUniform (const std::string& name, const glm::vec3* value);
-    void addUniform (const std::string& name, const glm::vec4* value);
     void addUniform (const std::string& name, const glm::mat3* value);
-    void addUniform (const std::string& name, const glm::mat4* value);
     void addUniform (const std::string& name, const int** value);
     void addUniform (const std::string& name, const double** value);
     void addUniform (const std::string& name, const float** value);
@@ -146,7 +156,7 @@ private:
 	std::shared_ptr<const TextureProvider> previous = nullptr
     );
 
-    CImage& m_image;
+    CRenderable& m_renderable;
     std::shared_ptr<const FBOProvider> m_fboProvider;
     const MaterialPass& m_pass;
     const TextureMap& m_binds;
@@ -180,5 +190,10 @@ private:
     GLint g_Texture0Translation;
     GLuint a_TexCoord;
     GLuint a_Position;
+
+    // Custom geometry callbacks (for particles, etc.)
+    GeometryCallback m_setupAttribsCallback;
+    GeometryCallback m_drawGeometryCallback;
+    GeometryCallback m_cleanupAttribsCallback;
 };
 } // namespace WallpaperEngine::Render::Objects::Effects

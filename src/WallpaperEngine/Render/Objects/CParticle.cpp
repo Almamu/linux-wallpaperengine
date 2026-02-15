@@ -49,23 +49,34 @@ inline float fadeValue (float life, float startTime, float endTime, float startV
 }
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
-    CObject (scene, particle), m_particle (particle) {
+    CRenderable (scene, particle, *particle.material->material), m_particle (particle) {
+    this->detectTexture ();
     // Initialize random number generator with time-based seed
     std::random_device rd;
     m_rng.seed (rd ());
 
-    // Read renderer configuration early to determine if trails are used
+    // Read renderer configuration early to determine rendering mode
     if (!m_particle.renderers.empty ()) {
 	const auto& renderer = m_particle.renderers[0];
-	if (renderer.name == "spritetrail" || renderer.name == "ropetrail") {
+	if (renderer.name == "rope" || renderer.name == "ropetrail") {
+	    // Both rope and ropetrail use genericropeparticle shader
+	    m_useRopeRenderer = true;
+	    m_ropeSubdivision = std::max (0, static_cast<int> (renderer.subdivision));
+	    m_ropeUVScale = renderer.uvScale;
+	    m_ropeUVScrolling = renderer.uvScrolling;
+	    m_ropeUVSmoothing = renderer.uvSmoothing;
+
+	    if (renderer.name == "ropetrail") {
+		m_useTrailRenderer = true;
+		m_trailLength = renderer.length;
+		m_ropeSegments = std::max (2, static_cast<int> (renderer.segments));
+	    }
+	} else if (renderer.name == "spritetrail") {
+	    // spritetrail uses genericparticle with TRAILRENDERER combo
 	    m_useTrailRenderer = true;
 	    m_trailLength = renderer.length;
 	    m_trailMaxLength = renderer.maxLength;
 	    m_trailMinLength = renderer.minLength;
-	    m_trailSubdivision = static_cast<int> (renderer.subdivision);
-	    if (m_trailSubdivision < 1) {
-		m_trailSubdivision = 1;
-	    }
 	}
     }
 
@@ -75,20 +86,30 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
 
     // Use wallpaper's specified count, or default if maxCount is 0
     m_maxParticles = (adjustedMaxCount > 0) ? adjustedMaxCount : DEFAULT_MAX_PARTICLES;
+
     m_particles.resize (m_maxParticles);
 
-    // Calculate buffer sizes
-    // Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
-    // Normal particles: 4 vertices, 6 indices
-    const int segmentsPerParticle = m_useTrailRenderer ? m_trailSubdivision : 1;
-    const int verticesPerParticle = m_useTrailRenderer ? (segmentsPerParticle + 1) * 2 : 4;
-    const int indicesPerParticle = m_useTrailRenderer ? segmentsPerParticle * 6 : 6;
+    // Calculate buffer sizes based on renderer type
+    if (m_useRopeRenderer) {
+	// Rope: connects N particles with (N-1) segments, each subdivided into sub-segments
+	const int subdivision = std::max (1, m_ropeSubdivision);
+	const int maxSubSegments = std::max (1, static_cast<int> (m_maxParticles - 1)) * subdivision;
+	m_vertices.resize (maxSubSegments * 4 * ROPE_FLOATS_PER_VERTEX);
+	m_indices.resize (maxSubSegments * 6);
+    } else {
+	// Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
+	// Normal particles: 4 vertices, 6 indices
+	const int verticesPerParticle = 4;
+	const int indicesPerParticle = 6;
 
-    m_vertices.resize (m_maxParticles * verticesPerParticle * 17);
-    m_indices.resize (m_maxParticles * indicesPerParticle);
+	m_vertices.resize (m_maxParticles * verticesPerParticle * SPRITE_FLOATS_PER_VERTEX);
+	m_indices.resize (m_maxParticles * indicesPerParticle);
+    }
 }
 
 CParticle::~CParticle () {
+    delete m_pass;
+
     if (m_vao != 0) {
 	glDeleteVertexArrays (1, &m_vao);
     }
@@ -97,9 +118,6 @@ CParticle::~CParticle () {
     }
     if (m_ebo != 0) {
 	glDeleteBuffers (1, &m_ebo);
-    }
-    if (m_shaderProgram != 0) {
-	glDeleteProgram (m_shaderProgram);
     }
 
     m_vertices.clear ();
@@ -122,42 +140,33 @@ void CParticle::setup () {
     origin.y = m_lastScreenHeight / 2.0f - origin.y;
     m_transformedOrigin = origin;
 
-    // Load particle material texture and blending mode
+    // Load particle material constants
     if (m_particle.material && m_particle.material->material && !m_particle.material->material->passes.empty ()) {
 	auto& firstPass = *m_particle.material->material->passes.begin ();
-
-	m_blendingMode = firstPass->blending;
 
 	// Read overbright constant (brightness multiplier for additive particles)
 	auto overbrightIt = firstPass->constants.find ("ui_editor_properties_overbright");
 	if (overbrightIt != firstPass->constants.end ()) {
 	    m_overbright = overbrightIt->second->value->getFloat ();
 	}
+    }
 
-	auto& textures = firstPass->textures;
-	if (!textures.empty ()) {
-	    std::string textureName = textures.begin ()->second;
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		m_texture = getScene ().findFBO (textureName);
-	    } else {
-		m_texture = getContext ().resolveTexture (textureName);
-	    }
-	    if (m_texture) {
-		m_textureFormat = m_texture->getFormat ();
-
-		// Get spritesheet data from texture (parsed in TextureParser)
-		m_spritesheetCols = static_cast<int> (m_texture->getSpritesheetCols ());
-		m_spritesheetRows = static_cast<int> (m_texture->getSpritesheetRows ());
-		m_spritesheetFrames = static_cast<int> (m_texture->getSpritesheetFrames ());
-		m_spritesheetDuration = m_texture->getSpritesheetDuration ();
-	    }
-	}
+    // Texture is resolved by CRenderable base class; read spritesheet data.
+    // TextureParser computes spritesheet grid from TEXS frame data (animated textures)
+    // or .tex-json metadata (static textures). For GIF-style animated textures (separate
+    // GL texture per frame), the parser returns 0 cols/rows since a 1x1 grid can't hold
+    // all frames — so no SPRITESHEET mode is needed (frame switching happens via texture ID).
+    if (const auto texture = getTexture ()) {
+	m_spritesheetCols = static_cast<int> (texture->getSpritesheetCols ());
+	m_spritesheetRows = static_cast<int> (texture->getSpritesheetRows ());
+	m_spritesheetFrames = static_cast<int> (texture->getSpritesheetFrames ());
+	m_spritesheetDuration = texture->getSpritesheetDuration ();
     }
 
     setupEmitters ();
     setupInitializers ();
     setupOperators ();
-    setupBuffers ();
+    setupPass ();
 
     // Setup control points (max 8)
     m_controlPoints.resize (8);
@@ -195,7 +204,10 @@ void CParticle::render () {
 	m_time = g_Time;
 	// Skip update on first frame to avoid weird initial burst
 	// This ensures all particles start from a clean state
-	renderSprites ();
+	if (m_useRopeRenderer)
+	    renderRope ();
+	else
+	    renderSprites ();
 	return;
     }
 
@@ -212,7 +224,10 @@ void CParticle::render () {
 
     // Render particles
     if (m_particleCount > 0 && m_particle.material) {
-	renderSprites ();
+	if (m_useRopeRenderer)
+	    renderRope ();
+	else
+	    renderSprites ();
     }
 }
 
@@ -278,23 +293,16 @@ void CParticle::update (float dt) {
 	op (m_particles, m_particleCount, m_controlPoints, static_cast<float> (m_time), dt);
     }
 
-    // Update animation frames and remove dead particles
-    for (uint32_t i = 0; i < m_particleCount;) {
+    // Update animation frames
+    for (uint32_t i = 0; i < m_particleCount; i++) {
 	auto& p = m_particles[i];
 
-	// Update animation frame if we have a spritesheet
 	if (m_spritesheetFrames > 0) {
-	    // Calculate frame based on particle lifetime
 	    float lifetimePos = p.getLifetimePos ();
-
-	    // Apply sequence multiplier if present
 	    float animSpeed = m_particle.sequenceMultiplier > 0.0f ? m_particle.sequenceMultiplier : 1.0f;
 
-	    // Calculate frame based on animation mode
 	    if (m_particle.animationMode == "randomframe") {
-		// Random frame mode: frame is set once at spawn and never changes
 		if (p.frame < 0.0f) {
-		    // Use particle memory address as seed for deterministic randomness per particle
 		    std::mt19937 particleRng (
 			static_cast<std::mt19937::result_type> (reinterpret_cast<uintptr_t> (&p))
 		    );
@@ -302,40 +310,64 @@ void CParticle::update (float dt) {
 		    p.frame = static_cast<float> (dist (particleRng));
 		}
 	    } else if (m_particle.animationMode == "once") {
-		// Play animation once over particle lifetime
 		p.frame = std::min (
 		    lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float> (m_spritesheetFrames - 1)
 		);
 	    } else {
-		// Default to "loop" or "sequence" mode - loop animation based on duration
 		if (m_spritesheetDuration > 0.0f) {
 		    float timeInCycle = std::fmod (p.age * animSpeed, m_spritesheetDuration);
 		    float cyclePos = timeInCycle / m_spritesheetDuration;
 		    p.frame = std::fmod (cyclePos * m_spritesheetFrames, static_cast<float> (m_spritesheetFrames));
 		} else {
-		    // No duration, use lifetime-based for sequence mode
 		    p.frame = std::fmod (
 			lifetimePos * m_spritesheetFrames * animSpeed, static_cast<float> (m_spritesheetFrames)
 		    );
 		}
 	    }
 	}
+    }
 
-	// Consider particle dead if: not alive, OR size is zero/negative (from sizechange operator)
-	// This ensures invisible particles are removed from pool to make room for new ones
-	if (!p.isAlive () || p.size <= 0.0f) {
-	    // Swap with last particle and reduce count
-	    if (i < m_particleCount - 1) {
-		p = m_particles[m_particleCount - 1];
+    // Remove dead particles with order-preserving compaction.
+    // Particles only die from natural lifetime expiry (age >= lifetime).
+    // We never kill based on size — particles may fade in/out with oscillating size.
+    // Compaction preserves spawn order so array index 0 is always the oldest particle.
+    uint32_t writeIdx = 0;
+    for (uint32_t readIdx = 0; readIdx < m_particleCount; readIdx++) {
+	if (m_particles[readIdx].isAlive ()) {
+	    if (writeIdx != readIdx) {
+		m_particles[writeIdx] = m_particles[readIdx];
 	    }
-	    m_particleCount--;
-	} else {
-	    i++;
+	    writeIdx++;
 	}
     }
+    m_particleCount = writeIdx;
 }
 
 const Particle& CParticle::getParticle () const { return m_particle; }
+
+const float& CParticle::getBrightness () const { return m_overbright; }
+
+const float& CParticle::getUserAlpha () const { return m_particle.instanceOverride.alpha->value->getFloat (); }
+
+const float& CParticle::getAlpha () const { return m_particle.instanceOverride.alpha->value->getFloat (); }
+
+const glm::vec3& CParticle::getColor () const {
+    static const glm::vec3 defaultColor (1.0f);
+    if (m_particle.instanceOverride.color && m_particle.instanceOverride.color->value) {
+	return m_particle.instanceOverride.color->value->getVec3 ();
+    }
+    return defaultColor;
+}
+
+const glm::vec4& CParticle::getColor4 () const {
+    static const glm::vec4 defaultColor (1.0f);
+    if (m_particle.instanceOverride.color && m_particle.instanceOverride.color->value) {
+	return m_particle.instanceOverride.color->value->getVec4 ();
+    }
+    return defaultColor;
+}
+
+const glm::vec3& CParticle::getCompositeColor () const { return getColor (); }
 
 // ========== EMITTERS ==========
 
@@ -381,8 +413,7 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
 	    randomPeriodicEmission, emissionTimer = 0.0f, elapsedTime = 0.0f, delayTimer = emitter.delay,
 	    durationTimer = 0.0f, periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
-	    instantaneousEmitted
-	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+	    instantaneousEmitted = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
@@ -434,17 +465,16 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
 	    instantaneousEmitted = true;
 	}
 
-	// Handle rate-based emission
-	if (emitter.rate > 0.0f && !limitOnePerFrame) {
+	// Rate-based emission with optional cap at 1 per frame
+	if (emitter.rate > 0.0f) {
 	    emissionTimer += dt * rate;
-	    toEmit += static_cast<uint32_t> (emissionTimer);
-	    emissionTimer -= static_cast<float> (static_cast<uint32_t> (emissionTimer));
-	}
-
-	// Handle limit one per frame (flags bit 1)
-	// Reset at start of each frame, then emit exactly one particle if rate > 0
-	if (limitOnePerFrame && emitter.rate > 0.0f) {
-	    toEmit += 1; // Always emit exactly 1 per frame
+	    uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
+	    emissionTimer -= static_cast<float> (rateEmit);
+	    // limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+	    if (limitOnePerFrame && rateEmit > 1) {
+		rateEmit = 1;
+	    }
+	    toEmit += rateEmit;
 	}
 
 	// Emit particles
@@ -527,17 +557,25 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 	}
     }
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, emissionTimer = 0.0f,
-	    remaining
-	    = emitter.instantaneous] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    bool limitOnePerFrame = (emitter.flags & 2) != 0;
+    bool isRope = m_useRopeRenderer;
+    std::string particleName = m_particle.name;
+
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame,
+	    isRope, particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous,
+	    lastSpawnTime = -1.0f, noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
 
+	// Rate-based emission with optional cap at 1 per frame
 	emissionTimer += dt * rate;
-
 	uint32_t toEmit = static_cast<uint32_t> (emissionTimer);
 	emissionTimer -= static_cast<float> (toEmit);
+	// limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+	if (limitOnePerFrame && toEmit > 1) {
+	    toEmit = 1;
+	}
 
 	if (remaining > 0) {
 	    toEmit = remaining;
@@ -666,7 +704,9 @@ void CParticle::setupInitializers () {
 	} else if (initializer->is<AlphaRandomInitializer> ()) {
 	    func = createAlphaRandomInitializer (*initializer->as<AlphaRandomInitializer> ());
 	} else if (initializer->is<LifetimeRandomInitializer> ()) {
-	    func = createLifetimeRandomInitializer (*initializer->as<LifetimeRandomInitializer> ());
+	    const auto& lifeInit = *initializer->as<LifetimeRandomInitializer> ();
+	    m_uniformLifetimes = (lifeInit.min->value->getFloat () == lifeInit.max->value->getFloat ());
+	    func = createLifetimeRandomInitializer (lifeInit);
 	} else if (initializer->is<VelocityRandomInitializer> ()) {
 	    func = createVelocityRandomInitializer (*initializer->as<VelocityRandomInitializer> ());
 	} else if (initializer->is<RotationRandomInitializer> ()) {
@@ -795,13 +835,14 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
     DynamicValue* offsetVal = init.offset->value.get ();
     DynamicValue* scaleVal = init.scale->value.get ();
     DynamicValue* forwardVal = init.forward->value.get ();
+    DynamicValue* timeScaleVal = init.timeScale->value.get ();
     DynamicValue* phaseMinVal = init.phaseMin->value.get ();
     DynamicValue* phaseMaxVal = init.phaseMax->value.get ();
     DynamicValue* rightVal = init.right->value.get ();
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
-    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, phaseMinVal, phaseMaxVal, rightVal,
-	    speedOverride] (ParticleInstance& p) {
+    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, timeScaleVal, phaseMinVal, phaseMaxVal,
+	    rightVal, speedOverride] (ParticleInstance& p) {
 	// Get direction parameters
 	glm::vec3 forward = forwardVal->getVec3 ();
 	glm::vec3 right = rightVal->getVec3 ();
@@ -811,19 +852,29 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 
 	if (glm::length (forward) > 0.0001f) {
 	    forward = glm::normalize (forward);
+	} else {
+	    // Default forward direction when not specified (up in centered space)
+	    forward = glm::vec3 (0.0f, 1.0f, 0.0f);
 	}
 	if (glm::length (right) > 0.0001f) {
 	    right = glm::normalize (right);
+	} else {
+	    right = glm::vec3 (1.0f, 0.0f, 0.0f);
 	}
 
 	float speed = randomFloat (m_rng, speedMin->getFloat (), speedMax->getFloat ());
 	float scale = scaleVal->getFloat ();
 	float offset = offsetVal->getFloat ();
+	float timeScale = timeScaleVal->getFloat ();
 	float phaseMin = phaseMinVal->getFloat ();
 	float phaseMax = phaseMaxVal->getFloat ();
 
-	// Each particle gets its own random noise position (no shared state)
-	glm::vec3 noisePos = randomVec3 (m_rng, glm::vec3 (0.0f), glm::vec3 (10.0f));
+	// Sample noise at particle position + time-based offset.
+	// timescale shifts the noise field over time so particles spawned at different
+	// times get gradually changing directions (creates smooth evolving vapor stream).
+	// Position component provides spatial coherence for nearby particles.
+	glm::vec3 noisePos = p.position * 0.1f;
+	noisePos += glm::vec3 (static_cast<float> (m_time) * timeScale);
 
 	// Phase adds per-particle randomization to noise position
 	float phase = randomFloat (m_rng, phaseMin, phaseMax);
@@ -860,6 +911,17 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 	if (std::abs (offset) > 0.0001f) {
 	    glm::mat3 rot = glm::mat3 (glm::rotate (glm::mat4 (1.0f), -offset, right));
 	    result = rot * result;
+	}
+
+	// For 2D/orthographic particles (flags & 4 == 0), project direction onto XY plane.
+	// curlNoise is 3D but z-drift is meaningless for 2D particles and causes
+	// rope segments to diverge in depth, breaking visual connectivity.
+	if ((m_particle.flags & 4) == 0) {
+	    result.z = 0.0f;
+	    float len2d = glm::length (result);
+	    if (len2d > 0.0001f) {
+		result /= len2d;
+	    }
 	}
 
 	// Apply speed and instance override
@@ -1587,270 +1649,68 @@ OperatorFunc CParticle::createOscillatePositionOperator (const OscillatePosition
 
 // ========== RENDERING ==========
 
-GLuint CParticle::compileShader (GLenum type, const char* source) {
-    GLuint shader = glCreateShader (type);
-    glShaderSource (shader, 1, &source, nullptr);
-    glCompileShader (shader);
-
-    GLint success;
-    glGetShaderiv (shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-	char infoLog[512];
-	glGetShaderInfoLog (shader, 512, nullptr, infoLog);
-	sLog.error ("Particle shader compilation failed: ", infoLog);
-	return 0;
-    }
-    return shader;
-}
-
-GLuint CParticle::createShaderProgram () {
-    const char* vertexShaderSource = R"(
-        #version 330 core
-        layout (location = 0) in vec3 aPos;
-        layout (location = 1) in vec2 aTexCoord;
-        layout (location = 2) in vec3 aRotation;
-        layout (location = 3) in float aSize;
-        layout (location = 4) in vec4 aColor;
-        layout (location = 5) in float aFrame;
-        layout (location = 6) in vec3 aVelocity;
-
-        out vec2 vTexCoord;
-        out vec4 vColor;
-        flat out float vFrame;  // flat prevents interpolation across triangle
-
-        uniform mat4 g_ModelViewProjectionMatrix;
-        uniform mat3 u_VelocityRotation;
-        uniform int u_UseTrailRenderer;
-        uniform int u_Perspective;
-        uniform float u_TrailLength;
-        uniform float u_TrailMaxLength;
-        uniform float u_TrailMinLength;
-        uniform float u_TextureRatio;
-        uniform vec3 u_CameraPos;
-
-        void main() {
-            vec2 offset = aTexCoord - 0.5;
-            vec3 billboardPos;
-
-            // Trail rendering: compute tangents from velocity
-            if (u_UseTrailRenderer == 1) {
-                // Rotate velocity from local space to world space using particle system angles
-                vec3 worldVelocity = u_VelocityRotation * aVelocity;
-
-                // Eye direction varies by projection mode:
-                // - Orthographic: constant direction perpendicular to screen
-                // - Perspective: from camera to particle (varying per particle)
-                vec3 eyeDirection;
-                if (u_Perspective == 0) {
-                    // Orthographic: all particles have same eye direction (perpendicular to screen)
-                    eyeDirection = vec3(0.0, 0.0, 1.0);
-                } else {
-                    // Perspective: eye direction from camera to particle
-                    eyeDirection = aPos - u_CameraPos;
-                }
-
-                // Right vector: perpendicular to both eye and velocity
-                vec3 right = cross(eyeDirection, worldVelocity);
-                float rightLen = length(right);
-                if (rightLen > 0.001) {
-                    right = normalize(right);
-                } else {
-                    // Velocity parallel to eye, use default
-                    right = vec3(1.0, 0.0, 0.0);
-                }
-
-                // Up vector: along velocity direction, scaled by trail length
-                // up = velocity * max(minLength, min(speed * length, maxLength))
-                float speed = length(worldVelocity);
-                vec3 velDir = (speed > 0.001) ? worldVelocity / speed : vec3(0.0, -1.0, 0.0);
-
-                // Calculate trail length with min/max clamping
-                float trailLength = max(u_TrailMinLength, min(speed * u_TrailLength, u_TrailMaxLength));
-                vec3 up = velDir * trailLength;
-
-                // When trail length becomes very small compared to particle size, scale down
-                // the perpendicular width to prevent stretching artifacts
-                float widthScale = 1.0;
-                float expectedTrailForSize = aSize * u_TextureRatio * 0.025;
-                if (trailLength < expectedTrailForSize) {
-                    // Proportionally reduce width as trail collapses
-                    widthScale = trailLength / expectedTrailForSize;
-                }
-
-                // Compute position
-                // pos + (size * right * (u-0.5) - size * up * (v-0.5) * textureRatio)
-                billboardPos = aPos +
-                    (aSize * right * offset.x * widthScale) -
-                    (aSize * up * offset.y * u_TextureRatio);
-            } else {
-                // Standard rotation-based rendering
-                float cx = cos(aRotation.x);
-                float sx = sin(aRotation.x);
-                float cy = cos(aRotation.y);
-                float sy = sin(aRotation.y);
-                float cz = cos(aRotation.z);
-                float sz = sin(aRotation.z);
-
-                vec3 offset3d = vec3(offset, 0.0);
-
-                // Rotate around X axis
-                vec3 rotX = vec3(
-                    offset3d.x,
-                    offset3d.y * cx - offset3d.z * sx,
-                    offset3d.y * sx + offset3d.z * cx
-                );
-
-                // Rotate around Y axis
-                vec3 rotY = vec3(
-                    rotX.x * cy + rotX.z * sy,
-                    rotX.y,
-                    -rotX.x * sy + rotX.z * cy
-                );
-
-                // Rotate around Z axis
-                vec3 rotated = vec3(
-                    rotY.x * cz - rotY.y * sz,
-                    rotY.x * sz + rotY.y * cz,
-                    rotY.z
-                );
-
-                billboardPos = aPos + rotated * aSize;
-            }
-
-            gl_Position = g_ModelViewProjectionMatrix * vec4(billboardPos, 1.0);
-            vTexCoord = aTexCoord;
-            vColor = aColor;
-            vFrame = aFrame;
-        }
-    )";
-
-    const char* fragmentShaderSource = R"(
-        #version 330 core
-        in vec2 vTexCoord;
-        in vec4 vColor;
-        flat in float vFrame;
-
-        out vec4 FragColor;
-
-        uniform sampler2D g_Texture0;
-        uniform int u_HasTexture;
-        uniform int u_TextureFormat; // 8 = RG88, 9 = R8
-        uniform vec2 u_SpritesheetSize; // x=cols, y=rows
-        uniform float u_Overbright; // Brightness multiplier for additive particles
-
-        void main() {
-            vec4 texColor;
-            if (u_HasTexture == 1) {
-                // Calculate UV coordinates for spritesheet frame
-                vec2 uv = vTexCoord;
-                if (u_SpritesheetSize.x > 0.0) {
-                    // Spritesheet: adjust UVs to sample only the current frame
-                    float cols = u_SpritesheetSize.x;
-                    float rows = u_SpritesheetSize.y;
-                    float frameIndex = floor(vFrame);
-
-                    float frameX = mod(frameIndex, cols);
-                    float frameY = floor(frameIndex / cols);
-
-                    float frameWidth = 1.0 / cols;
-                    float frameHeight = 1.0 / rows;
-
-                    // Clamp UVs to [0,1] to prevent sampling outside frame bounds
-                    vec2 clampedUV = clamp(vTexCoord, 0.0, 1.0);
-
-                    // Calculate UV coordinates for the current frame
-                    uv = vec2(
-                        frameX * frameWidth + clampedUV.x * frameWidth,
-                        frameY * frameHeight + clampedUV.y * frameHeight
-                    );
-                }
-
-                // Sample texture
-                vec4 sample = texture(g_Texture0, uv);
-
-                // Convert texture format like common_fragment.h does
-                if (u_TextureFormat == 8) {
-                    // RG88: R channel is color (grayscale), G channel is alpha
-                    texColor = vec4(sample.rrr, sample.g);
-                } else if (u_TextureFormat == 9) {
-                    // R8: R channel is alpha, white color
-                    texColor = vec4(1.0, 1.0, 1.0, sample.r);
-                } else {
-                    // Normal RGBA
-                    texColor = sample;
-                }
-            } else {
-                // No texture - create circular particle fallback
-                vec2 coord = vTexCoord - vec2(0.5);
-                float dist = length(coord) * 2.0;
-                if (dist > 1.0) discard;
-                float alpha = 1.0 - dist;
-                texColor = vec4(1.0, 1.0, 1.0, alpha);
-            }
-
-            // Apply vertex color and texture
-            vec4 finalColor = vColor * texColor;
-
-            // Apply overbright multiplier to RGB channels (controls brightness for additive particles)
-            finalColor.rgb *= u_Overbright;
-
-            FragColor = finalColor;
-        }
-    )";
-
-    GLuint vertexShader = compileShader (GL_VERTEX_SHADER, vertexShaderSource);
-    GLuint fragmentShader = compileShader (GL_FRAGMENT_SHADER, fragmentShaderSource);
-
-    if (vertexShader == 0 || fragmentShader == 0) {
-	return 0;
-    }
-
-    GLuint program = glCreateProgram ();
-    glAttachShader (program, vertexShader);
-    glAttachShader (program, fragmentShader);
-    glLinkProgram (program);
-
-    GLint success;
-    glGetProgramiv (program, GL_LINK_STATUS, &success);
-    if (!success) {
-	char infoLog[512];
-	glGetProgramInfoLog (program, 512, nullptr, infoLog);
-	sLog.error ("Particle shader program linking failed: ", infoLog);
-	glDeleteShader (vertexShader);
-	glDeleteShader (fragmentShader);
-	return 0;
-    }
-
-    glDeleteShader (vertexShader);
-    glDeleteShader (fragmentShader);
-
-    return program;
-}
-
-void CParticle::setupBuffers () {
-    // Create shader program
-    m_shaderProgram = createShaderProgram ();
-    if (m_shaderProgram == 0) {
-	sLog.error ("Failed to create particle shader program for ", m_particle.name);
+void CParticle::setupPass () {
+    if (!m_particle.material || !m_particle.material->material || m_particle.material->material->passes.empty ()) {
+	sLog.error ("No valid material for particle ", m_particle.name);
 	return;
     }
 
-    // Cache uniform locations
-    m_uniformTexture = glGetUniformLocation (m_shaderProgram, "g_Texture0");
-    m_uniformHasTexture = glGetUniformLocation (m_shaderProgram, "u_HasTexture");
-    m_uniformTextureFormat = glGetUniformLocation (m_shaderProgram, "u_TextureFormat");
-    m_uniformSpritesheetSize = glGetUniformLocation (m_shaderProgram, "u_SpritesheetSize");
-    m_uniformOverbright = glGetUniformLocation (m_shaderProgram, "u_Overbright");
-    m_uniformUseTrailRenderer = glGetUniformLocation (m_shaderProgram, "u_UseTrailRenderer");
-    m_uniformPerspective = glGetUniformLocation (m_shaderProgram, "u_Perspective");
-    m_uniformTrailLength = glGetUniformLocation (m_shaderProgram, "u_TrailLength");
-    m_uniformTrailMaxLength = glGetUniformLocation (m_shaderProgram, "u_TrailMaxLength");
-    m_uniformTrailMinLength = glGetUniformLocation (m_shaderProgram, "u_TrailMinLength");
-    m_uniformTextureRatio = glGetUniformLocation (m_shaderProgram, "u_TextureRatio");
-    m_uniformCameraPos = glGetUniformLocation (m_shaderProgram, "u_CameraPos");
-    m_uniformVelocityRotation = glGetUniformLocation (m_shaderProgram, "u_VelocityRotation");
+    const auto& firstPass = **m_particle.material->material->passes.begin ();
 
-    // Save current VAO to restore after setup
+    // Build override with particle-specific combos
+    m_passOverride = std::make_unique<ImageEffectPassOverride> ();
+    m_passOverride->combos["THICKFORMAT"] = 1;
+    if (m_useRopeRenderer) {
+	m_passOverride->shaderOverride = "genericropeparticle";
+    }
+    if (m_spritesheetFrames > 0) {
+	m_passOverride->combos["SPRITESHEET"] = 1;
+    }
+    if (m_useTrailRenderer) {
+	m_passOverride->combos["TRAILRENDERER"] = 1;
+    }
+
+    // Force texture 0 to use the input (particle texture) rather than the shader's
+    // default "util/white" annotation, which would override it in setupRenderTexture()
+    m_passBinds = {{0, "previous"}};
+
+    // Check if material uses REFRACT combo
+    auto refractIt = firstPass.combos.find ("REFRACT");
+    m_hasRefract = refractIt != firstPass.combos.end () && refractIt->second != 0;
+
+    // Create the FBO provider for CPass
+    m_passFBOProvider = std::make_shared<FBOProvider> (this);
+
+    // For REFRACT: create a copy FBO that shadows _rt_FullFrameBuffer.
+    // The REFRACT shader reads g_Texture3 (= _rt_FullFrameBuffer) while we render TO the scene FBO.
+    // Reading from the same FBO being rendered to is undefined behavior in OpenGL, causing
+    // black reads on NVIDIA. By placing a copy FBO with the same name in our FBOProvider,
+    // CPass resolves g_Texture3 to the copy instead. We blit the scene content before each render.
+    if (m_hasRefract) {
+	auto sceneFBO = getScene ().getFBO ();
+	float w = static_cast<float> (sceneFBO->getRealWidth ());
+	float h = static_cast<float> (sceneFBO->getRealHeight ());
+	m_refractFBO = m_passFBOProvider->create (
+	    "_rt_FullFrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0f, { w, h }, { w, h }
+	);
+    }
+
+    // Create CPass with the WP particle shader
+    m_pass = new Effects::CPass (
+	*this, m_passFBOProvider, firstPass, *m_passOverride, m_passBinds, std::nullopt
+    );
+
+    // Set destination to scene FBO and input to particle texture
+    m_pass->setDestination (getScene ().getFBO ());
+    m_pass->setInput (getTexture ());
+
+    // Set matrix pointers - CPass will dereference these each frame
+    m_pass->setModelViewProjectionMatrix (&m_mvpMatrix);
+    m_pass->setModelViewProjectionMatrixInverse (&m_mvpMatrixInverse);
+    m_pass->setModelMatrix (&m_modelMatrix);
+    m_pass->setViewProjectionMatrix (&m_viewProjectionMatrix);
+
+    // Create OpenGL buffers
     GLint prevVAO = 0;
     glGetIntegerv (GL_VERTEX_ARRAY_BINDING, &prevVAO);
 
@@ -1862,43 +1722,178 @@ void CParticle::setupBuffers () {
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
 
-    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats
-    const int stride = sizeof (float) * 17;
+    const GLuint program = m_pass->getProgramID ();
 
-    // Position (location 0)
-    glEnableVertexAttribArray (0);
-    glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    if (m_useRopeRenderer) {
+	// Rope vertex layout: 7 attributes, 26 floats/vertex, stride=104 bytes
+	// a_PositionVec4(4) + a_TexCoordVec4(4) + a_TexCoordVec4C1(4) + a_TexCoordVec4C2(4)
+	// + a_TexCoordVec4C3(4) + a_TexCoordC4(2) + a_Color(4) = 26
+	const GLsizei stride = sizeof (float) * ROPE_FLOATS_PER_VERTEX;
 
-    // Texture coordinates (location 1)
-    glEnableVertexAttribArray (1);
-    glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3));
+	const GLint loc0 = glGetAttribLocation (program, "a_PositionVec4");
+	const GLint loc1 = glGetAttribLocation (program, "a_TexCoordVec4");
+	const GLint loc2 = glGetAttribLocation (program, "a_TexCoordVec4C1");
+	const GLint loc3 = glGetAttribLocation (program, "a_TexCoordVec4C2");
+	const GLint loc4 = glGetAttribLocation (program, "a_TexCoordVec4C3");
+	const GLint loc5 = glGetAttribLocation (program, "a_TexCoordC4");
+	const GLint loc6 = glGetAttribLocation (program, "a_Color");
 
-    // Rotation (location 2)
-    glEnableVertexAttribArray (2);
-    glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 5));
+	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
+	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 4)); }
+	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8)); }
+	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 12)); }
+	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 16)); }
+	if (loc5 >= 0) { glEnableVertexAttribArray (loc5); glVertexAttribPointer (loc5, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 20)); }
+	if (loc6 >= 0) { glEnableVertexAttribArray (loc6); glVertexAttribPointer (loc6, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 22)); }
+    } else {
+	// Sprite vertex layout: 5 attributes, 17 floats/vertex, stride=68 bytes
+	// a_Position(3) + a_TexCoordVec4(4) + a_Color(4) + a_TexCoordVec4C1(4) + a_TexCoordC2(2) = 17
+	const GLsizei stride = sizeof (float) * SPRITE_FLOATS_PER_VERTEX;
 
-    // Size (location 3)
-    glEnableVertexAttribArray (3);
-    glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8));
+	const GLint loc0 = glGetAttribLocation (program, "a_Position");
+	const GLint loc1 = glGetAttribLocation (program, "a_TexCoordVec4");
+	const GLint loc2 = glGetAttribLocation (program, "a_Color");
+	const GLint loc3 = glGetAttribLocation (program, "a_TexCoordVec4C1");
+	const GLint loc4 = glGetAttribLocation (program, "a_TexCoordC2");
 
-    // Color (location 4) - includes alpha as 4th component
-    glEnableVertexAttribArray (4);
-    glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 9));
+	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
+	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3)); }
+	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7)); }
+	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11)); }
+	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 15)); }
+    }
 
-    // Frame (location 5)
-    glEnableVertexAttribArray (5);
-    glVertexAttribPointer (5, 1, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 13));
-
-    // Velocity (location 6)
-    glEnableVertexAttribArray (6);
-    glVertexAttribPointer (6, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 14));
-
-    // Restore previous VAO
     glBindVertexArray (prevVAO);
+
+    setupGeometryCallbacks ();
+    setupParticleUniforms ();
+}
+
+void CParticle::setupGeometryCallbacks () {
+    m_pass->setGeometryCallback (
+	// Setup attribs: save current VAO, bind particle VAO
+	[this] () {
+	    glGetIntegerv (GL_VERTEX_ARRAY_BINDING, &m_prevVAO);
+	    glBindVertexArray (m_vao);
+	},
+	// Draw geometry: indexed rendering
+	[this] () { glDrawElements (GL_TRIANGLES, m_activeIndexCount, GL_UNSIGNED_INT, nullptr); },
+	// Cleanup: restore previous VAO
+	[this] () { glBindVertexArray (m_prevVAO); }
+    );
+}
+
+void CParticle::setupParticleUniforms () {
+    // Add particle-specific uniforms from common_particles.h that CPass doesn't provide
+    // These are pointer-based: CPass reads the current value each frame
+    m_pass->addUniform ("g_ModelMatrixInverse", &m_modelMatrixInverse);
+    m_pass->addUniform ("g_OrientationUp", &m_orientationUp);
+    m_pass->addUniform ("g_OrientationRight", &m_orientationRight);
+    m_pass->addUniform ("g_OrientationForward", &m_orientationForward);
+    m_pass->addUniform ("g_ViewUp", &m_viewUp);
+    m_pass->addUniform ("g_ViewRight", &m_viewRight);
+    m_pass->addUniform ("g_EyePosition", &m_eyePosition);
+    m_pass->addUniform ("g_RenderVar0", &m_renderVar0);
+    m_pass->addUniform ("g_RenderVar1", &m_renderVar1);
+
+    // REFRACT: set g_RefractAmount (shader default 0.05, may not be applied by CPass's parameter system)
+    if (m_hasRefract) {
+	m_pass->addUniform ("g_RefractAmount", &m_refractAmount);
+    }
+}
+
+void CParticle::updateMatrices () {
+    // Build model matrix from particle object transform
+    glm::vec3 scale = m_particle.scale->value->getVec3 ();
+    glm::vec3 angles = m_particle.angles->value->getVec3 ();
+
+    m_modelMatrix = glm::mat4 (1.0f);
+    m_modelMatrix = glm::translate (m_modelMatrix, m_transformedOrigin);
+    // Negate X and Z rotations to account for Y-flipped coordinate system
+    m_modelMatrix = glm::rotate (m_modelMatrix, -angles.z, glm::vec3 (0, 0, 1));
+    m_modelMatrix = glm::rotate (m_modelMatrix, angles.y, glm::vec3 (0, 1, 0));
+    m_modelMatrix = glm::rotate (m_modelMatrix, -angles.x, glm::vec3 (1, 0, 0));
+    m_modelMatrix = glm::scale (m_modelMatrix, scale);
+    m_modelMatrixInverse = glm::inverse (m_modelMatrix);
+
+    // Build model-view-projection matrix
+    if ((m_particle.flags & 4) != 0) {
+	// Perspective particles use a dedicated perspective projection
+	float width = getScene ().getCamera ().getWidth ();
+	float height = getScene ().getCamera ().getHeight ();
+	float aspect = width / height;
+	float fov = glm::radians (getScene ().getCamera ().getFov ());
+	float nearz = getScene ().getCamera ().getNearZ ();
+	float farz = getScene ().getCamera ().getFarZ ();
+
+	glm::mat4 perspectiveProj = glm::perspective (fov, aspect, nearz, farz);
+	glm::mat4 perspectiveView = glm::lookAt (
+	    glm::vec3 (0.0f, 0.0f, 1000.0f), glm::vec3 (0.0f, 0.0f, 0.0f), glm::vec3 (0.0f, 1.0f, 0.0f)
+	);
+
+	m_viewProjectionMatrix = perspectiveProj * perspectiveView;
+	m_eyePosition = glm::vec3 (0.0f, 0.0f, 1000.0f);
+    } else {
+	// Orthographic projection from scene camera
+	m_viewProjectionMatrix = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt ();
+	// For 2D/orthographic scenes the camera eye is at (0,0,0). The shader's
+	// ComputeParticleTrailTangents uses cross(eyeDirection, velocity) to
+	// compute the trail ribbon width. With eye at z=0 and particles at z=0,
+	// eyeDirection is purely in XY — the cross product yields a Z-only vector
+	// that is invisible under orthographic projection. Place the eye at z=1000
+	// so the cross product produces a visible XY perpendicular direction.
+	m_eyePosition = glm::vec3 (0.0f, 0.0f, 1000.0f);
+    }
+
+    m_mvpMatrix = m_viewProjectionMatrix * m_modelMatrix;
+    m_mvpMatrixInverse = glm::inverse (m_mvpMatrix);
+
+    // Orientation vectors for billboard computation (screen-aligned)
+    // These define the coordinate frame that common_particles.h uses for billboard orientation
+    m_orientationUp = glm::vec3 (0.0f, 1.0f, 0.0f);
+    m_orientationRight = glm::vec3 (1.0f, 0.0f, 0.0f);
+    m_orientationForward = glm::vec3 (0.0f, 0.0f, 1.0f);
+    m_viewUp = glm::vec3 (0.0f, 1.0f, 0.0f);
+    m_viewRight = glm::vec3 (1.0f, 0.0f, 0.0f);
+
+    // Update g_RenderVar0: trail parameters (.x=length, .y=maxLength, .z=minLength)
+    m_renderVar0 = glm::vec4 (m_trailLength, m_trailMaxLength, m_trailMinLength, 0.0f);
+
+    // Update g_RenderVar1: spritesheet params (.x=frameWidth, .y=frameHeight, .z=numFrames, .w=textureRatio)
+    if (m_spritesheetFrames > 0 && m_spritesheetCols > 0 && m_spritesheetRows > 0) {
+	float frameWidth = 1.0f / static_cast<float> (m_spritesheetCols);
+	float frameHeight = 1.0f / static_cast<float> (m_spritesheetRows);
+	float textureRatio = 1.0f;
+	if (const auto texture = getTexture ()) {
+	    // Use atlas dimensions (from resolution vec4) for textureRatio, NOT getRealWidth/Height
+	    // which returns per-frame dimensions for animated textures. The shader needs the
+	    // per-frame pixel aspect ratio: (atlasH * frameHeight) / (atlasW * frameWidth).
+	    const glm::vec4* res = texture->getResolution ();
+	    float w = res->x; // atlas/GL texture width
+	    float h = res->y; // atlas/GL texture height
+	    if (w > 0.0f) {
+		textureRatio = (h * frameHeight) / (w * frameWidth);
+	    }
+	}
+	m_renderVar1 = glm::vec4 (
+	    frameWidth, frameHeight, static_cast<float> (m_spritesheetFrames), textureRatio
+	);
+    } else {
+	// No spritesheet - texture ratio is height/width
+	float textureRatio = 1.0f;
+	if (const auto texture = getTexture ()) {
+	    float w = static_cast<float> (texture->getRealWidth ());
+	    float h = static_cast<float> (texture->getRealHeight ());
+	    if (w > 0.0f) {
+		textureRatio = h / w;
+	    }
+	}
+	m_renderVar1 = glm::vec4 (0.0f, 0.0f, 0.0f, textureRatio);
+    }
 }
 
 void CParticle::renderSprites () {
-    if (m_particleCount == 0) {
+    if (m_particleCount == 0 || m_pass == nullptr) {
 	return;
     }
 
@@ -1914,58 +1909,68 @@ void CParticle::renderSprites () {
 	return;
     }
 
-    // Calculate buffer sizes
-    // All particles use single quad: 4 vertices, 6 indices
-    // Trail effect is handled by shader using velocity data
-    int verticesPerParticle = 4;
-    int indicesPerParticle = 6;
-
-    // Prepare vertex data
-    // Vertex format: pos(3) + texcoord(2) + rotation(3) + size(1) + color(4) + frame(1) + velocity(3) = 17 floats per
-    // vertex
-    std::vector<float> vertices;
-    vertices.reserve (aliveCount * verticesPerParticle * 17);
-
-    // Prepare index data
-    std::vector<uint32_t> indices;
-    indices.reserve (aliveCount * indicesPerParticle);
-
+    // Build vertex data in WP shader layout:
+    // a_Position(3) + a_TexCoordVec4(uv.x, uv.y, rotZ, size)(4) + a_Color(4)
+    //   + a_TexCoordVec4C1(vel.x, vel.y, vel.z, lifetime)(4) + a_TexCoordC2(rotX, rotY)(2) = 17 floats
     uint32_t vertexIndex = 0;
+    uint32_t indexOffset = 0;
+
     for (uint32_t i = 0; i < m_particleCount; i++) {
 	const auto& p = m_particles[i];
 	if (!p.alive) {
 	    continue;
 	}
 
-	// Skip particles with invalid values (NaN, infinity, or extreme size)
+	// Skip particles with invalid values
 	if (!std::isfinite (p.position.x) || !std::isfinite (p.position.y) || !std::isfinite (p.position.z)
-	    || !std::isfinite (p.rotation.x) || !std::isfinite (p.rotation.y) || !std::isfinite (p.rotation.z)
 	    || !std::isfinite (p.size) || p.size <= 0.0f || p.size > 10000.0f) {
 	    continue;
 	}
 
-	// Particle size is already scaled by instance override, don't apply object scale
-	// float size = p.size / 2.0f;
+	// Compute the lifetime value for the WP shader's ComputeSpriteFrame.
+	// The shader computes: floor(frac(lifetime) * numFrames) to get current frame,
+	// and frac(lifetime * numFrames) for the blend factor between frames.
+	// We encode the CPU-computed p.frame (which accounts for sequenceMultiplier
+	// and animation mode) into the lifetime value the shader expects.
+	float lifetime = p.getLifetimePos ();
 
-	// Single quad per particle - shader handles trail stretching via velocity
+	if (m_spritesheetFrames > 0 && p.frame >= 0.0f) {
+	    if (m_particle.animationMode == "randomframe") {
+		// Center within the frame to avoid floating-point edge cases
+		lifetime = (p.frame + 0.5f) / static_cast<float> (m_spritesheetFrames);
+	    } else {
+		// Encode frame index + fractional blend: shader reconstructs via
+		// floor(lifetime * numFrames) = current frame,
+		// frac(lifetime * numFrames) = blend toward next frame
+		lifetime = p.frame / static_cast<float> (m_spritesheetFrames);
+	    }
+	}
+
 	auto addVertex = [&] (float u, float v) {
-	    vertices.push_back (p.position.x);
-	    vertices.push_back (p.position.y);
-	    vertices.push_back (p.position.z);
-	    vertices.push_back (u);
-	    vertices.push_back (v);
-	    vertices.push_back (p.rotation.x);
-	    vertices.push_back (p.rotation.y);
-	    vertices.push_back (p.rotation.z);
-	    vertices.push_back (p.size);
-	    vertices.push_back (p.color.r);
-	    vertices.push_back (p.color.g);
-	    vertices.push_back (p.color.b);
-	    vertices.push_back (p.alpha);
-	    vertices.push_back (p.frame);
-	    vertices.push_back (p.velocity.x);
-	    vertices.push_back (p.velocity.y);
-	    vertices.push_back (p.velocity.z);
+	    const uint32_t base = vertexIndex * SPRITE_FLOATS_PER_VERTEX;
+	    // a_Position (vec3)
+	    m_vertices[base + 0] = p.position.x;
+	    m_vertices[base + 1] = p.position.y;
+	    m_vertices[base + 2] = p.position.z;
+	    // a_TexCoordVec4 (vec4: uv.x, uv.y, rotZ, size)
+	    m_vertices[base + 3] = u;
+	    m_vertices[base + 4] = v;
+	    m_vertices[base + 5] = p.rotation.z;
+	    m_vertices[base + 6] = p.size;
+	    // a_Color (vec4: r, g, b, a)
+	    m_vertices[base + 7] = p.color.r;
+	    m_vertices[base + 8] = p.color.g;
+	    m_vertices[base + 9] = p.color.b;
+	    m_vertices[base + 10] = p.alpha;
+	    // a_TexCoordVec4C1 (vec4: vel.x, vel.y, vel.z, lifetime)
+	    m_vertices[base + 11] = p.velocity.x;
+	    m_vertices[base + 12] = p.velocity.y;
+	    m_vertices[base + 13] = p.velocity.z;
+	    m_vertices[base + 14] = lifetime;
+	    // a_TexCoordC2 (vec2: rotX, rotY)
+	    m_vertices[base + 15] = p.rotation.x;
+	    m_vertices[base + 16] = p.rotation.y;
+	    vertexIndex++;
 	};
 
 	// 4 vertices for quad corners
@@ -1976,230 +1981,296 @@ void CParticle::renderSprites () {
 	addVertex (0.0f, 0.0f); // 3: Top-left
 
 	// 6 indices forming 2 triangles
-	indices.push_back (baseVertex + 0);
-	indices.push_back (baseVertex + 1);
-	indices.push_back (baseVertex + 2);
-	indices.push_back (baseVertex + 2);
-	indices.push_back (baseVertex + 3);
-	indices.push_back (baseVertex + 0);
-
-	vertexIndex += 4;
+	m_indices[indexOffset++] = baseVertex + 0;
+	m_indices[indexOffset++] = baseVertex + 1;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 3;
+	m_indices[indexOffset++] = baseVertex + 0;
     }
 
-    if (m_shaderProgram == 0) {
+    m_activeIndexCount = static_cast<GLsizei> (indexOffset);
+    if (m_activeIndexCount == 0) {
 	return;
     }
 
-    // Clear any existing GL errors before we start
-    while (glGetError () != GL_NO_ERROR)
-	;
-
 #if !NDEBUG
-
     std::string str = "Rendering particles ";
-
     str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
 	+ ")";
-
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif
 
-    // Save current GL state before any modifications
-    GLint prevProgram = 0;
-    GLint prevVAO = 0;
-    GLint prevTexture = 0;
-    GLboolean prevBlendEnabled = glIsEnabled (GL_BLEND);
-    GLboolean prevDepthMask = GL_TRUE;
-    GLint prevBlendSrcRGB = GL_ONE;
-    GLint prevBlendDstRGB = GL_ZERO;
-    GLint prevBlendSrcAlpha = GL_ONE;
-    GLint prevBlendDstAlpha = GL_ZERO;
-    GLint prevActiveTexture = GL_TEXTURE0;
-    GLint prevArrayBuffer = 0;
-    glGetIntegerv (GL_CURRENT_PROGRAM, &prevProgram);
-    glGetIntegerv (GL_VERTEX_ARRAY_BINDING, &prevVAO);
-    glGetIntegerv (GL_TEXTURE_BINDING_2D, &prevTexture);
-    glGetBooleanv (GL_DEPTH_WRITEMASK, &prevDepthMask);
-    glGetIntegerv (GL_BLEND_SRC_RGB, &prevBlendSrcRGB);
-    glGetIntegerv (GL_BLEND_DST_RGB, &prevBlendDstRGB);
-    glGetIntegerv (GL_BLEND_SRC_ALPHA, &prevBlendSrcAlpha);
-    glGetIntegerv (GL_BLEND_DST_ALPHA, &prevBlendDstAlpha);
-    glGetIntegerv (GL_ACTIVE_TEXTURE, &prevActiveTexture);
-    glGetIntegerv (GL_ARRAY_BUFFER_BINDING, &prevArrayBuffer);
-
+    // Upload vertex and index data
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
-    glBufferData (GL_ARRAY_BUFFER, vertices.size () * sizeof (float), vertices.data (), GL_DYNAMIC_DRAW);
+    glBufferData (
+	GL_ARRAY_BUFFER, static_cast<GLsizeiptr> (vertexIndex * SPRITE_FLOATS_PER_VERTEX * sizeof (float)),
+	m_vertices.data (), GL_DYNAMIC_DRAW
+    );
 
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-    glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size () * sizeof (uint32_t), indices.data (), GL_DYNAMIC_DRAW);
+    glBufferData (
+	GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr> (indexOffset * sizeof (uint32_t)), m_indices.data (),
+	GL_DYNAMIC_DRAW
+    );
 
-    // Use particle shader
-    glUseProgram (m_shaderProgram);
+    // Update matrices and uniform data
+    updateMatrices ();
 
-    // Bind particle texture
-    if (m_texture) {
-	glActiveTexture (GL_TEXTURE0);
-	glBindTexture (GL_TEXTURE_2D, m_texture->getTextureID (0));
+    // For REFRACT: blit current scene content into the copy FBO before rendering.
+    // This gives the shader a snapshot of what's behind the particles for refraction,
+    // without a feedback loop (rendering to scene FBO while reading from copy FBO).
+    if (m_hasRefract && m_refractFBO) {
+	auto sceneFBO = getScene ().getFBO ();
+	GLint w = static_cast<GLint> (sceneFBO->getRealWidth ());
+	GLint h = static_cast<GLint> (sceneFBO->getRealHeight ());
+	glBindFramebuffer (GL_READ_FRAMEBUFFER, sceneFBO->getFramebuffer ());
+	glBindFramebuffer (GL_DRAW_FRAMEBUFFER, m_refractFBO->getFramebuffer ());
+	glBlitFramebuffer (0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
-	// Set texture wrapping mode
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // The shader's ComputeParticleTrailTangents produces a right vector with a Z component
+    // (from cross(eyeDirection, velocity) where eyeDirection has XY offset from model transform).
+    // For 2D/ortho particles at z≈0, the ortho near plane sits at ndc.z=-1 — any Z offset from
+    // the right vector pushes vertices past the near plane, causing half the quad to be clipped.
+    // GL_DEPTH_CLAMP prevents near/far clipping by clamping depth instead.
+    glEnable (GL_DEPTH_CLAMP);
 
-	if (m_uniformTexture != -1) {
-	    glUniform1i (m_uniformTexture, 0);
-	}
-	if (m_uniformHasTexture != -1) {
-	    glUniform1i (m_uniformHasTexture, 1);
-	}
-	if (m_uniformTextureFormat != -1) {
-	    glUniform1i (m_uniformTextureFormat, static_cast<int> (m_textureFormat));
-	}
-	// Set spritesheet size (cols, rows)
-	if (m_uniformSpritesheetSize != -1) {
-	    glUniform2f (
-		m_uniformSpritesheetSize, static_cast<float> (m_spritesheetCols), static_cast<float> (m_spritesheetRows)
+    // CPass::render() handles: FBO binding, texture setup, uniforms, blending, draw call, cleanup
+    m_pass->render ();
+
+    glDisable (GL_DEPTH_CLAMP);
+
+#if !NDEBUG
+    glPopDebugGroup ();
+#endif
+}
+
+void CParticle::renderRope () {
+    if (m_particleCount < 2 || m_pass == nullptr) {
+	return;
+    }
+
+    // Array is already in spawn order (oldest at index 0) thanks to order-preserving
+    // compaction in update(). All particles in [0, m_particleCount) are alive.
+    const uint32_t aliveCount = m_particleCount;
+
+    // Build vertex data with Catmull-Rom spline subdivision.
+    // Each segment between consecutive particles is subdivided into m_ropeSubdivision
+    // sub-segments for smooth curves instead of harsh corners at particle positions.
+    //
+    // Rope vertex layout (26 floats per vertex, THICKFORMAT):
+    // [0-3]   a_PositionVec4:   startPos.xyz, sizeStart
+    // [4-7]   a_TexCoordVec4:   endPos.xyz, trailLength
+    // [8-11]  a_TexCoordVec4C1: CP0.xyz, trailPosition
+    // [12-15] a_TexCoordVec4C2: CP1.xyz, sizeEnd
+    // [16-19] a_TexCoordVec4C3: colorEnd.rgba
+    // [20-21] a_TexCoordC4:     uvs.xy
+    // [22-25] a_Color:          colorStart.rgba
+
+    const uint32_t numSegments = aliveCount - 1;
+    const int subdivision = std::max (1, m_ropeSubdivision);
+
+    // Catmull-Rom spline evaluation
+    auto catmullRom = [] (const glm::vec3& p0, const glm::vec3& p1,
+			  const glm::vec3& p2, const glm::vec3& p3, float t) -> glm::vec3 {
+	float t2 = t * t, t3 = t2 * t;
+	return 0.5f * ((2.0f * p1) +
+		       (-p0 + p2) * t +
+		       (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+		       (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
+    };
+
+    // First pass: evaluate spline to get all interpolated points
+    const uint32_t totalPoints = numSegments * subdivision + 1;
+    // Store position, size, color (rgba) per point = 3 + 1 + 4 = 8 floats
+    std::vector<glm::vec3> splinePositions (totalPoints);
+    std::vector<float> splineSizes (totalPoints);
+    std::vector<glm::vec4> splineColors (totalPoints); // rgba
+
+    for (uint32_t i = 0; i < numSegments; i++) {
+	const auto& p1 = m_particles[i];
+	const auto& p2 = m_particles[i + 1];
+	const auto& p0 = (i > 0) ? m_particles[i - 1] : p1;
+	const auto& p3 = (i + 2 < aliveCount) ? m_particles[i + 2] : p2;
+
+	for (int k = 0; k < subdivision; k++) {
+	    float t = static_cast<float> (k) / static_cast<float> (subdivision);
+	    uint32_t idx = i * subdivision + k;
+
+	    splinePositions[idx] = catmullRom (p0.position, p1.position, p2.position, p3.position, t);
+	    splineSizes[idx] = glm::mix (p1.size, p2.size, t);
+	    splineColors[idx] = glm::mix (
+		glm::vec4 (p1.color, p1.alpha),
+		glm::vec4 (p2.color, p2.alpha), t
 	    );
 	}
-	// Set texture aspect ratio (height / width)
-	if (m_uniformTextureRatio != -1) {
-	    float width = static_cast<float> (m_texture->getRealWidth ());
-	    float height = static_cast<float> (m_texture->getRealHeight ());
-	    float textureRatio = (width > 0.0f) ? (height / width) : 1.0f;
-	    glUniform1f (m_uniformTextureRatio, textureRatio);
-	}
-    } else {
-	if (m_uniformHasTexture != -1) {
-	    glUniform1i (m_uniformHasTexture, 0);
-	}
-	if (m_uniformSpritesheetSize != -1) {
-	    glUniform2f (m_uniformSpritesheetSize, 0.0f, 0.0f);
-	}
-	// Default texture ratio for no texture
-	if (m_uniformTextureRatio != -1) {
-	    glUniform1f (m_uniformTextureRatio, 1.0f);
+    }
+    // Last point is the final particle
+    {
+	const auto& pLast = m_particles[aliveCount - 1];
+	splinePositions[totalPoints - 1] = pLast.position;
+	splineSizes[totalPoints - 1] = pLast.size;
+	splineColors[totalPoints - 1] = glm::vec4 (pLast.color, pLast.alpha);
+    }
+
+    // Second pass: build quads from consecutive spline points.
+    // The shader computes UV.v from trailPosition / (trailLength - 1), consuming
+    // 1/(trailLength-1) of UV space per quad. Express trailLength and trailPosition
+    // in sub-segment units so each sub-segment quad gets the correct UV slice.
+    // UV scale divides the effective length, making UVs exceed [0,1] → texture repeats.
+    uint32_t vertexIndex = 0;
+    uint32_t indexOffset = 0;
+    const uint32_t totalSubSegments = totalPoints - 1;
+    const float uvScale = (m_ropeUVScale > 0.0f) ? m_ropeUVScale : 1.0f;
+    const float trailLength = static_cast<float> (totalSubSegments) / uvScale + 1.0f;
+    const float usableLength = trailLength - 1.0f;
+
+    // UV smoothing: distribute UV proportional to arc length instead of uniform index.
+    // Per wiki: only when all particle lifetimes match and scrolling is disabled.
+    const bool useSmoothing = m_ropeUVSmoothing && m_uniformLifetimes && !m_ropeUVScrolling;
+    std::vector<float> cumulativeArcLength;
+    float totalArcLength = 0.0f;
+
+    if (useSmoothing) {
+	cumulativeArcLength.resize (totalPoints, 0.0f);
+	for (uint32_t i = 1; i < totalPoints; i++) {
+	    totalArcLength += glm::distance (splinePositions[i], splinePositions[i - 1]);
+	    cumulativeArcLength[i] = totalArcLength;
 	}
     }
 
-    // Set overbright multiplier (brightness control for additive particles)
-    if (m_uniformOverbright != -1) {
-	glUniform1f (m_uniformOverbright, m_overbright);
+    // UV scrolling: shift UV along the rope over time (1 UV cycle per second)
+    float scrollOffset = 0.0f;
+    if (m_ropeUVScrolling && usableLength > 0.0f) {
+	scrollOffset = std::fmod (static_cast<float> (g_Time), 10000.0f) * usableLength;
     }
 
-    // Set trail renderer uniforms
-    if (m_uniformUseTrailRenderer != -1) {
-	glUniform1i (m_uniformUseTrailRenderer, m_useTrailRenderer ? 1 : 0);
-    }
-    if (m_uniformPerspective != -1) {
-	glUniform1i (m_uniformPerspective, (m_particle.flags & 4) != 0 ? 1 : 0);
-    }
-    if (m_uniformTrailLength != -1) {
-	glUniform1f (m_uniformTrailLength, m_trailLength);
-    }
-    if (m_uniformTrailMaxLength != -1) {
-	glUniform1f (m_uniformTrailMaxLength, m_trailMaxLength);
-    }
-    if (m_uniformTrailMinLength != -1) {
-	glUniform1f (m_uniformTrailMinLength, m_trailMinLength);
-    }
-    if (m_uniformCameraPos != -1) {
-	if ((m_particle.flags & 4) != 0) {
-	    glUniform3f (m_uniformCameraPos, 0.0f, 0.0f, 1000.0f);
+    for (uint32_t s = 0; s < totalSubSegments; s++) {
+	const glm::vec3& posStart = splinePositions[s];
+	const glm::vec3& posEnd = splinePositions[s + 1];
+	float sizeStart = splineSizes[s];
+	float sizeEnd = splineSizes[s + 1];
+	const glm::vec4& colorStart = splineColors[s];
+	const glm::vec4& colorEnd = splineColors[s + 1];
+
+	// Neighboring points for shader tangent computation (CP0/CP1)
+	const glm::vec3& posPrev = (s > 0) ? splinePositions[s - 1] : posStart;
+	const glm::vec3& posAfter = (s + 2 < totalPoints) ? splinePositions[s + 2] : posEnd;
+
+	// Compute trailPosition for UV mapping
+	float trailPosition;
+	if (useSmoothing && totalArcLength > 0.0f) {
+	    // Arc-length parameterization: map cumulative distance to sub-segment space
+	    trailPosition = cumulativeArcLength[s] / totalArcLength * static_cast<float> (totalSubSegments);
 	} else {
-	    glm::vec3 eye = getScene ().getCamera ().getEye ();
-	    glUniform3f (m_uniformCameraPos, eye.x, eye.y, eye.z);
+	    trailPosition = static_cast<float> (s);
 	}
+	trailPosition += scrollOffset;
+
+	auto addRopeVertex = [&] (float uvX, float uvY) {
+	    const uint32_t base = vertexIndex * ROPE_FLOATS_PER_VERTEX;
+
+	    // a_PositionVec4: startPos.xyz, sizeStart
+	    m_vertices[base + 0] = posStart.x;
+	    m_vertices[base + 1] = posStart.y;
+	    m_vertices[base + 2] = posStart.z;
+	    m_vertices[base + 3] = sizeStart;
+
+	    // a_TexCoordVec4: endPos.xyz, trailLength
+	    m_vertices[base + 4] = posEnd.x;
+	    m_vertices[base + 5] = posEnd.y;
+	    m_vertices[base + 6] = posEnd.z;
+	    m_vertices[base + 7] = trailLength;
+
+	    // a_TexCoordVec4C1: CP0.xyz (neighbor before start), trailPosition
+	    m_vertices[base + 8] = posPrev.x;
+	    m_vertices[base + 9] = posPrev.y;
+	    m_vertices[base + 10] = posPrev.z;
+	    m_vertices[base + 11] = trailPosition;
+
+	    // a_TexCoordVec4C2: CP1.xyz (neighbor after end), sizeEnd
+	    m_vertices[base + 12] = posAfter.x;
+	    m_vertices[base + 13] = posAfter.y;
+	    m_vertices[base + 14] = posAfter.z;
+	    m_vertices[base + 15] = sizeEnd;
+
+	    // a_TexCoordVec4C3: colorEnd.rgba
+	    m_vertices[base + 16] = colorEnd.r;
+	    m_vertices[base + 17] = colorEnd.g;
+	    m_vertices[base + 18] = colorEnd.b;
+	    m_vertices[base + 19] = colorEnd.a;
+
+	    // a_TexCoordC4: uvs.xy
+	    m_vertices[base + 20] = uvX;
+	    m_vertices[base + 21] = uvY;
+
+	    // a_Color: colorStart.rgba
+	    m_vertices[base + 22] = colorStart.r;
+	    m_vertices[base + 23] = colorStart.g;
+	    m_vertices[base + 24] = colorStart.b;
+	    m_vertices[base + 25] = colorStart.a;
+
+	    vertexIndex++;
+	};
+
+	// Quad: 4 vertices (left/right at start/end of segment)
+	uint32_t baseVertex = vertexIndex;
+	addRopeVertex (0.0f, 0.0f); // left at start
+	addRopeVertex (1.0f, 0.0f); // right at start
+	addRopeVertex (1.0f, 1.0f); // right at end
+	addRopeVertex (0.0f, 1.0f); // left at end
+
+	// 2 triangles
+	m_indices[indexOffset++] = baseVertex + 0;
+	m_indices[indexOffset++] = baseVertex + 1;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 2;
+	m_indices[indexOffset++] = baseVertex + 3;
+	m_indices[indexOffset++] = baseVertex + 0;
     }
 
-    // Build model matrix from particle object transform
-    glm::vec3 scale = m_particle.scale->value->getVec3 ();
-    glm::vec3 angles = m_particle.angles->value->getVec3 ();
+    m_activeIndexCount = static_cast<GLsizei> (indexOffset);
+    if (m_activeIndexCount == 0) {
+	return;
+    }
 
-    glm::mat4 model = glm::mat4 (1.0f);
-    model = glm::translate (model, m_transformedOrigin);
-    // Angles are already in radians from scene.json
-    // Negate X and Z rotations to account for Y-flipped coordinate system
-    model = glm::rotate (model, -angles.z, glm::vec3 (0, 0, 1));
-    model = glm::rotate (model, angles.y, glm::vec3 (0, 1, 0));
-    model = glm::rotate (model, -angles.x, glm::vec3 (1, 0, 0));
-    model = glm::scale (model, scale);
+#if !NDEBUG
+    std::string str = "Rendering rope particles ";
+    str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
+	+ ")";
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+#endif
 
-    // Build velocity rotation matrix (rotation only, for transforming velocity vectors in shader)
-    // Negate X and Z rotations to account for Y-flipped coordinate system
-    glm::mat3 velocityRotation = glm::mat3 (
-	glm::rotate (glm::mat4 (1.0f), -angles.z, glm::vec3 (0, 0, 1))
-	* glm::rotate (glm::mat4 (1.0f), angles.y, glm::vec3 (0, 1, 0))
-	* glm::rotate (glm::mat4 (1.0f), -angles.x, glm::vec3 (1, 0, 0))
+    // Upload vertex and index data
+    glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
+    glBufferData (
+	GL_ARRAY_BUFFER, static_cast<GLsizeiptr> (vertexIndex * ROPE_FLOATS_PER_VERTEX * sizeof (float)),
+	m_vertices.data (), GL_DYNAMIC_DRAW
     );
-    if (m_uniformVelocityRotation != -1) {
-	glUniformMatrix3fv (m_uniformVelocityRotation, 1, GL_FALSE, &velocityRotation[0][0]);
+
+    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBufferData (
+	GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr> (indexOffset * sizeof (uint32_t)), m_indices.data (),
+	GL_DYNAMIC_DRAW
+    );
+
+    // Update matrices and uniform data
+    updateMatrices ();
+
+    // For REFRACT: blit current scene content into the copy FBO before rendering
+    if (m_hasRefract && m_refractFBO) {
+	auto sceneFBO = getScene ().getFBO ();
+	GLint w = static_cast<GLint> (sceneFBO->getRealWidth ());
+	GLint h = static_cast<GLint> (sceneFBO->getRealHeight ());
+	glBindFramebuffer (GL_READ_FRAMEBUFFER, sceneFBO->getFramebuffer ());
+	glBindFramebuffer (GL_DRAW_FRAMEBUFFER, m_refractFBO->getFramebuffer ());
+	glBlitFramebuffer (0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
-    // Build model-view-projection matrix
-    glm::mat4 mvp;
-
-    // Perspective particles (flags & 4) use a dedicated perspective projection
-    // This creates depth effect where particles closer to camera appear larger
-    if ((m_particle.flags & 4) != 0) {
-	float width = getScene ().getCamera ().getWidth ();
-	float height = getScene ().getCamera ().getHeight ();
-	float aspect = width / height;
-
-	float fov = glm::radians (getScene ().getCamera ().getFov ());
-	float nearz = getScene ().getCamera ().getNearZ ();
-	float farz = getScene ().getCamera ().getFarZ ();
-
-	glm::mat4 perspectiveProj = glm::perspective (fov, aspect, nearz, farz);
-
-	glm::vec3 cameraPos = glm::vec3 (0.0f, 0.0f, 1000.0f);
-	glm::vec3 lookTarget = glm::vec3 (0.0f, 0.0f, 0.0f);
-	glm::vec3 upVec = glm::vec3 (0.0f, 1.0f, 0.0f);
-	glm::mat4 perspectiveView = glm::lookAt (cameraPos, lookTarget, upVec);
-
-	mvp = perspectiveProj * perspectiveView * model;
-    } else {
-	// Orthographic projection from scene camera
-	mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
-    }
-
-    GLint mvpLoc = glGetUniformLocation (m_shaderProgram, "g_ModelViewProjectionMatrix");
-    if (mvpLoc != -1) {
-	glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, &mvp[0][0]);
-    }
-
-    // Enable blending for particles
-    glEnable (GL_BLEND);
-    // Apply blending mode from material
-    switch (m_blendingMode) {
-	case Data::Model::BlendingMode_Additive:
-	    glBlendFunc (GL_SRC_ALPHA, GL_ONE);
-	    break;
-	case Data::Model::BlendingMode_Translucent:
-	    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	    break;
-	case Data::Model::BlendingMode_Normal:
-	default:
-	    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	    break;
-    }
-    glDepthMask (GL_FALSE); // Don't write to depth buffer for transparent particles
-
-    // Render triangles using indexed rendering
-    glBindVertexArray (m_vao);
-    glDrawElements (GL_TRIANGLES, static_cast<GLsizei> (indices.size ()), GL_UNSIGNED_INT, nullptr);
-
-    // Restore state
-    glDepthMask (prevDepthMask);
-    glBlendFuncSeparate (prevBlendSrcRGB, prevBlendDstRGB, prevBlendSrcAlpha, prevBlendDstAlpha);
-    if (prevBlendEnabled) {
-	glEnable (GL_BLEND);
-    } else {
-	glDisable (GL_BLEND);
-    }
-    glUseProgram (prevProgram);
-    glActiveTexture (prevActiveTexture);
-    glBindTexture (GL_TEXTURE_2D, prevTexture);
-    glBindBuffer (GL_ARRAY_BUFFER, prevArrayBuffer);
-    glBindVertexArray (prevVAO);
+    glEnable (GL_DEPTH_CLAMP);
+    m_pass->render ();
+    glDisable (GL_DEPTH_CLAMP);
 
 #if !NDEBUG
     glPopDebugGroup ();

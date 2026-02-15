@@ -33,12 +33,12 @@ const TextureMap DEFAULT_BINDS = {};
 const ImageEffectPassOverride DEFAULT_OVERRIDE = {};
 
 CPass::CPass (
-    CImage& image, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
+    CRenderable& renderable, std::shared_ptr<const FBOProvider> fboProvider, const MaterialPass& pass,
     std::optional<std::reference_wrapper<const ImageEffectPassOverride>> override,
     std::optional<std::reference_wrapper<const TextureMap>> binds,
     std::optional<std::reference_wrapper<std::string>> target
 ) :
-    Helpers::ContextAware (image), m_image (image), m_fboProvider (std::move (fboProvider)), m_pass (pass),
+    Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)), m_pass (pass),
     m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE), m_target (target),
     m_blendingmode (pass.blending) {
@@ -153,7 +153,7 @@ void CPass::setupRenderTexture () {
     if (texture->isAnimated ()) {
 	// calculate current texture and frame
 	double currentRenderTime = fmod (
-	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_image.getAnimationTime ()
+	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_renderable.getAnimationTime ()
 	);
 
 	for (const auto& frameCur : texture->getFrames ()) {
@@ -278,6 +278,11 @@ void CPass::setupRenderUniforms () {
 }
 
 void CPass::setupRenderAttributes () const {
+    if (this->m_setupAttribsCallback) {
+	this->m_setupAttribsCallback ();
+	return;
+    }
+
     for (const auto& cur : this->m_attribs) {
 	glEnableVertexAttribArray (cur->id);
 	glBindBuffer (GL_ARRAY_BUFFER, *cur->value);
@@ -286,7 +291,7 @@ void CPass::setupRenderAttributes () const {
 #if !NDEBUG
 	glObjectLabel (
 	    GL_BUFFER, *cur->value, -1,
-	    ("Image " + std::to_string (this->m_image.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
+	    ("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
 		.c_str ()
 	);
 #endif /* DEBUG */
@@ -294,15 +299,24 @@ void CPass::setupRenderAttributes () const {
 }
 
 void CPass::renderGeometry () const {
+    if (this->m_drawGeometryCallback) {
+	this->m_drawGeometryCallback ();
+	return;
+    }
+
     // start actual rendering now
     glBindBuffer (GL_ARRAY_BUFFER, this->a_Position);
     glDrawArrays (GL_TRIANGLES, 0, 6);
 }
 
 void CPass::cleanupRenderSetup () {
-    // disable vertex attribs array and textures
-    for (const auto& cur : this->m_attribs) {
-	glDisableVertexAttribArray (cur->id);
+    if (this->m_cleanupAttribsCallback) {
+	this->m_cleanupAttribsCallback ();
+    } else {
+	// disable vertex attribs array
+	for (const auto& cur : this->m_attribs) {
+	    glDisableVertexAttribArray (cur->id);
+	}
     }
 
     // unbind all the used textures
@@ -328,7 +342,7 @@ void CPass::render () {
 
 std::shared_ptr<const FBOProvider> CPass::getFBOProvider () const { return this->m_fboProvider; }
 
-const CImage& CPass::getImage () const { return this->m_image; }
+const CRenderable& CPass::getRenderable () const { return this->m_renderable; }
 
 void CPass::setDestination (std::shared_ptr<const CFBO> drawTo) { this->m_drawTo = std::move (drawTo); }
 
@@ -359,6 +373,16 @@ const MaterialPass& CPass::getPass () const { return this->m_pass; }
 std::optional<std::reference_wrapper<std::string>> CPass::getTarget () const { return this->m_target; }
 
 Render::Shaders::Shader* CPass::getShader () const { return this->m_shader; }
+
+GLuint CPass::getProgramID () const { return this->m_programID; }
+
+void CPass::setGeometryCallback (
+    GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
+) {
+    this->m_setupAttribsCallback = std::move (setupAttribs);
+    this->m_drawGeometryCallback = std::move (drawGeometry);
+    this->m_cleanupAttribsCallback = std::move (cleanupAttribs);
+}
 
 GLuint CPass::compileShader (const char* shader, GLuint type) {
     // reserve shaders in OpenGL
@@ -400,7 +424,7 @@ GLuint CPass::compileShader (const char* shader, GLuint type) {
 
 void CPass::setupShaders () {
     // ensure the constants are defined
-    const auto texture0 = this->m_image.getTexture ();
+    const auto texture0 = this->m_renderable.getTexture ();
 
     // copy the combos from the pass
     this->m_combos.insert (this->m_pass.combos.begin (), this->m_pass.combos.end ());
@@ -418,8 +442,12 @@ void CPass::setupShaders () {
     // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
+    const std::string& shaderName = this->m_override.shaderOverride.has_value ()
+	? this->m_override.shaderOverride.value ()
+	: this->m_pass.shader;
+
     this->m_shader = new Render::Shaders::Shader (
-	this->m_image.getAssetLocator (), this->m_pass.shader, this->m_combos, this->m_override.combos,
+	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos,
 	this->m_pass.textures, this->m_override.textures, this->m_override.constants
     );
 
@@ -462,9 +490,9 @@ void CPass::setupShaders () {
     }
 
 #if !NDEBUG
-    glObjectLabel (GL_PROGRAM, this->m_programID, -1, this->m_pass.shader.c_str ());
-    glObjectLabel (GL_SHADER, vertexShaderID, -1, (this->m_pass.shader + ".vert").c_str ());
-    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (this->m_pass.shader + ".frag").c_str ());
+    glObjectLabel (GL_PROGRAM, this->m_programID, -1, shaderName.c_str ());
+    glObjectLabel (GL_SHADER, vertexShaderID, -1, (shaderName + ".vert").c_str ());
+    glObjectLabel (GL_SHADER, fragmentShaderID, -1, (shaderName + ".frag").c_str ());
 #endif /* DEBUG */
 
     // after being liked shaders can be dettached and deleted
@@ -566,7 +594,7 @@ void CPass::setupTextureUniforms () {
     }
 
     // resolve the main texture
-    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_image.getTexture (), 0);
+    std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_renderable.getTexture (), 0);
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -591,22 +619,22 @@ void CPass::setupTextureUniforms () {
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
 
-    const auto& image = this->m_image.getImage ();
-    const auto& scene = this->m_image.getScene ();
-    const auto& sceneData = this->m_image.getScene ().getScene ();
-    const auto& recorder = this->m_image.getScene ().getAudioContext ().getRecorder ();
+    const auto& renderable = this->m_renderable;
+    const auto& scene = this->m_renderable.getScene ();
+    const auto& sceneData = this->m_renderable.getScene ().getScene ();
+    const auto& recorder = this->m_renderable.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
     this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
     this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
     // register variables like brightness and alpha with some default value
-    this->addUniform ("g_Brightness", image.brightness);
-    this->addUniform ("g_UserAlpha", image.alpha->value->getFloat ());
-    this->addUniform ("g_Alpha", image.alpha->value->getFloat ());
-    this->addUniform ("g_Color", image.color->value->getVec3 ());
-    this->addUniform ("g_Color4", image.color->value->getVec4 ());
+    this->addUniform ("g_Brightness", renderable.getBrightness ());
+    this->addUniform ("g_UserAlpha", renderable.getUserAlpha ());
+    this->addUniform ("g_Alpha", renderable.getAlpha ());
+    this->addUniform ("g_Color", renderable.getColor ());
+    this->addUniform ("g_Color4", renderable.getColor4 ());
     // TODO: VALIDATE THAT G_COMPOSITECOLOR REALLY COMES FROM THIS ONE
-    this->addUniform ("g_CompositeColor", image.color->value->getVec3 ());
+    this->addUniform ("g_CompositeColor", renderable.getCompositeColor ());
     // add some external variables
     this->addUniform ("g_Time", &g_Time);
     this->addUniform ("g_Daytime", &g_Daytime);
@@ -715,20 +743,27 @@ void CPass::setupShaderVariables () {
 	}
     }
 
-    // find variables in the shaders and set the value with the constants if possible
-    for (const auto& [name, value] : this->m_override.constants) {
+    // apply material pass constants (e.g. constantshadervalues from the material JSON)
+    for (const auto& [name, value] : this->m_pass.constants) {
 	const auto [vertex, fragment] = this->m_shader->findParameter (name);
 
-	// variable not found, can be ignored
 	if (vertex == nullptr && fragment == nullptr) {
 	    continue;
 	}
 
-	// get one instance of it
 	ShaderVariable* var = vertex == nullptr ? fragment : vertex;
+	this->addUniform (var, value->value.get ());
+    }
 
-	// this takes care of all possible casts, even invalid ones, which will use whatever default behaviour
-	// of the underlying CDynamicValue used for the value
+    // apply override constants (highest priority, overrides both defaults and pass constants)
+    for (const auto& [name, value] : this->m_override.constants) {
+	const auto [vertex, fragment] = this->m_shader->findParameter (name);
+
+	if (vertex == nullptr && fragment == nullptr) {
+	    continue;
+	}
+
+	ShaderVariable* var = vertex == nullptr ? fragment : vertex;
 	this->addUniform (var, value->value.get ());
     }
 }

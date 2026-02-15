@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,6 +50,7 @@ struct ImageEffectPassOverride {
     ComboMap combos;
     ShaderConstantMap constants;
     TextureMap textures;
+    std::optional<std::string> shaderOverride; // Overrides MaterialPass::shader when set
 };
 
 /**
@@ -495,6 +497,12 @@ struct ParticleRenderer {
     float maxLength;
     float minLength;
     float subdivision;
+    float segments;     // ropetrail: number of history segments per particle
+    float uvScale;
+    bool uvScrolling;
+    bool uvSmoothing;   // rope only: reduces flickering when lifetimes are identical
+    bool fadeAlpha;     // ropetrail: fade alpha along trail
+    bool fadeSize;      // ropetrail: fade size along trail
 };
 
 /**
