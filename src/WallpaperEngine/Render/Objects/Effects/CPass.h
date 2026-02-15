@@ -29,6 +29,7 @@ public:
 	std::optional<std::reference_wrapper<const TextureMap>> binds,
 	std::optional<std::reference_wrapper<std::string>> target
     );
+    ~CPass ();
 
     void render ();
 
@@ -53,9 +54,8 @@ public:
 
     // Custom geometry rendering support (for particles, etc.)
     using GeometryCallback = std::function<void ()>;
-    void setGeometryCallback (
-	GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
-    );
+    void
+    setGeometryCallback (GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs);
 
     // Public uniform setters for external callers (pointer-based, updated per-frame)
     void addUniform (const std::string& name, const float* value, int count = 1);

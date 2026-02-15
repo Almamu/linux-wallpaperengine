@@ -39,7 +39,25 @@ CWallpaper::CWallpaper (
     glBufferData (GL_ARRAY_BUFFER, sizeof (position), position, GL_STATIC_DRAW);
 }
 
-CWallpaper::~CWallpaper () = default;
+CWallpaper::~CWallpaper () {
+    // destroy shader programs
+    GLuint attachedShaders[2];
+    GLsizei attachedCount = 0;
+
+    // destroy shaders (we only attach 2 to each program)
+    glGetAttachedShaders (this->m_shader, 2, &attachedCount, attachedShaders);
+
+    for (auto i = 0; i < attachedCount; i++) {
+	glDeleteShader (attachedShaders[i]);
+    }
+
+    glDeleteProgram (this->m_shader);
+
+    // destroy used buffers
+    glDeleteBuffers (1, &this->m_texCoordBuffer);
+    glDeleteBuffers (1, &this->m_positionBuffer);
+    glDeleteVertexArrays (1, &this->m_vaoBuffer);
+}
 
 const AssetLocator& CWallpaper::getAssetLocator () const { return *this->m_wallpaperData.project.assetLocator; }
 

@@ -38,11 +38,26 @@ CPass::CPass (
     std::optional<std::reference_wrapper<const TextureMap>> binds,
     std::optional<std::reference_wrapper<std::string>> target
 ) :
-    Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)), m_pass (pass),
-    m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
+    Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)),
+    m_pass (pass), m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE), m_target (target),
     m_blendingmode (pass.blending) {
     this->setupShaders ();
+}
+
+CPass::~CPass () {
+    // destroy shader programs
+    GLuint attachedShaders[2];
+    GLsizei attachedCount;
+
+    // destroy shaders (we only attach 2 to each program)
+    glGetAttachedShaders (this->m_programID, 2, &attachedCount, attachedShaders);
+
+    for (auto i = 0; i < attachedCount; i++) {
+	glDeleteShader (attachedShaders[i]);
+    }
+
+    glDeleteProgram (this->m_programID);
 }
 
 std::shared_ptr<const TextureProvider> CPass::resolveTexture (
@@ -153,7 +168,8 @@ void CPass::setupRenderTexture () {
     if (texture->isAnimated ()) {
 	// calculate current texture and frame
 	double currentRenderTime = fmod (
-	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_renderable.getAnimationTime ()
+	    static_cast<double> (this->getContext ().getDriver ().getRenderTime ()),
+	    this->m_renderable.getAnimationTime ()
 	);
 
 	for (const auto& frameCur : texture->getFrames ()) {
@@ -442,9 +458,8 @@ void CPass::setupShaders () {
     // TODO: REVIEW THE SHADER TEXTURES HERE, THE ONES PASSED ON TO THE SHADER SHOULD NOT BE IN THE LIST
     // TODO: USED TO BUILD THE TEXTURES LATER
     // use the combos copied from the pass so it includes the texture format
-    const std::string& shaderName = this->m_override.shaderOverride.has_value ()
-	? this->m_override.shaderOverride.value ()
-	: this->m_pass.shader;
+    const std::string& shaderName
+	= this->m_override.shaderOverride.has_value () ? this->m_override.shaderOverride.value () : this->m_pass.shader;
 
     this->m_shader = new Render::Shaders::Shader (
 	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos,

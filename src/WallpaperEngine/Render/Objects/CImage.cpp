@@ -15,12 +15,12 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    CRenderable (scene, image, *image.model->material), m_sceneSpacePosition (GL_NONE),
-    m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE),
-    m_modelViewProjectionScreen (), m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (),
-    m_modelViewProjectionScreenInverse (), m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
-    m_modelViewProjectionCopyInverse (), m_modelMatrix (), m_viewProjectionMatrix (), m_image (image),
-    m_material (nullptr), m_colorBlendMaterial (nullptr), m_pos (), m_initialized (false) {
+    CRenderable (scene, image, *image.model->material), m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE),
+    m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (),
+    m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),
+    m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)), m_modelViewProjectionCopyInverse (),
+    m_modelMatrix (), m_viewProjectionMatrix (), m_image (image), m_material (nullptr), m_colorBlendMaterial (nullptr),
+    m_pos (), m_initialized (false) {
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());
     auto scene_height = static_cast<float> (scene.getHeight ());
@@ -208,6 +208,22 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_viewProjectionMatrix = glm::mat4 (1.0);
+}
+
+CImage::~CImage () {
+    // delete passes first as they depend on the image's data
+    for (auto* pass : this->m_passes) {
+	delete pass;
+    }
+
+    this->m_passes.clear ();
+
+    // free any gl resources
+    glDeleteBuffers (1, &this->m_sceneSpacePosition);
+    glDeleteBuffers (1, &this->m_copySpacePosition);
+    glDeleteBuffers (1, &this->m_passSpacePosition);
+    glDeleteBuffers (1, &this->m_texcoordCopy);
+    glDeleteBuffers (1, &this->m_texcoordPass);
 }
 
 void CImage::setup () {
@@ -473,30 +489,17 @@ void CImage::render () {
 #endif /* DEBUG */
 }
 
-const float& CImage::getBrightness () const {
-    return this->m_image.brightness;
-}
+const float& CImage::getBrightness () const { return this->m_image.brightness; }
 
-const float& CImage::getUserAlpha () const {
-    return this->m_image.alpha->value->getFloat ();
-}
+const float& CImage::getUserAlpha () const { return this->m_image.alpha->value->getFloat (); }
 
-const float& CImage::getAlpha () const {
-    return this->m_image.alpha->value->getFloat ();
-}
+const float& CImage::getAlpha () const { return this->m_image.alpha->value->getFloat (); }
 
-const glm::vec3& CImage::getColor () const {
-    return this->m_image.color->value->getVec3 ();
-}
+const glm::vec3& CImage::getColor () const { return this->m_image.color->value->getVec3 (); }
 
-const glm::vec4& CImage::getColor4() const {
-    return this->m_image.color->value->getVec4 ();
-}
+const glm::vec4& CImage::getColor4 () const { return this->m_image.color->value->getVec4 (); }
 
-const glm::vec3& CImage::getCompositeColor () const {
-    return this->m_image.color->value->getVec3 ();
-}
-
+const glm::vec3& CImage::getCompositeColor () const { return this->m_image.color->value->getVec3 (); }
 
 void CImage::updateScreenSpacePosition () {
     // do not perform any changes to the image based on the parallax if it was explicitly disabled

@@ -11,20 +11,17 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 CRenderable::CRenderable (Wallpapers::CScene& scene, const Object& object, const Material& material) :
-    CObject (scene, object),
-    Render::FBOProvider (&scene),
-    m_material (material) {
-}
+    CObject (scene, object), Render::FBOProvider (&scene), m_material (material) { }
 
 void CRenderable::detectTexture () {
     if (TextureMap* textures = &(*this->m_material.passes.begin ())->textures; !textures->empty ()) {
-        std::string textureName = textures->begin ()->second;
+	std::string textureName = textures->begin ()->second;
 
-        if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-            this->m_texture = this->getScene ().findFBO (textureName);
-        } else {
-            this->m_texture = this->getContext ().resolveTexture (textureName);
-        }
+	if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+	    this->m_texture = this->getScene ().findFBO (textureName);
+	} else {
+	    this->m_texture = this->getContext ().resolveTexture (textureName);
+	}
     }
 }
 
@@ -33,11 +30,10 @@ void CRenderable::setup () {
     this->m_animationTime = 0.0f;
 
     for (const auto& cur : this->getTexture ()->getFrames ()) {
-        this->m_animationTime += cur->frametime;
+	this->m_animationTime += cur->frametime;
     }
 }
 
 std::shared_ptr<const TextureProvider> CRenderable::getTexture () const { return this->m_texture; }
-
 
 double CRenderable::getAnimationTime () const { return this->m_animationTime; }

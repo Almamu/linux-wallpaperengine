@@ -40,7 +40,13 @@ namespace Audio {
 	     *
 	     * @param stream
 	     */
-	    virtual void addStream (AudioStream* stream) = 0;
+	    virtual int addStream (AudioStream* stream) = 0;
+
+	    /**
+	     *
+	     * @param streamId The stream to stop playing
+	     */
+	    virtual void removeStream (int streamId) = 0;
 
 	    /**
 	     * Updates status of the different audio settings

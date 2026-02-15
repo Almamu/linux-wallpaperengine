@@ -84,7 +84,7 @@ public:
      */
     [[nodiscard]] bool isRepeat () const;
     /**
-     * Stops decoding and playbak of the stream
+     * Stops decoding and playback of the stream
      */
     void stop ();
     /**
@@ -201,5 +201,7 @@ private:
 	SDL_cond* wait = nullptr;
 	SDL_cond* cond = nullptr;
     }* m_queue {};
+
+    SDL_Thread* m_audioThread = nullptr;
 };
 } // namespace WallpaperEngine::Audio

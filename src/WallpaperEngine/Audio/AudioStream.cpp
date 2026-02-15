@@ -18,7 +18,8 @@ int audio_read_thread (void* arg) {
 	sLog.exception ("Cannot create mutex for audio playback waiting");
     }
 
-    while (ret >= 0 && stream->getAudioContext ().getApplicationContext ().state.general.keepRunning) {
+    while (ret >= 0 && stream->getAudioContext ().getApplicationContext ().state.general.keepRunning
+	   && stream->isInitialized ()) {
 	// give the cpu some time to play the queued frames if there's enough info there
 	if (stream->getQueueSize () >= MAX_QUEUE_SIZE
 	    || (stream->getQueuePacketCount () > MIN_FRAMES
@@ -50,14 +51,9 @@ int audio_read_thread (void* arg) {
 	} else {
 	    av_packet_unref (packet);
 	}
-
-	if (!stream->isInitialized ()) {
-	    break;
-	}
     }
 
     // stop the audio too just in case
-    stream->stop ();
     SDL_DestroyMutex (waitMutex);
 
     return 0;
@@ -144,6 +140,21 @@ AudioStream::AudioStream (AudioContext& audioContext, AVCodecContext* context) :
 }
 
 AudioStream::~AudioStream () {
+    // stop the audio
+    this->stop ();
+
+    if (this->m_audioThread != nullptr) {
+	// wait for the thread to finish
+	SDL_WaitThread (this->m_audioThread, nullptr);
+    }
+
+    this->m_audioThread = nullptr;
+
+    if (this->m_queue != nullptr) {
+	// wait for the audio buffers to be done
+	SDL_CondWait (this->m_queue->wait, this->m_queue->mutex);
+    }
+
     if (this->m_swrctx != nullptr && swr_is_initialized (this->m_swrctx) == true) {
 	swr_close (this->m_swrctx);
     }
@@ -168,16 +179,11 @@ AudioStream::~AudioStream () {
     delete this->m_queue;
 
     if (this->m_formatContext != nullptr) {
-	avformat_close_input (&this->m_formatContext);
+	avformat_free_context (this->m_formatContext);
     }
+
     if (this->m_context != nullptr) {
 	avcodec_free_context (&this->m_context);
-    }
-    if (this->m_audioStream != NO_AUDIO_STREAM) {
-	av_freep (&this->m_formatContext->streams[this->m_audioStream]);
-    }
-    if (this->m_formatContext != nullptr) {
-	avformat_free_context (this->m_formatContext);
     }
 }
 
@@ -227,7 +233,7 @@ void AudioStream::loadCustomContent (const char* filename) {
     this->initialize ();
 
     // initialize an SDL thread to read the file
-    SDL_CreateThread (audio_read_thread, filename, this);
+    this->m_audioThread = SDL_CreateThread (audio_read_thread, filename, this);
 }
 
 void AudioStream::initialize () {

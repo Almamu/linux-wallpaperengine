@@ -82,6 +82,19 @@ CVideo::CVideo (
     this->setupFramebuffers ();
 }
 
+CVideo::~CVideo () {
+    // stop mpv and cleanup resources
+    if (this->m_mpvGl) {
+	mpv_render_context_free (this->m_mpvGl);
+	this->m_mpvGl = nullptr;
+    }
+
+    if (this->m_mpv) {
+	mpv_terminate_destroy (this->m_mpv);
+	this->m_mpv = nullptr;
+    }
+}
+
 void CVideo::setSize (const int width, const int height) {
     this->m_width = width > 0 ? width : this->m_width;
     this->m_height = height > 0 ? height : this->m_height;

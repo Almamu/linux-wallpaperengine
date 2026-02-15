@@ -33,11 +33,13 @@ public:
     ~SDLAudioDriver () override;
 
     /** @inheritdoc */
-    void addStream (AudioStream* stream) override;
+    int addStream (AudioStream* stream) override;
+    /** @inheritdoc */
+    void removeStream (int streamId) override;
     /**
      * @return All the registered audio streams
      */
-    const std::vector<SDLAudioBuffer*>& getStreams ();
+    const std::map<int, SDLAudioBuffer*>& getStreams ();
 
     /** @inheritdoc */
     [[nodiscard]] AVSampleFormat getFormat () const override;
@@ -50,7 +52,13 @@ public:
      */
     [[nodiscard]] const SDL_AudioSpec& getSpec () const;
 
+    [[nodiscard]] SDL_mutex* getStreamMutex () const;
+
 private:
+    /** The mutex lock used to access the stream list mutex */
+    SDL_mutex* m_streamListMutex;
+    /** The last streamID used */
+    int m_lastStreamID = 0;
     /** The device's ID */
     SDL_AudioDeviceID m_deviceID;
     /** If the driver is initialized or not */
@@ -58,6 +66,6 @@ private:
     /** The sound output configuration */
     SDL_AudioSpec m_audioSpec {};
     /** All the playable steams */
-    std::vector<SDLAudioBuffer*> m_streams {};
+    std::map<int, SDLAudioBuffer*> m_streams {};
 };
 } // namespace WallpaperEngine::Audio::Drivers

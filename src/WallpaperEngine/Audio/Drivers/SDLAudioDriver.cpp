@@ -17,7 +17,9 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 	return;
     }
 
-    for (const auto& buffer : driver->getStreams ()) {
+    SDL_LockMutex (driver->getStreamMutex ());
+
+    for (const auto& buffer : driver->getStreams () | std::views::values) {
 	uint8_t* streamDataPointer = streamData;
 	int streamLength = length;
 
@@ -66,12 +68,17 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 	    buffer->audio_buf_index += len1;
 	}
     }
+
+    // TODO: DO WE NEED TO ALSO LOCK WHILE THE AUDIO IS PLAYING? OR SOMEHOW WAIT UNTIL THE STREAM IS NOT IN USE ANYMORE?
+    SDL_UnlockMutex (driver->getStreamMutex ());
 }
 
 SDLAudioDriver::SDLAudioDriver (
     Application::ApplicationContext& applicationContext, Detectors::AudioPlayingDetector& detector,
     Recorders::PlaybackRecorder& recorder
 ) : AudioDriver (applicationContext, detector, recorder), m_audioSpec () {
+    this->m_streamListMutex = SDL_CreateMutex ();
+
     if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {
 	sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError ());
 	sLog.error ("Continuing without audio support");
@@ -111,9 +118,21 @@ SDLAudioDriver::~SDLAudioDriver () {
     SDL_QuitSubSystem (SDL_INIT_AUDIO);
 }
 
-void SDLAudioDriver::addStream (AudioStream* stream) { this->m_streams.push_back (new SDLAudioBuffer { stream }); }
+int SDLAudioDriver::addStream (AudioStream* stream) {
+    const int newStreamId = this->m_lastStreamID;
+    this->m_lastStreamID++;
 
-const std::vector<SDLAudioBuffer*>& SDLAudioDriver::getStreams () { return this->m_streams; }
+    SDL_LockMutex (this->m_streamListMutex);
+
+    this->m_streams.insert_or_assign (newStreamId, new SDLAudioBuffer { stream });
+
+    SDL_UnlockMutex (this->m_streamListMutex);
+
+    return newStreamId;
+}
+void SDLAudioDriver::removeStream (int streamId) { this->m_streams.erase (streamId); }
+
+const std::map<int, SDLAudioBuffer*>& SDLAudioDriver::getStreams () { return this->m_streams; }
 
 AVSampleFormat SDLAudioDriver::getFormat () const {
     switch (this->m_audioSpec.format) {
@@ -141,3 +160,5 @@ int SDLAudioDriver::getSampleRate () const { return this->m_audioSpec.freq; }
 int SDLAudioDriver::getChannels () const { return this->m_audioSpec.channels; }
 
 const SDL_AudioSpec& SDLAudioDriver::getSpec () const { return this->m_audioSpec; }
+
+SDL_mutex* SDLAudioDriver::getStreamMutex () const { return this->m_streamListMutex; }

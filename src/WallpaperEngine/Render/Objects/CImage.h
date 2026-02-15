@@ -27,6 +27,7 @@ class CImage final : public CRenderable {
 
 public:
     CImage (Wallpapers::CScene& scene, const Image& image);
+    ~CImage () override;
 
     void setup () override;
     void render () override;

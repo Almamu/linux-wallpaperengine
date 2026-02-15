@@ -31,7 +31,12 @@ namespace Audio {
 	 *
 	 * @param stream
 	 */
-	void addStream (AudioStream* stream) const;
+	int addStream (AudioStream* stream) const;
+
+	/**
+	 * @param streamId The stream to stop playing
+	 */
+	void removeStream (int streamId) const;
 
 	/**
 	 * TODO: MAYBE THIS SHOULD BE OUR OWN DEFINITIONS INSTEAD OF LIBRARY SPECIFIC ONES?

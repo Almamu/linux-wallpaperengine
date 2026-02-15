@@ -13,6 +13,8 @@ public:
 	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
     );
 
+    ~CVideo () override;
+
     const Video& getVideo () const;
 
     [[nodiscard]] int getWidth () const override;

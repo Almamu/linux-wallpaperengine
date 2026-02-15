@@ -204,10 +204,11 @@ void CParticle::render () {
 	m_time = g_Time;
 	// Skip update on first frame to avoid weird initial burst
 	// This ensures all particles start from a clean state
-	if (m_useRopeRenderer)
+	if (m_useRopeRenderer) {
 	    renderRope ();
-	else
+	} else {
 	    renderSprites ();
+	}
 	return;
     }
 
@@ -224,10 +225,11 @@ void CParticle::render () {
 
     // Render particles
     if (m_particleCount > 0 && m_particle.material) {
-	if (m_useRopeRenderer)
+	if (m_useRopeRenderer) {
 	    renderRope ();
-	else
+	} else {
 	    renderSprites ();
+	}
     }
 }
 
@@ -413,7 +415,8 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
 	    randomPeriodicEmission, emissionTimer = 0.0f, elapsedTime = 0.0f, delayTimer = emitter.delay,
 	    durationTimer = 0.0f, periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
-	    instantaneousEmitted = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+	    instantaneousEmitted
+	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
@@ -561,9 +564,9 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     bool isRope = m_useRopeRenderer;
     std::string particleName = m_particle.name;
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame,
-	    isRope, particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous,
-	    lastSpawnTime = -1.0f, noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame, isRope,
+	    particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous, lastSpawnTime = -1.0f,
+	    noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
@@ -841,8 +844,8 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
     DynamicValue* rightVal = init.right->value.get ();
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
-    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, timeScaleVal, phaseMinVal, phaseMaxVal,
-	    rightVal, speedOverride] (ParticleInstance& p) {
+    return [this, speedMin, speedMax, offsetVal, scaleVal, forwardVal, timeScaleVal, phaseMinVal, phaseMaxVal, rightVal,
+	    speedOverride] (ParticleInstance& p) {
 	// Get direction parameters
 	glm::vec3 forward = forwardVal->getVec3 ();
 	glm::vec3 right = rightVal->getVec3 ();
@@ -1672,7 +1675,7 @@ void CParticle::setupPass () {
 
     // Force texture 0 to use the input (particle texture) rather than the shader's
     // default "util/white" annotation, which would override it in setupRenderTexture()
-    m_passBinds = {{0, "previous"}};
+    m_passBinds = { { 0, "previous" } };
 
     // Check if material uses REFRACT combo
     auto refractIt = firstPass.combos.find ("REFRACT");
@@ -1696,9 +1699,7 @@ void CParticle::setupPass () {
     }
 
     // Create CPass with the WP particle shader
-    m_pass = new Effects::CPass (
-	*this, m_passFBOProvider, firstPass, *m_passOverride, m_passBinds, std::nullopt
-    );
+    m_pass = new Effects::CPass (*this, m_passFBOProvider, firstPass, *m_passOverride, m_passBinds, std::nullopt);
 
     // Set destination to scene FBO and input to particle texture
     m_pass->setDestination (getScene ().getFBO ());
@@ -1738,13 +1739,34 @@ void CParticle::setupPass () {
 	const GLint loc5 = glGetAttribLocation (program, "a_TexCoordC4");
 	const GLint loc6 = glGetAttribLocation (program, "a_Color");
 
-	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
-	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 4)); }
-	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8)); }
-	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 12)); }
-	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 16)); }
-	if (loc5 >= 0) { glEnableVertexAttribArray (loc5); glVertexAttribPointer (loc5, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 20)); }
-	if (loc6 >= 0) { glEnableVertexAttribArray (loc6); glVertexAttribPointer (loc6, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 22)); }
+	if (loc0 >= 0) {
+	    glEnableVertexAttribArray (loc0);
+	    glVertexAttribPointer (loc0, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0));
+	}
+	if (loc1 >= 0) {
+	    glEnableVertexAttribArray (loc1);
+	    glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 4));
+	}
+	if (loc2 >= 0) {
+	    glEnableVertexAttribArray (loc2);
+	    glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 8));
+	}
+	if (loc3 >= 0) {
+	    glEnableVertexAttribArray (loc3);
+	    glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 12));
+	}
+	if (loc4 >= 0) {
+	    glEnableVertexAttribArray (loc4);
+	    glVertexAttribPointer (loc4, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 16));
+	}
+	if (loc5 >= 0) {
+	    glEnableVertexAttribArray (loc5);
+	    glVertexAttribPointer (loc5, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 20));
+	}
+	if (loc6 >= 0) {
+	    glEnableVertexAttribArray (loc6);
+	    glVertexAttribPointer (loc6, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 22));
+	}
     } else {
 	// Sprite vertex layout: 5 attributes, 17 floats/vertex, stride=68 bytes
 	// a_Position(3) + a_TexCoordVec4(4) + a_Color(4) + a_TexCoordVec4C1(4) + a_TexCoordC2(2) = 17
@@ -1756,11 +1778,26 @@ void CParticle::setupPass () {
 	const GLint loc3 = glGetAttribLocation (program, "a_TexCoordVec4C1");
 	const GLint loc4 = glGetAttribLocation (program, "a_TexCoordC2");
 
-	if (loc0 >= 0) { glEnableVertexAttribArray (loc0); glVertexAttribPointer (loc0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0)); }
-	if (loc1 >= 0) { glEnableVertexAttribArray (loc1); glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3)); }
-	if (loc2 >= 0) { glEnableVertexAttribArray (loc2); glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7)); }
-	if (loc3 >= 0) { glEnableVertexAttribArray (loc3); glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11)); }
-	if (loc4 >= 0) { glEnableVertexAttribArray (loc4); glVertexAttribPointer (loc4, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 15)); }
+	if (loc0 >= 0) {
+	    glEnableVertexAttribArray (loc0);
+	    glVertexAttribPointer (loc0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 0));
+	}
+	if (loc1 >= 0) {
+	    glEnableVertexAttribArray (loc1);
+	    glVertexAttribPointer (loc1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 3));
+	}
+	if (loc2 >= 0) {
+	    glEnableVertexAttribArray (loc2);
+	    glVertexAttribPointer (loc2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 7));
+	}
+	if (loc3 >= 0) {
+	    glEnableVertexAttribArray (loc3);
+	    glVertexAttribPointer (loc3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 11));
+	}
+	if (loc4 >= 0) {
+	    glEnableVertexAttribArray (loc4);
+	    glVertexAttribPointer (loc4, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof (float) * 15));
+	}
     }
 
     glBindVertexArray (prevVAO);
@@ -1827,9 +1864,8 @@ void CParticle::updateMatrices () {
 	float farz = getScene ().getCamera ().getFarZ ();
 
 	glm::mat4 perspectiveProj = glm::perspective (fov, aspect, nearz, farz);
-	glm::mat4 perspectiveView = glm::lookAt (
-	    glm::vec3 (0.0f, 0.0f, 1000.0f), glm::vec3 (0.0f, 0.0f, 0.0f), glm::vec3 (0.0f, 1.0f, 0.0f)
-	);
+	glm::mat4 perspectiveView
+	    = glm::lookAt (glm::vec3 (0.0f, 0.0f, 1000.0f), glm::vec3 (0.0f, 0.0f, 0.0f), glm::vec3 (0.0f, 1.0f, 0.0f));
 
 	m_viewProjectionMatrix = perspectiveProj * perspectiveView;
 	m_eyePosition = glm::vec3 (0.0f, 0.0f, 1000.0f);
@@ -1875,9 +1911,7 @@ void CParticle::updateMatrices () {
 		textureRatio = (h * frameHeight) / (w * frameWidth);
 	    }
 	}
-	m_renderVar1 = glm::vec4 (
-	    frameWidth, frameHeight, static_cast<float> (m_spritesheetFrames), textureRatio
-	);
+	m_renderVar1 = glm::vec4 (frameWidth, frameHeight, static_cast<float> (m_spritesheetFrames), textureRatio);
     } else {
 	// No spritesheet - texture ratio is height/width
 	float textureRatio = 1.0f;
@@ -2072,13 +2106,12 @@ void CParticle::renderRope () {
     const int subdivision = std::max (1, m_ropeSubdivision);
 
     // Catmull-Rom spline evaluation
-    auto catmullRom = [] (const glm::vec3& p0, const glm::vec3& p1,
-			  const glm::vec3& p2, const glm::vec3& p3, float t) -> glm::vec3 {
+    auto catmullRom = [] (const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3,
+			  float t) -> glm::vec3 {
 	float t2 = t * t, t3 = t2 * t;
-	return 0.5f * ((2.0f * p1) +
-		       (-p0 + p2) * t +
-		       (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
-		       (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
+	return 0.5f
+	    * ((2.0f * p1) + (-p0 + p2) * t + (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2
+	       + (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
     };
 
     // First pass: evaluate spline to get all interpolated points
@@ -2100,10 +2133,7 @@ void CParticle::renderRope () {
 
 	    splinePositions[idx] = catmullRom (p0.position, p1.position, p2.position, p3.position, t);
 	    splineSizes[idx] = glm::mix (p1.size, p2.size, t);
-	    splineColors[idx] = glm::mix (
-		glm::vec4 (p1.color, p1.alpha),
-		glm::vec4 (p2.color, p2.alpha), t
-	    );
+	    splineColors[idx] = glm::mix (glm::vec4 (p1.color, p1.alpha), glm::vec4 (p2.color, p2.alpha), t);
 	}
     }
     // Last point is the final particle

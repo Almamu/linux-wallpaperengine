@@ -37,9 +37,10 @@ public:
     [[nodiscard]] const AssetLocator& getAssetLocator () const;
     [[nodiscard]] int getId () const;
 
+    virtual ~CObject () override = default;
+
 protected:
     CObject (Wallpapers::CScene& scene, const Object& object);
-    virtual ~CObject () override = default;
 
 private:
     Wallpapers::CScene& m_scene;

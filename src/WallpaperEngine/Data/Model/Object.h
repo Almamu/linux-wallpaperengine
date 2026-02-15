@@ -497,12 +497,12 @@ struct ParticleRenderer {
     float maxLength;
     float minLength;
     float subdivision;
-    float segments;     // ropetrail: number of history segments per particle
+    float segments; // ropetrail: number of history segments per particle
     float uvScale;
     bool uvScrolling;
-    bool uvSmoothing;   // rope only: reduces flickering when lifetimes are identical
-    bool fadeAlpha;     // ropetrail: fade alpha along trail
-    bool fadeSize;      // ropetrail: fade size along trail
+    bool uvSmoothing; // rope only: reduces flickering when lifetimes are identical
+    bool fadeAlpha; // ropetrail: fade alpha along trail
+    bool fadeSize; // ropetrail: fade size along trail
 };
 
 /**

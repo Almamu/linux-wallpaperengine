@@ -23,7 +23,7 @@ protected:
     void load ();
 
 private:
-    std::vector<Audio::AudioStream*> m_audioStreams = {};
+    std::map<int, Audio::AudioStream*> m_audioStreams = {};
 
     const Sound& m_sound;
 };

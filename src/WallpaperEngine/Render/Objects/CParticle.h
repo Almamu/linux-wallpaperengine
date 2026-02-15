@@ -234,11 +234,11 @@ private:
     float m_trailMinLength { 0.0f };
     // Rope renderer (rope + ropetrail both use genericropeparticle shader)
     bool m_useRopeRenderer { false };
-    int m_ropeSubdivision { 4 };     // Catmull-Rom subdivisions between points (smoothing)
-    int m_ropeSegments { 4 };        // ropetrail: historical position snapshots per particle
+    int m_ropeSubdivision { 4 }; // Catmull-Rom subdivisions between points (smoothing)
+    int m_ropeSegments { 4 }; // ropetrail: historical position snapshots per particle
     float m_ropeUVScale { 1.0f };
     bool m_ropeUVScrolling { false };
-    bool m_ropeUVSmoothing { true };  // rope only
+    bool m_ropeUVSmoothing { true }; // rope only
     bool m_uniformLifetimes { false }; // true when lifetime min==max (enables UV smoothing)
 
     // Per-vertex float counts for different renderer types

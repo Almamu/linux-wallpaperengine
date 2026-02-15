@@ -19,6 +19,8 @@ public:
 	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
     );
 
+    ~CScene () override;
+
     [[nodiscard]] Camera& getCamera () const;
 
     [[nodiscard]] const Scene& getScene () const;

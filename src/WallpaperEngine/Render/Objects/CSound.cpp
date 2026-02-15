@@ -15,8 +15,11 @@ CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene,
 CSound::~CSound () {
     // free all the sound buffers and streams
     for (const auto& stream : this->m_audioStreams) {
-	delete stream;
+	this->getScene ().getAudioContext ().removeStream (stream.first);
+	delete stream.second;
     }
+
+    this->m_audioStreams.clear ();
 }
 
 void CSound::load () {
@@ -26,10 +29,8 @@ void CSound::load () {
 
 	stream->setRepeat (this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "loop");
 
-	this->m_audioStreams.push_back (stream);
-
 	// add the stream to the context so it can be played
-	this->getScene ().getAudioContext ().addStream (stream);
+	this->m_audioStreams.insert_or_assign (this->getScene ().getAudioContext ().addStream (stream), stream);
     }
 }
 

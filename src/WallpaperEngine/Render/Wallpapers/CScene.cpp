@@ -136,6 +136,18 @@ CScene::CScene (
     }
 }
 
+CScene::~CScene () {
+    // bloom object is in the objects list, so no need to explicitly delete it
+    this->m_bloomObject = nullptr;
+
+    for (const auto& val : this->m_objects | std::views::values) {
+	delete val;
+    }
+
+    this->m_objectsByRenderOrder.clear ();
+    this->m_objects.clear ();
+}
+
 Render::CObject* CScene::createObject (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
