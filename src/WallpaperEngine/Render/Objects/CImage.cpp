@@ -1,4 +1,7 @@
 #include "CImage.h"
+
+#include "CRenderable.h"
+
 #include <sstream>
 
 #include "WallpaperEngine/Data/Model/Material.h"
@@ -12,7 +15,7 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    CRenderable (scene, image), m_sceneSpacePosition (GL_NONE),
+    CRenderable (scene, image, *image.model->material), m_sceneSpacePosition (GL_NONE),
     m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE),
     m_modelViewProjectionScreen (), m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (),
     m_modelViewProjectionScreenInverse (), m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)),
@@ -27,9 +30,10 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ().scale->value->getVec3 ();
 
-    // detect texture (if any)
+    this->detectTexture ();
 
-    if (auto textures = (*this->m_image.model->material->passes.begin ())->textures; textures.empty ()) {
+    // detect texture (if any)
+    if (this->m_texture == nullptr) {
 	if (this->m_image.model->solidlayer && size.x == 0.0f && size.y == 0.0f) {
 	    size.x = scene_width;
 	    size.y = scene_height;

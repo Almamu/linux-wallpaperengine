@@ -49,7 +49,8 @@ inline float fadeValue (float life, float startTime, float endTime, float startV
 }
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
-    CRenderable (scene, particle), m_particle (particle) {
+    CRenderable (scene, particle, *particle.material->material), m_particle (particle) {
+    this->detectTexture ();
     // Initialize random number generator with time-based seed
     std::random_device rd;
     m_rng.seed (rd ());

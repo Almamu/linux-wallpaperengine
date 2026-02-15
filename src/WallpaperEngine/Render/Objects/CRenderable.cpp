@@ -10,18 +10,14 @@ using namespace WallpaperEngine::Render::Objects::Effects;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
-CRenderable::CRenderable (Wallpapers::CScene& scene, const Object& object) :
+CRenderable::CRenderable (Wallpapers::CScene& scene, const Object& object, const Material& material) :
     CObject (scene, object),
-    Render::FBOProvider (&scene) {
-    TextureMap* textures = nullptr;
+    Render::FBOProvider (&scene),
+    m_material (material) {
+}
 
-    if (object.is <Image> ()) {
-        textures = &(*object.as <Image> ()->model->material->passes.begin ())->textures;
-    } else if (object.is <Particle> ()) {
-        textures = &(*object.as <Particle> ()->material->material->passes.begin ())->textures;
-    }
-
-    if (textures != nullptr && !textures->empty ()) {
+void CRenderable::detectTexture () {
+    if (TextureMap* textures = &(*this->m_material.passes.begin ())->textures; !textures->empty ()) {
         std::string textureName = textures->begin ()->second;
 
         if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {

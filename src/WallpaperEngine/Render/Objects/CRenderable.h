@@ -14,7 +14,7 @@ class CRenderable : public CObject, public FBOProvider {
     friend CObject;
 
 public:
-    CRenderable (Wallpapers::CScene& scene, const Object& object);
+    CRenderable (Wallpapers::CScene& scene, const Object& object, const Material& material);
 
     [[nodiscard]]std::shared_ptr<const TextureProvider> getTexture () const;
 
@@ -30,8 +30,11 @@ public:
     [[nodiscard]] virtual const glm::vec3& getCompositeColor() const = 0;
 
 protected:
+    void detectTexture();
+
     double m_animationTime = 0.0;
 
     std::shared_ptr<const TextureProvider> m_texture = nullptr;
+    const Material& m_material;
 };
 }
