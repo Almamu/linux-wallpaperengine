@@ -163,7 +163,7 @@ There's a few developers that decided to focus on this and created their own.
 If you're one of those developers, feel free to open an issue to get your project included here!
 
 - @Maxnights' GUI: https://github.com/Maxnights/simple-linux-wallpaperengine-gui
-
+- @jagrat7's GUI: https://github.com/jagrat7/linux-wallpaper-engine
 ### 🔧 Common Options
 
 | Option | Description |
