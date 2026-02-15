@@ -195,6 +195,19 @@ ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
     auto container = this->setupAssetLocator (bg);
     auto json = WallpaperEngine::Data::JSON::JSON::parse (container->readString ("project.json"));
 
+    // when a background is loaded, reset the screenshot variables
+    // this allows taking screenshots after a background changes
+    // useful for playlists
+    if (this->m_context.settings.screenshot.take) {
+        this->m_nextFrameScreenshot = this->m_context.settings.screenshot.delay;
+
+        if (this->m_videoDriver != nullptr) {
+            this->m_nextFrameScreenshot += this->m_videoDriver->getFrameCounter ();
+        }
+
+        this->m_screenShotTaken = false;
+    }
+
     return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (container));
 }
 
@@ -813,13 +826,16 @@ void WallpaperApplication::show () {
 
 	this->updatePlaylists ();
 
-	if (!this->m_context.settings.screenshot.take
-	    || m_videoDriver->getFrameCounter () < this->m_context.settings.screenshot.delay) {
-	    continue;
-	}
+        if (!this->m_context.settings.screenshot.take || this->m_screenShotTaken == true) {
+            continue;
+        }
 
-	this->takeScreenshot (this->m_context.settings.screenshot.path);
-	this->m_context.settings.screenshot.take = false;
+        if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
+            continue;
+        }
+
+        this->takeScreenshot (this->m_context.settings.screenshot.path);
+        this->m_screenShotTaken = true;
     }
 
     sLog.out ("Stopping");

@@ -149,6 +149,8 @@ private:
     std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
     std::mt19937 m_playlistRng { std::random_device {}() };
     bool m_isPaused = false;
+    bool m_screenShotTaken = false;
+    uint32_t m_nextFrameScreenshot = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};
 };
 } // namespace WallpaperEngine::Application
