@@ -90,10 +90,11 @@ CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
 
     // Calculate buffer sizes based on renderer type
     if (m_useRopeRenderer) {
-	// Rope: connects N particles with (N-1) segments, one quad per segment
-	const int maxSegments = std::max (1, static_cast<int> (m_maxParticles - 1));
-	m_vertices.resize (maxSegments * 4 * ROPE_FLOATS_PER_VERTEX);
-	m_indices.resize (maxSegments * 6);
+	// Rope: connects N particles with (N-1) segments, each subdivided into sub-segments
+	const int subdivision = std::max (1, m_ropeSubdivision);
+	const int maxSubSegments = std::max (1, static_cast<int> (m_maxParticles - 1)) * subdivision;
+	m_vertices.resize (maxSubSegments * 4 * ROPE_FLOATS_PER_VERTEX);
+	m_indices.resize (maxSubSegments * 6);
     } else {
 	// Trail particles: (N+1) * 2 vertices for ribbon strip, N * 6 indices for N quads
 	// Normal particles: 4 vertices, 6 indices
@@ -702,7 +703,9 @@ void CParticle::setupInitializers () {
 	} else if (initializer->is<AlphaRandomInitializer> ()) {
 	    func = createAlphaRandomInitializer (*initializer->as<AlphaRandomInitializer> ());
 	} else if (initializer->is<LifetimeRandomInitializer> ()) {
-	    func = createLifetimeRandomInitializer (*initializer->as<LifetimeRandomInitializer> ());
+	    const auto& lifeInit = *initializer->as<LifetimeRandomInitializer> ();
+	    m_uniformLifetimes = (lifeInit.min->value->getFloat () == lifeInit.max->value->getFloat ());
+	    func = createLifetimeRandomInitializer (lifeInit);
 	} else if (initializer->is<VelocityRandomInitializer> ()) {
 	    func = createVelocityRandomInitializer (*initializer->as<VelocityRandomInitializer> ());
 	} else if (initializer->is<RotationRandomInitializer> ()) {
@@ -2051,8 +2054,9 @@ void CParticle::renderRope () {
     // compaction in update(). All particles in [0, m_particleCount) are alive.
     const uint32_t aliveCount = m_particleCount;
 
-    // Build vertex data: one quad per consecutive particle pair.
-    // The shader handles ribbon expansion via the tangent (CP) vectors.
+    // Build vertex data with Catmull-Rom spline subdivision.
+    // Each segment between consecutive particles is subdivided into m_ropeSubdivision
+    // sub-segments for smooth curves instead of harsh corners at particle positions.
     //
     // Rope vertex layout (26 floats per vertex, THICKFORMAT):
     // [0-3]   a_PositionVec4:   startPos.xyz, sizeStart
@@ -2062,70 +2066,149 @@ void CParticle::renderRope () {
     // [16-19] a_TexCoordVec4C3: colorEnd.rgba
     // [20-21] a_TexCoordC4:     uvs.xy
     // [22-25] a_Color:          colorStart.rgba
-    //
-    // Shader computes ribbon direction from control points:
-    //   CPStart = startPos - CP0  →  trailRightStart = cross(eye, trailDelta + CPStart) = cross(eye, endPos - CP0)
-    //   CPEnd   = endPos   - CP1  →  trailRightEnd   = cross(eye, trailDelta - CPEnd)   = cross(eye, CP1 - startPos)
-    // Using neighboring particle positions as CP0/CP1 gives proper tangent-based ribbon direction.
 
     const uint32_t numSegments = aliveCount - 1;
-    const float trailLength = static_cast<float> (aliveCount);
+    const int subdivision = std::max (1, m_ropeSubdivision);
 
-    uint32_t vertexIndex = 0;
-    uint32_t indexOffset = 0;
+    // Catmull-Rom spline evaluation
+    auto catmullRom = [] (const glm::vec3& p0, const glm::vec3& p1,
+			  const glm::vec3& p2, const glm::vec3& p3, float t) -> glm::vec3 {
+	float t2 = t * t, t3 = t2 * t;
+	return 0.5f * ((2.0f * p1) +
+		       (-p0 + p2) * t +
+		       (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+		       (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
+    };
+
+    // First pass: evaluate spline to get all interpolated points
+    const uint32_t totalPoints = numSegments * subdivision + 1;
+    // Store position, size, color (rgba) per point = 3 + 1 + 4 = 8 floats
+    std::vector<glm::vec3> splinePositions (totalPoints);
+    std::vector<float> splineSizes (totalPoints);
+    std::vector<glm::vec4> splineColors (totalPoints); // rgba
 
     for (uint32_t i = 0; i < numSegments; i++) {
-	const auto& pStart = m_particles[i];
-	const auto& pEnd = m_particles[i + 1];
+	const auto& p1 = m_particles[i];
+	const auto& p2 = m_particles[i + 1];
+	const auto& p0 = (i > 0) ? m_particles[i - 1] : p1;
+	const auto& p3 = (i + 2 < aliveCount) ? m_particles[i + 2] : p2;
 
-	// Neighboring particles for tangent direction (clamped at boundaries)
-	const auto& pPrev = (i > 0) ? m_particles[i - 1] : pStart;
-	const auto& pAfter = (i + 2 < aliveCount) ? m_particles[i + 2] : pEnd;
+	for (int k = 0; k < subdivision; k++) {
+	    float t = static_cast<float> (k) / static_cast<float> (subdivision);
+	    uint32_t idx = i * subdivision + k;
 
-	float trailPosition = static_cast<float> (i);
+	    splinePositions[idx] = catmullRom (p0.position, p1.position, p2.position, p3.position, t);
+	    splineSizes[idx] = glm::mix (p1.size, p2.size, t);
+	    splineColors[idx] = glm::mix (
+		glm::vec4 (p1.color, p1.alpha),
+		glm::vec4 (p2.color, p2.alpha), t
+	    );
+	}
+    }
+    // Last point is the final particle
+    {
+	const auto& pLast = m_particles[aliveCount - 1];
+	splinePositions[totalPoints - 1] = pLast.position;
+	splineSizes[totalPoints - 1] = pLast.size;
+	splineColors[totalPoints - 1] = glm::vec4 (pLast.color, pLast.alpha);
+    }
+
+    // Second pass: build quads from consecutive spline points.
+    // The shader computes UV.v from trailPosition / (trailLength - 1), consuming
+    // 1/(trailLength-1) of UV space per quad. Express trailLength and trailPosition
+    // in sub-segment units so each sub-segment quad gets the correct UV slice.
+    // UV scale divides the effective length, making UVs exceed [0,1] → texture repeats.
+    uint32_t vertexIndex = 0;
+    uint32_t indexOffset = 0;
+    const uint32_t totalSubSegments = totalPoints - 1;
+    const float uvScale = (m_ropeUVScale > 0.0f) ? m_ropeUVScale : 1.0f;
+    const float trailLength = static_cast<float> (totalSubSegments) / uvScale + 1.0f;
+    const float usableLength = trailLength - 1.0f;
+
+    // UV smoothing: distribute UV proportional to arc length instead of uniform index.
+    // Per wiki: only when all particle lifetimes match and scrolling is disabled.
+    const bool useSmoothing = m_ropeUVSmoothing && m_uniformLifetimes && !m_ropeUVScrolling;
+    std::vector<float> cumulativeArcLength;
+    float totalArcLength = 0.0f;
+
+    if (useSmoothing) {
+	cumulativeArcLength.resize (totalPoints, 0.0f);
+	for (uint32_t i = 1; i < totalPoints; i++) {
+	    totalArcLength += glm::distance (splinePositions[i], splinePositions[i - 1]);
+	    cumulativeArcLength[i] = totalArcLength;
+	}
+    }
+
+    // UV scrolling: shift UV along the rope over time (1 UV cycle per second)
+    float scrollOffset = 0.0f;
+    if (m_ropeUVScrolling && usableLength > 0.0f) {
+	scrollOffset = std::fmod (static_cast<float> (g_Time), 10000.0f) * usableLength;
+    }
+
+    for (uint32_t s = 0; s < totalSubSegments; s++) {
+	const glm::vec3& posStart = splinePositions[s];
+	const glm::vec3& posEnd = splinePositions[s + 1];
+	float sizeStart = splineSizes[s];
+	float sizeEnd = splineSizes[s + 1];
+	const glm::vec4& colorStart = splineColors[s];
+	const glm::vec4& colorEnd = splineColors[s + 1];
+
+	// Neighboring points for shader tangent computation (CP0/CP1)
+	const glm::vec3& posPrev = (s > 0) ? splinePositions[s - 1] : posStart;
+	const glm::vec3& posAfter = (s + 2 < totalPoints) ? splinePositions[s + 2] : posEnd;
+
+	// Compute trailPosition for UV mapping
+	float trailPosition;
+	if (useSmoothing && totalArcLength > 0.0f) {
+	    // Arc-length parameterization: map cumulative distance to sub-segment space
+	    trailPosition = cumulativeArcLength[s] / totalArcLength * static_cast<float> (totalSubSegments);
+	} else {
+	    trailPosition = static_cast<float> (s);
+	}
+	trailPosition += scrollOffset;
 
 	auto addRopeVertex = [&] (float uvX, float uvY) {
 	    const uint32_t base = vertexIndex * ROPE_FLOATS_PER_VERTEX;
 
 	    // a_PositionVec4: startPos.xyz, sizeStart
-	    m_vertices[base + 0] = pStart.position.x;
-	    m_vertices[base + 1] = pStart.position.y;
-	    m_vertices[base + 2] = pStart.position.z;
-	    m_vertices[base + 3] = pStart.size;
+	    m_vertices[base + 0] = posStart.x;
+	    m_vertices[base + 1] = posStart.y;
+	    m_vertices[base + 2] = posStart.z;
+	    m_vertices[base + 3] = sizeStart;
 
 	    // a_TexCoordVec4: endPos.xyz, trailLength
-	    m_vertices[base + 4] = pEnd.position.x;
-	    m_vertices[base + 5] = pEnd.position.y;
-	    m_vertices[base + 6] = pEnd.position.z;
+	    m_vertices[base + 4] = posEnd.x;
+	    m_vertices[base + 5] = posEnd.y;
+	    m_vertices[base + 6] = posEnd.z;
 	    m_vertices[base + 7] = trailLength;
 
 	    // a_TexCoordVec4C1: CP0.xyz (neighbor before start), trailPosition
-	    m_vertices[base + 8] = pPrev.position.x;
-	    m_vertices[base + 9] = pPrev.position.y;
-	    m_vertices[base + 10] = pPrev.position.z;
+	    m_vertices[base + 8] = posPrev.x;
+	    m_vertices[base + 9] = posPrev.y;
+	    m_vertices[base + 10] = posPrev.z;
 	    m_vertices[base + 11] = trailPosition;
 
 	    // a_TexCoordVec4C2: CP1.xyz (neighbor after end), sizeEnd
-	    m_vertices[base + 12] = pAfter.position.x;
-	    m_vertices[base + 13] = pAfter.position.y;
-	    m_vertices[base + 14] = pAfter.position.z;
-	    m_vertices[base + 15] = pEnd.size;
+	    m_vertices[base + 12] = posAfter.x;
+	    m_vertices[base + 13] = posAfter.y;
+	    m_vertices[base + 14] = posAfter.z;
+	    m_vertices[base + 15] = sizeEnd;
 
 	    // a_TexCoordVec4C3: colorEnd.rgba
-	    m_vertices[base + 16] = pEnd.color.r;
-	    m_vertices[base + 17] = pEnd.color.g;
-	    m_vertices[base + 18] = pEnd.color.b;
-	    m_vertices[base + 19] = pEnd.alpha;
+	    m_vertices[base + 16] = colorEnd.r;
+	    m_vertices[base + 17] = colorEnd.g;
+	    m_vertices[base + 18] = colorEnd.b;
+	    m_vertices[base + 19] = colorEnd.a;
 
 	    // a_TexCoordC4: uvs.xy
 	    m_vertices[base + 20] = uvX;
 	    m_vertices[base + 21] = uvY;
 
 	    // a_Color: colorStart.rgba
-	    m_vertices[base + 22] = pStart.color.r;
-	    m_vertices[base + 23] = pStart.color.g;
-	    m_vertices[base + 24] = pStart.color.b;
-	    m_vertices[base + 25] = pStart.alpha;
+	    m_vertices[base + 22] = colorStart.r;
+	    m_vertices[base + 23] = colorStart.g;
+	    m_vertices[base + 24] = colorStart.b;
+	    m_vertices[base + 25] = colorStart.a;
 
 	    vertexIndex++;
 	};

@@ -239,6 +239,7 @@ private:
     float m_ropeUVScale { 1.0f };
     bool m_ropeUVScrolling { false };
     bool m_ropeUVSmoothing { true };  // rope only
+    bool m_uniformLifetimes { false }; // true when lifetime min==max (enables UV smoothing)
 
     // Per-vertex float counts for different renderer types
     static constexpr int SPRITE_FLOATS_PER_VERTEX = 17;
