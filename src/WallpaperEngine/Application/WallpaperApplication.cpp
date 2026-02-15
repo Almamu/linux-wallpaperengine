@@ -25,6 +25,7 @@
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#include <thread>
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
@@ -499,9 +500,18 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
     const bool vflip = this->m_renderContext->getOutput ().renderVFlip ();
     const auto& wallpapers = this->m_renderContext->getWallpapers ();
 
-    // build the output file with stbi_image_write
-    auto* bitmap = new uint8_t[width * height * 3] { 0 };
-    int xoffset = 0;
+    struct ViewportCapture {
+	uint8_t* buffer;
+	int readWidth;
+	int readHeight;
+	int vpWidth;
+	int vpHeight;
+	int xoffset;
+	float ustart, uend, vstart, vend;
+    };
+
+    std::vector<ViewportCapture> captures;
+    int currentXOffset = 0;
 
     for (const auto& [screen, viewport] : this->m_renderContext->getOutput ().getViewports ()) {
 	// activate opengl context so we can read from the framebuffer
@@ -551,47 +561,59 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
 	// Get the UV coordinates which define the visible portion based on scaling mode
 	const auto [ustart, uend, vstart, vend] = wallpaper->getState ().getTextureUVs ();
 
-	// copy pixels to bitmap, sampling from the UV-defined region
-	for (int y = 0; y < vpHeight; y++) {
-	    for (int x = 0; x < vpWidth; x++) {
-		// interpolate within the UV range to get source coordinates
-		const float u = ustart + (static_cast<float> (x) / vpWidth) * (uend - ustart);
-		const float v = vstart + (static_cast<float> (y) / vpHeight) * (vend - vstart);
-
-		// convert UV to pixel coordinates in the source buffer
-		const int srcX = std::clamp (static_cast<int> (u * readWidth), 0, readWidth - 1);
-		const int srcY = std::clamp (static_cast<int> (v * readHeight), 0, readHeight - 1);
-		const int srcIdx = (srcY * readWidth + srcX) * 3;
-
-		const int xfinal = x + xoffset;
-		// FBO content is not flipped like default framebuffer, so invert vflip logic
-		const int yfinal = vflip ? y : (vpHeight - y - 1);
-
-		if (yfinal >= 0 && yfinal < height && xfinal >= 0 && xfinal < width) {
-		    bitmap[yfinal * width * 3 + xfinal * 3] = buffer[srcIdx];
-		    bitmap[yfinal * width * 3 + xfinal * 3 + 1] = buffer[srcIdx + 1];
-		    bitmap[yfinal * width * 3 + xfinal * 3 + 2] = buffer[srcIdx + 2];
-		}
-	    }
-	}
+	captures.push_back (
+	    { buffer, readWidth, readHeight, vpWidth, vpHeight, currentXOffset, ustart, uend, vstart, vend }
+	);
 
 	if (viewport->single) {
-	    xoffset += vpWidth;
+	    currentXOffset += vpWidth;
+	}
+    }
+
+    const auto extension = filename.extension ();
+    const std::string extStr = extension.string ();
+
+    // Offload pixel processing and saving to a background thread to avoid hitches
+    std::thread ([captures, width, height, vflip, extStr, filename]() {
+	auto* bitmap = new uint8_t[width * height * 3] { 0 };
+
+	for (const auto& capture : captures) {
+	    // copy pixels to bitmap, sampling from the UV-defined region
+	    for (int y = 0; y < capture.vpHeight; y++) {
+		for (int x = 0; x < capture.vpWidth; x++) {
+		    // interpolate within the UV range to get source coordinates
+		    const float u = capture.ustart + (static_cast<float> (x) / capture.vpWidth) * (capture.uend - capture.ustart);
+		    const float v = capture.vstart + (static_cast<float> (y) / capture.vpHeight) * (capture.vend - capture.vstart);
+
+		    // convert UV to pixel coordinates in the source buffer
+		    const int srcX = std::clamp (static_cast<int> (u * capture.readWidth), 0, capture.readWidth - 1);
+		    const int srcY = std::clamp (static_cast<int> (v * capture.readHeight), 0, capture.readHeight - 1);
+		    const int srcIdx = (srcY * capture.readWidth + srcX) * 3;
+
+		    const int xfinal = x + capture.xoffset;
+		    // FBO content is not flipped like default framebuffer, so invert vflip logic
+		    const int yfinal = vflip ? y : (capture.vpHeight - y - 1);
+
+		    if (yfinal >= 0 && yfinal < height && xfinal >= 0 && xfinal < width) {
+			bitmap[yfinal * width * 3 + xfinal * 3] = capture.buffer[srcIdx];
+			bitmap[yfinal * width * 3 + xfinal * 3 + 1] = capture.buffer[srcIdx + 1];
+			bitmap[yfinal * width * 3 + xfinal * 3 + 2] = capture.buffer[srcIdx + 2];
+		    }
+		}
+	    }
+	    delete[] capture.buffer;
 	}
 
-	// free the buffer allocated for the viewport
-	delete[] buffer;
-    }
+	if (extStr == ".bmp") {
+	    stbi_write_bmp (filename.c_str (), width, height, 3, bitmap);
+	} else if (extStr == ".png") {
+	    stbi_write_png (filename.c_str (), width, height, 3, bitmap, width * 3);
+	} else if (extStr == ".jpg" || extStr == ".jpeg") {
+	    stbi_write_jpg (filename.c_str (), width, height, 3, bitmap, 100);
+	}
 
-    if (const auto extension = filename.extension (); extension == ".bmp") {
-	stbi_write_bmp (filename.c_str (), width, height, 3, bitmap);
-    } else if (extension == ".png") {
-	stbi_write_png (filename.c_str (), width, height, 3, bitmap, width * 3);
-    } else if (extension == ".jpg" || extension == ".jpeg") {
-	stbi_write_jpg (filename.c_str (), width, height, 3, bitmap, 100);
-    }
-
-    delete[] bitmap;
+	delete[] bitmap;
+    }).detach ();
 }
 
 void WallpaperApplication::setupOutput () {
