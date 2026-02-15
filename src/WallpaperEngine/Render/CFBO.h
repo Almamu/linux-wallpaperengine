@@ -34,6 +34,8 @@ public:
     [[nodiscard]] uint32_t getSpritesheetFrames () const override;
     [[nodiscard]] float getSpritesheetDuration () const override;
 
+    void update () const override;
+
 private:
     GLuint m_framebuffer = GL_NONE;
     GLuint m_depthbuffer = GL_NONE;

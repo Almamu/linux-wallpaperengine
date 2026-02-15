@@ -78,5 +78,10 @@ public:
      * @return Duration of spritesheet animation in seconds
      */
     [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
+
+    /**
+     * Allows the texture contents to be updated (for example, for video textures)
+     */
+    virtual void update () const = 0;
 };
 } // namespace WallpaperEngine::Render

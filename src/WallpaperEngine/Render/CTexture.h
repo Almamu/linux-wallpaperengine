@@ -1,22 +1,27 @@
 #pragma once
 
+#include "Helpers/ContextAware.h"
 #include "TextureProvider.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
 #include <memory>
+#include <mpv/render.h>
 #include <vector>
+#include <mpv/client.h>
+#include <mpv/render_gl.h>
 
 namespace WallpaperEngine::Render {
+class RenderContext;
 using namespace WallpaperEngine::Data::Assets;
 
 /**
  * A normal texture file in WallpaperEngine's format
  */
-class CTexture final : public TextureProvider {
+class CTexture final : public TextureProvider, public Helpers::ContextAware {
 public:
-    explicit CTexture (TextureUniquePtr header);
+    explicit CTexture (RenderContext& context, TextureUniquePtr header);
     ~CTexture () override;
 
     [[nodiscard]] GLuint getTextureID (uint32_t imageIndex) const override;
@@ -33,6 +38,11 @@ public:
     [[nodiscard]] uint32_t getSpritesheetRows () const override;
     [[nodiscard]] uint32_t getSpritesheetFrames () const override;
     [[nodiscard]] float getSpritesheetDuration () const override;
+
+    /**
+     * Some textures need to be updated
+     */
+    void update() const override;
 
 private:
     /**
@@ -57,7 +67,18 @@ private:
     TextureUniquePtr m_header;
     /** OpenGL's texture ID */
     GLuint* m_textureID = nullptr;
+    GLuint m_framebuffer = GL_NONE;
     /** Resolution vector of the texture */
     glm::vec4 m_resolution {};
+    /** mpv instance for video textures */
+    mpv_handle* m_mpv = nullptr;
+    /** Render context for opengl rendering */
+    mpv_render_context* m_mpvGl = nullptr;
+    /** The width of the video as reported by mpv */
+    mutable int64_t m_videoWidth = 0;
+    /** The height of the video as reported by mpv */
+    mutable int64_t m_videoHeight = 0;
+    /** Audio for the video (always 0) */
+    double m_volume = 0.0f;
 };
 } // namespace WallpaperEngine::Assets

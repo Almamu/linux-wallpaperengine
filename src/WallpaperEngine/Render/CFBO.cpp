@@ -123,3 +123,5 @@ uint32_t CFBO::getSpritesheetFrames () const {
 float CFBO::getSpritesheetDuration () const {
     return 0.0f; // FBOs don't have spritesheets
 }
+
+void CFBO::update () const {  }

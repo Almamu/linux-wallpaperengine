@@ -847,6 +847,10 @@ void WallpaperApplication::show () {
     SDL_Quit ();
 }
 
+void WallpaperApplication::updateTextures () {
+    m_renderContext->renderTextures ();
+}
+
 void WallpaperApplication::update (Render::Drivers::Output::OutputViewport* viewport) {
     // render the scene
     m_renderContext->render (viewport);

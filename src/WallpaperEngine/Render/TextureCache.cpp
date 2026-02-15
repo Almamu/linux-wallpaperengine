@@ -27,7 +27,6 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 	    auto stream = BinaryReader (contents);
 
 	    // Create metadata loader lambda that captures the assetLocator
-	    // Note: Unlike texture() which prepends "materials/", readString() doesn't,
 	    // so we need to construct the full path here
 	    auto metadataLoader = [&project] (const std::string& metaFilename) -> std::string {
 		std::filesystem::path fullPath = std::filesystem::path ("materials") / metaFilename;
@@ -35,7 +34,7 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 	    };
 
 	    auto parsedTexture = TextureParser::parse (stream, filename, metadataLoader);
-	    auto texture = std::make_shared<CTexture> (std::move (parsedTexture));
+	    auto texture = std::make_shared<CTexture> (this->getContext (), std::move (parsedTexture));
 
 	    this->store (filename, texture);
 
@@ -50,4 +49,21 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 
 void TextureCache::store (const std::string& name, std::shared_ptr<const TextureProvider> texture) {
     this->m_textureCache.insert_or_assign (name, texture);
+}
+
+void TextureCache::update () const {
+    for (const auto& texture : this->m_textureCache) {
+#if !NDEBUG
+        const std::string text = "Rendering texture " + texture.first;
+
+        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, text.c_str ());
+#endif
+
+        texture.second->update ();
+
+#if !NDEBUG
+        glPopDebugGroup ();
+#endif
+    }
+
 }

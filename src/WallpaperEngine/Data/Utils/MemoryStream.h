@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 
 namespace WallpaperEngine::Data::Utils {
 struct MemoryStream : std::istream, private std::streambuf {

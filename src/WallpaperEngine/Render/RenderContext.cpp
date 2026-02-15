@@ -11,6 +11,18 @@ namespace WallpaperEngine::Render {
 RenderContext::RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app) :
     m_driver (driver), m_app (app), m_textureCache (new TextureCache (*this)) { }
 
+void RenderContext::renderTextures () {
+#if !NDEBUG
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering textures");
+#endif
+
+    this->m_textureCache->update();
+
+#if !NDEBUG
+    glPopDebugGroup ();
+#endif
+}
+
 void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
     viewport->makeCurrent ();
 
@@ -59,4 +71,5 @@ std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std:
 const std::map<std::string, std::shared_ptr<CWallpaper>>& RenderContext::getWallpapers () const {
     return this->m_wallpapers;
 }
+
 } // namespace WallpaperEngine::Render

@@ -194,6 +194,8 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
 }
 
 void CWallpaper::render (const glm::ivec4& viewport, const bool vflip) {
+    // bind the vertex array
+    glBindVertexArray (this->m_vaoBuffer);
 #if !NDEBUG
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
 #endif /* !NDEBUG */

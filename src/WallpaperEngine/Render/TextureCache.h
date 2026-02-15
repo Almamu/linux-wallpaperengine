@@ -38,6 +38,11 @@ public:
      */
     void store (const std::string& name, std::shared_ptr<const TextureProvider> texture);
 
+    /**
+     * Runs a texture update cycle on everything registered in the cache
+     */
+    void update () const;
+
 private:
     /** Cached textures */
     std::map<std::string, std::shared_ptr<const TextureProvider>> m_textureCache = {};
