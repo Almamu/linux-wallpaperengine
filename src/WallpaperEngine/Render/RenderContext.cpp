@@ -16,7 +16,7 @@ void RenderContext::renderTextures () {
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering textures");
 #endif
 
-    this->m_textureCache->update();
+    this->m_textureCache->update ();
 
 #if !NDEBUG
     glPopDebugGroup ();

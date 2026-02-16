@@ -41,7 +41,6 @@ public:
     [[nodiscard]] int getId () const;
     [[nodiscard]] const Object& getObject () const;
 
-
 private:
     Wallpapers::CScene& m_scene;
     const Object& m_object;

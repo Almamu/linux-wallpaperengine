@@ -32,7 +32,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 
     // TODO: PROPERLY SUPPORT PARENTS, FOR NOW THIS SHOULD BE ENOUGH
     if (this->m_image.parent.has_value ()) {
-        origin += this->getScene ().getObject (this->m_image.parent.value ())->getObject ().origin->value->getVec3 ();
+	origin += this->getScene ().getObject (this->m_image.parent.value ())->getObject ().origin->value->getVec3 ();
     }
 
     this->detectTexture ();

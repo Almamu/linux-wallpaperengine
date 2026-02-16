@@ -9,7 +9,7 @@ using namespace WallpaperEngine::Render::Wallpapers;
 CObject::CObject (Wallpapers::CScene& scene, const Object& object) :
     Helpers::ContextAware (scene), m_scene (scene), m_object (object) { }
 
-void CObject::render () {  }
+void CObject::render () { }
 
 Wallpapers::CScene& CObject::getScene () const { return this->m_scene; }
 

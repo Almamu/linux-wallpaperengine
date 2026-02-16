@@ -60,7 +60,8 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	sLog.error ("Light objects are not supported yet");
     } else {
 	// dump the object for now, might want to change later
-        // TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY ANYTHING SPECIAL
+	// TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY
+	// ANYTHING SPECIAL
 	sLog.error ("Unknown object type found: ", it.dump ());
     }
 

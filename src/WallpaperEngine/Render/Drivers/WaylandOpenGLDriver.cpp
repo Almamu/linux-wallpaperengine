@@ -332,7 +332,7 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     if (!initialized) {
 	initialized = true;
 
-        this->getApp ().updateTextures ();
+	this->getApp ().updateTextures ();
 
 	for (const auto& viewport : this->getOutput ().getViewports () | std::views::values) {
 	    this->getApp ().update (viewport);

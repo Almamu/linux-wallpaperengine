@@ -7,10 +7,10 @@
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
 #include <memory>
-#include <mpv/render.h>
-#include <vector>
 #include <mpv/client.h>
+#include <mpv/render.h>
 #include <mpv/render_gl.h>
+#include <vector>
 
 namespace WallpaperEngine::Render {
 class RenderContext;
@@ -42,7 +42,7 @@ public:
     /**
      * Some textures need to be updated
      */
-    void update() const override;
+    void update () const override;
 
 private:
     /**

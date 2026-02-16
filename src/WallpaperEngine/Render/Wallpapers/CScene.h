@@ -33,7 +33,7 @@ public:
     const glm::vec2* getParallaxDisplacement () const;
 
     [[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
-    [[nodiscard]] const CObject* getObject(int id) const;
+    [[nodiscard]] const CObject* getObject (int id) const;
 
 protected:
     void renderFrame (const glm::ivec4& viewport) override;

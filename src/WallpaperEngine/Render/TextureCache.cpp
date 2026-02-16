@@ -54,16 +54,15 @@ void TextureCache::store (const std::string& name, std::shared_ptr<const Texture
 void TextureCache::update () const {
     for (const auto& texture : this->m_textureCache) {
 #if !NDEBUG
-        const std::string text = "Rendering texture " + texture.first;
+	const std::string text = "Rendering texture " + texture.first;
 
-        glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, text.c_str ());
+	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, text.c_str ());
 #endif
 
-        texture.second->update ();
+	texture.second->update ();
 
 #if !NDEBUG
-        glPopDebugGroup ();
+	glPopDebugGroup ();
 #endif
     }
-
 }
