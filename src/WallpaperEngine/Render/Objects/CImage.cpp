@@ -30,6 +30,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ().scale->value->getVec3 ();
 
+    // TODO: PROPERLY SUPPORT PARENTS, FOR NOW THIS SHOULD BE ENOUGH
+    if (this->m_image.parent.has_value ()) {
+        origin += this->getScene ().getObject (this->m_image.parent.value ())->getObject ().origin->value->getVec3 ();
+    }
+
     this->detectTexture ();
 
     // detect texture (if any)

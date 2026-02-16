@@ -171,6 +171,20 @@ Render::CObject* CScene::createObject (const Object& object) {
 	}
     }
 
+    // check if the item has any parent and also create it first
+    if (object.parent.has_value ()) {
+        int parentId = object.parent.value ();
+
+        const auto dep
+            = std::ranges::find_if (this->getScene ().objects, [&parentId] (const auto& o) { return o->id == parentId; });
+
+        if (dep == this->getScene ().objects.end ()) {
+            sLog.exception ("Cannot find parent ", parentId, " for object ", object.id);
+        }
+
+        this->createObject (**dep);
+    }
+
     if (object.is<Image> ()) {
 	auto* image = new Objects::CImage (*this, *object.as<Image> ());
 
@@ -199,6 +213,9 @@ Render::CObject* CScene::createObject (const Object& object) {
 	}
 
 	renderObject = particle;
+    } else {
+        sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+        renderObject = new CObject (*this, object);
     }
 
     if (renderObject != nullptr) {
@@ -310,3 +327,5 @@ const glm::vec2* CScene::getMousePositionLast () const { return &this->m_mousePo
 const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_parallaxDisplacement; }
 
 const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const { return this->m_objectsByRenderOrder; }
+
+const CObject* CScene::getObject(int id) const { return this->m_objects.at(id); }

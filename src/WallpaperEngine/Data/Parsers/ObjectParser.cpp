@@ -29,6 +29,8 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	    .id = it.require<int> ("id", "Object must have an id"),
 	    .name = it.require<std::string> ("name", "Object must have a name"),
 	    .dependencies = parseDependencies (it),
+	    .parent = it.optional<int> ("parent"),
+	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
 	};
     } catch (const std::exception& e) {
 	sLog.error ("Error parsing object base data: ", e.what ());
@@ -47,21 +49,22 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     }
 
     if (imageIt != it.end () && imageIt->is_string ()) {
-	return parseImage (it, project, basedata, *imageIt);
+	return parseImage (it, project, std::move (basedata), *imageIt);
     } else if (soundIt != it.end () && soundIt->is_array ()) {
-	return parseSound (it, basedata);
+	return parseSound (it, std::move (basedata));
     } else if (particleIt != it.end ()) {
-	return parseParticle (it, project, basedata);
+	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
 	sLog.error ("Text objects are not supported yet");
     } else if (lightIt != it.end ()) {
 	sLog.error ("Light objects are not supported yet");
     } else {
 	// dump the object for now, might want to change later
+        // TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY ANYTHING SPECIAL
 	sLog.error ("Unknown object type found: ", it.dump ());
     }
 
-    return std::make_unique<Object> (basedata);
+    return std::make_unique<Object> (std::move (basedata));
 }
 
 std::vector<int> ObjectParser::parseDependencies (const JSON& it) {
@@ -106,7 +109,6 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
     auto result = std::make_unique<Image> (
 	std::move (base),
 	ImageData {
-	    .origin = it.user ("origin", properties, glm::vec3 (0.0f)),
 	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
 	    .angles = it.user ("angles", properties, glm::vec3 (0.0)),
 	    .visible = it.user ("visible", properties, true),
@@ -258,7 +260,6 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	    return std::make_unique<Particle> (
 		std::move (base),
 		ParticleData {
-		    .origin = it.user ("origin", properties, glm::vec3 (0.0f)),
 		    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
 		    .angles = it.user ("angles", properties, glm::vec3 (0.0f)),
 		    .visible = it.user ("visible", properties, true),
@@ -508,7 +509,6 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	return std::make_unique<Particle> (
 	    std::move (base),
 	    ParticleData {
-		.origin = it.user ("origin", properties, glm::vec3 (0.0f)),
 		.scale = it.user ("scale", properties, glm::vec3 (1.0f)),
 		.angles = it.user ("angles", properties, glm::vec3 (0.0f)),
 		.visible = it.user ("visible", properties, true),
