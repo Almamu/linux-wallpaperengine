@@ -33,8 +33,18 @@ void* get_proc_address_texture (void* ctx, const char* name) {
 }
 
 int64_t mem_seek (void* cookie, const int64_t offset) {
-    static_cast<MipmapMemoryStream*> (cookie)->seekg (offset, std::ios_base::beg);
-    return static_cast<MipmapMemoryStream*> (cookie)->tellg ();
+    MipmapMemoryStream* stream = static_cast<MipmapMemoryStream*> (cookie);
+
+    // sometimes the stream can get to fail state depending on what mpv did
+    // seeking usually means we can ignore that and try seek
+    // if the seek fails the failbit will be set again
+    if (stream->fail()) {
+        stream->clear ();
+    }
+
+    stream->seekg (offset, std::ios_base::beg);
+
+    return stream->tellg ();
 }
 
 int64_t mem_read (void* cookie, char* buf, uint64_t bytes) {
@@ -118,6 +128,7 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 	mpv_set_option_string (this->m_mpv, "config", "no");
 	mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
 	mpv_set_option_string (this->m_mpv, "vo", "libmpv");
+        mpv_set_option_string (this->m_mpv, "profile", "fast");
 
 	if (mpv_initialize (this->m_mpv) < 0) {
 	    sLog.exception ("Could not initialize mpv context");

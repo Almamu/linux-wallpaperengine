@@ -458,6 +458,8 @@ void CImage::render () {
 	return;
     }
 
+    // TODO: DO NOT DRAW IMAGES THAT ARE NOT VISIBLE AND NOTHING DEPENDS ON THEM
+
     glColorMask (true, true, true, true);
 
     // update the position if required
