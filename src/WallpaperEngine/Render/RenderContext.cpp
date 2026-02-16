@@ -11,18 +11,6 @@ namespace WallpaperEngine::Render {
 RenderContext::RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app) :
     m_driver (driver), m_app (app), m_textureCache (new TextureCache (*this)) { }
 
-void RenderContext::renderTextures () {
-#if !NDEBUG
-    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering textures");
-#endif
-
-    this->m_textureCache->update ();
-
-#if !NDEBUG
-    glPopDebugGroup ();
-#endif
-}
-
 void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
     viewport->makeCurrent ();
 

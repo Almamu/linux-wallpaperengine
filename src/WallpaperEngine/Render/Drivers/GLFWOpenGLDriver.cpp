@@ -114,8 +114,6 @@ void GLFWOpenGLDriver::dispatchEventQueue () {
     // clear the screen
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    this->getApp ().updateTextures ();
-
     for (const auto& [screen, viewport] : this->m_output->getViewports ()) {
 	this->getApp ().update (viewport);
     }

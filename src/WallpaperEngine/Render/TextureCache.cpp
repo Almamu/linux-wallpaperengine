@@ -50,19 +50,3 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 void TextureCache::store (const std::string& name, std::shared_ptr<const TextureProvider> texture) {
     this->m_textureCache.insert_or_assign (name, texture);
 }
-
-void TextureCache::update () const {
-    for (const auto& texture : this->m_textureCache) {
-#if !NDEBUG
-	const std::string text = "Rendering texture " + texture.first;
-
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, text.c_str ());
-#endif
-
-	texture.second->update ();
-
-#if !NDEBUG
-	glPopDebugGroup ();
-#endif
-    }
-}

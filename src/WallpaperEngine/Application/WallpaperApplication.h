@@ -50,10 +50,6 @@ public:
      */
     [[nodiscard]] ApplicationContext& getContext () const;
     /**
-     * Updates textures used (video textures)
-     */
-    void updateTextures ();
-    /**
      * Renders a frame
      */
     void update (Render::Drivers::Output::OutputViewport* viewport);

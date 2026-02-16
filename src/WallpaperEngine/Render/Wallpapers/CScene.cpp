@@ -280,6 +280,17 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	    = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
     }
 
+    // update main textures for images
+    for (const auto& cur : this->m_objectsByRenderOrder) {
+	if (!cur->is<Objects::CImage> ()) {
+	    continue;
+	}
+
+	cur->as<Objects::CImage> ()->getTexture ()->update ();
+    }
+
+    // bind the vertex array
+    glBindVertexArray (this->m_vaoBuffer);
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer ());
     // ensure we render over the whole framebuffer

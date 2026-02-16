@@ -16,6 +16,7 @@ public:
     using FullscreenDetectorConstructionFunc
 	= std::function<std::unique_ptr<Detectors::FullScreenDetector> (ApplicationContext&, VideoDriver&)>;
     VideoFactories ();
+    ~VideoFactories () = default;
 
     static VideoFactories& get ();
 
