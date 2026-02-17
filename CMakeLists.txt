@@ -462,7 +462,12 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     src/WallpaperEngine/Data/Dumpers/StringPrinter.h
-    src/WallpaperEngine/Data/JSON.cpp)
+    src/WallpaperEngine/Data/JSON.cpp
+
+    src/WallpaperEngine/VideoPlayback/MPV/GLPlayer.cpp
+    src/WallpaperEngine/VideoPlayback/MPV/GLPlayer.h
+    src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.cpp
+    src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h)
 
 if(BUILD_TESTING)
     add_executable(

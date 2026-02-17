@@ -7,9 +7,6 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (

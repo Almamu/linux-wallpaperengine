@@ -1,75 +1,14 @@
 #include "CTexture.h"
 #include "WallpaperEngine/Logging/Log.h"
 
-#include <cstring>
 #include <lz4.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "RenderContext.h"
 
-#include <mpv/stream_cb.h>
 #include <stb_image.h>
 
 using namespace WallpaperEngine::Render;
-
-// TODO: CLEANUP CODE HERE, EXTRACT VIDEO-SPECIFIC MPV STUFF TO EXTERNAL LIBRARIES SO THIS CODE IS NOT DUPLICATED
-// ANYMORE
-struct MipmapMemoryStream : MemoryStream {
-    explicit MipmapMemoryStream (const MipmapSharedPtr& mipmap) :
-	MemoryStream (std::unique_ptr<char[]> (new char[mipmap->uncompressedSize]), mipmap->uncompressedSize),
-	m_mipmap (mipmap) {
-	// copy over the data
-	// TODO: MEMORYSTREAM AND MIPMAP EXPECT A UNIQUE_PTR, SO WE CANNOT JUST USE THE POINTER DIRECTLY
-	// TODO: MAYBE LOOK INTO HOW TO IMPROVE THIS?
-	// TODO: MAYBE BUILD SOME KIND OF MEMORYSTREAM WITH VIEWS?
-	memcpy (this->m_buffer.get (), m_mipmap->uncompressedData.get (), m_mipmap->uncompressedSize);
-    }
-
-    MipmapSharedPtr m_mipmap;
-};
-
-void* get_proc_address_texture (void* ctx, const char* name) {
-    return static_cast<CTexture*> (ctx)->getContext ().getDriver ().getProcAddress (name);
-}
-
-int64_t mem_seek (void* cookie, const int64_t offset) {
-    MipmapMemoryStream* stream = static_cast<MipmapMemoryStream*> (cookie);
-
-    // sometimes the stream can get to fail state depending on what mpv did
-    // seeking usually means we can ignore that and try seek
-    // if the seek fails the failbit will be set again
-    if (stream->fail()) {
-        stream->clear ();
-    }
-
-    stream->seekg (offset, std::ios_base::beg);
-
-    return stream->tellg ();
-}
-
-int64_t mem_read (void* cookie, char* buf, uint64_t bytes) {
-    return static_cast<MipmapMemoryStream*> (cookie)->read (buf, bytes).gcount ();
-}
-
-int64_t mem_size (void* cookie) { return static_cast<MipmapMemoryStream*> (cookie)->m_mipmap->uncompressedSize; }
-
-void mem_close (void* cookie) {
-    // free the mipmap memory stream
-    delete static_cast<MipmapMemoryStream*> (cookie);
-}
-
-int mem_open (void* userdata, char* uri, struct mpv_stream_cb_info* info) {
-    // no-op, video is already open, each mpv instance only supports ONE video
-    // so any mem_open call is marked as okay
-    // TODO: ENSURE THIS KIND OF THING IS SAFE...
-    info->cookie = new MipmapMemoryStream (*static_cast<MipmapSharedPtr*> (userdata));
-    info->read_fn = mem_read;
-    info->seek_fn = mem_seek;
-    info->close_fn = mem_close;
-    info->size_fn = mem_size;
-
-    return 0;
-}
 
 CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
     Helpers::ContextAware (context), m_header (std::move (header)) {
@@ -79,91 +18,24 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 
     // videos are a bit special, they only have one framebuffer, one mipmap
     if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	// generate the texture and set it up to be used by the player
 	this->m_textureID = new GLuint[1];
-	glGenFramebuffers (1, &this->m_framebuffer);
-	// generate the framebuffer
-	glBindFramebuffer (GL_FRAMEBUFFER, this->m_framebuffer);
-
-	this->m_videoWidth = this->m_header->textureWidth;
-	this->m_videoHeight = this->m_header->textureHeight;
-	// give texture a size and content
 	glGenTextures (1, this->m_textureID);
 	this->setupOpenGLParameters (0);
-	glTexImage2D (
-	    GL_TEXTURE_2D, 0, internalFormat, this->m_videoWidth, this->m_videoHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-	    nullptr
+
+        const auto mipmap = *this->m_header->images.begin ()->second.begin ();
+
+	this->m_player = std::make_unique<GLPlayer> (
+	    this->getContext (), this->m_textureID[0],
+	    std::make_unique<MemoryStreamProtocol>(
+	        mipmap->uncompressedData.get(), mipmap->uncompressedSize
+	    ), this->m_header->textureWidth, this->m_header->textureHeight
 	);
-
-	constexpr GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-	// set the texture as the colour attachmend #0
-	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_textureID[0], 0);
-	// finally set the list of draw buffers
-	glDrawBuffers (1, drawBuffers);
-
-	// ensure first framebuffer is okay
-	if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-	    sLog.exception ("Framebuffers are not properly set");
-	}
-
-	// clear the framebuffer
-	glClear (GL_COLOR_BUFFER_BIT);
-
-	// finally initialize mpv
-	// setup mpv and start the render cycle
-	this->m_mpv = mpv_create ();
-
-	if (this->m_mpv == nullptr) {
-	    sLog.exception ("Cannot create mpv context for video texture");
-	}
-
-	// copied off CVideo, we don't really need anything fancy here
-	mpv_set_option_string (this->m_mpv, "terminal", "yes");
-#if NDEBUG
-	mpv_set_option_string (this->m_mpv, "msg-level", "all=status,statusline=no");
-#else
-	mpv_set_option_string (this->m_mpv, "msg-level", "all=v");
-#endif
-	mpv_set_option_string (this->m_mpv, "input-cursor", "no");
-	mpv_set_option_string (this->m_mpv, "cursor-autohide", "no");
-	mpv_set_option_string (this->m_mpv, "config", "no");
-	mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
-	mpv_set_option_string (this->m_mpv, "vo", "libmpv");
-        mpv_set_option_string (this->m_mpv, "profile", "fast");
-        mpv_set_option_string (this->m_mpv, "untimed", "yes");
-
-	if (mpv_initialize (this->m_mpv) < 0) {
-	    sLog.exception ("Could not initialize mpv context");
-	}
-
-	// add custom protocol
-	mpv_stream_cb_add_ro (this->m_mpv, "texture", &*this->m_header->images.begin ()->second.begin (), mem_open);
-
-	// ensure video is muted and plays in a loop
-	mpv_set_option_string (this->m_mpv, "hwdec", "auto");
-	mpv_set_option_string (this->m_mpv, "loop", "inf");
-	mpv_set_option (this->m_mpv, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
-
-	// initialize gl context for mpv
-	mpv_opengl_init_params gl_init_params { get_proc_address_texture, this };
-	mpv_render_param params[] { { MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL) },
-				    { MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params },
-				    { MPV_RENDER_PARAM_INVALID, nullptr } };
-
-	if (mpv_render_context_create (&this->m_mpvGl, this->m_mpv, params) < 0) {
-	    sLog.exception ("Failed to initialize MPV's GL context");
-	}
-
-	// start playing the video
-	const char* command[] = { "loadfile", "texture://", nullptr };
-
-	if (mpv_command (this->m_mpv, command) < 0) {
-	    sLog.exception ("Cannot load video texture to play");
-	}
-
-	// also mute the video
-	const char* mutecommand[] = { "set", "mute", "yes", nullptr };
-
-	mpv_command (this->m_mpv, mutecommand);
+	// setup texture video player
+	this->m_player->setMuted ();
+	this->m_player->setVolume (0.0f);
+	this->m_player->setUntimed ();
+	// texture is ready, nothing else to do
 	return;
     }
 
@@ -232,19 +104,8 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 }
 
 CTexture::~CTexture () {
-    if (this->m_mpvGl) {
-	mpv_render_context_free (this->m_mpvGl);
-	this->m_mpvGl = nullptr;
-    }
-
-    if (this->m_mpv) {
-	mpv_terminate_destroy (this->m_mpv);
-	this->m_mpv = nullptr;
-    }
-
-    if (this->m_framebuffer != GL_NONE) {
-	glDeleteFramebuffers (1, &this->m_framebuffer);
-    }
+    // first release the player to prevent using null references
+    this->m_player.release ();
 
     glDeleteTextures (this->m_header->imageCount, this->m_textureID);
 
@@ -379,47 +240,7 @@ uint32_t CTexture::getSpritesheetFrames () const { return this->getHeader ().spr
 float CTexture::getSpritesheetDuration () const { return this->getHeader ().spritesheetDuration; }
 
 void CTexture::update () const {
-    // do not do anything if the texture is not a video
-    if (this->m_mpv == nullptr) {
-	return;
+    if (this->m_player) {
+	this->m_player->render ();
     }
-
-    // video textures should only have one mipmap
-    const auto mipmap = *this->getHeader ().images.begin ()->second.begin ();
-    // read all the events available
-    while (true) {
-	const mpv_event* event = mpv_wait_event (this->m_mpv, 0);
-
-	if (event == nullptr || event->event_id == MPV_EVENT_NONE) {
-	    break;
-	}
-
-	// we do not care about any of the events
-	if (event->event_id == MPV_EVENT_VIDEO_RECONFIG) {
-	    if (mpv_get_property (this->m_mpv, "dwidth", MPV_FORMAT_INT64, &this->m_videoWidth) >= 0
-		&& mpv_get_property (this->m_mpv, "dheight", MPV_FORMAT_INT64, &this->m_videoHeight) >= 0) {
-		// reconfigure the texture
-		glBindTexture (GL_TEXTURE_2D, this->m_textureID[0]);
-		glTexImage2D (
-		    GL_TEXTURE_2D, 0, GL_RGBA8, this->m_videoWidth, this->m_videoHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-		    nullptr
-		);
-	    }
-	}
-    }
-
-    // render the next
-    glViewport (0, 0, this->m_videoWidth, this->m_videoHeight);
-
-    mpv_opengl_fbo fbo { static_cast<int> (this->m_framebuffer), static_cast<int> (this->m_videoWidth),
-			 static_cast<int> (this->m_videoHeight), GL_RGBA8 };
-
-    // no need to flip as it'll be handled by the wallpaper rendering code
-    int flip_y = 0;
-
-    mpv_render_param params[] = { { MPV_RENDER_PARAM_OPENGL_FBO, &fbo },
-				  { MPV_RENDER_PARAM_FLIP_Y, &flip_y },
-				  { MPV_RENDER_PARAM_INVALID, nullptr } };
-
-    mpv_render_context_render (this->m_mpvGl, params);
 }

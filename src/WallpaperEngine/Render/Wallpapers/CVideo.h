@@ -2,10 +2,11 @@
 
 #include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include <mpv/client.h>
-#include <mpv/render_gl.h>
+#include "WallpaperEngine/VideoPlayback/MPV/GLPlayer.h"
 
 namespace WallpaperEngine::Render::Wallpapers {
+using namespace WallpaperEngine::VideoPlayback::MPV;
+
 class CVideo final : public CWallpaper {
 public:
     CVideo (
@@ -13,15 +14,14 @@ public:
 	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
     );
 
-    ~CVideo () override;
+    ~CVideo () override = default;
 
-    const Video& getVideo () const;
+    const Data::Model::Video& getVideo () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
 
     void setPause (bool newState) override;
-    void setSize (int width, int height);
 
 protected:
     void renderFrame (const glm::ivec4& viewport) override;
@@ -29,12 +29,8 @@ protected:
     friend class CWallpaper;
 
 private:
-    mpv_handle* m_mpv = nullptr;
-    mpv_render_context* m_mpvGl = nullptr;
+    GLPlayerUniquePtr m_player;
 
-    bool m_paused = false;
-    int64_t m_width = 16;
-    int64_t m_height = 16;
     bool m_muted = false;
 };
 } // namespace WallpaperEngine::Render::Wallpapers

@@ -3,6 +3,7 @@
 #include "Helpers/ContextAware.h"
 #include "TextureProvider.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
+#include "WallpaperEngine/VideoPlayback/MPV/GLPlayer.h"
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
@@ -15,7 +16,7 @@
 namespace WallpaperEngine::Render {
 class RenderContext;
 using namespace WallpaperEngine::Data::Assets;
-
+using namespace WallpaperEngine::VideoPlayback::MPV;
 /**
  * A normal texture file in WallpaperEngine's format
  */
@@ -67,18 +68,9 @@ private:
     TextureUniquePtr m_header;
     /** OpenGL's texture ID */
     GLuint* m_textureID = nullptr;
-    GLuint m_framebuffer = GL_NONE;
     /** Resolution vector of the texture */
     glm::vec4 m_resolution {};
-    /** mpv instance for video textures */
-    mpv_handle* m_mpv = nullptr;
-    /** Render context for opengl rendering */
-    mpv_render_context* m_mpvGl = nullptr;
-    /** The width of the video as reported by mpv */
-    mutable int64_t m_videoWidth = 0;
-    /** The height of the video as reported by mpv */
-    mutable int64_t m_videoHeight = 0;
-    /** Audio for the video (always 0) */
-    double m_volume = 0.0f;
+    /** The video player in use */
+    GLPlayerUniquePtr m_player;
 };
 } // namespace WallpaperEngine::Assets

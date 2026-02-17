@@ -26,4 +26,5 @@ struct MemoryStream : std::istream, private std::streambuf {
 };
 
 using MemoryStreamSharedPtr = std::shared_ptr<MemoryStream>;
+using MemoryStreamUniquePtr = std::unique_ptr<MemoryStream>;
 }
