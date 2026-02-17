@@ -129,6 +129,7 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 	mpv_set_option_string (this->m_mpv, "fbo-format", "rgba8");
 	mpv_set_option_string (this->m_mpv, "vo", "libmpv");
         mpv_set_option_string (this->m_mpv, "profile", "fast");
+        mpv_set_option_string (this->m_mpv, "untimed", "yes");
 
 	if (mpv_initialize (this->m_mpv) < 0) {
 	    sLog.exception ("Could not initialize mpv context");
