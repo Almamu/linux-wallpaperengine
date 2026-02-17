@@ -1,6 +1,8 @@
 #pragma once
 #include "WallpaperEngine/Data/Utils/MemoryStream.h"
 
+#include <mpv/client.h>
+
 #include <cstring>
 #include <memory>
 
@@ -12,7 +14,7 @@ struct MemoryStreamProtocol : Data::Utils::MemoryStream {
 	memcpy (this->m_buffer.get (), pointer, size);
     }
 
-    void linkPlayer (const GLPlayer& player);
+    void registerReadCallback (mpv_handle* handle);
 
     size_t m_size;
 };

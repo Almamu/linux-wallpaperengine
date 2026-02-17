@@ -41,6 +41,20 @@ public:
     [[nodiscard]] float getSpritesheetDuration () const override;
 
     /**
+     * Increments the usage count of the texture
+     *
+     * Directly controls playback for video CTextures, only started when at least one thing is using it
+     * Initializes mpv if needed and starts playback
+     */
+    void incrementUsageCount () const override;
+    /**
+     * Decrements the usage count of the texture
+     *
+     * Directly controls playback for video CTextures, only stopped when nothing is using it
+     * De-initializes mpv if needed
+     */
+    void decrementUsageCount () const override;
+    /**
      * Some textures need to be updated
      */
     void update () const override;
@@ -62,7 +76,7 @@ private:
     /**
      * Prepares openGL parameters for loading texture data
      */
-    void setupOpenGLParameters (const uint32_t textureID) const;
+    void setupOpenGLParameters (uint32_t textureID) const;
 
     /** The texture header */
     TextureUniquePtr m_header;

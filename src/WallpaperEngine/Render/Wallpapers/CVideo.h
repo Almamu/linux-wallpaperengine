@@ -14,7 +14,7 @@ public:
 	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
     );
 
-    ~CVideo () override = default;
+    ~CVideo () override;
 
     const Data::Model::Video& getVideo () const;
 

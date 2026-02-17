@@ -213,9 +213,15 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_viewProjectionMatrix = glm::mat4 (1.0);
+
+    // ensure the input texture is marked as used
+    // this makes video playback start if it's not already
+    this->m_texture->incrementUsageCount ();
 }
 
 CImage::~CImage () {
+    this->m_texture->decrementUsageCount ();
+
     // delete passes first as they depend on the image's data
     for (auto* pass : this->m_passes) {
 	delete pass;

@@ -124,4 +124,6 @@ float CFBO::getSpritesheetDuration () const {
     return 0.0f; // FBOs don't have spritesheets
 }
 
+void CFBO::incrementUsageCount () const { }
+void CFBO::decrementUsageCount () const { }
 void CFBO::update () const { }

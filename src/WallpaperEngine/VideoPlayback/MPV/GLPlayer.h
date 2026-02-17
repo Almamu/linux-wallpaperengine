@@ -23,6 +23,21 @@ public:
     );
     ~GLPlayer () override;
 
+    /**
+     * Increments the usage count of the player
+     *
+     * Directly controls playback, only started when at least one thing is using it
+     * Initializes mpv if needed and starts playback
+     */
+    void incrementUsageCount ();
+    /**
+     * Decrements the usage count of the player
+     *
+     * Directly controls playback, only stopped when nothing is using it
+     * De-initializes mpv if needed
+     */
+    void decrementUsageCount ();
+
     void setUntimed ();
     void clearUntimed ();
     void setMuted ();
@@ -39,8 +54,9 @@ public:
 private:
     void prepareGL ();
     void init ();
-    void play (MemoryStreamProtocolUniquePtr source);
-    void play (const std::filesystem::path& file);
+    void play ();
+    void setSource (MemoryStreamProtocolUniquePtr source);
+    void setSource (const std::filesystem::path& file);
     void stop ();
 
 protected:
@@ -55,8 +71,9 @@ protected:
     bool m_muted = false;
     bool m_untimed = false;
     bool m_paused = false;
-    std::optional<std::string> m_file;
+    std::optional<std::filesystem::path> m_file;
     std::optional<MemoryStreamProtocolUniquePtr> m_stream;
+    uint32_t m_usageCount = 0;
 };
 
 using GLPlayerUniquePtr = std::unique_ptr<GLPlayer>;

@@ -47,6 +47,6 @@ int mem_open (void* userdata, char* uri, struct mpv_stream_cb_info* info) {
     return 0;
 }
 
-void MemoryStreamProtocol::linkPlayer (const GLPlayer& player) {
-    mpv_stream_cb_add_ro (player.m_handle, "buffer", this, mem_open);
+void MemoryStreamProtocol::registerReadCallback (mpv_handle* handle) {
+    mpv_stream_cb_add_ro (handle, "buffer", this, mem_open);
 }

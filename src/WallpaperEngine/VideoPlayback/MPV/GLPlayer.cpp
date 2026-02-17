@@ -19,7 +19,7 @@ GLPlayer::GLPlayer (
     this->m_doWeOwnFramebuffer = this->m_fbo == GL_NONE;
 
     this->prepareGL ();
-    this->play (file);
+    this->setSource (file);
 }
 
 GLPlayer::GLPlayer (
@@ -30,7 +30,7 @@ GLPlayer::GLPlayer (
     this->m_doWeOwnFramebuffer = this->m_fbo == GL_NONE;
 
     this->prepareGL ();
-    this->play (std::move (stream));
+    this->setSource (std::move (stream));
 }
 
 GLPlayer::~GLPlayer () {
@@ -41,6 +41,26 @@ GLPlayer::~GLPlayer () {
     if (this->m_doWeOwnFramebuffer) {
 	// free gl resources too
 	glDeleteFramebuffers (1, &this->m_fbo);
+    }
+}
+
+void GLPlayer::incrementUsageCount () {
+    this->m_usageCount++;
+
+    if (this->m_usageCount == 1) {
+        this->play ();
+    }
+}
+
+void GLPlayer::decrementUsageCount () {
+    if (this->m_usageCount == 0) {
+        sLog.exception("GLPlayer usage count would underflow");
+    }
+
+    this->m_usageCount--;
+
+    if (this->m_usageCount == 0) {
+        this->stop ();
     }
 }
 
@@ -105,7 +125,11 @@ void GLPlayer::clearPaused () {
 void GLPlayer::render () const {
     // do not do anything if the texture is not a video
     if (this->m_handle == nullptr) {
-	return;
+        const_cast<GLPlayer*>(this)->incrementUsageCount();
+    }
+
+    if (this->m_handle == nullptr) {
+        return;
     }
 
     // read all the events available
@@ -116,17 +140,31 @@ void GLPlayer::render () const {
 	    break;
 	}
 
-	// we do not care about any of the events
-	if (event->event_id == MPV_EVENT_VIDEO_RECONFIG) {
-	    if (mpv_get_property (this->m_handle, "dwidth", MPV_FORMAT_INT64, &this->m_width) >= 0
-		&& mpv_get_property (this->m_handle, "dheight", MPV_FORMAT_INT64, &this->m_height) >= 0) {
-		// reconfigure the texture
-		glBindTexture (GL_TEXTURE_2D, this->m_outputTexture);
-		glTexImage2D (
-		    GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr
-		);
-	    }
-	}
+        if (event->event_id != MPV_EVENT_VIDEO_RECONFIG) {
+            continue;
+        }
+
+        int64_t width, height;
+
+        if (mpv_get_property (this->m_handle, "dwidth", MPV_FORMAT_INT64, &width) < 0) {
+            continue;
+        }
+
+        if (mpv_get_property (this->m_handle, "dheight", MPV_FORMAT_INT64, &height) < 0) {
+            continue;
+        }
+
+        if (width < 0 || height < 0) {
+            continue;
+        }
+
+        this->m_width = width;
+        this->m_height = height;
+        // reconfigure the texture
+        glBindTexture (GL_TEXTURE_2D, this->m_outputTexture);
+        glTexImage2D (
+            GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr
+        );
     }
 
     // render the next
@@ -178,7 +216,7 @@ void GLPlayer::init () {
 	sLog.exception ("Cannot create mpv context for video texture");
     }
 
-    // copied off CVideo, we don't really need anything fancy here
+    // setup mpv options for playback
     mpv_set_option_string (this->m_handle, "terminal", "yes");
 #if NDEBUG
     mpv_set_option_string (this->m_handle, "msg-level", "all=status,statusline=no");
@@ -216,34 +254,38 @@ void GLPlayer::init () {
     mpv_set_option_string (this->m_handle, "mute", this->m_muted ? "yes" : "no");
 }
 
-void GLPlayer::play (const std::filesystem::path& file) {
-    if (this->m_handle == nullptr) {
-	this->init ();
-    }
-
-    // build the path to the video file
-    const char* command[] = { "loadfile", file.c_str (), nullptr };
-
-    if (mpv_command (this->m_handle, command) < 0) {
-	sLog.exception ("Cannot load video to play");
-    }
+void GLPlayer::setSource (const std::filesystem::path& file) {
+    this->m_file = file;
 }
 
-void GLPlayer::play (MemoryStreamProtocolUniquePtr source) {
-    if (this->m_handle == nullptr) {
-	this->init ();
-    }
-
-    source->linkPlayer (*this);
+void GLPlayer::setSource (MemoryStreamProtocolUniquePtr source) {
     this->m_stream = std::move (source);
+}
 
-    // start playing the video
-    const char* command[] = { "loadfile", "buffer://", nullptr };
-
-    if (mpv_command (this->m_handle, command) < 0) {
-        sLog.exception ("Cannot load video texture to play");
+void GLPlayer::play () {
+    if (this->m_handle != nullptr) {
+        sLog.exception("Cannot play the same GLPlayer twice");
     }
 
+    this->init ();
+
+    if (this->m_file.has_value()) {
+        // build the path to the video file
+        const char* command[] = { "loadfile", this->m_file.value ().c_str (), nullptr };
+
+        if (mpv_command (this->m_handle, command) < 0) {
+            sLog.exception ("Cannot load video to play");
+        }
+    } else if (this->m_stream) {
+        this->m_stream.value ()->registerReadCallback (this->m_handle);
+
+        // start playing the video
+        const char* command[] = { "loadfile", "buffer://", nullptr };
+
+        if (mpv_command (this->m_handle, command) < 0) {
+            sLog.exception ("Cannot load video texture to play");
+        }
+    }
 }
 
 void GLPlayer::stop () {

@@ -26,6 +26,12 @@ CVideo::CVideo (
 	this->CWallpaper::getWallpaperFramebuffer ()
     );
     this->m_player->setVolume (this->getContext ().getApp ().getContext ().settings.audio.volume * 100.0 / 128.0);
+    // make sure the video has at least one usage marked, this ensures the video plays
+    this->m_player->incrementUsageCount ();
+}
+
+CVideo::~CVideo () {
+    this->m_player->decrementUsageCount ();
 }
 
 void CVideo::renderFrame (const glm::ivec4& viewport) {

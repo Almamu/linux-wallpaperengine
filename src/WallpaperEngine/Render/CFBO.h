@@ -34,6 +34,8 @@ public:
     [[nodiscard]] uint32_t getSpritesheetFrames () const override;
     [[nodiscard]] float getSpritesheetDuration () const override;
 
+    void incrementUsageCount() const override;
+    void decrementUsageCount() const override;
     void update () const override;
 
 private:
