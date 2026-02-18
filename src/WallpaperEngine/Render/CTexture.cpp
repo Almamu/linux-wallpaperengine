@@ -23,13 +23,12 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 	glGenTextures (1, this->m_textureID);
 	this->setupOpenGLParameters (0);
 
-        const auto mipmap = *this->m_header->images.begin ()->second.begin ();
+	const auto mipmap = *this->m_header->images.begin ()->second.begin ();
 
 	this->m_player = std::make_unique<GLPlayer> (
 	    this->getContext (), this->m_textureID[0],
-	    std::make_unique<MemoryStreamProtocol>(
-                mipmap->uncompressedData.get(), mipmap->uncompressedSize
-            ), this->m_header->textureWidth, this->m_header->textureHeight
+	    std::make_unique<MemoryStreamProtocol> (mipmap->uncompressedData.get (), mipmap->uncompressedSize),
+	    this->m_header->textureWidth, this->m_header->textureHeight
 	);
 	// setup texture video player
 	this->m_player->setMuted ();
@@ -241,13 +240,13 @@ float CTexture::getSpritesheetDuration () const { return this->getHeader ().spri
 
 void CTexture::incrementUsageCount () const {
     if (this->m_player) {
-        this->m_player->incrementUsageCount ();
+	this->m_player->incrementUsageCount ();
     }
 }
 
 void CTexture::decrementUsageCount () const {
     if (this->m_player) {
-        this->m_player->decrementUsageCount ();
+	this->m_player->decrementUsageCount ();
     }
 }
 

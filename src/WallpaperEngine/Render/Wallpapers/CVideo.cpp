@@ -30,9 +30,7 @@ CVideo::CVideo (
     this->m_player->incrementUsageCount ();
 }
 
-CVideo::~CVideo () {
-    this->m_player->decrementUsageCount ();
-}
+CVideo::~CVideo () { this->m_player->decrementUsageCount (); }
 
 void CVideo::renderFrame (const glm::ivec4& viewport) {
     // ensure the video's audio follows audio detection rules
