@@ -517,7 +517,7 @@ void CImage::updateScreenSpacePosition () {
     auto rotModel = glm::mat4 (1.0f);
 
     // TODO: ALSO APPLY PARENT'S ROTATION? NEED TO BUILD SOME EXAMPLE BACKGROUNDS TO PROPERLY TRY THIS
-    if (const double angleMagnitude = glm::length (angles); angleMagnitude != 0.0f) {
+    if (glm::dot(angles, angles) > 0.0f) {
 	const auto sceneCenter
 	    = glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
 
