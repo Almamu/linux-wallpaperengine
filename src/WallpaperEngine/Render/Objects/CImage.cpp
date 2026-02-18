@@ -515,21 +515,8 @@ const glm::vec3& CImage::getCompositeColor () const { return this->m_image.color
 void CImage::updateScreenSpacePosition () {
     const glm::vec3 angles = this->m_image.angles->value->getVec3 ();
     auto rotModel = glm::mat4 (1.0f);
-
-    // TODO: ALSO APPLY PARENT'S ROTATION? NEED TO BUILD SOME EXAMPLE BACKGROUNDS TO PROPERLY TRY THIS
-    if (glm::dot(angles, angles) > 0.0f) {
-	const auto sceneCenter
-	    = glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
-
-	rotModel = glm::translate (rotModel, sceneCenter);
-	rotModel = glm::rotate (rotModel, angles.z, glm::vec3 (0.0f, 0.0f, -1.0f));
-	rotModel = glm::rotate (rotModel, angles.y, glm::vec3 (0.0f, 1.0f, 0.0f));
-	rotModel = glm::rotate (rotModel, angles.x, glm::vec3 (-1.0f, 0.0f, 0.0f));
-	rotModel = glm::translate (rotModel, -sceneCenter);
-    }
-
     this->m_modelViewProjectionScreen
-	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt () * rotModel;
+	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
 
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
     if (this->getScene ().getScene ().camera.parallax.enabled
@@ -541,9 +528,22 @@ void CImage::updateScreenSpacePosition () {
 	// parallax should happen
 	float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
 	float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().y;
-	this->m_modelViewProjectionScreen = glm::translate (this->m_modelViewProjectionScreen, { x, y, 0.0f });
+	this->m_modelViewProjectionScreen *= glm::translate (glm::mat4 (1.0f), { x, y, 0.0f });
     }
 
+    // TODO: ALSO APPLY PARENT'S ROTATION? NEED TO BUILD SOME EXAMPLE BACKGROUNDS TO PROPERLY TRY THIS
+    if (glm::dot (angles, angles) > 0.0f) {
+	const auto sceneCenter
+	    = glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
+
+	rotModel = glm::translate (rotModel, sceneCenter);
+	rotModel = glm::rotate (rotModel, angles.z, glm::vec3 (0.0f, 0.0f, -1.0f));
+	rotModel = glm::rotate (rotModel, angles.y, glm::vec3 (0.0f, 1.0f, 0.0f));
+	rotModel = glm::rotate (rotModel, angles.x, glm::vec3 (-1.0f, 0.0f, 0.0f));
+	rotModel = glm::translate (rotModel, -sceneCenter);
+    }
+
+    this->m_modelViewProjectionScreen *= rotModel;
     this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 }
 
