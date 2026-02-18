@@ -1,23 +1,50 @@
 #include "CTexture.h"
 #include "WallpaperEngine/Logging/Log.h"
 
-#include <cstring>
 #include <lz4.h>
-#include <string>
 
 #define STB_IMAGE_IMPLEMENTATION
+#include "RenderContext.h"
+
 #include <stb_image.h>
 
 using namespace WallpaperEngine::Render;
 
-CTexture::CTexture (TextureUniquePtr header) : m_header (std::move (header)) {
+CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
+    Helpers::ContextAware (context), m_header (std::move (header)) {
     // ensure the header is parsed
     this->setupResolution ();
     const GLint internalFormat = this->setupInternalFormat ();
 
+    // videos are a bit special, they only have one framebuffer, one mipmap
+    if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	if (this->m_header->images.empty () || this->m_header->images.begin ()->second.empty ()) {
+	    sLog.exception ("Cannot load video texture, no mipmaps found");
+	}
+
+	// generate the texture and set it up to be used by the player
+	this->m_textureID = new GLuint[1];
+	glGenTextures (1, this->m_textureID);
+	this->setupOpenGLParameters (0);
+
+	const auto mipmap = *this->m_header->images.begin ()->second.begin ();
+
+	this->m_player = std::make_unique<GLPlayer> (
+	    this->getContext (), this->m_textureID[0],
+	    std::make_unique<MemoryStreamProtocol> (mipmap->uncompressedData.get (), mipmap->uncompressedSize),
+	    this->m_header->textureWidth, this->m_header->textureHeight
+	);
+	// setup texture video player
+	this->m_player->setMuted ();
+	this->m_player->setVolume (0.0f);
+	this->m_player->setUntimed ();
+	// texture is ready, nothing else to do
+	return;
+    }
+
     // allocate texture ids list
     this->m_textureID = new GLuint[this->m_header->imageCount];
-    // ask opengl for the correct amount of textures
+    // ask opengl for the correct amount of textures and framebuffers
     glGenTextures (this->m_header->imageCount, this->m_textureID);
 
     for (const auto& [index, mipmaps] : this->m_header->images) {
@@ -32,10 +59,6 @@ CTexture::CTexture (TextureUniquePtr header) : m_header (std::move (header)) {
 	    int height = mipmap->height;
 	    const uint32_t bufferSize = mipmap->uncompressedSize;
 	    GLenum textureFormat = GL_RGBA;
-
-	    if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
-	        sLog.exception ("MP4 textures are not supported yet");
-	    }
 
 	    if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
 		int fileChannels;
@@ -84,8 +107,13 @@ CTexture::CTexture (TextureUniquePtr header) : m_header (std::move (header)) {
 }
 
 CTexture::~CTexture () {
-    for (uint32_t i = 0; i < this->m_header->imageCount; i++) {
-        glDeleteTextures (1, &this->m_textureID[i]);
+    // first release the player to prevent using null references
+    this->m_player.reset ();
+
+    if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	glDeleteTextures (1, this->m_textureID);
+    } else {
+	glDeleteTextures (this->m_header->imageCount, this->m_textureID);
     }
 
     delete[] this->m_textureID;
@@ -137,6 +165,7 @@ GLint CTexture::setupInternalFormat () const {
 }
 
 void CTexture::setupOpenGLParameters (const uint32_t textureID) const {
+    // TODO: LABEL ELEMENTS TOO
     // bind the texture to assign information to it
     glBindTexture (GL_TEXTURE_2D, this->m_textureID[textureID]);
 
@@ -216,3 +245,21 @@ uint32_t CTexture::getSpritesheetRows () const { return this->getHeader ().sprit
 uint32_t CTexture::getSpritesheetFrames () const { return this->getHeader ().spritesheetFrames; }
 
 float CTexture::getSpritesheetDuration () const { return this->getHeader ().spritesheetDuration; }
+
+void CTexture::incrementUsageCount () const {
+    if (this->m_player) {
+	this->m_player->incrementUsageCount ();
+    }
+}
+
+void CTexture::decrementUsageCount () const {
+    if (this->m_player) {
+	this->m_player->decrementUsageCount ();
+    }
+}
+
+void CTexture::update () const {
+    if (this->m_player) {
+	this->m_player->render ();
+    }
+}

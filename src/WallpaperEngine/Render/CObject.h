@@ -31,16 +31,15 @@ public:
 
     template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
 
-    virtual void render () = 0;
+    CObject (Wallpapers::CScene& scene, const Object& object);
+    virtual ~CObject () override = default;
+
+    virtual void render ();
 
     [[nodiscard]] Wallpapers::CScene& getScene () const;
     [[nodiscard]] const AssetLocator& getAssetLocator () const;
     [[nodiscard]] int getId () const;
-
-    virtual ~CObject () override = default;
-
-protected:
-    CObject (Wallpapers::CScene& scene, const Object& object);
+    [[nodiscard]] const Object& getObject () const;
 
 private:
     Wallpapers::CScene& m_scene;

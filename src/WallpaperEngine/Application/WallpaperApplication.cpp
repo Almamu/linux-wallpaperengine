@@ -199,13 +199,13 @@ ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
     // this allows taking screenshots after a background changes
     // useful for playlists
     if (this->m_context.settings.screenshot.take) {
-        this->m_nextFrameScreenshot = this->m_context.settings.screenshot.delay;
+	this->m_nextFrameScreenshot = this->m_context.settings.screenshot.delay;
 
-        if (this->m_videoDriver != nullptr) {
-            this->m_nextFrameScreenshot += this->m_videoDriver->getFrameCounter ();
-        }
+	if (this->m_videoDriver != nullptr) {
+	    this->m_nextFrameScreenshot += this->m_videoDriver->getFrameCounter ();
+	}
 
-        this->m_screenShotTaken = false;
+	this->m_screenShotTaken = false;
     }
 
     return WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (container));
@@ -587,7 +587,7 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
     const std::string extStr = extension.string ();
 
     // Offload pixel processing and saving to a background thread to avoid hitches
-    std::thread ([captures, width, height, vflip, extStr, filename]() {
+    std::thread ([captures, width, height, vflip, extStr, filename] () {
 	auto* bitmap = new uint8_t[width * height * 3] { 0 };
 
 	for (const auto& capture : captures) {
@@ -595,8 +595,10 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
 	    for (int y = 0; y < capture.vpHeight; y++) {
 		for (int x = 0; x < capture.vpWidth; x++) {
 		    // interpolate within the UV range to get source coordinates
-		    const float u = capture.ustart + (static_cast<float> (x) / capture.vpWidth) * (capture.uend - capture.ustart);
-		    const float v = capture.vstart + (static_cast<float> (y) / capture.vpHeight) * (capture.vend - capture.vstart);
+		    const float u
+			= capture.ustart + (static_cast<float> (x) / capture.vpWidth) * (capture.uend - capture.ustart);
+		    const float v = capture.vstart
+			+ (static_cast<float> (y) / capture.vpHeight) * (capture.vend - capture.vstart);
 
 		    // convert UV to pixel coordinates in the source buffer
 		    const int srcX = std::clamp (static_cast<int> (u * capture.readWidth), 0, capture.readWidth - 1);
@@ -826,16 +828,16 @@ void WallpaperApplication::show () {
 
 	this->updatePlaylists ();
 
-        if (!this->m_context.settings.screenshot.take || this->m_screenShotTaken == true) {
-            continue;
-        }
+	if (!this->m_context.settings.screenshot.take || this->m_screenShotTaken == true) {
+	    continue;
+	}
 
-        if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
-            continue;
-        }
+	if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
+	    continue;
+	}
 
-        this->takeScreenshot (this->m_context.settings.screenshot.path);
-        this->m_screenShotTaken = true;
+	this->takeScreenshot (this->m_context.settings.screenshot.path);
+	this->m_screenShotTaken = true;
     }
 
     sLog.out ("Stopping");

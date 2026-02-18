@@ -163,6 +163,8 @@ protected:
     /** The FBO used for scene output */
     std::shared_ptr<const CFBO> m_sceneFBO = nullptr;
 
+    GLuint m_vaoBuffer = GL_NONE;
+
 private:
     /** The texture used for the scene output */
     GLuint m_texCoordBuffer = GL_NONE;
@@ -172,7 +174,6 @@ private:
     GLint g_Texture0 = GL_NONE;
     GLint a_Position = GL_NONE;
     GLint a_TexCoord = GL_NONE;
-    GLuint m_vaoBuffer = GL_NONE;
     /** The framebuffer to draw the background to */
     GLuint m_destFramebuffer = GL_NONE;
     /** Setups OpenGL's shaders for this wallpaper backbuffer */

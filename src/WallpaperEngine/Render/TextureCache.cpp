@@ -27,7 +27,6 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 	    auto stream = BinaryReader (contents);
 
 	    // Create metadata loader lambda that captures the assetLocator
-	    // Note: Unlike texture() which prepends "materials/", readString() doesn't,
 	    // so we need to construct the full path here
 	    auto metadataLoader = [&project] (const std::string& metaFilename) -> std::string {
 		std::filesystem::path fullPath = std::filesystem::path ("materials") / metaFilename;
@@ -35,7 +34,7 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 	    };
 
 	    auto parsedTexture = TextureParser::parse (stream, filename, metadataLoader);
-	    auto texture = std::make_shared<CTexture> (std::move (parsedTexture));
+	    auto texture = std::make_shared<CTexture> (this->getContext (), std::move (parsedTexture));
 
 	    this->store (filename, texture);
 

@@ -30,6 +30,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glm::vec2 size = this->getSize ();
     glm::vec3 scale = this->getImage ().scale->value->getVec3 ();
 
+    // TODO: PROPERLY SUPPORT PARENTS, FOR NOW THIS SHOULD BE ENOUGH
+    if (this->m_image.parent.has_value ()) {
+	origin += this->getScene ().getObject (this->m_image.parent.value ())->getObject ().origin->value->getVec3 ();
+    }
+
     this->detectTexture ();
 
     // detect texture (if any)
@@ -208,9 +213,15 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_viewProjectionMatrix = glm::mat4 (1.0);
+
+    // ensure the input texture is marked as used
+    // this makes video playback start if it's not already
+    this->m_texture->incrementUsageCount ();
 }
 
 CImage::~CImage () {
+    this->m_texture->decrementUsageCount ();
+
     // delete passes first as they depend on the image's data
     for (auto* pass : this->m_passes) {
 	delete pass;
@@ -452,6 +463,8 @@ void CImage::render () {
     if (!this->m_initialized) {
 	return;
     }
+
+    // TODO: DO NOT DRAW IMAGES THAT ARE NOT VISIBLE AND NOTHING DEPENDS ON THEM
 
     glColorMask (true, true, true, true);
 

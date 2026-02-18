@@ -171,6 +171,21 @@ Render::CObject* CScene::createObject (const Object& object) {
 	}
     }
 
+    // check if the item has any parent and also create it first
+    if (object.parent.has_value ()) {
+	int parentId = object.parent.value ();
+
+	const auto dep = std::ranges::find_if (this->getScene ().objects, [&parentId] (const auto& o) {
+	    return o->id == parentId;
+	});
+
+	if (dep == this->getScene ().objects.end ()) {
+	    sLog.exception ("Cannot find parent ", parentId, " for object ", object.id);
+	}
+
+	this->createObject (**dep);
+    }
+
     if (object.is<Image> ()) {
 	auto* image = new Objects::CImage (*this, *object.as<Image> ());
 
@@ -199,6 +214,9 @@ Render::CObject* CScene::createObject (const Object& object) {
 	}
 
 	renderObject = particle;
+    } else {
+	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+	renderObject = new CObject (*this, object);
     }
 
     if (renderObject != nullptr) {
@@ -262,6 +280,29 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	    = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
     }
 
+    // update main textures for images
+    for (const auto& cur : this->m_objectsByRenderOrder) {
+	if (!cur->is<Objects::CImage> ()) {
+	    continue;
+	}
+
+	const Objects::CImage* image = cur->as<Objects::CImage> ();
+
+#if !NDEBUG
+	const std::string message = "Updating texture " + image->getImage ().model->filename;
+
+	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, message.c_str ());
+#endif
+
+	image->getTexture ()->update ();
+
+#if !NDEBUG
+	glPopDebugGroup ();
+#endif
+    }
+
+    // bind the vertex array
+    glBindVertexArray (this->m_vaoBuffer);
     // use the scene's framebuffer by default
     glBindFramebuffer (GL_FRAMEBUFFER, this->getWallpaperFramebuffer ());
     // ensure we render over the whole framebuffer
@@ -310,3 +351,5 @@ const glm::vec2* CScene::getMousePositionLast () const { return &this->m_mousePo
 const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_parallaxDisplacement; }
 
 const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const { return this->m_objectsByRenderOrder; }
+
+const CObject* CScene::getObject (int id) const { return this->m_objects.at (id); }

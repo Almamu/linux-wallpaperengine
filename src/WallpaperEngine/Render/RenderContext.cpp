@@ -59,4 +59,5 @@ std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std:
 const std::map<std::string, std::shared_ptr<CWallpaper>>& RenderContext::getWallpapers () const {
     return this->m_wallpapers;
 }
+
 } // namespace WallpaperEngine::Render

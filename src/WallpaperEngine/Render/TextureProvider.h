@@ -78,5 +78,24 @@ public:
      * @return Duration of spritesheet animation in seconds
      */
     [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
+
+    /**
+     * Increments the usage count of the texture
+     *
+     * Directly controls playback for video CTextures, only started when at least one thing is using it
+     * Initializes mpv if needed and starts playback
+     */
+    virtual void incrementUsageCount () const = 0;
+    /**
+     * Decrements the usage count of the texture
+     *
+     * Directly controls playback for video CTextures, only stopped when nothing is using it
+     * De-initializes mpv if needed
+     */
+    virtual void decrementUsageCount () const = 0;
+    /**
+     * Allows the texture contents to be updated (for example, for video textures)
+     */
+    virtual void update () const = 0;
 };
 } // namespace WallpaperEngine::Render

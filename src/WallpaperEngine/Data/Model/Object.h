@@ -22,6 +22,9 @@ struct ObjectData {
     int id;
     std::string name;
     std::vector<int> dependencies;
+    std::optional<int> parent;
+    /** The point of origin of the object */
+    UserSettingUniquePtr origin;
 };
 
 /**
@@ -86,8 +89,6 @@ struct ImageAnimationLayer {
 };
 
 struct ImageData {
-    /** The point of origin of the image */
-    UserSettingUniquePtr origin;
     /** The scale of the image */
     UserSettingUniquePtr scale;
     /** The rotation of the image */
@@ -537,7 +538,6 @@ struct ParticleInstanceOverride {
 
 struct ParticleData {
     /** Position and transformation */
-    UserSettingUniquePtr origin;
     UserSettingUniquePtr scale;
     UserSettingUniquePtr angles;
     UserSettingUniquePtr visible;
