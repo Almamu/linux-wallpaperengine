@@ -123,11 +123,7 @@ void GLPlayer::clearPaused () {
 }
 
 void GLPlayer::render () const {
-    // do not do anything if the texture is not a video
-    if (this->m_handle == nullptr) {
-	const_cast<GLPlayer*> (this)->incrementUsageCount ();
-    }
-
+    // rendering should only happen if the texture is in use
     if (this->m_handle == nullptr) {
 	return;
     }
@@ -193,7 +189,7 @@ void GLPlayer::prepareGL () {
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_fbo);
     glBindTexture (GL_TEXTURE_2D, this->m_outputTexture);
     // reset texture's contents
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->m_width, this->m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     constexpr GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_outputTexture, 0);
     glDrawBuffers (1, drawBuffers);
@@ -234,9 +230,9 @@ void GLPlayer::init () {
     }
 
     // ensure video is muted and plays in a loop
-    mpv_set_option_string (this->m_handle, "hwdec", "auto");
-    mpv_set_option_string (this->m_handle, "loop", "inf");
-    mpv_set_option (this->m_handle, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
+    mpv_set_property_string (this->m_handle, "hwdec", "auto");
+    mpv_set_property_string (this->m_handle, "loop", "inf");
+    mpv_set_property (this->m_handle, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
 
     // initialize gl context for mpv
     mpv_opengl_init_params gl_init_params { get_proc_address, this };
@@ -249,7 +245,7 @@ void GLPlayer::init () {
     }
 
     // mute the video by default
-    mpv_set_option_string (this->m_handle, "mute", this->m_muted ? "yes" : "no");
+    mpv_set_property_string (this->m_handle, "mute", this->m_muted ? "yes" : "no");
 }
 
 void GLPlayer::setSource (const std::filesystem::path& file) { this->m_file = file; }

@@ -48,5 +48,7 @@ int mem_open (void* userdata, char* uri, struct mpv_stream_cb_info* info) {
 }
 
 void MemoryStreamProtocol::registerReadCallback (mpv_handle* handle) {
-    mpv_stream_cb_add_ro (handle, "buffer", this, mem_open);
+    if (mpv_stream_cb_add_ro (handle, "buffer", this, mem_open) < 0) {
+	sLog.exception ("Cannot register memory stream protocol for mpv");
+    }
 }
