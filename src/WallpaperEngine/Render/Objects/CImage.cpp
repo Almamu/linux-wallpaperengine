@@ -541,7 +541,7 @@ void CImage::updateScreenSpacePosition () {
 
         // parallax should happen
         float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
-        float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+        float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().y;
         this->m_modelViewProjectionScreen = glm::translate (this->m_modelViewProjectionScreen, { x, y, 0.0f });
     }
 
