@@ -18,6 +18,10 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 
     // videos are a bit special, they only have one framebuffer, one mipmap
     if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	if (this->m_header->images.empty () || this->m_header->images.begin ()->second.empty ()) {
+	    sLog.exception ("Cannot load video texture, no mipmaps found");
+	}
+
 	// generate the texture and set it up to be used by the player
 	this->m_textureID = new GLuint[1];
 	glGenTextures (1, this->m_textureID);
@@ -104,9 +108,13 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 
 CTexture::~CTexture () {
     // first release the player to prevent using null references
-    this->m_player.release ();
+    this->m_player.reset ();
 
-    glDeleteTextures (this->m_header->imageCount, this->m_textureID);
+    if (this->m_header->isVideoMp4 || this->m_header->flags & TextureFlags_Video) {
+	glDeleteTextures (1, this->m_textureID);
+    } else {
+	glDeleteTextures (this->m_header->imageCount, this->m_textureID);
+    }
 
     delete[] this->m_textureID;
 }
