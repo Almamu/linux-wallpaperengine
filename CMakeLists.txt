@@ -485,16 +485,15 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp)
 endif()
 
-add_executable(
-    linux-wallpaperengine
-    src/main.cpp
+add_library(
+    linux-wallpaperengine-lib SHARED
 
     ${COMMON_SOURCES}
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES})
 
-target_link_libraries (linux-wallpaperengine PUBLIC
+target_link_libraries (linux-wallpaperengine-lib PUBLIC
     ${OPENGL_LIBRARIES}
     GLEW::GLEW
     ${GLUT_LIBRARIES}
@@ -539,8 +538,8 @@ if (BUILD_TESTING)
         argparse)
 endif()
 
-target_compile_definitions(linux-wallpaperengine PUBLIC ERRORONLY=${ERRORONLY})
-target_compile_definitions(linux-wallpaperengine PUBLIC DEMOMODE=${DEMOMODE})
+target_compile_definitions(linux-wallpaperengine-lib PUBLIC ERRORONLY=${ERRORONLY})
+target_compile_definitions(linux-wallpaperengine-lib PUBLIC DEMOMODE=${DEMOMODE})
 
 if (BUILD_TESTING)
     # tests should give as much output as possible
@@ -549,28 +548,54 @@ if (BUILD_TESTING)
 endif()
 
 if(X11_SUPPORT_FOUND)
-    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_X11)
+    target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_X11)
 
     # make sure some of the X11 functions we'll use are available
     check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
 
     if(HAVE_XSETIOERROREXITHANDLER)
-        target_compile_definitions(linux-wallpaperengine PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
+        target_compile_definitions(linux-wallpaperengine-lib PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
     endif()
 endif()
 
 if(WAYLAND_SUPPORT_FOUND)
-    target_compile_definitions(linux-wallpaperengine PUBLIC ENABLE_WAYLAND)
+    target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_WAYLAND)
 endif()
 
-COPY_FILES(linux-wallpaperengine "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-COPY_FILES(linux-wallpaperengine "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+target_include_directories(linux-wallpaperengine-lib PUBLIC
+    src
+    src/External/glslang-WallpaperEngine
+    src/External/SPIRV-Cross-WallpaperEngine
+    src/External/MimeTypes
+    src/External/json/include
+    src/External/stb
+    src/External/kissfft
+    ${MPV_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIR}
+    ${LZ4_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIRS}
+    ${FFMPEG_INCLUDE_DIR}
+    ${PULSEAUDIO_INCLUDE_DIR}
+    ${CEF_INCLUDE_PATH}
+    ${CMAKE_SOURCE_DIR}
+    ${X11_INCLUDES}
+    ${WAYLAND_OUTPUT_DIR})
+
+COPY_FILES(linux-wallpaperengine-lib "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+COPY_FILES(linux-wallpaperengine-lib "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 # remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
 file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
+set_target_properties(linux-wallpaperengine-lib PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY})
 
-add_dependencies(linux-wallpaperengine libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
+add_dependencies(linux-wallpaperengine-lib libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
 # custom version of cef's SET_EXECUTABLE_TARGET_PROPERTIES that fixes C files being compiled with the wrong parameters
-REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine)
+REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-lib)
+
+add_executable(linux-wallpaperengine
+    src/main.cpp)
+
+target_link_libraries (linux-wallpaperengine PUBLIC linux-wallpaperengine-lib)
 
 # set some install parameters if not in debug mode
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)

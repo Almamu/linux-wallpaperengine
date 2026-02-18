@@ -22,6 +22,11 @@
 #include <set>
 
 namespace WallpaperEngine::Application {
+/**
+ * Forward declaration of a wrapper class friend of the actual wallpaper application for library-exposing purposes
+ */
+class WallpaperApplicationWrapper;
+
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 /**
@@ -59,6 +64,7 @@ public:
     [[nodiscard]] const WallpaperEngine::Render::Drivers::Output::Output& getOutput () const;
 
 private:
+    friend WallpaperApplicationWrapper;
     /**
      * Sets up an asset locator for the given background
      *
