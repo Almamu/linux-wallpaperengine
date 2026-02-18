@@ -204,10 +204,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
-    this->m_modelViewProjectionScreen
-	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
-
-    this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
+    // update screen space position matrix to properly place the image
+    this->updateScreenSpacePosition ();
 
     this->m_modelViewProjectionCopy = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
@@ -470,7 +468,7 @@ void CImage::render () {
 
     // update the position if required
     // TODO: There's more images that are not affected by parallax, autosize or fullscreen are not affected
-    if (this->getScene ().getScene ().camera.parallax.enabled && !this->getImage ().model->fullscreen) {
+    if (!this->getImage ().model->fullscreen) {
 	this->updateScreenSpacePosition ();
     }
 
@@ -515,21 +513,38 @@ const glm::vec4& CImage::getColor4 () const { return this->m_image.color->value-
 const glm::vec3& CImage::getCompositeColor () const { return this->m_image.color->value->getVec3 (); }
 
 void CImage::updateScreenSpacePosition () {
+    const glm::vec3 angles = this->m_image.angles->value->getVec3 ();
+    auto rotModel = glm::mat4 (1.0f);
+    this->m_modelViewProjectionScreen
+	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
+
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
-    if (this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
-	return;
+    if (this->getScene ().getScene ().camera.parallax.enabled
+	&& !this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+	const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
+	const glm::vec2 depth = this->getImage ().parallaxDepth->value->getVec2 ();
+	const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
+
+	// parallax should happen
+	float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
+	float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().y;
+	this->m_modelViewProjectionScreen *= glm::translate (glm::mat4 (1.0f), { x, y, 0.0f });
     }
 
-    const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
-    const glm::vec2 depth = this->getImage ().parallaxDepth;
-    const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
+    // TODO: ALSO APPLY PARENT'S ROTATION? NEED TO BUILD SOME EXAMPLE BACKGROUNDS TO PROPERLY TRY THIS
+    if (glm::dot (angles, angles) > 0.0f) {
+	const auto sceneCenter
+	    = glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
 
-    float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
-    float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+	rotModel = glm::translate (rotModel, sceneCenter);
+	rotModel = glm::rotate (rotModel, angles.z, glm::vec3 (0.0f, 0.0f, -1.0f));
+	rotModel = glm::rotate (rotModel, angles.y, glm::vec3 (0.0f, 1.0f, 0.0f));
+	rotModel = glm::rotate (rotModel, angles.x, glm::vec3 (-1.0f, 0.0f, 0.0f));
+	rotModel = glm::translate (rotModel, -sceneCenter);
+    }
 
-    this->m_modelViewProjectionScreen = glm::translate (
-	this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt (), { x, y, 0.0f }
-    );
+    this->m_modelViewProjectionScreen *= rotModel;
+    this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 }
 
 const Image& CImage::getImage () const { return this->m_image; }
