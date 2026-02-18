@@ -516,6 +516,7 @@ void CImage::updateScreenSpacePosition () {
     const glm::vec3 angles = this->m_image.angles->value->getVec3 ();
     auto rotModel = glm::mat4 (1.0f);
 
+    // TODO: ALSO APPLY PARENT'S ROTATION? NEED TO BUILD SOME EXAMPLE BACKGROUNDS TO PROPERLY TRY THIS
     if (const double angleMagnitude = glm::length (angles); angleMagnitude != 0.0f) {
 	const auto sceneCenter = glm::vec3(
             (this->m_pos.x + this->m_pos.z) /2.0f,
@@ -535,7 +536,7 @@ void CImage::updateScreenSpacePosition () {
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
     if (!this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
         const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
-        const glm::vec2 depth = this->getImage ().parallaxDepth;
+        const glm::vec2 depth = this->getImage ().parallaxDepth->value->getVec2 ();
         const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
 
         // parallax should happen
