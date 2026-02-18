@@ -65,21 +65,19 @@ void GLPlayer::decrementUsageCount () {
 }
 
 void GLPlayer::setUntimed () {
-    this->m_untimed = true;
-
-    // apply the value to the playback if it's already started
     if (this->m_handle) {
-	mpv_set_property_string (this->m_handle, "untimed", "yes");
+	sLog.exception ("Cannot set untimed mode after playback has started");
     }
+
+    this->m_untimed = true;
 }
 
 void GLPlayer::clearUntimed () {
-    this->m_untimed = false;
-
-    // apply the value to the playback if it's already started
     if (this->m_handle) {
-	mpv_set_property_string (this->m_handle, "untimed", "no");
+	sLog.exception ("Cannot set untimed mode after playback has started");
     }
+
+    this->m_untimed = false;
 }
 
 void GLPlayer::setMuted () {
@@ -110,7 +108,7 @@ void GLPlayer::setPaused () {
     this->m_paused = true;
 
     if (this->m_handle) {
-	mpv_set_property (this->m_handle, "pause", MPV_FORMAT_FLAG, &this->m_paused);
+	mpv_set_property_string (this->m_handle, "pause", "yes");
     }
 }
 
@@ -118,7 +116,7 @@ void GLPlayer::clearPaused () {
     this->m_paused = false;
 
     if (this->m_handle) {
-	mpv_set_property (this->m_handle, "pause", MPV_FORMAT_FLAG, &this->m_paused);
+	mpv_set_property_string (this->m_handle, "pause", "no");
     }
 }
 
@@ -244,8 +242,10 @@ void GLPlayer::init () {
 	sLog.exception ("Failed to initialize MPV's GL context");
     }
 
-    // mute the video by default
+    // mute the video if required
     mpv_set_property_string (this->m_handle, "mute", this->m_muted ? "yes" : "no");
+    // ensure play/pause status is respected too
+    mpv_set_property_string (this->m_handle, "pause", this->m_paused ? "yes" : "no");
 }
 
 void GLPlayer::setSource (const std::filesystem::path& file) { this->m_file = file; }
@@ -255,6 +255,10 @@ void GLPlayer::setSource (MemoryStreamProtocolUniquePtr source) { this->m_stream
 void GLPlayer::play () {
     if (this->m_handle != nullptr) {
 	sLog.exception ("Cannot play the same GLPlayer twice");
+    }
+
+    if (!this->m_file.has_value () && !this->m_stream.has_value ()) {
+	sLog.exception ("Cannot play a GLPlayer without a source");
     }
 
     this->init ();
