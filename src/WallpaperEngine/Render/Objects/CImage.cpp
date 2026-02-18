@@ -532,7 +532,8 @@ void CImage::updateScreenSpacePosition () {
 	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt () * rotModel;
 
     // do not perform any changes to the image based on the parallax if it was explicitly disabled
-    if (!this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+    if (this->getScene ().getScene ().camera.parallax.enabled
+	&& !this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
 	const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
 	const glm::vec2 depth = this->getImage ().parallaxDepth->value->getVec2 ();
 	const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
