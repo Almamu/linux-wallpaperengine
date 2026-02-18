@@ -69,7 +69,7 @@ void GLPlayer::setUntimed () {
 
     // apply the value to the playback if it's already started
     if (this->m_handle) {
-	mpv_set_option_string (this->m_handle, "untimed", "yes");
+	mpv_set_property_string (this->m_handle, "untimed", "yes");
     }
 }
 
@@ -78,7 +78,7 @@ void GLPlayer::clearUntimed () {
 
     // apply the value to the playback if it's already started
     if (this->m_handle) {
-	mpv_set_option_string (this->m_handle, "untimed", "no");
+	mpv_set_property_string (this->m_handle, "untimed", "no");
     }
 }
 
@@ -86,7 +86,7 @@ void GLPlayer::setMuted () {
     this->m_muted = true;
 
     if (this->m_handle) {
-	mpv_set_option_string (this->m_handle, "mute", "yes");
+	mpv_set_property_string (this->m_handle, "mute", "yes");
     }
 }
 
@@ -94,7 +94,7 @@ void GLPlayer::clearMuted () {
     this->m_muted = false;
 
     if (this->m_handle) {
-	mpv_set_option_string (this->m_handle, "mute", "no");
+	mpv_set_property_string (this->m_handle, "mute", "no");
     }
 }
 
@@ -102,7 +102,7 @@ void GLPlayer::setVolume (double volume) {
     this->m_volume = volume;
 
     if (this->m_handle) {
-	mpv_set_option (this->m_handle, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
+	mpv_set_property (this->m_handle, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
     }
 }
 
