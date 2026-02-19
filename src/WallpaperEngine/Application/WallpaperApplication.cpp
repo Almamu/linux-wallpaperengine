@@ -719,14 +719,11 @@ void WallpaperApplication::setupOpenGLDebugging () {
 #endif
 }
 
-void WallpaperApplication::show () {
+void WallpaperApplication::setup () {
     this->setupOutput ();
     this->setupAudio ();
     this->prepareOutputs ();
     this->setupOpenGLDebugging ();
-
-    static time_t seconds;
-    static struct tm* timeinfo;
 
     if (this->m_context.settings.general.dumpStructure) {
 	auto prettyPrinter = Data::Dumpers::StringPrinter ();
@@ -750,66 +747,17 @@ void WallpaperApplication::show () {
     bool initialized = false;
     int frame = 0;
 #endif /* DEMOMODE */
+}
 
-    while (this->m_context.state.general.keepRunning) {
-	// update g_Daytime
-	time (&seconds);
-	timeinfo = localtime (&seconds);
-	g_Daytime = ((timeinfo->tm_hour * 60.0f) + timeinfo->tm_min) / (24.0f * 60.0f);
+void WallpaperApplication::render () {
+    static time_t seconds;
+    static struct tm* timeinfo;
 
-	// keep track of the previous frame's time
-	g_TimeLast = g_Time;
-	// calculate the current time value
-	g_Time = m_videoDriver->getRenderTime ();
-	// update audio recorder
-	m_audioDriver->update ();
-	// update input information
-	m_videoDriver->getInputContext ().update ();
-	// process driver events
-	m_videoDriver->dispatchEventQueue ();
-
-	if (m_videoDriver->closeRequested ()) {
-	    sLog.out ("Stop requested by driver");
-	    this->m_context.state.general.keepRunning = false;
-	}
-
-#if DEMOMODE
-	// wait for a full render cycle before actually starting
-	// this gives some extra time for video and web decoders to set themselves up
-	// because of size changes
-	if (m_videoDriver->getFrameCounter () > (uint32_t)this->m_context.settings.render.maximumFPS) {
-	    if (!initialized) {
-		width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
-		height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
-		pixels.reserve (width * height * 3);
-		init_encoder ("output.webm", width, height);
-		initialized = true;
-	    }
-
-	    glBindFramebuffer (
-		GL_FRAMEBUFFER, this->m_renderContext->getWallpapers ().begin ()->second->getWallpaperFramebuffer ()
-	    );
-
-	    glPixelStorei (GL_PACK_ALIGNMENT, 1);
-	    glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
-	    write_video_frame (pixels.data ());
-	    frame++;
-
-	    // stop after the given framecount
-	    if (frame >= FRAME_COUNT) {
-		this->m_context.state.general.keepRunning = false;
-	    }
-	}
-#endif /* DEMOMODE */
-	// check for fullscreen windows and wait until there's none fullscreen
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
-	    this->m_isPaused = true;
-	    this->m_pauseStart = std::chrono::steady_clock::now ();
-
-	    m_renderContext->setPause (true);
-	    while (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if (this->m_isPaused) {
 		usleep (FULLSCREEN_CHECK_WAIT_TIME);
-	    }
+		if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+			return;
+		}
 	    m_renderContext->setPause (false);
 
 	    // account for paused duration in playlist timers
@@ -824,29 +772,97 @@ void WallpaperApplication::show () {
 	    }
 
 	    this->m_isPaused = false;
+	} else {
+
+		// update g_Daytime
+		time (&seconds);
+		timeinfo = localtime (&seconds);
+		g_Daytime = static_cast<float>((timeinfo->tm_hour * 60) + timeinfo->tm_min) / (24.0f * 60.0f);
+
+		// keep track of the previous frame's time
+		g_TimeLast = g_Time;
+		// calculate the current time value
+		g_Time = m_videoDriver->getRenderTime ();
+		// update audio recorder
+		m_audioDriver->update ();
+		// update input information
+		m_videoDriver->getInputContext ().update ();
+		// process driver events
+		m_videoDriver->dispatchEventQueue ();
+
+		if (m_videoDriver->closeRequested ()) {
+			sLog.out ("Stop requested by driver");
+			this->m_context.state.general.keepRunning = false;
+		}
+
+#if DEMOMODE
+		// wait for a full render cycle before actually starting
+		// this gives some extra time for video and web decoders to set themselves up
+		// because of size changes
+		if (m_videoDriver->getFrameCounter () > (uint32_t)this->m_context.settings.render.maximumFPS) {
+			if (!initialized) {
+			width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
+			height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
+			pixels.reserve (width * height * 3);
+			init_encoder ("output.webm", width, height);
+			initialized = true;
+			}
+
+			glBindFramebuffer (
+			GL_FRAMEBUFFER, this->m_renderContext->getWallpapers ().begin ()->second->getWallpaperFramebuffer ()
+			);
+
+			glPixelStorei (GL_PACK_ALIGNMENT, 1);
+			glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
+			write_video_frame (pixels.data ());
+			frame++;
+
+			// stop after the given framecount
+			if (frame >= FRAME_COUNT) {
+			this->m_context.state.general.keepRunning = false;
+			}
+		}
+#endif /* DEMOMODE */
+		// check for fullscreen windows and wait until there's none fullscreen
+		if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+			this->m_isPaused = true;
+			this->m_pauseStart = std::chrono::steady_clock::now ();
+
+			m_renderContext->setPause (true);
+			return;
+		}
 	}
 
 	this->updatePlaylists ();
 
 	if (!this->m_context.settings.screenshot.take || this->m_screenShotTaken == true) {
-	    continue;
+	    return;
 	}
 
 	if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
-	    continue;
+	    return;
 	}
 
 	this->takeScreenshot (this->m_context.settings.screenshot.path);
 	this->m_screenShotTaken = true;
+}
+
+void WallpaperApplication::cleanup () {
+	sLog.out ("Stopping");
+
+	#if DEMOMODE
+		close_encoder ();
+	#endif /* DEMOMODE */
+
+		SDL_Quit ();
+}
+
+void WallpaperApplication::show () {
+	setup();
+    while (this->m_context.state.general.keepRunning) {
+		render();
     }
-
-    sLog.out ("Stopping");
-
-#if DEMOMODE
-    close_encoder ();
-#endif /* DEMOMODE */
-
-    SDL_Quit ();
+    cleanup();
 }
 
 void WallpaperApplication::update (Render::Drivers::Output::OutputViewport* viewport) {
@@ -867,4 +883,16 @@ ApplicationContext& WallpaperApplication::getContext () const { return this->m_c
 
 const WallpaperEngine::Render::Drivers::Output::Output& WallpaperApplication::getOutput () const {
     return this->m_renderContext->getOutput ();
+}
+
+void WallpaperApplication::setDestinationFramebuffer (GLuint framebuffer) {
+	this->m_destinationFramebuffer = framebuffer;
+	// Update all wallpapers with the new destination framebuffer
+	for (const auto& [screen, wallpaper] : this->m_renderContext->getWallpapers ()) {
+		wallpaper->setDestinationFramebuffer (framebuffer);
+	};
+}
+
+GLuint WallpaperApplication::getDestinationFramebuffer () const { 
+	return this->m_destinationFramebuffer;
 }

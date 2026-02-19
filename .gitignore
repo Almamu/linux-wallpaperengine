@@ -1,5 +1,6 @@
 cmake-build-*
 .idea
+.cache/
 build/
 .vscode/
 third_party/
