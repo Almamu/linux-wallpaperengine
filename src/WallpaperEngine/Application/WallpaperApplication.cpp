@@ -773,7 +773,6 @@ void WallpaperApplication::render () {
 
 	    this->m_isPaused = false;
 	} else {
-
 		// update g_Daytime
 		time (&seconds);
 		timeinfo = localtime (&seconds);
