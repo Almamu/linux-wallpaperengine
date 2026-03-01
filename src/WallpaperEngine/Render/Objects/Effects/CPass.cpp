@@ -47,17 +47,22 @@ CPass::CPass (
 
 CPass::~CPass () {
     // destroy shader programs
-    GLuint attachedShaders[2];
-    GLsizei attachedCount;
+    if (!glIsProgram(this->m_programID)) return; // program already invalid or deleted
 
-    // destroy shaders (we only attach 2 to each program)
-    glGetAttachedShaders (this->m_programID, 2, &attachedCount, attachedShaders);
+    GLint shaderCount = 0;
+    glGetProgramiv(this->m_programID, GL_ATTACHED_SHADERS, &shaderCount);
 
-    for (auto i = 0; i < attachedCount; i++) {
-	glDeleteShader (attachedShaders[i]);
+    if (shaderCount > 0) {
+        std::vector<GLuint> attachedShaders(shaderCount);
+        glGetAttachedShaders(this->m_programID, shaderCount, nullptr, attachedShaders.data());
+
+        for (GLuint s : attachedShaders) {
+            if (glIsShader(s)) glDeleteShader(s);
+        }
     }
 
-    glDeleteProgram (this->m_programID);
+    glDeleteProgram(this->m_programID);
+    this->m_programID = 0;
 }
 
 std::shared_ptr<const TextureProvider> CPass::resolveTexture (

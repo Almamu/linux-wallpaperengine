@@ -35,6 +35,7 @@ void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
 }
 
 void RenderContext::setWallpaper (const std::string& display, std::shared_ptr<CWallpaper> wallpaper) {
+    wallpaper->setDestinationFramebuffer (this->m_app.getDestinationFramebuffer ());
     this->m_wallpapers.insert_or_assign (display, wallpaper);
 }
 

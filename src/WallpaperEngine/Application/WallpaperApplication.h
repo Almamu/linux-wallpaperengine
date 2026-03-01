@@ -22,6 +22,7 @@
 #include <set>
 
 namespace WallpaperEngine::Application {
+
 using namespace WallpaperEngine::Assets;
 using namespace WallpaperEngine::Data::Model;
 /**
@@ -31,6 +32,18 @@ class WallpaperApplication {
 public:
     explicit WallpaperApplication (ApplicationContext& context);
 
+    /**
+     * Prepares the application for rendering.
+     */
+    void setup();
+    /**
+     * Renders a frame of the application.
+     */
+    void render();
+    /**
+     * Cleans up all the resources used by the application.
+     */
+    static void cleanup();
     /**
      * Shows the application until it's closed
      */
@@ -57,6 +70,15 @@ public:
      * Gets the output
      */
     [[nodiscard]] const WallpaperEngine::Render::Drivers::Output::Output& getOutput () const;
+    /**
+     * Sets the destination framebuffer for rendering. If not called, the default framebuffer will be used.
+     */
+    void setDestinationFramebuffer (GLuint framebuffer);
+
+    /**
+     * Gets the currently set destination framebuffer for rendering. If not set, returns 0 (the default framebuffer).
+     */
+    [[nodiscard]] GLuint getDestinationFramebuffer () const;
 
 private:
     /**
@@ -152,5 +174,6 @@ private:
     bool m_screenShotTaken = false;
     uint32_t m_nextFrameScreenshot = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};
+    GLuint m_destinationFramebuffer = 0;
 };
 } // namespace WallpaperEngine::Application
