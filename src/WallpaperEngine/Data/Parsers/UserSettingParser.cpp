@@ -1,6 +1,7 @@
 #include "UserSettingParser.h"
 
 #include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
 
 using namespace WallpaperEngine::Data::Parsers;
@@ -13,14 +14,17 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
     auto valueIt = data;
     std::string content = data.dump ();
 
+    std::optional<std::string> scriptSource;
+    std::optional<json> scriptPropsJson;
+
     if (data.is_object ()) {
 	const auto user = data.optional ("user");
 	const auto script = data.optional ("script");
 	valueIt = data.require ("value", "User setting must have a value");
 
-	// TODO: PARSE SCRIPT VALUES
 	if (script.has_value () && !script->is_null ()) {
-	    sLog.error ("Found user setting with script value: ", script.value ().dump ());
+	    scriptSource = script->get<std::string> ();
+	    scriptPropsJson = data.optional ("scriptproperties");
 	}
 
 	if (user.has_value () && !user->is_null ()) {
@@ -65,6 +69,24 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
     } else if (valueIt.is_null ()) {
 	// null value with no connection to property
 	value->update ();
+    }
+
+    // If the setting has a script, wrap the base value in a ScriptedDynamicValue
+    if (scriptSource.has_value ()) {
+	std::map<std::string, DynamicValueUniquePtr> scriptProps;
+
+	if (scriptPropsJson.has_value () && scriptPropsJson->is_object ()) {
+	    for (const auto& [key, propData] : scriptPropsJson->items ()) {
+		auto propSetting = UserSettingParser::parse (propData, properties);
+		scriptProps[key] = std::move (propSetting->value);
+	    }
+	}
+
+	value = std::make_unique<ScriptedDynamicValue> (
+	    std::move (scriptSource.value ()),
+	    std::move (scriptProps),
+	    std::move (*value)
+	);
     }
 
     // TODO: This might need to be removed if it causes issues with default values

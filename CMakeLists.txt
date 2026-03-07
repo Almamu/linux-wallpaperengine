@@ -136,6 +136,8 @@ add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft kissfft)
 add_subdirectory(src/External/argparse argparse)
+set(QJS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(src/External/quickjs quickjs)
 if(BUILD_TESTING)
     add_subdirectory(src/External/Catch2)
 endif()
@@ -468,7 +470,11 @@ set(COMMON_SOURCES
     src/WallpaperEngine/VideoPlayback/MPV/GLPlayer.cpp
     src/WallpaperEngine/VideoPlayback/MPV/GLPlayer.h
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.cpp
-    src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h)
+    src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h
+    src/WallpaperEngine/Scripting/ScriptEngine.h
+    src/WallpaperEngine/Scripting/ScriptEngine.cpp
+    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.h
+    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp)
 
 if(BUILD_TESTING)
     add_executable(
@@ -513,7 +519,8 @@ target_link_libraries (linux-wallpaperengine-lib PUBLIC
     glfw
     libcef_lib
     libcef_dll_wrapper
-    argparse)
+    argparse
+    qjs)
 
 if (BUILD_TESTING)
     target_link_libraries (tests PRIVATE
@@ -536,7 +543,8 @@ if (BUILD_TESTING)
         glfw
         libcef_lib
         libcef_dll_wrapper
-        argparse)
+        argparse
+        qjs)
 endif()
 
 target_compile_definitions(linux-wallpaperengine-lib PUBLIC ERRORONLY=${ERRORONLY})
