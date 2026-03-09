@@ -17,10 +17,10 @@ jobs:
         with:
           submodules: true
 
-      - name: Publish linux-wallpaperengine-git to the AUR
+      - name: Publish linux-wallpaperengine-core-git to the AUR
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
-          pkgname: linux-wallpaperengine-git
+          pkgname: linux-wallpaperengine-core-git
           pkgbuild: ./packaging/archlinux/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
