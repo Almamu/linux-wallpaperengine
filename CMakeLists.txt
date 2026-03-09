@@ -23,6 +23,7 @@ if(NOT ERRORONLY)
 endif()
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
@@ -432,6 +433,10 @@ target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
     libcef_lib
     libcef_dll_wrapper)
 
+target_include_directories(linux-wallpaperengine-core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
 target_compile_definitions(linux-wallpaperengine-core PRIVATE
     WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
     WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
@@ -451,22 +456,22 @@ set_target_properties(linux-wallpaperengine-core PROPERTIES
 target_link_libraries (linux-wallpaperengine-core PUBLIC
     ${OPENGL_LIBRARIES}
     GLEW::GLEW
-    ${GLUT_LIBRARIES}
-    ${ZLIB_LIBRARIES}
-    ${LZ4_LIBRARY}
-    ${SDL2_LIBRARIES}
-    ${FFMPEG_LIBRARIES}
-    ${MPV_LIBRARY}
-    ${PULSEAUDIO_LIBRARY}
-    kissfft::kissfft-${KISSFFT_DATATYPE}
-    glslang
-    spirv-cross-core
-    spirv-cross-glsl
-    glfw
-    libcef_lib
-    libcef_dll_wrapper
-    argparse
-    qjs)
+    $<BUILD_INTERFACE:${GLUT_LIBRARIES}>
+    $<BUILD_INTERFACE:${ZLIB_LIBRARIES}>
+    $<BUILD_INTERFACE:${LZ4_LIBRARY}>
+    $<BUILD_INTERFACE:${SDL2_LIBRARIES}>
+    $<BUILD_INTERFACE:${FFMPEG_LIBRARIES}>
+    $<BUILD_INTERFACE:${MPV_LIBRARY}>
+    $<BUILD_INTERFACE:${PULSEAUDIO_LIBRARY}>
+    $<BUILD_INTERFACE:kissfft::kissfft-${KISSFFT_DATATYPE}>
+    $<BUILD_INTERFACE:glslang>
+    $<BUILD_INTERFACE:spirv-cross-core>
+    $<BUILD_INTERFACE:spirv-cross-glsl>
+    $<BUILD_INTERFACE:glfw>
+    $<BUILD_INTERFACE:libcef_lib>
+    $<BUILD_INTERFACE:libcef_dll_wrapper>
+    $<BUILD_INTERFACE:argparse>
+    $<BUILD_INTERFACE:qjs>)
 
 if (BUILD_TESTING)
     target_link_libraries (tests PRIVATE
@@ -512,28 +517,43 @@ SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-core)
 
 # set some install parameters if not in debug mode
 install(TARGETS linux-wallpaperengine-core linux-wallpaperengine-webhelper
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/linux-wallpaperengine)
+    EXPORT linux-wallpaperengine-core
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/linux-wallpaperengine)
 
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION "${CMAKE_INSTALL_LIBDIR}/linux-wallpaperengine"
-        FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*")
+    FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*")
 
 install(DIRECTORY include/frontends/ DESTINATION include/${PROJECT_NAME})
+
+# Export targets
+install(EXPORT linux-wallpaperengine-core
+    NAMESPACE linux-wallpaperengine-core
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/linux-wallpaperengine-core)
 
 # pkg-config generation
 if(NOT PROJECT_VERSION)
     set(PROJECT_VERSION "0.0.1")
 endif()
 
-configure_file(
-    linux-wallpaperengine-core.pc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
-    @ONLY
-)
+configure_package_config_file(linux-wallpaperengine-core-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/linux-wallpaperengine-core)
 
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-)
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/linux-wallpaperengine-core)
+
+configure_file(linux-wallpaperengine-core.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
+    @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

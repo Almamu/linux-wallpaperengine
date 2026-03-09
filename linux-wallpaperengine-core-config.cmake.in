@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Public dependencies
+find_dependency(GLEW)
+
+include("${CMAKE_CURRENT_LIST_DIR}/linux-wallpaperengine-core-targets.cmake")
+
+check_required_components(linux-wallpaperengine-core)
