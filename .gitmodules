@@ -32,6 +32,6 @@
 [submodule "src/External/kissfft-WallpaperEngine"]
 	path = src/External/kissfft-WallpaperEngine
 	url = https://github.com/Almamu/kissfft-WallpaperEngine.git
-[submodule "src/External/quickjs"]
-	path = src/External/quickjs
-	url = https://github.com/quickjs-ng/quickjs.git
+[submodule "src/External/quickjs-WallpaperEngine"]
+	path = src/External/quickjs-WallpaperEngine
+	url = git@github.com:Almamu/quickjs-WallpaperEngine.git

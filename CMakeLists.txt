@@ -36,9 +36,10 @@ find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
 
-set(QJS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
 option(ENABLE_OPT OFF)
+
+# quickjs build
+option(QJS_ENABLE_INSTALL OFF)
 
 # glslang build
 option(BUILD_SHARED_LIBS OFF)
@@ -166,7 +167,7 @@ add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft-WallpaperEngine kissfft)
 add_subdirectory(src/External/argparse argparse)
-add_subdirectory(src/External/quickjs quickjs)
+add_subdirectory(src/External/quickjs-WallpaperEngine quickjs)
 
 if(BUILD_TESTING)
     add_subdirectory(src/External/Catch2)
@@ -502,7 +503,7 @@ file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
 set_target_properties(linux-wallpaperengine-core PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY})
 
-add_dependencies(linux-wallpaperengine-core libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
+add_dependencies(linux-wallpaperengine-core libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl qjs)
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-core)
 
 # set some install parameters if not in debug mode
@@ -516,3 +517,19 @@ install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION "${CMAKE_INSTALL_LIBDI
         FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*")
 
 install(DIRECTORY include/frontends/ DESTINATION include/${PROJECT_NAME})
+
+# pkg-config generation
+if(NOT PROJECT_VERSION)
+    set(PROJECT_VERSION "0.0.1")
+endif()
+
+configure_file(
+    linux-wallpaperengine-core.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
+    @ONLY
+)
+
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)
