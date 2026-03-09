@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
@@ -204,10 +206,15 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
+    // compute the center of the image in scene space for rotation
+    this->m_sceneCenter = glm::vec3 (
+	(this->m_pos.x + this->m_pos.z) / 2.0f,
+	(this->m_pos.y + this->m_pos.w) / 2.0f,
+	0.0f
+    );
+
     this->m_modelViewProjectionScreen
 	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
-
-    this->m_modelViewProjectionScreenInverse = glm::inverse (this->m_modelViewProjectionScreen);
 
     this->m_modelViewProjectionCopy = glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
@@ -468,11 +475,8 @@ void CImage::render () {
 
     glColorMask (true, true, true, true);
 
-    // update the position if required
-    // TODO: There's more images that are not affected by parallax, autosize or fullscreen are not affected
-    if (this->getScene ().getScene ().camera.parallax.enabled && !this->getImage ().model->fullscreen) {
-	this->updateScreenSpacePosition ();
-    }
+    // Always update screen transform (handles rotation + parallax dynamically)
+    this->updateScreenSpacePosition ();
 
 #if !NDEBUG
     std::string str = "Rendering ";
@@ -515,21 +519,36 @@ const glm::vec4& CImage::getColor4 () const { return this->m_image.color->value-
 const glm::vec3& CImage::getCompositeColor () const { return this->m_image.color->value->getVec3 (); }
 
 void CImage::updateScreenSpacePosition () {
-    // do not perform any changes to the image based on the parallax if it was explicitly disabled
-    if (this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
-	return;
+    // Build rotation from angles (already in radians from scene.json — see CParticle.cpp:2119)
+    // Negate X and Z rotations to account for Y-flipped coordinate system (CParticle.cpp:2120)
+    glm::vec3 angles = this->getImage ().angles->value->getVec3 ();
+    glm::mat4 rotModel = glm::mat4 (1.0f);
+    if (angles.x != 0.0f || angles.y != 0.0f || angles.z != 0.0f) {
+	rotModel = glm::translate (rotModel, this->m_sceneCenter);
+	rotModel = glm::rotate (rotModel, -angles.z, glm::vec3 (0.0f, 0.0f, 1.0f));
+	rotModel = glm::rotate (rotModel, angles.y, glm::vec3 (0.0f, 1.0f, 0.0f));
+	rotModel = glm::rotate (rotModel, -angles.x, glm::vec3 (1.0f, 0.0f, 0.0f));
+	rotModel = glm::translate (rotModel, -this->m_sceneCenter);
     }
 
-    const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
-    const glm::vec2 depth = this->getImage ().parallaxDepth;
-    const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
+    glm::mat4 mvp = this->getScene ().getCamera ().getProjection ()
+		   * this->getScene ().getCamera ().getLookAt ()
+		   * rotModel;
 
-    float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
-    float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+    // Apply parallax displacement if enabled
+    if (this->getScene ().getScene ().camera.parallax.enabled
+	&& !this->getImage ().model->fullscreen
+	&& !this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+	const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
+	const glm::vec2 depth = this->getImage ().parallaxDepth->value->getVec2 ();
+	const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
+	float x = (depth.x + parallaxAmount) * displacement->x * this->getSize ().x;
+	float y = (depth.y + parallaxAmount) * displacement->y * this->getSize ().x;
+	mvp = glm::translate (mvp, { x, y, 0.0f });
+    }
 
-    this->m_modelViewProjectionScreen = glm::translate (
-	this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt (), { x, y, 0.0f }
-    );
+    this->m_modelViewProjectionScreen = mvp;
+    this->m_modelViewProjectionScreenInverse = glm::inverse (mvp);
 }
 
 const Image& CImage::getImage () const { return this->m_image; }
