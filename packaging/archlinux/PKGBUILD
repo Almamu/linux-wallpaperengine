@@ -30,7 +30,7 @@ prepare() {
 build() {
     cmake -B build -S "$pkgname" \
         -DCMAKE_BUILD_TYPE='Release' \
-        -DCMAKE_INSTALL_PREFIX="/opt/${_pkgname}" \
+        -DCMAKE_INSTALL_PREFIX="/usr" \
         -Wno-dev \
         -DCMAKE_CXX_FLAGS="-ffat-lto-objects -Wno-builtin-macro-redefined" \
         -DCMAKE_C_FLAGS="-Wno-builtin-macro-redefined"

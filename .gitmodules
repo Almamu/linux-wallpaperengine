@@ -34,4 +34,4 @@
 	url = https://github.com/Almamu/kissfft-WallpaperEngine.git
 [submodule "src/External/quickjs-WallpaperEngine"]
 	path = src/External/quickjs-WallpaperEngine
-	url = git@github.com:Almamu/quickjs-WallpaperEngine.git
+	url = https://github.com/Almamu/quickjs-WallpaperEngine.git
