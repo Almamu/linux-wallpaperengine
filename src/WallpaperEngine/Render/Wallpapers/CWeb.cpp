@@ -40,6 +40,11 @@ CWeb::CWeb (
 	CefString (&settings.browser_subprocess_path) = WPENGINE_WEBHELPER_PATH;
 #endif
 
+#ifdef WPENGINE_CEF_RESOURCES_PATH
+	CefString (&settings.resources_dir_path) = WPENGINE_CEF_RESOURCES_PATH;
+	CefString (&settings.locales_dir_path) = WPENGINE_CEF_RESOURCES_PATH "/locales";
+#endif
+
 	cef_string_utf8_to_utf16 (cache_path.c_str (), cache_path.length (), &settings.root_cache_path);
 	settings.windowless_rendering_enabled = true;
 #if defined(CEF_NO_SANDBOX)

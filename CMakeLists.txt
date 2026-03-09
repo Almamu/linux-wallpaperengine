@@ -432,18 +432,19 @@ target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
     libcef_dll_wrapper)
 
 target_compile_definitions(linux-wallpaperengine-core PRIVATE
-    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_BINDIR}/linux-wallpaperengine-webhelper")
+    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
+    WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
 
 set_target_properties(linux-wallpaperengine-webhelper PROPERTIES
     SKIP_BUILD_RPATH FALSE
     BUILD_WITH_INSTALL_RPATH FALSE
-    INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}"
+    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set_target_properties(linux-wallpaperengine-core PROPERTIES
     SKIP_BUILD_RPATH FALSE
     BUILD_WITH_INSTALL_RPATH FALSE
-    INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}"
+    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 target_link_libraries (linux-wallpaperengine-core PUBLIC
