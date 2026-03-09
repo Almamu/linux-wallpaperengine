@@ -1,16 +1,16 @@
 # Maintainer: Alexis Maiquez <aur@almamu.com>
-pkgname=linux-wallpaperengine-git
+pkgname=linux-wallpaperengine-core-git
 _pkgname=linux-wallpaperengine
-pkgver=r567.b6c1825
+pkgver=r600.c2e3f89
 pkgrel=1
-pkgdesc="use steam's wallpaperengine on linux"
+pkgdesc="linux-wallpaperengine backend code, handles rendering of wallpapers for the various frontends out there"
 arch=('x86_64')
-url="https://github.com/Almamu/linux-wallpaperengine"
+url="https://github.com/Almamu/linux-wallpaperengine-core"
 license=('GPL-3.0-only')
 depends=('lz4' 'ffmpeg' 'mpv' 'glfw' 'glew' 'freeglut' 'libpulse' 'libcups' 'at-spi2-core' 'nss' 'libxcomposite' 'libxdamage' 'nspr')
-makedepends=('git' 'cmake' 'sdl2' 'glm' 'wayland-protocols' 'xorg-xrandr')
-provides=("linux-wallpaperengine")
-source=("${pkgname}::git+https://github.com/Almamu/linux-wallpaperengine.git#branch=main")
+makedepends=('git' 'cmake' 'sdl2' 'glm')
+provides=("linux-wallpaperengine-core")
+source=("${pkgname}::git+https://github.com/Almamu/linux-wallpaperengine-core.git#branch=main")
 sha512sums=('SKIP')
 
 pkgver() {
@@ -41,11 +41,4 @@ package() {
     DESTDIR="$pkgdir" cmake --install build
     # create forwarding script
     install -d -m755 "${pkgdir}/usr/bin"
-    cat > "${pkgdir}/usr/bin/${_pkgname}" << EOF
-#!/bin/bash
-export LD_LIBRARY_PATH="/opt/${_pkgname}/lib:\$LD_LIBRARY_PATH"
-cd /opt/${_pkgname}; exec ./${_pkgname} "\$@"
-EOF
-    chmod +x ${pkgdir}/usr/bin/${_pkgname}
-    chmod +x ${pkgdir}/opt/${_pkgname}/linux-wallpaperengine
 }

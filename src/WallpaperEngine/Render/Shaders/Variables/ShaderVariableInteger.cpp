@@ -5,6 +5,6 @@
 using namespace WallpaperEngine::Render::Shaders::Variables;
 
 ShaderVariableInteger::ShaderVariableInteger (const int defaultValue, const std::string& name) :
-    ShaderVariable (defaultValue) {
-    this->setName (name);
+	ShaderVariable (defaultValue) {
+	this->setName (name);
 }

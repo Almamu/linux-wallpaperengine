@@ -11,24 +11,24 @@ namespace WallpaperEngine::Data::Utils {
  */
 class TypeCaster {
 public:
-    virtual ~TypeCaster () = default;
+	virtual ~TypeCaster () = default;
 
-    template <class T> [[nodiscard]] const T* as () const {
-	if (is<T> ()) {
-	    return static_cast<const T*> (this);
+	template <class T> [[nodiscard]] const T* as () const {
+		if (is<T> ()) {
+			return static_cast<const T*> (this);
+		}
+
+		throw std::bad_cast ();
 	}
 
-	throw std::bad_cast ();
-    }
+	template <class T> [[nodiscard]] T* as () {
+		if (is<T> ()) {
+			return static_cast<T*> (this);
+		}
 
-    template <class T> [[nodiscard]] T* as () {
-	if (is<T> ()) {
-	    return static_cast<T*> (this);
+		throw std::bad_cast ();
 	}
 
-	throw std::bad_cast ();
-    }
-
-    template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
+	template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
 };
 } // namespace WallpaperEngine::Data::Utils

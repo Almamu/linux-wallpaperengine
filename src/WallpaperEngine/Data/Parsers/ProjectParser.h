@@ -17,10 +17,10 @@ using namespace WallpaperEngine::Data::Model;
  */
 class ProjectParser {
 public:
-    static ProjectUniquePtr parse (const JSON& data, AssetLocatorUniquePtr container);
+	static ProjectUniquePtr parse (const JSON& data, AssetLocatorUniquePtr container);
 
 private:
-    static Project::Type parseType (const std::string& type);
-    static Properties parseProperties (const std::optional<JSON>& data);
+	static Project::Type parseType (const std::string& type);
+	static Properties parseProperties (const std::optional<JSON>& data);
 };
 } // namespace WallpaperEngine::Data::Parsers

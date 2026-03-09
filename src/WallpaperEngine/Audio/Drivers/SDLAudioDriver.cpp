@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include "SDLAudioDriver.h"
 #include "WallpaperEngine/Logging/Log.h"
 
@@ -8,151 +10,151 @@ using namespace WallpaperEngine::Audio;
 using namespace WallpaperEngine::Audio::Drivers;
 
 void audio_callback (void* userdata, uint8_t* streamData, int length) {
-    auto* driver = static_cast<SDLAudioDriver*> (userdata);
+	auto* driver = static_cast<SDLAudioDriver*> (userdata);
 
-    memset (streamData, 0, length);
+	memset (streamData, 0, length);
 
-    // if audio is playing do not do anything here!
-    if (driver->getAudioDetector ().anythingPlaying ()) {
-	return;
-    }
-
-    SDL_LockMutex (driver->getStreamMutex ());
-
-    for (const auto& buffer : driver->getStreams () | std::views::values) {
-	uint8_t* streamDataPointer = streamData;
-	int streamLength = length;
-
-	// sound is not initialized or stopped and is not in loop mode
-	// ignore mixing it in
-	if (!buffer->stream->isInitialized ()) {
-	    continue;
+	// if audio is playing do not do anything here!
+	if (driver->getAudioDetector ().anythingPlaying ()) {
+		return;
 	}
 
-	// check if queue is empty and signal the read thread
-	if (buffer->stream->isQueueEmpty ()) {
-	    SDL_CondSignal (buffer->stream->getWaitCondition ());
-	    continue;
-	}
+	SDL_LockMutex (driver->getStreamMutex ());
 
-	while (streamLength > 0 && driver->getApplicationContext ().state.general.keepRunning) {
-	    if (buffer->audio_buf_index >= buffer->audio_buf_size) {
-		// get more data to fill the buffer
-		int audio_size = buffer->stream->decodeFrame (buffer->audio_buf, sizeof (buffer->audio_buf));
+	for (const auto& buffer : driver->getStreams () | std::views::values) {
+		uint8_t* streamDataPointer = streamData;
+		int streamLength = length;
 
-		if (audio_size < 0) {
-		    // fallback for errors, silence
-		    buffer->audio_buf_size = 1024;
-		    memset (buffer->audio_buf, 0, buffer->audio_buf_size);
-		} else {
-		    buffer->audio_buf_size = audio_size;
+		// sound is not initialized or stopped and is not in loop mode
+		// ignore mixing it in
+		if (!buffer->stream->isInitialized ()) {
+			continue;
 		}
 
-		buffer->audio_buf_index = 0;
-	    }
+		// check if queue is empty and signal the read thread
+		if (buffer->stream->isQueueEmpty ()) {
+			SDL_CondSignal (buffer->stream->getWaitCondition ());
+			continue;
+		}
 
-	    int len1 = buffer->audio_buf_size - buffer->audio_buf_index;
+		while (streamLength > 0 && driver->getContext ().isRunning) {
+			if (buffer->audio_buf_index >= buffer->audio_buf_size) {
+				// get more data to fill the buffer
+				int audio_size = buffer->stream->decodeFrame (buffer->audio_buf, sizeof (buffer->audio_buf));
 
-	    if (len1 > streamLength) {
-		len1 = streamLength;
-	    }
+				if (audio_size < 0) {
+					// fallback for errors, silence
+					buffer->audio_buf_size = 1024;
+					memset (buffer->audio_buf, 0, buffer->audio_buf_size);
+				} else {
+					buffer->audio_buf_size = audio_size;
+				}
 
-	    // mix the audio
-	    SDL_MixAudioFormat (
-		streamDataPointer, &buffer->audio_buf[buffer->audio_buf_index], driver->getSpec ().format, len1,
-		driver->getApplicationContext ().state.audio.volume
-	    );
+				buffer->audio_buf_index = 0;
+			}
 
-	    streamLength -= len1;
-	    streamDataPointer += len1;
-	    buffer->audio_buf_index += len1;
+			int len1 = buffer->audio_buf_size - buffer->audio_buf_index;
+
+			if (len1 > streamLength) {
+				len1 = streamLength;
+			}
+
+			// mix the audio
+			SDL_MixAudioFormat (
+				streamDataPointer, &buffer->audio_buf[buffer->audio_buf_index], driver->getSpec ().format, len1,
+				driver->getContext ().config->volume
+			);
+
+			streamLength -= len1;
+			streamDataPointer += len1;
+			buffer->audio_buf_index += len1;
+		}
 	}
-    }
 
-    // TODO: DO WE NEED TO ALSO LOCK WHILE THE AUDIO IS PLAYING? OR SOMEHOW WAIT UNTIL THE STREAM IS NOT IN USE ANYMORE?
-    SDL_UnlockMutex (driver->getStreamMutex ());
+	// TODO: DO WE NEED TO ALSO LOCK WHILE THE AUDIO IS PLAYING? OR SOMEHOW WAIT UNTIL THE STREAM IS NOT IN USE ANYMORE?
+	SDL_UnlockMutex (driver->getStreamMutex ());
 }
 
 SDLAudioDriver::SDLAudioDriver (
-    Application::ApplicationContext& applicationContext, Detectors::AudioPlayingDetector& detector,
-    Recorders::PlaybackRecorder& recorder
-) : AudioDriver (applicationContext, detector, recorder), m_audioSpec () {
-    this->m_streamListMutex = SDL_CreateMutex ();
+	Context& applicationContext, std::unique_ptr<Detectors::AudioPlayingDetector> detector,
+	std::unique_ptr<Recorders::PlaybackRecorder> recorder
+) : AudioDriver (applicationContext, std::move (detector), std::move (recorder)), m_audioSpec () {
+	this->m_streamListMutex = SDL_CreateMutex ();
 
-    if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {
-	sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError ());
-	sLog.error ("Continuing without audio support");
+	if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {
+		sLog.error ("Cannot initialize SDL audio system, SDL_GetError: ", SDL_GetError ());
+		sLog.error ("Continuing without audio support");
 
-	return;
-    }
+		return;
+	}
 
-    const SDL_AudioSpec requestedSpec = { .freq = 48000,
-					  .format = AUDIO_F32,
-					  .channels = 2,
-					  .samples = SDL_AUDIO_BUFFER_SIZE,
-					  .callback = audio_callback,
-					  .userdata = this };
+	const SDL_AudioSpec requestedSpec = { .freq = 48000,
+		                                  .format = AUDIO_F32,
+		                                  .channels = 2,
+		                                  .samples = SDL_AUDIO_BUFFER_SIZE,
+		                                  .callback = audio_callback,
+		                                  .userdata = this };
 
-    this->m_deviceID
-	= SDL_OpenAudioDevice (nullptr, false, &requestedSpec, &this->m_audioSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);
+	this->m_deviceID
+		= SDL_OpenAudioDevice (nullptr, false, &requestedSpec, &this->m_audioSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);
 
-    if (this->m_deviceID == 0) {
-	sLog.error ("SDL_OpenAudioDevice: ", SDL_GetError ());
-	return;
-    }
+	if (this->m_deviceID == 0) {
+		sLog.error ("SDL_OpenAudioDevice: ", SDL_GetError ());
+		return;
+	}
 
-    SDL_PauseAudioDevice (this->m_deviceID, 0);
+	SDL_PauseAudioDevice (this->m_deviceID, 0);
 
-    this->m_initialized = true;
+	this->m_initialized = true;
 }
 
 SDLAudioDriver::~SDLAudioDriver () {
-    if (!this->m_initialized) {
-	return;
-    }
+	if (!this->m_initialized) {
+		return;
+	}
 
-    if (this->m_deviceID != 0) {
-	SDL_CloseAudioDevice (this->m_deviceID);
-    }
+	if (this->m_deviceID != 0) {
+		SDL_CloseAudioDevice (this->m_deviceID);
+	}
 
-    SDL_QuitSubSystem (SDL_INIT_AUDIO);
+	SDL_QuitSubSystem (SDL_INIT_AUDIO);
 }
 
 int SDLAudioDriver::addStream (AudioStream* stream) {
-    const int newStreamId = this->m_lastStreamID;
-    this->m_lastStreamID++;
+	const int newStreamId = this->m_lastStreamID;
+	this->m_lastStreamID++;
 
-    SDL_LockMutex (this->m_streamListMutex);
+	SDL_LockMutex (this->m_streamListMutex);
 
-    this->m_streams.insert_or_assign (newStreamId, new SDLAudioBuffer { stream });
+	this->m_streams.insert_or_assign (newStreamId, new SDLAudioBuffer { stream });
 
-    SDL_UnlockMutex (this->m_streamListMutex);
+	SDL_UnlockMutex (this->m_streamListMutex);
 
-    return newStreamId;
+	return newStreamId;
 }
 void SDLAudioDriver::removeStream (int streamId) { this->m_streams.erase (streamId); }
 
 const std::map<int, SDLAudioBuffer*>& SDLAudioDriver::getStreams () { return this->m_streams; }
 
 AVSampleFormat SDLAudioDriver::getFormat () const {
-    switch (this->m_audioSpec.format) {
-	case AUDIO_U8:
-	case AUDIO_S8:
-	    return AV_SAMPLE_FMT_U8;
-	case AUDIO_U16MSB:
-	case AUDIO_U16LSB:
-	case AUDIO_S16LSB:
-	case AUDIO_S16MSB:
-	    return AV_SAMPLE_FMT_S16;
-	case AUDIO_S32LSB:
-	case AUDIO_S32MSB:
-	    return AV_SAMPLE_FMT_S32;
-	case AUDIO_F32LSB:
-	case AUDIO_F32MSB:
-	    return AV_SAMPLE_FMT_FLT;
-	default:
-	    sLog.exception ("Cannot convert from SDL format to ffmpeg format, aborting...");
-    }
+	switch (this->m_audioSpec.format) {
+		case AUDIO_U8:
+		case AUDIO_S8:
+			return AV_SAMPLE_FMT_U8;
+		case AUDIO_U16MSB:
+		case AUDIO_U16LSB:
+		case AUDIO_S16LSB:
+		case AUDIO_S16MSB:
+			return AV_SAMPLE_FMT_S16;
+		case AUDIO_S32LSB:
+		case AUDIO_S32MSB:
+			return AV_SAMPLE_FMT_S32;
+		case AUDIO_F32LSB:
+		case AUDIO_F32MSB:
+			return AV_SAMPLE_FMT_FLT;
+		default:
+			sLog.exception ("Cannot convert from SDL format to ffmpeg format, aborting...");
+	}
 }
 
 int SDLAudioDriver::getSampleRate () const { return this->m_audioSpec.freq; }

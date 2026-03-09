@@ -6,8 +6,8 @@
 namespace WallpaperEngine::Render::Shaders::Variables {
 class ShaderVariableVector2 final : public ShaderVariable {
 public:
-    using ShaderVariable::ShaderVariable;
+	using ShaderVariable::ShaderVariable;
 
-    ShaderVariableVector2 (const glm::vec2& defaultValue, const std::string& name);
+	ShaderVariableVector2 (const glm::vec2& defaultValue, const std::string& name);
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

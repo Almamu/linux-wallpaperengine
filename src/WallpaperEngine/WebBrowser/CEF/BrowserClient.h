@@ -9,12 +9,12 @@ namespace WallpaperEngine::WebBrowser::CEF {
 // *************************************************************************
 class BrowserClient : public CefClient {
 public:
-    explicit BrowserClient (CefRefPtr<CefRenderHandler> ptr);
+	explicit BrowserClient (CefRefPtr<CefRenderHandler> ptr);
 
-    [[nodiscard]] CefRefPtr<CefRenderHandler> GetRenderHandler () override;
+	[[nodiscard]] CefRefPtr<CefRenderHandler> GetRenderHandler () override;
 
-    CefRefPtr<CefRenderHandler> m_renderHandler = nullptr;
+	CefRefPtr<CefRenderHandler> m_renderHandler = nullptr;
 
-    IMPLEMENT_REFCOUNTING (BrowserClient);
+	IMPLEMENT_REFCOUNTING (BrowserClient);
 };
 } // namespace WallpaperEngine::WebBrowser::CEF

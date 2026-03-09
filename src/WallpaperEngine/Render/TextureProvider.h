@@ -12,90 +12,90 @@
 namespace WallpaperEngine::Render {
 using namespace WallpaperEngine::Data::Assets;
 /**
- * Base interface that describes the minimum information required for a texture
- * to be displayed by the engine
+ * Base interface that describes the minimum information required for the engine
+ * to display a texture
  */
 class TextureProvider {
 public:
-    virtual ~TextureProvider () = default;
+	virtual ~TextureProvider () = default;
 
-    /**
-     * @param imageIndex For animated textures, the frame to get the ID of
-     * @return The OpenGL texture to use when rendering
-     */
-    [[nodiscard]] virtual GLuint getTextureID (uint32_t imageIndex) const = 0;
-    /**
-     * @param imageIndex For animated textures, the frame to get the ID of
-     * @return The texture's width
-     */
-    [[nodiscard]] virtual uint32_t getTextureWidth (uint32_t imageIndex) const = 0;
-    /**
-     * @param imageIndex For animated textures, the frame to get the ID of
-     * @return The texture's height
-     */
-    [[nodiscard]] virtual uint32_t getTextureHeight (uint32_t imageIndex) const = 0;
-    /**
-     * @return The textures real width
-     */
-    [[nodiscard]] virtual uint32_t getRealWidth () const = 0;
-    /**
-     * @return The textures real height
-     */
-    [[nodiscard]] virtual uint32_t getRealHeight () const = 0;
-    /**
-     * @return The texture's memory format
-     */
-    [[nodiscard]] virtual TextureFormat getFormat () const = 0;
-    /**
-     * @return The texture's settings
-     */
-    [[nodiscard]] virtual uint32_t getFlags () const = 0;
-    /**
-     * @return The list of frames this texture has
-     */
-    [[nodiscard]] virtual const std::vector<FrameSharedPtr>& getFrames () const = 0;
-    /**
-     * @return The texture's resolution vector
-     */
-    [[nodiscard]] virtual const glm::vec4* getResolution () const = 0;
-    /**
-     * @return If the texture is animated or not
-     */
-    [[nodiscard]] virtual bool isAnimated () const = 0;
-    /**
-     * @return Number of columns in spritesheet grid (0 if not a spritesheet)
-     */
-    [[nodiscard]] virtual uint32_t getSpritesheetCols () const = 0;
-    /**
-     * @return Number of rows in spritesheet grid (0 if not a spritesheet)
-     */
-    [[nodiscard]] virtual uint32_t getSpritesheetRows () const = 0;
-    /**
-     * @return Total number of frames in spritesheet (0 if not a spritesheet)
-     */
-    [[nodiscard]] virtual uint32_t getSpritesheetFrames () const = 0;
-    /**
-     * @return Duration of spritesheet animation in seconds
-     */
-    [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
+	/**
+	 * @param imageIndex For animated textures, the frame to get the ID of
+	 * @return The OpenGL texture to use when rendering
+	 */
+	[[nodiscard]] virtual GLuint getTextureID (uint32_t imageIndex) const = 0;
+	/**
+	 * @param imageIndex For animated textures, the frame to get the ID of
+	 * @return The texture's width
+	 */
+	[[nodiscard]] virtual uint32_t getTextureWidth (uint32_t imageIndex) const = 0;
+	/**
+	 * @param imageIndex For animated textures, the frame to get the ID of
+	 * @return The texture's height
+	 */
+	[[nodiscard]] virtual uint32_t getTextureHeight (uint32_t imageIndex) const = 0;
+	/**
+	 * @return The textures real width
+	 */
+	[[nodiscard]] virtual uint32_t getRealWidth () const = 0;
+	/**
+	 * @return The textures real height
+	 */
+	[[nodiscard]] virtual uint32_t getRealHeight () const = 0;
+	/**
+	 * @return The texture's memory format
+	 */
+	[[nodiscard]] virtual TextureFormat getFormat () const = 0;
+	/**
+	 * @return The texture's settings
+	 */
+	[[nodiscard]] virtual uint32_t getFlags () const = 0;
+	/**
+	 * @return The list of frames this texture has
+	 */
+	[[nodiscard]] virtual const std::vector<FrameSharedPtr>& getFrames () const = 0;
+	/**
+	 * @return The texture's resolution vector
+	 */
+	[[nodiscard]] virtual const glm::vec4* getResolution () const = 0;
+	/**
+	 * @return If the texture is animated or not
+	 */
+	[[nodiscard]] virtual bool isAnimated () const = 0;
+	/**
+	 * @return Number of columns in the spritesheet grid (0 if not a spritesheet)
+	 */
+	[[nodiscard]] virtual uint32_t getSpritesheetCols () const = 0;
+	/**
+	 * @return Number of rows in a spritesheet grid (0 if not a spritesheet)
+	 */
+	[[nodiscard]] virtual uint32_t getSpritesheetRows () const = 0;
+	/**
+	 * @return Total number of frames in the spritesheet (0 if not a spritesheet)
+	 */
+	[[nodiscard]] virtual uint32_t getSpritesheetFrames () const = 0;
+	/**
+	 * @return Duration of spritesheet animation in seconds
+	 */
+	[[nodiscard]] virtual float getSpritesheetDuration () const = 0;
 
-    /**
-     * Increments the usage count of the texture
-     *
-     * Directly controls playback for video CTextures, only started when at least one thing is using it
-     * Initializes mpv if needed and starts playback
-     */
-    virtual void incrementUsageCount () const = 0;
-    /**
-     * Decrements the usage count of the texture
-     *
-     * Directly controls playback for video CTextures, only stopped when nothing is using it
-     * De-initializes mpv if needed
-     */
-    virtual void decrementUsageCount () const = 0;
-    /**
-     * Allows the texture contents to be updated (for example, for video textures)
-     */
-    virtual void update () const = 0;
+	/**
+	 * Increments the usage count of the texture
+	 *
+	 * Directly controls playback for video CTextures, only started when at least one thing is using it
+	 * Initializes mpv if needed and starts playback
+	 */
+	virtual void incrementUsageCount () const = 0;
+	/**
+	 * Decrements the usage count of the texture
+	 *
+	 * Directly controls playback for video CTextures, only stopped when nothing is using it
+	 * De-initializes mpv if needed
+	 */
+	virtual void decrementUsageCount () const = 0;
+	/**
+	 * Allows the texture contents to be updated (for example, for video textures)
+	 */
+	virtual void update () const = 0;
 };
 } // namespace WallpaperEngine::Render

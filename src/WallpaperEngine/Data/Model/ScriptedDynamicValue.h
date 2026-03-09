@@ -17,19 +17,17 @@ namespace WallpaperEngine::Data::Model {
  */
 class ScriptedDynamicValue : public DynamicValue {
 public:
-    ScriptedDynamicValue (
-	std::string scriptSource,
-	std::map<std::string, DynamicValueUniquePtr> scriptProps,
-	DynamicValue baseValue
-    );
+	ScriptedDynamicValue (
+		std::string scriptSource, std::map<std::string, DynamicValueUniquePtr> scriptProps, DynamicValue baseValue
+	);
 
-    ~ScriptedDynamicValue () override = default;
+	~ScriptedDynamicValue () override = default;
 
 private:
-    void reevaluate ();
+	void reevaluate ();
 
-    std::string m_scriptSource;
-    std::map<std::string, DynamicValueUniquePtr> m_scriptProps;
-    DynamicValue m_baseValue;
+	std::string m_scriptSource;
+	std::map<std::string, DynamicValueUniquePtr> m_scriptProps;
+	DynamicValue m_baseValue;
 };
 } // namespace WallpaperEngine::Data::Model

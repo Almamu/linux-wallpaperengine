@@ -2,22 +2,15 @@
 
 namespace WallpaperEngine::Audio::Drivers::Detectors {
 AudioPlayingDetector::AudioPlayingDetector (
-    Application::ApplicationContext& appContext,
-    const Render::Drivers::Detectors::FullScreenDetector& fullscreenDetector
-) : m_applicationContext (appContext), m_fullscreenDetector (fullscreenDetector) { }
+	wp_mute_check& source, std::unique_ptr<Render::Drivers::Detectors::FullScreenDetector> fullscreenDetector
+) : m_source (source), m_fullscreenDetector (std::move (fullscreenDetector)) { }
 
 bool AudioPlayingDetector::anythingPlaying () const { return this->m_isPlaying; }
 
-Application::ApplicationContext& AudioPlayingDetector::getApplicationContext () const {
-    return this->m_applicationContext;
-}
-
 const Render::Drivers::Detectors::FullScreenDetector& AudioPlayingDetector::getFullscreenDetector () const {
-    return this->m_fullscreenDetector;
+	return *this->m_fullscreenDetector.get ();
 }
 
-void AudioPlayingDetector::setIsPlaying (const bool newState) { this->m_isPlaying = newState; }
-
-void AudioPlayingDetector::update () { }
+void AudioPlayingDetector::update () { this->m_isPlaying = this->m_source.is_muted (this->m_source.user_parameter); }
 
 } // namespace WallpaperEngine::Audio::Drivers::Detectors

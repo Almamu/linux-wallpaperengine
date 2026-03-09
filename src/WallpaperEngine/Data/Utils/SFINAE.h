@@ -13,9 +13,9 @@ template <glm::length_t L, typename S, glm::qualifier Q> struct is_glm_vec<glm::
 template <typename T> struct GlmVecTraits;
 
 template <glm::length_t L, typename T, glm::qualifier Q> struct GlmVecTraits<glm::vec<L, T, Q>> {
-    static constexpr int length = L;
-    using type = T;
-    static constexpr glm::qualifier qualifier = Q;
+	static constexpr int length = L;
+	using type = T;
+	static constexpr glm::qualifier qualifier = Q;
 };
 
 }

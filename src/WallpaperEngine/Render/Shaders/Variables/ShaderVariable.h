@@ -11,16 +11,16 @@ using namespace WallpaperEngine::Data::Utils;
 
 class ShaderVariable : public DynamicValue, public TypeCaster {
 public:
-    using DynamicValue::DynamicValue;
+	using DynamicValue::DynamicValue;
 
-    [[nodiscard]] const std::string& getIdentifierName () const;
-    [[nodiscard]] const std::string& getName () const;
+	[[nodiscard]] const std::string& getIdentifierName () const;
+	[[nodiscard]] const std::string& getName () const;
 
-    void setIdentifierName (std::string identifierName);
-    void setName (const std::string& name);
+	void setIdentifierName (std::string identifierName);
+	void setName (const std::string& name);
 
 private:
-    std::string m_identifierName;
-    std::string m_name;
+	std::string m_identifierName;
+	std::string m_name;
 };
 } // namespace WallpaperEngine::Render::Shaders::Variables

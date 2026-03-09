@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Render/Camera.h"
 
+#include "../../../../include/frontends/project.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 
 namespace WallpaperEngine::Render {
@@ -14,48 +15,45 @@ using namespace WallpaperEngine::Data::Model;
 
 class CScene final : public CWallpaper {
 public:
-    CScene (
-	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
-    );
+	CScene (const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext, wp_mouse_input* mouseInput);
 
-    ~CScene () override;
+	~CScene () override;
 
-    [[nodiscard]] Camera& getCamera () const;
+	[[nodiscard]] Camera& getCamera () const;
 
-    [[nodiscard]] const Scene& getScene () const;
+	[[nodiscard]] const Scene& getScene () const;
 
-    [[nodiscard]] int getWidth () const override;
-    [[nodiscard]] int getHeight () const override;
+	[[nodiscard]] int getWidth () const override;
+	[[nodiscard]] int getHeight () const override;
 
-    const glm::vec2* getMousePosition () const;
-    const glm::vec2* getMousePositionLast () const;
-    const glm::vec2* getParallaxDisplacement () const;
+	const glm::vec2* getMousePosition () const;
+	const glm::vec2* getMousePositionLast () const;
+	const glm::vec2* getParallaxDisplacement () const;
 
-    [[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
-    [[nodiscard]] const CObject* getObject (int id) const;
+	[[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
+	[[nodiscard]] const CObject* getObject (int id) const;
 
 protected:
-    void renderFrame (const glm::ivec4& viewport) override;
-    void updateMouse (const glm::ivec4& viewport);
+	void renderFrame () override;
+	void updateMouse ();
 
-    friend class CWallpaper;
+	friend class CWallpaper;
 
 private:
-    Render::CObject* createObject (const Object& object);
-    void addObjectToRenderOrder (const Object& object);
+	Render::CObject* createObject (const Object& object);
+	void addObjectToRenderOrder (const Object& object);
 
-    std::unique_ptr<Camera> m_camera;
-    ObjectUniquePtr m_bloomObjectData;
-    CObject* m_bloomObject = nullptr;
-    std::map<int, CObject*> m_objects = {};
-    std::vector<CObject*> m_objectsByRenderOrder = {};
-    glm::vec2 m_mousePosition = {};
-    glm::vec2 m_mousePositionLast = {};
-    glm::vec2 m_parallaxDisplacement = {};
-    std::shared_ptr<const CFBO> _rt_4FrameBuffer = nullptr;
-    std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;
-    std::shared_ptr<const CFBO> _rt_Bloom = nullptr;
-    std::shared_ptr<const CFBO> _rt_shadowAtlas = nullptr;
+	std::unique_ptr<Camera> m_camera;
+	ObjectUniquePtr m_bloomObjectData;
+	CObject* m_bloomObject = nullptr;
+	std::map<int, CObject*> m_objects = {};
+	std::vector<CObject*> m_objectsByRenderOrder = {};
+	glm::vec2 m_mousePosition = {};
+	glm::vec2 m_mousePositionLast = {};
+	glm::vec2 m_parallaxDisplacement = {};
+	std::shared_ptr<const CFBO> _rt_4FrameBuffer = nullptr;
+	std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;
+	std::shared_ptr<const CFBO> _rt_Bloom = nullptr;
+	std::shared_ptr<const CFBO> _rt_shadowAtlas = nullptr;
 };
 } // namespace WallpaperEngine::Render::Wallpaper

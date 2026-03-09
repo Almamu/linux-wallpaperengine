@@ -10,14 +10,14 @@ namespace WallpaperEngine::Data::Assets {
 using namespace WallpaperEngine::Data::Utils;
 
 struct FileEntry {
-    std::string filename;
-    uint32_t offset;
-    uint32_t length;
+	std::string filename;
+	uint32_t offset;
+	uint32_t length;
 };
 
 struct Package {
-    BinaryReaderUniquePtr file;
-    FileEntryList files;
-    uint32_t baseOffset;
+	BinaryReaderUniquePtr file;
+	FileEntryList files;
+	uint32_t baseOffset;
 };
 }

@@ -2,22 +2,22 @@
 
 namespace WallpaperEngine::Audio::Drivers {
 AudioDriver::AudioDriver (
-    Application::ApplicationContext& applicationContext, Detectors::AudioPlayingDetector& detector,
-    Recorders::PlaybackRecorder& recorder
-) : m_applicationContext (applicationContext), m_detector (detector), m_recorder (recorder) {
-    // perform a few update cycles to ensure data is ready before anything actually uses the audio
-    this->AudioDriver::update ();
-    this->AudioDriver::update ();
+	Context& applicationContext, std::unique_ptr<Detectors::AudioPlayingDetector> detector,
+	std::unique_ptr<Recorders::PlaybackRecorder> recorder
+) : m_context (applicationContext), m_detector (std::move (detector)), m_recorder (std::move (recorder)) {
+	// perform a few update cycles to ensure data is ready before anything actually uses the audio
+	this->AudioDriver::update ();
+	this->AudioDriver::update ();
 }
 
 void AudioDriver::update () {
-    this->m_recorder.update ();
-    this->m_detector.update ();
+	this->m_recorder->update ();
+	this->m_detector->update ();
 }
 
-Application::ApplicationContext& AudioDriver::getApplicationContext () const { return this->m_applicationContext; }
+Context& AudioDriver::getContext () const { return this->m_context; }
 
-Detectors::AudioPlayingDetector& AudioDriver::getAudioDetector () const { return this->m_detector; }
+Detectors::AudioPlayingDetector& AudioDriver::getAudioDetector () const { return *this->m_detector.get (); }
 
-Recorders::PlaybackRecorder& AudioDriver::getRecorder () const { return this->m_recorder; }
+Recorders::PlaybackRecorder& AudioDriver::getRecorder () const { return *this->m_recorder.get (); }
 } // namespace WallpaperEngine::Audio::Drivers

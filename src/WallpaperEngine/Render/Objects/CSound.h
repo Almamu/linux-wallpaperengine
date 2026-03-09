@@ -14,17 +14,17 @@ using namespace WallpaperEngine::Data::Model;
 
 class CSound final : public CObject {
 public:
-    CSound (Wallpapers::CScene& scene, const Sound& sound);
-    ~CSound () override;
+	CSound (Wallpapers::CScene& scene, const Sound& sound);
+	~CSound () override;
 
-    void render () override;
+	void render () override;
 
 protected:
-    void load ();
+	void load ();
 
 private:
-    std::map<int, Audio::AudioStream*> m_audioStreams = {};
+	std::map<int, Audio::AudioStream*> m_audioStreams = {};
 
-    const Sound& m_sound;
+	const Sound& m_sound;
 };
 } // namespace WallpaperEngine::Render::Objects

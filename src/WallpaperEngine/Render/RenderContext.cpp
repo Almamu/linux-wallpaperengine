@@ -1,64 +1,46 @@
-#include <iostream>
-
 #include <GL/glew.h>
 
 #include "CWallpaper.h"
 #include "RenderContext.h"
 
-#include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Assets/AssetLoadException.h"
+#include "WallpaperEngine/Context.h"
 
 namespace WallpaperEngine::Render {
-RenderContext::RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app) :
-    m_driver (driver), m_app (app), m_textureCache (new TextureCache (*this)) { }
+RenderContext::RenderContext (Context& context) : m_textureCache (*context.texture_cache), m_context (context) { }
 
-void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
-    viewport->makeCurrent ();
-
+void RenderContext::render () const {
 #if !NDEBUG
-    const std::string str = "Rendering to output " + viewport->name;
+	const std::string str = "Rendering to output ";
 
-    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
-    // search the background in the viewport selection
+	// search the background in the viewport selection
 
-    // render the background
-    if (const auto ref = this->m_wallpapers.find (viewport->name); ref != this->m_wallpapers.end ()) {
-	ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
-    }
+	// TODO: CHECK VIEWPORT AND USE WALLPAPER'S SIZE INSTEAD
+	if (this->m_wallpaper) {
+		this->m_wallpaper->render ();
+	}
 
 #if !NDEBUG
-    glPopDebugGroup ();
+	glPopDebugGroup ();
 #endif /* DEBUG */
-
-    viewport->swapOutput ();
 }
 
-void RenderContext::setWallpaper (const std::string& display, std::shared_ptr<CWallpaper> wallpaper) {
-    wallpaper->setDestinationFramebuffer (this->m_app.getDestinationFramebuffer ());
-    this->m_wallpapers.insert_or_assign (display, wallpaper);
-}
+void RenderContext::setWallpaper (std::unique_ptr<CWallpaper> wallpaper) { this->m_wallpaper = std::move (wallpaper); }
 
-void RenderContext::setPause (const bool newState) const {
-    for (const auto& wallpaper : this->m_wallpapers | std::views::values) {
-	wallpaper->setPause (newState);
-    }
-}
-
-Input::InputContext& RenderContext::getInputContext () const { return this->m_driver.getInputContext (); }
-
-const WallpaperApplication& RenderContext::getApp () const { return this->m_app; }
-
-const Drivers::VideoDriver& RenderContext::getDriver () const { return this->m_driver; }
-
-const Drivers::Output::Output& RenderContext::getOutput () const { return this->m_driver.getOutput (); }
+const Context& RenderContext::getContext () const { return this->m_context; }
 
 std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std::string& name) const {
-    return this->m_textureCache->resolve (name);
+	try {
+		return this->m_textureCache.resolve (name);
+	} catch (const Assets::AssetLoadException& e) {
+		// TODO: try to load from the container and store it into the cache
+		throw;
+	}
 }
 
-const std::map<std::string, std::shared_ptr<CWallpaper>>& RenderContext::getWallpapers () const {
-    return this->m_wallpapers;
-}
+const CWallpaper& RenderContext::getWallpaper () const { return *this->m_wallpaper; }
 
 } // namespace WallpaperEngine::Render

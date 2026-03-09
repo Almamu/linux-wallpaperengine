@@ -11,30 +11,30 @@ using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render::Objects {
 class CRenderable : public CObject, public FBOProvider {
-    friend CObject;
+	friend CObject;
 
 public:
-    CRenderable (Wallpapers::CScene& scene, const Object& object, const Material& material);
+	CRenderable (Wallpapers::CScene& scene, const Object& object, const Material& material);
 
-    [[nodiscard]] std::shared_ptr<const TextureProvider> getTexture () const;
+	[[nodiscard]] std::shared_ptr<const TextureProvider> getTexture () const;
 
-    [[nodiscard]] double getAnimationTime () const;
+	[[nodiscard]] double getAnimationTime () const;
 
-    virtual void setup ();
+	virtual void setup ();
 
-    [[nodiscard]] virtual const float& getBrightness () const = 0;
-    [[nodiscard]] virtual const float& getUserAlpha () const = 0;
-    [[nodiscard]] virtual const float& getAlpha () const = 0;
-    [[nodiscard]] virtual const glm::vec3& getColor () const = 0;
-    [[nodiscard]] virtual const glm::vec4& getColor4 () const = 0;
-    [[nodiscard]] virtual const glm::vec3& getCompositeColor () const = 0;
+	[[nodiscard]] virtual const float& getBrightness () const = 0;
+	[[nodiscard]] virtual const float& getUserAlpha () const = 0;
+	[[nodiscard]] virtual const float& getAlpha () const = 0;
+	[[nodiscard]] virtual const glm::vec3& getColor () const = 0;
+	[[nodiscard]] virtual const glm::vec4& getColor4 () const = 0;
+	[[nodiscard]] virtual const glm::vec3& getCompositeColor () const = 0;
 
 protected:
-    void detectTexture ();
+	void detectTexture ();
 
-    double m_animationTime = 0.0;
+	double m_animationTime = 0.0;
 
-    std::shared_ptr<const TextureProvider> m_texture = nullptr;
-    const Material& m_material;
+	std::shared_ptr<const TextureProvider> m_texture = nullptr;
+	const Material& m_material;
 };
 }

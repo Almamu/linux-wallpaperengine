@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WallpaperEngine/Assets/AssetLocator.h"
 #include "include/cef_scheme.h"
 #include <string>
 
@@ -15,19 +16,19 @@ using namespace WallpaperEngine::Data::Model;
  */
 class WPSchemeHandlerFactory : public CefSchemeHandlerFactory {
 public:
-    explicit WPSchemeHandlerFactory (const Project& project);
+	explicit WPSchemeHandlerFactory (const Assets::AssetLocator& assetLoader);
 
-    CefRefPtr<CefResourceHandler> Create (
-	CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name,
-	CefRefPtr<CefRequest> request
-    ) override;
+	CefRefPtr<CefResourceHandler> Create (
+		CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name,
+		CefRefPtr<CefRequest> request
+	) override;
 
-    static std::string generateSchemeName (const std::string& workshopId);
+	static std::string generateSchemeName (const std::string& uuid);
 
 private:
-    const Project& m_project;
+	const Assets::AssetLocator& m_assetLoader;
 
-    IMPLEMENT_REFCOUNTING (WPSchemeHandlerFactory);
-    DISALLOW_COPY_AND_ASSIGN (WPSchemeHandlerFactory);
+	IMPLEMENT_REFCOUNTING (WPSchemeHandlerFactory);
+	DISALLOW_COPY_AND_ASSIGN (WPSchemeHandlerFactory);
 };
 } // namespace WallpaperEngine::WebBrowser::CEF

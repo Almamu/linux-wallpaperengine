@@ -9,7 +9,7 @@ const std::string& ShaderVariable::getIdentifierName () const { return this->m_i
 const std::string& ShaderVariable::getName () const { return this->m_name; }
 
 void ShaderVariable::setIdentifierName (std::string identifierName) {
-    this->m_identifierName = std::move (identifierName);
+	this->m_identifierName = std::move (identifierName);
 }
 
 void ShaderVariable::setName (const std::string& name) { this->m_name = name; }

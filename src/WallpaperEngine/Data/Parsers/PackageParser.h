@@ -9,9 +9,9 @@ using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Utils;
 class PackageParser {
 public:
-    static PackageUniquePtr parse (ReadStreamSharedPtr stream);
+	static PackageUniquePtr parse (ReadStreamSharedPtr stream);
 
 private:
-    static FileEntryList parseFileList (const BinaryReader& stream);
+	static FileEntryList parseFileList (const BinaryReader& stream);
 };
 }

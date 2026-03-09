@@ -29,6 +29,9 @@
 [submodule "src/External/Catch2"]
 	path = src/External/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "src/External/kissfft-WallpaperEngine"]
+	path = src/External/kissfft-WallpaperEngine
+	url = https://github.com/Almamu/kissfft-WallpaperEngine.git
 [submodule "src/External/quickjs"]
 	path = src/External/quickjs
 	url = https://github.com/quickjs-ng/quickjs.git
