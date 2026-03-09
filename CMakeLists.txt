@@ -69,7 +69,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(KISSFFT_TEST OFF)
 option(KISSFFT_TOOLS OFF)
 option(KISSFFT_PKGCONFIG OFF)
-option(KISSFFT_STATIC ON)
+# need to force this because otherwise it wont work
+set(KISSFFT_STATIC ON CACHE BOOL "Build kissfft as static (ON) or shared library (OFF)" FORCE)
 option(KISSFFT_ENABLE_INSTALL OFF)
 
 # Download CEF of specified version for current platform
@@ -457,7 +458,7 @@ target_link_libraries (linux-wallpaperengine-core PUBLIC
     ${FFMPEG_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
-    kissfft
+    kissfft::kissfft-${KISSFFT_DATATYPE}
     glslang
     spirv-cross-core
     spirv-cross-glsl
@@ -479,7 +480,7 @@ if (BUILD_TESTING)
         ${FFMPEG_LIBRARIES}
         ${MPV_LIBRARY}
         ${PULSEAUDIO_LIBRARY}
-        kissfft
+        kissfft::kissfft-${KISSFFT_DATATYPE}
         glslang
         spirv-cross-core
         spirv-cross-glsl
@@ -506,7 +507,7 @@ file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
 set_target_properties(linux-wallpaperengine-core PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY})
 
-add_dependencies(linux-wallpaperengine-core libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl qjs)
+add_dependencies(linux-wallpaperengine-core libcef_dll_wrapper kissfft::kissfft-${KISSFFT_DATATYPE} glslang spirv-cross-core spirv-cross-glsl qjs)
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-core)
 
 # set some install parameters if not in debug mode
