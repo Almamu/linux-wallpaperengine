@@ -427,7 +427,9 @@ add_executable(linux-wallpaperengine-webhelper
     src/WallpaperEngine/WebBrowser/WebBrowserHelper.cpp)
 
 target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
-    linux-wallpaperengine-core)
+    linux-wallpaperengine-core
+    libcef_lib
+    libcef_dll_wrapper)
 
 target_compile_definitions(linux-wallpaperengine-core PRIVATE
     WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_BINDIR}/linux-wallpaperengine-webhelper")
