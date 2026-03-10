@@ -8,6 +8,31 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 
 /**
+ * The current active context in use
+ *
+ * There can be only one active at a time
+ */
+wp_context* wp_active_context;
+
+void* wp_context_call_gl_proc_address (const char* name) {
+	if (wp_active_context == nullptr) {
+		return nullptr;
+	}
+
+	const auto contextPtr = static_cast<WallpaperEngine::Context*> (wp_active_context);
+
+	if (contextPtr->gl_proc_address == nullptr) {
+		return nullptr;
+	}
+
+	if (contextPtr->gl_proc_address->get_proc_address == nullptr) {
+		return nullptr;
+	}
+
+	return contextPtr->gl_proc_address->get_proc_address (contextPtr->gl_proc_address, name);
+}
+
+/**
  * Builds an asset locator and sets up all the paths and virtual files that are needed for proper playback
  * TODO: MOVE THIS SOMEWHERE ELSE?
  *
@@ -117,6 +142,16 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 			return nullptr;
 		}
 
+		if (wp_active_context == nullptr) {
+			wp_active_context = context;
+			// initialize glad with the proper loadgl function
+			gladLoadGLLoader (wp_context_call_gl_proc_address);
+		}
+
+		if (wp_active_context != nullptr && context != wp_active_context) {
+			sLog.exception ("Cannot load project with multiple contexts active at once");
+		}
+
 		auto contextPtr = static_cast<WallpaperEngine::Context*> (context);
 		auto locator = wp_setup_asset_locator (contextPtr->config, project);
 		auto json = JSON::parse (locator->readString ("project.json"));
@@ -152,7 +187,19 @@ wp_project* wp_project_load_folder (wp_context* context, wp_mouse_input* mouse_i
 }
 
 void wp_project_destroy (wp_project* project) {
-	delete static_cast<WallpaperEngine::LoadedProject*> (project);
+	const auto projectPtr = static_cast<WallpaperEngine::LoadedProject*> (project);
+
+	// remove the project off the list
+	projectPtr->context.projects.erase (projectPtr->ref);
+
+	if (projectPtr->context.projects.empty ()) {
+		// context is not bound to anything anymore
+		// erase active reference
+		wp_active_context = nullptr;
+	}
+
+	// finally free LoadedProject info
+	delete projectPtr;
 }
 
 int wp_project_get_width (wp_project* project) {
@@ -163,6 +210,6 @@ int wp_project_get_height (wp_project* project) {
 	return static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().getHeight ();
 }
 
-void wp_project_set_output_framebuffer (wp_project* project, GLuint fb) {
-	static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().setDestinationFramebuffer (fb);
+void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer) {
+	static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().setDestinationFramebuffer (framebuffer);
 }
