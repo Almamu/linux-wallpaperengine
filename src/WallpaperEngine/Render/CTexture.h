@@ -5,7 +5,7 @@
 #include "WallpaperEngine/Data/Assets/Texture.h"
 #include "WallpaperEngine/VideoPlayback/MPV/GLPlayer.h"
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <glm/vec4.hpp>
 #include <memory>
 #include <mpv/client.h>

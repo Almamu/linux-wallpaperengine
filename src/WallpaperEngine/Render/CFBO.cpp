@@ -20,7 +20,9 @@ CFBO::CFBO (
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	// label stuff for debugging
 #if !NDEBUG
-	glObjectLabel (GL_TEXTURE, this->m_texture, -1, this->m_name.c_str ());
+	if (GLAD_GL_VERSION_4_3) {
+		glObjectLabel (GL_TEXTURE, this->m_texture, -1, this->m_name.c_str ());
+	}
 #endif /* DEBUG */
 	// set filtering parameters, otherwise the texture is not rendered
 	if (flags & TextureFlags_ClampUVs) {

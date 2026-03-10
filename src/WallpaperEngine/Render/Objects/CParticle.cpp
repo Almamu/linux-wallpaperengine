@@ -5,7 +5,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Utils/NoiseUtils.h"
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
@@ -2029,10 +2029,12 @@ void CParticle::renderSprites () {
 	}
 
 #if !NDEBUG
-	std::string str = "Rendering particles ";
-	str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
-		+ ")";
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	if (GLAD_GL_VERSION_4_3) {
+		std::string str = "Rendering particles ";
+		str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
+			+ ")";
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	}
 #endif
 
 	// Upload vertex and index data
@@ -2266,10 +2268,12 @@ void CParticle::renderRope () {
 	}
 
 #if !NDEBUG
-	std::string str = "Rendering rope particles ";
-	str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
-		+ ")";
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	if (GLAD_GL_VERSION_4_3) {
+		std::string str = "Rendering rope particles ";
+		str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
+			+ ")";
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	}
 #endif
 
 	// Upload vertex and index data

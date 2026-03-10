@@ -477,16 +477,18 @@ void CImage::render () {
 	this->updateScreenSpacePosition ();
 
 #if !NDEBUG
-	std::string str = "Rendering ";
+	if (GLAD_GL_VERSION_4_3) {
+		std::string str = "Rendering ";
 
-	if (this->getScene ().getScene ().camera.bloom.enabled->value->getBool () && this->getId () == -1) {
-		str += "bloom";
-	} else {
-		str += this->getImage ().name + " (" + std::to_string (this->getId ()) + ", "
-			+ this->getImage ().model->material->filename + ")";
+		if (this->getScene ().getScene ().camera.bloom.enabled->value->getBool () && this->getId () == -1) {
+			str += "bloom";
+		} else {
+			str += this->getImage ().name + " (" + std::to_string (this->getId ()) + ", "
+				+ this->getImage ().model->material->filename + ")";
+		}
+
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 	}
-
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
 	auto cur = this->m_passes.begin ();

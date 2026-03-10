@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <optional>
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <mpv/client.h>
 #include <mpv/render.h>
 

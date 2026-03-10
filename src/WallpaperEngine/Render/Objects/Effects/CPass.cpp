@@ -312,11 +312,13 @@ void CPass::setupRenderAttributes () const {
 		glVertexAttribPointer (cur->id, cur->elements, cur->type, GL_FALSE, 0, nullptr);
 
 #if !NDEBUG
-		glObjectLabel (
-			GL_BUFFER, *cur->value, -1,
-			("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
-				.c_str ()
-		);
+		if (GLAD_GL_VERSION_4_3) {
+			glObjectLabel (
+				GL_BUFFER, *cur->value, -1,
+				("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
+					.c_str ()
+			);
+		}
 #endif /* DEBUG */
 	}
 }
@@ -512,9 +514,11 @@ void CPass::setupShaders () {
 	}
 
 #if !NDEBUG
-	glObjectLabel (GL_PROGRAM, this->m_programID, -1, shaderName.c_str ());
-	glObjectLabel (GL_SHADER, vertexShaderID, -1, (shaderName + ".vert").c_str ());
-	glObjectLabel (GL_SHADER, fragmentShaderID, -1, (shaderName + ".frag").c_str ());
+	if (GLAD_GL_VERSION_4_3) {
+		glObjectLabel (GL_PROGRAM, this->m_programID, -1, shaderName.c_str ());
+		glObjectLabel (GL_SHADER, vertexShaderID, -1, (shaderName + ".vert").c_str ());
+		glObjectLabel (GL_SHADER, fragmentShaderID, -1, (shaderName + ".frag").c_str ());
+	}
 #endif /* DEBUG */
 
 	// after being liked shaders can be dettached and deleted

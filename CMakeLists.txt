@@ -9,7 +9,6 @@ endif()
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
-set(OpenGL_GL_PREFERENCE "LEGACY")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # puts the app in demomode, which records a 5 second webm video and quits
@@ -27,9 +26,6 @@ include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(MPV REQUIRED)
@@ -170,7 +166,7 @@ add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft-WallpaperEngine kissfft)
 add_subdirectory(src/External/argparse argparse)
 add_subdirectory(src/External/quickjs-WallpaperEngine quickjs)
-
+add_subdirectory(src/External/glad linux-wallpaperengine-glad)
 if(BUILD_TESTING)
     add_subdirectory(src/External/Catch2)
 endif()
@@ -430,6 +426,7 @@ add_executable(linux-wallpaperengine-webhelper
 
 target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
     linux-wallpaperengine-core
+    linux-wallpaperengine-glad
     libcef_lib
     libcef_dll_wrapper)
 
@@ -454,9 +451,7 @@ set_target_properties(linux-wallpaperengine-core PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 target_link_libraries (linux-wallpaperengine-core PUBLIC
-    ${OPENGL_LIBRARIES}
-    GLEW::GLEW
-    $<BUILD_INTERFACE:${GLUT_LIBRARIES}>
+    $<BUILD_INTERFACE:linux-wallpaperengine-glad>
     $<BUILD_INTERFACE:${ZLIB_LIBRARIES}>
     $<BUILD_INTERFACE:${LZ4_LIBRARY}>
     $<BUILD_INTERFACE:${SDL2_LIBRARIES}>
@@ -476,8 +471,7 @@ target_link_libraries (linux-wallpaperengine-core PUBLIC
 if (BUILD_TESTING)
     target_link_libraries (tests PRIVATE
         Catch2::Catch2WithMain
-        ${OPENGL_LIBRARIES}
-        GLEW::GLEW
+        linux-wallpaperengine-glad
         ${GLUT_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${LZ4_LIBRARY}

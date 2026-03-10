@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/glad.h>
 
 #include "CWallpaper.h"
 #include "RenderContext.h"
@@ -11,9 +11,11 @@ RenderContext::RenderContext (Context& context) : m_textureCache (*context.textu
 
 void RenderContext::render () const {
 #if !NDEBUG
-	const std::string str = "Rendering to output ";
+	if (GLAD_GL_VERSION_4_3) {
+		const std::string str = "Rendering to output ";
 
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+	}
 #endif /* DEBUG */
 
 	// search the background in the viewport selection
@@ -24,7 +26,9 @@ void RenderContext::render () const {
 	}
 
 #if !NDEBUG
-	glPopDebugGroup ();
+	if  (GLAD_GL_VERSION_4_3) {
+		glPopDebugGroup ();
+	}
 #endif /* DEBUG */
 }
 

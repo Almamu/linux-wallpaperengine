@@ -285,15 +285,19 @@ void CScene::renderFrame () {
 		const Objects::CImage* image = cur->as<Objects::CImage> ();
 
 #if !NDEBUG
-		const std::string message = "Updating texture " + image->getImage ().model->filename;
+		if (GLAD_GL_VERSION_4_3) {
+			const std::string message = "Updating texture " + image->getImage ().model->filename;
 
-		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, message.c_str ());
+			glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, message.c_str ());
+		}
 #endif
 
 		image->getTexture ()->update ();
 
 #if !NDEBUG
-		glPopDebugGroup ();
+		if (GLAD_GL_VERSION_4_3) {
+			glPopDebugGroup ();
+		}
 #endif
 	}
 

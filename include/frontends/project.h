@@ -3,8 +3,6 @@
 
 #include "context.h"
 
-#include <GL/glew.h>
-
 /**
  * Background project instance
  */
@@ -86,6 +84,6 @@ int wp_project_get_height (wp_project* project);
  * @param project The project to update the output framebuffer for
  * @param framebuffer The framebuffer to use for rendering
  */
-void wp_project_set_output_framebuffer (wp_project* project, GLuint framebuffer);
+void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer);
 
 #endif

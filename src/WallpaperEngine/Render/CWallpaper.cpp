@@ -183,11 +183,15 @@ void CWallpaper::setDestinationFramebuffer (GLuint framebuffer) const { this->m_
 
 void CWallpaper::render () {
 #if !NDEBUG
-	glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
+	if (GLAD_GL_VERSION_4_3) {
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
+	}
 #endif /* !NDEBUG */
 	this->renderFrame ();
 #if !NDEBUG
-	glPopDebugGroup ();
+	if (GLAD_GL_VERSION_4_3) {
+		glPopDebugGroup ();
+	}
 #endif /* !NDEBUG */
 }
 
