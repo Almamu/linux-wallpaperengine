@@ -151,6 +151,10 @@ wp_project* wp_project_load_folder (wp_context* context, wp_mouse_input* mouse_i
 	return wp_project_load (context, mouse_input, std::filesystem::path (folder));
 }
 
+void wp_project_destroy (wp_project* project) {
+	delete static_cast<WallpaperEngine::LoadedProject*> (project);
+}
+
 int wp_project_get_width (wp_project* project) {
 	return static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().getWidth ();
 }
