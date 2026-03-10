@@ -143,7 +143,7 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, const int id) {
 	return wp_project_load (
 		context, mouse_input,
-		static_cast<const WallpaperEngine::Configuration*> (context)->backgrounds_dir / std::to_string (id)
+		static_cast<const WallpaperEngine::Context*> (context)->config->backgrounds_dir / std::to_string (id)
 	);
 }
 
