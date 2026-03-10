@@ -20,7 +20,7 @@ int main (int argc, char* argv[]) {
 	if (assetsDir.empty () || backgroundDir.empty () || backgroundId.empty ()) {
 		sLog.error (
 			"Missing required command-line arguments. This command is designed to be run from "
-		    "liblinux-wallpaperengine-core and not by itself..."
+			"liblinux-wallpaperengine-core and not by itself..."
 		);
 		return 1;
 	}

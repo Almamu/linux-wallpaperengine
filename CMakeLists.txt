@@ -449,7 +449,6 @@ target_link_libraries (linux-wallpaperengine-core PUBLIC
     $<BUILD_INTERFACE:glslang>
     $<BUILD_INTERFACE:spirv-cross-core>
     $<BUILD_INTERFACE:spirv-cross-glsl>
-    $<BUILD_INTERFACE:glfw>
     $<BUILD_INTERFACE:libcef_lib>
     $<BUILD_INTERFACE:libcef_dll_wrapper>
     $<BUILD_INTERFACE:argparse>
@@ -470,7 +469,6 @@ if (BUILD_TESTING)
         glslang
         spirv-cross-core
         spirv-cross-glsl
-        glfw
         libcef_lib
         libcef_dll_wrapper
         argparse
