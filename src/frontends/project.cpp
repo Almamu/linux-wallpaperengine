@@ -170,9 +170,17 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 		);
 
 		return result;
+	} catch (std::bad_alloc& error) {
+		sLog.error("Exception when loading background: ", error.what ());
+	} catch (std::runtime_error& error) {
+		sLog.error("Exception when loading background: ", error.what ());
+	} catch (std::exception& error) {
+		sLog.error("Exception when loading background: ", error.what ());
 	} catch (...) {
-		return nullptr;
+		sLog.error("Unknown exception when loading background");
 	}
+
+	return nullptr;
 }
 
 wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, const int id) {
