@@ -12,7 +12,7 @@
  *
  * There can be only one active at a time
  */
-wp_context* wp_active_context;
+wp_context* wp_active_context = nullptr;
 
 void* wp_context_call_gl_proc_address (const char* name) {
 	if (wp_active_context == nullptr) {
