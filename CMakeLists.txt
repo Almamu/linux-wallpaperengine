@@ -11,11 +11,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# puts the app in demomode, which records a 5 second webm video and quits
-if(NOT DEMOMODE)
-    set(DEMOMODE 0)
-endif()
-
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 if(NOT ERRORONLY)
     set(ERRORONLY 0)
@@ -169,13 +164,6 @@ add_subdirectory(src/External/quickjs-WallpaperEngine quickjs)
 add_subdirectory(src/External/glad linux-wallpaperengine-glad)
 if(BUILD_TESTING)
     add_subdirectory(src/External/Catch2)
-endif()
-
-if(DEMOMODE)
-    set(DEMOMODE_SOURCES
-        src/recording.cpp
-        src/recording.h)
-    message(WARNING "Enabling demo mode will automatically record 5 seconds and stop the software. This is used internally to produce the video seen on the website as a sort of status report")
 endif()
 
 add_library(ceflib SHARED IMPORTED)
@@ -417,8 +405,7 @@ endif()
 add_library(
     linux-wallpaperengine-core SHARED
 
-    ${COMMON_SOURCES}
-    ${DEMOMODE_SOURCES})
+    ${COMMON_SOURCES})
 
 add_executable(linux-wallpaperengine-webhelper
     src/WallpaperEngine/Utils/UUID.cpp
@@ -491,12 +478,10 @@ if (BUILD_TESTING)
 endif()
 
 target_compile_definitions(linux-wallpaperengine-core PUBLIC ERRORONLY=${ERRORONLY})
-target_compile_definitions(linux-wallpaperengine-core PUBLIC DEMOMODE=${DEMOMODE})
 
 if (BUILD_TESTING)
     # tests should give as much output as possible
     target_compile_definitions(tests PRIVATE ERRORONLY=0)
-    target_compile_definitions(tests PRIVATE DEMOMODE=0)
 endif()
 
 COPY_FILES(linux-wallpaperengine-core "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
