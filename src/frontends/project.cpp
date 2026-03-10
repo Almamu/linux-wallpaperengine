@@ -59,7 +59,7 @@ AssetLocatorUniquePtr wp_setup_asset_locator (const wp_configuration* config, co
 		container->mount (static_cast<const WallpaperEngine::Configuration*> (config)->assets_dir, "/assets");
 	} catch (std::runtime_error&) { }
 
-	auto vfs = container->getVFS ();
+	auto& vfs = container->getVFS ();
 
 	//
 	// Had to get a little creative with the effects to achieve the same bloom effect without any custom code
