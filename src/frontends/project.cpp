@@ -29,7 +29,7 @@ void* wp_context_call_gl_proc_address (const char* name) {
 		return nullptr;
 	}
 
-	return contextPtr->gl_proc_address->get_proc_address (contextPtr->gl_proc_address, name);
+	return contextPtr->gl_proc_address->get_proc_address (contextPtr->gl_proc_address->user_parameter, name);
 }
 
 /**
