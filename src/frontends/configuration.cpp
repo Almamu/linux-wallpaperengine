@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 
 #include "../../include/frontends/configuration.h"
 
@@ -98,28 +99,36 @@ bool wp_config_set_steam_dir (wp_configuration* config, const char* dir) {
 	// check for workshop and content folders
 	try {
 		const std::filesystem::path backgrounds_dir = Steam::FileSystem::workshopDirectory (dir, WORKSHOP_APP_ID);
-		const std::filesystem::path assets_dir = Steam::FileSystem::appDirectory (dir, "wallpaper_engine");
+		const std::filesystem::path assets_dir = Steam::FileSystem::appDirectory (dir, "wallpaper_engine") / "assets";
 
-		return wp_config_set_assets_dir (config, assets_dir.c_str ())
-			&& wp_config_set_backgrounds_dir (config, backgrounds_dir.c_str ());
+		// prevent partially setting these values as they may break
+		if (!std::filesystem::exists (backgrounds_dir) || !std::filesystem::exists (backgrounds_dir)) {
+			return false;
+		}
+
+		if (!std::filesystem::exists (assets_dir) || !std::filesystem::is_directory (assets_dir)) {
+			return false;
+		}
+
+		static_cast<WallpaperEngine::Configuration*> (config)->backgrounds_dir = backgrounds_dir;
+		static_cast<WallpaperEngine::Configuration*> (config)->assets_dir = assets_dir;
+
+		return true;
 	} catch (std::runtime_error&) {
 		return false;
 	}
 }
 
 bool wp_config_detect_steam_dir (wp_configuration* config) {
-	// try with a few different paths
-	for (const auto& path : steam_paths) {
-		// all the paths we have in the list are based on the user's directory
-		// so build the right path and send it
-		std::filesystem::path real_path = detectHomedir () / path;
+	const std::filesystem::path homedir = detectHomedir ();
 
-		if (wp_config_set_steam_dir (config, real_path.c_str ())) {
-			return true;
-		}
-	}
+	return std::ranges::any_of (
+		steam_paths.begin (), steam_paths.end (),
+		[homedir, config](const std::string& path) -> bool {
+		const std::filesystem::path real_path = homedir / path;
 
-	return false;
+		return wp_config_set_steam_dir (config, real_path.c_str ());
+	});
 }
 
 void wp_config_enable_audio (wp_configuration* config, const bool enable) {
