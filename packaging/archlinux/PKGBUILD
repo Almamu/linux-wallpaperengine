@@ -34,7 +34,7 @@ build() {
         -Wno-dev \
         -DCMAKE_CXX_FLAGS="-ffat-lto-objects -Wno-builtin-macro-redefined" \
         -DCMAKE_C_FLAGS="-Wno-builtin-macro-redefined"
-    cmake --build build
+    cmake --build build --target linux-wallpaperengine-core linux-wallpaperengine-webhelper
 }
 
 package() {
