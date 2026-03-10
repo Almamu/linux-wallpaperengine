@@ -315,7 +315,8 @@ void CPass::setupRenderAttributes () const {
 		if (GLAD_GL_VERSION_4_3) {
 			glObjectLabel (
 				GL_BUFFER, *cur->value, -1,
-				("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " " + cur->name)
+				("Image " + std::to_string (this->m_renderable.getId ()) + " Pass " + this->m_pass.shader + " "
+			     + cur->name)
 					.c_str ()
 			);
 		}

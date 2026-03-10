@@ -26,7 +26,7 @@ void RenderContext::render () const {
 	}
 
 #if !NDEBUG
-	if  (GLAD_GL_VERSION_4_3) {
+	if (GLAD_GL_VERSION_4_3) {
 		glPopDebugGroup ();
 	}
 #endif /* DEBUG */

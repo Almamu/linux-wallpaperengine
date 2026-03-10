@@ -17,8 +17,11 @@ int main (int argc, char* argv[]) {
 	const CefString backgroundDir = commandLine->GetSwitchValue ("background-dir");
 	const CefString backgroundId = commandLine->GetSwitchValue ("uuid");
 
-	if (assetsDir.empty() || backgroundDir.empty() || backgroundId.empty()) {
-		sLog.error ("Missing required command-line arguments. This command is designed to be run from liblinux-wallpaperengine-core and not by itself...");
+	if (assetsDir.empty () || backgroundDir.empty () || backgroundId.empty ()) {
+		sLog.error (
+			"Missing required command-line arguments. This command is designed to be run from "
+		    "liblinux-wallpaperengine-core and not by itself..."
+		);
 		return 1;
 	}
 

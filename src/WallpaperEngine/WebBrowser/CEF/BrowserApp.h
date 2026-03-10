@@ -15,8 +15,7 @@ namespace WallpaperEngine::WebBrowser::CEF {
 class BrowserApp : public SubprocessApp, public CefBrowserProcessHandler {
 public:
 	explicit BrowserApp (
-		std::filesystem::path  assetDir, std::filesystem::path  backgroundDir,
-		const Assets::AssetLocator& locator
+		std::filesystem::path assetDir, std::filesystem::path backgroundDir, const Assets::AssetLocator& locator
 	);
 
 	[[nodiscard]] CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler () override;

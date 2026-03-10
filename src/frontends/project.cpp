@@ -171,13 +171,13 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 
 		return result;
 	} catch (std::bad_alloc& error) {
-		sLog.error("Exception when loading background: ", error.what ());
+		sLog.error ("Exception when loading background: ", error.what ());
 	} catch (std::runtime_error& error) {
-		sLog.error("Exception when loading background: ", error.what ());
+		sLog.error ("Exception when loading background: ", error.what ());
 	} catch (std::exception& error) {
-		sLog.error("Exception when loading background: ", error.what ());
+		sLog.error ("Exception when loading background: ", error.what ());
 	} catch (...) {
-		sLog.error("Unknown exception when loading background");
+		sLog.error ("Unknown exception when loading background");
 	}
 
 	return nullptr;
@@ -219,5 +219,7 @@ int wp_project_get_height (wp_project* project) {
 }
 
 void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer) {
-	static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().setDestinationFramebuffer (framebuffer);
+	static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().setDestinationFramebuffer (
+		framebuffer
+	);
 }

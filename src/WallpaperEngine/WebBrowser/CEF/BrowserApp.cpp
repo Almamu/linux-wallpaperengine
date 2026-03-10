@@ -1,14 +1,15 @@
 #include "BrowserApp.h"
 
-#include <utility>
 #include "WallpaperEngine/Utils/UUID.h"
+#include <utility>
 
 using namespace WallpaperEngine::WebBrowser::CEF;
 
 BrowserApp::BrowserApp (
-	std::filesystem::path  assetDir, std::filesystem::path  backgroundDir,
-	const Assets::AssetLocator& locator
-) : SubprocessApp (Utils::UUID::UUIDv4 (), locator), m_assetDir (std::move(assetDir)), m_backgroundDir (std::move(backgroundDir)) { }
+	std::filesystem::path assetDir, std::filesystem::path backgroundDir, const Assets::AssetLocator& locator
+) :
+	SubprocessApp (Utils::UUID::UUIDv4 (), locator), m_assetDir (std::move (assetDir)),
+	m_backgroundDir (std::move (backgroundDir)) { }
 
 CefRefPtr<CefBrowserProcessHandler> BrowserApp::GetBrowserProcessHandler () { return this; }
 

@@ -1,5 +1,5 @@
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "../../include/frontends/configuration.h"
 
@@ -123,12 +123,12 @@ bool wp_config_detect_steam_dir (wp_configuration* config) {
 	const std::filesystem::path homedir = detectHomedir ();
 
 	return std::ranges::any_of (
-		steam_paths.begin (), steam_paths.end (),
-		[homedir, config](const std::string& path) -> bool {
-		const std::filesystem::path real_path = homedir / path;
+		steam_paths.begin (), steam_paths.end (), [homedir, config] (const std::string& path) -> bool {
+			const std::filesystem::path real_path = homedir / path;
 
-		return wp_config_set_steam_dir (config, real_path.c_str ());
-	});
+			return wp_config_set_steam_dir (config, real_path.c_str ());
+		}
+	);
 }
 
 void wp_config_enable_audio (wp_configuration* config, const bool enable) {
