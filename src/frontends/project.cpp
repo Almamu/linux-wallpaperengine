@@ -135,7 +135,7 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 		);
 
 		return result;
-	} catch (std::runtime_error&) {
+	} catch (...) {
 		return nullptr;
 	}
 }
