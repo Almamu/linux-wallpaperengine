@@ -63,7 +63,8 @@ AdapterSharedPtr Container::mount (const std::filesystem::path& path, const std:
 	}
 
 	throw std::filesystem::filesystem_error (
-		"The specified mount cannot be handled by any of the filesystem adapters", path, std::error_code ()
+		"The specified mount cannot be handled by any of the filesystem adapters", path,
+		std::make_error_code (std::errc::operation_not_permitted)
 	);
 }
 
@@ -91,6 +92,7 @@ Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) co
 	}
 
 	throw std::filesystem::filesystem_error (
-		"Cannot find requested file in any of the mountpoints", path, std::error_code ()
+		"Cannot find requested file in any of the mountpoints", path,
+		std::make_error_code (std::errc::no_such_file_or_directory)
 	);
 }

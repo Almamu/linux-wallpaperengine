@@ -103,6 +103,12 @@ public:
 	void setDestinationFramebuffer (GLuint framebuffer) const;
 
 	/**
+	 *
+	 * @return The current destination framebuffer
+	 */
+	GLuint getDestinationFramebuffer () const;
+
+	/**
 	 * @return The width of this wallpaper
 	 */
 	[[nodiscard]] virtual int getWidth () const = 0;

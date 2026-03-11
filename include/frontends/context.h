@@ -24,6 +24,21 @@ struct wp_gl_proc_address {
 };
 
 /**
+ * Provides callbacks to the timing system
+ */
+struct wp_time_counter {
+	/**
+	 * Pointer to user-defined data that will be passed to the callbacks
+	 */
+	void* user_parameter;
+
+	/**
+	 * Requests the current time
+	 */
+	float (*get_time) (void* user_parameter);
+};
+
+/**
  * Sets up a context based on the given configuration and readies everything up for rendering
  * and loading backgrounds
  *
@@ -46,5 +61,13 @@ void wp_context_destroy (wp_context* context);
  * @param address The address to use for opengl function lookups
  */
 void wp_context_set_gl_proc_address (wp_context* context, wp_gl_proc_address* address);
+
+/**
+ * Updates the time counter handlers
+ *
+ * @param context The context to set the wp_time_counter for
+ * @param counter The new counter to use in this context
+ */
+void wp_context_set_time_counter (wp_context* context, wp_time_counter* counter);
 
 #endif

@@ -11,7 +11,9 @@ ReadStreamSharedPtr VirtualAdapter::open (const std::filesystem::path& path) con
 	const auto file = this->files.find (path);
 
 	if (file == this->files.end ()) {
-		throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find file", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	return file->second;
@@ -20,7 +22,9 @@ ReadStreamSharedPtr VirtualAdapter::open (const std::filesystem::path& path) con
 bool VirtualAdapter::exists (const std::filesystem::path& path) const { return this->files.contains (path); }
 
 std::filesystem::path VirtualAdapter::physicalPath (const std::filesystem::path& path) const {
-	throw std::filesystem::filesystem_error ("Virtual adapter does not support realpath", path, std::error_code ());
+	throw std::filesystem::filesystem_error (
+		"Virtual adapter does not support realpath", path, std::make_error_code (std::errc::operation_not_supported)
+	);
 }
 
 void VirtualAdapter::add (const std::filesystem::path& path, const char* data) {

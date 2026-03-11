@@ -326,6 +326,12 @@ We'll be looking at improving this in the future, but for now it can be a useful
 
 ---
 
+## 🛠️ Development
+
+If you're interested in contributing or building the project for development purposes, please refer to our [Development Guide](docs/DEVELOPMENT.md).
+
+---
+
 ## 🙏 Special Thanks
 
 - [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights

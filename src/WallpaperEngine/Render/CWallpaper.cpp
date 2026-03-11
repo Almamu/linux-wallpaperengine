@@ -21,10 +21,8 @@ CWallpaper::CWallpaper (
 	this->setupShaders ();
 
 	constexpr GLfloat texCoords[] = { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f };
-
-	// inverted positions so the final texture is rendered properly
-	constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0,  1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
-		                             -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
+	constexpr GLfloat position[] = { -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+		                             -1.0f, 1.0f,  0.0f, 1.0f, -1.0f, 0.0f, 1.0f,  1.0f, 0.0f };
 
 	glGenBuffers (1, &this->m_texCoordBuffer);
 	glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
@@ -179,7 +177,9 @@ void CWallpaper::setupShaders () {
 	this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
 }
 
-void CWallpaper::setDestinationFramebuffer (GLuint framebuffer) const { this->m_destFramebuffer = framebuffer; }
+void CWallpaper::setDestinationFramebuffer (const GLuint framebuffer) const { this->m_destFramebuffer = framebuffer; }
+
+GLuint CWallpaper::getDestinationFramebuffer () const { return this->m_destFramebuffer; }
 
 void CWallpaper::render () {
 #if !NDEBUG
@@ -193,6 +193,46 @@ void CWallpaper::render () {
 		glPopDebugGroup ();
 	}
 #endif /* !NDEBUG */
+
+#if !NDEBUG
+	if (GLAD_GL_VERSION_4_3) {
+		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering wallpaper to output");
+	}
+#endif
+
+	glViewport (0, 0, this->getWidth (), this->getHeight ());
+
+	glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
+
+	glBindVertexArray (this->m_vaoBuffer);
+
+	glDisable (GL_BLEND);
+	glDisable (GL_DEPTH_TEST);
+	glDisable (GL_CULL_FACE);
+	// do not use any shader
+	glUseProgram (this->m_shader);
+	// activate scene texture
+	glActiveTexture (GL_TEXTURE0);
+	glBindTexture (GL_TEXTURE_2D, this->getWallpaperTexture ());
+	// set uniforms and attribs
+	glEnableVertexAttribArray (this->a_TexCoord);
+	glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+	glVertexAttribPointer (this->a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glEnableVertexAttribArray (this->a_Position);
+	glBindBuffer (GL_ARRAY_BUFFER, this->m_positionBuffer);
+	glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glUniform1i (this->g_Texture0, 0);
+	// write the framebuffer as is to the screen
+	glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
+	glDrawArrays (GL_TRIANGLES, 0, 6);
+
+#if !NDEBUG
+	if (GLAD_GL_VERSION_4_3) {
+		glPopDebugGroup ();
+	}
+#endif
 }
 
 void CWallpaper::setPause (bool newState) { }

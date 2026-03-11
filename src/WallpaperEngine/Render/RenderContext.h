@@ -4,32 +4,28 @@
 
 #include "TextureCache.h"
 namespace WallpaperEngine {
-struct Context;
-namespace Application {
-	class WallpaperApplication;
+namespace Assets {
+	class AssetLocator;
 }
-
+struct Context;
 namespace Render {
-	class CWallpaper;
 	class TextureCache;
 
 	class RenderContext {
 	public:
-		explicit RenderContext (Context& context);
+		explicit RenderContext (Context& context, Assets::AssetLocator& locator);
 
-		void render () const;
-		void setWallpaper (std::unique_ptr<CWallpaper> wallpaper);
 		[[nodiscard]] const Context& getContext () const;
-		[[nodiscard]] std::shared_ptr<const TextureProvider> resolveTexture (const std::string& name) const;
-		[[nodiscard]] const CWallpaper& getWallpaper () const;
+		[[nodiscard]] std::shared_ptr<const TextureProvider> resolveTexture (const std::string& name);
+		[[nodiscard]] const Assets::AssetLocator& getAssetLocator () const;
 
 	private:
-		/** Wallpaper being rendered by this context */
-		std::unique_ptr<CWallpaper> m_wallpaper;
 		/** Texture cache for the render */
 		TextureCache& m_textureCache;
 		/** The context that owns this render context */
 		Context& m_context;
+		/** The asset locator used for this render context */
+		Assets::AssetLocator& m_locator;
 	};
 } // namespace Render
 } // namespace WallpaperEngine

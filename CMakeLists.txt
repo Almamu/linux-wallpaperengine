@@ -21,6 +21,7 @@ include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
+find_package(glfw3)
 find_package(ZLIB REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(MPV REQUIRED)
@@ -183,7 +184,6 @@ include_directories(
     src/External/stb
     src/External/kissfft
     ${MPV_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
     ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
@@ -393,8 +393,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp)
 
 if(BUILD_TESTING)
-    add_executable(
-        tests
+    add_executable(tests
 
         ${COMMON_SOURCES}
 
@@ -402,40 +401,20 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp)
 endif()
 
-add_library(
-    linux-wallpaperengine-core SHARED
-
+add_library(linux-wallpaperengine-core SHARED
     ${COMMON_SOURCES})
 
 add_executable(linux-wallpaperengine-webhelper
     src/WallpaperEngine/Utils/UUID.cpp
     src/WallpaperEngine/WebBrowser/WebBrowserHelper.cpp)
 
-target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
-    linux-wallpaperengine-core
-    linux-wallpaperengine-glad
-    libcef_lib
-    libcef_dll_wrapper)
-
-target_include_directories(linux-wallpaperengine-core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
-
-target_compile_definitions(linux-wallpaperengine-core PRIVATE
-    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
-    WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
-
-set_target_properties(linux-wallpaperengine-webhelper PROPERTIES
-    SKIP_BUILD_RPATH FALSE
-    BUILD_WITH_INSTALL_RPATH FALSE
-    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
-    INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-set_target_properties(linux-wallpaperengine-core PROPERTIES
-    SKIP_BUILD_RPATH FALSE
-    BUILD_WITH_INSTALL_RPATH FALSE
-    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
-    INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(glfw3_FOUND)
+    # linux-wallpaperengine-dev-viewer looks to simplify testing and validation of new features
+    # so a full, static build is better in this case
+    add_executable(linux-wallpaperengine-dev-viewer
+        src/WallpaperEngine/Development/SimpleBackgroundViewer.cpp
+        ${COMMON_SOURCES})
+endif()
 
 target_link_libraries (linux-wallpaperengine-core PUBLIC
     $<BUILD_INTERFACE:linux-wallpaperengine-glad>
@@ -451,7 +430,6 @@ target_link_libraries (linux-wallpaperengine-core PUBLIC
     $<BUILD_INTERFACE:spirv-cross-glsl>
     $<BUILD_INTERFACE:libcef_lib>
     $<BUILD_INTERFACE:libcef_dll_wrapper>
-    $<BUILD_INTERFACE:argparse>
     $<BUILD_INTERFACE:qjs>)
 
 if (BUILD_TESTING)
@@ -471,9 +449,59 @@ if (BUILD_TESTING)
         spirv-cross-glsl
         libcef_lib
         libcef_dll_wrapper
-        argparse
         qjs)
 endif()
+
+target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
+    linux-wallpaperengine-core
+    linux-wallpaperengine-glad
+    libcef_lib
+    libcef_dll_wrapper)
+
+if(glfw3_FOUND)
+    target_link_libraries(linux-wallpaperengine-dev-viewer PUBLIC
+        linux-wallpaperengine-glad
+        ${ZLIB_LIBRARIES}
+        ${LZ4_LIBRARY}
+        ${SDL2_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
+        ${MPV_LIBRARY}
+        ${PULSEAUDIO_LIBRARY}
+        kissfft::kissfft-${KISSFFT_DATATYPE}
+        glslang
+        spirv-cross-core
+        spirv-cross-glsl
+        libcef_lib
+        libcef_dll_wrapper
+        argparse
+        glfw
+        qjs)
+endif()
+
+target_include_directories(linux-wallpaperengine-core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
+if(glfw3_FOUND)
+    target_include_directories(linux-wallpaperengine-dev-viewer PUBLIC
+        ${OPENGL_INCLUDE_DIR})
+endif()
+
+target_compile_definitions(linux-wallpaperengine-core PRIVATE
+    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
+    WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
+
+set_target_properties(linux-wallpaperengine-webhelper PROPERTIES
+    SKIP_BUILD_RPATH FALSE
+    BUILD_WITH_INSTALL_RPATH FALSE
+    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+set_target_properties(linux-wallpaperengine-core PROPERTIES
+    SKIP_BUILD_RPATH FALSE
+    BUILD_WITH_INSTALL_RPATH FALSE
+    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 target_compile_definitions(linux-wallpaperengine-core PUBLIC ERRORONLY=${ERRORONLY})
 

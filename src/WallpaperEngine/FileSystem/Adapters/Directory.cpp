@@ -13,17 +13,23 @@ ReadStreamSharedPtr DirectoryAdapter::open (const std::filesystem::path& path) c
 	auto finalpath = std::filesystem::canonical (this->basepath / path);
 
 	if (finalpath.string ().find (this->basepath.string ()) != 0) {
-		throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find file", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	const auto status = std::filesystem::status (finalpath);
 
 	if (!std::filesystem::exists (finalpath)) {
-		throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find file", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	if (!std::filesystem::is_regular_file (status)) {
-		throw std::filesystem::filesystem_error ("Expected file but found a directory", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Expected file but found a directory", path, std::make_error_code (std::errc::is_a_directory)
+		);
 	}
 
 	return std::make_shared<std::ifstream> (finalpath);
@@ -57,7 +63,9 @@ std::filesystem::path DirectoryAdapter::physicalPath (const std::filesystem::pat
 	auto finalpath = std::filesystem::canonical (this->basepath / path);
 
 	if (finalpath.string ().find (this->basepath.string ()) != 0) {
-		throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find file", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	return finalpath;
@@ -75,11 +83,15 @@ AdapterSharedPtr DirectoryFactory::create (const std::filesystem::path& path) co
 	const auto status = std::filesystem::status (finalpath);
 
 	if (!std::filesystem::exists (finalpath)) {
-		throw std::filesystem::filesystem_error ("Cannot find directory", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find directory", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	if (!std::filesystem::is_directory (status)) {
-		throw std::filesystem::filesystem_error ("Expected directory but found a file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Expected directory but found a file", path, std::make_error_code (std::errc::not_a_directory)
+		);
 	}
 
 	return std::make_unique<DirectoryAdapter> (finalpath);

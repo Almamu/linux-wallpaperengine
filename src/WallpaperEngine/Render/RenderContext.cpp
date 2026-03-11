@@ -3,48 +3,38 @@
 #include "CWallpaper.h"
 #include "RenderContext.h"
 
+#include "CTexture.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Context.h"
+#include "WallpaperEngine/Data/Parsers/TextureParser.h"
 
 namespace WallpaperEngine::Render {
-RenderContext::RenderContext (Context& context) : m_textureCache (*context.texture_cache), m_context (context) { }
-
-void RenderContext::render () const {
-#if !NDEBUG
-	if (GLAD_GL_VERSION_4_3) {
-		const std::string str = "Rendering to output ";
-
-		glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
-	}
-#endif /* DEBUG */
-
-	// search the background in the viewport selection
-
-	// TODO: CHECK VIEWPORT AND USE WALLPAPER'S SIZE INSTEAD
-	if (this->m_wallpaper) {
-		this->m_wallpaper->render ();
-	}
-
-#if !NDEBUG
-	if (GLAD_GL_VERSION_4_3) {
-		glPopDebugGroup ();
-	}
-#endif /* DEBUG */
-}
-
-void RenderContext::setWallpaper (std::unique_ptr<CWallpaper> wallpaper) { this->m_wallpaper = std::move (wallpaper); }
+RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator) :
+	m_textureCache (*context.texture_cache), m_context (context), m_locator (locator) { }
 
 const Context& RenderContext::getContext () const { return this->m_context; }
 
-std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std::string& name) const {
+std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std::string& name) {
 	try {
 		return this->m_textureCache.resolve (name);
 	} catch (const Assets::AssetLoadException& e) {
-		// TODO: try to load from the container and store it into the cache
-		throw;
+		const auto& locator = this->getAssetLocator ();
+		const auto contents = locator.texture (name);
+		const auto stream = BinaryReader (contents);
+
+		auto metadataLoader = [&locator] (const std::string& filename) -> std::string {
+			return locator.readString (std::filesystem::path ("materials") / filename);
+		};
+
+		auto parsedTexture = Data::Parsers::TextureParser::parse (stream, name, metadataLoader);
+		auto texture = std::make_shared<CTexture> (*this, std::move (parsedTexture));
+
+		this->m_textureCache.store (name, texture);
+
+		return texture;
 	}
 }
 
-const CWallpaper& RenderContext::getWallpaper () const { return *this->m_wallpaper; }
+const Assets::AssetLocator& RenderContext::getAssetLocator () const { return this->m_locator; }
 
 } // namespace WallpaperEngine::Render

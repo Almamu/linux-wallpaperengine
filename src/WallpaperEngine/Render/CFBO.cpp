@@ -46,7 +46,7 @@ CFBO::CFBO (
 
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
 
-	// set the texture as the colour attachmend #0
+	// set the texture as the color attachment #0
 	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_texture, 0);
 	// finally set the list of draw buffers
 	glDrawBuffers (1, drawBuffers);

@@ -20,7 +20,9 @@ ReadStreamSharedPtr PackageAdapter::open (const std::filesystem::path& path) con
 	});
 
 	if (it == this->package->files.end ()) {
-		throw std::filesystem::filesystem_error ("Cannot find file", path, std::error_code ());
+		throw std::filesystem::filesystem_error (
+			"Cannot find file", path, std::make_error_code (std::errc::no_such_file_or_directory)
+		);
 	}
 
 	// read file into memory
@@ -45,7 +47,9 @@ bool PackageAdapter::exists (const std::filesystem::path& path) const {
 }
 
 std::filesystem::path PackageAdapter::physicalPath (const std::filesystem::path& path) const {
-	throw std::filesystem::filesystem_error ("Package adapter does not support realpath", path, std::error_code ());
+	throw std::filesystem::filesystem_error (
+		"Package adapter does not support realpath", path, std::make_error_code (std::errc::operation_not_supported)
+	);
 }
 
 bool PackageFactory::handlesMountpoint (const std::filesystem::path& path) const {

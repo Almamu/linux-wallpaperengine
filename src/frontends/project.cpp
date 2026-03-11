@@ -56,7 +56,7 @@ AssetLocatorUniquePtr wp_setup_asset_locator (const wp_configuration* config, co
 	} catch (std::runtime_error&) { }
 
 	try {
-		container->mount (static_cast<const WallpaperEngine::Configuration*> (config)->assets_dir, "/assets");
+		container->mount (static_cast<const WallpaperEngine::Configuration*> (config)->assets_dir, "/");
 	} catch (std::runtime_error&) { }
 
 	auto& vfs = container->getVFS ();
@@ -161,13 +161,12 @@ wp_project* wp_project_load (wp_context* context, wp_mouse_input* mouse_input, c
 		);
 		auto result = new WallpaperEngine::LoadedProject {
 			.ref = it,
-			.render = std::make_unique<RenderContext> (*contextPtr),
+			.render = std::make_unique<RenderContext> (*contextPtr, *(*it)->assetLocator),
 			.context = *contextPtr,
 		};
 
-		result->render->setWallpaper (
-			CWallpaper::fromWallpaper (*(*it)->wallpaper, *result->render, *contextPtr->audio, mouse_input)
-		);
+		result->wallpaper
+			= CWallpaper::fromWallpaper (*(*it)->wallpaper, *result->render, *contextPtr->audio, mouse_input);
 
 		return result;
 	} catch (std::bad_alloc& error) {
@@ -211,15 +210,13 @@ void wp_project_destroy (wp_project* project) {
 }
 
 int wp_project_get_width (wp_project* project) {
-	return static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().getWidth ();
+	return static_cast<WallpaperEngine::LoadedProject*> (project)->wallpaper->getWidth ();
 }
 
 int wp_project_get_height (wp_project* project) {
-	return static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().getHeight ();
+	return static_cast<WallpaperEngine::LoadedProject*> (project)->wallpaper->getHeight ();
 }
 
 void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer) {
-	static_cast<WallpaperEngine::LoadedProject*> (project)->render->getWallpaper ().setDestinationFramebuffer (
-		framebuffer
-	);
+	static_cast<WallpaperEngine::LoadedProject*> (project)->wallpaper->setDestinationFramebuffer (framebuffer);
 }
