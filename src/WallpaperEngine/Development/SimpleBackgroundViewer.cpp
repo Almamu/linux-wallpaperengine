@@ -18,7 +18,7 @@ std::map<std::string, std::string> properties;
 int framebufferWidth = 1280;
 int framebufferHeight = 720;
 
-void glfw_framebuffer_size_callback (GLFWwindow* window, int width, int height) {
+void glfw_framebuffer_size_callback (GLFWwindow* window, const int width, const int height) {
 	framebufferWidth = width;
 	framebufferHeight = height;
 
@@ -38,7 +38,7 @@ float glfw_get_time (void* user_parameter) { return glfwGetTime (); }
 wp_gl_proc_address glfw_gl_proc_address = { .user_parameter = nullptr, .get_proc_address = glfw_gl_proc_address_impl };
 wp_time_counter glfw_time_counter = { .user_parameter = nullptr, .get_time = glfw_get_time };
 
-void parseArgs (int argc, char* argv[]) {
+void parseArgs (const int argc, char* argv[]) {
 	argparse::ArgumentParser program ("linux-wallpaperengine-dev-viewer", "0.0", argparse::default_arguments::help);
 
 	program.add_argument ("-a", "--assets")
@@ -68,7 +68,7 @@ void parseArgs (int argc, char* argv[]) {
 	program.parse_known_args (argc, argv);
 }
 
-int main (int argc, char* argv[]) {
+int main (const int argc, char* argv[]) {
 	sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
 	sLog.addError (new std::ostream (std::cerr.rdbuf ()));
 
@@ -143,8 +143,8 @@ int main (int argc, char* argv[]) {
 		sLog.exception ("Cannot load background ", wallpaper);
 	}
 
-	int width = wp_project_get_width (project);
-	int height = wp_project_get_height (project);
+	const int width = wp_project_get_width (project);
+	const int height = wp_project_get_height (project);
 
 	GLuint framebuffer;
 	GLuint texture;
@@ -154,8 +154,8 @@ int main (int argc, char* argv[]) {
 	GLuint vaoBuffer;
 	// setup vao and required buffers
 	constexpr GLfloat texCoords[] = { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f };
-	constexpr GLfloat position[] = { -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-		                             -1.0f, 1.0f,  0.0f, 1.0f, -1.0f, 0.0f, 1.0f,  1.0f, 0.0f };
+	constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
+		                             -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
 	glGenVertexArrays (1, &vaoBuffer);
 	glBindVertexArray (vaoBuffer);
@@ -300,9 +300,9 @@ int main (int argc, char* argv[]) {
 	glDeleteShader (fragmentShaderID);
 
 	// get textures
-	GLint g_Texture0 = glGetUniformLocation (shader, "g_Texture0");
-	GLint a_Position = glGetAttribLocation (shader, "a_Position");
-	GLint a_TexCoord = glGetAttribLocation (shader, "a_TexCoord");
+	const GLint g_Texture0 = glGetUniformLocation (shader, "g_Texture0");
+	const GLint a_Position = glGetAttribLocation (shader, "a_Position");
+	const GLint a_TexCoord = glGetAttribLocation (shader, "a_TexCoord");
 
 	wp_project_set_output_framebuffer (project, framebuffer);
 
@@ -367,9 +367,22 @@ int main (int argc, char* argv[]) {
 	std::signal (SIGTERM, SIG_DFL);
 	std::signal (SIGKILL, SIG_DFL);
 
-	// TODO: CLEANUP ALL THE RESOURCES HELD
+	// cleanup wallpapers loaded
+	wp_project_destroy (project);
+	wp_context_destroy (context);
+	wp_config_destroy (configuration);
 
-	// TODO: CLEANUP OPENGL RESOURCES
+	// cleanup opengl resources
+	glDeleteProgram (shader);
+	glDeleteFramebuffers (1, &framebuffer);
+	glDeleteTextures (1, &texture);
+	glDeleteBuffers (1, &positionBuffer);
+	glDeleteBuffers (1, &texCoordBuffer);
+	glDeleteVertexArrays (1, &vaoBuffer);
+
+	// cleanup glfw resources
+	glfwDestroyWindow (glfwWindow);
+	glfwTerminate ();
 
 	return 0;
 }
