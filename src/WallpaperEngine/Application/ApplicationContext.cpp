@@ -290,7 +290,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	})
 	.append ();
     backgroundMode.add_argument ("-r", "--screen-root")
-	.help ("The screen the following settings will have an effect on")
+	.help ("The screen the following settings will have an effect on (X11 only, not supported on Wayland)")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
 	    if (this->settings.general.screenBackgrounds.find (value)
 		!= this->settings.general.screenBackgrounds.end ()) {
@@ -298,6 +298,16 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    }
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
+	    }
+
+	    // Check if running on Wayland - screen-root is not supported
+	    const char* sessionType = getenv ("XDG_SESSION_TYPE");
+	    if (sessionType && strcmp (sessionType, "wayland") == 0) {
+		sLog.exception (
+		    "--screen-root is not supported on Wayland. "
+		    "On Wayland, the wallpaper is automatically placed on all outputs using the wlr-layer-shell protocol. "
+		    "Please run without --screen-root and ensure your compositor supports wlr-layer-shell-unstable-v1."
+		);
 	    }
 
 	    this->settings.render.mode = DESKTOP_BACKGROUND;
