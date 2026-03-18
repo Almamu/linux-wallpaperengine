@@ -122,7 +122,6 @@ list(REMOVE_ITEM CEF_CXX_COMPILER_FLAGS -std=c++17)
 list(REMOVE_ITEM CEF_COMPILER_FLAGS -fvisibility=hidden)
 list(REMOVE_ITEM CEF_COMPILER_FLAGS -fvisibility-inlines-hidden)
 list(APPEND CEF_CXX_COMPILER_FLAGS -std=c++20)
-list(APPEND CEF_COMPILER_FLAGS -rdynamic)
 list(APPEND CEF_EXE_LINKER_FLAGS -rdynamic)
 # remove the vulkan library from the files to copy so it doesn't fail after removing it
 list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
