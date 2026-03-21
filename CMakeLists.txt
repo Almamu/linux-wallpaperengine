@@ -194,6 +194,8 @@ include_directories(
 set(COMMON_SOURCES
     include/frontends/configuration.h
     src/frontends/configuration.cpp
+    include/frontends/content.h
+    src/frontends/content.cpp
     include/frontends/project.h
     src/frontends/project.cpp
     include/frontends/context.h
@@ -397,8 +399,8 @@ if(BUILD_TESTING)
 
         ${COMMON_SOURCES}
 
-        src/WallpaperEngine/Testing/Cases/Example.cpp
-        src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp)
+        tests/Tests/Library/Backgrounds.cpp
+        tests/Tests/MouseCoordinates.cpp)
 endif()
 
 add_library(linux-wallpaperengine-core SHARED

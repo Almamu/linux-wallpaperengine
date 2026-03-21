@@ -1,4 +1,4 @@
-#include "../../include/frontends/context.h"
+#include "frontends/context.h"
 
 #include "WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h"
 #include "WallpaperEngine/Audio/Drivers/SDLAudioDriver.h"

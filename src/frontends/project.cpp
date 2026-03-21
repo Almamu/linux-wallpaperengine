@@ -1,6 +1,6 @@
 #include <filesystem>
 
-#include "../../include/frontends/project.h"
+#include "frontends/project.h"
 
 #include "WallpaperEngine/Configuration.h"
 #include "WallpaperEngine/Context.h"

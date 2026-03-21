@@ -101,10 +101,12 @@ void ShaderUnit::preprocessVariables () {
 
 		if (combo != std::string::npos) {
 			this->parseComboConfiguration (line.substr (combo + strlen ("// [COMBO] ")), 0);
-		} else if (uniform != std::string::npos && comment != std::string::npos && semicolon != std::string::npos &&
-		           // this check ensures that the comment is after the semicolon (so it's not a commented-out line)
-		           // this needs further refining as it's not taking into account block comments
-		           semicolon < comment) {
+		} else if (
+			uniform != std::string::npos && comment != std::string::npos && semicolon != std::string::npos &&
+			// this check ensures that the comment is after the semicolon (so it's not a commented-out line)
+		    // this needs further refining as it's not taking into account block comments
+			semicolon < comment
+		) {
 			// uniforms with comments should never have a value assigned, use this fact to detect the required parts
 			const size_t last_space = line.find_last_of (' ', semicolon);
 
@@ -258,8 +260,7 @@ void ShaderUnit::preprocessIncludes () {
 		size_t current = 0;
 
 		while (
-			std::regex_search (this->m_preprocessed.cbegin () + current, this->m_preprocessed.cend (), match, ifdef)
-		) {
+			std::regex_search (this->m_preprocessed.cbegin () + current, this->m_preprocessed.cend (), match, ifdef)) {
 			current += match.position ();
 
 			// if it's opening an #ifdef keep track of the start of the block

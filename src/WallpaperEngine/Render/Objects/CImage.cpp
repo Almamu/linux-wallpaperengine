@@ -59,8 +59,10 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 	if ((size.x == 0.0f || size.y == 0.0f) && this->m_texture != nullptr) {
 		size.x = static_cast<float> (this->m_texture->getRealWidth ());
 		size.y = static_cast<float> (this->m_texture->getRealHeight ());
-	} else if ((size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
-	           && this->getImage ().model->height.has_value ()) {
+	} else if (
+		(size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
+		&& this->getImage ().model->height.has_value ()
+	) {
 		size.x = static_cast<float> (this->getImage ().model->width.value ());
 		size.y = static_cast<float> (this->getImage ().model->height.value ());
 	}
@@ -134,9 +136,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 			/ static_cast<float> (this->getTexture ()->getTextureHeight (0));
 	}
 	// calculate the correct texCoord limits for the texture based on the texture screen size and real size
-	else if (this->getTexture () != nullptr
-	         && (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
-	             || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())) {
+	else if (
+		this->getTexture () != nullptr
+		&& (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
+	        || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())
+	) {
 		// Account for padding in non-power-of-two textures: clamp UVs to the real content
 		width = static_cast<float> (this->getTexture ()->getRealWidth ())
 			/ static_cast<float> (this->getTexture ()->getTextureWidth (0));
