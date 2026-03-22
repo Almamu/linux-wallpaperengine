@@ -203,6 +203,8 @@ set(COMMON_SOURCES
     include/frontends/pulseaudio.h
     include/frontends/render.h
     src/frontends/render.cpp
+    include/frontends/playlists.h
+    src/frontends/playlists.cpp
 
     src/External/MimeTypes/MimeTypes.cpp
     src/External/MimeTypes/MimeTypes.h
@@ -345,6 +347,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Model/DynamicValue.h
     src/WallpaperEngine/Data/Model/DynamicValue.cpp
     src/WallpaperEngine/Data/Model/Property.h
+    src/WallpaperEngine/Data/Model/Config.h
     src/WallpaperEngine/Data/Utils/TypeCaster.h
     src/WallpaperEngine/Data/Utils/BinaryReader.cpp
     src/WallpaperEngine/Data/Utils/BinaryReader.h
@@ -372,6 +375,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Parsers/PropertyParser.h
     src/WallpaperEngine/Data/Parsers/TextureParser.cpp
     src/WallpaperEngine/Data/Parsers/TextureParser.h
+    src/WallpaperEngine/Data/Parsers/ConfigParser.cpp
+    src/WallpaperEngine/Data/Parsers/ConfigParser.h
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
@@ -399,6 +404,7 @@ if(BUILD_TESTING)
 
         ${COMMON_SOURCES}
 
+        tests/Tests/Library/Playlists.cpp
         tests/Tests/Library/Backgrounds.cpp
         tests/Tests/MouseCoordinates.cpp)
 endif()

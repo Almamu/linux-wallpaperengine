@@ -23,6 +23,8 @@ struct BackgroundListFixture {
 	BackgroundListFixture() {
 		// uuidv4 should be more than enough
 		root = std::filesystem::temp_directory_path () / WallpaperEngine::Utils::UUID::UUIDv4 ();
+
+		std::filesystem::create_directories (root);
 	}
 
 	~BackgroundListFixture() {

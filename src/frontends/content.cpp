@@ -10,6 +10,7 @@
  * Actual representation of the wp_background_list structure
  */
 struct wp_background_list_impl {
+	WallpaperEngine::Configuration* config;
 	std::filesystem::directory_iterator it;
 	std::optional<std::filesystem::path> current_path;
 	std::optional<std::filesystem::path> preview_path;
@@ -33,7 +34,8 @@ wp_background_list* wp_background_list_open (wp_configuration* config) {
 	}
 
 	// open directory and allocate structs
-	return new wp_background_list_impl { .it = std::filesystem::directory_iterator (configPtr->backgrounds_dir),
+	return new wp_background_list_impl { .config = configPtr,
+		                                 .it = std::filesystem::directory_iterator (configPtr->backgrounds_dir),
 		                                 .current_entry = { .path = nullptr, .preview_path = nullptr } };
 }
 
@@ -45,6 +47,9 @@ wp_background_list_entry* wp_background_list_next (wp_background_list* list) {
 			// also update the entry to ensure it points to nothing
 			listPtr->current_path = std::nullopt;
 			listPtr->preview_path = std::nullopt;
+
+			// reset the iterator so the next call starts off the beginning again
+			listPtr->it = std::filesystem::directory_iterator (listPtr->config->backgrounds_dir);
 
 			break;
 		}

@@ -7,8 +7,6 @@
 #include "WallpaperEngine/Configuration.h"
 #include "WallpaperEngine/Logging/Log.h"
 
-#define WORKSHOP_APP_ID 431960
-
 bool wp_null_is_muted_or_paused (void* user_parameter);
 
 wp_mute_check null_mute_check = {

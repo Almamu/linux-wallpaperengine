@@ -1,6 +1,8 @@
 #ifndef __WP_LIB_CONFIGURATION_H__
 #define __WP_LIB_CONFIGURATION_H__
 
+#define WORKSHOP_APP_ID 431960
+
 /**
  * Configuration instance
  */

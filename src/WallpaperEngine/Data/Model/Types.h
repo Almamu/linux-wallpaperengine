@@ -32,6 +32,9 @@ struct FBO;
 struct Effect;
 struct EffectPass;
 struct ModelStruct;
+struct Config;
+struct Playlist;
+struct PlaylistItem;
 
 using PropertySharedPtr = std::shared_ptr<Property>;
 using Properties = std::map<std::string, PropertySharedPtr>;
@@ -62,4 +65,10 @@ using ModelUniquePtr = std::unique_ptr<ModelStruct>;
 using ObjectList = std::vector<ObjectUniquePtr>;
 using ComboMap = std::map<std::string, int>;
 using TextureMap = std::map<int, std::string>;
+
+using PlaylistUniquePtr = std::unique_ptr<Playlist>;
+using ConfigUniquePtr = std::unique_ptr<Config>;
+using PlaylistItemUniquePtr = std::unique_ptr<PlaylistItem>;
+using PlaylistMap = std::map<std::string, PlaylistUniquePtr>;
+
 }

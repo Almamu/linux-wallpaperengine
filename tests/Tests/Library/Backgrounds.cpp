@@ -6,14 +6,6 @@
 
 #include "tests/Fixtures/BackgroundListFixture.h"
 
-wp_configuration* basic_setup (const std::filesystem::path& root) {
-	wp_configuration* config = wp_config_create ();
-
-	wp_config_set_backgrounds_dir (config, root.c_str ());
-
-	return config;
-}
-
 #define REQUIRE_PATH_VALUES(root, entry_get, background, hasPreview) \
 	{ \
 		wp_background_list_entry* entry = entry_get; \
@@ -30,7 +22,9 @@ TEST_CASE_METHOD (BackgroundListFixture, "Test") {
 	addBackground (9999);
 	addBackground (100849, false);
 
-	wp_configuration* config = basic_setup (root);
+	wp_configuration* config = wp_config_create ();
+
+	REQUIRE(wp_config_set_backgrounds_dir (config, root.c_str ()) == true);
 
 	wp_background_list* list = wp_background_list_open (config);
 
@@ -39,10 +33,10 @@ TEST_CASE_METHOD (BackgroundListFixture, "Test") {
 	REQUIRE_PATH_VALUES(root, wp_background_list_next (list), "9999", true);
 	REQUIRE_PATH_VALUES(root, wp_background_list_next (list), "5241", true);
 	REQUIRE_PATH_VALUES(root, wp_background_list_next (list), "3050", true);
-
-	wp_background_list_entry* entry = wp_background_list_next (list);
-
-	REQUIRE (entry == nullptr);
+	// validate that after the last result we get a nullptr
+	REQUIRE (wp_background_list_next (list) == nullptr);
+	// but calling it again starts off the beginning again
+	REQUIRE_PATH_VALUES(root, wp_background_list_next (list), "100849", false);
 
 	wp_background_list_close (list);
 
