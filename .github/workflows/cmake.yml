@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run clang-format style check for C/C++ programs.
-        uses: jidicula/clang-format-action@v4.16.0
+        uses: jidicula/clang-format-action@v4.18.0
         with:
           check-path: "src"
           exclude-regex: "(src/External)"
