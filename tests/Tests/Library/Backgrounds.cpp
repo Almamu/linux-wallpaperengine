@@ -20,7 +20,7 @@
 		values.insert_or_assign (*path.begin(), true); \
 	}
 
-TEST_CASE_METHOD (BackgroundListFixture, "Test") {
+TEST_CASE_METHOD (BackgroundListFixture, "Background list behaviour") {
 	addBackground (3050);
 	addBackground (5241);
 	addBackground (9999);

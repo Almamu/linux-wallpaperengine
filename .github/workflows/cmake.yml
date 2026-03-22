@@ -5,17 +5,19 @@ on:
     paths:
       - '.github/workflows/cmake.yml'
       - 'src/**'
+      - 'include/**'
+      - 'tests/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
-      - 'protocols/**'
     branches: [ main ]
   pull_request:
     paths:
       - '.github/workflows/cmake.yml'
       - 'src/**'
+      - 'include/**'
+      - 'tests/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
-      - 'protocols/**'
     branches: [ main ]
   workflow_dispatch:
 

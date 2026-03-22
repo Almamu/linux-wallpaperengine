@@ -6,7 +6,7 @@
 
 #include "tests/Fixtures/PlaylistsFixture.h"
 
-TEST_CASE_METHOD (PlaylistsFixture, "Test") {
+TEST_CASE_METHOD (PlaylistsFixture, "Playlist behaviour") {
 	addPlaylist (
 		"test",
 		PlaylistMode_Daytime,
