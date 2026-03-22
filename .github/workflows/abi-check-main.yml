@@ -2,8 +2,22 @@ name: ABI Check (Main)
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/abi-check-main.yml'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
     branches: [ main ]
   push:
+    paths:
+      - '.github/workflows/abi-check-main.yml'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'CMakeModules/**'
+      - CMakeLists.txt
     branches: [ main ]
 
 jobs:
