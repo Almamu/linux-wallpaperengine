@@ -39,10 +39,7 @@ jobs:
     env:
       BUILD_TYPE: Release
 
-    strategy:
-      matrix:
-        os: [ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3
@@ -53,7 +50,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ github.job }}-${{ matrix.os }}  # Eg. "some_build-ubuntu-latest"
+          key: ${{ github.ref_name }}-ubuntu-24.04
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev
@@ -61,12 +58,12 @@ jobs:
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTING=1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TESTING=1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         # build both tests and the wallpaperengine-webhelper as this includes a full build cycle
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target tests linux-wallpaperengine-webhelper
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target tests linux-wallpaperengine-webhelper
 
       - name: Run tests
         # Run the unit tests available
-        run: ${{github.workspace}}/build/output/tests
+        run: ${{ github.workspace }}/build/output/tests

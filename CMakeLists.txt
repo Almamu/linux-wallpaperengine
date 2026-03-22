@@ -19,6 +19,8 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# include debug symbols even in release
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 find_package(glfw3)
@@ -69,17 +71,7 @@ option(KISSFFT_ENABLE_INSTALL OFF)
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
 set(CEF_VERSION "145.0.28+g51162e8+chromium-145.0.7632.160")
-# CEF_DISTRIBUTION_TYPE default value should be different based on the type of build
-# debug builds should use standard versions
-# while release version can do with the minimal version
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(default_cef_dist "standard")
-else()
-    set(default_cef_dist "minimal")
-endif()
-
-set(CEF_DISTRIBUTION_TYPE "${default_cef_dist}" CACHE STRING "CEF distribution variant")
-set_property(CACHE CEF_DISTRIBUTION_TYPE PROPERTY STRINGS "minimal" "standard")
+set(CEF_DISTRIBUTION_TYPE "standard")
 # Determine the platform.
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     if("${PROJECT_ARCH}" STREQUAL "arm64")

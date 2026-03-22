@@ -1,0 +1,50 @@
+name: Release ABI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    env:
+      BUILD_TYPE: Release
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      # cache some build information
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.ref_name }}-ubuntu-24.04
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev abi-dumper
+
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        # build both tests and the wallpaperengine-webhelper as this includes a full build cycle
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine-core
+
+      - name: Generate ABI dump
+        run: |
+          abi-dumper ${{ github.workspace }}/build/output/liblinux-wallpaperengine-core.so \
+            -o baseline.dump \
+            -lver ${{ github.ref_name }}
+
+      - name: Create Release + Upload ABI
+        uses: softprops/action-gh-release@v2
+        with:
+          files: baseline.dump
