@@ -3,6 +3,8 @@ name: ABI Check (Main)
 on:
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   abi-check:
@@ -59,3 +61,21 @@ jobs:
             echo "ABI BREAK DETECTED"
             exit 1
           fi
+      - name: Upload ABI report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abi-report
+          path: report/
+
+      - name: Comment PR with report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "📦 ABI report available in workflow artifacts."
+            })
