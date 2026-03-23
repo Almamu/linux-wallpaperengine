@@ -65,11 +65,11 @@ jobs:
             -l linux-wallpaperengine-core \
             -old old.dump \
             -new new.dump \
-            -report-path report
+            -report-path ${{ github.workspace }}/report
 
       - name: Fail on break
         run: |
-          if grep -q "Binary compatibility: 100%" report/compat_report.html; then
+          if grep -q "Binary compatibility: 100%" ${{ github.workspace }}/report/compat_report.html; then
             echo "ABI OK"
           else
             echo "ABI BREAK DETECTED"
@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: abi-report
-          path: report/
+          path: ${{ github.workspace }}/report
 
       - name: Comment PR with report
         if: github.event_name == 'pull_request'
