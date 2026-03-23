@@ -8,6 +8,9 @@ endif()
 
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -174,7 +177,7 @@ include_directories(
     src/External/MimeTypes
     src/External/json/include
     src/External/stb
-    src/External/kissfft
+    src/External/kissfft-WallpaperEngine
     ${MPV_INCLUDE_DIR}
     ${LZ4_INCLUDE_DIR}
     ${SDL2_INCLUDE_DIRS}
@@ -404,6 +407,8 @@ endif()
 add_library(linux-wallpaperengine-core SHARED
     ${COMMON_SOURCES})
 
+target_link_options(linux-wallpaperengine-core PRIVATE "-Wl,--exclude-libs,ALL")
+
 add_executable(linux-wallpaperengine-webhelper
     src/WallpaperEngine/Utils/UUID.cpp
     src/WallpaperEngine/WebBrowser/WebBrowserHelper.cpp)
@@ -416,7 +421,7 @@ if(glfw3_FOUND)
         ${COMMON_SOURCES})
 endif()
 
-target_link_libraries (linux-wallpaperengine-core PUBLIC
+target_link_libraries (linux-wallpaperengine-core PRIVATE
     $<BUILD_INTERFACE:linux-wallpaperengine-glad>
     $<BUILD_INTERFACE:${ZLIB_LIBRARIES}>
     $<BUILD_INTERFACE:${LZ4_LIBRARY}>
@@ -452,14 +457,14 @@ if (BUILD_TESTING)
         qjs)
 endif()
 
-target_link_libraries(linux-wallpaperengine-webhelper PUBLIC
+target_link_libraries(linux-wallpaperengine-webhelper PRIVATE
     linux-wallpaperengine-core
     linux-wallpaperengine-glad
     libcef_lib
     libcef_dll_wrapper)
 
 if(glfw3_FOUND)
-    target_link_libraries(linux-wallpaperengine-dev-viewer PUBLIC
+    target_link_libraries(linux-wallpaperengine-dev-viewer PRIVATE
         linux-wallpaperengine-glad
         ${ZLIB_LIBRARIES}
         ${LZ4_LIBRARY}
@@ -478,12 +483,12 @@ if(glfw3_FOUND)
         qjs)
 endif()
 
-target_include_directories(linux-wallpaperengine-core PUBLIC
+target_include_directories(linux-wallpaperengine-core PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
 if(glfw3_FOUND)
-    target_include_directories(linux-wallpaperengine-dev-viewer PUBLIC
+    target_include_directories(linux-wallpaperengine-dev-viewer PRIVATE
         ${OPENGL_INCLUDE_DIR})
 endif()
 
@@ -501,7 +506,8 @@ set_target_properties(linux-wallpaperengine-core PROPERTIES
     SKIP_BUILD_RPATH FALSE
     BUILD_WITH_INSTALL_RPATH FALSE
     INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
-    INSTALL_RPATH_USE_LINK_PATH TRUE)
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    DEFINE_SYMBOL WPENGINE_BUILD)
 
 target_compile_definitions(linux-wallpaperengine-core PUBLIC ERRORONLY=${ERRORONLY})
 

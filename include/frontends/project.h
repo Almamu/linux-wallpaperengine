@@ -1,7 +1,12 @@
 #ifndef __WP_LIB_PROJECT_H__
 #define __WP_LIB_PROJECT_H__
 
+#include "export.h"
 #include "context.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Background project instance
@@ -45,7 +50,7 @@ struct wp_mouse_input {
  *
  * @return The project if was loaded successfully, NULL otherwise
  */
-wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, int id);
+WPENGINE_API wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, int id);
 
 /**
  * Loads the project.json from the given folder
@@ -56,7 +61,7 @@ wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input
  *
  * @return The project if was loaded successfully, NULL otherwise
  */
-wp_project* wp_project_load_folder (wp_context* context, wp_mouse_input* mouse_input, const char* folder);
+WPENGINE_API wp_project* wp_project_load_folder (wp_context* context, wp_mouse_input* mouse_input, const char* folder);
 
 /**
  * Frees any allocated memory by the project, stops the renderer (if setup)
@@ -64,19 +69,19 @@ wp_project* wp_project_load_folder (wp_context* context, wp_mouse_input* mouse_i
  *
  * @param project The project to free
  */
-void wp_project_destroy (wp_project* project);
+WPENGINE_API void wp_project_destroy (wp_project* project);
 
 /**
  * @param project The project to get render width for
  * @return The width of the project's render viewport
  */
-int wp_project_get_width (wp_project* project);
+WPENGINE_API int wp_project_get_width (wp_project* project);
 
 /**
  * @param project The project to get render height for
  * @return The height of the project's render viewport
  */
-int wp_project_get_height (wp_project* project);
+WPENGINE_API int wp_project_get_height (wp_project* project);
 
 /**
  * Updates the output framebuffer for the project
@@ -84,6 +89,10 @@ int wp_project_get_height (wp_project* project);
  * @param project The project to update the output framebuffer for
  * @param framebuffer The framebuffer to use for rendering
  */
-void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer);
+WPENGINE_API void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,12 +1,18 @@
 #ifndef __WP_LIB_RENDER_H__
 #define __WP_LIB_RENDER_H__
 
+#include "export.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "project.h"
 
 /**
  * Renders a frame to the given framebuffer
  */
-void wp_render_frame (wp_project* project);
+WPENGINE_API void wp_render_frame (wp_project* project);
 
 /**
  * Updates time counters in the context so time "passes" on a background.
@@ -15,6 +21,10 @@ void wp_render_frame (wp_project* project);
  *
  * @param context The context to update time for
  */
-void wp_render_update_time (wp_context* context);
+WPENGINE_API void wp_render_update_time (wp_context* context);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
