@@ -12,14 +12,14 @@ typedef void wp_pulseaudio;
 /**
  * @return A pulseaudio playback detector to be used
  */
-WPENGINE_API wp_pulseaudio* wp_pulseaudio_create ();
+wp_pulseaudio* WPENGINE_API wp_pulseaudio_create ();
 
 /**
  * Frees any resources help up by the pulseaudio player
  *
  * @param pulseaudio
  */
-WPENGINE_API void wp_pulseaudio_destroy (wp_pulseaudio* pulseaudio);
+void WPENGINE_API wp_pulseaudio_destroy (wp_pulseaudio* pulseaudio);
 
 #ifdef __cplusplus
 }

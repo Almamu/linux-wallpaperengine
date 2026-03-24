@@ -8,7 +8,7 @@ on:
 jobs:
   release:
     env:
-      BUILD_TYPE: Release
+      BUILD_TYPE: Debug
 
     runs-on: ubuntu-latest
 
@@ -24,7 +24,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ github.ref_name }}-ubuntu-24.04
+          key: debug-${{ github.ref_name }}-ubuntu-24.04
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev abi-dumper
