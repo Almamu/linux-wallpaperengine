@@ -1,8 +1,8 @@
 #ifndef __WP_LIB_PROJECT_H__
 #define __WP_LIB_PROJECT_H__
 
-#include "export.h"
 #include "context.h"
+#include "export.h"
 
 #ifdef __cplusplus
 extern "C" {

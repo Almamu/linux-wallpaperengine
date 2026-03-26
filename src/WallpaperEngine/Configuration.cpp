@@ -1,10 +1,10 @@
 #include <algorithm>
-#include <vector>
 #include <fstream>
+#include <vector>
 
+#include "Configuration.h"
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Logging/Log.h"
-#include "Configuration.h"
 
 #include "Data/Parsers/ConfigParser.h"
 
@@ -34,14 +34,8 @@ std::filesystem::path detectHomedir () {
 }
 
 Configuration::Configuration (wp_rendering_pause_check* pause_check, wp_mute_check* mute_check) :
-	properties ({}),
-	pause_check (pause_check),
-	mute_check (mute_check),
-	volume (15),
-	enableAudio (true),
-	disableParticles (false),
-	disableParallax (false),
-	web_fps (60) {
+	properties ({}), pause_check (pause_check), mute_check (mute_check), volume (15), enableAudio (true),
+	disableParticles (false), disableParallax (false), web_fps (60) {
 	this->detectSteamDir ();
 }
 
@@ -123,19 +117,12 @@ ContentListEntry* Configuration::openBackgroundList () {
 }
 
 PlaylistListEntry* Configuration::openPlaylistList () {
-	auto baseConfig = WallpaperEngine::Data::Parsers::ConfigParser::load (
-		this->assets_dir / ".." / "config.json"
-	);
+	auto baseConfig = WallpaperEngine::Data::Parsers::ConfigParser::load (this->assets_dir / ".." / "config.json");
 	const auto it = baseConfig->playlists.begin ();
 
-	return new PlaylistListEntry {
-		.config = std::move (baseConfig),
-		.it = it,
-		.entry = {
-			.name = nullptr,
-			.items = nullptr
-		}
-	};
+	return new PlaylistListEntry { .config = std::move (baseConfig),
+		                           .it = it,
+		                           .entry = { .name = nullptr, .items = nullptr } };
 }
 
 wp_background_list_entry* ContentListEntry::next () {
@@ -197,8 +184,8 @@ wp_background_list_entry* ContentListEntry::next () {
 
 PlaylistListEntry::~PlaylistListEntry () {
 	this->entry.name = nullptr;
-	delete [] this->entry.items;
-	delete [] this->entry.daytimeend;
+	delete[] this->entry.items;
+	delete[] this->entry.daytimeend;
 	this->entry.item_count = 0;
 	this->entry.items = nullptr;
 	this->entry.daytimeend = nullptr;

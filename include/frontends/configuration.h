@@ -152,7 +152,8 @@ void WPENGINE_API wp_config_set_mute_check (wp_configuration* config, wp_mute_ch
  * @param config The configuration instance to modify
  * @param fullscreen_detection The fullscreen detection configuration to apply null to disable fullscreen detection
  */
-void WPENGINE_API wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection);
+void WPENGINE_API
+wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection);
 
 /**
  * Sets a value for a background's property to override the defaults

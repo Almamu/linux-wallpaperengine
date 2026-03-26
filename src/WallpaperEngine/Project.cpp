@@ -125,8 +125,9 @@ AssetLocatorUniquePtr wp_setup_asset_locator (const wp_configuration* config, co
 	return std::make_unique<AssetLocator> (std::move (container));
 }
 
-WallpaperEngine::Project::Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project) :
-	context (*context) {
+WallpaperEngine::Project::Project (
+	Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project
+) : context (*context) {
 	if (!std::filesystem::exists (project) || !std::filesystem::is_directory (project)) {
 		sLog.exception ("Cannot find project file");
 	}
@@ -145,8 +146,7 @@ WallpaperEngine::Project::Project (Context* context, wp_mouse_input* mouse_input
 	auto locator = wp_setup_asset_locator (contextPtr->config, project);
 	auto json = JSON::parse (locator->readString ("project.json"));
 	auto it = contextPtr->projects.insert (
-		contextPtr->projects.end (),
-		WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator))
+		contextPtr->projects.end (), WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator))
 	);
 
 	this->ref = it;
@@ -163,26 +163,22 @@ WallpaperEngine::Project::~Project () {
 	}
 }
 
-int WallpaperEngine::Project::getHeight () const {
-	return this->wallpaper->getHeight ();
-}
+int WallpaperEngine::Project::getHeight () const { return this->wallpaper->getHeight (); }
 
-int WallpaperEngine::Project::getWidth () const {
-	return this->wallpaper->getWidth ();
-}
+int WallpaperEngine::Project::getWidth () const { return this->wallpaper->getWidth (); }
 
 void WallpaperEngine::Project::setOutputFramebuffer (const unsigned int framebuffer) const {
 	this->wallpaper->setDestinationFramebuffer (framebuffer);
 }
 
-void WallpaperEngine::Project::render () {
-	this->wallpaper->render ();
-}
+void WallpaperEngine::Project::render () { this->wallpaper->render (); }
 
-WallpaperEngine::Project* WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const int id) {
+WallpaperEngine::Project*
+WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const int id) {
 	return new Project (context, mouse_input, context->config->backgrounds_dir / std::to_string (id));
 }
 
-WallpaperEngine::Project* WallpaperEngine::Project::loadFolder (Context* context, wp_mouse_input* mouse_input, const char* folder) {
+WallpaperEngine::Project*
+WallpaperEngine::Project::loadFolder (Context* context, wp_mouse_input* mouse_input, const char* folder) {
 	return new Project (context, mouse_input, context->config->backgrounds_dir / folder);
 }
