@@ -1,0 +1,6 @@
+{
+    global:
+        wp_*;
+    local:
+        *;
+};

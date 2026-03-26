@@ -341,6 +341,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Model/DynamicValue.cpp
     src/WallpaperEngine/Data/Model/Property.h
     src/WallpaperEngine/Data/Model/Config.h
+    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.h
+    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp
     src/WallpaperEngine/Data/Utils/TypeCaster.h
     src/WallpaperEngine/Data/Utils/BinaryReader.cpp
     src/WallpaperEngine/Data/Utils/BinaryReader.h
@@ -382,15 +384,18 @@ set(COMMON_SOURCES
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.cpp
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h
 
+    src/WallpaperEngine/Scripting/ScriptEngine.h
+    src/WallpaperEngine/Scripting/ScriptEngine.cpp
+
     src/WallpaperEngine/Utils/UUID.h
     src/WallpaperEngine/Utils/UUID.cpp
 
+    src/WallpaperEngine/Configuration.cpp
     src/WallpaperEngine/Configuration.h
+    src/WallpaperEngine/Context.cpp
     src/WallpaperEngine/Context.h
-    src/WallpaperEngine/Scripting/ScriptEngine.h
-    src/WallpaperEngine/Scripting/ScriptEngine.cpp
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.h
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp)
+    src/WallpaperEngine/Project.cpp
+    src/WallpaperEngine/Project.h)
 
 if(BUILD_TESTING)
     add_executable(tests
@@ -405,7 +410,9 @@ endif()
 add_library(linux-wallpaperengine-core SHARED
     ${COMMON_SOURCES})
 
-target_link_options(linux-wallpaperengine-core PRIVATE "-Wl,--exclude-libs,ALL")
+target_link_options(linux-wallpaperengine-core PRIVATE
+    "-Wl,--exclude-libs,ALL"
+    "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
 
 add_executable(linux-wallpaperengine-webhelper
     src/WallpaperEngine/Utils/UUID.cpp

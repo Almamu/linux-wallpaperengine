@@ -12,14 +12,8 @@
 #include "Render/RenderContext.h"
 
 namespace WallpaperEngine {
-struct LoadedProject {
-	std::vector<ProjectUniquePtr>::const_iterator ref;
-	std::unique_ptr<CWallpaper> wallpaper;
-	std::unique_ptr<RenderContext> render;
-	Context& context;
-};
-
-struct Context {
+class Context {
+public:
 	std::unique_ptr<TextureCache> texture_cache;
 	std::unique_ptr<AudioContext> audio;
 	const Configuration* config;
@@ -30,5 +24,9 @@ struct Context {
 	float renderTime;
 	float renderTimeLast;
 	float daytime;
+
+	explicit Context (const Configuration* config);
+
+	void updateTime ();
 };
 }

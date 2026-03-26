@@ -5,7 +5,6 @@
 
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Configuration.h"
-#include "WallpaperEngine/Logging/Log.h"
 
 bool wp_null_is_muted_or_paused (void* user_parameter);
 
@@ -21,143 +20,92 @@ wp_rendering_pause_check null_rendering_pause_check = {
 
 bool wp_null_is_muted_or_paused (void* user_parameter) { return false; }
 
-std::vector<std::string> steam_paths = {
-	".steam/steam",
-	".local/share/Steam",
-	".var/app/com.valvesoftware.Steam/.local/share/Steam",
-	"snap/steam/common/.local/share/Steam",
-};
-
-std::filesystem::path detectHomedir () {
-	char* home = getenv ("HOME");
-
-	if (home == nullptr) {
-		sLog.exception ("Cannot find home directory for the current user");
-	}
-
-	const std::filesystem::path path = home;
-
-	if (!std::filesystem::is_directory (path)) {
-		sLog.exception ("Cannot find home directory for current user, ", home, " is not a directory");
-	}
-
-	return path;
+#define WPENGINE_CONFIG_API_BEGIN try {
+#define WPENGINE_CONFIG_API_END(result) } catch (...) { \
+	return result; \
 }
 
 wp_configuration* wp_config_create () {
-	auto result = new WallpaperEngine::Configuration {
-		.properties = {},
-		.pause_check = &null_rendering_pause_check,
-		.mute_check = &null_mute_check,
-		.volume = 15,
-		.enableAudio = true,
-		.disableParticles = false,
-		.disableParallax = false,
-		.web_fps = 60,
-	};
-
-	wp_config_detect_steam_dir (result);
-
-	return result;
+	WPENGINE_CONFIG_API_BEGIN
+	return new WallpaperEngine::Configuration (&null_rendering_pause_check, &null_mute_check);
+	WPENGINE_CONFIG_API_END(nullptr);
 }
 
 void wp_config_destroy (wp_configuration* config) {
-	if (config == nullptr) {
-		return;
-	}
-
+	WPENGINE_CONFIG_API_BEGIN
 	delete static_cast<WallpaperEngine::Configuration*> (config);
+	WPENGINE_CONFIG_API_END();
 }
 
 bool wp_config_set_assets_dir (wp_configuration* config, const char* dir) {
-	const std::filesystem::path assets_dir = dir;
-
-	if (!std::filesystem::exists (assets_dir) || !std::filesystem::is_directory (assets_dir)) {
-		return false;
-	}
-
-	static_cast<WallpaperEngine::Configuration*> (config)->assets_dir = assets_dir;
-
-	return true;
+	WPENGINE_CONFIG_API_BEGIN
+	return static_cast<WallpaperEngine::Configuration*> (config)->setAssetsDir (dir);
+	WPENGINE_CONFIG_API_END(false);
 }
 
 bool wp_config_set_backgrounds_dir (wp_configuration* config, const char* dir) {
-	const std::filesystem::path backgrounds_dir = dir;
-
-	if (!std::filesystem::exists (backgrounds_dir) || !std::filesystem::is_directory (backgrounds_dir)) {
-		return false;
-	}
-
-	static_cast<WallpaperEngine::Configuration*> (config)->backgrounds_dir = backgrounds_dir;
-
-	return true;
+	WPENGINE_CONFIG_API_BEGIN
+	return static_cast<WallpaperEngine::Configuration*> (config)->setBackgroundsDir (dir);
+	WPENGINE_CONFIG_API_END(false);
 }
 
 bool wp_config_set_steam_dir (wp_configuration* config, const char* dir) {
-	// check for workshop and content folders
-	try {
-		const std::filesystem::path backgrounds_dir = Steam::FileSystem::workshopDirectory (dir, WORKSHOP_APP_ID);
-		const std::filesystem::path assets_dir = Steam::FileSystem::appDirectory (dir, "wallpaper_engine") / "assets";
-
-		// prevent partially setting these values as they may break
-		if (!std::filesystem::exists (backgrounds_dir) || !std::filesystem::exists (backgrounds_dir)) {
-			return false;
-		}
-
-		if (!std::filesystem::exists (assets_dir) || !std::filesystem::is_directory (assets_dir)) {
-			return false;
-		}
-
-		static_cast<WallpaperEngine::Configuration*> (config)->backgrounds_dir = backgrounds_dir;
-		static_cast<WallpaperEngine::Configuration*> (config)->assets_dir = assets_dir;
-
-		return true;
-	} catch (std::runtime_error&) {
-		return false;
-	}
+	WPENGINE_CONFIG_API_BEGIN
+	return static_cast<WallpaperEngine::Configuration*> (config)->setSteamDir (dir);
+	WPENGINE_CONFIG_API_END(false);
 }
 
 bool wp_config_detect_steam_dir (wp_configuration* config) {
-	const std::filesystem::path homedir = detectHomedir ();
-
-	return std::ranges::any_of (
-		steam_paths.begin (), steam_paths.end (), [homedir, config] (const std::string& path) -> bool {
-			const std::filesystem::path real_path = homedir / path;
-
-			return wp_config_set_steam_dir (config, real_path.c_str ());
-		}
-	);
+	WPENGINE_CONFIG_API_BEGIN
+	return static_cast<WallpaperEngine::Configuration*> (config)->detectSteamDir ();
+	WPENGINE_CONFIG_API_END(false);
 }
 
 void wp_config_enable_audio (wp_configuration* config, const bool enable) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->enableAudio = enable;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_audio_volume (wp_configuration* config, const int volume) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->volume = std::min (0, std::max (volume, 128));
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_disable_particles (wp_configuration* config, const bool disable) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->disableParticles = disable;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_disable_parallax (wp_configuration* config, const bool disable) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->disableParallax = disable;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_web_fps_limit (wp_configuration* config, const int limit) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->web_fps = limit;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_mute_check (wp_configuration* config, wp_mute_check* automute) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->mute_check = automute ?: &null_mute_check;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->pause_check
 		= fullscreen_detection ?: &null_rendering_pause_check;
+	WPENGINE_CONFIG_API_END();
 }
 
 void wp_config_set_property (wp_configuration* config, const char* key, const char* value) {
+	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->properties[key] = value;
+	WPENGINE_CONFIG_API_END();
 }

@@ -7,7 +7,7 @@ namespace WallpaperEngine {
 namespace Assets {
 	class AssetLocator;
 }
-struct Context;
+class Context;
 namespace Render {
 	class TextureCache;
 
