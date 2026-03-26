@@ -429,6 +429,10 @@ target_link_options(linux-wallpaperengine-core PRIVATE
     "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
 
 add_executable(linux-wallpaperengine-webhelper
+    ${COMMON_SOURCES}
+
+    src/WallpaperEngine/Logging/Log.cpp
+    src/WallpaperEngine/Logging/Log.h
     src/WallpaperEngine/Utils/UUID.cpp
     src/WallpaperEngine/WebBrowser/WebBrowserHelper.cpp)
 
@@ -436,8 +440,8 @@ if(glfw3_FOUND)
     # linux-wallpaperengine-dev-viewer looks to simplify testing and validation of new features
     # so a full, static build is better in this case
     add_executable(linux-wallpaperengine-dev-viewer
-        src/WallpaperEngine/Development/SimpleBackgroundViewer.cpp
-        ${COMMON_SOURCES})
+        ${COMMON_SOURCES}
+        src/WallpaperEngine/Development/SimpleBackgroundViewer.cpp)
 endif()
 
 target_link_libraries (linux-wallpaperengine-core PRIVATE
@@ -477,10 +481,21 @@ if (BUILD_TESTING)
 endif()
 
 target_link_libraries(linux-wallpaperengine-webhelper PRIVATE
-    linux-wallpaperengine-core
     linux-wallpaperengine-glad
+    ${GLUT_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${LZ4_LIBRARY}
+    ${SDL2_LIBRARIES}
+    ${FFMPEG_LIBRARIES}
+    ${MPV_LIBRARY}
+    ${PULSEAUDIO_LIBRARY}
+    kissfft::kissfft-${KISSFFT_DATATYPE}
+    glslang
+    spirv-cross-core
+    spirv-cross-glsl
     libcef_lib
-    libcef_dll_wrapper)
+    libcef_dll_wrapper
+    qjs)
 
 if(glfw3_FOUND)
     target_link_libraries(linux-wallpaperengine-dev-viewer PRIVATE

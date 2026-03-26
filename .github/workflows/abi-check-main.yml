@@ -69,8 +69,13 @@ jobs:
 
       - name: Fail on break
         run: |
-          if grep -q "Binary compatibility: 100%" ${{ github.workspace }}/report.html; then
-            echo "ABI OK"
+          if grep -q "kind:binary;verdict:compatible" ${{ github.workspace }}/report.html; then
+            if grep -q "kind:source;verdict:compatible" ${{ github.workspace }}/report.html; then
+              echo "ABI OK"
+            else
+              echo "ABI BREAK DETECTED"
+              exit 1
+            fi
           else
             echo "ABI BREAK DETECTED"
             exit 1
