@@ -44,8 +44,14 @@ jobs:
             -o baseline.dump \
             -lver ${{ github.ref_name }}
 
+      - name: "✏️ Generate release changelog"
+        id: github_release
+        uses: janheinrichmerker/action-github-changelog-generator@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release + Upload ABI
         uses: softprops/action-gh-release@v2
         with:
           files: baseline.dump
-          generate_release_notes: true
+          body: ${{ steps.github_release.outputs.changelog }}
