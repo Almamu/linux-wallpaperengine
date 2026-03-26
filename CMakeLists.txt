@@ -14,6 +14,15 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# obtain last version tag
+execute_process(
+        COMMAND git describe --tags --dirty --always
+        OUTPUT_VARIABLE PROJECT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# remove the "v" off the front
+string(REGEX REPLACE "^v" "" VERSION_CLEAN ${PROJECT_VERSION})
+
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 if(NOT ERRORONLY)
     set(ERRORONLY 0)
@@ -407,6 +416,11 @@ if(BUILD_TESTING)
         tests/Tests/MouseCoordinates.cpp)
 endif()
 
+# generate the version file that will be exported with the installation
+configure_file(
+        ${CMAKE_SOURCE_DIR}/version.h.in
+        ${CMAKE_BINARY_DIR}/generated/version.h)
+
 add_library(linux-wallpaperengine-core SHARED
     ${COMMON_SOURCES})
 
@@ -542,17 +556,13 @@ install(TARGETS linux-wallpaperengine-core linux-wallpaperengine-webhelper
 install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION "${CMAKE_INSTALL_LIBDIR}/linux-wallpaperengine"
     FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*")
 
+install(DIRECTORY ${CMAKE_BINARY_DIR}/generated/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY include/frontends/ DESTINATION include/${PROJECT_NAME})
 
 # Export targets
 install(EXPORT linux-wallpaperengine-core
     NAMESPACE linux-wallpaperengine-core
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/linux-wallpaperengine-core)
-
-# pkg-config generation
-if(NOT PROJECT_VERSION)
-    set(PROJECT_VERSION "0.0.1")
-endif()
 
 configure_package_config_file(linux-wallpaperengine-core-config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/linux-wallpaperengine-core-config.cmake

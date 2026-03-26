@@ -1,0 +1,6 @@
+#ifndef __WP_LIB_VERSION_H__
+#define __WP_LIB_VERSION_H__
+
+#define LINUX_WALLPAPERENGINE_VERSION "@PROJECT_VERSION@"
+
+#endif

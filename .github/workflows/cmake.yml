@@ -9,7 +9,7 @@ on:
       - 'tests/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
-    branches: [ main ]
+    branches: [main]
   pull_request:
     paths:
       - '.github/workflows/cmake.yml'
@@ -18,7 +18,7 @@ on:
       - 'tests/**'
       - 'CMakeModules/**'
       - CMakeLists.txt
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - run: echo "Formatted with clang-format version ${{ steps.clang-format.outputs.clang-format-version }}"
 
   tests:
-    #needs: formatting
+    needs: formatting
     env:
       BUILD_TYPE: Release
 
@@ -50,7 +50,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ github.ref_name }}-ubuntu-24.04
+          key: test-${{ github.ref_name }}-ubuntu-24.04
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev
@@ -62,8 +62,38 @@ jobs:
 
       - name: Build
         # build both tests and the wallpaperengine-webhelper as this includes a full build cycle
-        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target tests linux-wallpaperengine-webhelper
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target tests
 
       - name: Run tests
         # Run the unit tests available
         run: ${{ github.workspace }}/build/output/tests
+
+  build:
+    needs: formatting
+    env:
+      BUILD_TYPE: Release
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      # cache some build information
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: build-${{ github.ref_name }}-ubuntu-24.04
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev
+
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TESTING=1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        # build both tests and the wallpaperengine-webhelper as this includes a full build cycle
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine-core linux-wallpaperengine-webhelper
