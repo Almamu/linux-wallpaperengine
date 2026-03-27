@@ -16,9 +16,7 @@ wp_time_counter default_time_counter = { .user_parameter = nullptr, .get_time = 
 	}
 WPENGINE_API wp_context* wp_context_create (const wp_configuration* config) {
 	WPENGINE_CONTEXT_API_BEGIN
-	return new WallpaperEngine::Context (
-		static_cast<const WallpaperEngine::Configuration*> (config)
-	);
+	return new WallpaperEngine::Context (static_cast<const WallpaperEngine::Configuration*> (config));
 	WPENGINE_CONTEXT_API_END (nullptr)
 }
 

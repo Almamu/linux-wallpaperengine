@@ -99,7 +99,8 @@ WPENGINE_API void wp_config_set_mute_check (wp_configuration* config, wp_mute_ch
 	WPENGINE_CONFIG_API_END ();
 }
 
-WPENGINE_API void wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection) {
+WPENGINE_API void
+wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection) {
 	WPENGINE_CONFIG_API_BEGIN
 	static_cast<WallpaperEngine::Configuration*> (config)->pause_check
 		= fullscreen_detection ?: &null_rendering_pause_check;
