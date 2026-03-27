@@ -18,7 +18,6 @@ wp_background_list* wp_background_list_open (wp_configuration* config) {
 wp_background_list_entry* wp_background_list_next (wp_background_list* list) {
 	WPENGINE_CONTENT_API_BEGIN
 	return static_cast<WallpaperEngine::ContentListEntry*> (list)->next ();
-	;
 	WPENGINE_CONTENT_API_END (nullptr)
 }
 

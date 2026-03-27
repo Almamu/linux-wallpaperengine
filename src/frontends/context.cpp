@@ -16,24 +16,9 @@ wp_time_counter default_time_counter = { .user_parameter = nullptr, .get_time = 
 	}
 wp_context* wp_context_create (const wp_configuration* config) {
 	WPENGINE_CONTEXT_API_BEGIN
-	auto configPtr = static_cast<const WallpaperEngine::Configuration*> (config);
-	auto result = new WallpaperEngine::Context (configPtr);
-
-	result->audio = std::make_unique<WallpaperEngine::Audio::AudioContext> (
-		std::make_unique<WallpaperEngine::Audio::Drivers::SDLAudioDriver> (
-			*result,
-			std::make_unique<WallpaperEngine::Audio::Drivers::Detectors::AudioPlayingDetector> (
-				*configPtr->mute_check,
-				std::make_unique<WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> (
-					*configPtr->pause_check
-				)
-			),
-			// TODO: SEPARATE THIS INTO ANOTHER HEADER, FOR NOW USE PULSEAUDIO DIRECTLY
-			std::make_unique<WallpaperEngine::Audio::Drivers::Recorders::PulseAudioPlaybackRecorder> ()
-		)
+	return new WallpaperEngine::Context (
+		static_cast<const WallpaperEngine::Configuration*> (config)
 	);
-
-	return result;
 	WPENGINE_CONTEXT_API_END (nullptr)
 }
 
