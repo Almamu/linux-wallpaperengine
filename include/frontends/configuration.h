@@ -46,7 +46,7 @@ struct wp_rendering_pause_check {
  *
  * @return
  */
-wp_configuration* WPENGINE_API wp_config_create ();
+WPENGINE_API wp_configuration* wp_config_create ();
 
 /**
  * Frees any allocated memory by the configuration instance
@@ -54,7 +54,7 @@ wp_configuration* WPENGINE_API wp_config_create ();
  *
  * @param config The config to free
  */
-void WPENGINE_API wp_config_destroy (wp_configuration* config);
+WPENGINE_API void wp_config_destroy (wp_configuration* config);
 
 /**
  * Updates the assets directory for this configuration
@@ -64,7 +64,7 @@ void WPENGINE_API wp_config_destroy (wp_configuration* config);
  *
  * @return true if the directory was set successfully, false otherwise
  */
-bool WPENGINE_API wp_config_set_assets_dir (wp_configuration* config, const char* dir);
+WPENGINE_API bool wp_config_set_assets_dir (wp_configuration* config, const char* dir);
 
 /**
  * Updates the directory where backgrounds are stored for this configuration
@@ -74,7 +74,7 @@ bool WPENGINE_API wp_config_set_assets_dir (wp_configuration* config, const char
  *
  * @return true if the directory was set successfully, false otherwise
  */
-bool WPENGINE_API wp_config_set_backgrounds_dir (wp_configuration* config, const char* dir);
+WPENGINE_API bool wp_config_set_backgrounds_dir (wp_configuration* config, const char* dir);
 
 /**
  * Updates the steam directory for this configuration.
@@ -86,7 +86,7 @@ bool WPENGINE_API wp_config_set_backgrounds_dir (wp_configuration* config, const
  *
  * @return true if the directory was set successfully, false otherwise
  */
-bool WPENGINE_API wp_config_set_steam_dir (wp_configuration* config, const char* dir);
+WPENGINE_API bool wp_config_set_steam_dir (wp_configuration* config, const char* dir);
 
 /**
  * Checks common folders in search of the steam directory.
@@ -96,7 +96,7 @@ bool WPENGINE_API wp_config_set_steam_dir (wp_configuration* config, const char*
  *
  * @return true if the steam directory was detected, false otherwise
  */
-bool WPENGINE_API wp_config_detect_steam_dir (wp_configuration* config);
+WPENGINE_API bool wp_config_detect_steam_dir (wp_configuration* config);
 
 /**
  * Enables/disables the audio playing
@@ -104,7 +104,7 @@ bool WPENGINE_API wp_config_detect_steam_dir (wp_configuration* config);
  * @param config
  * @param enable
  */
-void WPENGINE_API wp_config_enable_audio (wp_configuration* config, bool enable);
+WPENGINE_API void wp_config_enable_audio (wp_configuration* config, bool enable);
 
 /**
  * Sets the desired background's volume (value ranges from 0 to 128)
@@ -112,7 +112,7 @@ void WPENGINE_API wp_config_enable_audio (wp_configuration* config, bool enable)
  * @param config
  * @param volume
  */
-void WPENGINE_API wp_config_set_audio_volume (wp_configuration* config, int volume);
+WPENGINE_API void wp_config_set_audio_volume (wp_configuration* config, int volume);
 
 /**
  * Enables/disables particle rendering for backgrounds under this configuration
@@ -120,7 +120,7 @@ void WPENGINE_API wp_config_set_audio_volume (wp_configuration* config, int volu
  * @param config
  * @param disable
  */
-void WPENGINE_API wp_config_set_disable_particles (wp_configuration* config, bool disable);
+WPENGINE_API void wp_config_set_disable_particles (wp_configuration* config, bool disable);
 
 /**
  * Enables/disables parallax effects on backgrounds
@@ -128,7 +128,7 @@ void WPENGINE_API wp_config_set_disable_particles (wp_configuration* config, boo
  * @param config
  * @param disable
  */
-void WPENGINE_API wp_config_set_disable_parallax (wp_configuration* config, bool disable);
+WPENGINE_API void wp_config_set_disable_parallax (wp_configuration* config, bool disable);
 
 /**
  * Sets the FPS limit for web-based rendering
@@ -136,7 +136,7 @@ void WPENGINE_API wp_config_set_disable_parallax (wp_configuration* config, bool
  * @param config
  * @param limit
  */
-void WPENGINE_API wp_config_set_web_fps_limit (wp_configuration* config, int limit);
+WPENGINE_API void wp_config_set_web_fps_limit (wp_configuration* config, int limit);
 
 /**
  * Enables automute and configurates detection
@@ -144,7 +144,7 @@ void WPENGINE_API wp_config_set_web_fps_limit (wp_configuration* config, int lim
  * @param config The configuration instance to modify
  * @param automute The automute configuration to apply, null to disabled automute
  */
-void WPENGINE_API wp_config_set_mute_check (wp_configuration* config, wp_mute_check* automute);
+WPENGINE_API void wp_config_set_mute_check (wp_configuration* config, wp_mute_check* automute);
 
 /**
  * Enables fullscreen detection and configurates it
@@ -152,7 +152,7 @@ void WPENGINE_API wp_config_set_mute_check (wp_configuration* config, wp_mute_ch
  * @param config The configuration instance to modify
  * @param fullscreen_detection The fullscreen detection configuration to apply null to disable fullscreen detection
  */
-void WPENGINE_API
+WPENGINE_API void
 wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_pause_check* fullscreen_detection);
 
 /**
@@ -162,7 +162,7 @@ wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_paus
  * @param key The property to set the value for
  * @param value Property's value
  */
-void WPENGINE_API wp_config_set_property (wp_configuration* config, const char* key, const char* value);
+WPENGINE_API void wp_config_set_property (wp_configuration* config, const char* key, const char* value);
 
 #ifdef __cplusplus
 }

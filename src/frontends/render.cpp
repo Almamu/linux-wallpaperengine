@@ -11,13 +11,13 @@
 		return result;                                                                                                 \
 	}
 
-void WPENGINE_API wp_render_frame (wp_project* project) {
+WPENGINE_API void wp_render_frame (wp_project* project) {
 	WPENGINE_RENDER_API_BEGIN
 	static_cast<WallpaperEngine::Project*> (project)->render ();
 	WPENGINE_RENDER_API_END ();
 }
 
-void WPENGINE_API wp_render_update_time (wp_context* context) {
+WPENGINE_API void wp_render_update_time (wp_context* context) {
 	WPENGINE_RENDER_API_BEGIN
 	const auto contextPtr = static_cast<WallpaperEngine::Context*> (context);
 

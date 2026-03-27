@@ -12,7 +12,7 @@ extern "C" {
 /**
  * Renders a frame to the given framebuffer
  */
-void WPENGINE_API wp_render_frame (wp_project* project);
+WPENGINE_API void wp_render_frame (wp_project* project);
 
 /**
  * Updates time counters in the context so time "passes" on a background.
@@ -21,7 +21,7 @@ void WPENGINE_API wp_render_frame (wp_project* project);
  *
  * @param context The context to update time for
  */
-void WPENGINE_API wp_render_update_time (wp_context* context);
+WPENGINE_API void wp_render_update_time (wp_context* context);
 
 #ifdef __cplusplus
 }

@@ -540,9 +540,9 @@ set_target_properties(linux-wallpaperengine-core PROPERTIES
     SKIP_BUILD_RPATH FALSE
     BUILD_WITH_INSTALL_RPATH FALSE
     INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
-    INSTALL_RPATH_USE_LINK_PATH TRUE
-    DEFINE_SYMBOL WPENGINE_BUILD)
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+target_compile_definitions(linux-wallpaperengine-core PRIVATE WPENGINE_BUILD)
 target_compile_definitions(linux-wallpaperengine-core PUBLIC ERRORONLY=${ERRORONLY})
 
 if (BUILD_TESTING)
