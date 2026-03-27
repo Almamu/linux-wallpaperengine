@@ -11,19 +11,19 @@
 		return result;                                                                                                 \
 	}
 
-wp_playlists* wp_playlists_load (wp_configuration* config) {
+wp_playlists* WPENGINE_API wp_playlists_load (wp_configuration* config) {
 	WPENGINE_PLAYLIST_API_BEGIN
 	return static_cast<WallpaperEngine::Configuration*> (config)->openPlaylistList ();
 	WPENGINE_PLAYLIST_API_END (nullptr);
 }
 
-wp_playlist_entry* wp_playlists_next (wp_playlists* playlists) {
+wp_playlist_entry* WPENGINE_API wp_playlists_next (wp_playlists* playlists) {
 	WPENGINE_PLAYLIST_API_BEGIN
 	return static_cast<WallpaperEngine::PlaylistListEntry*> (playlists)->next ();
 	WPENGINE_PLAYLIST_API_END (nullptr);
 }
 
-void wp_playlists_destroy (wp_playlists* playlists) {
+void WPENGINE_API wp_playlists_destroy (wp_playlists* playlists) {
 	WPENGINE_PLAYLIST_API_BEGIN
 	delete static_cast<WallpaperEngine::PlaylistListEntry*> (playlists);
 	WPENGINE_PLAYLIST_API_END ();
