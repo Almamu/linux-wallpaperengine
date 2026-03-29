@@ -49,6 +49,9 @@ jobs:
         uses: janheinrichmerker/action-github-changelog-generator@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          onlyLastTag: true
+          stripHeaders: true
+          stripGeneratorNotice: true
 
       - name: Create Release + Upload ABI
         uses: softprops/action-gh-release@v2
