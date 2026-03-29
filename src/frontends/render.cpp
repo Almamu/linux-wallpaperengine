@@ -19,9 +19,6 @@ WPENGINE_API void wp_render_frame (wp_project* project) {
 
 WPENGINE_API void wp_render_update_time (wp_context* context) {
 	WPENGINE_RENDER_API_BEGIN
-	const auto contextPtr = static_cast<WallpaperEngine::Context*> (context);
-
-	contextPtr->renderTimeLast = contextPtr->renderTime;
-	contextPtr->renderTime = contextPtr->time_counter->get_time (contextPtr->time_counter->user_parameter);
+	static_cast<WallpaperEngine::Context*> (context)->updateTime ();
 	WPENGINE_RENDER_API_END ();
 }

@@ -3,9 +3,11 @@
 #include "Audio/Drivers/SDLAudioDriver.h"
 #include "WallpaperEngine/Audio/Drivers/AudioDriver.h"
 
-WallpaperEngine::Context::Context (const Configuration* config) :
-	texture_cache (std::make_unique<TextureCache> ()), audio (nullptr), config (config), gl_proc_address (nullptr),
-	time_counter (nullptr), projects (), isRunning (true), renderTime (0.0f), renderTimeLast (0.0f), daytime (0.0f) {
+WallpaperEngine::Context::Context (
+	const Configuration* config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses
+) :
+	texture_cache (std::make_unique<TextureCache> ()), config (config), gl_proc_address (gl_proc_addresses),
+	time_counter (time_counter), isRunning (true), renderTime (0.0f), renderTimeLast (0.0f), daytime (0.0f) {
 	this->audio = std::make_unique<WallpaperEngine::Audio::AudioContext> (
 		std::make_unique<WallpaperEngine::Audio::Drivers::SDLAudioDriver> (
 			*this,

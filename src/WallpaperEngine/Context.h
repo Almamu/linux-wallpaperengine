@@ -25,7 +25,9 @@ public:
 	float renderTimeLast;
 	float daytime;
 
-	explicit Context (const Configuration* config);
+	explicit Context (
+		const Configuration* config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses
+	);
 
 	void updateTime ();
 };
