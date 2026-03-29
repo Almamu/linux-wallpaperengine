@@ -41,7 +41,6 @@ find_package(SDL2 REQUIRED)
 find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
-find_package(PulseAudio REQUIRED)
 
 option(ENABLE_OPT OFF)
 
@@ -189,7 +188,6 @@ include_directories(
     ${LZ4_INCLUDE_DIR}
     ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
-    ${PULSEAUDIO_INCLUDE_DIR}
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR})
 
@@ -202,7 +200,6 @@ set(COMMON_SOURCES
     src/frontends/project.cpp
     include/frontends/context.h
     src/frontends/context.cpp
-    include/frontends/pulseaudio.h
     include/frontends/render.h
     src/frontends/render.cpp
     include/frontends/playlists.h
@@ -239,18 +236,15 @@ set(COMMON_SOURCES
 
     src/WallpaperEngine/Input/MouseClickStatus.h
 
-    src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.cpp
-    src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.h
-    src/WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.cpp
-    src/WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h
-
-    src/WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.cpp
-    src/WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h
-
     src/WallpaperEngine/Audio/Drivers/AudioDriver.cpp
     src/WallpaperEngine/Audio/Drivers/AudioDriver.h
     src/WallpaperEngine/Audio/Drivers/SDLAudioDriver.cpp
     src/WallpaperEngine/Audio/Drivers/SDLAudioDriver.h
+
+    src/WallpaperEngine/Audio/PlaybackRecorder.cpp
+    src/WallpaperEngine/Audio/PlaybackRecorder.h
+    src/WallpaperEngine/Audio/AudioPlayingDetector.cpp
+    src/WallpaperEngine/Audio/AudioPlayingDetector.h
     src/WallpaperEngine/Audio/AudioContext.cpp
     src/WallpaperEngine/Audio/AudioContext.h
     src/WallpaperEngine/Audio/AudioStream.cpp
@@ -278,9 +272,6 @@ set(COMMON_SOURCES
 
     src/WallpaperEngine/Render/Helpers/ContextAware.cpp
     src/WallpaperEngine/Render/Helpers/ContextAware.h
-
-    src/WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.cpp
-    src/WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h
 
     src/WallpaperEngine/Render/RenderContext.h
     src/WallpaperEngine/Render/RenderContext.cpp
@@ -451,7 +442,6 @@ target_link_libraries (linux-wallpaperengine-core PRIVATE
     $<BUILD_INTERFACE:${SDL2_LIBRARIES}>
     $<BUILD_INTERFACE:${FFMPEG_LIBRARIES}>
     $<BUILD_INTERFACE:${MPV_LIBRARY}>
-    $<BUILD_INTERFACE:${PULSEAUDIO_LIBRARY}>
     $<BUILD_INTERFACE:kissfft::kissfft-${KISSFFT_DATATYPE}>
     $<BUILD_INTERFACE:glslang>
     $<BUILD_INTERFACE:spirv-cross-core>
@@ -470,7 +460,6 @@ if (BUILD_TESTING)
         ${SDL2_LIBRARIES}
         ${FFMPEG_LIBRARIES}
         ${MPV_LIBRARY}
-        ${PULSEAUDIO_LIBRARY}
         kissfft::kissfft-${KISSFFT_DATATYPE}
         glslang
         spirv-cross-core
@@ -488,7 +477,6 @@ target_link_libraries(linux-wallpaperengine-webhelper PRIVATE
     ${SDL2_LIBRARIES}
     ${FFMPEG_LIBRARIES}
     ${MPV_LIBRARY}
-    ${PULSEAUDIO_LIBRARY}
     kissfft::kissfft-${KISSFFT_DATATYPE}
     glslang
     spirv-cross-core
@@ -505,7 +493,6 @@ if(glfw3_FOUND)
         ${SDL2_LIBRARIES}
         ${FFMPEG_LIBRARIES}
         ${MPV_LIBRARY}
-        ${PULSEAUDIO_LIBRARY}
         kissfft::kissfft-${KISSFFT_DATATYPE}
         glslang
         spirv-cross-core

@@ -39,7 +39,7 @@ jobs:
           key: debug-${{ github.ref_name }}-ubuntu-24.04
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 libfftw3-dev abi-compliance-checker abi-dumper
+        run: sudo apt-get update && sudo apt-get -y install libgl-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libglm-dev libmpv-dev mpv libmpv2 abi-compliance-checker abi-dumper
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

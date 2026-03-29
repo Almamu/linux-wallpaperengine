@@ -1,6 +1,6 @@
 #include "CVideo.h"
 
-#include "WallpaperEngine/Audio/Drivers/AudioDriver.h"
+#include "WallpaperEngine/Audio/AudioPlayingDetector.h"
 #include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
@@ -35,7 +35,7 @@ CVideo::~CVideo () { this->m_player->decrementUsageCount (); }
 void CVideo::renderFrame () {
 	// ensure the video's audio follows audio detection rules
 	if (this->getContext ().getContext ().config->enableAudio
-	    && this->m_muted != this->getAudioContext ().getDriver ().getAudioDetector ().anythingPlaying ()) {
+	    && this->m_muted != this->getContext ().getContext ().audio->getDetector ().anythingPlaying ()) {
 		this->m_muted = !this->m_muted;
 
 		if (this->m_muted) {

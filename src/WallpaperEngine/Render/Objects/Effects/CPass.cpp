@@ -5,6 +5,8 @@
 #include <sstream>
 #include <utility>
 
+#include "WallpaperEngine/Audio/PlaybackRecorder.h"
+
 #include "WallpaperEngine/Render/Helpers/ContextAware.h"
 
 #include "WallpaperEngine/Data/Model/Effect.h"

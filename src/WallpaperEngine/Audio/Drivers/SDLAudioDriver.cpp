@@ -1,6 +1,9 @@
 #include <ranges>
 
 #include "SDLAudioDriver.h"
+
+#include "WallpaperEngine/Context.h"
+#include "WallpaperEngine/Audio/AudioPlayingDetector.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 4096
@@ -15,7 +18,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 	memset (streamData, 0, length);
 
 	// if audio is playing do not do anything here!
-	if (driver->getAudioDetector ().anythingPlaying ()) {
+	if (driver->getContext ().audio->getDetector ().anythingPlaying ()) {
 		return;
 	}
 
@@ -75,10 +78,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 	SDL_UnlockMutex (driver->getStreamMutex ());
 }
 
-SDLAudioDriver::SDLAudioDriver (
-	Context& applicationContext, std::unique_ptr<Detectors::AudioPlayingDetector> detector,
-	std::unique_ptr<Recorders::PlaybackRecorder> recorder
-) : AudioDriver (applicationContext, std::move (detector), std::move (recorder)), m_audioSpec () {
+SDLAudioDriver::SDLAudioDriver (Context& applicationContext) : AudioDriver (applicationContext), m_audioSpec () {
 	this->m_streamListMutex = SDL_CreateMutex ();
 
 	if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0) {

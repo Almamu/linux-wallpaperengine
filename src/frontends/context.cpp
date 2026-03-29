@@ -1,12 +1,16 @@
 #include "frontends/context.h"
 
-#include "WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h"
-#include "WallpaperEngine/Audio/Drivers/SDLAudioDriver.h"
+#include <SDL.h>
 #include "WallpaperEngine/Context.h"
 
 float default_get_time (void* user_parameter) { return SDL_GetTicks () / 1000.0f; }
 
+bool default_is_frame_ready (void* user_parameter) { return false; }
+
 wp_time_counter default_time_counter = { .user_parameter = nullptr, .get_time = default_get_time };
+
+wp_audio_input_mix default_audio_input_mix
+	= { .user_parameter = nullptr, .is_frame_ready = default_is_frame_ready, .get_frame = nullptr };
 
 #define WPENGINE_CONTEXT_API_BEGIN try {
 #define WPENGINE_CONTEXT_API_END(result)                                                                               \
@@ -17,7 +21,8 @@ wp_time_counter default_time_counter = { .user_parameter = nullptr, .get_time = 
 WPENGINE_API wp_context* wp_context_create (const wp_configuration* config) {
 	WPENGINE_CONTEXT_API_BEGIN
 	return new WallpaperEngine::Context (
-		static_cast<const WallpaperEngine::Configuration*> (config), &default_time_counter, nullptr
+		static_cast<const WallpaperEngine::Configuration*> (config), &default_time_counter, nullptr,
+		&default_audio_input_mix
 	);
 	WPENGINE_CONTEXT_API_END (nullptr)
 }
@@ -37,5 +42,11 @@ WPENGINE_API void wp_context_set_gl_proc_address (wp_context* context, wp_gl_pro
 WPENGINE_API void wp_context_set_time_counter (wp_context* context, wp_time_counter* counter) {
 	WPENGINE_CONTEXT_API_BEGIN
 	static_cast<WallpaperEngine::Context*> (context)->time_counter = counter ?: &default_time_counter;
+	WPENGINE_CONTEXT_API_END ();
+}
+
+WPENGINE_API void wp_context_set_audio_input_mix (wp_context* context, wp_audio_input_mix* mix) {
+	WPENGINE_CONTEXT_API_BEGIN
+	static_cast<WallpaperEngine::Context*> (context)->audio_input_mix = mix ?: &default_audio_input_mix;
 	WPENGINE_CONTEXT_API_END ();
 }

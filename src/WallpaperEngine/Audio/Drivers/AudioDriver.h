@@ -1,37 +1,21 @@
 #pragma once
 
-#include "WallpaperEngine/Context.h"
-
 #include "WallpaperEngine/Audio/AudioStream.h"
-#include "WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h"
-#include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
 
 namespace WallpaperEngine {
-namespace Application {
-	class ApplicationContext;
+class Context;
 }
 
-namespace Audio {
+namespace WallpaperEngine::Audio {
 	class AudioStream;
 
 	namespace Drivers {
-		namespace Detectors {
-			class AudioPlayingDetector;
-		}
-
-		namespace Recorders {
-			class PulseAudioPlaybackRecorder;
-		}
-
 		/**
 		 * Base class for audio driver implementations
 		 */
 		class AudioDriver {
 		public:
-			explicit AudioDriver (
-				Context& applicationContext, std::unique_ptr<Detectors::AudioPlayingDetector> detector,
-				std::unique_ptr<Recorders::PlaybackRecorder> recorder
-			);
+			explicit AudioDriver (Context& applicationContext);
 
 			virtual ~AudioDriver () = default;
 			/**
@@ -70,20 +54,9 @@ namespace Audio {
 			 * @return The application context under which the audio driver is initialized
 			 */
 			Context& getContext () const;
-			/**
-			 * @return The audio playing detector to use to stop playing sound when something else starts playing
-			 */
-			[[nodiscard]] Detectors::AudioPlayingDetector& getAudioDetector () const;
-			/**
-			 * @return The audio recorder to use to capture stereo mix data
-			 */
-			[[nodiscard]] Recorders::PlaybackRecorder& getRecorder () const;
 
 		private:
 			Context& m_context;
-			std::unique_ptr<Detectors::AudioPlayingDetector> m_detector;
-			std::unique_ptr<Recorders::PlaybackRecorder> m_recorder;
 		};
 	} // namespace Drivers
-} // namespace Audio
-} // namespace WallpaperEngine
+} // namespace WallpaperEngine::Audio

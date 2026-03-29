@@ -4,27 +4,24 @@
 
 #include <libavutil/samplefmt.h>
 
-#include "WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.h"
+#include "Drivers/AudioDriver.h"
+#include "PlaybackRecorder.h"
+#include "AudioPlayingDetector.h"
 
-namespace WallpaperEngine {
-namespace Application {
-	class ApplicationContext;
-}
-
-namespace Audio {
+namespace WallpaperEngine::Audio {
 	namespace Drivers {
 		class AudioDriver;
-
-		namespace Recorders {
-			class PulseAudioPlaybackRecorder;
-		}
-	} // namespace Drivers
+	}
 
 	class AudioStream;
 
 	class AudioContext {
 	public:
-		explicit AudioContext (std::unique_ptr<Drivers::AudioDriver> driver);
+		explicit AudioContext (
+			std::unique_ptr<Drivers::AudioDriver> driver,
+			std::unique_ptr<PlaybackRecorder> recorder,
+			std::unique_ptr<AudioPlayingDetector> detector
+		);
 
 		/**
 		 * Registers the given stream in the driver for playing
@@ -55,16 +52,20 @@ namespace Audio {
 		/**
 		 * @return The audio recorder to use to capture stereo mix data
 		 */
-		[[nodiscard]] Drivers::Recorders::PlaybackRecorder& getRecorder () const;
-
+		[[nodiscard]] PlaybackRecorder& getRecorder () const;
+		/**
+	     * @return The audio playing detector to use to detect when audio is playing from something else
+	     */
+		[[nodiscard]] AudioPlayingDetector& getDetector () const;
 		/**
 		 * @return The audio driver used to playback and record audio
 		 */
 		[[nodiscard]] Drivers::AudioDriver& getDriver () const;
 
 	private:
+		std::unique_ptr<PlaybackRecorder> m_recorder;
+		std::unique_ptr<AudioPlayingDetector> m_detector;
 		/** The audio driver in use */
 		std::unique_ptr<Drivers::AudioDriver> m_driver;
 	};
 } // namespace Audio
-} // namespace WallpaperEngine

@@ -5,6 +5,8 @@
 
 #include "Types.h"
 
+#include "frontends/playlists.h"
+
 namespace WallpaperEngine::Data::Model {
 enum PlaylistMode {
 	PlaylistMode_Unknown = -1,

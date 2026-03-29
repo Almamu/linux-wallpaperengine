@@ -1,10 +1,11 @@
 #include "AudioStream.h"
 
 #include "Drivers/AudioDriver.h"
+#include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include <cassert>
 #include <cmath>
-#include <iostream>
+
 
 // maximum size of the queue to prevent reading too much data
 
