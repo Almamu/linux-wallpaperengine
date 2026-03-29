@@ -208,6 +208,11 @@ wp_playlist_entry* PlaylistListEntry::next () {
 	this->entry.item_count = this->it->second->items.size ();
 	this->entry.items = new const char*[this->entry.item_count];
 	this->entry.daytimeend = new float[this->entry.item_count];
+	this->entry.delay = this->it->second->delay;
+	this->entry.transitiontime = this->it->second->transitiontime;
+	this->entry.mode = static_cast<wp_playlist_mode> (this->it->second->mode);
+	this->entry.order = static_cast<wp_playlist_order> (this->it->second->order);
+	this->entry.transition = static_cast<wp_playlist_transition> (this->it->second->transition);
 
 	size_t i = 0;
 

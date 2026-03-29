@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Types.h"
+
 namespace WallpaperEngine::Data::Model {
 enum PlaylistMode {
 	PlaylistMode_Unknown = -1,
@@ -12,12 +13,14 @@ enum PlaylistMode {
 	PlaylistMode_Daytime = 2,
 	PlaylistMode_Weekday = 3,
 	PlaylsitMode_Never = 4,
+	PlaylistMode_Max,
 };
 
 enum PlaylistOrder {
 	PlaylistOrder_Unknown = -1,
 	PlaylistOrder_Random = 0,
 	PlaylistOrder_Sorted = 1,
+	PlaylistOrder_Max,
 };
 
 enum PlaylistTransition {
@@ -54,7 +57,21 @@ enum PlaylistTransition {
 	PlaylistTransition_Bullets = 27, // 24
 	PlaylistTransition_Ice = 28, // 25
 	PlaylistTransition_Boilover = 29, // 26
+	PlaylistTransition_Max,
 };
+
+static_assert (
+	static_cast<int> (wp_playlist_mode_Max) == static_cast<int> (PlaylistMode_Max),
+	"Playlist mode enums are desynchronized"
+);
+static_assert (
+	static_cast<int> (wp_playlist_order_Max) == static_cast<int> (PlaylistOrder_Max),
+	"Playlist order enums are desynchronized"
+);
+static_assert (
+	static_cast<int> (wp_playlist_transition_Max) == static_cast<int> (PlaylistTransition_Max),
+	"Playlist transition enums are desynchronized"
+);
 
 struct PlaylistItem {
 	float daytimeend;
