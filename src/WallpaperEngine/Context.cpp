@@ -1,8 +1,8 @@
 #include "Context.h"
 
 #include "Audio/Drivers/SDLAudioDriver.h"
-#include "WallpaperEngine/Audio/Drivers/AudioDriver.h"
 #include "WallpaperEngine/Audio/AudioPlayingDetector.h"
+#include "WallpaperEngine/Audio/Drivers/AudioDriver.h"
 #include "WallpaperEngine/Audio/PlaybackRecorder.h"
 
 WallpaperEngine::Context::Context (
@@ -13,8 +13,7 @@ WallpaperEngine::Context::Context (
 	time_counter (time_counter), audio_input_mix (audio_input_mix), isRunning (true), renderTime (0.0f),
 	renderTimeLast (0.0f), daytime (0.0f) {
 	this->audio = std::make_unique<Audio::AudioContext> (
-		std::make_unique<Audio::Drivers::SDLAudioDriver> (*this),
-		std::make_unique<Audio::PlaybackRecorder> (*this),
+		std::make_unique<Audio::Drivers::SDLAudioDriver> (*this), std::make_unique<Audio::PlaybackRecorder> (*this),
 		std::make_unique<Audio::AudioPlayingDetector> (*this)
 	);
 }

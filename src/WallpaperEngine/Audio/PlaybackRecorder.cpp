@@ -45,7 +45,8 @@ void PlaybackRecorder::update () {
 		return;
 	}
 
-	const unsigned char* buffer = this->m_context.audio_input_mix->get_frame (this->m_context.audio_input_mix->user_parameter);
+	const unsigned char* buffer
+		= this->m_context.audio_input_mix->get_frame (this->m_context.audio_input_mix->user_parameter);
 
 	// convert audio data to deltas so the fft library can properly handle it
 	for (int i = 0; i < WP_AUDIO_INPUT_FRAME_SIZE; i++) {

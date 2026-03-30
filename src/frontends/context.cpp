@@ -1,7 +1,7 @@
 #include "frontends/context.h"
 
-#include <SDL.h>
 #include "WallpaperEngine/Context.h"
+#include <SDL.h>
 
 float default_get_time (void* user_parameter) { return SDL_GetTicks () / 1000.0f; }
 

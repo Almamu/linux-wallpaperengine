@@ -5,27 +5,26 @@ class Context;
 }
 
 namespace WallpaperEngine::Audio {
+/**
+ * Base class for any implementation of audio playing detection
+ */
+class AudioPlayingDetector final {
+public:
+	explicit AudioPlayingDetector (Context& context);
+
 	/**
-	 * Base class for any implementation of audio playing detection
+	 * @return If any kind of sound is currently playing on the default audio device
 	 */
-	class AudioPlayingDetector final {
-	public:
-		explicit AudioPlayingDetector (Context& context);
+	[[nodiscard]] bool anythingPlaying () const;
 
-		/**
-		 * @return If any kind of sound is currently playing on the default audio device
-		 */
-		[[nodiscard]] bool anythingPlaying () const;
+	/**
+	 * Checks if any audio is playing and updates state accordingly
+	 */
+	void update ();
 
-		/**
-		 * Checks if any audio is playing and updates state accordingly
-		 */
-		void update ();
+private:
+	Context& m_context;
 
-	private:
-		Context& m_context;
-
-		bool m_isPlaying = false;
-	};
+	bool m_isPlaying = false;
+};
 } // namespace WallpaperEngine::Audio
-

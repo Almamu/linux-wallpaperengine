@@ -2,8 +2,8 @@
 
 #include "SDLAudioDriver.h"
 
-#include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Audio/AudioPlayingDetector.h"
+#include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 4096

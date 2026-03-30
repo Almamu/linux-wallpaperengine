@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cmath>
 
-
 // maximum size of the queue to prevent reading too much data
 
 using namespace WallpaperEngine::Audio;
