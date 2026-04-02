@@ -27,6 +27,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 find_package(X11)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(SDL2 REQUIRED)
@@ -568,6 +569,10 @@ endif()
 
 if(WAYLAND_SUPPORT_FOUND)
     target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_WAYLAND)
+endif()
+
+if(WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
+    target_compile_definitions(linux-wallpaperengine-lib PUBLIC GLEW_EGL)
 endif()
 
 target_include_directories(linux-wallpaperengine-lib PUBLIC
