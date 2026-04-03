@@ -341,7 +341,7 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
     double mouseY = 1.0 - normalizedMouseY; 
 
     this->m_mousePosition.x = this->m_mousePositionNormalized.x;
-    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - ugvs.vstart);
+    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
 }
 
 const Scene& CScene::getScene () const { return *this->getWallpaperData ().as<Scene> (); }
