@@ -30,6 +30,7 @@ public:
 
     const glm::vec2* getMousePosition () const;
     const glm::vec2* getMousePositionLast () const;
+    const glm::vec2* getMousePositionNormalized () const;
     const glm::vec2* getParallaxDisplacement () const;
 
     [[nodiscard]] const std::vector<CObject*>& getObjectsByRenderOrder () const;
@@ -52,6 +53,7 @@ private:
     std::vector<CObject*> m_objectsByRenderOrder = {};
     glm::vec2 m_mousePosition = {};
     glm::vec2 m_mousePositionLast = {};
+    glm::vec2 m_mousePositionNormalized = {};
     glm::vec2 m_parallaxDisplacement = {};
     std::shared_ptr<const CFBO> _rt_4FrameBuffer = nullptr;
     std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;

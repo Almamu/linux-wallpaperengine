@@ -326,7 +326,7 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
     double mouseX = glm::clamp ((position.x - viewport.x) / viewport.z, 0.0, 1.0);
     // Normalize Y coordinate (OpenGL convention: 0=bottom, 1=top)
     // Particle code expects this convention: 0=bottom results in negative Y (down), 1=top results in positive Y (up)
-    double mouseY = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
+    double normalizedMouseY = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
 
     // Account for UV cropping when using fill/fit scaling modes
     // The scene may be rendered larger than viewport and cropped via UVs
@@ -334,8 +334,14 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
 
     // Map mouse position from viewport space to scene UV space
     // UVs define what portion of the scene texture is visible
-    this->m_mousePosition.x = uvs.ustart + mouseX * (uvs.uend - uvs.ustart);
-    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
+    this->m_mousePositionNormalized.x = uvs.ustart + mouseX * (uvs.uend - uvs.ustart);
+    this->m_mousePositionNormalized.y = uvs.vstart + normalizedMouseY * (uvs.vend - uvs.vstart);
+
+    // Invert previous normalization of Y to match what the shader expects
+    double mouseY = 1.0 - normalizedMouseY; 
+
+    this->m_mousePosition.x = this->m_mousePositionNormalized.x;
+    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - ugvs.vstart);
 }
 
 const Scene& CScene::getScene () const { return *this->getWallpaperData ().as<Scene> (); }
@@ -347,6 +353,8 @@ int CScene::getHeight () const { return this->m_camera->getHeight (); }
 const glm::vec2* CScene::getMousePosition () const { return &this->m_mousePosition; }
 
 const glm::vec2* CScene::getMousePositionLast () const { return &this->m_mousePositionLast; }
+
+const glm::vec2* CScene::getMousePositionNormalized () const { return &this->m_mousePositionNormalized; }
 
 const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_parallaxDisplacement; }
 

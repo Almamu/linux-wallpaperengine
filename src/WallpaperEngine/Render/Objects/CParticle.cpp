@@ -259,7 +259,7 @@ void CParticle::update (float dt) {
     }
 
     // Update control points with mouse position
-    const glm::vec2* mousePos = getScene ().getMousePosition ();
+    const glm::vec2* mousePos = getScene ().getMousePositionNormalized ();
     if (mousePos) {
 
 	for (auto& cp : m_controlPoints) {
