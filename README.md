@@ -1,10 +1,10 @@
-<figure align="center">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
-        <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
-    </picture>
-    <figcaption align="center">Tux image based on original Tux by Larry Erwing, The GIMP</figcaption>
-</figure>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+    <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
+</picture>
+<p align="center">
+    <small>Tux image based on original Tux by Larry Erwing, The GIMP</small>
+</p>
 
 <p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
