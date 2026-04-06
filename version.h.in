@@ -2,5 +2,14 @@
 #define __WP_LIB_VERSION_H__
 
 #define LINUX_WALLPAPERENGINE_VERSION "@PROJECT_VERSION@"
+#define LINUX_WALLPAPERENGINE_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define LINUX_WALLPAPERENGINE_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define LINUX_WALLPAPERENGINE_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+//
+// This file should be used to include defines to detect available features,
+// so apps can support more than one version and detect at compile-time
+// what features are available
+//
 
 #endif

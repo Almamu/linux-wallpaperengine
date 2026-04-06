@@ -20,8 +20,23 @@ execute_process(
         OUTPUT_VARIABLE PROJECT_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-# remove the "v" off the front
-string(REGEX REPLACE "^v" "" VERSION_CLEAN ${PROJECT_VERSION})
+# get version off the tag
+string(REGEX MATCH "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
+
+if(CMAKE_MATCH_0)
+    set(PROJECT_VERSION
+            "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}"
+    )
+
+    set(PROJECT_VERSION_MAJOR "${CMAKE_MATCH_1}")
+    set(PROJECT_VERSION_MINOR "${CMAKE_MATCH_2}")
+    set(PROJECT_VERSION_PATCH "${CMAKE_MATCH_3}")
+    set(PROJECT_SOVERSION "${PROJECT_VERSION_MAJOR}")
+else()
+    message(WARNING "No valid tag found, falling back to 0.0.0")
+    set(PROJECT_VERSION "0.0.0")
+    set(PROJECT_SOVERSION "0")
+endif()
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
 if(NOT ERRORONLY)
@@ -523,12 +538,6 @@ set_target_properties(linux-wallpaperengine-webhelper PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-set_target_properties(linux-wallpaperengine-core PROPERTIES
-    SKIP_BUILD_RPATH FALSE
-    BUILD_WITH_INSTALL_RPATH FALSE
-    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
-    INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 target_compile_definitions(linux-wallpaperengine-core PRIVATE WPENGINE_BUILD)
 target_compile_definitions(linux-wallpaperengine-core PUBLIC ERRORONLY=${ERRORONLY})
 
@@ -541,8 +550,15 @@ COPY_FILES(linux-wallpaperengine-core "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" 
 COPY_FILES(linux-wallpaperengine-core "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 # remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
 file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
+
 set_target_properties(linux-wallpaperengine-core PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY})
+    LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY}
+    SKIP_BUILD_RPATH FALSE
+    BUILD_WITH_INSTALL_RPATH FALSE
+    INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_SOVERSION})
 
 add_dependencies(linux-wallpaperengine-core libcef_dll_wrapper kissfft::kissfft-${KISSFFT_DATATYPE} glslang spirv-cross-core spirv-cross-glsl qjs)
 SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-core)
