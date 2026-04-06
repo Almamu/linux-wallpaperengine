@@ -1,7 +1,9 @@
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
-    <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
-</picture>
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+        <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
+    </picture>
+</p>
 <p align="center">
     <small>Tux image based on original Tux by Larry Erwing, The GIMP</small>
 </p>
