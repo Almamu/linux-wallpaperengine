@@ -304,8 +304,15 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 	sLog.exception ("Cannot continue...");
     }
 
+    glewExperimental = GL_TRUE;
     if (const GLenum result = glewInit (); result != GLEW_OK) {
-	sLog.error ("Failed to initialize GLEW: ", glewGetErrorString (result));
+	if (result == GLEW_ERROR_NO_GLX_DISPLAY) {
+	    sLog.out ("Failed to initialize GLEW, but continuing with EGL context: No GLX display");
+	} else {
+	    const char* error = reinterpret_cast<const char*>(glewGetErrorString (result));
+	    sLog.error ("Failed to initialize GLEW: ", error ? error : "Unknown error");
+	    sLog.exception ("Cannot continue...");
+	}
     }
 }
 
