@@ -1,3 +1,11 @@
+<figure align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+        <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
+    </picture>
+    <figcaption align="center">Tux image based on original Tux by Larry Erwing, The GIMP</figcaption>
+</figure>
+
 <p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
     <a href="https://github.com/Almamu/linux-wallpaperengine/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/Almamu/linux-wallpaperengine/cmake.yml?branch=main" /></a>
@@ -15,8 +23,6 @@
 # 🖼️ Linux Wallpaper Engine
 
 Bring **Wallpaper Engine**-style live wallpapers to Linux! This project allows you to run animated wallpapers from Steam’s Wallpaper Engine right on your desktop.
-
-> ⚠️ This is an educational project that evolved into a functional OpenGL-based wallpaper engine for Linux. Expect some limitations and quirks!
 
 ---
 
