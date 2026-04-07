@@ -1,62 +1,61 @@
-include(SetupCEF)
-find_package(ZLIB REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(MPV REQUIRED)
-find_package(LZ4 REQUIRED)
-find_package(FFMPEG REQUIRED)
-find_package(glfw3 REQUIRED)
-include(SetupExternals)
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/External/argparse argparse)
-
-# linux-wallpaperengine-dev-viewer looks to simplify testing and validation of new features
-# so a full, static build is better in this case
-add_executable(linux-wallpaperengine-dev-viewer
-    ${COMMON_SOURCES}
+set(TARGET_NAME linux-wallpaperengine-dev-viewer)
+set(TARGET_SOURCE_FILES
+    $<TARGET_OBJECTS:linux-wallpaperengine-core-object>
     WallpaperEngine/Development/SimpleBackgroundViewer.cpp)
-target_include_directories(linux-wallpaperengine-dev-viewer PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/core>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/glslang-WallpaperEngine>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/SPIRV-Cross-WallpaperEngine>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/MimeTypes>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/json/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/stb>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/kissfft-WallpaperEngine>
-    $<BUILD_INTERFACE:${MPV_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${LZ4_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${SDL2_INCLUDE_DIRS}>
-    $<BUILD_INTERFACE:${FFMPEG_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${CEF_INCLUDE_PATH}>
-    $<INSTALL_INTERFACE:include>)
-
-target_link_libraries(linux-wallpaperengine-dev-viewer PRIVATE
-    $<BUILD_INTERFACE:linux-wallpaperengine-glad>
-    $<BUILD_INTERFACE:${ZLIB_LIBRARIES}>
-    $<BUILD_INTERFACE:${LZ4_LIBRARY}>
-    $<BUILD_INTERFACE:${SDL2_LIBRARIES}>
-    $<BUILD_INTERFACE:${FFMPEG_LIBRARIES}>
-    $<BUILD_INTERFACE:${MPV_LIBRARY}>
-    $<BUILD_INTERFACE:kissfft::kissfft-${KISSFFT_DATATYPE}>
-    $<BUILD_INTERFACE:glslang>
-    $<BUILD_INTERFACE:spirv-cross-core>
-    $<BUILD_INTERFACE:spirv-cross-glsl>
-    $<BUILD_INTERFACE:libcef_lib>
-    $<BUILD_INTERFACE:libcef_dll_wrapper>
-    $<BUILD_INTERFACE:argparse>
-    $<BUILD_INTERFACE:glfw>
-    $<BUILD_INTERFACE:qjs>)
-
-target_include_directories(linux-wallpaperengine-dev-viewer PRIVATE
-    ${OPENGL_INCLUDE_DIR})
-
-add_dependencies(linux-wallpaperengine-dev-viewer
-    libcef_dll_wrapper
-    kissfft::kissfft-${KISSFFT_DATATYPE}
+set(TARGET_LIBRARIES
+    linux-wallpaperengine-core-object
+    linux-wallpaperengine-glad
+    nlohmann_json::nlohmann_json
+    PkgConfig::zlib
+    PkgConfig::lz4
+    SDL2::SDL2
+    PkgConfig::ffmpeg
+    PkgConfig::mpv
+    kissfft
     glslang
     spirv-cross-core
     spirv-cross-glsl
+    libcef_lib
+    libcef_dll_wrapper
+    argparse
+    glfw
     qjs)
 
-SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-dev-viewer)
+add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
+target_include_directories(${TARGET_NAME}-object PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(NOT WPBUILD_DEVVIEWER)
+    return()
+endif()
+
+include(RequireGLSLANG)
+include(RequireKissFFT)
+include(RequireCEF)
+include(RequireQuickJS)
+include(RequireArgParse)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+pkg_check_modules(zlib REQUIRED IMPORTED_TARGET zlib)
+pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
+pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET libavformat libavcodec libswresample libswscale libavutil)
+find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
+find_package(glfw3 REQUIRED)
+
+target_link_libraries(${TARGET_NAME}-object PRIVATE ${TARGET_LIBRARIES})
+
+# linux-wallpaperengine-dev-viewer looks to simplify testing and validation of new features
+# so a full, static build is better in this case
+add_executable(${TARGET_NAME} $<TARGET_OBJECTS:${TARGET_NAME}-object>)
+
+target_link_libraries(${TARGET_NAME} PRIVATE ${TARGET_LIBRARIES})
+
+add_dependencies(${TARGET_NAME}
+    libcef_dll_wrapper
+    kissfft
+    glslang
+    spirv-cross-core
+    spirv-cross-glsl
+    qjs
+    linux-wallpaperengine-glad)
+
+SET_EXECUTABLE_TARGET_PROPERTIES(${TARGET_NAME}-object)

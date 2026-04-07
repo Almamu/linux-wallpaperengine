@@ -2,8 +2,8 @@
 
 #include "WallpaperEngine/Render/Camera.h"
 
-#include "../../../../include/frontends/project.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
+#include "frontends/project.h"
 
 namespace WallpaperEngine::Render {
 class Camera;

@@ -10,11 +10,10 @@ extern "C" {
 #include <libavutil/fifo.h>
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
-#include <libswscale/swscale.h>
 }
 
-#include <SDL.h>
-#include <SDL_thread.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_thread.h>
 
 #include "WallpaperEngine/Audio/AudioContext.h"
 

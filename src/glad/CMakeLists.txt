@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.12)
-project(linux-wallpaperengine-glad)
+set(TARGET_NAME linux-wallpaperengine-glad)
+set(GLAD_SOURCE_FILES
+    src/glad.c)
 
-add_library(linux-wallpaperengine-glad)
+add_library(${TARGET_NAME} STATIC ${GLAD_SOURCE_FILES})
+target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_sources(linux-wallpaperengine-glad PRIVATE src/glad.c)
-
-target_include_directories(linux-wallpaperengine-glad PUBLIC include)
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(linux-wallpaperengine-glad PUBLIC ${OpenGL_LIBRARIES})
+target_link_libraries(${TARGET_NAME} PUBLIC ${OpenGL_LIBRARIES})

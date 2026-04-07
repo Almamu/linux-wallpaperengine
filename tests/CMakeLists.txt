@@ -1,52 +1,55 @@
-include(SetupCEF)
-find_package(ZLIB REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(MPV REQUIRED)
-find_package(LZ4 REQUIRED)
-find_package(FFMPEG REQUIRED)
-include(SetupExternals)
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/External/Catch2 catch2)
-
-add_executable(tests
-    ${COMMON_SOURCES}
+set(TARGET_NAME linux-wallpaperengine-tests)
+set(TARGET_SOURCE_FILES
+    $<TARGET_OBJECTS:linux-wallpaperengine-core-object>
 
     Tests/Library/Playlists.cpp
     Tests/Library/Backgrounds.cpp
     Tests/MouseCoordinates.cpp)
 
-target_include_directories(tests PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/core>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/glslang-WallpaperEngine>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/SPIRV-Cross-WallpaperEngine>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/MimeTypes>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/json/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/stb>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/External/kissfft-WallpaperEngine>
-    $<BUILD_INTERFACE:${MPV_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${LZ4_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${SDL2_INCLUDE_DIRS}>
-    $<BUILD_INTERFACE:${FFMPEG_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${CEF_INCLUDE_PATH}>
-    $<INSTALL_INTERFACE:include>)
+add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
+target_include_directories(${TARGET_NAME}-object PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries (tests PRIVATE
-    Catch2::Catch2WithMain
-    $<BUILD_INTERFACE:linux-wallpaperengine-glad>
-    $<BUILD_INTERFACE:${ZLIB_LIBRARIES}>
-    $<BUILD_INTERFACE:${LZ4_LIBRARY}>
-    $<BUILD_INTERFACE:${SDL2_LIBRARIES}>
-    $<BUILD_INTERFACE:${FFMPEG_LIBRARIES}>
-    $<BUILD_INTERFACE:${MPV_LIBRARY}>
-    $<BUILD_INTERFACE:kissfft::kissfft-${KISSFFT_DATATYPE}>
-    $<BUILD_INTERFACE:glslang>
-    $<BUILD_INTERFACE:spirv-cross-core>
-    $<BUILD_INTERFACE:spirv-cross-glsl>
-    $<BUILD_INTERFACE:libcef_lib>
-    $<BUILD_INTERFACE:libcef_dll_wrapper>
-    $<BUILD_INTERFACE:qjs>)
+if(NOT WPBUILD_TESTS)
+    return()
+endif()
+
+include(RequireGLSLANG)
+include(RequireKissFFT)
+include(RequireCEF)
+include(RequireQuickJS)
+include(RequireNLOHMANNJson)
+include(RequireCatch2)
+pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+pkg_check_modules(zlib REQUIRED IMPORTED_TARGET zlib)
+pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
+pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET libavformat libavcodec libswresample libswscale libavutil)
+find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
+
+target_link_libraries(${TARGET_NAME}-object PRIVATE
+    linux-wallpaperengine-common-object
+    linux-wallpaperengine-core-object
+    linux-wallpaperengine-glad
+    nlohmann_json::nlohmann_json
+    PkgConfig::zlib
+    PkgConfig::lz4
+    SDL2::SDL2
+    PkgConfig::ffmpeg
+    PkgConfig::mpv
+    kissfft
+    glslang
+    spirv-cross-core
+    spirv-cross-glsl
+    libcef_lib
+    libcef_dll_wrapper
+    glfw
+    qjs
+    Catch2::Catch2)
+
+add_executable(${TARGET_NAME} $<TARGET_OBJECTS:${TARGET_NAME}-object>)
+target_link_libraries(${TARGET_NAME} PRIVATE Catch2::Catch2WithMain)
+
+SET_EXECUTABLE_TARGET_PROPERTIES(${TARGET_NAME}-object)
 
 # tests should give as much output as possible
-target_compile_definitions(tests PRIVATE ERRORONLY=0)
+target_compile_definitions(${TARGET_NAME} PRIVATE ERRORONLY=0)

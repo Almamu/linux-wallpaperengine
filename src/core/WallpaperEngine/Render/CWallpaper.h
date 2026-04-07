@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-#include "../../../include/frontends/project.h"
+#include "frontends/project.h"
 
 #include "WallpaperEngine/Audio/AudioContext.h"
 
