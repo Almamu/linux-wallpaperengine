@@ -5,7 +5,8 @@ build/
 .vscode/
 third_party/
 packaging/archlinux/*
-!packaging/archlinux/PKGBUILD
+!packaging/archlinux/linux-wallpaperengine/PKGBUILD
+!packaging/archlinux/linux-wallpaperengine-core/PKGBUILD
 *-protocol.o
 *-protocol.c
 *-protocol.h

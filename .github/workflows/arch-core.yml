@@ -1,13 +1,11 @@
-name: Arch Linux AUR Package Update (linux-wallpaperengine)
+name: Arch Linux AUR Package Update (linux-wallpaperengine-core)
 
-# disabled for now
 on:
-
-#  workflow_dispatch:
-#  push:
-#    branches: [main]
-#    paths:
-#      - 'packaging/archlinux/linux-wallpaperengine/**'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/archlinux/linux-wallpaperengine-core/**'
 
 jobs:
   publish:
@@ -23,7 +21,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: linux-wallpaperengine-core-git
-          pkgbuild: ./packaging/archlinux/linux-wallpaperengine/PKGBUILD
+          pkgbuild: ./packaging/archlinux/linux-wallpaperengine-core/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

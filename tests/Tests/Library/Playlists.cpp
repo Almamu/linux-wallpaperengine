@@ -4,7 +4,7 @@
 #include "frontends/configuration.h"
 #include "frontends/playlists.h"
 
-#include "tests/Fixtures/PlaylistsFixture.h"
+#include "Fixtures/PlaylistsFixture.h"
 
 TEST_CASE_METHOD (PlaylistsFixture, "Playlist behaviour") {
 	addPlaylist (

@@ -4,7 +4,7 @@
 #include "frontends/configuration.h"
 #include "frontends/content.h"
 
-#include "tests/Fixtures/BackgroundListFixture.h"
+#include "Fixtures/BackgroundListFixture.h"
 
 #define REQUIRE_PATH_VALUES(root, entry_get, values, hasPreviews) \
 	{ \
