@@ -149,7 +149,7 @@ target_compile_definitions(${TARGET_NAME} PRIVATE
     WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
     WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
 
-target_compile_definitions(${TARGET_NAME} PRIVATE WPENGINE_BUILD)
+target_compile_definitions(${TARGET_NAME}-object PRIVATE WPENGINE_BUILD)
 target_compile_definitions(${TARGET_NAME} PUBLIC ERRORONLY=${ERRORONLY})
 
 target_link_options(${TARGET_NAME} PRIVATE
