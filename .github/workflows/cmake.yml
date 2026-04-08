@@ -62,11 +62,11 @@ jobs:
 
       - name: Build
         # build both tests and the wallpaperengine-webhelper as this includes a full build cycle
-        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target tests
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine-tests
 
       - name: Run tests
         # Run the unit tests available
-        run: ${{ github.workspace }}/build/output/tests
+        run: ${{ github.workspace }}/build/output/linux-wallpaperengine-tests
 
   build-lib:
     needs: formatting
