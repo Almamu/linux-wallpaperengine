@@ -16,8 +16,9 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
+          fetch-tags: true
           submodules: true
 
       # cache some build information
