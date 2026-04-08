@@ -44,6 +44,7 @@ using UserSettingUniquePtr = std::unique_ptr<UserSetting>;
 using ShaderConstantMap = std::map<std::string, UserSettingUniquePtr>;
 
 using ProjectUniquePtr = std::unique_ptr<Project>;
+using ProjectSharedPtr = std::shared_ptr<Project>;
 using WallpaperUniquePtr = std::unique_ptr<Wallpaper>;
 using SceneUniquePtr = std::unique_ptr<Scene>;
 using WebUniquePtr = std::unique_ptr<Web>;

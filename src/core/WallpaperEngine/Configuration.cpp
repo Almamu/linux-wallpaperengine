@@ -7,6 +7,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include "Data/Parsers/ConfigParser.h"
+#include "Data/Parsers/ProjectParser.h"
 
 using namespace WallpaperEngine;
 
@@ -182,6 +183,14 @@ wp_background_list_entry* ContentListEntry::next () {
 	return nullptr;
 }
 
+void ContentListEntry::reset () {
+	this->current_entry.path = nullptr;
+	this->current_entry.preview_path = nullptr;
+	this->current_path = std::nullopt;
+	this->preview_path = std::nullopt;
+	this->it = std::filesystem::directory_iterator (this->config->backgrounds_dir);
+}
+
 PlaylistListEntry::~PlaylistListEntry () {
 	this->entry.name = nullptr;
 	delete[] this->entry.items;
@@ -225,4 +234,20 @@ wp_playlist_entry* PlaylistListEntry::next () {
 
 	// finally return the playlist entry to the caller
 	return &this->entry;
+}
+
+void PlaylistListEntry::reset () {
+	delete[] this->entry.items;
+	delete[] this->entry.daytimeend;
+
+	this->entry.name = nullptr;
+	this->entry.item_count = 0;
+	this->entry.items = nullptr;
+	this->entry.daytimeend = nullptr;
+	this->entry.delay = 0;
+	this->entry.transitiontime = 0;
+	this->entry.mode = wp_playlist_mode_Unknown;
+	this->entry.order = wp_playlist_order_Unknown;
+	this->entry.transition = wp_playlist_transition_Unknown;
+	this->it = this->config->playlists.begin ();
 }

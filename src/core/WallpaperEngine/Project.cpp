@@ -1,5 +1,6 @@
 #include "Project.h"
 #include "Context.h"
+#include "Data/Model/Property.h"
 #include "Data/Parsers/ProjectParser.h"
 
 using namespace WallpaperEngine;
@@ -142,22 +143,18 @@ WallpaperEngine::Project::Project (
 		sLog.exception ("Cannot load project with multiple contexts active at once");
 	}
 
-	auto contextPtr = static_cast<WallpaperEngine::Context*> (context);
-	auto locator = wp_setup_asset_locator (contextPtr->config, project);
+	auto locator = wp_setup_asset_locator (context->config, project);
 	auto json = JSON::parse (locator->readString ("project.json"));
-	auto it = contextPtr->projects.insert (
-		contextPtr->projects.end (), WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator))
+	this->ref = context->projects.insert (
+		context->projects.end (), WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator))
 	);
 
-	this->ref = it;
-	this->renderContext = std::make_unique<RenderContext> (*contextPtr, *(*it)->assetLocator);
-	this->wallpaper
-		= CWallpaper::fromWallpaper (*(*it)->wallpaper, *this->renderContext, *contextPtr->audio, mouse_input);
+	this->current_property = nullptr;
+	this->property_it = (*this->ref)->properties.begin ();
+	this->mouse_input = mouse_input;
 }
 
 WallpaperEngine::Project::~Project () {
-	this->context.projects.erase (this->ref);
-
 	if (this->context.projects.empty ()) {
 		active_context = nullptr;
 	}
@@ -171,7 +168,162 @@ void WallpaperEngine::Project::setOutputFramebuffer (const unsigned int framebuf
 	this->wallpaper->setDestinationFramebuffer (framebuffer);
 }
 
-void WallpaperEngine::Project::render () { this->wallpaper->render (); }
+void WallpaperEngine::Project::render () {
+	if (this->renderContext == nullptr) {
+		// initialize render if not available
+		this->renderContext = std::make_unique<RenderContext> (this->context, *(*this->ref)->assetLocator);
+		this->wallpaper = CWallpaper::fromWallpaper (
+			*(*this->ref)->wallpaper, *this->renderContext, *this->context.audio, this->mouse_input
+		);
+	}
+
+	this->wallpaper->render ();
+}
+
+wp_project_property* WallpaperEngine::Project::propertyListNext () {
+	if (this->property_it == (*this->ref)->properties.end ()) {
+		this->property_it = (*this->ref)->properties.begin ();
+		return nullptr;
+	}
+
+	// get current property's info and copy it over
+	const auto& property = this->property_it++;
+
+	if (const auto boolean = property->second->asOrNull<PropertyBoolean> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_boolean {
+			.base = { .type = wp_property_type_boolean, .name = boolean->name.c_str () },
+			.value = boolean->getBool () });
+	} else if (const auto color = property->second->asOrNull<PropertyColor> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_color {
+			.base = { .type = wp_property_type_color, .name = color->name.c_str () },
+			.r = color->getIVec4 ().r,
+			.g = color->getIVec4 ().g,
+			.b = color->getIVec4 ().b,
+			.a = color->getIVec4 ().a,
+		});
+	} else if (const auto text = property->second->asOrNull<PropertyText> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_text {
+			.base = { .type = wp_property_type_text, .name = text->name.c_str () },
+			.value = text->getString ().c_str () });
+	} else if (const auto slider = property->second->asOrNull<PropertySlider> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_slider {
+			.base = { .type = wp_property_type_slider, .name = slider->name.c_str () },
+			.min = slider->min,
+			.max = slider->max,
+			.step = slider->step,
+			.value = slider->getFloat () });
+	} else if (const auto combo = property->second->asOrNull<PropertyCombo> ()) {
+		auto result = new wp_project_property_combo {
+			.base = { .type = wp_property_type_combo, .name = combo->name.c_str () },
+			.value_count = combo->values.size (),
+			.values = new wp_project_property_combo_value[combo->values.size ()],
+		};
+
+		int current = 0;
+
+		for (const auto& value : combo->values) {
+			result->values[current++]
+				= wp_project_property_combo_value { .key = value.first.c_str (), .value = value.second.c_str () };
+		}
+
+		this->current_property = reinterpret_cast<wp_project_property*> (result);
+	} else if (const auto file = property->second->asOrNull<PropertyFile> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_file {
+			.base = { .type = wp_property_type_file, .name = file->name.c_str () },
+			.path = file->getString ().c_str () });
+	} else if (const auto sceneTexture = property->second->asOrNull<PropertySceneTexture> ()) {
+		this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_scene_texture {
+			.base = { .type = wp_property_type_scene_texture, .name = sceneTexture->name.c_str () },
+			.value = sceneTexture->getString ().c_str () });
+	} else {
+		sLog.exception ("Unknown property type");
+	}
+
+	return this->current_property;
+}
+
+void WallpaperEngine::Project::propertyListReset () {
+	this->property_it = (*this->ref)->properties.begin ();
+
+	if (const auto combo = WP_PROPERTY_AS_COMBO (this->current_property)) {
+		delete combo->values;
+	}
+
+	delete this->current_property;
+	this->current_property = nullptr;
+}
+
+void WallpaperEngine::Project::propertySet (const std::string& key, bool value) {
+	const auto it = (*this->ref)->properties.find (key);
+
+	if (it == (*this->ref)->properties.end ()) {
+		sLog.exception ("Property not found");
+	}
+
+	it->second->update (value);
+}
+
+void WallpaperEngine::Project::propertySet (const std::string& key, const std::string& value) {
+	const auto it = (*this->ref)->properties.find (key);
+
+	if (it == (*this->ref)->properties.end ()) {
+		sLog.exception ("Property not found");
+	}
+
+	it->second->update (value);
+}
+
+void WallpaperEngine::Project::propertySet (const std::string& key, float value) {
+	const auto it = (*this->ref)->properties.find (key);
+
+	if (it == (*this->ref)->properties.end ()) {
+		sLog.exception ("Property not found");
+	}
+
+	it->second->update (value);
+}
+
+void WallpaperEngine::Project::propertySet (const std::string& key, glm::vec4 value) {
+	const auto it = (*this->ref)->properties.find (key);
+
+	if (it == (*this->ref)->properties.end ()) {
+		sLog.exception ("Property not found");
+	}
+
+	it->second->update (value);
+}
+
+void WallpaperEngine::Project::propertySet (const wp_project_property* property, float value) {
+	if (property != this->current_property) {
+		return;
+	}
+
+	this->propertySet (property->name, value);
+}
+
+void WallpaperEngine::Project::propertySet (const wp_project_property* property, const std::string& value) {
+	if (property != this->current_property) {
+		sLog.exception ("Property not found");
+	}
+
+	this->propertySet (property->name, value);
+}
+
+void WallpaperEngine::Project::propertySet (const wp_project_property* property, glm::vec4 value) {
+	if (property != this->current_property) {
+		sLog.exception ("Property not found");
+	}
+
+	this->propertySet (property->name, value);
+}
+
+void WallpaperEngine::Project::propertySet (const wp_project_property* property, bool value) {
+	if (property != this->current_property) {
+		sLog.exception ("Property not found");
+	}
+
+	this->propertySet (property->name, value);
+}
 
 WallpaperEngine::Project*
 WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const int id) {
@@ -179,6 +331,11 @@ WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input,
 }
 
 WallpaperEngine::Project*
+WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id) {
+	return new Project (context, mouse_input, context->config->backgrounds_dir / id);
+}
+
+WallpaperEngine::Project*
 WallpaperEngine::Project::loadFolder (Context* context, wp_mouse_input* mouse_input, const char* folder) {
-	return new Project (context, mouse_input, context->config->backgrounds_dir / folder);
+	return new Project (context, mouse_input, folder);
 }

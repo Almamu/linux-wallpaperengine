@@ -23,11 +23,13 @@ public:
 
 	~PlaylistListEntry ();
 	wp_playlist_entry* next ();
+	void reset ();
 };
 
 class ContentListEntry {
 public:
 	std::filesystem::directory_iterator it;
+	Data::Model::Properties::const_iterator property_it;
 	std::optional<std::filesystem::path> current_path;
 	std::optional<std::filesystem::path> preview_path;
 	Configuration* config;
@@ -35,6 +37,7 @@ public:
 	wp_background_list_entry current_entry;
 
 	wp_background_list_entry* next ();
+	void reset ();
 };
 
 class Configuration {

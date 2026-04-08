@@ -34,7 +34,7 @@ public:
 	[[nodiscard]] virtual std::string dump () const = 0;
 };
 
-class PropertySlider final : public Property, SliderData {
+class PropertySlider final : public Property, public SliderData {
 public:
 	PropertySlider (PropertyData data, SliderData sliderData, const float value) :
 		Property (std::move (data)), SliderData (std::move (sliderData)) {
@@ -137,7 +137,7 @@ public:
 	}
 };
 
-class PropertyCombo final : public Property, ComboData {
+class PropertyCombo final : public Property, public ComboData {
 public:
 	PropertyCombo (PropertyData data, ComboData comboData, const std::string& value) :
 		Property (std::move (data)), ComboData (std::move (comboData)) {
@@ -151,7 +151,6 @@ public:
 			return;
 		}
 
-		// search for the value in the combo options or default to the textual value
 		this->DynamicValue::update (value);
 	}
 
@@ -160,7 +159,7 @@ public:
 
 		ss << this->name << " - combo" << std::endl
 		   << "\tText: " << this->text << std::endl
-		   << "\tValue: " << this->toString () << std::endl
+		   << "\tValue: " << this->getString () << std::endl
 		   << "Values: " << std::endl;
 
 		for (const auto& [key, value] : this->values) {
@@ -176,18 +175,14 @@ public:
 	explicit PropertyText (PropertyData data) : Property (std::move (data)) { }
 
 	using Property::update;
-	void update (const std::string& value) override {
-		throw std::runtime_error ("PropertyText::update() is not implemented");
-	}
-
-	[[nodiscard]] std::string toString () const override { return this->text; }
+	void update (const std::string& value) override { this->DynamicValue::update (value); }
 
 	[[nodiscard]] std::string dump () const override {
 		std::stringstream ss;
 
 		ss << this->name << " - text" << std::endl
 		   << "\tText: " << this->text << std::endl
-		   << "\tValue: " << this->toString () << std::endl;
+		   << "\tValue: " << this->getString () << std::endl;
 
 		return ss.str ();
 	}
@@ -199,20 +194,18 @@ public:
 		this->PropertySceneTexture::update (value);
 	}
 
-	void update (const std::string& value) override { this->m_value = value; }
+	using Property::update;
+	void update (const std::string& value) override { this->DynamicValue::update (value); }
 
 	[[nodiscard]] std::string dump () const override {
 		std::stringstream ss;
 
 		ss << this->name << " - scene texture" << std::endl
 		   << "\tText: " << this->text << std::endl
-		   << "\tValue: " << this->m_value << std::endl;
+		   << "\tValue: " << this->getString () << std::endl;
 
 		return ss.str ();
 	}
-
-private:
-	std::string m_value;
 };
 
 class PropertyFile final : public Property {
@@ -221,20 +214,18 @@ public:
 		this->PropertyFile::update (value);
 	}
 
-	void update (const std::string& value) override { this->m_value = value; }
+	using Property::update;
+	void update (const std::string& value) override { this->DynamicValue::update (value); }
 
 	[[nodiscard]] std::string dump () const override {
 		std::stringstream ss;
 
 		ss << this->name << " - file" << std::endl
 		   << "\tText: " << this->text << std::endl
-		   << "\tValue: " << this->m_value << std::endl;
+		   << "\tValue: " << this->getString () << std::endl;
 
 		return ss.str ();
 	}
-
-private:
-	std::string m_value;
 };
 
 class PropertyTextInput final : public Property {
@@ -243,19 +234,17 @@ public:
 		this->PropertyTextInput::update (value);
 	}
 
-	void update (const std::string& value) override { this->m_value = value; }
+	using Property::update;
+	void update (const std::string& value) override { this->DynamicValue::update (value); }
 
 	[[nodiscard]] std::string dump () const override {
 		std::stringstream ss;
 
 		ss << this->name << " - textinput" << std::endl
 		   << "\tText: " << this->text << std::endl
-		   << "\tValue: " << this->m_value << std::endl;
+		   << "\tValue: " << this->getString () << std::endl;
 
 		return ss.str ();
 	}
-
-private:
-	std::string m_value;
 };
 }

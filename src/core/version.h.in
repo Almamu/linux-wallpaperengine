@@ -11,5 +11,6 @@
 // so apps can support more than one version and detect at compile-time
 // what features are available
 //
+#define SUPPORTS_PROJECT_PROPERTIES
 
 #endif

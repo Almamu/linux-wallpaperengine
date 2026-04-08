@@ -29,6 +29,14 @@ public:
 		throw std::bad_cast ();
 	}
 
+	template <class T> [[nodiscard]] T* asOrNull () {
+		if (is<T> ()) {
+			return static_cast<T*> (this);
+		}
+
+		return nullptr;
+	}
+
 	template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
 };
 } // namespace WallpaperEngine::Data::Utils

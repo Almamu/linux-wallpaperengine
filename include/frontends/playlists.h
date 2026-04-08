@@ -118,9 +118,17 @@ struct wp_playlist_entry {
 WPENGINE_API wp_playlists* wp_playlists_load (wp_configuration* config);
 
 /**
+ * WARNING: pointers returned by this function live as long as you do not reset or go to the next element.
+ * if you want to keep this info for a UI or something, make copies of the data
+ *
  * @return The next playlist entry in the list (if any) null otherwise
  */
 WPENGINE_API wp_playlist_entry* wp_playlists_next (wp_playlists* playlists);
+
+/**
+ * @return Regardless of the current progress, restarts the playlist enumeration
+ */
+WPENGINE_API void wp_playlists_reset (wp_playlists* playlists);
 
 /**
  * Destroys playlist information and cleans up used memory

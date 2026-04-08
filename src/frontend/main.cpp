@@ -1,9 +1,9 @@
 #include <csignal>
 #include <iostream>
 
-#include "../WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 WallpaperEngine::Application::WallpaperApplication* app;
 
@@ -22,26 +22,8 @@ void initLogging () {
 
 int main (int argc, char* argv[]) {
 	try {
-		// if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
-		bool enableLogging = true;
-		const std::string typeZygote = "--type=zygote";
-		const std::string typeUtility = "--type=utility";
-
-		for (int i = 1; i < argc; i++) {
-			if (strncmp (typeZygote.c_str (), argv[i], typeZygote.size ()) == 0) {
-				enableLogging = false;
-				break;
-			}
-
-			if (strncmp (typeUtility.c_str (), argv[i], typeUtility.size ()) == 0) {
-				enableLogging = false;
-				break;
-			}
-		}
-
-		if (enableLogging) {
-			initLogging ();
-		}
+		sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
+		sLog.addError (new std::ostream (std::cerr.rdbuf ()));
 
 		WallpaperEngine::Application::ApplicationContext appContext (argc, argv);
 

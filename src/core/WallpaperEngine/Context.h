@@ -22,7 +22,7 @@ public:
 	wp_time_counter* time_counter;
 	wp_audio_input_mix* audio_input_mix;
 	wp_mute_check* mute_check;
-	std::vector<Data::Model::ProjectUniquePtr> projects;
+	std::vector<Data::Model::ProjectSharedPtr> projects;
 	bool isRunning;
 	float renderTime;
 	float renderTimeLast;

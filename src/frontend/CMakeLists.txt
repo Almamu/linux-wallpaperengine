@@ -16,5 +16,6 @@ find_package(linux-wallpaperengine-core REQUIRED)
 add_executable(${TARGET_NAME} ${TARGET_SOURCE_FILES})
 
 target_link_libraries (${TARGET_NAME} PUBLIC
+    linux-wallpaperengine-common-object
     linux-wallpaperengine-core
     argparse)
