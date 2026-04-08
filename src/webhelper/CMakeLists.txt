@@ -18,7 +18,6 @@ set(TARGET_LIBRARIES
     spirv-cross-glsl
     libcef_lib
     libcef_dll_wrapper
-    glfw
     qjs)
 
 add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
@@ -53,7 +52,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-add_dependencies(${TARGET_NAME} libcef_dll_wrapper kissfft::kissfft-${KISSFFT_DATATYPE} glslang spirv-cross-core spirv-cross-glsl qjs)
+add_dependencies(${TARGET_NAME} libcef_dll_wrapper kissfft glslang spirv-cross-core spirv-cross-glsl qjs)
 
 SET_EXECUTABLE_TARGET_PROPERTIES(${TARGET_NAME}-object)
 
