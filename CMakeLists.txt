@@ -25,11 +25,14 @@ set(EXTERNAL_DEPS_DIR ${CMAKE_SOURCE_DIR}/src/External)
 # obtain last version tag
 execute_process(
     COMMAND git describe --tags --dirty --always
-    OUTPUT_VARIABLE PROJECT_VERSION
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_TAG
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+message(NOTICE "Repository version ${GIT_TAG}")
+
 # get version off the tag
-string(REGEX MATCH "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
+string(REGEX MATCH "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${GIT_TAG})
 
 if(CMAKE_MATCH_0)
     set(PROJECT_VERSION "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}")
@@ -39,12 +42,7 @@ if(CMAKE_MATCH_0)
     set(PROJECT_VERSION_PATCH "${CMAKE_MATCH_3}")
     set(PROJECT_SOVERSION "${PROJECT_VERSION_MAJOR}")
 else()
-    message(WARNING "No valid tag found, falling back to 0.0.0")
-    set(PROJECT_VERSION "0.0.0")
-    set(PROJECT_VERSION_MAJOR 0)
-    set(PROJECT_VERSION_MINOR 0)
-    set(PROJECT_VERSION_PATCH 0)
-    set(PROJECT_SOVERSION "0")
+    message(FATAL_ERROR "Cannot determine version")
 endif()
 
 # if you're developing you might find this debug option useful for shader output, although RenderDoc is encouraged
