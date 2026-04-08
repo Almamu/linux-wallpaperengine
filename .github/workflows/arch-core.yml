@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-tags: true
+          fetch-depth: 0
           submodules: true
 
       - name: Publish linux-wallpaperengine-core-git to the AUR
