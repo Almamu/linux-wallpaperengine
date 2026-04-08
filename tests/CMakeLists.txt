@@ -48,7 +48,7 @@ target_link_libraries(${TARGET_NAME}-object PRIVATE ${TARGET_LIBRARIES}
     Catch2::Catch2)
 
 add_executable(${TARGET_NAME} $<TARGET_OBJECTS:${TARGET_NAME}-object>)
-target_link_libraries(${TARGET_NAME} PRIVATE ${TARGET_LIBRARIES} Catch2::Catch2WithMain)
+target_link_libraries(${TARGET_NAME} PRIVATE ${TARGET_NAME}-object ${TARGET_LIBRARIES} Catch2::Catch2WithMain)
 
 SET_EXECUTABLE_TARGET_PROPERTIES(${TARGET_NAME}-object)
 
