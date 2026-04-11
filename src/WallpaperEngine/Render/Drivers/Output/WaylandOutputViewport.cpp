@@ -116,7 +116,7 @@ WaylandOutputViewport::WaylandOutputViewport (
 void WaylandOutputViewport::setupLS () {
     surface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
+	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM,
 	"linux-wallpaperengine"
     );
 
@@ -125,7 +125,9 @@ void WaylandOutputViewport::setupLS () {
     }
 
     wl_region* region = wl_compositor_create_region (m_driver->getWaylandContext ()->compositor);
-    wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
+    if (m_driver->getApp ().getContext ().settings.mouse.enabled) {
+	wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
+    }
 
     zwlr_layer_surface_v1_set_size (layerSurface, 0, 0);
     zwlr_layer_surface_v1_set_anchor (
@@ -137,6 +139,7 @@ void WaylandOutputViewport::setupLS () {
     zwlr_layer_surface_v1_add_listener (layerSurface, &layerSurfaceListener, this);
     zwlr_layer_surface_v1_set_exclusive_zone (layerSurface, -1);
     wl_surface_set_input_region (surface, region);
+    wl_region_destroy (region);
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
 
