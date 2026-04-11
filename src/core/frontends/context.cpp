@@ -21,7 +21,7 @@ wp_audio_input_mix default_audio_input_mix
 WPENGINE_API wp_context* wp_context_create (const wp_configuration* config) {
 	WPENGINE_CONTEXT_API_BEGIN
 	return new WallpaperEngine::Context (
-		static_cast<const WallpaperEngine::Configuration*> (config), &default_time_counter, nullptr,
+		*static_cast<const WallpaperEngine::Configuration*> (config), &default_time_counter, nullptr,
 		&default_audio_input_mix
 	);
 	WPENGINE_CONTEXT_API_END (nullptr)

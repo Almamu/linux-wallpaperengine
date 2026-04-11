@@ -25,7 +25,7 @@ CVideo::CVideo (const Wallpaper& wallpaper, RenderContext& context, AudioContext
 		this->getContext (), this->CWallpaper::getWallpaperTexture (), videopath, 64, 64,
 		this->CWallpaper::getWallpaperFramebuffer ()
 	);
-	this->m_player->setVolume (this->getContext ().getContext ().config->volume * 100.0 / 128.0);
+	this->m_player->setVolume (this->getContext ().getContext ().config.volume * 100.0 / 128.0);
 	// make sure the video has at least one usage marked; this ensures the video plays
 	this->m_player->incrementUsageCount ();
 }
@@ -34,7 +34,7 @@ CVideo::~CVideo () { this->m_player->decrementUsageCount (); }
 
 void CVideo::renderFrame () {
 	// ensure the video's audio follows audio detection rules
-	if (this->getContext ().getContext ().config->enableAudio
+	if (this->getContext ().getContext ().config.enableAudio
 	    && this->m_muted != this->getContext ().getContext ().audio->getDetector ().anythingPlaying ()) {
 		this->m_muted = !this->m_muted;
 

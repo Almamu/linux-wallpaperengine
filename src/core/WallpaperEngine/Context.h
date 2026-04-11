@@ -17,11 +17,10 @@ class Context {
 public:
 	std::unique_ptr<TextureCache> texture_cache;
 	std::unique_ptr<Audio::AudioContext> audio;
-	const Configuration* config;
+	const Configuration& config;
 	wp_gl_proc_address* gl_proc_address;
 	wp_time_counter* time_counter;
 	wp_audio_input_mix* audio_input_mix;
-	wp_mute_check* mute_check;
 	std::vector<Data::Model::ProjectSharedPtr> projects;
 	bool isRunning;
 	float renderTime;
@@ -29,7 +28,7 @@ public:
 	float daytime;
 
 	explicit Context (
-		const Configuration* config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses,
+		const Configuration& config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses,
 		wp_audio_input_mix* audio_input_mix
 	);
 

@@ -27,6 +27,7 @@ void Output::render () {
 		this->m_previousHeight = height;
 		this->setupFramebuffer ();
 	}
+
 	// render to our framebuffer
 	wp_render_frame (this->m_wallpaper);
 	// now render to the destionation

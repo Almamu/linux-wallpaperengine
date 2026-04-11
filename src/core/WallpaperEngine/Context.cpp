@@ -6,7 +6,7 @@
 #include "WallpaperEngine/Audio/PlaybackRecorder.h"
 
 WallpaperEngine::Context::Context (
-	const Configuration* config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses,
+	const Configuration& config, wp_time_counter* time_counter, wp_gl_proc_address* gl_proc_addresses,
 	wp_audio_input_mix* audio_input_mix
 ) :
 	texture_cache (std::make_unique<TextureCache> ()), config (config), gl_proc_address (gl_proc_addresses),
@@ -21,4 +21,6 @@ WallpaperEngine::Context::Context (
 void WallpaperEngine::Context::updateTime () {
 	this->renderTimeLast = this->renderTime;
 	this->renderTime = this->time_counter->get_time (this->time_counter->user_parameter);
+	this->audio->getDetector ().update ();
+	this->audio->getRecorder ().update ();
 }

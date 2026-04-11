@@ -65,7 +65,7 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 			// mix the audio
 			SDL_MixAudioFormat (
 				streamDataPointer, &buffer->audio_buf[buffer->audio_buf_index], driver->getSpec ().format, len1,
-				driver->getContext ().config->volume
+				driver->getContext ().config.volume
 			);
 
 			streamLength -= len1;

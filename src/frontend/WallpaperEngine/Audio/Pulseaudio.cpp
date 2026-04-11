@@ -129,6 +129,10 @@ void pa_sink_input_info_cb (pa_context* ctx, const pa_sink_input_info* info, int
 		return;
 	}
 
+	if (eol) {
+		return;
+	}
+
 	auto impl = static_cast<Pulseaudio*> (userdata);
 	const char* value = pa_proplist_gets (info->proplist, PA_PROP_APPLICATION_PROCESS_ID);
 
@@ -136,9 +140,19 @@ void pa_sink_input_info_cb (pa_context* ctx, const pa_sink_input_info* info, int
 		return;
 	}
 
-	if (std::stol (value, nullptr, 10) != getpid () && pa_cvolume_avg (&info->volume) != PA_VOLUME_MUTED) {
-		impl->anythingPlaying = true;
+	if (std::stol (value, nullptr, 10) == getpid ()) {
+		return;
 	}
+
+	if (pa_cvolume_avg (&info->volume) == PA_VOLUME_MUTED) {
+		return;
+	}
+
+	if (info->corked) {
+		return;
+	}
+
+	impl->anythingPlaying = true;
 }
 
 void pa_context_subscribe_cb (pa_context* ctx, pa_subscription_event_type_t t, uint32_t idx, void* userdata) {
@@ -172,6 +186,9 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
 				if (o) {
 					pa_operation_unref (o);
 				}
+
+				// also request sink input status so at startup there's valid data
+				pa_context_get_sink_input_info_list (ctx, &pa_sink_input_info_cb, userdata);
 				break;
 			}
 		case PA_CONTEXT_FAILED:

@@ -71,7 +71,7 @@ WPENGINE_API void wp_config_enable_audio (wp_configuration* config, const bool e
 
 WPENGINE_API void wp_config_set_audio_volume (wp_configuration* config, const int volume) {
 	WPENGINE_CONFIG_API_BEGIN
-	static_cast<WallpaperEngine::Configuration*> (config)->volume = std::min (0, std::max (volume, 128));
+	static_cast<WallpaperEngine::Configuration*> (config)->volume = std::max (0, std::min (volume, 128));
 	WPENGINE_CONFIG_API_END ();
 }
 

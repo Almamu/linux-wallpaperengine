@@ -33,7 +33,7 @@ void* wp_context_call_gl_proc_address (const char* name) {
  *
  * @return
  */
-AssetLocatorUniquePtr wp_setup_asset_locator (const wp_configuration* config, const std::filesystem::path& project) {
+AssetLocatorUniquePtr wp_setup_asset_locator (const Configuration& config, const std::filesystem::path& project) {
 	auto container = std::make_unique<Container> ();
 
 	container->mount (project, "/");
@@ -48,7 +48,7 @@ AssetLocatorUniquePtr wp_setup_asset_locator (const wp_configuration* config, co
 	} catch (std::runtime_error&) { }
 
 	try {
-		container->mount (static_cast<const WallpaperEngine::Configuration*> (config)->assets_dir, "/");
+		container->mount (config.assets_dir, "/");
 	} catch (std::runtime_error&) { }
 
 	auto& vfs = container->getVFS ();
@@ -357,12 +357,12 @@ void WallpaperEngine::Project::describe (wp_describe_callback* callback) {
 
 WallpaperEngine::Project*
 WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const int id) {
-	return new Project (context, mouse_input, context->config->backgrounds_dir / std::to_string (id));
+	return new Project (context, mouse_input, context->config.backgrounds_dir / std::to_string (id));
 }
 
 WallpaperEngine::Project*
 WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id) {
-	return new Project (context, mouse_input, context->config->backgrounds_dir / id);
+	return new Project (context, mouse_input, context->config.backgrounds_dir / id);
 }
 
 WallpaperEngine::Project*

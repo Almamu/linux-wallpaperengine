@@ -7,15 +7,15 @@ AudioPlayingDetector::AudioPlayingDetector (Context& context) : m_context (conte
 bool AudioPlayingDetector::anythingPlaying () const { return this->m_isPlaying; }
 
 void AudioPlayingDetector::update () {
-	if (this->m_context.mute_check == nullptr) {
+	if (this->m_context.config.mute_check == nullptr) {
 		return;
 	}
 
-	if (this->m_context.mute_check->is_muted == nullptr) {
+	if (this->m_context.config.mute_check->is_muted == nullptr) {
 		return;
 	}
 
-	this->m_isPlaying = this->m_context.mute_check->is_muted (this->m_context.mute_check->user_parameter);
+	this->m_isPlaying = this->m_context.config.mute_check->is_muted (this->m_context.config.mute_check->user_parameter);
 }
 
 } // namespace WallpaperEngine::Audio

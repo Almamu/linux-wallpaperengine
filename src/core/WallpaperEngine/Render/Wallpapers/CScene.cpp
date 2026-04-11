@@ -195,7 +195,7 @@ Render::CObject* CScene::createObject (const Object& object) {
 	} else if (object.is<Sound> ()) {
 		renderObject = new Objects::CSound (*this, *object.as<Sound> ());
 	} else if (object.is<Particle> ()) {
-		if (this->getContext ().getContext ().config->disableParticles) {
+		if (this->getContext ().getContext ().config.disableParticles) {
 			sLog.debug ("Ignoring particle system (disabled in settings): ", object.as<Particle> ()->name);
 			return nullptr;
 		}
@@ -264,7 +264,7 @@ void CScene::renderFrame () {
 
 	// update the parallax position if required
 	if (this->getScene ().camera.parallax.enabled->value->getBool ()
-	    && !this->getContext ().getContext ().config->disableParallax) {
+	    && !this->getContext ().getContext ().config.disableParallax) {
 		const float influence = this->getScene ().camera.parallax.mouseInfluence->value->getFloat ();
 		const float amount = this->getScene ().camera.parallax.amount->value->getFloat ();
 		const float delay = glm::min (

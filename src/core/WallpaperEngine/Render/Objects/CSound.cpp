@@ -8,7 +8,7 @@
 using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene, sound), m_sound (sound) {
-	if (this->getContext ().getContext ().config->enableAudio) {
+	if (this->getContext ().getContext ().config.enableAudio) {
 		this->load ();
 	}
 }
