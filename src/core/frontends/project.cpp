@@ -185,3 +185,9 @@ WPENGINE_API void wp_project_set_output_framebuffer (wp_project* project, const 
 	static_cast<WallpaperEngine::Project*> (project)->setOutputFramebuffer (framebuffer);
 	WPENGINE_PROJECT_API_END ();
 }
+
+WPENGINE_API void wp_project_describe (wp_project* project, wp_describe_callback* callback) {
+	WPENGINE_PROJECT_API_BEGIN
+	static_cast<WallpaperEngine::Project*> (project)->describe (callback);
+	WPENGINE_PROJECT_API_END ();
+}

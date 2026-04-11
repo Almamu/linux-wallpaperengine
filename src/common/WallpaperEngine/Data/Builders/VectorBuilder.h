@@ -12,6 +12,7 @@ namespace WallpaperEngine::Data::Builders {
 using namespace WallpaperEngine::Data::Utils::SFINAE;
 
 class VectorBuilder {
+public:
 	/**
 	 * Convert template that calls the proper std::strto* function
 	 * based on the incoming type
@@ -22,7 +23,16 @@ class VectorBuilder {
 	 */
 	template <typename type> static type convert (const char* str);
 
-public:
+	/**
+	 * Convert template that calls the proper std::strto* function
+	 * based on the incoming type
+	 *
+	 * @tparam type
+	 * @param str
+	 * @return
+	 */
+	template <typename type> static type convert (const std::string& str) { return convert<type> (str.c_str ()); }
+
 	/**
 	 * Takes the string and returns the vector size (2, 3 or 4)
 	 *

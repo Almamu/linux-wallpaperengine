@@ -1,245 +1,23 @@
 #include "ApplicationContext.h"
 
 #include "Steam/FileSystem/FileSystem.h"
-#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <iostream>
+#include <ranges>
 #include <string_view>
 
 #include <argparse/argparse.hpp>
 
-#define WORKSHOP_APP_ID 431960
-#define APP_DIRECTORY "wallpaper_engine"
+#include <linux-wallpaperengine/playlists.h>
 
 using namespace WallpaperEngine::Application;
-using WallpaperEngine::Data::JSON::JSON;
 
-std::filesystem::path ApplicationContext::resolvePlaylistItemPath (const std::string& raw) const {
-	if (raw.empty ()) {
-		return {};
-	}
-
-	std::string cleaned = raw;
-
-	constexpr std::string_view windowsPrefix = "\\\\?\\";
-
-	if (cleaned.rfind (windowsPrefix, 0) == 0) {
-		cleaned = cleaned.substr (windowsPrefix.length ());
-	}
-
-	std::replace (cleaned.begin (), cleaned.end (), '\\', '/');
-
-	if (cleaned.size () > 1 && cleaned[1] == ':') {
-		cleaned = cleaned.substr (2);
-	}
-
-	if (!cleaned.empty () && cleaned.front () != '/') {
-		cleaned.insert (cleaned.begin (), '/');
-	}
-
-	std::filesystem::path path = std::filesystem::path (cleaned).lexically_normal ();
-
-	if (std::filesystem::is_regular_file (path)) {
-		path = path.parent_path ();
-	}
-
-	return path;
-}
-
-std::filesystem::path ApplicationContext::configFilePath () const {
-	try {
-		return Steam::FileSystem::appDirectory (APP_DIRECTORY, "") / "config.json";
-	} catch (std::runtime_error&) {
-		sLog.exception ("Cannot locate wallpaper engine installation to read config.json");
-		return {};
-	}
-}
-
-std::optional<JSON> ApplicationContext::parseConfigJson (const std::filesystem::path& path) const {
-	if (path.empty ()) {
-		return std::nullopt;
-	}
-
-	std::ifstream configFile (path);
-
-	if (!configFile.is_open ()) {
-		sLog.exception ("Cannot open wallpaper engine config file at ", path);
-		return std::nullopt;
-	}
-
-	try {
-		return JSON::parse (configFile);
-	} catch (const std::exception& e) {
-		sLog.error ("Failed parsing wallpaper engine config.json: ", e.what ());
-		return std::nullopt;
-	}
-}
-
-std::optional<ApplicationContext::PlaylistDefinition>
-ApplicationContext::buildPlaylistDefinition (const JSON& playlistJson, const std::string& fallbackName) const {
-	PlaylistDefinition definition;
-	definition.name = playlistJson.optional<std::string> ("name", fallbackName);
-	definition.settings = this->parsePlaylistSettings (playlistJson);
-	definition.items
-		= this->collectPlaylistItems (playlistJson, definition.name.empty () ? fallbackName : definition.name);
-
-	if (definition.items.empty ()) {
-		return std::nullopt;
-	}
-
-	if (definition.name.empty ()) {
-		if (fallbackName.empty ()) {
-			sLog.error ("Skipping playlist with no name");
-			return std::nullopt;
-		}
-
-		definition.name = fallbackName;
-	}
-
-	return definition;
-}
-
-ApplicationContext::PlaylistSettings ApplicationContext::parsePlaylistSettings (const JSON& playlistJson) const {
-	PlaylistSettings settings;
-	const auto settingsJson = playlistJson.optional ("settings");
-	settings.delayMinutes = settingsJson ? settingsJson->optional<uint32_t> ("delay", 60) : 60;
-	settings.mode = settingsJson ? settingsJson->optional<std::string> ("mode", "timer") : "timer";
-	settings.order = settingsJson ? settingsJson->optional<std::string> ("order", "sequential") : "sequential";
-	settings.updateOnPause = settingsJson ? settingsJson->optional<bool> ("updateonpause", false) : false;
-	settings.videoSequence = settingsJson ? settingsJson->optional<bool> ("videosequence", false) : false;
-	return settings;
-}
-
-std::vector<std::filesystem::path>
-ApplicationContext::collectPlaylistItems (const JSON& playlistJson, const std::string& name) const {
-	std::vector<std::filesystem::path> items;
-	const auto jsonItems = playlistJson.optional ("items");
-
-	if (!jsonItems.has_value () || !jsonItems->is_array ()) {
-		sLog.error ("Skipping playlist ", name, ": missing items");
-		return items;
-	}
-
-	for (const auto& rawItem : *jsonItems) {
-		if (!rawItem.is_string ()) {
-			continue;
-		}
-
-		auto resolvedPath = this->resolvePlaylistItemPath (rawItem.get<std::string> ());
-
-		if (resolvedPath.empty ()) {
-			continue;
-		}
-
-		if (!std::filesystem::exists (resolvedPath)) {
-			sLog.error ("Skipping playlist item not found: ", resolvedPath.string ());
-			continue;
-		}
-
-		items.push_back (resolvedPath);
-	}
-
-	if (items.empty ()) {
-		sLog.error ("Skipping playlist ", name, ": no usable items found");
-	}
-
-	return items;
-}
-
-void ApplicationContext::registerPlaylist (PlaylistDefinition&& definition) {
-	this->m_configPlaylists.insert_or_assign (definition.name, std::move (definition));
-}
-
-void ApplicationContext::loadPlaylistsFromConfig () {
-	if (this->m_loadedConfigPlaylists) {
-		return;
-	}
-
-	this->m_loadedConfigPlaylists = true;
-
-	const auto configPath = this->configFilePath ();
-	const auto root = this->parseConfigJson (configPath);
-	if (!root.has_value ()) {
-		return;
-	}
-
-	const auto steamUser = root->optional ("steamuser");
-
-	if (!steamUser.has_value ()) {
-		sLog.exception ("Cannot find steamuser section in config.json");
-	}
-
-	auto addPlaylist = [this] (const JSON& playlistJson, const std::string& fallbackName) {
-		auto definition = this->buildPlaylistDefinition (playlistJson, fallbackName);
-		if (!definition) {
-			return;
-		}
-		this->registerPlaylist (std::move (*definition));
-	};
-
-	if (const auto general = steamUser->optional ("general")) {
-		if (const auto playlists = general->optional ("playlists")) {
-			for (const auto& playlist : *playlists) {
-				try {
-					addPlaylist (playlist, playlist.optional<std::string> ("name", ""));
-				} catch (const std::exception& e) {
-					sLog.error ("Failed parsing playlist: ", e.what ());
-				}
-			}
-		}
-	}
-
-	if (const auto wallpaperConfig = steamUser->optional ("wallpaperconfig")) {
-		if (const auto selected = wallpaperConfig->optional ("selectedwallpapers")) {
-			for (const auto& entry : selected->items ()) {
-				const auto playlist = entry.value ().optional ("playlist");
-
-				if (!playlist.has_value ()) {
-					continue;
-				}
-
-				try {
-					addPlaylist (*playlist, entry.key ());
-				} catch (const std::exception& e) {
-					sLog.error ("Failed parsing playlist for ", entry.key (), ": ", e.what ());
-				}
-			}
-		}
-	}
-}
-
-const ApplicationContext::PlaylistDefinition& ApplicationContext::getPlaylistFromConfig (const std::string& name) {
-	if (!this->m_loadedConfigPlaylists) {
-		this->loadPlaylistsFromConfig ();
-	}
-
-	const auto cur = this->m_configPlaylists.find (name);
-
-	if (cur == this->m_configPlaylists.end ()) {
-		std::string available;
-
-		for (auto it = this->m_configPlaylists.begin (); it != this->m_configPlaylists.end (); ++it) {
-			available += it->first;
-			if (std::next (it) != this->m_configPlaylists.end ()) {
-				available += ", ";
-			}
-		}
-
-		const std::string availableText = available.empty () ? "" : std::string (". Available: ") + available;
-
-		sLog.exception ("Playlist not found in config.json: ", name, availableText);
-		throw std::runtime_error ("Playlist not found: " + name);
-	}
-
-	return cur->second;
-}
-
-ApplicationContext::ApplicationContext (int argc, char* argv[]) : m_argc (argc), m_argv (argv) { }
+ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration* config) :
+	m_argc (argc), m_argv (argv), m_config (config) { }
 
 void ApplicationContext::loadSettingsFromArgv () {
 	std::string lastScreen;
@@ -254,7 +32,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 		.default_value ("")
 		.action ([this] (const std::string& value) -> void {
 			if (!value.empty ()) {
-				this->settings.general.defaultBackground = translateBackground (value);
+				this->settings.general.defaultBackground = value;
 			}
 		});
 
@@ -310,9 +88,9 @@ void ApplicationContext::loadSettingsFromArgv () {
 	backgroundGroup.add_argument ("-b", "--bg")
 		.help ("After --screen-root, specifies the background to use for the given screen")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			this->settings.general.screenBackgrounds[lastScreen] = translateBackground (value);
+			this->settings.general.screenBackgrounds[lastScreen] = value;
 			// set the default background to the last one used
-			this->settings.general.defaultBackground = translateBackground (value);
+			this->settings.general.defaultBackground = value;
 		})
 		.append ();
 	backgroundGroup.add_argument ("--playlist")
@@ -321,21 +99,13 @@ void ApplicationContext::loadSettingsFromArgv () {
 			"screen, otherwise it is used in window mode."
 		)
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			const auto& playlist = this->getPlaylistFromConfig (value);
-
 			if (lastScreen.empty ()) {
-				this->settings.general.defaultPlaylist = playlist;
-				if (this->settings.general.defaultBackground.empty () && !playlist.items.empty ()) {
-					this->settings.general.defaultBackground = playlist.items.front ();
-				}
+				this->settings.general.defaultPlaylist = value;
 			} else {
-				this->settings.general.screenPlaylists[lastScreen] = playlist;
-				if (!playlist.items.empty ()) {
-					this->settings.general.screenBackgrounds[lastScreen] = playlist.items.front ();
-				}
+				this->settings.general.screenPlaylists[lastScreen] = value;
 
-				if (this->settings.general.defaultBackground.empty () && !playlist.items.empty ()) {
-					this->settings.general.defaultBackground = playlist.items.front ();
+				if (!this->settings.general.defaultPlaylist.has_value ()) {
+					this->settings.general.defaultPlaylist = value;
 				}
 			}
 		})
@@ -347,16 +117,16 @@ void ApplicationContext::loadSettingsFromArgv () {
 		)
 		.choices ("stretch", "fit", "fill", "default")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			WallpaperEngine::Render::WallpaperState::TextureUVsScaling mode;
+			SCALING_MODE mode;
 
 			if (value == "stretch") {
-				mode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::StretchUVs;
+				mode = SCALING_MODE_STRETCH;
 			} else if (value == "fit") {
-				mode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::ZoomFitUVs;
+				mode = SCALING_MODE_FIT;
 			} else if (value == "fill") {
-				mode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::ZoomFillUVs;
+				mode = SCALING_MODE_FILL;
 			} else if (value == "default") {
-				mode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::DefaultUVs;
+				mode = SCALING_MODE_DEFAULT;
 			} else {
 				sLog.exception ("Invalid scaling mode: ", value);
 			}
@@ -375,22 +145,22 @@ void ApplicationContext::loadSettingsFromArgv () {
 		)
 		.choices ("clamp", "border", "repeat")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			TextureFlags flags;
+			CLAMP_MODE mode;
 
 			if (value == "clamp") {
-				flags = TextureFlags_ClampUVs;
+				mode = CLAMP_MODE_UVS;
 			} else if (value == "border") {
-				flags = TextureFlags_ClampUVsBorder;
+				mode = CLAMP_MODE_UVS_BORDER;
 			} else if (value == "repeat") {
-				flags = TextureFlags_NoFlags;
+				mode = CLAMP_MODE_REPEAT;
 			} else {
 				sLog.exception ("Invalid clamp mode: ", value);
 			}
 
 			if (this->settings.render.mode == DESKTOP_BACKGROUND) {
-				this->settings.general.screenClamps[lastScreen] = flags;
+				this->settings.general.screenClamps[lastScreen] = mode;
 			} else {
-				this->settings.render.window.clamp = flags;
+				this->settings.render.window.clamp = mode;
 			}
 		});
 
@@ -465,7 +235,23 @@ void ApplicationContext::loadSettingsFromArgv () {
 	contentGroup.add_argument ("--assets-dir")
 		.help ("Folder where the assets are stored")
 		.default_value ("")
-		.action ([this] (const std::string& value) -> void { this->settings.general.assets = value; });
+		.action ([this] (const std::string& value) -> void {
+			if (this->settings.general.steam.has_value ()) {
+				sLog.exception ("Only one of --assets-dir or --steam-dir can be specified");
+			}
+
+			this->settings.general.assets = value;
+		});
+	contentGroup.add_argument ("--steam-dir")
+		.help ("Base folder to the steam installation (where steamapps exists)")
+		.default_value ("")
+		.action ([this] (const std::string& value) -> void {
+			if (this->settings.general.assets.has_value ()) {
+				sLog.exception ("Only one of --assets-dir or --steam-dir can be specified");
+			}
+
+			this->settings.general.steam = value;
+		});
 
 	auto& configurationGroup = program.add_group ("Wallpaper configuration options");
 
@@ -548,13 +334,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 		// perform some extra validation on the inputs
 		this->validateAssets ();
 		this->validateScreenshot ();
-
-		// setup application state
-		this->state.general.keepRunning = true;
-		this->state.audio.enabled = this->settings.audio.enabled;
-		this->state.audio.volume = this->settings.audio.volume;
-		this->state.mouse.enabled = this->settings.mouse.enabled;
-
 #if DEMOMODE
 		sLog.error ("WARNING: RUNNING IN DEMO MODE WILL STOP WALLPAPERS AFTER 5 SECONDS SO VIDEO CAN BE RECORDED");
 		// special settings for demomode
@@ -573,27 +352,52 @@ int ApplicationContext::getArgc () const { return this->m_argc; }
 
 char** ApplicationContext::getArgv () const { return this->m_argv; }
 
-std::filesystem::path ApplicationContext::translateBackground (const std::string& bgIdOrPath) {
-	if (bgIdOrPath.find ('/') == std::string::npos) {
-		return Steam::FileSystem::workshopDirectory (WORKSHOP_APP_ID, bgIdOrPath);
-	}
+wp_configuration* ApplicationContext::getConfig () const { return this->m_config; }
 
-	return bgIdOrPath;
+const std::map<std::string, ApplicationContext::PlaylistDefinition>& ApplicationContext::getPlaylists () const {
+	return this->m_playlists;
 }
 
-void ApplicationContext::validateAssets () {
-	if (!this->settings.general.assets.empty ()) {
-		sLog.out (
-			"Using wallpaper engine's assets at ", this->settings.general.assets, " based on --assets-dir parameter"
-		);
-		return;
+void ApplicationContext::validateAssets () const {
+	bool directoryFound = false;
+
+	// try with assets, then with steam directory
+	if (this->settings.general.assets.has_value ()) {
+		directoryFound = wp_config_set_assets_dir (this->m_config, this->settings.general.assets.value ().c_str ());
+
+		if (directoryFound == false) {
+			sLog.error (
+				"Assets directory specified is invalid or inaccessible: ", this->settings.general.assets.value ()
+			);
+		}
 	}
 
-	try {
-		this->settings.general.assets = Steam::FileSystem::appDirectory (APP_DIRECTORY, "assets");
-	} catch (std::runtime_error&) {
-		// set current path as assets' folder
-		this->settings.general.assets = std::filesystem::canonical ("/proc/self/exe").parent_path () / "assets";
+	if (this->settings.general.steam.has_value ()) {
+		directoryFound = directoryFound
+			|| wp_config_set_steam_dir (this->m_config, this->settings.general.steam.value ().c_str ());
+
+		if (directoryFound == false) {
+			sLog.error (
+				"Steam directory specified is invalid or inaccessible: ", this->settings.general.steam.value ()
+			);
+		}
+	}
+
+	// otherwise try the steam directory detection
+	directoryFound = directoryFound || wp_config_detect_steam_dir (this->m_config);
+
+	if (directoryFound == false) {
+		sLog.error ("Could not automatically detect steam directory");
+	}
+	// last resort, use assets dir from current path
+	directoryFound
+		= directoryFound
+		|| wp_config_set_assets_dir (
+			  this->m_config, (std::filesystem::canonical ("/proc/self/exe").parent_path () / "assets").c_str ()
+		);
+
+	if (directoryFound == false) {
+		sLog.exception ("Could not automatically detect assets or steam directory");
 	}
 }
 
@@ -610,5 +414,63 @@ void ApplicationContext::validateScreenshot () const {
 
 	if (extension != ".bmp" && extension != ".png" && extension != ".jpeg" && extension != ".jpg") {
 		sLog.exception ("Cannot determine screenshot format, unknown extension ", extension);
+	}
+}
+
+void ApplicationContext::validatePlaylists () {
+	std::vector<std::string> playlistsToCheck;
+
+	if (this->settings.general.defaultPlaylist.has_value ()) {
+		playlistsToCheck.push_back (this->settings.general.defaultPlaylist.value ());
+	}
+
+	for (const auto& playlist : this->settings.general.screenPlaylists | std::views::values) {
+		playlistsToCheck.push_back (playlist);
+	}
+
+	wp_playlists* playlists = wp_playlists_load (this->m_config);
+
+	for (wp_playlist_entry* entry = wp_playlists_next (playlists); entry != nullptr;
+	     entry = wp_playlists_next (playlists)) {
+		const auto count = std::erase_if (playlistsToCheck, [entry] (const std::string& playlist) {
+			return playlist == entry->name;
+		});
+
+		if (count == 0) {
+			continue;
+		}
+
+		auto inserted = this->m_playlists.emplace (
+			entry->name,
+			PlaylistDefinition { .name = entry->name,
+		                         .items = {},
+		                         .settings = PlaylistSettings { .delayMinutes = entry->delay,
+		                                                        .mode = entry->mode,
+		                                                        .order = entry->order,
+		                                                        .updateOnPause = false,
+		                                                        .videoSequence = false } }
+		);
+
+		if (inserted.second == false) {
+			// push the playlist back again, could not be added to the list of playlists available
+			playlistsToCheck.push_back (entry->name);
+		}
+
+		// add all the entries to the playlist
+		for (int i = 0; i < entry->item_count; i++) {
+			inserted.first->second.items.push_back (entry->items[i]);
+		}
+	}
+
+	wp_playlists_destroy (playlists);
+
+	if (playlistsToCheck.size () > 0) {
+		sLog.error ("Could not find the following playlists: ");
+
+		for (const auto& playlist : playlistsToCheck) {
+			sLog.error (playlist);
+		}
+
+		sLog.exception ();
 	}
 }

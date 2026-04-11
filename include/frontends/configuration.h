@@ -139,7 +139,7 @@ WPENGINE_API void wp_config_set_disable_parallax (wp_configuration* config, bool
 WPENGINE_API void wp_config_set_web_fps_limit (wp_configuration* config, int limit);
 
 /**
- * Enables automute and configurates detection
+ * Enables automute and configures detection
  *
  * @param config The configuration instance to modify
  * @param automute The automute configuration to apply, null to disabled automute
@@ -147,7 +147,7 @@ WPENGINE_API void wp_config_set_web_fps_limit (wp_configuration* config, int lim
 WPENGINE_API void wp_config_set_mute_check (wp_configuration* config, wp_mute_check* automute);
 
 /**
- * Enables fullscreen detection and configurates it
+ * Enables fullscreen detection and configures it
  *
  * @param config The configuration instance to modify
  * @param fullscreen_detection The fullscreen detection configuration to apply null to disable fullscreen detection

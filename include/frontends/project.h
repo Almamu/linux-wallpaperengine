@@ -58,6 +58,18 @@ struct wp_mouse_input {
 	int (*is_pressed) (void* user_parameter, int button);
 };
 
+struct wp_describe_callback {
+	/**
+	 * Pointer to user-defined data that will be passed to the callbacks
+	 */
+	void* user_parameter;
+
+	/**
+	 * Called by the describe function with data to write to the output buffer.
+	 */
+	void (*write) (void* user_parameter, const char* buffer, unsigned long size);
+};
+
 /**
  * Project's property
  */
@@ -362,13 +374,13 @@ WPENGINE_API void wp_project_destroy (wp_project* project);
 
 /**
  * @param project The project to get render width for
- * @return The width of the project's render viewport
+ * @return The width of the project's render viewport. This can change at any point
  */
 WPENGINE_API int wp_project_get_width (wp_project* project);
 
 /**
  * @param project The project to get render height for
- * @return The height of the project's render viewport
+ * @return The height of the project's render viewport. This can change at any point
  */
 WPENGINE_API int wp_project_get_height (wp_project* project);
 
@@ -379,6 +391,14 @@ WPENGINE_API int wp_project_get_height (wp_project* project);
  * @param framebuffer The framebuffer to use for rendering
  */
 WPENGINE_API void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer);
+
+/**
+ * Provides a textual representation of the project and it's elements, useful for debugging
+ *
+ * @param project
+ * @param callback
+ */
+WPENGINE_API void wp_project_describe (wp_project* project, wp_describe_callback* callback);
 
 #ifdef __cplusplus
 }

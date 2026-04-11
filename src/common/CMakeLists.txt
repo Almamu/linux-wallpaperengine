@@ -2,6 +2,7 @@ set(TARGET_NAME linux-wallpaperengine-common)
 set(TARGET_SOURCE_FILES
     ${EXTERNAL_DEPS_DIR}/MimeTypes/MimeTypes.cpp
     WallpaperEngine/Logging/Log.cpp
+    WallpaperEngine/Debugging/CallStack.cpp
     WallpaperEngine/Utils/UUID.cpp
     Steam/FileSystem/FileSystem.cpp)
 

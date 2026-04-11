@@ -1,30 +1,17 @@
 #pragma once
 
 #include <chrono>
+#include <glad/glad.h>
 #include <random>
-
-#include "WallpaperEngine/Application/ApplicationContext.h"
-#include "WallpaperEngine/Assets/AssetLocator.h"
-
-#include "WallpaperEngine/Render/CWallpaper.h"
-#include "WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h"
-#include "WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h"
-#include "WallpaperEngine/Render/Drivers/Output/GLFWWindowOutput.h"
-#include "WallpaperEngine/Render/RenderContext.h"
-
-#include "WallpaperEngine/Audio/Drivers/SDLAudioDriver.h"
-
-#include "WallpaperEngine/Input/InputContext.h"
-#include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
-
-#include "WallpaperEngine/Data/Model/Types.h"
-
 #include <set>
 
-namespace WallpaperEngine::Application {
+#include <linux-wallpaperengine/project.h>
 
-using namespace WallpaperEngine::Assets;
-using namespace WallpaperEngine::Data::Model;
+#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Audio/Pulseaudio.h"
+#include "WallpaperEngine/Desktop/Environment.h"
+
+namespace WallpaperEngine::Application {
 /**
  * Small wrapper class over the actual wallpaper's main application skeleton
  */
@@ -57,36 +44,17 @@ public:
 	/**
 	 * @return Maps screens to loaded backgrounds
 	 */
-	[[nodiscard]] const std::map<std::string, ProjectUniquePtr>& getBackgrounds () const;
+	[[nodiscard]] const std::map<std::string, wp_project*>& getBackgrounds () const;
 	/**
 	 * @return The current application context
 	 */
 	[[nodiscard]] ApplicationContext& getContext () const;
-	/**
-	 * Renders a frame
-	 */
-	void update (Render::Drivers::Output::OutputViewport* viewport);
-	/**
-	 * Gets the output
-	 */
-	[[nodiscard]] const WallpaperEngine::Render::Drivers::Output::Output& getOutput () const;
-	/**
-	 * Sets the destination framebuffer for rendering. If not called, the default framebuffer will be used.
-	 */
-	void setDestinationFramebuffer (GLuint framebuffer);
-
-	/**
-	 * Gets the currently set destination framebuffer for rendering. If not set, returns 0 (the default framebuffer).
-	 */
-	[[nodiscard]] GLuint getDestinationFramebuffer () const;
 
 private:
 	/**
-	 * Sets up an asset locator for the given background
-	 *
-	 * @param bg
+	 * Loads and sets up the desktop environment to use
 	 */
-	AssetLocatorUniquePtr setupAssetLocator (const std::string& bg) const;
+	void setupEnvironment ();
 	/**
 	 * Loads projects based off the settings
 	 */
@@ -97,7 +65,7 @@ private:
 	 * @param bg
 	 * @return
 	 */
-	[[nodiscard]] ProjectUniquePtr loadBackground (const std::string& bg);
+	[[nodiscard]] wp_project* loadBackground (const std::string& bg) const;
 	/**
 	 * Prepares all background's values and updates their properties if required
 	 */
@@ -107,33 +75,31 @@ private:
 	 *
 	 * @param project
 	 */
-	void setupPropertiesForProject (const Project& project);
-	/**
-	 * Prepares CEF browser to be used
-	 */
-	void setupBrowser ();
-	/**
-	 * Prepares desktop environment-related things (like render, window, fullscreen detector, etc)
-	 */
-	void setupOutput ();
+	void setupPropertiesForProject (wp_project* project);
 	/**
 	 * Prepares all audio-related things (like detector, output, etc)
 	 */
 	void setupAudio ();
 	/**
-	 * Prepares the render-context of all the backgrounds so they can be displayed on the screen
-	 */
-	void prepareOutputs ();
-	/**
 	 * Prepares output debugging for all opengl errors
 	 */
-	void setupOpenGLDebugging ();
+	static void setupOpenGLDebugging ();
 	/**
 	 * Takes an screenshot of the background and saves it to the specified path
 	 *
 	 * @param filename
 	 */
 	void takeScreenshot (const std::filesystem::path& filename) const;
+	/**
+	 *
+	 * @param screen
+	 * @param playlist
+	 * @param currentPath
+	 */
+	void registerPlaylist (
+		const std::string& screen, const ApplicationContext::PlaylistDefinition& playlist,
+		const std::optional<std::string>& currentPath
+	);
 
 	struct ActivePlaylist {
 		ApplicationContext::PlaylistDefinition definition;
@@ -144,36 +110,26 @@ private:
 		std::set<std::size_t> failedIndices;
 	};
 
-	void initializePlaylists ();
 	void updatePlaylists ();
 	void advancePlaylist (
 		const std::string& screen, ActivePlaylist& playlist, const std::chrono::steady_clock::time_point& now
 	);
-	bool selectNextCandidate (ActivePlaylist& playlist, std::size_t& outOrderIndex);
-	bool preflightWallpaper (const std::string& path);
+	static bool selectNextCandidate (const ActivePlaylist& playlist, std::size_t& outOrderIndex);
 	std::vector<std::size_t> buildPlaylistOrder (const ApplicationContext::PlaylistDefinition& definition);
-	void ensureBrowserForProject (const Project& project);
-	bool makeAnyViewportCurrent () const;
 
 	/** The application context that contains the current app settings */
 	ApplicationContext& m_context;
 	/** Maps screens to backgrounds */
-	std::map<std::string, ProjectUniquePtr> m_backgrounds {};
+	std::map<std::string, wp_project*> m_backgrounds {};
 	std::map<std::string, ActivePlaylist> m_activePlaylists {};
 
-	std::unique_ptr<WallpaperEngine::Audio::Drivers::Detectors::AudioPlayingDetector> m_audioDetector = nullptr;
-	std::unique_ptr<WallpaperEngine::Audio::AudioContext> m_audioContext = nullptr;
-	std::unique_ptr<WallpaperEngine::Audio::Drivers::SDLAudioDriver> m_audioDriver = nullptr;
-	std::unique_ptr<WallpaperEngine::Audio::Drivers::Recorders::PlaybackRecorder> m_audioRecorder = nullptr;
-	std::unique_ptr<WallpaperEngine::Render::RenderContext> m_renderContext = nullptr;
-	std::unique_ptr<WallpaperEngine::Render::Drivers::VideoDriver> m_videoDriver = nullptr;
-	std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> m_fullScreenDetector = nullptr;
-	std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
+	std::unique_ptr<Audio::Pulseaudio> m_playbackRecorder;
+
 	std::mt19937 m_playlistRng { std::random_device {}() };
-	bool m_isPaused = false;
 	bool m_screenShotTaken = false;
 	uint32_t m_nextFrameScreenshot = 0;
-	std::chrono::steady_clock::time_point m_pauseStart {};
-	GLuint m_destinationFramebuffer = 0;
+	std::optional<std::chrono::steady_clock::time_point> m_pauseStart = std::nullopt;
+
+	Desktop::Environment* m_desktopEnvironment;
 };
 } // namespace WallpaperEngine::Application

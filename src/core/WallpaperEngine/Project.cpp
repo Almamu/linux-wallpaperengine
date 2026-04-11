@@ -1,5 +1,6 @@
 #include "Project.h"
 #include "Context.h"
+#include "Data/Dumpers/StringPrinter.h"
 #include "Data/Model/Property.h"
 #include "Data/Parsers/ProjectParser.h"
 
@@ -133,16 +134,6 @@ WallpaperEngine::Project::Project (
 		sLog.exception ("Cannot find project file");
 	}
 
-	if (active_context == nullptr) {
-		active_context = context;
-		// initialize glad with the proper loadgl function
-		gladLoadGLLoader (wp_context_call_gl_proc_address);
-	}
-
-	if (active_context != nullptr && context != active_context) {
-		sLog.exception ("Cannot load project with multiple contexts active at once");
-	}
-
 	auto locator = wp_setup_asset_locator (context->config, project);
 	auto json = JSON::parse (locator->readString ("project.json"));
 	this->ref = context->projects.insert (
@@ -160,21 +151,44 @@ WallpaperEngine::Project::~Project () {
 	}
 }
 
-int WallpaperEngine::Project::getHeight () const { return this->wallpaper->getHeight (); }
+int WallpaperEngine::Project::getHeight () const {
+	if (this->wallpaper == nullptr) {
+		return 1;
+	}
 
-int WallpaperEngine::Project::getWidth () const { return this->wallpaper->getWidth (); }
+	return this->wallpaper->getHeight ();
+}
 
-void WallpaperEngine::Project::setOutputFramebuffer (const unsigned int framebuffer) const {
-	this->wallpaper->setDestinationFramebuffer (framebuffer);
+int WallpaperEngine::Project::getWidth () const {
+	if (this->wallpaper == nullptr) {
+		return 1;
+	}
+
+	return this->wallpaper->getWidth ();
+}
+
+void WallpaperEngine::Project::setOutputFramebuffer (const GLuint newFramebuffer) {
+	this->framebuffer = newFramebuffer;
+
+	if (this->wallpaper != nullptr) {
+		this->wallpaper->setDestinationFramebuffer (newFramebuffer);
+	}
 }
 
 void WallpaperEngine::Project::render () {
+	if (active_context != &this->context) {
+		active_context = &this->context;
+
+		gladLoadGLLoader (wp_context_call_gl_proc_address);
+	}
+
 	if (this->renderContext == nullptr) {
 		// initialize render if not available
 		this->renderContext = std::make_unique<RenderContext> (this->context, *(*this->ref)->assetLocator);
 		this->wallpaper = CWallpaper::fromWallpaper (
 			*(*this->ref)->wallpaper, *this->renderContext, *this->context.audio, this->mouse_input
 		);
+		this->wallpaper->setDestinationFramebuffer (this->framebuffer);
 	}
 
 	this->wallpaper->render ();
@@ -323,6 +337,22 @@ void WallpaperEngine::Project::propertySet (const wp_project_property* property,
 	}
 
 	this->propertySet (property->name, value);
+}
+
+void WallpaperEngine::Project::describe (wp_describe_callback* callback) {
+	// TODO: CHANGE PRETTYPRINTER TO TAKE IN AN OSTREAM THAT WILL CALL THE CALLBACK INSTEAD OF PARSING EVERYTHING
+	// UPFRONT
+	auto prettyPrinter = Data::Dumpers::StringPrinter ();
+	prettyPrinter.printWallpaper (*this->ref->get ()->wallpaper.get ());
+
+	const auto result = prettyPrinter.str ();
+	constexpr unsigned long chunkSize = 1024;
+
+	for (unsigned long offset = 0; offset < result.size (); offset += chunkSize) {
+		callback->write (
+			callback->user_parameter, &result.c_str ()[offset], std::min (chunkSize, result.size () - offset)
+		);
+	}
 }
 
 WallpaperEngine::Project*

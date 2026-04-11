@@ -21,6 +21,7 @@ protected:
 	Context& context;
 	Properties::const_iterator property_it;
 	wp_project_property* current_property;
+	GLuint framebuffer;
 
 	Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project);
 
@@ -29,7 +30,7 @@ public:
 
 	int getWidth () const;
 	int getHeight () const;
-	void setOutputFramebuffer (const unsigned int framebuffer) const;
+	void setOutputFramebuffer (GLuint newFramebuffer);
 	void render ();
 
 	wp_project_property* propertyListNext ();
@@ -43,6 +44,8 @@ public:
 	void propertySet (const std::string& key, float value);
 	void propertySet (const std::string& key, glm::vec4 value);
 	void propertySet (const std::string& key, bool value);
+
+	void describe (wp_describe_callback* callback);
 
 	static Project* loadId (Context* context, wp_mouse_input* mouse_input, const int id);
 	static Project* loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id);

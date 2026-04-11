@@ -9,8 +9,6 @@ set(TARGET_SOURCE_FILES
     frontends/render.cpp
     frontends/playlists.cpp
 
-    WallpaperEngine/Debugging/CallStack.cpp
-
     WallpaperEngine/Assets/AssetLoadException.cpp
     WallpaperEngine/Assets/AssetLocator.cpp
 
@@ -84,7 +82,6 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Data/Parsers/PropertyParser.cpp
     WallpaperEngine/Data/Parsers/TextureParser.cpp
     WallpaperEngine/Data/Parsers/ConfigParser.cpp
-    WallpaperEngine/Data/Builders/VectorBuilder.cpp
     WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     WallpaperEngine/Data/JSON.cpp
 
