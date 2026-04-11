@@ -22,6 +22,16 @@ public:
     [[nodiscard]] static GLSLContext& get ();
 
 private:
+    /**
+     * Attempts to fix HLSL-to-GLSL vector type mismatches by parsing glslang error messages
+     * and adding appropriate swizzle operators to truncate larger vectors.
+     *
+     * @param source The shader source code
+     * @param errorLog The glslang error log
+     * @return true if a fix was applied, false otherwise
+     */
+    static bool fixVectorTypeMismatch (std::string& source, const std::string& errorLog);
+
     static std::unique_ptr<GLSLContext> sInstance;
 };
 } // namespace WallpaperEngine::Render::Shaders
