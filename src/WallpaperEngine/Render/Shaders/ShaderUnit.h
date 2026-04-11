@@ -80,9 +80,22 @@ private:
      */
     void preprocessIncludes ();
     /**
-     * Parses the input shader lookin for require directives to comment them out for now
+     * Parses the input shader looking for require directives and resolves them into generated code
      */
     void preprocessRequires ();
+    /**
+     * Resolves a #require module name to generated GLSL code
+     *
+     * @param moduleName The module to resolve (e.g. "LightingV1")
+     * @return Generated GLSL code for the module, or empty string if unknown
+     */
+    [[nodiscard]] std::string resolveRequireModule (const std::string& moduleName) const;
+    /**
+     * Generates the LightingV1 module stub (PerformLighting_V1 function)
+     *
+     * @return GLSL code defining PerformLighting_V1
+     */
+    [[nodiscard]] std::string generateLightingV1 () const;
 
     /**
      * Parses a COMBO value to add the proper define to the code
