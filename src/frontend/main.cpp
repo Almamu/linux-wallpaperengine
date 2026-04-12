@@ -3,6 +3,7 @@
 
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
+#include "WallpaperEngine/Debugging/CallStack.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <linux-wallpaperengine/configuration.h>
@@ -23,7 +24,7 @@ void initLogging () {
 }
 
 int main (int argc, char* argv[]) {
-	try {
+	//try {
 		sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
 		sLog.addError (new std::ostream (std::cerr.rdbuf ()));
 
@@ -67,8 +68,8 @@ int main (int argc, char* argv[]) {
 		wp_config_destroy (config);
 
 		return 0;
-	} catch (const std::exception& e) {
+	/*} catch (const std::exception& e) {
 		std::cerr << e.what () << std::endl;
 		return 1;
-	}
+	}*/
 }

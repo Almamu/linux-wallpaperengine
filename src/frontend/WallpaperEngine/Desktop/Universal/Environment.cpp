@@ -1,4 +1,4 @@
-#include "GLFW.h"
+#include "Environment.h"
 
 #include "WallpaperEngine/Logging/Log.h"
 #include "glad/glad.h"
@@ -10,13 +10,13 @@ using namespace WallpaperEngine::Application;
 
 void CustomGLFWErrorHandler (int errorCode, const char* reason) { sLog.error ("GLFW error ", errorCode, ": ", reason); }
 
-float get_time (void* user_parameter) { return glfwGetTime (); }
+static float get_time (void* user_parameter) { return glfwGetTime (); }
 
-void* get_proc_address (void* user_parameter, const char* name) {
+static void* get_proc_address (void* user_parameter, const char* name) {
 	return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-GLFW::GLFW (ApplicationContext& context) :
+Environment::Environment (ApplicationContext& context) :
 	m_context (context), m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
 	glfwSetErrorCallback (CustomGLFWErrorHandler);
 
@@ -74,7 +74,7 @@ GLFW::GLFW (ApplicationContext& context) :
 	this->gl_proc_address = { .user_parameter = this, .get_proc_address = get_proc_address };
 }
 
-GLFW::~GLFW () {
+Environment::~Environment () {
 	if (this->m_window) {
 		glfwDestroyWindow (this->m_window);
 	}
@@ -82,7 +82,7 @@ GLFW::~GLFW () {
 	glfwTerminate ();
 }
 
-void GLFW::render () {
+void Environment::render () {
 	int width;
 	int height;
 
@@ -95,17 +95,17 @@ void GLFW::render () {
 	glfwPollEvents ();
 }
 
-void GLFW::detectFullscreen () {
+void Environment::detectFullscreen () {
 	// glfw does not support fullscreen detection for now
 	// in the future this should be separated from the render
 	// but should be more than enough for now
 }
 
-uint64_t GLFW::getCurrentFrame () { return this->m_framecount; }
+uint64_t Environment::getCurrentFrame () { return this->m_framecount; }
 
-bool GLFW::isCloseRequested () { return glfwWindowShouldClose (this->m_window); }
+bool Environment::isCloseRequested () { return glfwWindowShouldClose (this->m_window); }
 
-WallpaperEngine::Desktop::Output* GLFW::requestOutput (const std::string& name) {
+WallpaperEngine::Desktop::Output* Environment::requestOutput (const std::string& name) {
 	if (name.compare ("default") != 0) {
 		sLog.exception ("GLFW does not support multiple outputs, only default available");
 	}
@@ -113,4 +113,4 @@ WallpaperEngine::Desktop::Output* GLFW::requestOutput (const std::string& name) 
 	return &this->m_output;
 }
 
-WallpaperEngine::Desktop::Output* GLFW::getOutput (const std::string& name) { return &this->m_output; }
+WallpaperEngine::Desktop::Output* Environment::getOutput (const std::string& name) { return &this->m_output; }

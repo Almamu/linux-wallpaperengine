@@ -11,7 +11,7 @@ public:
 	Output (wp_project* wallpaper, glm::vec4 viewport);
 	virtual ~Output ();
 
-	void render ();
+	virtual void render ();
 
 	void setWallpaper (wp_project* wallpaper);
 	void setViewport (glm::vec4 viewport);

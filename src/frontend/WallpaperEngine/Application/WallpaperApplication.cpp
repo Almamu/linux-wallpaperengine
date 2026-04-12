@@ -7,7 +7,8 @@
 
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Debugging/CallStack.h"
-#include "WallpaperEngine/Desktop/Universal/GLFW.h"
+#include "WallpaperEngine/Desktop/Universal/Environment.h"
+#include "WallpaperEngine/Desktop/Wayland/Environment.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/vec3.hpp>
@@ -113,7 +114,7 @@ void WallpaperApplication::setupEnvironment () {
 		sLog.debug ("Checking for window servers: wayland, x11, default");
 
 		if (strncmp (XDG_SESSION_TYPE, "wayland", 7) == 0) {
-			sLog.exception ("Wayland detected");
+			this->m_desktopEnvironment = new Desktop::Wayland::Environment (this->m_context);
 		}
 
 		if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
@@ -121,9 +122,8 @@ void WallpaperApplication::setupEnvironment () {
 		}
 	} else {
 		sLog.debug ("No desktop mode requested, using window output");
+		this->m_desktopEnvironment = new Desktop::Universal::Environment (this->m_context);
 	}
-
-	this->m_desktopEnvironment = new Desktop::Universal::GLFW (this->m_context);
 
 	// setup counter and gl_proc_address
 	wp_context_set_gl_proc_address (this->m_context.state.context, &this->m_desktopEnvironment->gl_proc_address);

@@ -7,10 +7,10 @@
 #include <GLFW/glfw3.h>
 
 namespace WallpaperEngine::Desktop::Universal {
-class GLFW : public Environment {
+class Environment : public Desktop::Environment {
 public:
-	explicit GLFW (Application::ApplicationContext& context);
-	~GLFW () override;
+	explicit Environment (Application::ApplicationContext& context);
+	~Environment () override;
 
 	void render () override;
 	void detectFullscreen () override;
