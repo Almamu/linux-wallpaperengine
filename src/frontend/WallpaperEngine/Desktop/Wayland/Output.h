@@ -18,12 +18,14 @@ class Environment;
 class Output : public Desktop::Output {
 public:
 	Output (wl_registry* registry, uint32_t name, Environment& env);
+	~Output () override;
 
 	std::string name;
 	int scale;
 	bool initialized;
 	glm::vec2 size;
 	wl_callback* frameCallback;
+	bool callbackInitialized;
 
 	void render () override;
 

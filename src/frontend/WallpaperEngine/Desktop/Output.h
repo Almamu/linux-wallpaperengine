@@ -13,12 +13,12 @@ public:
 
 	virtual void render ();
 
-	void setWallpaper (wp_project* wallpaper);
-	void setViewport (glm::vec4 viewport);
-	void setFramebuffer (GLuint framebuffer);
+	virtual void setWallpaper (wp_project* wallpaper);
+	virtual void setViewport (glm::vec4 viewport);
+	virtual void setFramebuffer (GLuint framebuffer);
 
-	glm::vec4 getViewport () const;
-	GLuint getFramebuffer () const;
+	[[nodiscard]] glm::vec4 getViewport () const;
+	[[nodiscard]] GLuint getFramebuffer () const;
 
 private:
 	void setupFramebuffer ();

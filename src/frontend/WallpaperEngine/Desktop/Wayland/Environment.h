@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "WallpaperEngine/Desktop/Environment.h"
+#include "WallpaperEngine/Desktop/VirtualOutput.h"
 #include "WallpaperEngine/Desktop/Wayland/Output.h"
 
 namespace WallpaperEngine::Application {
@@ -42,14 +43,15 @@ public:
 	~Environment () override;
 
 	void registerOutput (wl_registry* registry, uint32_t name);
+	void deregisterOutput (Output* output);
 
 	void render () override;
 	void detectFullscreen () override;
 	uint64_t getCurrentFrame () override;
 	bool isCloseRequested () override;
 
-	[[nodiscard]] Output* requestOutput (const std::string& name) override;
-	[[nodiscard]] Output* getOutput (const std::string& name) override;
+	[[nodiscard]] Desktop::Output* requestOutput (const std::string& name) override;
+	[[nodiscard]] Desktop::Output* getOutput (const std::string& name) override;
 
 	std::chrono::high_resolution_clock::time_point render_start;
 
@@ -63,7 +65,7 @@ private:
 	uint64_t m_frameCount;
 	bool m_requestedExit;
 
-	std::map<std::string, Output*> m_outputsByName;
+	std::map<std::string, VirtualOutput<Output>*> m_requestedOutputs;
 	std::vector<Output*> m_outputs;
 };
 }

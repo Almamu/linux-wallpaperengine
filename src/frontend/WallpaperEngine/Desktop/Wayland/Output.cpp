@@ -23,9 +23,7 @@ handle_configure (void* data, zwlr_layer_surface_v1* layer_surface, uint32_t ser
 	zwlr_layer_surface_v1_ack_configure (layer_surface, serial);
 }
 
-static void handle_closed (void* data, zwlr_layer_surface_v1* surface) {
-	// TODO: HANDLE ON LAYER CLOSE
-}
+static void handle_closed (void* data, zwlr_layer_surface_v1* surface) { delete static_cast<Output*> (data); }
 
 static void geometry (
 	void* data, wl_output* wl_output, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height,
@@ -39,12 +37,10 @@ static void mode (void* data, wl_output* wl_output, uint32_t flags, int32_t widt
 
 	output->size = { width, height };
 	output->setViewport ({ 0, 0, width * output->scale, height * output->scale });
-
-	// TODO: APPLY RESIZE
 }
 
 static void done (void* data, wl_output* wl_output) {
-	// TODO: IMPLEMENT
+	// ignored
 }
 
 static void scale (void* data, wl_output* wl_output, int32_t scale) {
@@ -52,8 +48,6 @@ static void scale (void* data, wl_output* wl_output, int32_t scale) {
 
 	output->scale = scale;
 	output->setViewport ({ 0, 0, output->size.x * output->scale, output->size.y * output->scale });
-
-	// TODO: APPLY RESIZE
 }
 
 static void name (void* data, wl_output* wl_output, const char* name) {
@@ -94,12 +88,35 @@ constexpr zwlr_layer_surface_v1_listener layer_surface_listener
 	= { .configure = handle_configure, .closed = handle_closed };
 
 Output::Output (wl_registry* registry, uint32_t name, Environment& env) :
-	Desktop::Output (nullptr, { 0, 0, 1, 1 }), name (""), scale (1), initialized (false), m_environment (env) {
+	Desktop::Output (nullptr, { 0, 0, 1, 1 }), name (""), scale (1), initialized (false), m_environment (env),
+	callbackInitialized (false) {
 	this->m_wl_output = static_cast<wl_output*> (wl_registry_bind (registry, name, &wl_output_interface, 4));
 	wl_output_add_listener (this->m_wl_output, &output_listener, this);
 }
 
+Output::~Output () {
+	// remove the output from the available list
+	this->m_environment.deregisterOutput (this);
+
+	if (this->m_egl_surface != nullptr) {
+		eglDestroySurface (this->m_environment.egl_context.display, this->m_egl_surface);
+	}
+
+	if (this->m_egl_window != nullptr) {
+		wl_egl_window_destroy (this->m_egl_window);
+	}
+
+	if (this->m_layerSurface != nullptr) {
+		zwlr_layer_surface_v1_destroy (this->m_layerSurface);
+	}
+
+	if (this->m_layerSurface != nullptr) {
+		wl_surface_destroy (this->m_wl_surface);
+	}
+}
+
 void Output::render () {
+	this->callbackInitialized = true;
 	this->makeCurrent ();
 	// render to the framebuffer first
 	Desktop::Output::render ();
@@ -179,6 +196,7 @@ void Output::setupLayerShell () {
 	}
 
 	this->initialized = true;
+	this->notifyEnvironment ();
 }
 
 void Output::notifyEnvironment () const { this->m_environment.refreshOutputMap (); }

@@ -13,6 +13,7 @@
 #undef namespace
 #undef class
 
+using namespace WallpaperEngine;
 using namespace WallpaperEngine::Desktop::Wayland;
 
 /*
@@ -676,27 +677,23 @@ void Environment::registerOutput (wl_registry* registry, uint32_t name) {
 	this->m_outputs.push_back (new Output (registry, name, *this));
 }
 
+void Environment::deregisterOutput (Output* output) {
+	if (!output->name.empty ()) {
+		const auto it = this->m_requestedOutputs.find (output->name);
+
+		if (it != this->m_requestedOutputs.end ()) {
+			it->second->setRealOutput (nullptr);
+		}
+	}
+
+	std::erase (this->m_outputs, output);
+}
+
 void Environment::render () {
-	static bool initialized = false;
 	// render happens on every surface, not really here, but a roundtrip could mean
 	// a full render,so take it into account
 	const float startTime = get_time (this);
 	const float minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
-
-	// this starts the event chain of frame_listener, so it has to happen only once
-	// TODO: SUPPORT HOTPLUGGING OF SCREENS
-	if (!initialized) {
-		initialized = true;
-
-		for (const auto& output : this->m_outputs) {
-			if (output->initialized == false) {
-				continue;
-			}
-
-			// perform a full render of the output, this will start the appropiate chain of events
-			output->render ();
-		}
-	}
 
 	if (wl_display_dispatch (this->wayland_context.display) == -1) {
 		this->m_requestedExit = true;
@@ -725,24 +722,38 @@ bool Environment::isCloseRequested () {
 	return this->m_requestedExit;
 }
 
-Output* Environment::requestOutput (const std::string& name) {
-	const auto it = this->m_outputsByName.find (name);
-
-	if (it == this->m_outputsByName.end ()) {
-		sLog.exception ("Requested output ", name, " was not found");
+Desktop::Output* Environment::requestOutput (const std::string& name) {
+	// register the virtual output
+	if (this->m_requestedOutputs.contains (name)) {
+		sLog.exception ("Requested output ", name, " was already requested");
 	}
 
-	if (it->second->initialized == false) {
-		it->second->setupLayerShell ();
+	// check for a matching real output (if any)
+	const auto realOutput = std::ranges::find_if (this->m_outputs, [&name] (const Output* output) {
+		return output->name.compare (name) == 0;
+	});
+
+	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
+
+	if (realOutput != this->m_outputs.end ()) {
+		if ((*realOutput)->initialized == false) {
+			(*realOutput)->setupLayerShell ();
+		}
+
+		if ((*realOutput)->callbackInitialized == false) {
+			(*realOutput)->render ();
+		}
 	}
 
-	return it->second;
+	this->m_requestedOutputs.emplace (name, newOutput);
+
+	return newOutput;
 }
 
-Output* Environment::getOutput (const std::string& name) {
-	const auto it = this->m_outputsByName.find (name);
+Desktop::Output* Environment::getOutput (const std::string& name) {
+	const auto it = this->m_requestedOutputs.find (name);
 
-	if (it == this->m_outputsByName.end ()) {
+	if (it == this->m_requestedOutputs.end ()) {
 		sLog.exception ("Requested output ", name, " was not found");
 	}
 
@@ -750,13 +761,29 @@ Output* Environment::getOutput (const std::string& name) {
 }
 
 void Environment::refreshOutputMap () {
-	this->m_outputsByName.clear ();
-
 	for (const auto& output : this->m_outputs) {
 		if (output->name.empty ()) {
 			continue;
 		}
 
-		this->m_outputsByName.emplace (output->name, output);
+		const auto it = this->m_requestedOutputs.find (output->name);
+
+		if (it == this->m_requestedOutputs.end ()) {
+			continue;
+		}
+
+		it->second->setRealOutput (output);
+
+		// ensure the output is initialized
+		if (output->initialized == false) {
+			output->setupLayerShell ();
+		}
+
+		if (output->callbackInitialized == true) {
+			continue;
+		}
+
+		// starts the rendering to the output
+		it->second->render ();
 	}
 }
