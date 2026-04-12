@@ -1,6 +1,6 @@
 #include "Environment.h"
-#include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <cstring>
 
@@ -436,15 +436,20 @@ __attribute__ ((constructor)) void registerWaylandOpenGL () {
     );
 }*/
 
-static void handle_pointer_enter (void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {}
+static void handle_pointer_enter (
+	void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y
+) { }
 
-static void handle_pointer_leave (void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface) {}
+static void handle_pointer_leave (void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface) { }
 
-static void handle_pointer_motion (void* data, wl_pointer* pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {}
+static void
+handle_pointer_motion (void* data, wl_pointer* pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) { }
 
-static void handle_pointer_button (void* data, wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {}
+static void handle_pointer_button (
+	void* data, wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state
+) { }
 
-static void handle_pointer_axis (void* data, wl_pointer* pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {}
+static void handle_pointer_axis (void* data, wl_pointer* pointer, uint32_t time, uint32_t axis, wl_fixed_t value) { }
 
 constexpr wl_pointer_listener pointer_listener = {
 	.enter = handle_pointer_enter,
@@ -468,13 +473,15 @@ static void handle_global (void* data, wl_registry* registry, uint32_t name, con
 	const auto impl = static_cast<Environment*> (data);
 
 	if (strcmp (interface, wl_compositor_interface.name) == 0) {
-		impl->wayland_context.compositor = static_cast<wl_compositor*> (wl_registry_bind (registry, name, &wl_compositor_interface, 4));
+		impl->wayland_context.compositor
+			= static_cast<wl_compositor*> (wl_registry_bind (registry, name, &wl_compositor_interface, 4));
 	} else if (strcmp (interface, wl_shm_interface.name) == 0) {
 		impl->wayland_context.shm = static_cast<wl_shm*> (wl_registry_bind (registry, name, &wl_shm_interface, 1));
 	} else if (strcmp (interface, wl_output_interface.name) == 0) {
 		impl->registerOutput (registry, name);
 	} else if (strcmp (interface, zwlr_layer_shell_v1_interface.name) == 0) {
-		impl->wayland_context.layerShell = static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
+		impl->wayland_context.layerShell
+			= static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
 	} else if (strcmp (interface, wl_seat_interface.name) == 0) {
 		impl->wayland_context.seat = static_cast<wl_seat*> (wl_registry_bind (registry, name, &wl_seat_interface, 1));
 	}
@@ -496,32 +503,26 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 static float get_time (void* user_parameter) {
 	const auto impl = static_cast<Environment*> (user_parameter);
 
-	return static_cast<float>(
-		std::chrono::duration_cast<std::chrono::microseconds> (
-			std::chrono::high_resolution_clock::now () - impl->render_start
-		).count()
-	) / 1000000.0f;
+	return static_cast<float> (std::chrono::duration_cast<std::chrono::microseconds> (
+								   std::chrono::high_resolution_clock::now () - impl->render_start
+		   )
+	                               .count ())
+		/ 1000000.0f;
 }
 
-Environment::Environment (WallpaperEngine::Application::ApplicationContext& context) : m_context (context) {
+Environment::Environment (WallpaperEngine::Application::ApplicationContext& context) : Desktop::Environment (context) {
 	this->render_start = std::chrono::high_resolution_clock::now ();
 	this->m_requestedExit = false;
 	this->m_frameCount = 0;
 
-	this->egl_context = {
-		.display = nullptr,
-		.config = nullptr,
-		.context = nullptr,
-		.eglCreatePlatformWindowSurfaceEXT = nullptr
-	};
-	this->wayland_context = {
-		.display = nullptr,
-		.registry = nullptr,
-		.compositor = nullptr,
-		.shm = nullptr,
-		.layerShell = nullptr,
-		.seat = nullptr
-	};
+	this->egl_context
+		= { .display = nullptr, .config = nullptr, .context = nullptr, .eglCreatePlatformWindowSurfaceEXT = nullptr };
+	this->wayland_context = { .display = nullptr,
+		                      .registry = nullptr,
+		                      .compositor = nullptr,
+		                      .shm = nullptr,
+		                      .layerShell = nullptr,
+		                      .seat = nullptr };
 
 	this->wayland_context.display = wl_display_connect (nullptr);
 
@@ -535,11 +536,8 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 	wl_display_dispatch (this->wayland_context.display);
 	wl_display_roundtrip (this->wayland_context.display);
 
-	if (
-		this->wayland_context.compositor == nullptr ||
-		this->wayland_context.shm == nullptr ||
-		this->wayland_context.layerShell == nullptr ||
-		this->wayland_context.seat == nullptr) {
+	if (this->wayland_context.compositor == nullptr || this->wayland_context.shm == nullptr
+	    || this->wayland_context.layerShell == nullptr || this->wayland_context.seat == nullptr) {
 		sLog.exception ("Failed to bind to required interfaces");
 	}
 
@@ -551,22 +549,14 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 		sLog.exception ("Failed to initialize glad");
 	}
 
-	this->counter = {
-		.user_parameter = this,
-		.get_time = get_time
-	};
+	this->counter = { .user_parameter = this, .get_time = get_time };
 
 	this->gl_proc_address = {
 		.user_parameter = this,
 		.get_proc_address = get_proc_address,
 	};
 
-	this->mouse_input = {
-		.user_parameter = this,
-		.get_x = nullptr,
-		.get_y = nullptr,
-		.is_pressed = nullptr
-	};
+	this->mouse_input = { .user_parameter = this, .get_x = nullptr, .get_y = nullptr, .is_pressed = nullptr };
 }
 
 Environment::~Environment () {
@@ -594,8 +584,11 @@ void Environment::initEGL () {
 		sLog.exception ("EGL_EXT_platform_wayland not supported!");
 	}
 
-	const auto eglGetPlatformDisplayEXT = reinterpret_cast<PFNEGLGETPLATFORMDISPLAYEXTPROC> (eglGetProcAddress ("eglGetPlatformDisplayEXT"));
-	this->egl_context.eglCreatePlatformWindowSurfaceEXT = reinterpret_cast<PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC> (eglGetProcAddress ("eglCreatePlatformWindowSurfaceEXT"));
+	const auto eglGetPlatformDisplayEXT
+		= reinterpret_cast<PFNEGLGETPLATFORMDISPLAYEXTPROC> (eglGetProcAddress ("eglGetPlatformDisplayEXT"));
+	this->egl_context.eglCreatePlatformWindowSurfaceEXT = reinterpret_cast<PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC> (
+		eglGetProcAddress ("eglCreatePlatformWindowSurfaceEXT")
+	);
 
 	if (eglGetPlatformDisplayEXT == nullptr) {
 		sLog.exception ("Failed to get eglGetPlatformDisplayEXT function pointer");
@@ -605,7 +598,8 @@ void Environment::initEGL () {
 		sLog.exception ("Failed to get eglCreatePlatformWindowSurfaceEXT function pointer");
 	}
 
-	this->egl_context.display = eglGetPlatformDisplayEXT (EGL_PLATFORM_WAYLAND_EXT, this->wayland_context.display, nullptr);
+	this->egl_context.display
+		= eglGetPlatformDisplayEXT (EGL_PLATFORM_WAYLAND_EXT, this->wayland_context.display, nullptr);
 
 	if (this->egl_context.display == EGL_NO_DISPLAY) {
 		this->finishEGL ();
@@ -625,15 +619,9 @@ void Environment::initEGL () {
 	}
 
 	EGLint matchedConfigs = 0;
-	const EGLint configAttribs[] = {
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RED_SIZE, 1,
-		EGL_GREEN_SIZE, 1,
-		EGL_BLUE_SIZE, 1,
-		EGL_SAMPLES, 4,
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-		EGL_NONE
-	};
+	const EGLint configAttribs[]
+		= { EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, EGL_RED_SIZE, 1, EGL_GREEN_SIZE, 1, EGL_BLUE_SIZE, 1, EGL_SAMPLES, 4,
+		    EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT, EGL_NONE };
 
 	if (!eglChooseConfig (this->egl_context.display, configAttribs, &this->egl_context.config, 1, &matchedConfigs)) {
 		this->finishEGL ();
@@ -650,14 +638,16 @@ void Environment::initEGL () {
 		sLog.exception ("Failed to bind OpenGL API");
 	}
 
-	const EGLint contextAttribs[] = {
-		EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
-		EGL_CONTEXT_MINOR_VERSION_KHR, 3,
-		EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
-		EGL_NONE
-	};
+	const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION_KHR,
+		                              3,
+		                              EGL_CONTEXT_MINOR_VERSION_KHR,
+		                              3,
+		                              EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR,
+		                              EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
+		                              EGL_NONE };
 
-	this->egl_context.context = eglCreateContext (this->egl_context.display, this->egl_context.config, EGL_NO_CONTEXT, contextAttribs);
+	this->egl_context.context
+		= eglCreateContext (this->egl_context.display, this->egl_context.config, EGL_NO_CONTEXT, contextAttribs);
 
 	if (this->egl_context.context == EGL_NO_CONTEXT) {
 		this->finishEGL ();

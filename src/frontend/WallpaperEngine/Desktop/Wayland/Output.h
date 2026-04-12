@@ -6,10 +6,10 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <glm/vec2.hpp>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
-#include <glm/vec2.hpp>
 
 struct zwlr_layer_surface_v1;
 
@@ -17,7 +17,7 @@ namespace WallpaperEngine::Desktop::Wayland {
 class Environment;
 class Output : public Desktop::Output {
 public:
-	Output(wl_registry* registry, uint32_t name, Environment& env);
+	Output (wl_registry* registry, uint32_t name, Environment& env);
 
 	std::string name;
 	int scale;

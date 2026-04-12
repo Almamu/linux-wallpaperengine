@@ -10,8 +10,8 @@
 #include <map>
 #include <memory>
 
-#include "WallpaperEngine/Desktop/Wayland/Output.h"
 #include "WallpaperEngine/Desktop/Environment.h"
+#include "WallpaperEngine/Desktop/Wayland/Output.h"
 
 namespace WallpaperEngine::Application {
 class ApplicationContext;
@@ -21,6 +21,7 @@ struct zwlr_layer_shell_v1;
 namespace WallpaperEngine::Desktop::Wayland {
 class Environment : public Desktop::Environment {
 	friend class Output;
+
 public:
 	struct {
 		EGLDisplay display;
@@ -37,7 +38,7 @@ public:
 		wl_seat* seat;
 	} wayland_context;
 
-	Environment (Application::ApplicationContext& context);
+	explicit Environment (Application::ApplicationContext& context);
 	~Environment () override;
 
 	void registerOutput (wl_registry* registry, uint32_t name);
@@ -62,7 +63,6 @@ private:
 	uint64_t m_frameCount;
 	bool m_requestedExit;
 
-	Application::ApplicationContext& m_context;
 	std::map<std::string, Output*> m_outputsByName;
 	std::vector<Output*> m_outputs;
 };

@@ -106,7 +106,7 @@ void WallpaperApplication::setupEnvironment () {
 		if (!XDG_SESSION_TYPE) {
 			sLog.exception (
 				"Cannot read environment variable XDG_SESSION_TYPE, window server detection failed. Please ensure "
-			    "proper "
+				"proper "
 				"values are set"
 			);
 		}

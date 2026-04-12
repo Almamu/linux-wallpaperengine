@@ -5,6 +5,7 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Application/WallpaperApplication.cpp
     WallpaperEngine/Audio/Pulseaudio.cpp
     WallpaperEngine/Desktop/Universal/Environment.cpp
+    WallpaperEngine/Desktop/Environment.cpp
     WallpaperEngine/Desktop/Output.cpp
 
     main.cpp)

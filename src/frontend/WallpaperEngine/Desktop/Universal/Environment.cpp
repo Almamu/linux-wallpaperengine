@@ -17,7 +17,7 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 }
 
 Environment::Environment (ApplicationContext& context) :
-	m_context (context), m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
+	Desktop::Environment (context), m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
 	glfwSetErrorCallback (CustomGLFWErrorHandler);
 
 	if (glfwInit () == GLFW_FALSE) {

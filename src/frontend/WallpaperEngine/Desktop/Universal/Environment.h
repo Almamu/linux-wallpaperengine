@@ -22,7 +22,6 @@ public:
 
 private:
 	uint64_t m_framecount;
-	Application::ApplicationContext& m_context;
 	GLFWwindow* m_window;
 	Output m_output;
 };

@@ -1,6 +1,7 @@
 #include "Output.h"
 
 #include "Environment.h"
+#include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #define class _class
@@ -13,11 +14,12 @@
 
 using namespace WallpaperEngine::Desktop::Wayland;
 
-static void handle_configure (void* data, zwlr_layer_surface_v1* layer_surface, uint32_t serial, uint32_t width, uint32_t height) {
+static void
+handle_configure (void* data, zwlr_layer_surface_v1* layer_surface, uint32_t serial, uint32_t width, uint32_t height) {
 	const auto output = static_cast<Output*> (data);
 
 	output->size = { width, height };
-	output->setViewport ({0, 0, width * output->scale, height * output->scale});
+	output->setViewport ({ 0, 0, width * output->scale, height * output->scale });
 	zwlr_layer_surface_v1_ack_configure (layer_surface, serial);
 }
 
@@ -25,7 +27,10 @@ static void handle_closed (void* data, zwlr_layer_surface_v1* surface) {
 	// TODO: HANDLE ON LAYER CLOSE
 }
 
-static void geometry (void* data, wl_output* wl_output, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height, int32_t subpixel, const char* make, const char* model, int32_t transform) {
+static void geometry (
+	void* data, wl_output* wl_output, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height,
+	int32_t subpixel, const char* make, const char* model, int32_t transform
+) {
 	// ignored
 }
 
@@ -33,7 +38,7 @@ static void mode (void* data, wl_output* wl_output, uint32_t flags, int32_t widt
 	const auto output = static_cast<Output*> (data);
 
 	output->size = { width, height };
-	output->setViewport ({0, 0, width * output->scale, height * output->scale});
+	output->setViewport ({ 0, 0, width * output->scale, height * output->scale });
 
 	// TODO: APPLY RESIZE
 }
@@ -46,7 +51,7 @@ static void scale (void* data, wl_output* wl_output, int32_t scale) {
 	const auto output = static_cast<Output*> (data);
 
 	output->scale = scale;
-	output->setViewport ({0, 0, output->size.x * output->scale, output->size.y * output->scale});
+	output->setViewport ({ 0, 0, output->size.x * output->scale, output->size.y * output->scale });
 
 	// TODO: APPLY RESIZE
 }
@@ -85,17 +90,11 @@ constexpr wl_output_listener output_listener = {
 	.description = description,
 };
 
-constexpr zwlr_layer_surface_v1_listener layer_surface_listener = {
-	.configure = handle_configure,
-	.closed = handle_closed
-};
+constexpr zwlr_layer_surface_v1_listener layer_surface_listener
+	= { .configure = handle_configure, .closed = handle_closed };
 
-Output::Output(wl_registry* registry, uint32_t name, Environment& env) :
-	Desktop::Output (nullptr, {0, 0, 1, 1}),
-	name (""),
-	scale (1),
-	initialized (false),
-	m_environment (env) {
+Output::Output (wl_registry* registry, uint32_t name, Environment& env) :
+	Desktop::Output (nullptr, { 0, 0, 1, 1 }), name (""), scale (1), initialized (false), m_environment (env) {
 	this->m_wl_output = static_cast<wl_output*> (wl_registry_bind (registry, name, &wl_output_interface, 4));
 	wl_output_add_listener (this->m_wl_output, &output_listener, this);
 }
@@ -116,7 +115,9 @@ void Output::render () {
 void Output::setupLayerShell () {
 	this->m_wl_surface = wl_compositor_create_surface (this->m_environment.wayland_context.compositor);
 	this->m_layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-		this->m_environment.wayland_context.layerShell, this->m_wl_surface, this->m_wl_output, ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "linux-wallpaperengine");
+		this->m_environment.wayland_context.layerShell, this->m_wl_surface, this->m_wl_output,
+		ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "linux-wallpaperengine"
+	);
 
 	if (this->m_layerSurface == nullptr) {
 		sLog.exception ("Failed to create layer surface");
@@ -125,12 +126,16 @@ void Output::setupLayerShell () {
 	wl_region* region = wl_compositor_create_region (this->m_environment.wayland_context.compositor);
 
 	// TODO: REPLACE THIS BY CHECKING IF MOUSE HAS TO BE ENABLED OR NOT
-	if (false) {
+	if (this->m_environment.getContext ().settings.mouse.enabled) {
 		wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
 	}
 
 	zwlr_layer_surface_v1_set_size (this->m_layerSurface, 0, 0);
-	zwlr_layer_surface_v1_set_anchor (this->m_layerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
+	zwlr_layer_surface_v1_set_anchor (
+		this->m_layerSurface,
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT
+	);
 	zwlr_layer_surface_v1_set_keyboard_interactivity (this->m_layerSurface, false);
 	zwlr_layer_surface_v1_add_listener (this->m_layerSurface, &layer_surface_listener, this);
 	zwlr_layer_surface_v1_set_exclusive_zone (this->m_layerSurface, -1);
@@ -139,15 +144,20 @@ void Output::setupLayerShell () {
 	wl_surface_commit (this->m_wl_surface);
 	wl_display_roundtrip (this->m_environment.wayland_context.display);
 
-	this->m_egl_window = wl_egl_window_create (this->m_wl_surface, this->size.x * this->scale, this->size.y * this->scale);
-	this->m_egl_surface = this->m_environment.egl_context.eglCreatePlatformWindowSurfaceEXT (this->m_environment.egl_context.display, this->m_environment.egl_context.config, this->m_egl_window, nullptr);
+	this->m_egl_window
+		= wl_egl_window_create (this->m_wl_surface, this->size.x * this->scale, this->size.y * this->scale);
+	this->m_egl_surface = this->m_environment.egl_context.eglCreatePlatformWindowSurfaceEXT (
+		this->m_environment.egl_context.display, this->m_environment.egl_context.config, this->m_egl_window, nullptr
+	);
 
 	wl_surface_commit (this->m_wl_surface);
 	wl_display_roundtrip (this->m_environment.wayland_context.display);
 	wl_display_flush (this->m_environment.wayland_context.display);
 
 	static const auto XCURSORSIZE = getenv ("XCURSOR_SIZE") ? std::stoi (getenv ("XCURSOR_SIZE")) : 24;
-	const auto PRCURSORTHEME = wl_cursor_theme_load (getenv ("XCURSOR_THEME"), XCURSORSIZE * this->scale, this->m_environment.wayland_context.shm);
+	const auto PRCURSORTHEME = wl_cursor_theme_load (
+		getenv ("XCURSOR_THEME"), XCURSORSIZE * this->scale, this->m_environment.wayland_context.shm
+	);
 
 	if (PRCURSORTHEME == nullptr) {
 		sLog.exception ("Failed to load cursor theme");
@@ -160,19 +170,25 @@ void Output::setupLayerShell () {
 		sLog.exception ("Failed to create cursor surface");
 	}
 
-	if (eglMakeCurrent (this->m_environment.egl_context.display, this->m_egl_surface, this->m_egl_surface, this->m_environment.egl_context.context) == EGL_FALSE) {
+	if (eglMakeCurrent (
+			this->m_environment.egl_context.display, this->m_egl_surface, this->m_egl_surface,
+			this->m_environment.egl_context.context
+		)
+	    == EGL_FALSE) {
 		sLog.exception ("Failed to make EGL context current");
 	}
 
 	this->initialized = true;
 }
 
-void Output::notifyEnvironment () const {
-	this->m_environment.refreshOutputMap ();
-}
+void Output::notifyEnvironment () const { this->m_environment.refreshOutputMap (); }
 
 void Output::makeCurrent () const {
-	if (eglMakeCurrent (this->m_environment.egl_context.display, this->m_egl_surface, this->m_egl_surface, this->m_environment.egl_context.context) == EGL_FALSE) {
+	if (eglMakeCurrent (
+			this->m_environment.egl_context.display, this->m_egl_surface, this->m_egl_surface,
+			this->m_environment.egl_context.context
+		)
+	    == EGL_FALSE) {
 		sLog.error ("eglMakeCurrent failed for output ", this->name);
 	}
 }
