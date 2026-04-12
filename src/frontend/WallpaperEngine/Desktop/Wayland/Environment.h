@@ -17,7 +17,9 @@
 namespace WallpaperEngine::Application {
 class ApplicationContext;
 }
+
 struct zwlr_layer_shell_v1;
+struct zwlr_foreign_toplevel_manager_v1;
 
 namespace WallpaperEngine::Desktop::Wayland {
 class Environment : public Desktop::Environment {
@@ -36,7 +38,16 @@ public:
 		wl_compositor* compositor;
 		wl_shm* shm;
 		zwlr_layer_shell_v1* layerShell;
+		zwlr_foreign_toplevel_manager_v1* topLevelManager;
 		wl_seat* seat;
+		struct fullscreen_state {
+			bool pending;
+			bool current;
+			bool pendingActivated;
+			bool currentActivated;
+			std::string appId;
+			int fullscreenCount;
+		} fullscreen_state;
 	} wayland_context;
 
 	explicit Environment (Application::ApplicationContext& context);
@@ -55,8 +66,13 @@ public:
 
 	std::chrono::high_resolution_clock::time_point render_start;
 
+	bool isPendingRelevant () const;
+	bool isCurrentRelevant () const;
+
 protected:
 	void refreshOutputMap ();
+
+	bool isRelevant (const bool fullscreen, const bool activated, const std::string& appId) const;
 
 private:
 	void initEGL ();

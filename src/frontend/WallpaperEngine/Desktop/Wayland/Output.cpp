@@ -118,8 +118,11 @@ Output::~Output () {
 void Output::render () {
 	this->callbackInitialized = true;
 	this->makeCurrent ();
-	// render to the framebuffer first
-	Desktop::Output::render ();
+	if (this->m_environment.anything_fullscreen == false) {
+		// render to the framebuffer first
+		Desktop::Output::render ();
+	}
+
 	// now swap it to the screen
 	this->frameCallback = wl_surface_frame (this->m_wl_surface);
 	wl_callback_add_listener (this->frameCallback, &frame_listener, this);
@@ -142,7 +145,6 @@ void Output::setupLayerShell () {
 
 	wl_region* region = wl_compositor_create_region (this->m_environment.wayland_context.compositor);
 
-	// TODO: REPLACE THIS BY CHECKING IF MOUSE HAS TO BE ENABLED OR NOT
 	if (this->m_environment.getContext ().settings.mouse.enabled) {
 		wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
 	}

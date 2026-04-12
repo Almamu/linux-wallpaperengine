@@ -2,6 +2,7 @@
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <algorithm>
 #include <cstring>
 
 #define class _class
@@ -49,6 +50,119 @@ constexpr wl_seat_listener seat_listener = {
 	.capabilities = handle_capabilities,
 };
 
+static void handle_toplevel_title (void* data, zwlr_foreign_toplevel_handle_v1* handle, const char* title) {
+	// ignored
+}
+
+static void handle_toplevel_app_id (void* data, zwlr_foreign_toplevel_handle_v1* handle, const char* app_id) {
+	const auto impl = static_cast<Environment*> (data);
+
+	if (app_id) {
+		impl->wayland_context.fullscreen_state.appId = app_id;
+	}
+}
+
+static void handle_toplevel_output_enter (void* data, zwlr_foreign_toplevel_handle_v1* handle, wl_output* output) { }
+static void handle_toplevel_output_leave (void* data, zwlr_foreign_toplevel_handle_v1* handle, wl_output* output) { }
+
+static void handle_toplevel_state (void* data, zwlr_foreign_toplevel_handle_v1* handle, wl_array* state) {
+	const auto impl = static_cast<Environment*> (data);
+	const auto begin = static_cast<uint32_t*> (state->data);
+
+	impl->wayland_context.fullscreen_state.pending = false;
+	impl->wayland_context.fullscreen_state.pendingActivated = false;
+
+	for (auto it = begin; it < begin + state->size / sizeof (uint32_t); ++it) {
+		if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN) {
+			impl->wayland_context.fullscreen_state.pending = true;
+		}
+		if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED) {
+			impl->wayland_context.fullscreen_state.pendingActivated = true;
+		}
+	}
+}
+
+static void handle_toplevel_done (void* data, zwlr_foreign_toplevel_handle_v1* handle) {
+	const auto impl = static_cast<Environment*> (data);
+
+	// TODO: CHECK FOR RELEVANCY
+	const bool pendingRelevant = impl->isPendingRelevant ();
+	const bool currentRelevant = impl->isCurrentRelevant ();
+
+	impl->wayland_context.fullscreen_state.current = impl->wayland_context.fullscreen_state.pending;
+	impl->wayland_context.fullscreen_state.currentActivated = impl->wayland_context.fullscreen_state.pendingActivated;
+
+	if (currentRelevant == pendingRelevant) {
+		return;
+	}
+
+	if (pendingRelevant) {
+		++impl->wayland_context.fullscreen_state.fullscreenCount;
+		return;
+	}
+
+	if (impl->wayland_context.fullscreen_state.fullscreenCount == 0) {
+		sLog.error ("Fullscreen count underflow!!");
+	}
+
+	--impl->wayland_context.fullscreen_state.fullscreenCount;
+}
+
+static void handle_toplevel_closed (void* data, zwlr_foreign_toplevel_handle_v1* handle) {
+	const auto impl = static_cast<Environment*> (data);
+
+	// TODO: CHECK FOR RELEVANCY
+	if (impl->isCurrentRelevant ()) {
+		if (impl->wayland_context.fullscreen_state.fullscreenCount == 0) {
+			sLog.error ("Fullscreen count underflow!!");
+		} else {
+			impl->wayland_context.fullscreen_state.fullscreenCount--;
+		}
+	}
+
+	zwlr_foreign_toplevel_handle_v1_destroy (handle);
+}
+
+static void
+handle_toplevel_parent (void* data, zwlr_foreign_toplevel_handle_v1* handle, zwlr_foreign_toplevel_handle_v1* parent) {
+	// ignored
+}
+
+constexpr zwlr_foreign_toplevel_handle_v1_listener toplevel_handle_listener = {
+	.title = handle_toplevel_title,
+	.app_id = handle_toplevel_app_id,
+	.output_enter = handle_toplevel_output_enter,
+	.output_leave = handle_toplevel_output_leave,
+	.state = handle_toplevel_state,
+	.done = handle_toplevel_done,
+	.closed = handle_toplevel_closed,
+	.parent = handle_toplevel_parent,
+};
+
+static void
+handle_toplevel (void* data, zwlr_foreign_toplevel_manager_v1* manager, zwlr_foreign_toplevel_handle_v1* handle) {
+	const auto impl = static_cast<Environment*> (data);
+
+	impl->wayland_context.fullscreen_state = {
+		.pending = false,
+		.current = false,
+		.pendingActivated = false,
+		.currentActivated = false,
+		.appId = "",
+	};
+
+	zwlr_foreign_toplevel_handle_v1_add_listener (handle, &toplevel_handle_listener, impl);
+}
+
+static void handle_finished (void* data, zwlr_foreign_toplevel_manager_v1* manager) {
+	zwlr_foreign_toplevel_manager_v1_destroy (manager);
+}
+
+constexpr zwlr_foreign_toplevel_manager_v1_listener foreign_toplevel_manager_listener = {
+	.toplevel = handle_toplevel,
+	.finished = handle_finished,
+};
+
 static void handle_global (void* data, wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
 	const auto impl = static_cast<Environment*> (data);
 
@@ -64,6 +178,13 @@ static void handle_global (void* data, wl_registry* registry, uint32_t name, con
 			= static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
 	} else if (strcmp (interface, wl_seat_interface.name) == 0) {
 		impl->wayland_context.seat = static_cast<wl_seat*> (wl_registry_bind (registry, name, &wl_seat_interface, 1));
+	} else if (strcmp (interface, zwlr_foreign_toplevel_manager_v1_interface.name) == 0) {
+		impl->wayland_context.topLevelManager = static_cast<zwlr_foreign_toplevel_manager_v1*> (
+			wl_registry_bind (registry, name, &zwlr_foreign_toplevel_manager_v1_interface, 3)
+		);
+		zwlr_foreign_toplevel_manager_v1_add_listener (
+			impl->wayland_context.topLevelManager, &foreign_toplevel_manager_listener, impl
+		);
 	}
 }
 
@@ -288,18 +409,18 @@ void Environment::render () {
 }
 
 void Environment::detectFullscreen () {
-	// TODO: IMPLEMENT
+	if (this->wayland_context.topLevelManager == nullptr) {
+		return;
+	}
+
+	wl_display_roundtrip (this->wayland_context.display);
+
+	this->anything_fullscreen = this->wayland_context.fullscreen_state.fullscreenCount > 0;
 }
 
-uint64_t Environment::getCurrentFrame () {
-	// TODO: IMPLEMENT
-	return this->m_frameCount;
-}
+uint64_t Environment::getCurrentFrame () { return this->m_frameCount; }
 
-bool Environment::isCloseRequested () {
-	// TODO: IMPLEMENT
-	return this->m_requestedExit;
-}
+bool Environment::isCloseRequested () { return this->m_requestedExit; }
 
 Desktop::Output* Environment::requestOutput (const std::string& name) {
 	// register the virtual output
@@ -337,6 +458,52 @@ Desktop::Output* Environment::getOutput (const std::string& name) {
 	}
 
 	return it->second;
+}
+
+bool Environment::isPendingRelevant () const {
+	return this->isRelevant (
+		this->wayland_context.fullscreen_state.pending, this->wayland_context.fullscreen_state.pendingActivated,
+		this->wayland_context.fullscreen_state.appId
+	);
+}
+
+bool Environment::isCurrentRelevant () const {
+	return this->isRelevant (
+		this->wayland_context.fullscreen_state.current, this->wayland_context.fullscreen_state.currentActivated,
+		this->wayland_context.fullscreen_state.appId
+	);
+}
+
+bool Environment::isRelevant (const bool fullscreen, const bool activated, const std::string& appId) const {
+	if (!fullscreen) {
+		return false;
+	}
+
+	if (this->m_context.settings.render.pauseOnFullscreenOnlyWhenActive && !activated) {
+		return false;
+	}
+
+	if (appId.empty ()) {
+		return true;
+	}
+
+	std::string lowercaseAppId;
+	std::transform (appId.begin (), appId.end (), lowercaseAppId.begin (), ::tolower);
+
+	for (const auto& ignore : this->m_context.settings.render.fullscreenPauseIgnoreAppIds) {
+		if (ignore.empty ()) {
+			continue;
+		}
+
+		std::string lowercaseIgnore;
+		std::transform (ignore.begin (), ignore.end (), lowercaseIgnore.begin (), ::tolower);
+
+		if (lowercaseAppId.find (lowercaseIgnore) != std::string::npos) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void Environment::refreshOutputMap () {
