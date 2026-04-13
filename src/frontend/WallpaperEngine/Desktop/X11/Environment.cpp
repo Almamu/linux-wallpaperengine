@@ -11,10 +11,31 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Desktop::X11;
 
+static void* get_proc_address (void* user_parameter, const char* name) {
+	return reinterpret_cast<void*> (glfwGetProcAddress (name));
+}
+
+static float get_time (void* user_parameter) { return glfwGetTime (); }
+
 Environment::Environment (Application::ApplicationContext& context) : Desktop::Environment (context) {
 	this->m_closeRequested = false;
 	this->m_framebuffer = GL_NONE;
 	this->m_texture = GL_NONE;
+	this->counter = {
+		.user_parameter = this,
+		.get_time = get_time,
+	};
+	this->gl_proc_address = {
+		.user_parameter = this,
+		.get_proc_address = get_proc_address,
+	};
+	this->mouse_input = {
+		.user_parameter = this,
+		.get_x = nullptr,
+		.get_y = nullptr,
+		.is_pressed = nullptr,
+	};
+	// TODO: MOUSE INPUT SUPPORT!
 
 	// initialize glfw first
 	if (glfwInit () == GLFW_FALSE) {
@@ -113,21 +134,32 @@ void Environment::render () {
 		output->render ();
 	}
 
+	glfwSwapBuffers (this->m_window);
+	glfwPollEvents ();
+
 	this->m_frameCount++;
 
 	// read pixel info into the image data buffer
 	glReadPixels (0, 0, this->m_fullWidth, this->m_fullHeight, GL_BGRA, GL_UNSIGNED_BYTE, this->m_imageData);
 
 	// put the image back into the screen
-	XPutImage (this->m_display, this->m_pixmap, this->m_gc, this->m_image, 0, 0, 0, 0, this->m_fullWidth, this->m_fullHeight);
+	XPutImage (
+		this->m_display, this->m_pixmap, this->m_gc, this->m_image, 0, 0, 0, 0, this->m_fullWidth, this->m_fullHeight
+	);
 
 	// _XROOTPMAP_ID & ESETROOT_PMAP_ID allow other program (compositors) to
 	// edit the background. Without these, other programs will clear the screen.
 	// it also forces the compositor to refresh the background (tested with picom)
 	const Atom prop_root = XInternAtom (this->m_display, "_XROOTPMAP_ID", False);
 	const Atom prop_esetroot = XInternAtom (this->m_display, "ESETROOT_PMAP_ID", False);
-	XChangeProperty (this->m_display, this->m_root, prop_root, XA_PIXMAP, 32, PropModeReplace, reinterpret_cast<unsigned char*> (&this->m_pixmap), 1);
-	XChangeProperty (this->m_display, this->m_root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, reinterpret_cast<unsigned char*> (&this->m_pixmap), 1);
+	XChangeProperty (
+		this->m_display, this->m_root, prop_root, XA_PIXMAP, 32, PropModeReplace,
+		reinterpret_cast<unsigned char*> (&this->m_pixmap), 1
+	);
+	XChangeProperty (
+		this->m_display, this->m_root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace,
+		reinterpret_cast<unsigned char*> (&this->m_pixmap), 1
+	);
 
 	XClearWindow (this->m_display, this->m_root);
 	XFlush (this->m_display);
@@ -149,13 +181,9 @@ void Environment::detectFullscreen () {
 	}
 }
 
-uint64_t Environment::getCurrentFrame() {
-	return this->m_frameCount;
-}
+uint64_t Environment::getCurrentFrame () { return this->m_frameCount; }
 
-bool Environment::isCloseRequested() {
-	return this->m_closeRequested;
-}
+bool Environment::isCloseRequested () { return glfwWindowShouldClose (this->m_window); }
 
 void Environment::registerOutput (const std::string& name, const glm::vec4 viewport) {
 	auto output = new Output (nullptr, name, viewport);
@@ -189,9 +217,8 @@ Desktop::Output* Environment::requestOutput (const std::string& name) {
 	}
 
 	// check for a matching real output (if any)
-	const auto realOutput = std::ranges::find_if (this->m_outputs, [&name] (const Output* output) {
-		return output->name == name;
-	});
+	const auto realOutput
+		= std::ranges::find_if (this->m_outputs, [&name] (const Output* output) { return output->name == name; });
 
 	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
 
@@ -248,7 +275,9 @@ void Environment::updatePixmap () {
 	this->m_imageSize = this->m_fullWidth * this->m_fullHeight * 4;
 	this->m_imageData = new char[this->m_imageSize];
 	// create an image so we can copy it over
-	this->m_image = XCreateImage (this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth, this->m_fullHeight, 32, 0);
+	this->m_image = XCreateImage (
+		this->m_display, CopyFromParent, 24, ZPixmap, 0, this->m_imageData, this->m_fullWidth, this->m_fullHeight, 32, 0
+	);
 
 	glGenTextures (1, &this->m_texture);
 	glGenFramebuffers (1, &this->m_framebuffer);
@@ -256,7 +285,9 @@ void Environment::updatePixmap () {
 	glBindFramebuffer (GL_FRAMEBUFFER, this->m_framebuffer);
 
 	glBindTexture (GL_TEXTURE_2D, this->m_texture);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, this->m_fullWidth, this->m_fullHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexImage2D (
+		GL_TEXTURE_2D, 0, GL_RGBA8, this->m_fullWidth, this->m_fullHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr
+	);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -316,7 +347,7 @@ void Environment::detectOutputs () {
 			}
 		}
 
-		outputs.emplace_back(info->name);
+		outputs.emplace_back (info->name);
 
 		XRRFreeCrtcInfo (crtc);
 	}
@@ -329,7 +360,7 @@ void Environment::detectOutputs () {
 	std::vector<Output*> toRemove;
 
 	std::ranges::copy_if (this->m_outputs, toRemove.begin (), [outputs] (const Output* output) {
-		return std::ranges::find(outputs, output->name) == outputs.end();
+		return std::ranges::find (outputs, output->name) == outputs.end ();
 	});
 
 	for (const auto& output : toRemove) {

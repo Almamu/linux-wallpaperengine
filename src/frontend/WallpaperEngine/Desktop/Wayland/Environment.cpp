@@ -256,7 +256,7 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 		.user_parameter = this,
 		.get_proc_address = get_proc_address,
 	};
-
+	// TODO: MOUSE INPUT SUPPORT!
 	this->mouse_input = { .user_parameter = this, .get_x = nullptr, .get_y = nullptr, .is_pressed = nullptr };
 }
 
@@ -441,9 +441,8 @@ Desktop::Output* Environment::requestOutput (const std::string& name) {
 	}
 
 	// check for a matching real output (if any)
-	const auto realOutput = std::ranges::find_if (this->m_outputs, [&name] (const Output* output) {
-		return output->name == name;
-	});
+	const auto realOutput
+		= std::ranges::find_if (this->m_outputs, [&name] (const Output* output) { return output->name == name; });
 
 	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
 

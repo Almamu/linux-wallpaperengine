@@ -15,10 +15,10 @@ public:
 	explicit Environment (Application::ApplicationContext& context);
 	~Environment () override;
 
-	void render() override;
-	void detectFullscreen() override;
-	uint64_t getCurrentFrame() override;
-	bool isCloseRequested() override;
+	void render () override;
+	void detectFullscreen () override;
+	uint64_t getCurrentFrame () override;
+	bool isCloseRequested () override;
 
 	void registerOutput (const std::string& name, glm::vec4 viewport);
 	void deregisterOutput (Output* output);
