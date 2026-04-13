@@ -238,6 +238,11 @@ void WallpaperApplication::advancePlaylist (
 			? clampIt->second
 			: this->m_context.settings.render.window.clamp;
 
+		const auto activeScreenIt = this->m_activeOutputs.find (screen);
+
+		if (activeScreenIt != this->m_activeOutputs.end ()) {
+			activeScreenIt->second->setWallpaper (project);
+		}
 		// TODO: STORE SCALE, CLAMP, ETC TO BE USED
 	} catch (const std::exception& e) {
 		sLog.error ("Failed to advance playlist on ", screen, ": ", e.what ());
