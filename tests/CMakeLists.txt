@@ -21,7 +21,6 @@ set(TARGET_LIBRARIES
     spirv-cross-glsl
     libcef_lib
     libcef_dll_wrapper
-    glfw
     qjs)
 
 add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
