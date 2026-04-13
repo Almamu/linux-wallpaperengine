@@ -114,3 +114,5 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${EXTERNAL_DEPS_DIR}/stb)
 
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
+
+install(TARGETS ${TARGET_NAME})
