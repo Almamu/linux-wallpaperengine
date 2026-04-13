@@ -86,6 +86,12 @@ Environment::Environment (Application::ApplicationContext& context) : Desktop::E
 }
 
 Environment::~Environment () {
+	if (this->m_window) {
+		glfwDestroyWindow (this->m_window);
+	}
+
+	glfwTerminate ();
+
 	if (this->m_framebuffer != GL_NONE) {
 		glDeleteFramebuffers (1, &this->m_framebuffer);
 		this->m_framebuffer = GL_NONE;
