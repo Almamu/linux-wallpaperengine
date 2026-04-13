@@ -83,6 +83,7 @@ if(WAYLAND_SUPPORT_FOUND)
         ${OPENGL_egl_LIBRARY})
 
     message("Wayland support enabled")
+    target_compile_definitions(${TARGET_NAME} PRIVATE WAYLAND_SUPPORT)
 endif()
 
 if(X11_FOUND)
@@ -106,6 +107,7 @@ if(X11_FOUND)
 
             ${X11_Xrandr_LIB}
             ${X11_LIBRARIES})
+        target_compile_definitions(${TARGET_NAME} PRIVATE X11_SUPPORT)
     endif()
 endif()
 add_executable(${TARGET_NAME} ${TARGET_SOURCE_FILES})
@@ -116,6 +118,6 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${EXTERNAL_DEPS_DIR}/stb)
 
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
-target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION} X11_SUPPORT=${X11_FOUND} WAYLAND_SUPPORT=${WAYLAND_SUPPORT_ENABLED})
+target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION})
 
 install(TARGETS ${TARGET_NAME})
