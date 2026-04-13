@@ -19,23 +19,23 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 static float get_time (void* user_parameter) { return glfwGetTime (); }
 
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
-    const auto context = static_cast<Environment*> (userdata);
+	const auto context = static_cast<Environment*> (userdata);
 
-    sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
+	sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
 
 	context->detectOutputs ();
 }
 
 int CustomXErrorHandler (Display* dpy, XErrorEvent* event) {
-    sLog.debugerror ("Detected X error");
+	sLog.debugerror ("Detected X error");
 
-    return 0;
+	return 0;
 }
 
 int CustomXIOErrorHandler (Display* dsp) {
-    sLog.debugerror ("Detected X error");
+	sLog.debugerror ("Detected X error");
 
-    return 0;
+	return 0;
 }
 
 Environment::Environment (
@@ -102,13 +102,13 @@ Environment::Environment (
 	}
 
 #ifdef HAVE_XSETIOERROREXITHANDLER
-    XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
+	XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
 #endif /* HAVE_XSETIOERROREXITHANDLER */
 
 	this->m_root = DefaultRootWindow (this->m_display);
 
 	XSetErrorHandler (CustomXErrorHandler);
-    XSetIOErrorHandler (CustomXIOErrorHandler);
+	XSetIOErrorHandler (CustomXIOErrorHandler);
 
 	// setup screen events so screen changes are detected
 	XRRSelectInput (this->m_display, this->m_root, RRScreenChangeNotifyMask);
