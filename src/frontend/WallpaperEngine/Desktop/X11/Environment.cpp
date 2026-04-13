@@ -81,6 +81,11 @@ Environment::Environment (Application::ApplicationContext& context) : Desktop::E
 
 	// setup screen events so screen changes are detected
 	XRRSelectInput (this->m_display, this->m_root, RRScreenChangeNotifyMask);
+	XSelectInput (this->m_display, this->m_root, SubstructureNotifyMask | PropertyChangeMask);
+	this->m_prop_root = XInternAtom (this->m_display, "_XROOTPMAP_ID", False);
+	this->m_prop_esetroot = XInternAtom (this->m_display, "ESETROOT_PMAP_ID", False);
+	this->m_net_wm_state = XInternAtom (this->m_display, "_NET_WM_STATE", False);
+	this->m_net_wm_state_fullscreen = XInternAtom (this->m_display, "_NET_WM_STATE_FULLSCREEN", False);
 
 	this->detectOutputs ();
 }
@@ -156,14 +161,12 @@ void Environment::render () {
 	// _XROOTPMAP_ID & ESETROOT_PMAP_ID allow other program (compositors) to
 	// edit the background. Without these, other programs will clear the screen.
 	// it also forces the compositor to refresh the background (tested with picom)
-	const Atom prop_root = XInternAtom (this->m_display, "_XROOTPMAP_ID", False);
-	const Atom prop_esetroot = XInternAtom (this->m_display, "ESETROOT_PMAP_ID", False);
 	XChangeProperty (
-		this->m_display, this->m_root, prop_root, XA_PIXMAP, 32, PropModeReplace,
+		this->m_display, this->m_root, this->m_prop_root, XA_PIXMAP, 32, PropModeReplace,
 		reinterpret_cast<unsigned char*> (&this->m_pixmap), 1
 	);
 	XChangeProperty (
-		this->m_display, this->m_root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace,
+		this->m_display, this->m_root, this->m_prop_esetroot, XA_PIXMAP, 32, PropModeReplace,
 		reinterpret_cast<unsigned char*> (&this->m_pixmap), 1
 	);
 
@@ -173,18 +176,92 @@ void Environment::render () {
 
 void Environment::detectFullscreen () {
 	XEvent ev;
+	XWindowAttributes attribs;
+	unsigned long nitems, bytes_after;
+	Atom* props = nullptr;
+	Atom actual_type;
+	int actual_format;
 
 	// handle X11 events
 	while (XPending (this->m_display)) {
 		XNextEvent (this->m_display, &ev);
 
-		if (ev.type != this->m_xrandrEventBase + RRScreenChangeNotify) {
+		if (ev.type == this->m_xrandrEventBase + RRScreenChangeNotify) {
+			XRRUpdateConfiguration (&ev);
+			this->detectOutputs ();
 			continue;
 		}
 
-		XRRUpdateConfiguration (&ev);
-		this->detectOutputs ();
+		switch (ev.type) {
+			case ConfigureNotify: {
+				if (ev.xconfigure.window == DefaultRootWindow (this->m_display)) {
+					continue;
+				}
+
+				const auto it = std::ranges::find (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
+
+				XGetWindowAttributes (this->m_display, ev.xconfigure.window, &attribs);
+				glm::vec4 viewport (attribs.x, attribs.y, attribs.width, attribs.height);
+
+				// compare it against any of the outputs that are available
+				const auto anyOutput = std::ranges::any_of (this->m_outputs, [&viewport] (const Output* output) {
+					return output->getViewport () == viewport;
+				});
+
+				if (anyOutput) {
+					if (it == this->m_fullscreenWindowsByGeometry.end ()) {
+						this->m_fullscreenWindowsByGeometry.push_back (ev.xconfigure.window);
+					}
+				} else {
+					std::erase (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
+				}
+			}
+				break;
+
+			case UnmapNotify:
+				std::erase (this->m_fullscreenWindowsByGeometry, ev.xunmap.window);
+				std::erase (this->m_fullscreenWindowsByState, ev.xunmap.window);
+				break;
+
+			case DestroyNotify:
+				std::erase (this->m_fullscreenWindowsByGeometry, ev.xdestroywindow.window);
+				std::erase (this->m_fullscreenWindowsByState, ev.xdestroywindow.window);
+				break;
+
+			case PropertyNotify: {
+				if (ev.xproperty.atom != this->m_net_wm_state) {
+					continue;
+				}
+
+				if (ev.xproperty.window == DefaultRootWindow (this->m_display)) {
+					continue;
+				}
+
+				if (!XGetWindowProperty (
+						this->m_display, ev.xproperty.window, this->m_net_wm_state, 0, 32, False, XA_ATOM, &actual_type,
+						&actual_format, &nitems, &bytes_after, reinterpret_cast<unsigned char**> (&props)
+					)) {
+					continue;
+					}
+
+				for (unsigned long i = 0; i < nitems; i++) {
+					if (props[i] != this->m_net_wm_state_fullscreen) {
+						continue;
+					}
+
+					std::erase (this->m_fullscreenWindowsByState, ev.xproperty.window);
+				}
+
+				if (props) {
+					XFree (props);
+					props = nullptr;
+				}
+			}
+				break;
+		}
 	}
+
+	this->anything_fullscreen = !this->m_fullscreenWindowsByGeometry.empty () || !this->m_fullscreenWindowsByState.empty ();
 }
 
 uint64_t Environment::getCurrentFrame () { return this->m_frameCount; }

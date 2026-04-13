@@ -53,6 +53,13 @@ private:
 	GLuint m_framebuffer;
 	GLuint m_texture;
 
+	Atom m_net_wm_state;
+	Atom m_net_wm_state_fullscreen;
+	Atom m_prop_root;
+	Atom m_prop_esetroot;
+	std::vector<Window> m_fullscreenWindowsByGeometry;
+	std::vector<Window> m_fullscreenWindowsByState;
+
 	std::map<std::string, VirtualOutput<Output>*> m_requestedOutputs;
 	std::vector<Output*> m_outputs;
 };
