@@ -32,6 +32,7 @@ Bring **Wallpaper Engine**-style live wallpapers to Linux! This project allows y
 
 To compile and run this, you'll need:
 
+- WallpaperEngine installed in Steam (or WallpaperEngine assets somewhere in your system)
 - OpenGL 3.3 support
 - CMake
 - LZ4, Zlib
@@ -43,8 +44,6 @@ To compile and run this, you'll need:
 - MPV
 - PulseAudio
 - FFTW3
-
-Install the required dependencies on Ubuntu/Debian-based systems:
 
 ### Ubuntu 22.04
 ```bash
@@ -64,27 +63,19 @@ sudo epm update
 sudo epm install gcc-c++ make cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libGL-devel libGLEW-devel freeglut-devel libSDL2-devel liblz4-devel libavcodec-devel libavformat-devel libavutil-devel libswscale-devel libXxf86vm-devel libglm-devel libglfw3-devel libmpv-devel mpv libpulseaudio-devel libpulseaudio libfftw3-devel libpng-devel libffi-devel libswresample-devel libgmpxx-devel
 ```
 
-Install the required dependencies on RHEL/Fedora-based systems:
-
 ### Fedora 42
 ```bash
 sudo dnf update
 sudo dnf install gcc g++ cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel glew-devel freeglut-devel SDL2-devel lz4-devel ffmpeg ffmpeg-free-devel libXxf86vm-devel glm-devel glfw-devel mpv mpv-devel pulseaudio-libs-devel fftw-devel gmp-devel
 ```
 
----
+### Arch Linux
 
-## 🐧 Arch Linux Users
-
-You can install this directly from the AUR using your favorite AUR helper:
+Arch Linux users can install linux-wallpaperengine-git from the AUR:
 
 ```bash
 yay -S linux-wallpaperengine-git
 ```
-
-> This installs the latest development version.
-
-**Note:** You’ll still need assets from the official Wallpaper Engine (via Steam). See below for details.
 
 ---
 

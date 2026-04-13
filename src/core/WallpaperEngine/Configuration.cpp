@@ -3,8 +3,10 @@
 #include <vector>
 
 #include "Configuration.h"
+
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "vdf.hpp"
 
 #include "Data/Parsers/ConfigParser.h"
 #include "Data/Parsers/ProjectParser.h"
@@ -56,7 +58,7 @@ bool Configuration::setSteamDir (const std::filesystem::path& path) {
 	// check for workshop and content folders
 	try {
 		const std::filesystem::path backgrounds = Steam::FileSystem::workshopDirectory (path, WORKSHOP_APP_ID);
-		const std::filesystem::path assets = Steam::FileSystem::appDirectory (path, "wallpaper_engine") / "assets";
+		const std::filesystem::path assets = Steam::FileSystem::appDirectory (path, WORKSHOP_APP_ID) / "assets";
 
 		// prevent partially setting these values as they may break
 		if (!std::filesystem::exists (backgrounds) || !std::filesystem::exists (backgrounds)) {
