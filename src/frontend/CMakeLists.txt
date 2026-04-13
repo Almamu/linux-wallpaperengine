@@ -129,7 +129,7 @@ if(X11_FOUND AND X11_Xrandr_FOUND AND X11_xf86vmode_FOUND)
     target_compile_definitions(${TARGET_NAME} PUBLIC X11_SUPPORT)
 endif()
 
-if(WAYLAND_SUPPORT)
+if(WAYLAND_SUPPORT_FOUND)
     target_compile_definitions(${TARGET_NAME} PUBLIC WAYLAND_SUPPORT)
 endif()
 

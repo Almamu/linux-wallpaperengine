@@ -131,15 +131,16 @@ void WallpaperApplication::setupEnvironment () {
 #ifdef WAYLAND_SUPPORT
 		if (strncmp (XDG_SESSION_TYPE, "wayland", 7) == 0) {
 			this->m_desktopEnvironment = new Desktop::Wayland::Environment (this->m_context, *this, *this);
-		}
+		} else
 #endif
 #ifdef X11_SUPPORT
-		if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
+			if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
 			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context, *this, *this);
-		}
+		} else
 #endif
-
-		sLog.exception ("Unknown desktop type ", XDG_SESSION_TYPE);
+		{
+			sLog.exception ("Unknown desktop type ", XDG_SESSION_TYPE);
+		}
 	} else {
 		sLog.debug ("No desktop mode requested, using window output");
 		this->m_desktopEnvironment = new Desktop::Universal::Environment (this->m_context, *this, *this);

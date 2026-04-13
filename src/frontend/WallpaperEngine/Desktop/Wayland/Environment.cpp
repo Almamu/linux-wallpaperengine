@@ -6,6 +6,8 @@
 #include <cstring>
 #include <ranges>
 
+#include <sys/poll.h>
+
 #define class _class
 #define namespace _namespace
 #define static
@@ -210,6 +212,32 @@ static float get_time (void* user_parameter) {
 		/ 1000000.0f;
 }
 
+int wl_display_dispatch_nonblock (struct wl_display* display) {
+	// Try to read without blocking
+	if (wl_display_prepare_read (display) == 0) {
+		if (wl_display_flush (display) < 0) {
+			wl_display_cancel_read (display);
+			return -1;
+		}
+
+		struct pollfd pfd = {
+			.fd = wl_display_get_fd (display),
+			.events = POLLIN,
+		};
+
+		// Zero timeout = non-blocking poll
+		if (poll (&pfd, 1, 0) > 0) {
+			if (wl_display_read_events (display) < 0) {
+				return -1;
+			}
+		} else {
+			wl_display_cancel_read (display);
+		}
+	}
+
+	return wl_display_dispatch_pending (display);
+}
+
 Environment::Environment (
 	WallpaperEngine::Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
 	ScreenUnavailableNotification& unavailableNotification
@@ -398,7 +426,7 @@ void Environment::render () {
 
 	this->refreshOutputMap ();
 
-	if (wl_display_dispatch_timeout (this->wayland_context.display, nullptr) == -1) {
+	if (wl_display_dispatch_nonblock (this->wayland_context.display) == -1) {
 		this->m_requestedExit = true;
 	}
 
