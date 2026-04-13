@@ -1,4 +1,4 @@
-# GNOME
+# MATE
 
 - Window Server: X11
 
