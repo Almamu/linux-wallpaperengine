@@ -8,6 +8,8 @@
 
 #include <chrono>
 #include <map>
+#include <vector>
+#include <string>
 #include <memory>
 
 #include "WallpaperEngine/Desktop/Environment.h"
