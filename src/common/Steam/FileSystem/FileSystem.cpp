@@ -1,5 +1,5 @@
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
 #include "FileSystem.h"
 
@@ -20,7 +20,8 @@ std::filesystem::path Steam::FileSystem::workshopDirectory (const std::string& b
 
 std::filesystem::path Steam::FileSystem::appDirectory (const std::string& base, int appID) {
 	auto libraryfolderspath = std::filesystem::path (base) / "steamapps" / "libraryfolders.vdf";
-	auto appmanifestpath = std::filesystem::path (base) / "steamapps" / (std::string("appmanifest_") + std::to_string (appID) + ".acf");
+	auto appmanifestpath
+		= std::filesystem::path (base) / "steamapps" / (std::string ("appmanifest_") + std::to_string (appID) + ".acf");
 
 	if (!std::filesystem::exists (libraryfolderspath) || std::filesystem::is_directory (libraryfolderspath)) {
 		sLog.exception ("Cannot find libraryfolders.vdf on ", base);
@@ -53,7 +54,9 @@ std::filesystem::path Steam::FileSystem::appDirectory (const std::string& base, 
 	const auto installdirvalue = installdir->getValue ();
 
 	if (installdirvalue.has_value () == false) {
-		sLog.exception ("Cannot find value in name in AppState in appmanifest_", std::to_string (appID), ".acf on ", base);
+		sLog.exception (
+			"Cannot find value in name in AppState in appmanifest_", std::to_string (appID), ".acf on ", base
+		);
 	}
 
 	buffer.str (std::string ());
