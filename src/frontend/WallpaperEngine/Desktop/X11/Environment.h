@@ -26,16 +26,16 @@ public:
 
 	void registerOutput (const std::string& name, glm::vec4 viewport);
 	void deregisterOutput (Output* output);
+	/**
+	 * Detects all available outputs and registers them
+	 */
+	void detectOutputs ();
 
 private:
 	/**
 	 * Updates the pixmap used to copy over data to X11
 	 */
 	void updatePixmap ();
-	/**
-	 * Detects all available outputs and registers them
-	 */
-	void detectOutputs ();
 
 	GLFWwindow* m_window;
 	Display* m_display;

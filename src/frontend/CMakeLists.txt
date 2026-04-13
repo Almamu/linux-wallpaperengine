@@ -83,7 +83,6 @@ if(WAYLAND_SUPPORT_FOUND)
         ${OPENGL_egl_LIBRARY})
 
     message("Wayland support enabled")
-    target_compile_definitions(${TARGET_NAME} PRIVATE WAYLAND_SUPPORT)
 endif()
 
 if(X11_FOUND)
@@ -107,7 +106,6 @@ if(X11_FOUND)
 
             ${X11_Xrandr_LIB}
             ${X11_LIBRARIES})
-        target_compile_definitions(${TARGET_NAME} PRIVATE X11_SUPPORT)
     endif()
 endif()
 add_executable(${TARGET_NAME} ${TARGET_SOURCE_FILES})
@@ -119,5 +117,20 @@ target_include_directories(${TARGET_NAME} PUBLIC
 
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
 target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION})
+
+if(X11_FOUND AND X11_Xrandr_FOUND AND X11_xf86vmode_FOUND)
+    # make sure some of the X11 functions we'll use are available
+    check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
+
+    if(HAVE_XSETIOERROREXITHANDLER)
+        target_compile_definitions(${TARGET_NAME} PUBLIC HAVE_XSETIOERROREXITHANDLER)
+    endif()
+
+    target_compile_definitions(${TARGET_NAME} PUBLIC X11_SUPPORT)
+endif()
+
+if(WAYLAND_SUPPORT)
+    target_compile_definitions(${TARGET_NAME} PUBLIC WAYLAND_SUPPORT)
+endif()
 
 install(TARGETS ${TARGET_NAME})

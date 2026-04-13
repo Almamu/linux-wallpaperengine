@@ -4,6 +4,7 @@
 
 #include <GLFW/glfw3.h>
 #include <X11/Xatom.h>
+#include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 #include <algorithm>
 #include <ranges>
@@ -16,6 +17,26 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 }
 
 static float get_time (void* user_parameter) { return glfwGetTime (); }
+
+void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
+    const auto context = static_cast<Environment*> (userdata);
+
+    sLog.debugerror ("Critical XServer error detected. Attempting to recover...");
+
+	context->detectOutputs ();
+}
+
+int CustomXErrorHandler (Display* dpy, XErrorEvent* event) {
+    sLog.debugerror ("Detected X error");
+
+    return 0;
+}
+
+int CustomXIOErrorHandler (Display* dsp) {
+    sLog.debugerror ("Detected X error");
+
+    return 0;
+}
 
 Environment::Environment (
 	Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
@@ -80,7 +101,14 @@ Environment::Environment (
 		sLog.error ("XRandr is not present");
 	}
 
+#ifdef HAVE_XSETIOERROREXITHANDLER
+    XSetIOErrorExitHandler (this->m_display, CustomXIOErrorExitHandler, this);
+#endif /* HAVE_XSETIOERROREXITHANDLER */
+
 	this->m_root = DefaultRootWindow (this->m_display);
+
+	XSetErrorHandler (CustomXErrorHandler);
+    XSetIOErrorHandler (CustomXIOErrorHandler);
 
 	// setup screen events so screen changes are detected
 	XRRSelectInput (this->m_display, this->m_root, RRScreenChangeNotifyMask);
