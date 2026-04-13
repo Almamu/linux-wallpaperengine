@@ -37,4 +37,4 @@
 	url = https://github.com/quickjs-ng/quickjs.git
 [submodule "src/External/source-parsers"]
 	path = src/External/source-parsers
-	url = git@github.com:tasbox-org/source-parsers.git
+	url = https://github.com/tasbox-org/source-parsers.git
