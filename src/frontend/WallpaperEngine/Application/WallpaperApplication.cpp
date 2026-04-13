@@ -1,5 +1,6 @@
 #include "WallpaperApplication.h"
 
+#include "../../../../include/frontends/project.h"
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
 
 #include <glad/glad.h>
@@ -478,10 +479,6 @@ void WallpaperApplication::setupOpenGLDebugging () {
 void WallpaperApplication::setup () {
 	this->setupAudio ();
 	setupOpenGLDebugging ();
-
-	if (this->m_context.settings.general.dumpStructure) {
-		// TODO: REIMPLEMENT
-	}
 
 #if DEMOMODE
 	// ensure only one background is running so everything can be properly caught

@@ -11,6 +11,7 @@
 #include <cstring>
 #include <filesystem>
 
+bool dumpStructure = false;
 std::string assetsPath;
 std::string steamPath;
 std::string wallpaper;
@@ -35,8 +36,13 @@ void* glfw_gl_proc_address_impl (void* user_parameter, const char* proc_name) {
 
 float glfw_get_time (void* user_parameter) { return glfwGetTime (); }
 
+void describe_write (void* user_parameter, const char* buffer, const unsigned long size) {
+	std::cout.write (buffer, size);
+}
+
 wp_gl_proc_address glfw_gl_proc_address = { .user_parameter = nullptr, .get_proc_address = glfw_gl_proc_address_impl };
 wp_time_counter glfw_time_counter = { .user_parameter = nullptr, .get_time = glfw_get_time };
+wp_describe_callback describe_callback = { .user_parameter = nullptr, .write = describe_write };
 
 void parseArgs (const int argc, char* argv[]) {
 	argparse::ArgumentParser program ("linux-wallpaperengine-dev-viewer", "0.0", argparse::default_arguments::help);
@@ -64,6 +70,11 @@ void parseArgs (const int argc, char* argv[]) {
 				properties.emplace (value.substr (0, equals), value.substr (equals + 1));
 			}
 		});
+
+	program.add_argument ("-d", "--dump-structure")
+		.help ("Dumps the structure of the background")
+		.flag ()
+		.store_into (dumpStructure);
 
 	program.parse_known_args (argc, argv);
 }
@@ -141,6 +152,15 @@ int main (const int argc, char* argv[]) {
 
 	if (project == nullptr) {
 		sLog.exception ("Cannot load background ", wallpaper);
+	}
+
+	if (dumpStructure) {
+		wp_project_describe (project, &describe_callback);
+		wp_project_destroy (project);
+		wp_context_destroy (context);
+		wp_config_destroy (configuration);
+
+		return 0;
 	}
 
 	const int width = wp_project_get_width (project);

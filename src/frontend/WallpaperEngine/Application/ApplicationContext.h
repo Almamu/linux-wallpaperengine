@@ -67,8 +67,6 @@ public:
 		struct {
 			/** If the user requested a list of properties for the given background */
 			bool onlyListProperties;
-			/** If the user requested a dump of the background structure */
-			bool dumpStructure;
 			/** If the user requested the particles to be deactivated */
 			bool disableParticles;
 			/** The path to the assets folder */
@@ -154,7 +152,6 @@ public:
 	} settings = {
         .general = {
             .onlyListProperties = false,
-            .dumpStructure = false,
             .assets = std::nullopt,
         	.steam = std::nullopt,
             .backgrounds = {},

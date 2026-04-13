@@ -280,13 +280,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 		})
 		.append ();
 
-	auto& debuggingGroup = program.add_group ("Debugging options");
-
-	debuggingGroup.add_argument ("-z", "--dump-structure")
-		.help ("Dumps the structure of the backgrounds")
-		.flag ()
-		.store_into (this->settings.general.dumpStructure);
-
 	program.add_epilog (
 		"Usage examples:\n"
 		"  linux-wallpaperengine --screen-root HDMI-1 --bg 2317494988 --scaling fill --clamp border\n"

@@ -382,7 +382,6 @@ void Environment::finishEGL () const {
 }
 
 void Environment::registerOutput (wl_registry* registry, uint32_t name) {
-	// TODO: REPLACE THIS
 	this->m_stagingOutputs.push_back (new Output (registry, name, *this));
 }
 
