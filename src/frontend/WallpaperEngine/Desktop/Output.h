@@ -1,6 +1,6 @@
 #pragma once
 
-#include "glad/glad.h"
+#include <glad/glad.h>
 
 #include <glm/vec4.hpp>
 #include <linux-wallpaperengine/project.h>

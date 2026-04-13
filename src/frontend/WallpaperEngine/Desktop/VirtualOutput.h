@@ -12,7 +12,7 @@ public:
 		this->m_realOutput = output;
 	}
 
-	~VirtualOutput () override { }
+	~VirtualOutput () override = default;
 
 	void render () override {
 		if (this->m_realOutput == nullptr) {

@@ -4,11 +4,11 @@
 
 #include "Output.h"
 
-namespace WallpaperEngine {
-namespace Application {
+namespace WallpaperEngine::Application {
 	class ApplicationContext;
 }
-namespace Desktop {
+
+namespace WallpaperEngine::Desktop {
 	class Environment {
 	public:
 		explicit Environment (Application::ApplicationContext& context);
@@ -32,5 +32,4 @@ namespace Desktop {
 	protected:
 		Application::ApplicationContext& m_context;
 	};
-}
 }

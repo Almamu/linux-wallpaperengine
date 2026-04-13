@@ -25,6 +25,7 @@ include(RequireArgParse)
 find_package(linux-wallpaperengine-core REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(X11)
 # detect wayland support
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
 pkg_check_modules(pulseaudio REQUIRED IMPORTED_TARGET libpulse)
@@ -82,6 +83,29 @@ if(WAYLAND_SUPPORT_FOUND)
         ${OPENGL_egl_LIBRARY})
 endif()
 
+if(X11_FOUND)
+        if(NOT X11_Xrandr_FOUND)
+        message(WARNING "X11 support disabled. Xrandr package is missing")
+    elseif(NOT X11_xf86vmode_FOUND)
+        message(WARNING "X11 support disabled. Xxf86vm package is missing")
+    else()
+        message("X11 support enabled")
+        set(TARGET_SOURCE_FILES
+            ${TARGET_SOURCE_FILES}
+
+            WallpaperEngine/Desktop/X11/Environment.cpp
+            WallpaperEngine/Desktop/X11/Output.cpp)
+        set(TARGET_INCLUDE_DIRS
+            ${TARGET_INCLUDE_DIRS}
+
+            ${X11_INCLUDES})
+        set(TARGET_LIBRARIES
+            ${TARGET_LIBRARIES}
+
+            ${X11_Xrandr_LIB}
+            ${X11_LIBRARIES})
+    endif()
+endif()
 add_executable(${TARGET_NAME} ${TARGET_SOURCE_FILES})
 
 target_include_directories(${TARGET_NAME} PUBLIC

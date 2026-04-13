@@ -9,6 +9,7 @@
 #include "WallpaperEngine/Debugging/CallStack.h"
 #include "WallpaperEngine/Desktop/Universal/Environment.h"
 #include "WallpaperEngine/Desktop/Wayland/Environment.h"
+#include "WallpaperEngine/Desktop/X11/Environment.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/vec3.hpp>
@@ -118,7 +119,7 @@ void WallpaperApplication::setupEnvironment () {
 		}
 
 		if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
-			sLog.exception ("X11 detected");
+			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context);
 		}
 	} else {
 		sLog.debug ("No desktop mode requested, using window output");

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <ranges>
 
 #define class _class
 #define namespace _namespace
@@ -85,7 +86,6 @@ static void handle_toplevel_state (void* data, zwlr_foreign_toplevel_handle_v1* 
 static void handle_toplevel_done (void* data, zwlr_foreign_toplevel_handle_v1* handle) {
 	const auto impl = static_cast<Environment*> (data);
 
-	// TODO: CHECK FOR RELEVANCY
 	const bool pendingRelevant = impl->isPendingRelevant ();
 	const bool currentRelevant = impl->isCurrentRelevant ();
 
@@ -111,7 +111,6 @@ static void handle_toplevel_done (void* data, zwlr_foreign_toplevel_handle_v1* h
 static void handle_toplevel_closed (void* data, zwlr_foreign_toplevel_handle_v1* handle) {
 	const auto impl = static_cast<Environment*> (data);
 
-	// TODO: CHECK FOR RELEVANCY
 	if (impl->isCurrentRelevant ()) {
 		if (impl->wayland_context.fullscreen_state.fullscreenCount == 0) {
 			sLog.error ("Fullscreen count underflow!!");
@@ -226,6 +225,7 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 		                      .seat = nullptr };
 
 	this->wayland_context.display = wl_display_connect (nullptr);
+	this->wayland_context.display = wl_display_connect (nullptr);
 
 	if (this->wayland_context.display == nullptr) {
 		sLog.exception ("Failed to query wayland display");
@@ -266,6 +266,18 @@ Environment::~Environment () {
 	if (this->wayland_context.display) {
 		wl_display_disconnect (this->wayland_context.display);
 	}
+
+	// free all outputs
+	for (const auto output : this->m_requestedOutputs | std::views::values) {
+		delete output;
+	}
+
+	for (const auto output : this->m_outputs) {
+		delete output;
+	}
+
+	this->m_requestedOutputs.clear ();
+	this->m_outputs.clear ();
 }
 
 void Environment::initEGL () {
@@ -430,7 +442,7 @@ Desktop::Output* Environment::requestOutput (const std::string& name) {
 
 	// check for a matching real output (if any)
 	const auto realOutput = std::ranges::find_if (this->m_outputs, [&name] (const Output* output) {
-		return output->name.compare (name) == 0;
+		return output->name == name;
 	});
 
 	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
