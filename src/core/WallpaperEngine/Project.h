@@ -14,7 +14,7 @@ namespace WallpaperEngine {
 class Context;
 class Project {
 protected:
-	std::vector<ProjectSharedPtr>::const_iterator ref;
+	ProjectSharedPtr ref;
 	std::unique_ptr<CWallpaper> wallpaper;
 	std::unique_ptr<RenderContext> renderContext;
 	wp_mouse_input* mouse_input;

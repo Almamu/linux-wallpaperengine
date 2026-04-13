@@ -20,7 +20,7 @@ ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration
 	m_argc (argc), m_argv (argv), m_config (config) { }
 
 void ApplicationContext::loadSettingsFromArgv () {
-	std::string lastScreen;
+	std::string lastScreen = DEFAULT_SCREEN_NAME;
 
 	argparse::ArgumentParser program ("linux-wallpaperengine", "0.0", argparse::default_arguments::help);
 
@@ -32,7 +32,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 		.default_value ("")
 		.action ([this] (const std::string& value) -> void {
 			if (!value.empty ()) {
-				this->settings.general.defaultBackground = value;
+				this->settings.general.backgrounds[DEFAULT_SCREEN_NAME] = value;
 			}
 		});
 
@@ -70,8 +70,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	backgroundMode.add_argument ("-r", "--screen-root")
 		.help ("The screen the following settings will have an effect on")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			if (this->settings.general.screenBackgrounds.find (value)
-		        != this->settings.general.screenBackgrounds.end ()) {
+			if (this->settings.general.backgrounds.contains (value)) {
 				sLog.exception ("Cannot specify the same screen more than once: ", value);
 			}
 			if (this->settings.render.mode == EXPLICIT_WINDOW) {
@@ -80,7 +79,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 
 			this->settings.render.mode = DESKTOP_BACKGROUND;
 			lastScreen = value;
-			this->settings.general.screenBackgrounds[lastScreen] = "";
+			this->settings.general.backgrounds[lastScreen] = "";
 			this->settings.general.screenScalings[lastScreen] = this->settings.render.window.scalingMode;
 			this->settings.general.screenClamps[lastScreen] = this->settings.render.window.clamp;
 		})
@@ -88,9 +87,12 @@ void ApplicationContext::loadSettingsFromArgv () {
 	backgroundGroup.add_argument ("-b", "--bg")
 		.help ("After --screen-root, specifies the background to use for the given screen")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			this->settings.general.screenBackgrounds[lastScreen] = value;
-			// set the default background to the last one used
-			this->settings.general.defaultBackground = value;
+			this->settings.general.backgrounds[lastScreen] = value;
+
+			if (this->settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME) == false) {
+				// set the default background to the last one used
+				this->settings.general.backgrounds[DEFAULT_SCREEN_NAME] = value;
+			}
 		})
 		.append ();
 	backgroundGroup.add_argument ("--playlist")
@@ -99,14 +101,10 @@ void ApplicationContext::loadSettingsFromArgv () {
 			"screen, otherwise it is used in window mode."
 		)
 		.action ([this, &lastScreen] (const std::string& value) -> void {
-			if (lastScreen.empty ()) {
-				this->settings.general.defaultPlaylist = value;
-			} else {
-				this->settings.general.screenPlaylists[lastScreen] = value;
+			this->settings.general.playlists[lastScreen] = value;
 
-				if (!this->settings.general.defaultPlaylist.has_value ()) {
-					this->settings.general.defaultPlaylist = value;
-				}
+			if (this->settings.general.playlists.contains (DEFAULT_SCREEN_NAME) == false) {
+				this->settings.general.playlists[DEFAULT_SCREEN_NAME] = value;
 			}
 		})
 		.append ();
@@ -311,8 +309,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	try {
 		program.parse_known_args (this->m_argc, this->m_argv);
 
-		if (this->settings.general.defaultBackground.empty ()) {
-			throw std::runtime_error ("At least one background ID must be specified");
+		if (this->settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME) == false) {
+			sLog.exception ("At least one background ID must be specified");
 		}
 
 		this->settings.audio.volume = std::max (0, std::min (this->settings.audio.volume, 128));
@@ -420,11 +418,11 @@ void ApplicationContext::validateScreenshot () const {
 void ApplicationContext::validatePlaylists () {
 	std::vector<std::string> playlistsToCheck;
 
-	if (this->settings.general.defaultPlaylist.has_value ()) {
-		playlistsToCheck.push_back (this->settings.general.defaultPlaylist.value ());
+	if (this->settings.general.playlists.contains (DEFAULT_SCREEN_NAME)) {
+		playlistsToCheck.push_back (this->settings.general.playlists[DEFAULT_SCREEN_NAME]);
 	}
 
-	for (const auto& playlist : this->settings.general.screenPlaylists | std::views::values) {
+	for (const auto& playlist : this->settings.general.playlists | std::views::values) {
 		playlistsToCheck.push_back (playlist);
 	}
 

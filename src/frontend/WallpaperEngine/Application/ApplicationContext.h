@@ -13,6 +13,8 @@
 
 #include <glm/vec4.hpp>
 
+#define DEFAULT_SCREEN_NAME "__default__screen__"
+
 namespace WallpaperEngine::Application {
 /**
  * Application information as parsed off the command line arguments
@@ -73,10 +75,8 @@ public:
 			std::optional<std::filesystem::path> assets;
 			/** The path to the steam folder */
 			std::optional<std::filesystem::path> steam;
-			/** Background to load (provided as the final argument) as fallback for multi-screen setups */
-			std::string defaultBackground;
 			/** The backgrounds specified for different screens */
-			std::map<std::string, std::string> screenBackgrounds;
+			std::map<std::string, std::string> backgrounds;
 			/** Properties to change values for */
 			std::map<std::string, std::string> properties;
 			/** The scaling mode for different screens */
@@ -84,9 +84,7 @@ public:
 			/** The clamping mode for different screens */
 			std::map<std::string, CLAMP_MODE> screenClamps;
 			/** Playlists selected per screen */
-			std::map<std::string, std::string> screenPlaylists;
-			/** Playlist used in window mode */
-			std::optional<std::string> defaultPlaylist;
+			std::map<std::string, std::string> playlists;
 		} general;
 
 		/**
@@ -159,13 +157,11 @@ public:
             .dumpStructure = false,
             .assets = std::nullopt,
         	.steam = std::nullopt,
-            .defaultBackground = "",
-            .screenBackgrounds = {},
+            .backgrounds = {},
             .properties = {},
             .screenScalings = {},
             .screenClamps = {},
-            .screenPlaylists = {},
-            .defaultPlaylist = std::nullopt,
+            .playlists = {},
         },
         .render = {
             .mode = NORMAL_WINDOW,

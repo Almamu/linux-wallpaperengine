@@ -55,7 +55,6 @@ static void name (void* data, wl_output* wl_output, const char* name) {
 
 	if (name) {
 		output->name = name;
-		output->notifyEnvironment ();
 	}
 }
 
@@ -198,10 +197,7 @@ void Output::setupLayerShell () {
 	}
 
 	this->initialized = true;
-	this->notifyEnvironment ();
 }
-
-void Output::notifyEnvironment () const { this->m_environment.refreshOutputMap (); }
 
 void Output::makeCurrent () const {
 	if (eglMakeCurrent (

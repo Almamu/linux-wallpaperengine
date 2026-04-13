@@ -9,16 +9,16 @@
 namespace WallpaperEngine::Desktop::Universal {
 class Environment : public Desktop::Environment {
 public:
-	explicit Environment (Application::ApplicationContext& context);
+	Environment (
+		Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+		ScreenUnavailableNotification& unavailableNotification
+	);
 	~Environment () override;
 
 	void render () override;
 	void detectFullscreen () override;
 	uint64_t getCurrentFrame () override;
 	bool isCloseRequested () override;
-
-	[[nodiscard]] Output* requestOutput (const std::string& name) override;
-	[[nodiscard]] Output* getOutput (const std::string& name) override;
 
 private:
 	uint64_t m_framecount;

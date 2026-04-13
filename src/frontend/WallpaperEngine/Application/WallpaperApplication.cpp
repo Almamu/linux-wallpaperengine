@@ -58,7 +58,6 @@ void CustomGLDebugCallback (
 WallpaperApplication::WallpaperApplication (ApplicationContext& context) :
 	m_context (context), m_desktopEnvironment (nullptr) {
 	this->m_context.state.context = wp_context_create (this->m_context.getConfig ());
-	this->loadBackgrounds ();
 	this->setupEnvironment ();
 	this->setupProperties ();
 }
@@ -100,6 +99,8 @@ void WallpaperApplication::registerPlaylist (
 	this->m_activePlaylists.insert_or_assign (screen, std::move (state));
 }
 
+void WallpaperApplication::deregisterPlaylist (const std::string& screen) { this->m_activePlaylists.erase (screen); }
+
 void WallpaperApplication::setupEnvironment () {
 	if (this->m_context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND) {
 		const char* XDG_SESSION_TYPE = getenv ("XDG_SESSION_TYPE");
@@ -115,73 +116,20 @@ void WallpaperApplication::setupEnvironment () {
 		sLog.debug ("Checking for window servers: wayland, x11, default");
 
 		if (strncmp (XDG_SESSION_TYPE, "wayland", 7) == 0) {
-			this->m_desktopEnvironment = new Desktop::Wayland::Environment (this->m_context);
-		}
-
-		if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
-			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context);
+			this->m_desktopEnvironment = new Desktop::Wayland::Environment (this->m_context, *this, *this);
+		} else if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
+			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context, *this, *this);
+		} else {
+			sLog.exception ("Unknown desktop type ", XDG_SESSION_TYPE);
 		}
 	} else {
 		sLog.debug ("No desktop mode requested, using window output");
-		this->m_desktopEnvironment = new Desktop::Universal::Environment (this->m_context);
+		this->m_desktopEnvironment = new Desktop::Universal::Environment (this->m_context, *this, *this);
 	}
 
 	// setup counter and gl_proc_address
 	wp_context_set_gl_proc_address (this->m_context.state.context, &this->m_desktopEnvironment->gl_proc_address);
 	wp_context_set_time_counter (this->m_context.state.context, &this->m_desktopEnvironment->counter);
-
-	// request as many outputs as the user requested backgrounds
-	for (const auto& [name, background] : this->m_backgrounds) {
-		this->m_desktopEnvironment->requestOutput (name)->setWallpaper (background);
-	}
-}
-
-void WallpaperApplication::loadBackgrounds () {
-	const auto& playlists = this->m_context.getPlaylists ();
-	std::optional<ApplicationContext::PlaylistDefinition> defaultPlaylist;
-	auto defaultBackground = this->m_context.settings.general.defaultBackground;
-
-	if (this->m_context.settings.general.defaultPlaylist.has_value ()) {
-		// playlists take precedence over default background
-		const auto it = playlists.find (this->m_context.settings.general.defaultPlaylist.value ());
-
-		if (it != playlists.end () && !it->second.items.empty ()) {
-			defaultBackground = it->second.items.front ();
-			defaultPlaylist = it->second;
-			this->registerPlaylist ("default", *defaultPlaylist, defaultBackground);
-		}
-	}
-
-	// default background detected, assign it to the right scree
-	if (this->m_context.settings.render.mode == ApplicationContext::NORMAL_WINDOW
-	    || this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW) {
-		if (defaultPlaylist.has_value ()) {
-			this->registerPlaylist ("default", *defaultPlaylist, defaultBackground);
-		}
-
-		this->m_backgrounds["default"] = this->loadBackground (defaultBackground);
-		return;
-	}
-
-	for (const auto& [screen, path] : this->m_context.settings.general.screenBackgrounds) {
-		defaultBackground = path.empty () ? this->m_context.settings.general.defaultBackground : path;
-		const auto it = this->m_context.settings.general.screenPlaylists.find (screen);
-
-		if (it == this->m_context.settings.general.screenPlaylists.end ()) {
-			this->m_backgrounds[screen] = this->loadBackground (defaultBackground);
-			continue;
-		}
-
-		// playlist is set, get the first background and load it
-		const auto playlistIt = playlists.find (it->second);
-
-		if (playlistIt != playlists.end () && !playlistIt->second.items.empty ()) {
-			defaultBackground = playlistIt->second.items.front ();
-			this->registerPlaylist (screen, playlistIt->second, defaultBackground);
-		}
-
-		this->m_backgrounds[screen] = this->loadBackground (defaultBackground);
-	}
 }
 
 wp_project* WallpaperApplication::loadBackground (const std::string& bg) const {
@@ -272,8 +220,13 @@ void WallpaperApplication::advancePlaylist (
 			project = this->loadBackground (nextPath);
 		}
 
-		this->setupPropertiesForProject (project);
+		auto previousBgIt = this->m_backgrounds.find (screen);
 
+		if (previousBgIt != this->m_backgrounds.end ()) {
+			wp_project_destroy (previousBgIt->second);
+		}
+
+		this->setupPropertiesForProject (project);
 		this->m_backgrounds[screen] = project;
 
 		const auto scalingIt = this->m_context.settings.general.screenScalings.find (screen);
@@ -403,14 +356,7 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
 	std::vector<ViewportCapture> captures;
 	int currentXOffset = 0;
 
-	for (const auto& screen : this->m_backgrounds | std::views::keys) {
-		const auto output = this->m_desktopEnvironment->getOutput (screen);
-
-		if (output == nullptr) {
-			sLog.error ("Cannot find viewport for screen ", screen);
-			continue;
-		}
-
+	for (const auto& [screen, output] : this->m_activeOutputs) {
 		const auto viewport = output->getViewport ();
 		const int vpWidth = viewport.z - viewport.x;
 		const int vpHeight = viewport.w - viewport.y;
@@ -652,3 +598,87 @@ void WallpaperApplication::signal (int signal) {
 const std::map<std::string, wp_project*>& WallpaperApplication::getBackgrounds () const { return this->m_backgrounds; }
 
 ApplicationContext& WallpaperApplication::getContext () const { return this->m_context; }
+
+void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop::Output* output) {
+	// only act on screens that don't have a background set
+	if (this->m_backgrounds.contains (screen)) {
+		return;
+	}
+
+	const auto& playlists = this->m_context.getPlaylists ();
+	std::optional<ApplicationContext::PlaylistDefinition> defaultPlaylist = std::nullopt;
+	std::optional<std::string> defaultBackground = std::nullopt;
+	bool defaultBackgroundFromPlaylist = false;
+
+	if (playlists.contains (screen)) {
+		defaultPlaylist = playlists.at (screen);
+	}
+
+	// fallback to DEFAULT_SCREEN_NAME as default background
+	if (this->m_context.settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME)) {
+		defaultBackground = this->m_context.settings.general.backgrounds[DEFAULT_SCREEN_NAME];
+	}
+
+	// default playlist overrides the default background
+	if (this->m_context.settings.general.playlists.contains (DEFAULT_SCREEN_NAME)) {
+		const auto it = playlists.find (this->m_context.settings.general.playlists[DEFAULT_SCREEN_NAME]);
+
+		if (it == playlists.end ()) {
+			sLog.exception ("Playlist ", this->m_context.settings.general.playlists[DEFAULT_SCREEN_NAME], "not found");
+		}
+
+		if (it->second.items.empty ()) {
+			sLog.exception ("Playlist ", this->m_context.settings.general.playlists[DEFAULT_SCREEN_NAME], "is empty");
+		}
+
+		// playlists take precedence over default background
+		defaultBackground = it->second.items.front ();
+		defaultPlaylist = it->second;
+		defaultBackgroundFromPlaylist = true;
+	}
+
+	std::string path;
+
+	if (this->m_context.settings.general.backgrounds.contains (screen)) {
+		path = this->m_context.settings.general.backgrounds[screen];
+	}
+
+	auto currentDefaultBackground = path.empty () ? defaultBackground : path;
+	auto currentDefaultPlaylist = defaultBackgroundFromPlaylist ? defaultPlaylist : std::nullopt;
+	const auto it = this->m_context.settings.general.playlists.find (screen);
+
+	if (it != this->m_context.settings.general.playlists.end ()) {
+		const auto playlistsIt = playlists.find (it->second);
+
+		if (playlistsIt != playlists.end () && !playlistsIt->second.items.empty ()) {
+			currentDefaultBackground = playlistsIt->second.items.front ();
+			currentDefaultPlaylist = playlistsIt->second;
+		}
+	}
+
+	if (currentDefaultPlaylist.has_value ()) {
+		this->registerPlaylist (screen, *currentDefaultPlaylist, *currentDefaultBackground);
+	}
+
+	if (currentDefaultBackground.has_value () == false) {
+		return;
+	}
+
+	this->m_backgrounds[screen] = this->loadBackground (*currentDefaultBackground);
+	this->m_activeOutputs[screen] = output;
+
+	output->setWallpaper (this->m_backgrounds[screen]);
+}
+
+void WallpaperApplication::onScreenUnavailable (const std::string& name, Desktop::Output* output) {
+	// de-register background and playlist
+	this->deregisterPlaylist (name);
+	auto it = this->m_backgrounds.find (name);
+
+	if (it != this->m_backgrounds.end ()) {
+		// free memory
+		wp_project_destroy (it->second);
+	}
+
+	this->m_backgrounds.erase (name);
+}

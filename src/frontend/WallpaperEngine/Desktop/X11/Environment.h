@@ -4,15 +4,19 @@
 
 #include "Output.h"
 #include "WallpaperEngine/Desktop/Environment.h"
-#include "WallpaperEngine/Desktop/VirtualOutput.h"
 
 #include <GLFW/glfw3.h>
 #include <X11/Xlib.h>
 
 namespace WallpaperEngine::Desktop::X11 {
 class Environment : public Desktop::Environment {
+	friend class Output;
+
 public:
-	explicit Environment (Application::ApplicationContext& context);
+	Environment (
+		Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+		ScreenUnavailableNotification& unavailableNotification
+	);
 	~Environment () override;
 
 	void render () override;
@@ -22,9 +26,6 @@ public:
 
 	void registerOutput (const std::string& name, glm::vec4 viewport);
 	void deregisterOutput (Output* output);
-
-	[[nodiscard]] Desktop::Output* requestOutput (const std::string& name) override;
-	[[nodiscard]] Desktop::Output* getOutput (const std::string& name) override;
 
 private:
 	/**
@@ -60,7 +61,6 @@ private:
 	std::vector<Window> m_fullscreenWindowsByGeometry;
 	std::vector<Window> m_fullscreenWindowsByState;
 
-	std::map<std::string, VirtualOutput<Output>*> m_requestedOutputs;
-	std::vector<Output*> m_outputs;
+	std::map<std::string, Output*> m_outputs;
 };
 }

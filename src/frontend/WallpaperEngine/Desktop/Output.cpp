@@ -74,6 +74,8 @@ void Output::setViewport (const glm::vec4 viewport) { this->m_viewport = viewpor
 
 void Output::setFramebuffer (const GLuint framebuffer) { this->m_outputFramebuffer = framebuffer; }
 
+wp_project* Output::getWallpaper () const { return this->m_wallpaper; }
+
 glm::vec4 Output::getViewport () const { return this->m_viewport; }
 
 GLuint Output::getFramebuffer () const { return this->m_framebuffer; }

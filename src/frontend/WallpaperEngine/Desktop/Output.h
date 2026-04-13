@@ -19,6 +19,7 @@ public:
 
 	[[nodiscard]] glm::vec4 getViewport () const;
 	[[nodiscard]] GLuint getFramebuffer () const;
+	[[nodiscard]] wp_project* getWallpaper () const;
 
 private:
 	void setupFramebuffer ();

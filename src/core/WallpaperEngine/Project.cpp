@@ -129,19 +129,18 @@ AssetLocatorUniquePtr wp_setup_asset_locator (const Configuration& config, const
 
 WallpaperEngine::Project::Project (
 	Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project
-) : context (*context) {
+) : context (*context), framebuffer (GL_NONE) {
 	if (!std::filesystem::exists (project) || !std::filesystem::is_directory (project)) {
 		sLog.exception ("Cannot find project file");
 	}
 
 	auto locator = wp_setup_asset_locator (context->config, project);
 	auto json = JSON::parse (locator->readString ("project.json"));
-	this->ref = context->projects.insert (
-		context->projects.end (), WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator))
-	);
+	this->ref = WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator));
+	context->projects.push_back (this->ref);
 
 	this->current_property = nullptr;
-	this->property_it = (*this->ref)->properties.begin ();
+	this->property_it = this->ref->properties.begin ();
 	this->mouse_input = mouse_input;
 }
 
@@ -149,6 +148,12 @@ WallpaperEngine::Project::~Project () {
 	if (this->context.projects.empty ()) {
 		active_context = nullptr;
 	}
+
+	if (const auto combo = WP_PROPERTY_AS_COMBO (this->current_property)) {
+		delete combo->values;
+	}
+
+	this->current_property = nullptr;
 }
 
 int WallpaperEngine::Project::getHeight () const {
@@ -184,9 +189,9 @@ void WallpaperEngine::Project::render () {
 
 	if (this->renderContext == nullptr) {
 		// initialize render if not available
-		this->renderContext = std::make_unique<RenderContext> (this->context, *(*this->ref)->assetLocator);
+		this->renderContext = std::make_unique<RenderContext> (this->context, *this->ref->assetLocator);
 		this->wallpaper = CWallpaper::fromWallpaper (
-			*(*this->ref)->wallpaper, *this->renderContext, *this->context.audio, this->mouse_input
+			*this->ref->wallpaper, *this->renderContext, *this->context.audio, this->mouse_input
 		);
 		this->wallpaper->setDestinationFramebuffer (this->framebuffer);
 	}
@@ -195,8 +200,8 @@ void WallpaperEngine::Project::render () {
 }
 
 wp_project_property* WallpaperEngine::Project::propertyListNext () {
-	if (this->property_it == (*this->ref)->properties.end ()) {
-		this->property_it = (*this->ref)->properties.begin ();
+	if (this->property_it == this->ref->properties.end ()) {
+		this->property_it = this->ref->properties.begin ();
 		return nullptr;
 	}
 
@@ -257,7 +262,7 @@ wp_project_property* WallpaperEngine::Project::propertyListNext () {
 }
 
 void WallpaperEngine::Project::propertyListReset () {
-	this->property_it = (*this->ref)->properties.begin ();
+	this->property_it = this->ref->properties.begin ();
 
 	if (const auto combo = WP_PROPERTY_AS_COMBO (this->current_property)) {
 		delete combo->values;
@@ -268,9 +273,9 @@ void WallpaperEngine::Project::propertyListReset () {
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, bool value) {
-	const auto it = (*this->ref)->properties.find (key);
+	const auto it = this->ref->properties.find (key);
 
-	if (it == (*this->ref)->properties.end ()) {
+	if (it == this->ref->properties.end ()) {
 		sLog.exception ("Property not found");
 	}
 
@@ -278,9 +283,9 @@ void WallpaperEngine::Project::propertySet (const std::string& key, bool value) 
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, const std::string& value) {
-	const auto it = (*this->ref)->properties.find (key);
+	const auto it = this->ref->properties.find (key);
 
-	if (it == (*this->ref)->properties.end ()) {
+	if (it == this->ref->properties.end ()) {
 		sLog.exception ("Property not found");
 	}
 
@@ -288,9 +293,9 @@ void WallpaperEngine::Project::propertySet (const std::string& key, const std::s
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, float value) {
-	const auto it = (*this->ref)->properties.find (key);
+	const auto it = this->ref->properties.find (key);
 
-	if (it == (*this->ref)->properties.end ()) {
+	if (it == this->ref->properties.end ()) {
 		sLog.exception ("Property not found");
 	}
 
@@ -298,9 +303,9 @@ void WallpaperEngine::Project::propertySet (const std::string& key, float value)
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, glm::vec4 value) {
-	const auto it = (*this->ref)->properties.find (key);
+	const auto it = this->ref->properties.find (key);
 
-	if (it == (*this->ref)->properties.end ()) {
+	if (it == this->ref->properties.end ()) {
 		sLog.exception ("Property not found");
 	}
 
@@ -343,7 +348,7 @@ void WallpaperEngine::Project::describe (wp_describe_callback* callback) {
 	// TODO: CHANGE PRETTYPRINTER TO TAKE IN AN OSTREAM THAT WILL CALL THE CALLBACK INSTEAD OF PARSING EVERYTHING
 	// UPFRONT
 	auto prettyPrinter = Data::Dumpers::StringPrinter ();
-	prettyPrinter.printWallpaper (*this->ref->get ()->wallpaper.get ());
+	prettyPrinter.printWallpaper (*this->ref->wallpaper);
 
 	const auto result = prettyPrinter.str ();
 	constexpr unsigned long chunkSize = 1024;

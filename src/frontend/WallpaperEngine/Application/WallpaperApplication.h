@@ -10,12 +10,15 @@
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Audio/Pulseaudio.h"
 #include "WallpaperEngine/Desktop/Environment.h"
+#include "WallpaperEngine/Desktop/ScreenAvailableNotification.h"
+#include "WallpaperEngine/Desktop/ScreenUnavailableNotification.h"
 
 namespace WallpaperEngine::Application {
 /**
  * Small wrapper class over the actual wallpaper's main application skeleton
  */
-class WallpaperApplication {
+class WallpaperApplication : public Desktop::ScreenAvailableNotification,
+							 public Desktop::ScreenUnavailableNotification {
 public:
 	explicit WallpaperApplication (ApplicationContext& context);
 
@@ -50,15 +53,14 @@ public:
 	 */
 	[[nodiscard]] ApplicationContext& getContext () const;
 
+	void onScreenAvailable (const std::string& name, Desktop::Output* output) override;
+	void onScreenUnavailable (const std::string& name, Desktop::Output* output) override;
+
 private:
 	/**
 	 * Loads and sets up the desktop environment to use
 	 */
 	void setupEnvironment ();
-	/**
-	 * Loads projects based off the settings
-	 */
-	void loadBackgrounds ();
 	/**
 	 * Loads the given project
 	 *
@@ -101,6 +103,8 @@ private:
 		const std::optional<std::string>& currentPath
 	);
 
+	void deregisterPlaylist (const std::string& screen);
+
 	struct ActivePlaylist {
 		ApplicationContext::PlaylistDefinition definition;
 		std::vector<std::size_t> order;
@@ -122,6 +126,7 @@ private:
 	/** Maps screens to backgrounds */
 	std::map<std::string, wp_project*> m_backgrounds {};
 	std::map<std::string, ActivePlaylist> m_activePlaylists {};
+	std::map<std::string, Desktop::Output*> m_activeOutputs {};
 
 	std::unique_ptr<Audio::Pulseaudio> m_playbackRecorder;
 

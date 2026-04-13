@@ -17,7 +17,10 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 
 static float get_time (void* user_parameter) { return glfwGetTime (); }
 
-Environment::Environment (Application::ApplicationContext& context) : Desktop::Environment (context) {
+Environment::Environment (
+	Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+	ScreenUnavailableNotification& unavailableNotification
+) : Desktop::Environment (context, availableNotification, unavailableNotification) {
 	this->m_closeRequested = false;
 	this->m_framebuffer = GL_NONE;
 	this->m_texture = GL_NONE;
@@ -128,20 +131,15 @@ Environment::~Environment () {
 	}
 
 	// free all outputs
-	for (const auto output : this->m_requestedOutputs | std::views::values) {
+	for (const auto output : this->m_outputs | std::views::values) {
 		delete output;
 	}
 
-	for (const auto output : this->m_outputs) {
-		delete output;
-	}
-
-	this->m_requestedOutputs.clear ();
 	this->m_outputs.clear ();
 }
 
 void Environment::render () {
-	for (const auto& output : this->m_requestedOutputs | std::views::values) {
+	for (const auto& output : this->m_outputs | std::views::values) {
 		output->render ();
 	}
 
@@ -203,11 +201,12 @@ void Environment::detectFullscreen () {
 
 					XGetWindowAttributes (this->m_display, ev.xconfigure.window, &attribs);
 					glm::vec4 viewport (attribs.x, attribs.y, attribs.width, attribs.height);
+					bool anyOutput = false;
 
 					// compare it against any of the outputs that are available
-					const auto anyOutput = std::ranges::any_of (this->m_outputs, [&viewport] (const Output* output) {
-						return output->getViewport () == viewport;
-					});
+					for (const auto output : this->m_outputs | std::views::values) {
+						anyOutput = anyOutput || output->getViewport () == viewport;
+					}
 
 					if (anyOutput) {
 						if (it == this->m_fullscreenWindowsByGeometry.end ()) {
@@ -275,53 +274,14 @@ bool Environment::isCloseRequested () { return glfwWindowShouldClose (this->m_wi
 void Environment::registerOutput (const std::string& name, const glm::vec4 viewport) {
 	auto output = new Output (nullptr, name, viewport);
 
-	this->m_outputs.push_back (output);
+	this->m_outputs.insert_or_assign (name, output);
 
-	const auto it = this->m_requestedOutputs.find (name);
-
-	if (it == this->m_requestedOutputs.end ()) {
-		return;
-	}
-
-	it->second->setRealOutput (output);
-	it->second->setViewport (viewport);
+	this->onScreenAvailable (name, output);
 }
 
 void Environment::deregisterOutput (Output* output) {
-	const auto it = this->m_requestedOutputs.find (output->name);
-
-	if (it != this->m_requestedOutputs.end ()) {
-		it->second->setRealOutput (nullptr);
-	}
-
-	std::erase (this->m_outputs, output);
-}
-
-Desktop::Output* Environment::requestOutput (const std::string& name) {
-	// register the virtual output
-	if (this->m_requestedOutputs.contains (name)) {
-		sLog.exception ("Requested output ", name, " was already requested");
-	}
-
-	// check for a matching real output (if any)
-	const auto realOutput
-		= std::ranges::find_if (this->m_outputs, [&name] (const Output* output) { return output->name == name; });
-
-	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
-
-	this->m_requestedOutputs.emplace (name, newOutput);
-
-	return newOutput;
-}
-
-Desktop::Output* Environment::getOutput (const std::string& name) {
-	const auto it = this->m_requestedOutputs.find (name);
-
-	if (it == this->m_requestedOutputs.end ()) {
-		sLog.exception ("Requested output ", name, " was not found");
-	}
-
-	return it->second;
+	this->onScreenUnavailable (output->name, output);
+	this->m_outputs.erase (output->name);
 }
 
 void Environment::updatePixmap () {
@@ -389,7 +349,7 @@ void Environment::updatePixmap () {
 	glClear (GL_COLOR_BUFFER_BIT);
 
 	// update all the outputs with the new framebuffer to be used
-	for (const auto& output : this->m_requestedOutputs | std::views::values) {
+	for (const auto& output : this->m_outputs | std::views::values) {
 		output->setFramebuffer (this->m_framebuffer);
 	}
 }
@@ -416,22 +376,12 @@ void Environment::detectOutputs () {
 			continue;
 		}
 
-		const auto it = std::ranges::find_if (this->m_outputs, [&info] (const Output* output) {
-			return output->name == info->name;
-		});
+		const auto it = this->m_outputs.find (info->name);
 
 		if (it == this->m_outputs.end ()) {
 			this->registerOutput (info->name, glm::vec4 (crtc->x, crtc->y, crtc->width, crtc->height));
 		} else {
-			// output already exists, update the viewport
-			const auto requestedIt = this->m_requestedOutputs.find (info->name);
-
-			if (requestedIt != this->m_requestedOutputs.end ()) {
-				requestedIt->second->setViewport (glm::vec4 (crtc->x, crtc->y, crtc->width, crtc->height));
-				requestedIt->second->setRealOutput (*it);
-			} else {
-				(*it)->setViewport (glm::vec4 (crtc->x, crtc->y, crtc->width, crtc->height));
-			}
+			it->second->setViewport (glm::vec4 (crtc->x, crtc->y, crtc->width, crtc->height));
 		}
 
 		outputs.emplace_back (info->name);
@@ -446,11 +396,13 @@ void Environment::detectOutputs () {
 	// find not-present outputs
 	std::vector<Output*> toRemove;
 
-	std::ranges::copy_if (this->m_outputs, toRemove.begin (), [outputs] (const Output* output) {
-		return std::ranges::find (outputs, output->name) == outputs.end ();
-	});
+	for (const auto& [name, output] : this->m_outputs) {
+		if (std::ranges::find (outputs, name) == outputs.end ()) {
+			toRemove.emplace_back (output);
+		}
+	}
 
-	for (const auto& output : toRemove) {
+	for (const auto output : toRemove) {
 		this->deregisterOutput (output);
 	}
 }

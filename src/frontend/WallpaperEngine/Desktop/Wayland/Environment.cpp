@@ -210,7 +210,10 @@ static float get_time (void* user_parameter) {
 		/ 1000000.0f;
 }
 
-Environment::Environment (WallpaperEngine::Application::ApplicationContext& context) : Desktop::Environment (context) {
+Environment::Environment (
+	WallpaperEngine::Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+	ScreenUnavailableNotification& unavailableNotification
+) : Desktop::Environment (context, availableNotification, unavailableNotification) {
 	this->render_start = std::chrono::high_resolution_clock::now ();
 	this->m_requestedExit = false;
 	this->m_frameCount = 0;
@@ -225,11 +228,12 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 		                      .seat = nullptr };
 
 	this->wayland_context.display = wl_display_connect (nullptr);
-	this->wayland_context.display = wl_display_connect (nullptr);
 
 	if (this->wayland_context.display == nullptr) {
 		sLog.exception ("Failed to query wayland display");
 	}
+
+	this->initEGL ();
 
 	this->wayland_context.registry = wl_display_get_registry (this->wayland_context.display);
 	wl_registry_add_listener (this->wayland_context.registry, &registry_listener, this);
@@ -241,9 +245,6 @@ Environment::Environment (WallpaperEngine::Application::ApplicationContext& cont
 	    || this->wayland_context.layerShell == nullptr || this->wayland_context.seat == nullptr) {
 		sLog.exception ("Failed to bind to required interfaces");
 	}
-
-	// TODO: REST OF EGL INITIALIZATION
-	this->initEGL ();
 
 	// initialize glad
 	if (!gladLoadGLLoader (reinterpret_cast<GLADloadproc> (eglGetProcAddress))) {
@@ -268,15 +269,10 @@ Environment::~Environment () {
 	}
 
 	// free all outputs
-	for (const auto output : this->m_requestedOutputs | std::views::values) {
+	for (const auto output : this->m_outputs | std::views::values) {
 		delete output;
 	}
 
-	for (const auto output : this->m_outputs) {
-		delete output;
-	}
-
-	this->m_requestedOutputs.clear ();
 	this->m_outputs.clear ();
 }
 
@@ -386,19 +382,13 @@ void Environment::finishEGL () const {
 }
 
 void Environment::registerOutput (wl_registry* registry, uint32_t name) {
-	this->m_outputs.push_back (new Output (registry, name, *this));
+	// TODO: REPLACE THIS
+	this->m_stagingOutputs.push_back (new Output (registry, name, *this));
 }
 
 void Environment::deregisterOutput (Output* output) {
-	if (!output->name.empty ()) {
-		const auto it = this->m_requestedOutputs.find (output->name);
-
-		if (it != this->m_requestedOutputs.end ()) {
-			it->second->setRealOutput (nullptr);
-		}
-	}
-
-	std::erase (this->m_outputs, output);
+	this->onScreenUnavailable (output->name, output);
+	this->m_outputs.erase (output->name);
 }
 
 void Environment::render () {
@@ -407,7 +397,9 @@ void Environment::render () {
 	const float startTime = get_time (this);
 	const float minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
 
-	if (wl_display_dispatch (this->wayland_context.display) == -1) {
+	this->refreshOutputMap ();
+
+	if (wl_display_dispatch_timeout (this->wayland_context.display, nullptr) == -1) {
 		this->m_requestedExit = true;
 	}
 
@@ -433,43 +425,6 @@ void Environment::detectFullscreen () {
 uint64_t Environment::getCurrentFrame () { return this->m_frameCount; }
 
 bool Environment::isCloseRequested () { return this->m_requestedExit; }
-
-Desktop::Output* Environment::requestOutput (const std::string& name) {
-	// register the virtual output
-	if (this->m_requestedOutputs.contains (name)) {
-		sLog.exception ("Requested output ", name, " was already requested");
-	}
-
-	// check for a matching real output (if any)
-	const auto realOutput
-		= std::ranges::find_if (this->m_outputs, [&name] (const Output* output) { return output->name == name; });
-
-	auto newOutput = new VirtualOutput (realOutput == this->m_outputs.end () ? nullptr : *realOutput);
-
-	if (realOutput != this->m_outputs.end ()) {
-		if ((*realOutput)->initialized == false) {
-			(*realOutput)->setupLayerShell ();
-		}
-
-		if ((*realOutput)->callbackInitialized == false) {
-			(*realOutput)->render ();
-		}
-	}
-
-	this->m_requestedOutputs.emplace (name, newOutput);
-
-	return newOutput;
-}
-
-Desktop::Output* Environment::getOutput (const std::string& name) {
-	const auto it = this->m_requestedOutputs.find (name);
-
-	if (it == this->m_requestedOutputs.end ()) {
-		sLog.exception ("Requested output ", name, " was not found");
-	}
-
-	return it->second;
-}
 
 bool Environment::isPendingRelevant () const {
 	return this->isRelevant (
@@ -518,18 +473,24 @@ bool Environment::isRelevant (const bool fullscreen, const bool activated, const
 }
 
 void Environment::refreshOutputMap () {
-	for (const auto& output : this->m_outputs) {
+	// check for any output to be taken off from staging into actual output
+	for (const auto output : this->m_stagingOutputs) {
 		if (output->name.empty ()) {
 			continue;
 		}
 
-		const auto it = this->m_requestedOutputs.find (output->name);
+		this->m_outputs.insert_or_assign (output->name, output);
+		this->onScreenAvailable (output->name, output);
+	}
 
-		if (it == this->m_requestedOutputs.end ()) {
+	// remove any output that is already somewhat configured
+	std::erase_if (this->m_stagingOutputs, [] (const auto& output) { return !output->name.empty (); });
+	std::vector<Output*> newAvailableOutputs;
+
+	for (const auto& [name, output] : this->m_outputs) {
+		if (output->getWallpaper () == nullptr) {
 			continue;
 		}
-
-		it->second->setRealOutput (output);
 
 		// ensure the output is initialized
 		if (output->initialized == false) {
@@ -540,7 +501,8 @@ void Environment::refreshOutputMap () {
 			continue;
 		}
 
+		newAvailableOutputs.push_back (output);
 		// starts the rendering to the output
-		it->second->render ();
+		output->render ();
 	}
 }

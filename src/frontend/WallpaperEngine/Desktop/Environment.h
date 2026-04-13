@@ -3,15 +3,22 @@
 #include <string>
 
 #include "Output.h"
+#include "ScreenAvailableNotification.h"
+#include "ScreenUnavailableNotification.h"
 
 namespace WallpaperEngine::Application {
 class ApplicationContext;
 }
 
 namespace WallpaperEngine::Desktop {
-class Environment {
+class Environment : protected ScreenAvailableNotification, protected ScreenUnavailableNotification {
+	friend class Output;
+
 public:
-	explicit Environment (Application::ApplicationContext& context);
+	Environment (
+		Application::ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+		ScreenUnavailableNotification& unavailableNotification
+	);
 	virtual ~Environment () = default;
 
 	virtual void render () = 0;
@@ -26,10 +33,12 @@ public:
 	wp_mouse_input mouse_input;
 	bool anything_fullscreen = false;
 
-	virtual Output* requestOutput (const std::string& name) = 0;
-	[[nodiscard]] virtual Output* getOutput (const std::string& name) = 0;
+	virtual void onScreenAvailable (const std::string& name, Output* output) override;
+	virtual void onScreenUnavailable (const std::string& name, Output* output) override;
 
 protected:
 	Application::ApplicationContext& m_context;
+	ScreenAvailableNotification& m_availableNotification;
+	ScreenUnavailableNotification& m_unavailableNotification;
 };
 }

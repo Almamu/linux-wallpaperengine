@@ -16,8 +16,12 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 	return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
-Environment::Environment (ApplicationContext& context) :
-	Desktop::Environment (context), m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
+Environment::Environment (
+	ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+	ScreenUnavailableNotification& unavailableNotification
+) :
+	Desktop::Environment (context, availableNotification, unavailableNotification),
+	m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
 	glfwSetErrorCallback (CustomGLFWErrorHandler);
 
 	if (glfwInit () == GLFW_FALSE) {
@@ -72,9 +76,14 @@ Environment::Environment (ApplicationContext& context) :
 
 	// finally set the right gl_proc_address calls
 	this->gl_proc_address = { .user_parameter = this, .get_proc_address = get_proc_address };
+
+	// notify the app that there's a screen available
+	this->Environment::onScreenAvailable (DEFAULT_SCREEN_NAME, &this->m_output);
 }
 
 Environment::~Environment () {
+	Environment::onScreenUnavailable (DEFAULT_SCREEN_NAME, &this->m_output);
+
 	if (this->m_window) {
 		glfwDestroyWindow (this->m_window);
 	}
@@ -104,13 +113,3 @@ void Environment::detectFullscreen () {
 uint64_t Environment::getCurrentFrame () { return this->m_framecount; }
 
 bool Environment::isCloseRequested () { return glfwWindowShouldClose (this->m_window); }
-
-WallpaperEngine::Desktop::Output* Environment::requestOutput (const std::string& name) {
-	if (name.compare ("default") != 0) {
-		sLog.exception ("GLFW does not support multiple outputs, only default available");
-	}
-
-	return &this->m_output;
-}
-
-WallpaperEngine::Desktop::Output* Environment::getOutput (const std::string& name) { return &this->m_output; }
