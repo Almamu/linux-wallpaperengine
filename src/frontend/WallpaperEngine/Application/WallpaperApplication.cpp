@@ -1,16 +1,20 @@
 #include "WallpaperApplication.h"
 
-#include "../../../../include/frontends/project.h"
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
 
 #include <glad/glad.h>
+#include <linux-wallpaperengine/project.h>
 #include <linux-wallpaperengine/render.h>
 
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Debugging/CallStack.h"
 #include "WallpaperEngine/Desktop/Universal/Environment.h"
+#ifdef WAYLAND_SUPPORT
 #include "WallpaperEngine/Desktop/Wayland/Environment.h"
+#endif
+#ifdef X11_SUPPORT
 #include "WallpaperEngine/Desktop/X11/Environment.h"
+#endif
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/vec3.hpp>
@@ -114,15 +118,28 @@ void WallpaperApplication::setupEnvironment () {
 			);
 		}
 
-		sLog.debug ("Checking for window servers: wayland, x11, default");
+		std::string servers = "";
 
+#ifdef WAYLAND_SUPPORT
+		servers += "Wayland ";
+#endif
+#ifdef X11_SUPPORT
+		servers += "X11 ";
+#endif
+
+		sLog.debug ("Checking for window servers: ", servers);
+#ifdef WAYLAND_SUPPORT
 		if (strncmp (XDG_SESSION_TYPE, "wayland", 7) == 0) {
 			this->m_desktopEnvironment = new Desktop::Wayland::Environment (this->m_context, *this, *this);
-		} else if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
-			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context, *this, *this);
-		} else {
-			sLog.exception ("Unknown desktop type ", XDG_SESSION_TYPE);
 		}
+#endif
+#ifdef X11_SUPPORT
+		if (strncmp (XDG_SESSION_TYPE, "x11", 3) == 0) {
+			this->m_desktopEnvironment = new Desktop::X11::Environment (this->m_context, *this, *this);
+		}
+#endif
+
+		sLog.exception ("Unknown desktop type ", XDG_SESSION_TYPE);
 	} else {
 		sLog.debug ("No desktop mode requested, using window output");
 		this->m_desktopEnvironment = new Desktop::Universal::Environment (this->m_context, *this, *this);

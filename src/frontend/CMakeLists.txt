@@ -81,6 +81,8 @@ if(WAYLAND_SUPPORT_FOUND)
         wayland-client
         wayland-egl
         ${OPENGL_egl_LIBRARY})
+
+    message("Wayland support enabled")
 endif()
 
 if(X11_FOUND)
@@ -114,6 +116,6 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${EXTERNAL_DEPS_DIR}/stb)
 
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
-target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION})
+target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION} X11_SUPPORT=${X11_FOUND} WAYLAND_SUPPORT=${WAYLAND_SUPPORT_ENABLED})
 
 install(TARGETS ${TARGET_NAME})
