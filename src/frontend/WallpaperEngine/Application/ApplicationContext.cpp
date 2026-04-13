@@ -88,11 +88,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 		.help ("After --screen-root, specifies the background to use for the given screen")
 		.action ([this, &lastScreen] (const std::string& value) -> void {
 			this->settings.general.backgrounds[lastScreen] = value;
-
-			if (this->settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME) == false) {
-				// set the default background to the last one used
-				this->settings.general.backgrounds[DEFAULT_SCREEN_NAME] = value;
-			}
 		})
 		.append ();
 	backgroundGroup.add_argument ("--playlist")
@@ -102,10 +97,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 		)
 		.action ([this, &lastScreen] (const std::string& value) -> void {
 			this->settings.general.playlists[lastScreen] = value;
-
-			if (this->settings.general.playlists.contains (DEFAULT_SCREEN_NAME) == false) {
-				this->settings.general.playlists[DEFAULT_SCREEN_NAME] = value;
-			}
 		})
 		.append ();
 	backgroundGroup.add_argument ("--scaling")
@@ -309,7 +300,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	try {
 		program.parse_known_args (this->m_argc, this->m_argv);
 
-		if (this->settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME) == false) {
+		if (this->settings.general.backgrounds.empty ()) {
 			sLog.exception ("At least one background ID must be specified");
 		}
 
