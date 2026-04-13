@@ -1,8 +1,10 @@
 set(TARGET_NAME linux-wallpaperengine-dev-viewer)
 set(TARGET_SOURCE_FILES
+    $<TARGET_OBJECTS:linux-wallpaperengine-common-object>
     $<TARGET_OBJECTS:linux-wallpaperengine-core-object>
     WallpaperEngine/Development/SimpleBackgroundViewer.cpp)
 set(TARGET_LIBRARIES
+    linux-wallpaperengine-common-object
     linux-wallpaperengine-core-object
     linux-wallpaperengine-glad
     nlohmann_json::nlohmann_json
