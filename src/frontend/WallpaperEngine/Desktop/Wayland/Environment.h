@@ -8,9 +8,9 @@
 
 #include <chrono>
 #include <map>
-#include <vector>
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "WallpaperEngine/Desktop/Environment.h"
 #include "WallpaperEngine/Desktop/Wayland/Output.h"

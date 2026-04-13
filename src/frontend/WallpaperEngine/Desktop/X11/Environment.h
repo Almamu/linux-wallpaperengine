@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "Output.h"
 #include "WallpaperEngine/Desktop/Environment.h"
