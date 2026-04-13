@@ -25,7 +25,7 @@ ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration
 void ApplicationContext::loadSettingsFromArgv () {
 	std::string lastScreen = DEFAULT_SCREEN_NAME;
 
-	argparse::ArgumentParser program ("linux-wallpaperengine", STRINGIZE(PROJECT_VERSION), argparse::default_arguments::help);
+	argparse::ArgumentParser program ("linux-wallpaperengine", STRINGIZE(PROJECT_VERSION), argparse::default_arguments::all);
 
 	auto& backgroundGroup = program.add_group ("Background options");
 	auto& backgroundMode = backgroundGroup.add_mutually_exclusive_group (false);
