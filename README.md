@@ -164,7 +164,8 @@ If you're one of those developers, feel free to open an issue to get your projec
 - [simple-linux-wallpaperengine-gui](https://github.com/Maxnights/simple-linux-wallpaperengine-gui) by @Maxnights
 - [linux-wallpaper-engine](https://github.com/jagrat7/linux-wallpaper-engine) by @jagrat7
 - [wallpaperengine-gui](https://github.com/MikiDevLog/wallpaperengine-gui) by @MikiDevLog
-- [linux-wallpaperengine-controllfer for Noctalia Shell](https://noctalia.dev/plugins/linux-wallpaperengine-controller/)
+- [linux-wallpaperengine-controllfer for Noctalia Shell](https://noctalia.dev/plugins/linux-wallpaperengine-controller/) by @PaloMiku
+- [waypaper](https://github.com/anufrievroman/waypaper) by @anufrievroman
 
 ### 🔧 Common Options
 
