@@ -5,11 +5,13 @@ X11 support requires XRandr. Use screen names returned by `xrandr` to specify th
 Compositors drawing to the screen background might conflict with the app.
 
 - [Cinnamon](Cinnamon.md)
+- [MATE](MATE.md)
 
 ## Wayland support
 Works on compositors that support `wlr-layer-shell-unstable-v1`
 - [Sway](Sway.md)
 - [Hyprland](Hyprland.md)
+- [COSMIC](Cosmic.md)
 
 ## Desktop environments support
 - [GNOME](GNOME.md)
