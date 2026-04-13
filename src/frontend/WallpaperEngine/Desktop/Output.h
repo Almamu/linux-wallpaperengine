@@ -8,7 +8,7 @@
 namespace WallpaperEngine::Desktop {
 class Output {
 public:
-	Output (wp_project* wallpaper, glm::vec4 viewport);
+	Output (wp_project* wallpaper, glm::vec4 viewport, bool vflip = false);
 	virtual ~Output ();
 
 	virtual void render ();
@@ -32,6 +32,7 @@ private:
 	wp_project* m_wallpaper;
 	glm::vec4 m_viewport;
 
+	bool m_vflip;
 	int m_previousWidth = 0;
 	int m_previousHeight = 0;
 	GLuint m_shader = GL_NONE;

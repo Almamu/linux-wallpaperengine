@@ -7,9 +7,9 @@
 
 using namespace WallpaperEngine::Desktop;
 
-Output::Output (wp_project* wallpaper, const glm::vec4 viewport) :
+Output::Output (wp_project* wallpaper, const glm::vec4 viewport, bool vflip) :
 	m_wallpaper (wallpaper), m_viewport (viewport), m_outputFramebuffer (GL_NONE), m_previousWidth (1),
-	m_previousHeight (1) { }
+	m_previousHeight (1), m_vflip (vflip) { }
 
 Output::~Output () { this->clearFramebuffer (); }
 
@@ -83,7 +83,14 @@ GLuint Output::getFramebuffer () const { return this->m_framebuffer; }
 void Output::setupFramebuffer () {
 	// TODO: CLEAN THIS UP, THIS CODE IS REPEATED IN MULTIPLE PLACES
 	// setup vao and required buffers
-	constexpr GLfloat texCoords[] = { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f };
+	GLfloat texCoords[] = {
+		0.0f, this->m_vflip ? 1.0f : 0.0f,
+		1.0f, this->m_vflip ? 1.0f : 0.0f,
+		0.0f, this->m_vflip ? 0.0f : 1.0f,
+		0.0f, this->m_vflip ? 0.0f : 1.0f,
+		1.0f, this->m_vflip ? 1.0f : 0.0f,
+		1.0f, this->m_vflip ? 0.0f : 1.0f
+	};
 	constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
 		                             -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
