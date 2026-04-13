@@ -193,29 +193,30 @@ void Environment::detectFullscreen () {
 		}
 
 		switch (ev.type) {
-			case ConfigureNotify: {
-				if (ev.xconfigure.window == DefaultRootWindow (this->m_display)) {
-					continue;
-				}
-
-				const auto it = std::ranges::find (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
-
-				XGetWindowAttributes (this->m_display, ev.xconfigure.window, &attribs);
-				glm::vec4 viewport (attribs.x, attribs.y, attribs.width, attribs.height);
-
-				// compare it against any of the outputs that are available
-				const auto anyOutput = std::ranges::any_of (this->m_outputs, [&viewport] (const Output* output) {
-					return output->getViewport () == viewport;
-				});
-
-				if (anyOutput) {
-					if (it == this->m_fullscreenWindowsByGeometry.end ()) {
-						this->m_fullscreenWindowsByGeometry.push_back (ev.xconfigure.window);
+			case ConfigureNotify:
+				{
+					if (ev.xconfigure.window == DefaultRootWindow (this->m_display)) {
+						continue;
 					}
-				} else {
-					std::erase (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
+
+					const auto it = std::ranges::find (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
+
+					XGetWindowAttributes (this->m_display, ev.xconfigure.window, &attribs);
+					glm::vec4 viewport (attribs.x, attribs.y, attribs.width, attribs.height);
+
+					// compare it against any of the outputs that are available
+					const auto anyOutput = std::ranges::any_of (this->m_outputs, [&viewport] (const Output* output) {
+						return output->getViewport () == viewport;
+					});
+
+					if (anyOutput) {
+						if (it == this->m_fullscreenWindowsByGeometry.end ()) {
+							this->m_fullscreenWindowsByGeometry.push_back (ev.xconfigure.window);
+						}
+					} else {
+						std::erase (this->m_fullscreenWindowsByGeometry, ev.xconfigure.window);
+					}
 				}
-			}
 				break;
 
 			case UnmapNotify:
@@ -228,40 +229,43 @@ void Environment::detectFullscreen () {
 				std::erase (this->m_fullscreenWindowsByState, ev.xdestroywindow.window);
 				break;
 
-			case PropertyNotify: {
-				if (ev.xproperty.atom != this->m_net_wm_state) {
-					continue;
-				}
-
-				if (ev.xproperty.window == DefaultRootWindow (this->m_display)) {
-					continue;
-				}
-
-				if (!XGetWindowProperty (
-						this->m_display, ev.xproperty.window, this->m_net_wm_state, 0, 32, False, XA_ATOM, &actual_type,
-						&actual_format, &nitems, &bytes_after, reinterpret_cast<unsigned char**> (&props)
-					)) {
-					continue;
-					}
-
-				for (unsigned long i = 0; i < nitems; i++) {
-					if (props[i] != this->m_net_wm_state_fullscreen) {
+			case PropertyNotify:
+				{
+					if (ev.xproperty.atom != this->m_net_wm_state) {
 						continue;
 					}
 
-					std::erase (this->m_fullscreenWindowsByState, ev.xproperty.window);
-				}
+					if (ev.xproperty.window == DefaultRootWindow (this->m_display)) {
+						continue;
+					}
 
-				if (props) {
-					XFree (props);
-					props = nullptr;
+					if (!XGetWindowProperty (
+							this->m_display, ev.xproperty.window, this->m_net_wm_state, 0, 32, False, XA_ATOM,
+							&actual_type, &actual_format, &nitems, &bytes_after,
+							reinterpret_cast<unsigned char**> (&props)
+						)) {
+						continue;
+					}
+
+					for (unsigned long i = 0; i < nitems; i++) {
+						if (props[i] != this->m_net_wm_state_fullscreen) {
+							continue;
+						}
+
+						std::erase (this->m_fullscreenWindowsByState, ev.xproperty.window);
+					}
+
+					if (props) {
+						XFree (props);
+						props = nullptr;
+					}
 				}
-			}
 				break;
 		}
 	}
 
-	this->anything_fullscreen = !this->m_fullscreenWindowsByGeometry.empty () || !this->m_fullscreenWindowsByState.empty ();
+	this->anything_fullscreen
+		= !this->m_fullscreenWindowsByGeometry.empty () || !this->m_fullscreenWindowsByState.empty ();
 }
 
 uint64_t Environment::getCurrentFrame () { return this->m_frameCount; }
