@@ -191,7 +191,6 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/frontends/ DESTINATION include/${P
 
 # Export targets
 install(EXPORT ${TARGET_NAME}
-    NAMESPACE ${TARGET_NAME}
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME})
 
 configure_package_config_file(linux-wallpaperengine-core-config.cmake.in
