@@ -14,6 +14,9 @@
 
 #include <linux-wallpaperengine/playlists.h>
 
+#define STRINGIZE_(x) (#x)
+#define STRINGIZE(x) STRINGIZE_(x)
+
 using namespace WallpaperEngine::Application;
 
 ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration* config) :
@@ -22,7 +25,7 @@ ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration
 void ApplicationContext::loadSettingsFromArgv () {
 	std::string lastScreen = DEFAULT_SCREEN_NAME;
 
-	argparse::ArgumentParser program ("linux-wallpaperengine", "0.0", argparse::default_arguments::help);
+	argparse::ArgumentParser program ("linux-wallpaperengine", STRINGIZE(PROJECT_VERSION), argparse::default_arguments::help);
 
 	auto& backgroundGroup = program.add_group ("Background options");
 	auto& backgroundMode = backgroundGroup.add_mutually_exclusive_group (false);

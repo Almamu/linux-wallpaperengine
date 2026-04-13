@@ -86,16 +86,16 @@ yay -S linux-wallpaperengine-git
 You **must own and install Wallpaper Engine** via Steam. This provides the required assets used by many backgrounds.
 
 Right now the application will automatically detect everything for you as long as the official Wallpaper Engine is installed
-in one of these locations:
+through Steam.
+
+The app will look for the Steam installation in the following locations:
 
 ```
-~/.steam/steam/steamapps/common
-~/.local/share/Steam/steamapps/common
-~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
-~/snap/steam/common/.local/share/Steam/steamapps/common
+~/.steam/steam/
+~/.local/share/Steam/
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/
+~/snap/steam/common/.local/share/Steam/
 ```
-
-> ✅ If Wallpaper Engine is installed in one of these paths, the assets will be detected automatically!
 
 ---
 
@@ -110,9 +110,9 @@ You can copy the `assets` folder manually:
 
 1. In Steam, right-click **Wallpaper Engine** → **Manage** → **Browse local files**
 2. Copy the `assets` folder
-3. Paste it into the same folder where the `linux-wallpaperengine` binary is located (build/output if you followed the build instructions)
+3. Paste it into a new folder somewhere in your system
+4. Run the app with the `--assets-dir` option pointing to the new folder:
 
-Another option is to specify the path manually with the `--assets-dir` option, like this:
 ```bash
 linux-wallpaperengine --assets-dir /path/to/assets
 ```
@@ -133,12 +133,11 @@ Build it:
 
 ```bash
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE='Release' ..
-make
+cmake -DCMAKE_BUILD_TYPE='Release' -DCMAKE_INSTALL_PREFIX="/usr" -DWPBUILD_FRONTEND=ON ..
+make install
 ```
 
-Once the build process is finished, this should create a new `output` folder containing the app and all the required
-support files to run.
+This will install the `linux-wallpaperengine` binary in `/usr/bin` and the `linux-wallpaperengine-core` library in `/usr/lib` for other frontends and applications to use.
 
 ---
 
@@ -147,7 +146,7 @@ support files to run.
 Basic syntax:
 
 ```bash
-linux-wallpaperengine [options] <background_id or path>
+linux-wallpaperengine [options] <default background_id or path>
 ```
 
 You can use either:
@@ -162,8 +161,11 @@ Implementing a GUI is out of scope for now.
 There's a few developers that decided to focus on this and created their own.
 If you're one of those developers, feel free to open an issue to get your project included here!
 
-- @Maxnights' GUI: https://github.com/Maxnights/simple-linux-wallpaperengine-gui
-- @jagrat7's GUI: https://github.com/jagrat7/linux-wallpaper-engine
+- [simple-linux-wallpaperengine-gui](https://github.com/Maxnights/simple-linux-wallpaperengine-gui) by @Maxnights
+- [linux-wallpaper-engine](https://github.com/jagrat7/linux-wallpaper-engine) by @jagrat7
+- [wallpaperengine-gui](https://github.com/MikiDevLog/wallpaperengine-gui) by @MikiDevLog
+- [linux-wallpaperengine-controllfer for Noctalia Shell](https://noctalia.dev/plugins/linux-wallpaperengine-controller/)
+
 ### 🔧 Common Options
 
 | Option | Description |
@@ -187,14 +189,26 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 | `--fullscreen-pause-only-active` | Wayland only: pause only when a fullscreen window is active |
 | `--fullscreen-pause-ignore-appid <val>` | Wayland only: ignore fullscreen windows whose app_id contains `<val>` (repeatable) |
-
+| `--steam-dir <path>` | Set custom path for Steam installation |
+| `--help` | Show help |
+| `--version` | Show version |
 ---
 
 ### 💡 Examples
 
-#### Run a background by ID
+#### Run a background on a window
 ```bash
 linux-wallpaperengine 1845706469
+```
+
+#### Run a background on HDMI-1 screen
+```bash
+linux-wallpaperengine --screen-root HDMI-1 --bg 1845706469
+```
+
+#### Run a background on a specific screen and a different one on the rest
+```bash
+linux-wallpaperengine --screen-root eDP-1 --bg 1845706469 2667198602
 ```
 
 #### Run a background from a folder
@@ -224,7 +238,7 @@ linux-wallpaperengine --fps 30 1845706469
 linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
 
-This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
+This can be useful as output for pywal or other color systems that use images as a basis to generate a set of colors
 to apply to your system.
 
 #### View and change properties
@@ -289,12 +303,9 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 
 ---
 
-## 🧪 Wayland & X11 Support
+## 🧪 Wayland & X11 support
 
-- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
-- **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
-
-> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
+For GNOME, KDE, Sway, Hyprland, Cinnamon, i3, etc... check the compatibility docs [here](docs/support/README.md).
 
 ---
 
@@ -304,24 +315,6 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 ![example2](docs/images/example2.gif)
 
 Want to see more examples of backgrounds that work? Head over to the [project's website](https://wpengine.alma.mu/#showcase)
-
-## 🪲 Common issues
-### Black screen when setting as screen's background
-This can be caused by a few different things depending on your environment and setup.
-
-### X11
-Common symptom of a compositor drawing to the background which prevents Wallpaper Engine from being properly visible.
-The only solution currently is disabling the compositor so Wallpaper Engine can properly draw on the screen
-
-### NVIDIA
-Some users have had issues with GLFW initialization and other OpenGL errors. These are generally something that's
-worth reporting in the issues. Sometimes adding this variable when running Wallpaper Engine helps and/or solves
-the issue:
-```bash
-__GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
-```
-
-We'll be looking at improving this in the future, but for now it can be a useful workaround.
 
 ---
 
@@ -335,3 +328,4 @@ If you're interested in contributing or building the project for development pur
 
 - [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights
 - [RenderDoc](https://github.com/baldurk/renderdoc) – the best OpenGL debugger out there!
+- All the contributors that have created PR!

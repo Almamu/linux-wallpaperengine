@@ -114,5 +114,6 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${EXTERNAL_DEPS_DIR}/stb)
 
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
+target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION})
 
 install(TARGETS ${TARGET_NAME})
