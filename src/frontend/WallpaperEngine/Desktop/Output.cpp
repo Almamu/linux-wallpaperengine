@@ -83,14 +83,9 @@ GLuint Output::getFramebuffer () const { return this->m_framebuffer; }
 void Output::setupFramebuffer () {
 	// TODO: CLEAN THIS UP, THIS CODE IS REPEATED IN MULTIPLE PLACES
 	// setup vao and required buffers
-	GLfloat texCoords[] = {
-		0.0f, this->m_vflip ? 1.0f : 0.0f,
-		1.0f, this->m_vflip ? 1.0f : 0.0f,
-		0.0f, this->m_vflip ? 0.0f : 1.0f,
-		0.0f, this->m_vflip ? 0.0f : 1.0f,
-		1.0f, this->m_vflip ? 1.0f : 0.0f,
-		1.0f, this->m_vflip ? 0.0f : 1.0f
-	};
+	GLfloat texCoords[]
+		= { 0.0f, this->m_vflip ? 1.0f : 0.0f, 1.0f, this->m_vflip ? 1.0f : 0.0f, 0.0f, this->m_vflip ? 0.0f : 1.0f,
+		    0.0f, this->m_vflip ? 0.0f : 1.0f, 1.0f, this->m_vflip ? 1.0f : 0.0f, 1.0f, this->m_vflip ? 0.0f : 1.0f };
 	constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
 		                             -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
