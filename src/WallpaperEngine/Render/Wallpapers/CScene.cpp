@@ -187,20 +187,33 @@ Render::CObject* CScene::createObject (const Object& object) {
 	this->createObject (**dep);
     }
 
+    renderObject = this->dispatchObjectType (object);
+
+    if (renderObject != nullptr) {
+	this->m_objects.emplace (renderObject->getId (), renderObject);
+    }
+
+    return renderObject;
+}
+
+Render::CObject* CScene::dispatchObjectType (const Object& object) {
     if (object.is<Image> ()) {
 	auto* image = new Objects::CImage (*this, *object.as<Image> ());
 
 	try {
 	    image->setup ();
 	} catch (std::runtime_error&) {
-	    // this error message is already printed, so just show extra info about it
 	    sLog.error ("Cannot setup image ", image->getImage ().name);
 	}
 
-	renderObject = image;
-    } else if (object.is<Sound> ()) {
-	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
-    } else if (object.is<Particle> ()) {
+	return image;
+    }
+
+    if (object.is<Sound> ()) {
+	return new Objects::CSound (*this, *object.as<Sound> ());
+    }
+
+    if (object.is<Particle> ()) {
 	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
 	    sLog.debug ("Ignoring particle system (disabled in settings): ", object.as<Particle> ()->name);
 	    return nullptr;
@@ -214,8 +227,10 @@ Render::CObject* CScene::createObject (const Object& object) {
 	    sLog.error ("Cannot setup particle ", particle->getParticle ().name);
 	}
 
-	renderObject = particle;
-    } else if (object.is<Text> ()) {
+	return particle;
+    }
+
+    if (object.is<Text> ()) {
 	auto* text = new Objects::CText (*this, *object.as<Text> ());
 
 	try {
@@ -224,17 +239,11 @@ Render::CObject* CScene::createObject (const Object& object) {
 	    sLog.error ("Cannot setup text ", text->getObject ().name);
 	}
 
-	renderObject = text;
-    } else {
-	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
-	renderObject = new CObject (*this, object);
+	return text;
     }
 
-    if (renderObject != nullptr) {
-	this->m_objects.emplace (renderObject->getId (), renderObject);
-    }
-
-    return renderObject;
+    sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+    return new CObject (*this, object);
 }
 
 void CScene::addObjectToRenderOrder (const Object& object) {

@@ -44,6 +44,7 @@ protected:
 
 private:
     Render::CObject* createObject (const Object& object);
+    Render::CObject* dispatchObjectType (const Object& object);
     void addObjectToRenderOrder (const Object& object);
 
     std::unique_ptr<Camera> m_camera;
