@@ -25,6 +25,10 @@ ApplicationContext::ApplicationContext (int argc, char* argv[], wp_configuration
 void ApplicationContext::loadSettingsFromArgv () {
 	std::string lastScreen = DEFAULT_SCREEN_NAME;
 
+	// setup default values
+	this->settings.general.clamps[lastScreen] = CLAMP_MODE::CLAMP_MODE_UVS;
+	this->settings.general.scalings[lastScreen] = SCALING_MODE::SCALING_MODE_DEFAULT;
+
 	argparse::ArgumentParser program (
 		"linux-wallpaperengine", STRINGIZE(PROJECT_VERSION), argparse::default_arguments::all
 		);
@@ -85,8 +89,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 			this->settings.render.mode = DESKTOP_BACKGROUND;
 			lastScreen = value;
 			this->settings.general.backgrounds[lastScreen] = "";
-			this->settings.general.screenScalings[lastScreen] = this->settings.render.window.scalingMode;
-			this->settings.general.screenClamps[lastScreen] = this->settings.render.window.clamp;
+			this->settings.general.scalings[lastScreen] = this->settings.general.scalings[DEFAULT_SCREEN_NAME];
+			this->settings.general.clamps[lastScreen] = this->settings.general.clamps[DEFAULT_SCREEN_NAME];
 		})
 		.append ();
 	backgroundGroup.add_argument ("-b", "--bg")
@@ -125,11 +129,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 				sLog.exception ("Invalid scaling mode: ", value);
 			}
 
-			if (this->settings.render.mode == DESKTOP_BACKGROUND) {
-				this->settings.general.screenScalings[lastScreen] = mode;
-			} else {
-				this->settings.render.window.scalingMode = mode;
-			}
+			this->settings.general.scalings[lastScreen] = mode;
 		})
 		.append ();
 	backgroundGroup.add_argument ("--clamp")
@@ -151,11 +151,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 				sLog.exception ("Invalid clamp mode: ", value);
 			}
 
-			if (this->settings.render.mode == DESKTOP_BACKGROUND) {
-				this->settings.general.screenClamps[lastScreen] = mode;
-			} else {
-				this->settings.render.window.clamp = mode;
-			}
+			this->settings.general.clamps[lastScreen] = mode;
 		});
 
 	auto& performanceGroup = program.add_group ("Performance options");

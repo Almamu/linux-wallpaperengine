@@ -248,19 +248,21 @@ void WallpaperApplication::advancePlaylist (
 		this->setupPropertiesForProject (project);
 		this->m_backgrounds[screen] = project;
 
-		const auto scalingIt = this->m_context.settings.general.screenScalings.find (screen);
-		const auto clampIt = this->m_context.settings.general.screenClamps.find (screen);
-		const auto scaling = scalingIt != this->m_context.settings.general.screenScalings.end ()
+		const auto scalingIt = this->m_context.settings.general.scalings.find (screen);
+		const auto clampIt = this->m_context.settings.general.clamps.find (screen);
+		const auto scaling = scalingIt != this->m_context.settings.general.scalings.end ()
 			? scalingIt->second
-			: this->m_context.settings.render.window.scalingMode;
-		const auto clamp = clampIt != this->m_context.settings.general.screenClamps.end ()
+			: this->m_context.settings.general.scalings[DEFAULT_SCREEN_NAME];
+		const auto clamp = clampIt != this->m_context.settings.general.clamps.end ()
 			? clampIt->second
-			: this->m_context.settings.render.window.clamp;
+			: this->m_context.settings.general.clamps[DEFAULT_SCREEN_NAME];
 
 		const auto activeScreenIt = this->m_activeOutputs.find (screen);
 
 		if (activeScreenIt != this->m_activeOutputs.end ()) {
 			activeScreenIt->second->setWallpaper (project);
+			activeScreenIt->second->setScaling (scaling);
+			activeScreenIt->second->setClamping (clamp);
 		}
 		// TODO: STORE SCALE, CLAMP, ETC TO BE USED
 	} catch (const std::exception& e) {
@@ -684,10 +686,21 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
 		return;
 	}
 
+	const auto scalingIt = this->m_context.settings.general.scalings.find (screen);
+	const auto clampIt = this->m_context.settings.general.clamps.find (screen);
+	const auto scaling = scalingIt != this->m_context.settings.general.scalings.end ()
+		? scalingIt->second
+		: this->m_context.settings.general.scalings[DEFAULT_SCREEN_NAME];
+	const auto clamp = clampIt != this->m_context.settings.general.clamps.end ()
+		? clampIt->second
+		: this->m_context.settings.general.clamps[DEFAULT_SCREEN_NAME];
+
 	this->m_backgrounds[screen] = this->loadBackground (*currentDefaultBackground);
 	this->m_activeOutputs[screen] = output;
 
 	output->setWallpaper (this->m_backgrounds[screen]);
+	output->setScaling (scaling);
+	output->setClamping (clamp);
 }
 
 void WallpaperApplication::onScreenUnavailable (const std::string& name, Desktop::Output* output) {

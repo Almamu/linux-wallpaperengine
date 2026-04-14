@@ -70,9 +70,53 @@ void Output::setWallpaper (wp_project* wallpaper) {
 	}
 }
 
-void Output::setViewport (const glm::vec4 viewport) { this->m_viewport = viewport; }
+void Output::setViewport (const glm::vec4 viewport) {
+	// no change has to happen
+	if (this->m_viewport == viewport) {
+		return;
+	}
+
+	this->m_viewport = viewport;
+
+	if (this->m_wallpaper != nullptr) {
+		// viewport changes require updating the framebuffer
+		// as scaling/clamping mode affect it
+		this->clearFramebuffer ();
+		this->setupFramebuffer ();
+	}
+}
 
 void Output::setFramebuffer (const GLuint framebuffer) { this->m_outputFramebuffer = framebuffer; }
+
+void Output::setClamping (Application::ApplicationContext::CLAMP_MODE mode) {
+	if (this->m_clamp == mode) {
+		return;
+	}
+
+	this->m_clamp = mode;
+
+	if (this->m_wallpaper != nullptr) {
+		// viewport changes require updating the framebuffer
+		// as scaling/clamping mode affect it
+		this->clearFramebuffer ();
+		this->setupFramebuffer ();
+	}
+}
+
+void Output::setScaling (Application::ApplicationContext::SCALING_MODE mode) {
+	if (this->m_scaling == mode) {
+		return;
+	}
+
+	this->m_scaling = mode;
+
+	if (this->m_wallpaper != nullptr) {
+		// viewport changes require updating the framebuffer
+		// as scaling/clamping mode affect it
+		this->clearFramebuffer ();
+		this->setupFramebuffer ();
+	}
+}
 
 wp_project* Output::getWallpaper () const { return this->m_wallpaper; }
 
@@ -83,9 +127,52 @@ GLuint Output::getFramebuffer () const { return this->m_framebuffer; }
 void Output::setupFramebuffer () {
 	// TODO: CLEAN THIS UP, THIS CODE IS REPEATED IN MULTIPLE PLACES
 	// setup vao and required buffers
-	GLfloat texCoords[]
-		= { 0.0f, this->m_vflip ? 1.0f : 0.0f, 1.0f, this->m_vflip ? 1.0f : 0.0f, 0.0f, this->m_vflip ? 0.0f : 1.0f,
-		    0.0f, this->m_vflip ? 0.0f : 1.0f, 1.0f, this->m_vflip ? 1.0f : 0.0f, 1.0f, this->m_vflip ? 0.0f : 1.0f };
+
+	float uMin = 0.0f;
+	float uMax = 1.0f;
+	float vMin = 0.0f;
+	float vMax = 1.0f;
+
+	if (this->m_viewport.z > 0 && this->m_viewport.w > 0 && this->m_previousWidth > 0 && this->m_previousHeight > 0) {
+		const float ratioV = this->m_viewport.z / this->m_viewport.w;
+		const float ratioW = (float)this->m_previousWidth / (float)this->m_previousHeight;
+
+		switch (this->m_scaling) {
+			case Application::ApplicationContext::SCALING_MODE_STRETCH:
+				break;
+			case Application::ApplicationContext::SCALING_MODE_FIT:
+				if (ratioW > ratioV) {
+					const float s = ratioW / ratioV;
+					vMin = 0.5f - 0.5f * s;
+					vMax = 0.5f + 0.5f * s;
+				} else {
+					const float s = ratioV / ratioW;
+					uMin = 0.5f - 0.5f * s;
+					uMax = 0.5f + 0.5f * s;
+				}
+				break;
+			case Application::ApplicationContext::SCALING_MODE_FILL:
+			case Application::ApplicationContext::SCALING_MODE_DEFAULT:
+				if (ratioW > ratioV) {
+					const float s = ratioV / ratioW;
+					uMin = 0.5f - 0.5f * s;
+					uMax = 0.5f + 0.5f * s;
+				} else {
+					const float s = ratioW / ratioV;
+					vMin = 0.5f - 0.5f * s;
+					vMax = 0.5f + 0.5f * s;
+				}
+				break;
+		}
+	}
+
+	if (this->m_vflip) {
+		const float temp = vMin;
+		vMin = vMax;
+		vMax = temp;
+	}
+
+	const GLfloat texCoords[] = { uMin, vMin, uMax, vMin, uMin, vMax, uMin, vMax, uMax, vMin, uMax, vMax };
 	constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
 		                             -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
@@ -114,6 +201,26 @@ void Output::setupFramebuffer () {
 	);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	GLint wrapMode = GL_CLAMP_TO_EDGE;
+	switch (this->m_clamp) {
+		case Application::ApplicationContext::CLAMP_MODE_UVS:
+			wrapMode = GL_CLAMP_TO_EDGE;
+			break;
+		case Application::ApplicationContext::CLAMP_MODE_UVS_BORDER:
+			wrapMode = GL_CLAMP_TO_BORDER;
+			break;
+		case Application::ApplicationContext::CLAMP_MODE_REPEAT:
+			wrapMode = GL_REPEAT;
+			break;
+	}
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+
+	if (wrapMode == GL_CLAMP_TO_BORDER) {
+		constexpr GLfloat borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		glTexParameterfv (GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	}
 	constexpr GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->m_texture, 0);
 	glDrawBuffers (1, drawBuffers);

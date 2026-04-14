@@ -1,5 +1,7 @@
 #pragma once
 
+#include "WallpaperEngine/Application/ApplicationContext.h"
+
 #include <glad/glad.h>
 
 #include <glm/vec4.hpp>
@@ -16,6 +18,8 @@ public:
 	virtual void setWallpaper (wp_project* wallpaper);
 	virtual void setViewport (glm::vec4 viewport);
 	virtual void setFramebuffer (GLuint framebuffer);
+	virtual void setClamping (Application::ApplicationContext::CLAMP_MODE mode);
+	virtual void setScaling (Application::ApplicationContext::SCALING_MODE mode);
 
 	[[nodiscard]] glm::vec4 getViewport () const;
 	[[nodiscard]] GLuint getFramebuffer () const;
@@ -32,6 +36,8 @@ private:
 	wp_project* m_wallpaper;
 	glm::vec4 m_viewport;
 
+	Application::ApplicationContext::CLAMP_MODE m_clamp = Application::ApplicationContext::CLAMP_MODE_UVS;
+	Application::ApplicationContext::SCALING_MODE m_scaling = Application::ApplicationContext::SCALING_MODE_DEFAULT;
 	bool m_vflip;
 	int m_previousWidth = 0;
 	int m_previousHeight = 0;

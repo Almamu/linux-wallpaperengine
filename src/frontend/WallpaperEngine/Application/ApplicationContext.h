@@ -78,9 +78,9 @@ public:
 			/** Properties to change values for */
 			std::map<std::string, std::string> properties;
 			/** The scaling mode for different screens */
-			std::map<std::string, SCALING_MODE> screenScalings;
+			std::map<std::string, SCALING_MODE> scalings;
 			/** The clamping mode for different screens */
-			std::map<std::string, CLAMP_MODE> screenClamps;
+			std::map<std::string, CLAMP_MODE> clamps;
 			/** Playlists selected per screen */
 			std::map<std::string, std::string> playlists;
 		} general;
@@ -109,8 +109,6 @@ public:
 			struct {
 				/** The window size used in explicit window */
 				glm::ivec4 geometry;
-				CLAMP_MODE clamp;
-				SCALING_MODE scalingMode;
 			} window;
 		} render;
 
@@ -156,8 +154,8 @@ public:
         	.steam = std::nullopt,
             .backgrounds = {},
             .properties = {},
-            .screenScalings = {},
-            .screenClamps = {},
+            .scalings = {},
+            .clamps = {},
             .playlists = {},
         },
         .render = {
@@ -168,8 +166,6 @@ public:
             .fullscreenPauseIgnoreAppIds = {},
             .window = {
                 .geometry = {},
-                .clamp = CLAMP_MODE_UVS,
-                .scalingMode = SCALING_MODE_DEFAULT,
             },
         },
         .audio = {
