@@ -23,6 +23,7 @@ private:
     static ImageUniquePtr
     parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image);
     static ParticleUniquePtr parseParticle (const JSON& it, const Project& project, ObjectData base);
+    static TextUniquePtr parseText (const JSON& it, const Project& project, ObjectData base);
     static std::vector<ImageEffectUniquePtr> parseEffects (const JSON& it, const Project& project);
     static ImageEffectUniquePtr parseEffect (const JSON& it, const Project& project);
     static std::vector<ImageEffectPassOverrideUniquePtr>

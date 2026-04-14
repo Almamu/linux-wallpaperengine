@@ -576,4 +576,41 @@ public:
 	Object (std::move (data)), ParticleData (std::move (particleData)) { };
     ~Particle () override = default;
 };
+
+/**
+ * Text object data. Phase 1 of text support covers only static text;
+ * dynamic (script-driven) text captures the script source for a future
+ * pass but renders whatever initial value the scene provides.
+ */
+struct TextData {
+    /** The text content to render */
+    std::string text;
+    /** Scripted text source (empty for static text) */
+    std::string script;
+    /** Font size in points */
+    float pointsize;
+    /** Bounding box size */
+    glm::vec2 size;
+    /** Scale (x, y, z) */
+    UserSettingUniquePtr scale;
+    /** Text color as linear-space RGB */
+    UserSettingUniquePtr color;
+    /** Alpha multiplier */
+    UserSettingUniquePtr alpha;
+    /** Whether the text is visible */
+    UserSettingUniquePtr visible;
+    /** Horizontal alignment: "left", "center", "right" */
+    std::string alignment;
+    /** Vertical alignment: "top", "center", "bottom" */
+    std::string verticalalign;
+    /** Padding inside the bounding box */
+    int padding;
+};
+
+class Text : public Object, public TextData {
+public:
+    explicit Text (ObjectData data, TextData textData) noexcept :
+	Object (std::move (data)), TextData (std::move (textData)) { };
+    ~Text () override = default;
+};
 } // namespace WallpaperEngine::Data::Model

@@ -55,7 +55,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     } else if (particleIt != it.end ()) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
-	sLog.error ("Text objects are not supported yet");
+	return parseText (it, project, std::move (basedata));
     } else if (lightIt != it.end ()) {
 	sLog.error ("Light objects are not supported yet");
     } else {
@@ -99,6 +99,50 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
 	    .sounds = sounds,
 	}
     );
+}
+
+TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
+    const auto& properties = project.properties;
+    const auto textIt = it.require ("text", "Text object must have a text field");
+
+    std::string text;
+    std::string script;
+
+    if (textIt.is_string ()) {
+	text = textIt.get<std::string> ();
+    } else if (textIt.is_object ()) {
+	// dynamic text with a script; Phase 1 does not execute the script, so
+	// just capture the source and leave the rendered text empty
+	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ()) {
+	    script = *scriptIt;
+	}
+    }
+
+    auto result = std::make_unique<Text> (
+	std::move (base),
+	TextData {
+	    .text = std::move (text),
+	    .script = std::move (script),
+	    .pointsize = it.optional ("pointsize", 32.0f),
+	    .size = it.optional ("size", glm::vec2 (0.0f)),
+	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
+	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
+	    .alpha = it.user ("alpha", properties, 1.0f),
+	    .visible = it.user ("visible", properties, true),
+	    .alignment = it.optional ("alignment", std::string ("center")),
+	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
+	    .padding = it.optional ("padding", 0),
+	}
+    );
+
+    // color may arrive as vec3; widen it to vec4 with full alpha
+    if (result->color->value->getType () == DynamicValue::UnderlyingType::Vec3) {
+	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
+    } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
+	result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
+    }
+
+    return result;
 }
 
 ImageUniquePtr

@@ -1,6 +1,7 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CParticle.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
+#include "WallpaperEngine/Render/Objects/CText.h"
 
 #include "WallpaperEngine/Render/WallpaperState.h"
 
@@ -214,6 +215,16 @@ Render::CObject* CScene::createObject (const Object& object) {
 	}
 
 	renderObject = particle;
+    } else if (object.is<Text> ()) {
+	auto* text = new Objects::CText (*this, *object.as<Text> ());
+
+	try {
+	    text->setup ();
+	} catch (std::runtime_error&) {
+	    sLog.error ("Cannot setup text ", text->getObject ().name);
+	}
+
+	renderObject = text;
     } else {
 	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
 	renderObject = new CObject (*this, object);
