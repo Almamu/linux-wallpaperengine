@@ -253,9 +253,24 @@ void CImage::setup () {
     // TODO: CHECK ORDER OF THINGS, 2419444134'S ID 27 DEPENDS ON 104'S COMPOSITE_A WHEN OUR LAST RENDER IS ON
     // COMPOSITE_B
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
-    // passthrough images without effects are bad, do not draw them
-    if (this->m_image.model->passthrough && this->m_image.effects.empty ()) {
-	return;
+    if (this->m_image.model->passthrough) {
+		// passthrough images without effects are bad, do not draw them
+		if(this->m_image.effects.empty ()) {
+			return;
+		}
+
+		// Some have attempted to declare effects with visible set to false.
+		bool allEffectsInvisible = true;
+		for (const auto& cur : this->m_image.effects) {
+			if (cur->visible->value->getBool()) {
+				allEffectsInvisible = false;
+				break;
+			}
+		}
+
+		if (allEffectsInvisible) {
+			return;
+		}
     }
 
     // copy pass to the composite layer
