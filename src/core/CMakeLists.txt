@@ -60,12 +60,7 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Render/CFBO.cpp
     WallpaperEngine/Render/Objects/Effects/CPass.cpp
 
-    WallpaperEngine/WebBrowser/CEF/RenderHandler.cpp
-    WallpaperEngine/WebBrowser/CEF/BrowserClient.cpp
-    WallpaperEngine/WebBrowser/CEF/BrowserApp.cpp
-    WallpaperEngine/WebBrowser/CEF/SubprocessApp.cpp
-    WallpaperEngine/WebBrowser/CEF/WPSchemeHandlerFactory.cpp
-    WallpaperEngine/WebBrowser/CEF/WPSchemeHandler.cpp
+    WallpaperEngine/WebBrowser/IPC/WebManager.cpp
 
     WallpaperEngine/Data/Model/DynamicValue.cpp
     WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp
@@ -106,8 +101,6 @@ set(TARGET_LIBRARIES
     glslang
     spirv-cross-core
     spirv-cross-glsl
-    libcef_lib
-    libcef_dll_wrapper
     qjs)
 
 add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
@@ -117,14 +110,17 @@ target_include_directories(${TARGET_NAME}-object PUBLIC
     ${EXTERNAL_DEPS_DIR}/MimeTypes
     ${EXTERNAL_DEPS_DIR}/stb)
 
+target_compile_definitions(${TARGET_NAME}-object PRIVATE
+        WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper")
+
 if (NOT WPBUILD_CORE)
     return()
 endif()
 
 include(RequireGLSLANG)
 include(RequireKissFFT)
-include(RequireCEF)
 include(RequireQuickJS)
+
 include(RequireNLOHMANNJson)
 pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
 pkg_check_modules(zlib REQUIRED IMPORTED_TARGET zlib)
@@ -143,8 +139,7 @@ target_link_libraries(${TARGET_NAME}-object PRIVATE ${TARGET_LIBRARIES})
 target_link_libraries(${TARGET_NAME} PRIVATE ${TARGET_LIBRARIES})
 
 target_compile_definitions(${TARGET_NAME} PRIVATE
-    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper"
-    WPENGINE_CEF_RESOURCES_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine")
+    WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper")
 
 target_compile_definitions(${TARGET_NAME}-object PRIVATE WPENGINE_BUILD)
 target_compile_definitions(${TARGET_NAME} PUBLIC ERRORONLY=${ERRORONLY})
@@ -153,12 +148,10 @@ target_link_options(${TARGET_NAME} PRIVATE
     "-Wl,--exclude-libs,ALL"
     "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
 
-COPY_FILES(${TARGET_NAME} "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
-COPY_FILES(${TARGET_NAME} "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 
 set_target_properties(${TARGET_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY}
     SKIP_BUILD_RPATH FALSE
+    BUILD_RPATH "${TARGET_OUTPUT_DIRECTORY}"
     BUILD_WITH_INSTALL_RPATH FALSE
     INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_FULL_LIBDIR}/linux-wallpaperengine"
     INSTALL_RPATH_USE_LINK_PATH TRUE
@@ -166,15 +159,12 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     SOVERSION ${PROJECT_SOVERSION})
 
 add_dependencies(${TARGET_NAME}
-    libcef_dll_wrapper
     kissfft::kissfft
     glslang
     spirv-cross-core
     spirv-cross-glsl
     qjs
     linux-wallpaperengine-glad)
-
-SET_LIBRARY_TARGET_PROPERTIES(${TARGET_NAME}-object)
 
 install(TARGETS ${TARGET_NAME}
     EXPORT ${TARGET_NAME}
@@ -183,11 +173,9 @@ install(TARGETS ${TARGET_NAME}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/linux-wallpaperengine)
 
-install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION "${CMAKE_INSTALL_LIBDIR}/linux-wallpaperengine"
-    FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*")
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/generated/ DESTINATION include/${PROJECT_NAME})
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/frontends/ DESTINATION include/${PROJECT_NAME})
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/linux-wallpaperengine/ DESTINATION include/${PROJECT_NAME})
 
 # Export targets
 install(EXPORT ${TARGET_NAME}

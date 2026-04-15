@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-#include "frontends/project.h"
+#include "linux-wallpaperengine/project.h"
 
 #include "WallpaperEngine/Audio/AudioContext.h"
 
@@ -96,6 +96,13 @@ public:
 	[[nodiscard]] std::shared_ptr<const CFBO> getFBO () const;
 
 	/**
+	 * Updates the mouse input handler for this wallpaper
+	 *
+	 * @param newMouseInput The new mouse input to use for this wallpaper
+	 */
+	void setMouseInputHandler (wp_mouse_input* newMouseInput);
+
+	/**
 	 * Updates the destination framebuffer for this wallpaper
 	 *
 	 * @param framebuffer
@@ -103,7 +110,6 @@ public:
 	void setDestinationFramebuffer (GLuint framebuffer) const;
 
 	/**
-	 *
 	 * @return The current destination framebuffer
 	 */
 	GLuint getDestinationFramebuffer () const;

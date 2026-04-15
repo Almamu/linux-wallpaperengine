@@ -5,19 +5,12 @@
 
 using namespace WallpaperEngine::WebBrowser::CEF;
 
-BrowserApp::BrowserApp (
-	std::filesystem::path assetDir, std::filesystem::path backgroundDir, const Assets::AssetLocator& locator
-) :
-	SubprocessApp (Utils::UUID::UUIDv4 (), locator), m_assetDir (std::move (assetDir)),
-	m_backgroundDir (std::move (backgroundDir)) { }
+BrowserApp::BrowserApp () : CefApp (), m_handlerFactory (new WPSchemeHandlerFactory ()) { }
 
 CefRefPtr<CefBrowserProcessHandler> BrowserApp::GetBrowserProcessHandler () { return this; }
 
 void BrowserApp::OnContextInitialized () {
-	CefRegisterSchemeHandlerFactory (
-		WPSchemeHandlerFactory::generateSchemeName (this->getUUID ()), static_cast<const char*> (nullptr),
-		this->getHandlerFactory ()
-	);
+	CefRegisterSchemeHandlerFactory ("wp", static_cast<const char*> (nullptr), this->m_handlerFactory);
 }
 
 void BrowserApp::OnBeforeCommandLineProcessing (const CefString& process_type, CefRefPtr<CefCommandLine> command_line) {
@@ -49,9 +42,8 @@ if (process_type.empty()) {
 }*/
 }
 
-void BrowserApp::OnBeforeChildProcessLaunch (CefRefPtr<CefCommandLine> command_line) {
-	// TODO: add some parameters to give more context on what to load
-	command_line->AppendSwitchWithValue ("uuid", this->getUUID ());
-	command_line->AppendSwitchWithValue ("assets-dir", this->m_assetDir.c_str ());
-	command_line->AppendSwitchWithValue ("background-dir", this->m_backgroundDir.c_str ());
+void BrowserApp::OnRegisterCustomSchemes (CefRawPtr<CefSchemeRegistrar> registrar) {
+	registrar->AddCustomScheme (
+		"wp", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_FETCH_ENABLED
+	);
 }

@@ -8,7 +8,7 @@
 
 #include "Render/RenderContext.h"
 
-#include "frontends/project.h"
+#include "linux-wallpaperengine/project.h"
 
 namespace WallpaperEngine {
 class Context;
@@ -22,6 +22,8 @@ protected:
 	Properties::const_iterator property_it;
 	wp_project_property* current_property;
 	GLuint framebuffer;
+	int hintedWidth;
+	int hintedHeight;
 
 	Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project);
 
@@ -31,6 +33,8 @@ public:
 	int getWidth () const;
 	int getHeight () const;
 	void setOutputFramebuffer (GLuint newFramebuffer);
+	void setMouseInput (wp_mouse_input* newMouseInput);
+	void hintSize (int width, int height);
 	void render ();
 
 	wp_project_property* propertyListNext ();

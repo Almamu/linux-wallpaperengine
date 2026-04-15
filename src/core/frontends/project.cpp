@@ -1,4 +1,4 @@
-#include "frontends/project.h"
+#include "linux-wallpaperengine/project.h"
 
 #include "WallpaperEngine/Project.h"
 
@@ -180,9 +180,21 @@ WPENGINE_API int wp_project_get_height (wp_project* project) {
 	WPENGINE_PROJECT_API_END (0);
 }
 
+WPENGINE_API void wp_project_hint_size (wp_project* project, int width, int height) {
+	WPENGINE_PROJECT_API_BEGIN
+	return static_cast<WallpaperEngine::Project*> (project)->hintSize (width, height);
+	WPENGINE_PROJECT_API_END ();
+}
+
 WPENGINE_API void wp_project_set_output_framebuffer (wp_project* project, const unsigned int framebuffer) {
 	WPENGINE_PROJECT_API_BEGIN
 	static_cast<WallpaperEngine::Project*> (project)->setOutputFramebuffer (framebuffer);
+	WPENGINE_PROJECT_API_END ();
+}
+
+WPENGINE_API void wp_project_set_mouse_input (wp_project* project, wp_mouse_input* mouse_input) {
+	WPENGINE_PROJECT_API_BEGIN
+	static_cast<WallpaperEngine::Project*> (project)->setMouseInput (mouse_input);
 	WPENGINE_PROJECT_API_END ();
 }
 

@@ -3,8 +3,14 @@
 if(NOT TARGET libcef_dll_wrapper)
     # Download CEF of specified version for current platform
     # Specify the CEF distribution version.
-    set(CEF_VERSION "145.0.28+g51162e8+chromium-145.0.7632.160")
-    set(CEF_DISTRIBUTION_TYPE "standard")
+    set(CEF_VERSION "146.0.11+g3a0fcf1+chromium-146.0.7680.179")
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CEF_DISTRIBUTION_TYPE "standard")
+    else()
+        set(CEF_DISTRIBUTION_TYPE "minimal")
+    endif()
+
     # Determine the platform.
     if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         if("${PROJECT_ARCH}" STREQUAL "arm64")
@@ -84,6 +90,10 @@ if(NOT TARGET libcef_dll_wrapper)
 
     # remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
     file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
+
+    # setup install for chrome files
+    install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION "${CMAKE_INSTALL_LIBDIR}/linux-wallpaperengine"
+        FILES_MATCHING PATTERN "*.so*" PATTERN "*.bin" PATTERN "*.dat" PATTERN "*.pak" PATTERN "locales/*" PATTERN "chrome-sandbox")
 else()
     # add cef's cmake files to the lookup so we can use those directly
     list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")

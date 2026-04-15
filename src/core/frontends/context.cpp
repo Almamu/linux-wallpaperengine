@@ -1,4 +1,4 @@
-#include "frontends/context.h"
+#include "linux-wallpaperengine/context.h"
 
 #include "WallpaperEngine/Context.h"
 #include <SDL.h>

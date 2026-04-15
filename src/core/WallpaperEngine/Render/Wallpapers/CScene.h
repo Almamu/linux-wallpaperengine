@@ -3,7 +3,7 @@
 #include "WallpaperEngine/Render/Camera.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
-#include "frontends/project.h"
+#include "linux-wallpaperengine/project.h"
 
 namespace WallpaperEngine::Render {
 class Camera;

@@ -10,6 +10,7 @@
 
 #include "Data/Parsers/ConfigParser.h"
 #include "Data/Parsers/ProjectParser.h"
+#include "WebBrowser/IPC/WebManager.h"
 
 using namespace WallpaperEngine;
 
@@ -39,7 +40,11 @@ std::filesystem::path detectHomedir () {
 Configuration::Configuration (wp_rendering_pause_check* pause_check, wp_mute_check* mute_check) :
 	properties ({}), pause_check (pause_check), mute_check (mute_check), volume (15), enableAudio (true),
 	disableParticles (false), disableParallax (false), web_fps (60) {
+	// setup logging so the library can write things to the output
+	sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
+	sLog.addError (new std::ostream (std::cerr.rdbuf ()));
 	this->detectSteamDir ();
+	sWebManager.init ();
 }
 
 bool Configuration::detectSteamDir () {

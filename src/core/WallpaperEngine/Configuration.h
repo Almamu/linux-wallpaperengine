@@ -7,9 +7,9 @@
 #include <optional>
 #include <string>
 
-#include "frontends/configuration.h"
-#include "frontends/content.h"
-#include "frontends/playlists.h"
+#include "linux-wallpaperengine/configuration.h"
+#include "linux-wallpaperengine/content.h"
+#include "linux-wallpaperengine/playlists.h"
 
 namespace WallpaperEngine {
 class Configuration;

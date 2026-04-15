@@ -10,9 +10,9 @@ set(TARGET_SOURCE_FILES
 
     main.cpp)
 set(TARGET_LIBRARIES
+    linux-wallpaperengine-core
     linux-wallpaperengine-common-object
     linux-wallpaperengine-glad
-    linux-wallpaperengine-core
     PkgConfig::pulseaudio
     glfw
     argparse)
@@ -22,7 +22,9 @@ if(NOT WPBUILD_FRONTEND)
 endif()
 
 include(RequireArgParse)
+if(NOT TARGET linux-wallpaperengine-core)
 find_package(linux-wallpaperengine-core REQUIRED)
+endif()
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(X11)
@@ -115,8 +117,14 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${EXTERNAL_DEPS_DIR}/stb)
 
+if(TARGET linux-wallpaperengine-core)
+    target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include)
+endif()
+
 target_link_libraries (${TARGET_NAME} PUBLIC ${TARGET_LIBRARIES})
 target_compile_definitions(${TARGET_NAME} PRIVATE PROJECT_VERSION=${PROJECT_VERSION})
+
+target_link_options (${TARGET_NAME} PRIVATE "-Wl,--export-dynamic")
 
 if(X11_FOUND AND X11_Xrandr_FOUND AND X11_xf86vmode_FOUND)
     # make sure some of the X11 functions we'll use are available

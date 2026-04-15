@@ -3,6 +3,7 @@
 #include "Data/Dumpers/StringPrinter.h"
 #include "Data/Model/Property.h"
 #include "Data/Parsers/ProjectParser.h"
+#include "Render/Wallpapers/CWeb.h"
 
 using namespace WallpaperEngine;
 
@@ -180,6 +181,23 @@ void WallpaperEngine::Project::setOutputFramebuffer (const GLuint newFramebuffer
 	}
 }
 
+void WallpaperEngine::Project::setMouseInput (wp_mouse_input* newMouseInput) {
+	this->mouse_input = newMouseInput;
+
+	if (this->wallpaper != nullptr) {
+		this->wallpaper->setMouseInputHandler (newMouseInput);
+	}
+}
+
+void WallpaperEngine::Project::hintSize (int width, int height) {
+	this->hintedWidth = width;
+	this->hintedHeight = height;
+
+	if (this->wallpaper != nullptr && this->wallpaper->is<Wallpapers::CWeb>()) {
+		this->wallpaper->as<Wallpapers::CWeb>()->setSize (width, height);
+	}
+}
+
 void WallpaperEngine::Project::render () {
 	if (active_context != &this->context) {
 		active_context = &this->context;
@@ -194,6 +212,10 @@ void WallpaperEngine::Project::render () {
 			*this->ref->wallpaper, *this->renderContext, *this->context.audio, this->mouse_input
 		);
 		this->wallpaper->setDestinationFramebuffer (this->framebuffer);
+		// give hint about size to the wallpaper only if web
+		if (this->wallpaper->is<Wallpapers::CWeb>()) {
+			this->wallpaper->as<Wallpapers::CWeb>()->setSize (this->hintedWidth, this->hintedHeight);
+		}
 	}
 
 	this->wallpaper->render ();

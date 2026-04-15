@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "frontends/configuration.h"
+#include "linux-wallpaperengine/configuration.h"
 
 #include "Steam/FileSystem/FileSystem.h"
 #include "WallpaperEngine/Configuration.h"

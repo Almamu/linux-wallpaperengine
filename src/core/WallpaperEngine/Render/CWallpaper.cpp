@@ -268,11 +268,19 @@ glm::dvec2 CWallpaper::getLiveMousePosition () const {
 		return { 0, 0 };
 	}
 
+	if (this->m_mouseInput->get_x == nullptr || this->m_mouseInput->get_y == nullptr) {
+		return { 0, 0 };
+	}
+
 	return { this->m_mouseInput->get_x (this->m_mouseInput->user_parameter),
 		     this->m_mouseInput->get_y (this->m_mouseInput->user_parameter) };
 }
 
 wp_mouse_input* CWallpaper::getMouseInputHandler () const { return this->m_mouseInput; }
+
+void CWallpaper::setMouseInputHandler (wp_mouse_input* newMouseInput) {
+	this->m_mouseInput = newMouseInput;
+}
 
 std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext, wp_mouse_input* mouseInput

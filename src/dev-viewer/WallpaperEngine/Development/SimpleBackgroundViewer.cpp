@@ -1,10 +1,10 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include "argparse/argparse.hpp"
-#include "frontends/context.h"
-#include "frontends/project.h"
-#include "frontends/render.h"
 #include "glad/glad.h"
+#include "linux-wallpaperengine/context.h"
+#include "linux-wallpaperengine/project.h"
+#include "linux-wallpaperengine/render.h"
 
 #include <GLFW/glfw3.h>
 #include <csignal>

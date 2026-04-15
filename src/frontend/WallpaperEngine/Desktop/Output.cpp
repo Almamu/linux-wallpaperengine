@@ -9,7 +9,12 @@ using namespace WallpaperEngine::Desktop;
 
 Output::Output (wp_project* wallpaper, const glm::vec4 viewport, bool vflip) :
 	m_wallpaper (wallpaper), m_viewport (viewport), m_outputFramebuffer (GL_NONE), m_previousWidth (1),
-	m_previousHeight (1), m_vflip (vflip) { }
+	m_previousHeight (1), m_vflip (vflip) {
+	if (this->m_wallpaper != nullptr) {
+		// give a hint of the desired window size
+		wp_project_hint_size (this->m_wallpaper, viewport.z, viewport.w);
+	}
+}
 
 Output::~Output () { this->clearFramebuffer (); }
 
@@ -66,6 +71,9 @@ void Output::setWallpaper (wp_project* wallpaper) {
 	this->m_wallpaper = wallpaper;
 
 	if (this->m_wallpaper != nullptr) {
+		// give a hint of the desired window size
+		wp_project_hint_size (this->m_wallpaper, this->m_viewport.z, this->m_viewport.w);
+		// setup framebuffer
 		this->setupFramebuffer ();
 	}
 }
@@ -79,6 +87,8 @@ void Output::setViewport (const glm::vec4 viewport) {
 	this->m_viewport = viewport;
 
 	if (this->m_wallpaper != nullptr) {
+		// give a hint of the desired window size
+		wp_project_hint_size (this->m_wallpaper, viewport.z, viewport.w);
 		// viewport changes require updating the framebuffer
 		// as scaling/clamping mode affect it
 		this->clearFramebuffer ();

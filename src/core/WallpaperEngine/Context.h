@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "frontends/context.h"
+#include "linux-wallpaperengine/context.h"
 
 #include "Configuration.h"
 

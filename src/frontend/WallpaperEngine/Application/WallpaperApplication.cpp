@@ -118,7 +118,7 @@ void WallpaperApplication::setupEnvironment () {
 			);
 		}
 
-		std::string servers = "";
+		std::string servers;
 
 #ifdef WAYLAND_SUPPORT
 		servers += "Wayland ";
@@ -152,8 +152,8 @@ void WallpaperApplication::setupEnvironment () {
 }
 
 wp_project* WallpaperApplication::loadBackground (const std::string& bg) const {
-	return wp_project_load_id_str (this->m_context.state.context, nullptr, bg.c_str ())
-		?: wp_project_load_folder (this->m_context.state.context, nullptr, bg.c_str ());
+	return wp_project_load_id_str (this->m_context.state.context, &this->m_desktopEnvironment->mouse_input, bg.c_str ())
+		?: wp_project_load_folder (this->m_context.state.context, &this->m_desktopEnvironment->mouse_input, bg.c_str ());
 }
 
 std::vector<std::size_t>

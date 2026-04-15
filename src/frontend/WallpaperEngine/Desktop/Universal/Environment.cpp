@@ -16,6 +16,44 @@ static void* get_proc_address (void* user_parameter, const char* name) {
 	return reinterpret_cast<void*> (glfwGetProcAddress (name));
 }
 
+static double mouse_x;
+static double mouse_y;
+
+static double get_x (void* user_parameter) {
+	const auto window = static_cast<GLFWwindow*> (user_parameter);
+
+	glfwGetCursorPos (window, &mouse_x, &mouse_y);
+
+	return mouse_x;
+}
+
+static double get_y (void* user_parameter) {
+	const auto window = static_cast<GLFWwindow*> (user_parameter);
+
+	glfwGetCursorPos (window, &mouse_x, &mouse_y);
+
+	return mouse_y;
+}
+
+static int is_pressed (void* user_parameter, int button) {
+	const auto window = static_cast<GLFWwindow*> (user_parameter);
+	int result = 0;
+
+	if (button & WP_MOUSE_INPUT_BUTTON_RIGHT) {
+		result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_RIGHT;
+	}
+
+	if (button & WP_MOUSE_INPUT_BUTTON_LEFT) {
+		result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_LEFT;
+	}
+
+	if (button & WP_MOUSE_INPUT_BUTTON_MIDDLE) {
+		result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_MIDDLE;
+	}
+
+	return result;
+}
+
 Environment::Environment (
 	ApplicationContext& context, ScreenAvailableNotification& availableNotification,
 	ScreenUnavailableNotification& unavailableNotification
@@ -76,9 +114,7 @@ Environment::Environment (
 
 	// finally set the right gl_proc_address calls
 	this->gl_proc_address = { .user_parameter = this, .get_proc_address = get_proc_address };
-
-	// notify the app that there's a screen available
-	this->Environment::onScreenAvailable (DEFAULT_SCREEN_NAME, &this->m_output);
+	this->mouse_input = { .user_parameter = this->m_window, .get_x = get_x, .get_y = get_y, .is_pressed = is_pressed };
 }
 
 Environment::~Environment () {
@@ -92,6 +128,14 @@ Environment::~Environment () {
 }
 
 void Environment::render () {
+	static bool notifiedScreenAvailable = false;
+
+	// notify the app that there's a screen available
+	if (notifiedScreenAvailable == false) {
+		Environment::onScreenAvailable (DEFAULT_SCREEN_NAME, &this->m_output);
+		notifiedScreenAvailable = true;
+	}
+
 	int width;
 	int height;
 

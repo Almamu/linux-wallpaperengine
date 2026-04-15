@@ -1,4 +1,4 @@
-#include "frontends/content.h"
+#include "linux-wallpaperengine/content.h"
 
 #include "WallpaperEngine/Configuration.h"
 

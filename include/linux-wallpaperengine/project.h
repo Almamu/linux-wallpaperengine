@@ -385,12 +385,29 @@ WPENGINE_API int wp_project_get_width (wp_project* project);
 WPENGINE_API int wp_project_get_height (wp_project* project);
 
 /**
+ * Gives the project a hint for the size it will render at
+ *
+ * @param project The project to hint the size for
+ * @param width The width to hint for the project
+ * @param height The height to hint for the project
+ */
+WPENGINE_API void wp_project_hint_size (wp_project* project, int width, int height);
+
+/**
  * Updates the output framebuffer for the project
  *
  * @param project The project to update the output framebuffer for
  * @param framebuffer The framebuffer to use for rendering
  */
 WPENGINE_API void wp_project_set_output_framebuffer (wp_project* project, unsigned int framebuffer);
+
+/**
+ * Updates the mouse input used for the project
+ *
+ * @param project The project to update mouse input handler for
+ * @param mouse_input The mouse input handler to use for the project
+ */
+WPENGINE_API void wp_project_set_mouse_input (wp_project* project, wp_mouse_input* mouse_input);
 
 /**
  * Provides a textual representation of the project and it's elements, useful for debugging

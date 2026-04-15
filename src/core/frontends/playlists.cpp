@@ -1,4 +1,4 @@
-#include "frontends/playlists.h"
+#include "linux-wallpaperengine/playlists.h"
 
 #include "WallpaperEngine/Configuration.h"
 #include "WallpaperEngine/Data/Model/Types.h"

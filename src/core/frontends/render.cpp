@@ -1,8 +1,8 @@
-#include "frontends/render.h"
+#include "linux-wallpaperengine/render.h"
 
 #include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Project.h"
-#include "frontends/project.h"
+#include "linux-wallpaperengine/project.h"
 
 #define WPENGINE_RENDER_API_BEGIN try {
 #define WPENGINE_RENDER_API_END(result)                                                                                \

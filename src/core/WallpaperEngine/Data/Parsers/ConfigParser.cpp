@@ -4,7 +4,7 @@
 #include "ConfigParser.h"
 
 #include "WallpaperEngine/Data/Model/Config.h"
-#include "frontends/configuration.h"
+#include "linux-wallpaperengine/configuration.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;

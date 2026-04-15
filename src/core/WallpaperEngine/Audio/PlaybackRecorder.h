@@ -1,7 +1,7 @@
 #pragma once
 
-#include "frontends/context.h"
 #include "kiss_fftr.h"
+#include "linux-wallpaperengine/context.h"
 
 namespace WallpaperEngine {
 class Context;
