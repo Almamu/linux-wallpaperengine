@@ -139,7 +139,8 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
     if (result->color->value->getType () == DynamicValue::UnderlyingType::Vec3) {
 	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
     } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
-	result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
+	const glm::ivec3 icolor = result->color->value->getIVec3 ();
+	result->color->value->update (glm::vec4 (icolor) / 255.0f);
     }
 
     return result;

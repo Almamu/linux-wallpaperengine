@@ -538,6 +538,7 @@ if (BUILD_TESTING)
         ${FFMPEG_LIBRARIES}
         ${MPV_LIBRARY}
         ${PULSEAUDIO_LIBRARY}
+        Freetype::Freetype
         ${WAYLAND_LIBRARIES}
         ${X11_LIBRARIES}
         kissfft

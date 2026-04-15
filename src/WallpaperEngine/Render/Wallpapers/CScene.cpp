@@ -237,6 +237,8 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
 	    text->setup ();
 	} catch (std::runtime_error&) {
 	    sLog.error ("Cannot setup text ", text->getObject ().name);
+	    delete text;
+	    return nullptr;
 	}
 
 	return text;

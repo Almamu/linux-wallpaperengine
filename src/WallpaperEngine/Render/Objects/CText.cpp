@@ -19,6 +19,7 @@
 using namespace WallpaperEngine::Render::Objects;
 
 namespace {
+// TODO: Phase 2 – load font from wallpaper's materials/fonts/ using AssetLocator
 // Phase 1 uses a system font instead of the font shipped by the wallpaper.
 // Wallpaper Engine bundles .ttf files in `materials/fonts/`; wiring those in
 // is deferred to Phase 2 along with dynamic/scripted text.
@@ -135,7 +136,7 @@ void CText::buildTexture () {
     int maxAscent = 0;
     int maxDescent = 0;
 
-    for (char c : m_text.text) {
+    for (unsigned char c : m_text.text) {
 	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
 	    continue;
 	}
@@ -149,7 +150,7 @@ void CText::buildTexture () {
     std::vector<uint8_t> pixels (static_cast<size_t> (width) * height, 0);
 
     penX = 0;
-    for (char c : m_text.text) {
+    for (unsigned char c : m_text.text) {
 	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
 	    continue;
 	}
