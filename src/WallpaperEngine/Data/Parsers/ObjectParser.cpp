@@ -15,6 +15,78 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
+namespace {
+// Wraps a string value in a UserSetting with a String-typed DynamicValue.
+// UserSettingParser would try to numeric-parse single-char strings like "-"/":",
+// so we bypass it for raw string script-property values.
+UserSettingUniquePtr makeStringSetting (const std::string& s) {
+    auto dv = std::make_unique<DynamicValue> ();
+    dv->update (s);
+    return std::make_unique<UserSetting> (UserSetting {
+	.value = std::move (dv),
+	.property = nullptr,
+	.condition = std::nullopt,
+    });
+}
+
+// Resolves the `script` field of a scripted text node: if it looks like a
+// single-line path ending in .js, read it through the asset locator.
+// Returns empty string on failure (caller treats empty script as static).
+std::string resolveScriptSource (std::string raw, const Project& project) {
+    const bool looksLikePath =
+	!raw.empty () && raw.find ('\n') == std::string::npos && raw.size () >= 3
+	&& raw.compare (raw.size () - 3, 3, ".js") == 0;
+
+    if (!looksLikePath || project.assetLocator == nullptr)
+	return raw;
+
+    try {
+	return project.assetLocator->readString (raw);
+    } catch (const std::exception& e) {
+	sLog.error ("CText: cannot load script asset '", raw, "': ", e.what ());
+	return {};
+    }
+}
+
+// Parses a text object's `scriptproperties` subtree into a map of UserSettings.
+// Plain string values bypass UserSettingParser (which stof-throws on "-"/":"),
+// object values with a string `value` field also go through the string path.
+std::map<std::string, UserSettingUniquePtr>
+parseScriptProperties (const JSON& propsObj, const Properties& properties) {
+    std::map<std::string, UserSettingUniquePtr> out;
+    for (const auto& [key, propData] : propsObj.items ()) {
+	try {
+	    if (propData.is_string ()) {
+		out.emplace (key, makeStringSetting (propData.template get<std::string> ()));
+		continue;
+	    }
+	    if (propData.is_object ()) {
+		if (const auto valueField = propData.find ("value");
+		    valueField != propData.end () && valueField->is_string ()) {
+		    out.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
+		    continue;
+		}
+	    }
+	    out.emplace (key, UserSettingParser::parse (propData, properties));
+	} catch (const std::exception& e) {
+	    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
+	}
+    }
+    return out;
+}
+
+// The `color` user setting may arrive as vec3 or ivec3; normalize to vec4 with
+// full alpha so downstream renderers can assume a uniform type.
+void widenColorToVec4 (DynamicValue& v) {
+    if (v.getType () == DynamicValue::UnderlyingType::Vec3) {
+	v.update (glm::vec4 (v.getVec3 (), 1.0f));
+    } else if (v.getType () == DynamicValue::UnderlyingType::IVec3) {
+	const glm::ivec3 icolor = v.getIVec3 ();
+	v.update (glm::vec4 (glm::vec3 (icolor), 255.0f) / 255.0f);
+    }
+}
+} // namespace
+
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
@@ -115,61 +187,14 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
     } else if (textIt.is_object ()) {
 	// Scripted text: carries the JS source (either inline or as a .js asset path),
 	// an initial placeholder `value`, and typed initial values for scriptProperties.
-	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ()) {
-	    script = *scriptIt;
+	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ())
+	    script = resolveScriptSource (*scriptIt, project);
 
-	    // Single-line paths ending in .js are loaded through the asset locator.
-	    // Inline sources (which always contain newlines / semicolons) pass through.
-	    const bool looksLikePath =
-		!script.empty () && script.find ('\n') == std::string::npos && script.size () >= 3
-		&& script.compare (script.size () - 3, 3, ".js") == 0;
-
-	    if (looksLikePath && project.assetLocator != nullptr) {
-		try {
-		    script = project.assetLocator->readString (script);
-		} catch (const std::exception& e) {
-		    sLog.error ("CText: cannot load script asset '", script, "': ", e.what ());
-		    script.clear ();
-		}
-	    }
-	}
-
-	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ()) {
+	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ())
 	    text = *valueIt;
-	}
 
-	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ()) {
-	    // Build a UserSetting wrapping a String DynamicValue (UserSettingParser would try
-	    // to numeric-parse single-char strings like "-" / ":" and throw).
-	    auto makeStringSetting = [] (const std::string& s) -> UserSettingUniquePtr {
-		auto dv = std::make_unique<DynamicValue> ();
-		dv->update (s);
-		return std::make_unique<UserSetting> (UserSetting {
-		    .value = std::move (dv),
-		    .property = nullptr,
-		    .condition = std::nullopt,
-		});
-	    };
-
-	    for (const auto& [key, propData] : propsIt->items ()) {
-		try {
-		    if (propData.is_string ()) {
-			scriptProps.emplace (key, makeStringSetting (propData.template get<std::string> ()));
-			continue;
-		    }
-		    if (propData.is_object ()) {
-			if (const auto valueField = propData.find ("value");
-			    valueField != propData.end () && valueField->is_string ()) {
-			    scriptProps.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
-			    continue;
-			}
-		    }
-		    scriptProps.emplace (key, UserSettingParser::parse (propData, properties));
-		} catch (const std::exception& e) {
-		    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
-		}
-	    }
-	}
+	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ())
+	    scriptProps = parseScriptProperties (*propsIt, properties);
     }
 
     auto result = std::make_unique<Text> (
@@ -191,13 +216,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	}
     );
 
-    // color may arrive as vec3; widen it to vec4 with full alpha
-    if (result->color->value->getType () == DynamicValue::UnderlyingType::Vec3) {
-	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
-    } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
-	const glm::ivec3 icolor = result->color->value->getIVec3 ();
-	result->color->value->update (glm::vec4 (glm::vec3 (icolor), 255.0f) / 255.0f);
-    }
+    widenColorToVec4 (*result->color->value);
 
     return result;
 }

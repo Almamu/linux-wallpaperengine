@@ -92,96 +92,107 @@ void CText::setup () {
     const bool scripted = !m_text.script.empty ();
 
     // Nothing to render and no script to produce text later → bail.
-    if (m_text.text.empty () && !scripted) {
+    if (m_text.text.empty () && !scripted)
 	return;
-    }
 
-    if (FT_Init_FreeType (&m_ftLibrary) != 0) {
-	sLog.error ("CText: FT_Init_FreeType failed for object ", m_text.name);
+    if (!initFreeType ())
 	return;
-    }
 
-    bool fontLoaded = false;
+    if (!loadEmbeddedFont () && !loadSystemFont ())
+	return;
 
-    // Try loading the font specified by the wallpaper (e.g. "fonts/VCR_OSD_MONO.ttf").
+    FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (computeEffectivePixelSize ()));
+
+    buildShader ();
+    // Scripted text may have an empty placeholder; use a single space so the
+    // glyph texture has non-zero dimensions until the script produces a value.
+    rebuildTextureFrom (m_text.text.empty () ? std::string (" ") : m_text.text);
+
+    if (scripted)
+	initScriptLayer ();
+
+    m_valid = m_texture != 0 && m_program != 0 && m_vao != 0;
+}
+
+bool CText::initFreeType () {
+    if (FT_Init_FreeType (&m_ftLibrary) == 0)
+	return true;
+    sLog.error ("CText: FT_Init_FreeType failed for object ", m_text.name);
+    return false;
+}
+
+bool CText::loadEmbeddedFont () {
     // Wallpapers packed in .pkg don't expose physical paths, so we read the font
-    // into memory and use FT_New_Memory_Face. The buffer must outlive the face.
-    if (!m_text.font.empty () && m_text.font.rfind ("systemfont_", 0) != 0) {
-	try {
-	    auto stream = getAssetLocator ().read (m_text.font);
-	    stream->seekg (0, std::ios::end);
-	    const auto size = stream->tellg ();
-	    stream->seekg (0, std::ios::beg);
-	    m_fontData.resize (static_cast<size_t> (size));
-	    stream->read (reinterpret_cast<char*> (m_fontData.data ()), size);
-	    if (FT_New_Memory_Face (m_ftLibrary, m_fontData.data (),
-		    static_cast<FT_Long> (m_fontData.size ()), 0, &m_ftFace) == 0) {
-		fontLoaded = true;
-	    } else {
-		sLog.error ("CText: FT_New_Memory_Face failed for '", m_text.font, "', falling back to system font");
-		m_fontData.clear ();
-	    }
-	} catch (const std::exception& e) {
-	    sLog.error ("CText: cannot read font '", m_text.font, "': ", e.what (), ", falling back to system font");
-	    m_fontData.clear ();
-	}
+    // into memory and use FT_New_Memory_Face. m_fontData must outlive the face.
+    // `systemfont_*` references signal "use a system font"; let the fallback handle them.
+    if (m_text.font.empty () || m_text.font.rfind ("systemfont_", 0) == 0)
+	return false;
+
+    try {
+	auto stream = getAssetLocator ().read (m_text.font);
+	stream->seekg (0, std::ios::end);
+	const auto size = stream->tellg ();
+	stream->seekg (0, std::ios::beg);
+	m_fontData.resize (static_cast<size_t> (size));
+	stream->read (reinterpret_cast<char*> (m_fontData.data ()), size);
+
+	if (FT_New_Memory_Face (m_ftLibrary, m_fontData.data (),
+		static_cast<FT_Long> (m_fontData.size ()), 0, &m_ftFace) == 0)
+	    return true;
+
+	sLog.error ("CText: FT_New_Memory_Face failed for '", m_text.font, "', falling back to system font");
+    } catch (const std::exception& e) {
+	sLog.error ("CText: cannot read font '", m_text.font, "': ", e.what (), ", falling back to system font");
     }
 
-    // Fallback: use a system font.
-    if (!fontLoaded) {
-	std::string fontPath;
-	for (const auto& candidate : kFontCandidates) {
-	    if (std::filesystem::exists (candidate)) {
-		fontPath = candidate;
-		break;
-	    }
-	}
-	if (fontPath.empty ()) {
-	    sLog.error ("CText: no usable system font found");
-	    return;
-	}
-	if (FT_New_Face (m_ftLibrary, fontPath.c_str (), 0, &m_ftFace) != 0) {
-	    sLog.error ("CText: FT_New_Face failed for ", fontPath);
-	    return;
+    m_fontData.clear ();
+    return false;
+}
+
+bool CText::loadSystemFont () {
+    std::string fontPath;
+    for (const auto& candidate : kFontCandidates) {
+	if (std::filesystem::exists (candidate)) {
+	    fontPath = candidate;
+	    break;
 	}
     }
+    if (fontPath.empty ()) {
+	sLog.error ("CText: no usable system font found");
+	return false;
+    }
+    if (FT_New_Face (m_ftLibrary, fontPath.c_str (), 0, &m_ftFace) != 0) {
+	sLog.error ("CText: FT_New_Face failed for ", fontPath);
+	return false;
+    }
+    return true;
+}
 
-    // Compensate for small object scales. WE text objects often come with
-    // scale ~0.09 that, combined with a modest pointsize, would rasterize the
-    // glyphs to ~2px on screen (invisible). Rasterize at higher resolution so
-    // that after the model scale is applied in render() the on-screen size
-    // matches the intended pointsize.
+unsigned int CText::computeEffectivePixelSize () const {
+    // WE text objects often come with scale ~0.09 that, combined with a modest
+    // pointsize, would rasterize glyphs to ~2px on screen (invisible). Rasterize
+    // at higher resolution so that after the model scale is applied in render()
+    // the on-screen size matches the intended pointsize.
     const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
     const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
     const float compensate = (avgScale > 0.0f && avgScale < 1.0f)
 	? std::min (1.0f / avgScale, 32.0f)
 	: 1.0f;
-    const FT_UInt effectivePointsize = std::max<FT_UInt> (
-	1u, static_cast<FT_UInt> (static_cast<float> (m_text.pointsize) * compensate));
-    FT_Set_Pixel_Sizes (m_ftFace, 0, effectivePointsize);
+    return std::max<unsigned int> (
+	1u, static_cast<unsigned int> (static_cast<float> (m_text.pointsize) * compensate));
+}
 
-    buildShader ();
-    // Scripted text may have an empty placeholder; use a single space so the
-    // glyph texture has non-zero dimensions until the script produces a value.
-    const std::string initial = m_text.text.empty () ? std::string (" ") : m_text.text;
-    rebuildTextureFrom (initial);
-
-    if (scripted) {
-	std::map<std::string, DynamicValue*> initialProps;
-	for (const auto& [k, setting] : m_text.scriptProperties) {
-	    if (setting && setting->value) {
-		initialProps.emplace (k, setting->value.get ());
-	    }
-	}
-	m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
-	    m_text.script, initialProps, m_text.text
-	);
-	if (m_layerHandle == Scripting::kInvalidLayerHandle) {
-	    sLog.error ("CText: createLayerScript failed for '", m_text.name, "'");
-	}
+void CText::initScriptLayer () {
+    std::map<std::string, DynamicValue*> initialProps;
+    for (const auto& [k, setting] : m_text.scriptProperties) {
+	if (setting && setting->value)
+	    initialProps.emplace (k, setting->value.get ());
     }
-
-    m_valid = m_texture != 0 && m_program != 0 && m_vao != 0;
+    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
+	m_text.script, initialProps, m_text.text
+    );
+    if (m_layerHandle == Scripting::kInvalidLayerHandle)
+	sLog.error ("CText: createLayerScript failed for '", m_text.name, "'");
 }
 
 void CText::rebuildTextureFrom (const std::string& text) {

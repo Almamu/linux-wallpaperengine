@@ -52,6 +52,13 @@ private:
     void buildShader ();
     void uploadQuadVertices ();
 
+    // setup() helpers (kept small to keep the setup flow linear).
+    bool initFreeType ();
+    bool loadEmbeddedFont ();
+    bool loadSystemFont ();
+    unsigned int computeEffectivePixelSize () const;
+    void initScriptLayer ();
+
     const Text& m_text;
     std::string m_lastRenderedText;
     Scripting::ScriptLayerHandle m_layerHandle = Scripting::kInvalidLayerHandle;
