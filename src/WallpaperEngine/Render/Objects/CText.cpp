@@ -15,6 +15,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Camera.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "WallpaperEngine/Scripting/ScriptEngine.h"
 
 using namespace WallpaperEngine::Render::Objects;
 
@@ -75,6 +76,10 @@ GLuint compileShader (GLenum type, const char* source) {
 CText::CText (Wallpapers::CScene& scene, const Text& text) : CObject (scene, text), m_text (text) {}
 
 CText::~CText () {
+    if (m_layerHandle != Scripting::kInvalidLayerHandle) {
+	Scripting::ScriptEngine::instance ().destroyLayer (m_layerHandle);
+	m_layerHandle = Scripting::kInvalidLayerHandle;
+    }
     if (m_vbo != 0) glDeleteBuffers (1, &m_vbo);
     if (m_vao != 0) glDeleteVertexArrays (1, &m_vao);
     if (m_program != 0) glDeleteProgram (m_program);
@@ -84,13 +89,10 @@ CText::~CText () {
 }
 
 void CText::setup () {
-    // Phase 1: only static text is supported. If the scene provides a scripted
-    // text source we keep the object alive but render nothing — the JS-driven
-    // value evaluator needed to produce the string is a Phase 2 concern.
-    if (m_text.text.empty ()) {
-	if (!m_text.script.empty ()) {
-	    sLog.out ("CText: skipping dynamic/scripted text (Phase 1 static-only): ", m_text.name);
-	}
+    const bool scripted = !m_text.script.empty ();
+
+    // Nothing to render and no script to produce text later → bail.
+    if (m_text.text.empty () && !scripted) {
 	return;
     }
 
@@ -99,44 +101,104 @@ void CText::setup () {
 	return;
     }
 
-    std::string fontPath;
-    for (const auto& candidate : kFontCandidates) {
-	if (std::filesystem::exists (candidate)) {
-	    fontPath = candidate;
-	    break;
+    bool fontLoaded = false;
+
+    // Try loading the font specified by the wallpaper (e.g. "fonts/VCR_OSD_MONO.ttf").
+    // Wallpapers packed in .pkg don't expose physical paths, so we read the font
+    // into memory and use FT_New_Memory_Face. The buffer must outlive the face.
+    if (!m_text.font.empty () && m_text.font.rfind ("systemfont_", 0) != 0) {
+	try {
+	    auto stream = getAssetLocator ().read (m_text.font);
+	    stream->seekg (0, std::ios::end);
+	    const auto size = stream->tellg ();
+	    stream->seekg (0, std::ios::beg);
+	    m_fontData.resize (static_cast<size_t> (size));
+	    stream->read (reinterpret_cast<char*> (m_fontData.data ()), size);
+	    if (FT_New_Memory_Face (m_ftLibrary, m_fontData.data (),
+		    static_cast<FT_Long> (m_fontData.size ()), 0, &m_ftFace) == 0) {
+		fontLoaded = true;
+	    } else {
+		sLog.error ("CText: FT_New_Memory_Face failed for '", m_text.font, "', falling back to system font");
+		m_fontData.clear ();
+	    }
+	} catch (const std::exception& e) {
+	    sLog.error ("CText: cannot read font '", m_text.font, "': ", e.what (), ", falling back to system font");
+	    m_fontData.clear ();
 	}
     }
 
-    if (fontPath.empty ()) {
-	sLog.error ("CText: no usable system font found (Phase 1 uses system fonts)");
-	return;
+    // Fallback: use a system font.
+    if (!fontLoaded) {
+	std::string fontPath;
+	for (const auto& candidate : kFontCandidates) {
+	    if (std::filesystem::exists (candidate)) {
+		fontPath = candidate;
+		break;
+	    }
+	}
+	if (fontPath.empty ()) {
+	    sLog.error ("CText: no usable system font found");
+	    return;
+	}
+	if (FT_New_Face (m_ftLibrary, fontPath.c_str (), 0, &m_ftFace) != 0) {
+	    sLog.error ("CText: FT_New_Face failed for ", fontPath);
+	    return;
+	}
     }
 
-    if (FT_New_Face (m_ftLibrary, fontPath.c_str (), 0, &m_ftFace) != 0) {
-	sLog.error ("CText: FT_New_Face failed for ", fontPath);
-	return;
-    }
+    // Compensate for small object scales. WE text objects often come with
+    // scale ~0.09 that, combined with a modest pointsize, would rasterize the
+    // glyphs to ~2px on screen (invisible). Rasterize at higher resolution so
+    // that after the model scale is applied in render() the on-screen size
+    // matches the intended pointsize.
+    const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
+    const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
+    const float compensate = (avgScale > 0.0f && avgScale < 1.0f)
+	? std::min (1.0f / avgScale, 32.0f)
+	: 1.0f;
+    const FT_UInt effectivePointsize = std::max<FT_UInt> (
+	1u, static_cast<FT_UInt> (static_cast<float> (m_text.pointsize) * compensate));
+    FT_Set_Pixel_Sizes (m_ftFace, 0, effectivePointsize);
 
-    FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_text.pointsize));
-
-    buildTexture ();
     buildShader ();
-    buildQuad ();
+    // Scripted text may have an empty placeholder; use a single space so the
+    // glyph texture has non-zero dimensions until the script produces a value.
+    const std::string initial = m_text.text.empty () ? std::string (" ") : m_text.text;
+    rebuildTextureFrom (initial);
+
+    if (scripted) {
+	std::map<std::string, DynamicValue*> initialProps;
+	for (const auto& [k, setting] : m_text.scriptProperties) {
+	    if (setting && setting->value) {
+		initialProps.emplace (k, setting->value.get ());
+	    }
+	}
+	m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
+	    m_text.script, initialProps, m_text.text
+	);
+	if (m_layerHandle == Scripting::kInvalidLayerHandle) {
+	    sLog.error ("CText: createLayerScript failed for '", m_text.name, "'");
+	}
+    }
 
     m_valid = m_texture != 0 && m_program != 0 && m_vao != 0;
 }
 
-void CText::buildTexture () {
+void CText::rebuildTextureFrom (const std::string& text) {
     // Two-pass rasterization: first measure the bounding box, then rasterize
     // every glyph into a single grayscale bitmap. Phase 1 renders one line —
     // multi-line wrapping, alignment, and padding come with Phase 2.
+    //
+    // Safe to call repeatedly: GL handles (texture, VAO, VBO) are reused when
+    // already allocated, so dynamic/scripted text can regenerate the glyph
+    // bitmap every time the rendered string changes without leaking.
     FT_GlyphSlot slot = m_ftFace->glyph;
 
     int penX = 0;
     int maxAscent = 0;
     int maxDescent = 0;
 
-    for (unsigned char c : m_text.text) {
+    for (unsigned char c : text) {
 	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
 	    continue;
 	}
@@ -150,7 +212,7 @@ void CText::buildTexture () {
     std::vector<uint8_t> pixels (static_cast<size_t> (width) * height, 0);
 
     penX = 0;
-    for (unsigned char c : m_text.text) {
+    for (unsigned char c : text) {
 	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
 	    continue;
 	}
@@ -171,17 +233,25 @@ void CText::buildTexture () {
 	penX += slot->advance.x >> 6;
     }
 
-    glGenTextures (1, &m_texture);
+    const bool firstUpload = (m_texture == 0);
+    if (firstUpload) {
+	glGenTextures (1, &m_texture);
+    }
     glBindTexture (GL_TEXTURE_2D, m_texture);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D (GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels.data ());
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (firstUpload) {
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
 
     m_textureSize = {width, height};
     m_quadSize = {static_cast<float> (width), static_cast<float> (height)};
+    m_lastRenderedText = text;
+
+    uploadQuadVertices ();
 }
 
 void CText::buildShader () {
@@ -216,9 +286,11 @@ void CText::buildShader () {
     m_uTexture = glGetUniformLocation (m_program, "uTexture");
 }
 
-void CText::buildQuad () {
+void CText::uploadQuadVertices () {
     // Quad centered at the origin, sized in pixels. Scene-space placement is
-    // done via the model matrix using the object's origin/scale.
+    // done via the model matrix using the object's origin/scale. VBO contents
+    // are re-uploaded whenever the glyph bitmap is rebuilt so the quad always
+    // matches the current texture dimensions.
     const float hx = m_quadSize.x * 0.5f;
     const float hy = m_quadSize.y * 0.5f;
     // With vflip=true (Wayland/GLFW), GL y- = screen top. So the quad bottom (y=-hy,
@@ -233,21 +305,40 @@ void CText::buildQuad () {
 	-hx,  hy, 0.0f, 1.0f,
     };
 
-    glGenVertexArrays (1, &m_vao);
-    glGenBuffers (1, &m_vbo);
+    const bool firstUpload = (m_vao == 0);
+    if (firstUpload) {
+	glGenVertexArrays (1, &m_vao);
+	glGenBuffers (1, &m_vbo);
+    }
     glBindVertexArray (m_vao);
     glBindBuffer (GL_ARRAY_BUFFER, m_vbo);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (verts), verts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray (0);
-    glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (0));
-    glEnableVertexAttribArray (1);
-    glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (2 * sizeof (float)));
+    glBufferData (GL_ARRAY_BUFFER, sizeof (verts), verts, GL_DYNAMIC_DRAW);
+    if (firstUpload) {
+	glEnableVertexAttribArray (0);
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (0));
+	glEnableVertexAttribArray (1);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (2 * sizeof (float)));
+    }
     glBindVertexArray (0);
 }
 
 void CText::render () {
     if (!m_valid) return;
     if (!m_text.visible->value->getBool ()) return;
+
+    if (m_layerHandle != Scripting::kInvalidLayerHandle) {
+	auto& se = Scripting::ScriptEngine::instance ();
+	se.tickLayer (
+	    m_layerHandle,
+	    static_cast<double> (getScene ().getTime ()),
+	    static_cast<double> (getScene ().getDeltaTime ()),
+	    static_cast<double> (getScene ().getFps ())
+	);
+	const std::string current = se.layerText (m_layerHandle);
+	if (current != m_lastRenderedText) {
+	    rebuildTextureFrom (current.empty () ? std::string (" ") : current);
+	}
+    }
 
     const glm::vec4 color = m_text.color->value->getVec4 ();
     const float alpha = m_text.alpha->value->getFloat ();

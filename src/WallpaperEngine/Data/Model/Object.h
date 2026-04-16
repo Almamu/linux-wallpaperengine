@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <optional>
 #include <string>
 #include <utility>
@@ -583,10 +584,14 @@ public:
  * pass but renders whatever initial value the scene provides.
  */
 struct TextData {
-    /** The text content to render */
+    /** Initial text content to render (for scripted text, this is the `value` placeholder) */
     std::string text;
-    /** Scripted text source (empty for static text) */
+    /** Scripted text source — full JS, resolved inline or loaded from a .js asset. Empty for static text. */
     std::string script;
+    /** Typed initial values for the script's scriptProperties, keyed by property name */
+    std::map<std::string, UserSettingUniquePtr> scriptProperties;
+    /** Font reference from scene (e.g. "fonts/VCR_OSD_MONO.ttf" or "systemfont_arial") */
+    std::string font;
     /** Font size in points */
     float pointsize;
     /** Bounding box size */

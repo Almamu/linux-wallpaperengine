@@ -4,6 +4,7 @@
 #include "ModelParser.h"
 
 #include "ShaderConstantParser.h"
+#include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -107,14 +108,67 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 
     std::string text;
     std::string script;
+    std::map<std::string, UserSettingUniquePtr> scriptProps;
 
     if (textIt.is_string ()) {
 	text = textIt.get<std::string> ();
     } else if (textIt.is_object ()) {
-	// dynamic text with a script; Phase 1 does not execute the script, so
-	// just capture the source and leave the rendered text empty
+	// Scripted text: carries the JS source (either inline or as a .js asset path),
+	// an initial placeholder `value`, and typed initial values for scriptProperties.
 	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ()) {
 	    script = *scriptIt;
+
+	    // Single-line paths ending in .js are loaded through the asset locator.
+	    // Inline sources (which always contain newlines / semicolons) pass through.
+	    const bool looksLikePath =
+		!script.empty () && script.find ('\n') == std::string::npos && script.size () >= 3
+		&& script.compare (script.size () - 3, 3, ".js") == 0;
+
+	    if (looksLikePath && project.assetLocator != nullptr) {
+		try {
+		    script = project.assetLocator->readString (script);
+		} catch (const std::exception& e) {
+		    sLog.error ("CText: cannot load script asset '", script, "': ", e.what ());
+		    script.clear ();
+		}
+	    }
+	}
+
+	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ()) {
+	    text = *valueIt;
+	}
+
+	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ()) {
+	    // Build a UserSetting wrapping a String DynamicValue (UserSettingParser would try
+	    // to numeric-parse single-char strings like "-" / ":" and throw).
+	    auto makeStringSetting = [] (const std::string& s) -> UserSettingUniquePtr {
+		auto dv = std::make_unique<DynamicValue> ();
+		dv->update (s);
+		return std::make_unique<UserSetting> (UserSetting {
+		    .value = std::move (dv),
+		    .property = nullptr,
+		    .condition = std::nullopt,
+		});
+	    };
+
+	    for (const auto& [key, propData] : propsIt->items ()) {
+		try {
+		    if (propData.is_string ()) {
+			scriptProps.emplace (key, makeStringSetting (propData.template get<std::string> ()));
+			continue;
+		    }
+		    if (propData.is_object ()) {
+			if (const auto valueField = propData.find ("value");
+			    valueField != propData.end () && valueField->is_string ()) {
+			    scriptProps.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
+			    continue;
+			}
+		    }
+		    scriptProps.emplace (key, UserSettingParser::parse (propData, properties));
+		} catch (const std::exception& e) {
+		    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
+		}
+	    }
 	}
     }
 
@@ -123,13 +177,15 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	TextData {
 	    .text = std::move (text),
 	    .script = std::move (script),
+	    .scriptProperties = std::move (scriptProps),
+	    .font = it.optional ("font", std::string ()),
 	    .pointsize = it.optional ("pointsize", 32.0f),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
 	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
 	    .alpha = it.user ("alpha", properties, 1.0f),
 	    .visible = it.user ("visible", properties, true),
-	    .alignment = it.optional ("alignment", std::string ("center")),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
 	    .padding = it.optional ("padding", 0),
 	}
@@ -140,7 +196,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
     } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
 	const glm::ivec3 icolor = result->color->value->getIVec3 ();
-	result->color->value->update (glm::vec4 (icolor) / 255.0f);
+	result->color->value->update (glm::vec4 (glm::vec3 (icolor), 255.0f) / 255.0f);
     }
 
     return result;
@@ -160,7 +216,7 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .visible = it.user ("visible", properties, true),
 	    .alpha = it.user ("alpha", properties, 1.0f),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
-	    .alignment = it.optional ("alignment", std::string ("center")),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
 	    .colorBlendMode = it.optional ("colorBlendMode", 0),

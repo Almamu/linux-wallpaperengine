@@ -28,6 +28,13 @@ public:
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
 
+    // Time accessors used by dynamic text layers (CText + ScriptEngine).
+    // Read from the application-wide g_Time/g_TimeLast globals that other
+    // renderers already consume via extern (e.g. CParticle).
+    [[nodiscard]] float getTime () const;
+    [[nodiscard]] float getDeltaTime () const;
+    [[nodiscard]] float getFps () const;
+
     const glm::vec2* getMousePosition () const;
     const glm::vec2* getMousePositionLast () const;
     const glm::vec2* getMousePositionNormalized () const;
