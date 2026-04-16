@@ -1,6 +1,7 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CParticle.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
+#include "WallpaperEngine/Render/Objects/CText.h"
 
 #include "WallpaperEngine/Render/WallpaperState.h"
 
@@ -186,20 +187,33 @@ Render::CObject* CScene::createObject (const Object& object) {
 	this->createObject (**dep);
     }
 
+    renderObject = this->dispatchObjectType (object);
+
+    if (renderObject != nullptr) {
+	this->m_objects.emplace (renderObject->getId (), renderObject);
+    }
+
+    return renderObject;
+}
+
+Render::CObject* CScene::dispatchObjectType (const Object& object) {
     if (object.is<Image> ()) {
 	auto* image = new Objects::CImage (*this, *object.as<Image> ());
 
 	try {
 	    image->setup ();
 	} catch (std::runtime_error&) {
-	    // this error message is already printed, so just show extra info about it
 	    sLog.error ("Cannot setup image ", image->getImage ().name);
 	}
 
-	renderObject = image;
-    } else if (object.is<Sound> ()) {
-	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
-    } else if (object.is<Particle> ()) {
+	return image;
+    }
+
+    if (object.is<Sound> ()) {
+	return new Objects::CSound (*this, *object.as<Sound> ());
+    }
+
+    if (object.is<Particle> ()) {
 	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
 	    sLog.debug ("Ignoring particle system (disabled in settings): ", object.as<Particle> ()->name);
 	    return nullptr;
@@ -213,17 +227,25 @@ Render::CObject* CScene::createObject (const Object& object) {
 	    sLog.error ("Cannot setup particle ", particle->getParticle ().name);
 	}
 
-	renderObject = particle;
-    } else {
-	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
-	renderObject = new CObject (*this, object);
+	return particle;
     }
 
-    if (renderObject != nullptr) {
-	this->m_objects.emplace (renderObject->getId (), renderObject);
+    if (object.is<Text> ()) {
+	auto* text = new Objects::CText (*this, *object.as<Text> ());
+
+	try {
+	    text->setup ();
+	} catch (std::runtime_error&) {
+	    sLog.error ("Cannot setup text ", text->getObject ().name);
+	    delete text;
+	    return nullptr;
+	}
+
+	return text;
     }
 
-    return renderObject;
+    sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+    return new CObject (*this, object);
 }
 
 void CScene::addObjectToRenderOrder (const Object& object) {
@@ -349,6 +371,20 @@ const Scene& CScene::getScene () const { return *this->getWallpaperData ().as<Sc
 int CScene::getWidth () const { return this->m_camera->getWidth (); }
 
 int CScene::getHeight () const { return this->m_camera->getHeight (); }
+
+float CScene::getTime () const { return g_Time; }
+
+float CScene::getDeltaTime () const { return g_Time - g_TimeLast; }
+
+float CScene::getFps () const {
+    const float dt = g_Time - g_TimeLast;
+    // Guard against the first frame (where g_TimeLast is 0 so dt == g_Time)
+    // and division by zero on the very first call.
+    if (dt <= 1e-6f) {
+	return 60.0f;
+    }
+    return 1.0f / dt;
+}
 
 const glm::vec2* CScene::getMousePosition () const { return &this->m_mousePosition; }
 

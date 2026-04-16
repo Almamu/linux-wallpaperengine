@@ -4,6 +4,7 @@
 #include "ModelParser.h"
 
 #include "ShaderConstantParser.h"
+#include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -13,6 +14,78 @@
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
+
+namespace {
+// Wraps a string value in a UserSetting with a String-typed DynamicValue.
+// UserSettingParser would try to numeric-parse single-char strings like "-"/":",
+// so we bypass it for raw string script-property values.
+UserSettingUniquePtr makeStringSetting (const std::string& s) {
+    auto dv = std::make_unique<DynamicValue> ();
+    dv->update (s);
+    return std::make_unique<UserSetting> (UserSetting {
+	.value = std::move (dv),
+	.property = nullptr,
+	.condition = std::nullopt,
+    });
+}
+
+// Resolves the `script` field of a scripted text node: if it looks like a
+// single-line path ending in .js, read it through the asset locator.
+// Returns empty string on failure (caller treats empty script as static).
+std::string resolveScriptSource (std::string raw, const Project& project) {
+    const bool looksLikePath =
+	!raw.empty () && raw.find ('\n') == std::string::npos && raw.size () >= 3
+	&& raw.compare (raw.size () - 3, 3, ".js") == 0;
+
+    if (!looksLikePath || project.assetLocator == nullptr)
+	return raw;
+
+    try {
+	return project.assetLocator->readString (raw);
+    } catch (const std::exception& e) {
+	sLog.error ("CText: cannot load script asset '", raw, "': ", e.what ());
+	return {};
+    }
+}
+
+// Parses a text object's `scriptproperties` subtree into a map of UserSettings.
+// Plain string values bypass UserSettingParser (which stof-throws on "-"/":"),
+// object values with a string `value` field also go through the string path.
+std::map<std::string, UserSettingUniquePtr>
+parseScriptProperties (const JSON& propsObj, const Properties& properties) {
+    std::map<std::string, UserSettingUniquePtr> out;
+    for (const auto& [key, propData] : propsObj.items ()) {
+	try {
+	    if (propData.is_string ()) {
+		out.emplace (key, makeStringSetting (propData.template get<std::string> ()));
+		continue;
+	    }
+	    if (propData.is_object ()) {
+		if (const auto valueField = propData.find ("value");
+		    valueField != propData.end () && valueField->is_string ()) {
+		    out.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
+		    continue;
+		}
+	    }
+	    out.emplace (key, UserSettingParser::parse (propData, properties));
+	} catch (const std::exception& e) {
+	    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
+	}
+    }
+    return out;
+}
+
+// The `color` user setting may arrive as vec3 or ivec3; normalize to vec4 with
+// full alpha so downstream renderers can assume a uniform type.
+void widenColorToVec4 (DynamicValue& v) {
+    if (v.getType () == DynamicValue::UnderlyingType::Vec3) {
+	v.update (glm::vec4 (v.getVec3 (), 1.0f));
+    } else if (v.getType () == DynamicValue::UnderlyingType::IVec3) {
+	const glm::ivec3 icolor = v.getIVec3 ();
+	v.update (glm::vec4 (glm::vec3 (icolor), 255.0f) / 255.0f);
+    }
+}
+} // namespace
 
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
@@ -55,7 +128,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     } else if (particleIt != it.end ()) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
-	sLog.error ("Text objects are not supported yet");
+	return parseText (it, project, std::move (basedata));
     } else if (lightIt != it.end ()) {
 	sLog.error ("Light objects are not supported yet");
     } else {
@@ -101,6 +174,53 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
     );
 }
 
+TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
+    const auto& properties = project.properties;
+    const auto textIt = it.require ("text", "Text object must have a text field");
+
+    std::string text;
+    std::string script;
+    std::map<std::string, UserSettingUniquePtr> scriptProps;
+
+    if (textIt.is_string ()) {
+	text = textIt.get<std::string> ();
+    } else if (textIt.is_object ()) {
+	// Scripted text: carries the JS source (either inline or as a .js asset path),
+	// an initial placeholder `value`, and typed initial values for scriptProperties.
+	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ())
+	    script = resolveScriptSource (*scriptIt, project);
+
+	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ())
+	    text = *valueIt;
+
+	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ())
+	    scriptProps = parseScriptProperties (*propsIt, properties);
+    }
+
+    auto result = std::make_unique<Text> (
+	std::move (base),
+	TextData {
+	    .text = std::move (text),
+	    .script = std::move (script),
+	    .scriptProperties = std::move (scriptProps),
+	    .font = it.optional ("font", std::string ()),
+	    .pointsize = it.optional ("pointsize", 32.0f),
+	    .size = it.optional ("size", glm::vec2 (0.0f)),
+	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
+	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
+	    .alpha = it.user ("alpha", properties, 1.0f),
+	    .visible = it.user ("visible", properties, true),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
+	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
+	    .padding = it.optional ("padding", 0),
+	}
+    );
+
+    widenColorToVec4 (*result->color->value);
+
+    return result;
+}
+
 ImageUniquePtr
 ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image) {
     const auto& properties = project.properties;
@@ -115,7 +235,7 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .visible = it.user ("visible", properties, true),
 	    .alpha = it.user ("alpha", properties, 1.0f),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
-	    .alignment = it.optional ("alignment", std::string ("center")),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
 	    .colorBlendMode = it.optional ("colorBlendMode", 0),

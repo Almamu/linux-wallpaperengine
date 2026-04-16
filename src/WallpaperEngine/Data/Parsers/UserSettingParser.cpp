@@ -3,6 +3,7 @@
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
@@ -53,7 +54,14 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	std::string str = valueIt;
 
 	// TODO: VALIDATE THIS IS RIGHT?
-	if (int size = VectorBuilder::preparseSize (str); size == 2) {
+	if (int size = VectorBuilder::preparseSize (str); size == 1) {
+	    size_t parsed = 0;
+	    const float scalar = std::stof (str, &parsed);
+	    if (parsed != str.size ()) {
+		sLog.exception ("Invalid scalar format: ", str);
+	    }
+	    value->update (scalar);
+	} else if (size == 2) {
 	    value->update (static_cast<glm::vec2> (valueIt));
 	} else if (size == 3) {
 	    value->update (static_cast<glm::vec3> (valueIt));
