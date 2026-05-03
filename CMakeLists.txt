@@ -145,6 +145,7 @@ endif()
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
 
 if(WAYLAND_SUPPORT_FOUND)
+    pkg_check_modules(DBUS REQUIRED dbus-1)
     find_program(WaylandScanner NAMES wayland-scanner)
     message(STATUS "Found WaylandScanner at ${WaylandScanner}")
     execute_process(
@@ -172,16 +173,20 @@ if(WAYLAND_SUPPORT_FOUND)
         COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
 
     include_directories(${WAYLAND_SUPPORT_INCLUDE_DIRS})
+    include_directories(${DBUS_INCLUDE_DIRS})
     include_directories(${WAYLAND_OUTPUT_DIR})
     set(WAYLAND_LIBRARIES
         pthread
         wayland-cursor
         wayland-client
         wayland-egl
+        ${DBUS_LIBRARIES}
         ${OPENGL_egl_LIBRARY})
     set(WAYLAND_SOURCES
         src/WallpaperEngine/Render/Drivers/WaylandOpenGLDriver.h
         src/WallpaperEngine/Render/Drivers/WaylandOpenGLDriver.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/KDEWaylandFullScreenDetector.cpp
+        src/WallpaperEngine/Render/Drivers/Detectors/KDEWaylandFullScreenDetector.hpp
         src/WallpaperEngine/Render/Drivers/Detectors/WaylandFullScreenDetector.cpp
         src/WallpaperEngine/Render/Drivers/Detectors/WaylandFullScreenDetector.h
         src/WallpaperEngine/Render/Drivers/Output/WaylandOutput.cpp
@@ -259,6 +264,7 @@ include_directories(
     ${SDL2_INCLUDE_DIRS}
     ${FFMPEG_INCLUDE_DIR}
     ${PULSEAUDIO_INCLUDE_DIR}
+    ${DBUS_INCLUDE_DIRS}
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
     ${X11_INCLUDES})

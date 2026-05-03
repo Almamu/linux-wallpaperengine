@@ -297,6 +297,7 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 ## 🧪 Wayland & X11 Support
 
 - **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
+- **KDE Wayland**: Users of KDE Plasma under Wayland that may wish to make use of the "pause on fullscreen" features may do so but require the installation of an additional script found [here](https://github.com/LS-FCEFyN/Maximize-Detector)
 - **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
 > ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
