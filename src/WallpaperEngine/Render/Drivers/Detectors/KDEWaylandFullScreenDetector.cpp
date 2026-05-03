@@ -51,7 +51,6 @@ KDEWaylandFullScreenDetector::KDEWaylandFullScreenDetector (Application::Applica
 KDEWaylandFullScreenDetector::~KDEWaylandFullScreenDetector () { stopDBus (); }
 
 bool KDEWaylandFullScreenDetector::initializeDBus () {
-    dbus_threads_init_default ();
     if (!dbus_threads_init_default ()) {
 	sLog.error ("Failed to initialize DBus thread support");
 	return false;
