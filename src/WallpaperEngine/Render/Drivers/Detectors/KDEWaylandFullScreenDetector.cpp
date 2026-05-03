@@ -1,4 +1,4 @@
-#include "KDEWaylandFullScreenDetector.hpp"
+#include "KDEWaylandFullScreenDetector.h"
 
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Drivers/VideoFactories.h"
@@ -31,8 +31,7 @@ const char* KDEWaylandFullScreenDetector::objectPath () { return defaultObject; 
 const char* KDEWaylandFullScreenDetector::methodName () { return method; }
 
 KDEWaylandFullScreenDetector::KDEWaylandFullScreenDetector (Application::ApplicationContext& appContext) :
-    FullScreenDetector (appContext), m_fallbackDetector (std::make_unique<WaylandFullScreenDetector> (appContext)),
-    m_serviceName (trimCopy (std::getenv ("KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE"))) {
+    FullScreenDetector (appContext), m_serviceName (trimCopy (std::getenv ("KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE"))) {
     if (m_serviceName.empty ()) {
 	m_serviceName = defaultServiceName ();
     }
@@ -171,15 +170,9 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
     dbus_bool_t fully = false;
 
     if (!dbus_message_get_args (
-	    message, &error,
-	DBUS_TYPE_STRING, &windowKey,
-	DBUS_TYPE_STRING, &windowName,
-	DBUS_TYPE_INT32, &pid,
-	DBUS_TYPE_STRING, &appId,
-	DBUS_TYPE_BOOLEAN, &horizontal,
-	DBUS_TYPE_BOOLEAN, &vertical,
-	DBUS_TYPE_BOOLEAN, &fully,
-	DBUS_TYPE_INVALID
+	    message, &error, DBUS_TYPE_STRING, &windowKey, DBUS_TYPE_STRING, &windowName, DBUS_TYPE_INT32, &pid,
+	    DBUS_TYPE_STRING, &appId, DBUS_TYPE_BOOLEAN, &horizontal, DBUS_TYPE_BOOLEAN, &vertical, DBUS_TYPE_BOOLEAN,
+	    &fully, DBUS_TYPE_INVALID
 	)) {
 	sLog.error ("Invalid KDE Wayland maximize DBus call: ", error.message);
 	dbus_error_free (&error);
@@ -187,7 +180,6 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
     }
 
     updateWindowState (trimCopy (windowKey), trimCopy (appId), horizontal != false, vertical != false, fully != false);
-    m_hasReceivedUpdate.store (true, std::memory_order_release);
 
     if (m_connection != nullptr) {
 	DBusMessage* reply = dbus_message_new_method_return (message);
@@ -205,53 +197,53 @@ bool KDEWaylandFullScreenDetector::updateWindowState (
 ) {
     std::lock_guard lock (m_stateMutex);
     m_windowStates.insert_or_assign (
-    windowKey,
-    WindowState {
-        .horizontal = horizontal,
-        .vertical = vertical,
-        .fully = fully,
-        .appId = appId,
-    }
+	windowKey,
+	WindowState {
+	    .horizontal = horizontal,
+	    .vertical = vertical,
+	    .fully = fully,
+	    .appId = appId,
+	}
     );
 
     if (!windowKey.empty ()) {
-    m_activeWindowKey = windowKey;
+	m_activeWindowKey = windowKey;
     }
     return true;
 }
 
-bool KDEWaylandFullScreenDetector::anythingFullscreenFromDbus () const {
+bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
     const auto& ctx = getApplicationContext ();
 
     auto isRelevant = [&ctx] (const WindowState& state) {
-    if (!state.fully) {
-        return false;
-    }
+	if (!state.fully) {
+	    return false;
+	}
 
-    if (!state.appId.empty ()) {
-        for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
-        if (ignore.empty ()) {
-            continue;
-        }
+	if (!state.appId.empty ()) {
+	    for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
+		if (ignore.empty ()) {
+		    continue;
+		}
 
-        if (state.appId.find (ignore) != std::string::npos) {
-            return false;
-        }
-        }
-    }
+		if (state.appId.find (ignore) != std::string::npos) {
+		    return false;
+		}
+	    }
+	}
 
-    return true;
+	return true;
     };
 
     std::lock_guard lock (m_stateMutex);
 
     if (ctx.settings.render.pauseOnFullscreenOnlyWhenActive) {
-    const auto activeIt = m_windowStates.find (m_activeWindowKey);
-    return activeIt != m_windowStates.end () && isRelevant (activeIt->second);
+	const auto activeIt = m_windowStates.find (m_activeWindowKey);
+	return activeIt != m_windowStates.end () && isRelevant (activeIt->second);
     }
 
     for (const auto& entry : m_windowStates) {
-    if (isRelevant (entry.second)) {
+	if (isRelevant (entry.second)) {
 	    return true;
 	}
     }
@@ -259,29 +251,13 @@ bool KDEWaylandFullScreenDetector::anythingFullscreenFromDbus () const {
     return false;
 }
 
-bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
-    if (m_connection != nullptr && m_hasReceivedUpdate.load (std::memory_order_acquire)) {
-	return anythingFullscreenFromDbus ();
-    }
-
-    if (m_fallbackDetector != nullptr) {
-	return m_fallbackDetector->anythingFullscreen ();
-    }
-
-    return anythingFullscreenFromDbus ();
-}
+bool KDEWaylandFullScreenDetector::isInitialized () const { return m_connection != nullptr; }
 
 void KDEWaylandFullScreenDetector::reset () {
     {
 	std::lock_guard lock (m_stateMutex);
 	m_windowStates.clear ();
-    m_activeWindowKey.clear ();
-    }
-
-    m_hasReceivedUpdate.store (false, std::memory_order_release);
-
-    if (m_fallbackDetector != nullptr) {
-	m_fallbackDetector->reset ();
+	m_activeWindowKey.clear ();
     }
 }
 
