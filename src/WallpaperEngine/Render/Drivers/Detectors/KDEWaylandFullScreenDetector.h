@@ -11,7 +11,6 @@
 #include <unordered_map>
 
 #include "FullScreenDetector.h"
-#include "WaylandFullScreenDetector.h"
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 
@@ -59,7 +58,7 @@ public:
      */
     [[nodiscard]] bool anythingFullscreen () const override;
 
-    bool isInitialized() const;
+    [[nodiscard]] bool isInitialized() const;
 
     /**
      * @brief Clears all cached window states.

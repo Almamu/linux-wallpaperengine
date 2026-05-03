@@ -7,6 +7,10 @@
 #include <cstring>
 #include <sstream>
 
+#include <algorithm>
+#include <cctype>
+#include <string>
+
 namespace WallpaperEngine::Render::Drivers::Detectors {
 
 namespace {
@@ -14,7 +18,7 @@ namespace {
     constexpr const char* defaultObject = "/org/linuxwallpaperengine/WaylandDetector";
     constexpr const char* method = "OnWindowChanged";
 
-    std::string trimCopy (const char* value) {
+    std::string toStringSafe (const char* value) {
 	if (value == nullptr) {
 	    return {};
 	}
@@ -31,7 +35,7 @@ const char* KDEWaylandFullScreenDetector::objectPath () { return defaultObject; 
 const char* KDEWaylandFullScreenDetector::methodName () { return method; }
 
 KDEWaylandFullScreenDetector::KDEWaylandFullScreenDetector (Application::ApplicationContext& appContext) :
-    FullScreenDetector (appContext), m_serviceName (trimCopy (std::getenv ("KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE"))) {
+    FullScreenDetector (appContext), m_serviceName (toStringSafe (std::getenv ("KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE"))) {
     if (m_serviceName.empty ()) {
 	m_serviceName = defaultServiceName ();
     }
@@ -179,7 +183,7 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
 	return false;
     }
 
-    updateWindowState (trimCopy (windowKey), trimCopy (appId), horizontal != false, vertical != false, fully != false);
+    updateWindowState (toStringSafe (windowKey), toStringSafe (appId), horizontal != false, vertical != false, fully != false);
 
     if (m_connection != nullptr) {
 	DBusMessage* reply = dbus_message_new_method_return (message);
@@ -220,17 +224,25 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
 	    return false;
 	}
 
-	if (!state.appId.empty ()) {
-	    for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
-		if (ignore.empty ()) {
-		    continue;
-		}
+	if (!state.appId.empty()) {
+    std::string appIdLower = state.appId;
+    std::transform(appIdLower.begin(), appIdLower.end(), appIdLower.begin(),
+        [](unsigned char c) { return std::tolower(c); });
 
-		if (state.appId.find (ignore) != std::string::npos) {
-		    return false;
-		}
-	    }
-	}
+    for (const auto& ignore : ctx.settings.render.fullscreenPauseIgnoreAppIds) {
+        if (ignore.empty()) {
+            continue;
+        }
+
+        std::string ignoreLower = ignore;
+        std::transform(ignoreLower.begin(), ignoreLower.end(), ignoreLower.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+
+        if (appIdLower.find(ignoreLower) != std::string::npos) {
+            return false;
+        }
+    }
+}
 
 	return true;
     };
