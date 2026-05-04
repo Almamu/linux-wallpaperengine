@@ -104,7 +104,6 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
 }
 
 void KDEWaylandFullScreenDetector::stopDBus () {
-
     if (m_connection != nullptr) {
 	dbus_connection_unregister_object_path (m_connection, objectPath ());
 	dbus_connection_unref (m_connection);
