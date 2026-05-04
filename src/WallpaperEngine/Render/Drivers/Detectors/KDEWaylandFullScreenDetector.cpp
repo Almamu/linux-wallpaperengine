@@ -51,11 +51,6 @@ KDEWaylandFullScreenDetector::KDEWaylandFullScreenDetector (Application::Applica
 KDEWaylandFullScreenDetector::~KDEWaylandFullScreenDetector () { stopDBus (); }
 
 bool KDEWaylandFullScreenDetector::initializeDBus () {
-    if (!dbus_threads_init_default ()) {
-	sLog.error ("Failed to initialize DBus thread support");
-	return false;
-    }
-
     DBusError error;
     dbus_error_init (&error);
 
@@ -105,38 +100,15 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
 	return false;
     }
 
-    m_dispatchThread = std::thread (&KDEWaylandFullScreenDetector::dispatchLoop, this);
     return true;
 }
 
 void KDEWaylandFullScreenDetector::stopDBus () {
-    m_stop.store (true, std::memory_order_release);
-
-    if (m_dispatchThread.joinable ()) {
-	m_dispatchThread.join ();
-    }
 
     if (m_connection != nullptr) {
 	dbus_connection_unregister_object_path (m_connection, objectPath ());
 	dbus_connection_unref (m_connection);
 	m_connection = nullptr;
-    }
-}
-
-void KDEWaylandFullScreenDetector::dispatchLoop () {
-    while (!m_stop.load (std::memory_order_acquire)) {
-	if (m_connection == nullptr) {
-	    break;
-	}
-
-	if (!dbus_connection_read_write_dispatch (m_connection, 250)) {
-	    sLog.error ("DBus connection dropped unexpectedly");
-	    reset ();
-	    dbus_connection_unregister_object_path (m_connection, objectPath ());
-	    dbus_connection_unref (m_connection);
-	    m_connection = nullptr;
-	    break;
-	}
     }
 }
 
@@ -212,7 +184,6 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
 bool KDEWaylandFullScreenDetector::updateWindowState (
     const std::string& windowKey, const std::string& appId, bool horizontal, bool vertical, bool fully
 ) {
-    std::lock_guard lock (m_stateMutex);
     m_windowStates.insert_or_assign (
 	windowKey,
 	WindowState {
@@ -230,6 +201,17 @@ bool KDEWaylandFullScreenDetector::updateWindowState (
 }
 
 bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
+    if (m_connection != nullptr) {
+		if (!dbus_connection_read_write_dispatch (m_connection, 0)) {
+	    	sLog.error ("DBus connection dropped unexpectedly");
+	    	m_windowStates.clear ();
+	    	m_activeWindowKey.clear ();
+	    	dbus_connection_unregister_object_path (m_connection, objectPath ());
+	    	dbus_connection_unref (m_connection);
+	    	m_connection = nullptr;
+		}
+    }
+
     const auto& ctx = getApplicationContext ();
 
     auto isRelevant = [&ctx] (const WindowState& state) {
@@ -258,11 +240,8 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
 		}
 	    }
 	}
-
 	return true;
     };
-
-    std::lock_guard lock (m_stateMutex);
 
     if (ctx.settings.render.pauseOnFullscreenOnlyWhenActive) {
 	const auto activeIt = m_windowStates.find (m_activeWindowKey);
@@ -281,11 +260,8 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
 bool KDEWaylandFullScreenDetector::isInitialized () const { return m_connection != nullptr; }
 
 void KDEWaylandFullScreenDetector::reset () {
-    {
-	std::lock_guard lock (m_stateMutex);
-	m_windowStates.clear ();
-	m_activeWindowKey.clear ();
-    }
+    m_windowStates.clear ();
+    m_activeWindowKey.clear ();
 }
 
 } // namespace WallpaperEngine::Render::Drivers::Detectors

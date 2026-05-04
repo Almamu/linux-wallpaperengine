@@ -2,12 +2,8 @@
 
 #ifdef ENABLE_WAYLAND
 
-#include <atomic>
 #include <dbus/dbus.h>
-#include <memory>
-#include <mutex>
 #include <string>
-#include <thread>
 #include <unordered_map>
 
 #include "FullScreenDetector.h"
@@ -33,8 +29,7 @@ public:
     explicit KDEWaylandFullScreenDetector (Application::ApplicationContext& appContext);
 
     /**
-     * @brief Destructor. Stops the D-Bus dispatch thread and releases the
-     *        session-bus connection.
+     * @brief Destructor. Releases the session-bus connection.
      */
     ~KDEWaylandFullScreenDetector () override;
 
@@ -58,7 +53,7 @@ public:
      */
     [[nodiscard]] bool anythingFullscreen () const override;
 
-    [[nodiscard]] bool isInitialized() const;
+    [[nodiscard]] bool isInitialized () const;
 
     /**
      * @brief Clears all cached window states.
@@ -113,8 +108,8 @@ private:
     DBusHandlerResult handleMessage (DBusMessage* message);
 
     /**
-     * @brief Connects to the session D-Bus, requests the service name, registers
-     *        the object path, and starts the dispatch thread.
+     * @brief Connects to the session D-Bus, requests the service name, and
+     *        registers the object path.
      *
      * @return @c true on success; @c false if any D-Bus operation fails, in
      *         which case the connection is released and @c m_connection is left
@@ -123,18 +118,9 @@ private:
     bool initializeDBus ();
 
     /**
-     * @brief Signals the dispatch thread to stop and joins it, then releases
-     *        the D-Bus connection.
+     * @brief Releases the D-Bus connection.
      */
     void stopDBus ();
-
-    /**
-     * @brief Runs the D-Bus dispatch loop on a dedicated thread.
-     *
-     * Calls @c dbus_connection_read_write_dispatch() in a 250 ms polling loop
-     * until @c m_stop is set.
-     */
-    void dispatchLoop ();
 
     /**
      * @brief Parses and handles an @c OnWindowChanged method-call message.
@@ -157,8 +143,6 @@ private:
      * @brief Inserts or replaces the @c WindowState entry for @p windowKey
      *        and updates the active-window key.
      *
-     * Thread-safe: acquires @c m_stateMutex for the duration of the update.
-     *
      * @param windowKey   Opaque string identifier for the window.
      * @param appId       Wayland app-id used for ignore-list matching.
      * @param horizontal  Whether the window occupies the full screen width.
@@ -170,22 +154,13 @@ private:
     );
 
     /** @brief Session D-Bus connection handle; @c nullptr if initialization failed. */
-    DBusConnection* m_connection = nullptr;
-
-    /** @brief Background thread running the D-Bus dispatch loop. */
-    std::thread m_dispatchThread;
-
-    /** @brief Set to @c true to signal @c dispatchLoop() to exit cleanly. */
-    std::atomic_bool m_stop { false };
-
-    /** @brief Guards @c m_windowStates and @c m_activeWindowKey. */
-    mutable std::mutex m_stateMutex;
+    mutable DBusConnection* m_connection = nullptr;
 
     /** @brief Per-window maximize/fullscreen state, keyed by the window's opaque identifier. */
-    std::unordered_map<std::string, WindowState> m_windowStates;
+    mutable std::unordered_map<std::string, WindowState> m_windowStates;
 
     /** @brief Key of the most recently activated (focused) window. */
-    std::string m_activeWindowKey;
+    mutable std::string m_activeWindowKey;
 
     /**
      * @brief D-Bus well-known service name to register under.
