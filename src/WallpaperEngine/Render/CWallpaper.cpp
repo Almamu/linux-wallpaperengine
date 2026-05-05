@@ -250,7 +250,7 @@ void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm
 
 	// Log span debug info only on first few frames
 	if (this->m_lastRenderedFrame < 5) {
-	    sLog.out ("SPAN DEBUG: viewport=", viewport.z, "x", viewport.w,
+	    sLog.debug ("SPAN DEBUG: viewport=", viewport.z, "x", viewport.w,
 		" globalPos=(", globalPosition.x, ",", globalPosition.y, ")",
 		" span=(", span.totalBounds.x, ",", span.totalBounds.y, ",", span.totalBounds.z, ",", span.totalBounds.w, ")",
 		" rel=[", relLeft, ",", relRight, "]x[", relTop, ",", relBottom, "]",

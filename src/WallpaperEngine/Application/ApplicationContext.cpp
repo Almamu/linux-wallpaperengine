@@ -297,6 +297,11 @@ void ApplicationContext::loadSettingsFromArgv () {
 		!= this->settings.general.screenBackgrounds.end ()) {
 		sLog.exception ("Cannot specify the same screen more than once: ", value);
 	    }
+	    for (const auto& group : this->settings.general.spanGroups) {
+		if (std::find (group.screens.begin (), group.screens.end (), value) != group.screens.end ()) {
+		    sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
+		}
+	    }
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }

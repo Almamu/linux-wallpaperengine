@@ -197,6 +197,10 @@ void WallpaperApplication::loadBackgrounds () {
 
     // Load one background per span group
     for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	if (spanGroup.screens.empty ()) {
+	    continue;
+	}
+
 	std::filesystem::path bgPath = spanGroup.background;
 	if (bgPath.empty ()) {
 	    bgPath = this->m_context.settings.general.defaultBackground;
@@ -733,6 +737,10 @@ void WallpaperApplication::prepareOutputs () {
 
     // Set up span groups: one shared wallpaper per group, registered for each viewport
     for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	if (spanGroup.screens.empty ()) {
+	    continue;
+	}
+
 	const std::string groupKey = "span:" + spanGroup.screens.front ();
 	const auto bgIt = this->m_backgrounds.find (groupKey);
 	if (bgIt == this->m_backgrounds.end ()) {
@@ -756,7 +764,7 @@ void WallpaperApplication::prepareOutputs () {
 	    const int y = vp->globalPosition.y;
 	    const int w = vp->logicalSize.x;
 	    const int h = vp->logicalSize.y;
-	    sLog.out ("SPAN DEBUG prepareOutputs: screen '", screenName,
+	    sLog.debug ("SPAN DEBUG prepareOutputs: screen '", screenName,
 		"' globalPos=(", x, ",", y, ") logicalSize=", w, "x", h);
 	    minX = std::min (minX, x);
 	    minY = std::min (minY, y);
@@ -769,7 +777,7 @@ void WallpaperApplication::prepareOutputs () {
 	    continue;
 	}
 
-	sLog.out ("SPAN DEBUG prepareOutputs: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")");
+	sLog.debug ("SPAN DEBUG prepareOutputs: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")");
 
 	WallpaperEngine::Render::CWallpaper::SpanInfo spanInfo;
 	spanInfo.totalBounds = { minX, minY, maxX - minX, maxY - minY };

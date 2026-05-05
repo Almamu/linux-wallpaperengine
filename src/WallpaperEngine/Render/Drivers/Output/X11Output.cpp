@@ -52,11 +52,12 @@ void X11Output::reset () {
 }
 
 void X11Output::free () {
-    // go through all the viewports and free them
-    for (const auto& [screen, viewport] : this->m_viewports) {
-	delete viewport;
+    // delete owned viewport objects (m_viewports holds non-owning aliases)
+    for (const auto& screen : this->m_screens) {
+	delete screen;
     }
 
+    this->m_screens.clear ();
     this->m_viewports.clear ();
 
     // free all the resources we've got
@@ -123,12 +124,6 @@ void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
 	    continue;
 	}
 
-	// add the screen to the list of screens
-	this->m_screens.push_back (new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height },
-							    info->name });
-	this->m_screens.back ()->globalPosition = { crtc->x, crtc->y };
-	this->m_screens.back ()->logicalSize = { crtc->width, crtc->height };
-
 	// check if this screen is part of a span group
 	bool inSpanGroup = false;
 	for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
@@ -155,6 +150,7 @@ void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
 	    auto* vp = new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
 	    vp->globalPosition = { crtc->x, crtc->y };
 	    vp->logicalSize = { crtc->width, crtc->height };
+	    this->m_screens.push_back (vp);
 	    this->m_viewports[info->name] = vp;
 	}
 

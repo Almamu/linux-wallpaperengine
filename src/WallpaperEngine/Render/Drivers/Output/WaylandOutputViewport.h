@@ -52,6 +52,7 @@ namespace Output {
 	wl_cursor* pointer = nullptr;
 	wl_surface* cursorSurface = nullptr;
 	bool callbackInitialized = false;
+	bool hasXdgLogicalPosition = false;
 	zxdg_output_v1* xdgOutput = nullptr;
 
 	void setupLS ();

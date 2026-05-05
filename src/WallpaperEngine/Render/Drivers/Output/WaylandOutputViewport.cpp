@@ -37,16 +37,18 @@ static void geometry (
     const char* make, const char* model, int32_t transform
 ) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
-    viewport->globalPosition = { x, y };
-    sLog.out ("SPAN DEBUG geometry: output '", viewport->name, "' position=(", x, ",", y, ") transform=", transform);
+    // only use geometry position as fallback if xdg-output hasn't provided one
+    if (!viewport->hasXdgLogicalPosition) {
+	viewport->globalPosition = { x, y };
+    }
+    sLog.debug ("SPAN DEBUG geometry: output '", viewport->name, "' position=(", x, ",", y, ") transform=", transform);
 }
 
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
-    // update viewport size too
+    // update viewport size (physical pixels; logicalSize comes from xdg-output or layer shell configure)
     viewport->size = { width, height };
-    viewport->logicalSize = { width, height };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
 
     if (viewport->layerSurface) {
@@ -113,11 +115,16 @@ constexpr struct zwlr_layer_surface_v1_listener layerSurfaceListener = {
 static void xdgOutputLogicalPosition (void* data, struct zxdg_output_v1* xdg_output, int32_t x, int32_t y) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
     viewport->globalPosition = { x, y };
-    sLog.out ("SPAN DEBUG xdg-output logical_position: '", viewport->name, "' position=(", x, ",", y, ")");
+    viewport->hasXdgLogicalPosition = true;
+    sLog.debug ("SPAN DEBUG xdg-output logical_position: '", viewport->name, "' position=(", x, ",", y, ")");
 }
 
 static void xdgOutputLogicalSize (void* data, struct zxdg_output_v1* xdg_output, int32_t width, int32_t height) {
-    // We use layer surface configure for viewport dimensions
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    viewport->logicalSize = { width, height };
+    if (viewport->initialized) {
+	viewport->getDriver ()->getOutput ().reset ();
+    }
 }
 
 static void xdgOutputDone (void* data, struct zxdg_output_v1* xdg_output) {
