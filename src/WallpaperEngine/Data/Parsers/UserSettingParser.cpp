@@ -60,23 +60,21 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	    value->update (static_cast<glm::vec3> (valueIt));
 	} else if (size == 4) {
 	    value->update (static_cast<glm::vec4> (valueIt));
-	} else if (size == 1) {
-        // 单个标量值：尝试解析为 float，失败则存为 string
-        std::size_t parsed = 0;
-        try {
-            float f = std::stof (str, &parsed);
-            if (parsed == str.size ()) {
-                value->update (f);
-            } else {
-                value->update (str);
-            }
-        } catch (const std::exception&) {
-            value->update (str);
-        }
-    } else {
-            // preparseSize 返回 0：非向量格式，存为纯字符串
-        value->update (str);
-    }
+	} else {
+	    // preparseSize returned 0: no spaces found — try parsing as a scalar float,
+	    // fall back to a plain string for non-numeric values (e.g. "bottom", "center").
+	    std::size_t parsed = 0;
+	    try {
+		float f = std::stof (str, &parsed);
+		if (parsed == str.size ()) {
+		    value->update (f);
+		} else {
+		    value->update (str);
+		}
+	    } catch (const std::exception&) {
+		value->update (str);
+	    }
+	}
     } else if (valueIt.is_number_integer ()) {
 	value->update (valueIt.get<int> ());
     } else if (valueIt.is_number_float ()) {
