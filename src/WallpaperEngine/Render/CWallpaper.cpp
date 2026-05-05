@@ -7,8 +7,6 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 
-#include <algorithm>
-
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
@@ -218,39 +216,39 @@ void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm
     float ustart, uend, vstart, vend;
 
     if (this->m_spanInfo.has_value ()) {
-	// Span mode: scale wallpaper to fill (cover) the bounding box while preserving
-	// aspect ratio. Each monitor shows its positional slice.
+	// Span mode: treat bounding box as virtual viewport, scale wallpaper using
+	// the normal scaling rules (fill/fit/stretch/default), then slice per monitor.
 	const auto& span = this->m_spanInfo.value ();
 	const float spanW = static_cast<float> (span.totalBounds.z);
 	const float spanH = static_cast<float> (span.totalBounds.w);
 	const float spanX = static_cast<float> (span.totalBounds.x);
 	const float spanY = static_cast<float> (span.totalBounds.y);
-	const float wallW = static_cast<float> (this->getWidth ());
-	const float wallH = static_cast<float> (this->getHeight ());
 
-	// Scale wallpaper to fill the bounding box (cover, preserving aspect ratio)
-	const float scale = std::max (spanW / wallW, spanH / wallH);
-	const float scaledW = wallW * scale;
-	const float scaledH = wallH * scale;
-	// Center any excess
-	const float offsetX = (scaledW - spanW) / 2.0f;
-	const float offsetY = (scaledH - spanH) / 2.0f;
+	// Compute base UVs for the wallpaper scaled to the bounding box
+	this->updateUVs (span.totalBounds, vflip);
+	auto [baseUstart, baseUend, baseVstart, baseVend] = this->m_state.getTextureUVs ();
 
-	// Viewport position within the scaled wallpaper
-	const float left = (static_cast<float> (globalPosition.x) - spanX) + offsetX;
-	const float right = left + static_cast<float> (viewport.z);
-	const float top = (static_cast<float> (globalPosition.y) - spanY) + offsetY;
-	const float bottom = top + static_cast<float> (viewport.w);
+	// This viewport's relative position within the bounding box [0..1]
+	const float relLeft = (static_cast<float> (globalPosition.x) - spanX) / spanW;
+	const float relRight = (static_cast<float> (globalPosition.x + viewport.z) - spanX) / spanW;
+	const float relTop = (static_cast<float> (globalPosition.y) - spanY) / spanH;
+	const float relBottom = (static_cast<float> (globalPosition.y + viewport.w) - spanY) / spanH;
 
-	ustart = left / scaledW;
-	uend = right / scaledW;
-	if (vflip) {
-	    vstart = top / scaledH;
-	    vend = bottom / scaledH;
-	} else {
-	    vstart = 1.0f - top / scaledH;
-	    vend = 1.0f - bottom / scaledH;
-	}
+	// Interpolate within the base UVs to get this viewport's slice
+	const float baseURange = baseUend - baseUstart;
+	const float baseVRange = baseVend - baseVstart;
+
+	ustart = baseUstart + relLeft * baseURange;
+	uend = baseUstart + relRight * baseURange;
+	vstart = baseVstart + relTop * baseVRange;
+	vend = baseVstart + relBottom * baseVRange;
+
+	sLog.out ("SPAN DEBUG: viewport=", viewport.z, "x", viewport.w,
+	    " globalPos=(", globalPosition.x, ",", globalPosition.y, ")",
+	    " span=(", span.totalBounds.x, ",", span.totalBounds.y, ",", span.totalBounds.z, ",", span.totalBounds.w, ")",
+	    " rel=[", relLeft, ",", relRight, "]x[", relTop, ",", relBottom, "]",
+	    " baseUV=[", baseUstart, ",", baseUend, "]x[", baseVstart, ",", baseVend, "]",
+	    " finalUV=[", ustart, ",", uend, "]x[", vstart, ",", vend, "]");
     } else {
 	// Normal mode: compute UVs based on viewport dimensions and wallpaper resolution
 	updateUVs (viewport, vflip);
