@@ -201,12 +201,15 @@ void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm
     // Get current frame counter from the driver to avoid redundant scene renders
     const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
     const bool needsSceneRender = (currentFrame != this->m_lastRenderedFrame);
+    const glm::ivec4 sceneViewport = this->m_spanInfo.has_value ()
+	? glm::ivec4 { 0, 0, this->m_spanInfo->totalBounds.z, this->m_spanInfo->totalBounds.w }
+	: viewport;
 
 #if !NDEBUG
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
 #endif /* !NDEBUG */
     if (needsSceneRender) {
-	this->renderFrame (viewport);
+	this->renderFrame (sceneViewport);
 	this->m_lastRenderedFrame = currentFrame;
     }
 #if !NDEBUG
