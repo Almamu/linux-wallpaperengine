@@ -38,7 +38,7 @@ public:
 	const char* third = second ? strchr (second + 1, ' ') : nullptr;
 
 	if (first == nullptr) {
-	    sLog.exception ("Invalid vector format: " + str + " (too few values, expected: 2, 3 or 4)");
+	    return 0;
 	}
 
 	if (second == nullptr) {

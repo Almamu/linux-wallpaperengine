@@ -3,6 +3,7 @@
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
@@ -57,8 +58,22 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	    value->update (static_cast<glm::vec2> (valueIt));
 	} else if (size == 3) {
 	    value->update (static_cast<glm::vec3> (valueIt));
-	} else {
+	} else if (size == 4) {
 	    value->update (static_cast<glm::vec4> (valueIt));
+	} else {
+	    // preparseSize returned 0: no spaces found — try parsing as a scalar float,
+	    // fall back to a plain string for non-numeric values (e.g. "bottom", "center").
+	    std::size_t parsed = 0;
+	    try {
+		float f = std::stof (str, &parsed);
+		if (parsed == str.size ()) {
+		    value->update (f);
+		} else {
+		    value->update (str);
+		}
+	    } catch (const std::exception&) {
+		value->update (str);
+	    }
 	}
     } else if (valueIt.is_number_integer ()) {
 	value->update (valueIt.get<int> ());
