@@ -325,6 +325,17 @@ void ApplicationContext::loadSettingsFromArgv () {
 		if (screen.empty ()) {
 		    continue;
 		}
+		// reject duplicates within this group
+		if (std::find (group.screens.begin (), group.screens.end (), screen) != group.screens.end ()) {
+		    sLog.exception ("--screen-span: duplicate screen name '", screen, "'");
+		}
+		// reject screens already claimed by another span group
+		for (const auto& existing : this->settings.general.spanGroups) {
+		    if (std::find (existing.screens.begin (), existing.screens.end (), screen)
+			!= existing.screens.end ()) {
+			sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
+		    }
+		}
 		group.screens.push_back (screen);
 	    }
 
