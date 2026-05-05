@@ -308,7 +308,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    this->settings.general.screenClamps[lastScreen] = this->settings.render.window.clamp;
 	})
 	.append ();
-    backgroundMode.add_argument ("--screen-span")
+    backgroundGroup.add_argument ("--screen-span")
 	.help ("Comma-separated list of screens to span a single wallpaper across")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
