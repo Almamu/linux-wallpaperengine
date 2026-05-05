@@ -101,6 +101,13 @@ void X11Output::loadScreenInfo () {
 	return;
     }
 
+    discoverOutputs (screenResources);
+    XRRFreeScreenResources (screenResources);
+    validateOutputs ();
+    initX11Background ();
+}
+
+void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
     for (int i = 0; i < screenResources->noutput; i++) {
 	const XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs[i]);
 
@@ -151,9 +158,9 @@ void X11Output::loadScreenInfo () {
 
 	XRRFreeCrtcInfo (crtc);
     }
+}
 
-    XRRFreeScreenResources (screenResources);
-
+void X11Output::validateOutputs () const {
     bool any = false;
 
     for (const auto& o : this->m_screens) {
@@ -197,7 +204,9 @@ void X11Output::loadScreenInfo () {
 
 	sLog.exception ("Cannot continue...");
     }
+}
 
+void X11Output::initX11Background () {
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
     this->m_gc = XCreateGC (this->m_display, this->m_pixmap, 0, nullptr);

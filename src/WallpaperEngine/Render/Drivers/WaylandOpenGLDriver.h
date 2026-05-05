@@ -93,7 +93,10 @@ private:
     WaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
 
+    void initWaylandRegistry ();
+    void setupOutputLayerSurfaces ();
     void initEGL ();
+    void initGLEW ();
     void finishEGL () const;
 
     uint32_t m_frameCounter = 0;

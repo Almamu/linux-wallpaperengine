@@ -263,6 +263,13 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
     VideoDriver (app, m_mouseInput), m_output (context, *this), m_requestedExit (false), m_frameCounter (0),
     m_context (context), m_mouseInput (*this) {
+    initWaylandRegistry ();
+    initEGL ();
+    setupOutputLayerSurfaces ();
+    initGLEW ();
+}
+
+void WaylandOpenGLDriver::initWaylandRegistry () {
     m_waylandContext.display = wl_display_connect (nullptr);
 
     if (!m_waylandContext.display) {
@@ -287,17 +294,17 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 	}
 	wl_display_roundtrip (m_waylandContext.display);
     }
+}
 
-    initEGL ();
-
+void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
     bool any = false;
 
     for (const auto& o : this->m_screens) {
-	bool shouldSetup = context.settings.general.screenBackgrounds.contains (o->name);
+	bool shouldSetup = m_context.settings.general.screenBackgrounds.contains (o->name);
 
 	// also check if this screen is in any span group
 	if (!shouldSetup) {
-	    for (const auto& spanGroup : context.settings.general.spanGroups) {
+	    for (const auto& spanGroup : m_context.settings.general.spanGroups) {
 		for (const auto& screen : spanGroup.screens) {
 		    if (screen == o->name) {
 			shouldSetup = true;
@@ -328,13 +335,15 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 
 	sLog.error ("Requested: ");
 
-	for (const auto& o : context.settings.general.screenBackgrounds | std::views::keys) {
+	for (const auto& o : m_context.settings.general.screenBackgrounds | std::views::keys) {
 	    sLog.error ("  ", o);
 	}
 
 	sLog.exception ("Cannot continue...");
     }
+}
 
+void WaylandOpenGLDriver::initGLEW () {
     glewExperimental = GL_TRUE;
     if (const GLenum result = glewInit (); result != GLEW_OK) {
 	if (result == GLEW_ERROR_NO_GLX_DISPLAY) {
