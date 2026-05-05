@@ -201,14 +201,14 @@ bool KDEWaylandFullScreenDetector::updateWindowState (
 
 bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
     if (m_connection != nullptr) {
-		if (!dbus_connection_read_write_dispatch (m_connection, 0)) {
-	    	sLog.error ("DBus connection dropped unexpectedly");
-	    	m_windowStates.clear ();
-	    	m_activeWindowKey.clear ();
-	    	dbus_connection_unregister_object_path (m_connection, objectPath ());
-	    	dbus_connection_unref (m_connection);
-	    	m_connection = nullptr;
-		}
+	if (!dbus_connection_read_write_dispatch (m_connection, 0)) {
+	    sLog.error ("DBus connection dropped unexpectedly");
+	    m_windowStates.clear ();
+	    m_activeWindowKey.clear ();
+	    dbus_connection_unregister_object_path (m_connection, objectPath ());
+	    dbus_connection_unref (m_connection);
+	    m_connection = nullptr;
+	}
     }
 
     const auto& ctx = getApplicationContext ();
@@ -247,11 +247,9 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
 	return activeIt != m_windowStates.end () && isRelevant (activeIt->second);
     }
 
-    for (const auto& entry : m_windowStates) {
-	if (isRelevant (entry.second)) {
-	    return true;
-	}
-    }
+    return std::any_of (m_windowStates.begin (), m_windowStates.end (), [&] (const auto& e) {
+	return isRelevant (e.second);
+    });
 
     return false;
 }
