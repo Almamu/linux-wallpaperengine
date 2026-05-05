@@ -346,6 +346,12 @@ void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
 	    sLog.error ("  ", o);
 	}
 
+	for (const auto& spanGroup : m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		sLog.error ("  ", screen, " (span group)");
+	    }
+	}
+
 	sLog.exception ("Cannot continue...");
     }
 }
