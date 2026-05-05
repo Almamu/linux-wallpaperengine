@@ -754,10 +754,10 @@ void WallpaperApplication::prepareOutputs () {
 	    const auto& vp = vpIt->second;
 	    const int x = vp->globalPosition.x;
 	    const int y = vp->globalPosition.y;
-	    const int w = vp->viewport.z;
-	    const int h = vp->viewport.w;
+	    const int w = vp->logicalSize.x;
+	    const int h = vp->logicalSize.y;
 	    sLog.out ("SPAN DEBUG prepareOutputs: screen '", screenName,
-		"' globalPos=(", x, ",", y, ") viewport=", w, "x", h);
+		"' globalPos=(", x, ",", y, ") logicalSize=", w, "x", h);
 	    minX = std::min (minX, x);
 	    minY = std::min (minY, y);
 	    maxX = std::max (maxX, x + w);

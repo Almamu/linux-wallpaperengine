@@ -66,7 +66,8 @@ public:
     /**
      * Performs a render pass of the wallpaper
      */
-    void render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition = {0, 0});
+    void render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition = {0, 0},
+	const glm::ivec2& logicalSize = {0, 0});
 
     /**
      * Pause the renderer

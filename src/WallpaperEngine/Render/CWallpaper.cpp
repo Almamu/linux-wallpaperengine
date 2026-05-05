@@ -196,7 +196,8 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     }
 }
 
-void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition) {
+void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition,
+    const glm::ivec2& logicalSize) {
     // Get current frame counter from the driver to avoid redundant scene renders
     const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
     const bool needsSceneRender = (currentFrame != this->m_lastRenderedFrame);
@@ -229,10 +230,11 @@ void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm
 	auto [baseUstart, baseUend, baseVstart, baseVend] = this->m_state.getTextureUVs ();
 
 	// This viewport's relative position within the bounding box [0..1]
+	// Use logicalSize (same coordinate space as globalPosition and totalBounds)
 	const float relLeft = (static_cast<float> (globalPosition.x) - spanX) / spanW;
-	const float relRight = (static_cast<float> (globalPosition.x + viewport.z) - spanX) / spanW;
+	const float relRight = (static_cast<float> (globalPosition.x + logicalSize.x) - spanX) / spanW;
 	const float relTop = (static_cast<float> (globalPosition.y) - spanY) / spanH;
-	const float relBottom = (static_cast<float> (globalPosition.y + viewport.w) - spanY) / spanH;
+	const float relBottom = (static_cast<float> (globalPosition.y + logicalSize.y) - spanY) / spanH;
 
 	// Interpolate within the base UVs to get this viewport's slice
 	const float baseURange = baseUend - baseUstart;

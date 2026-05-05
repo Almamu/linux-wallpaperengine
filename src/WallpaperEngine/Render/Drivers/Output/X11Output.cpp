@@ -127,6 +127,7 @@ void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
 	this->m_screens.push_back (new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height },
 							    info->name });
 	this->m_screens.back ()->globalPosition = { crtc->x, crtc->y };
+	this->m_screens.back ()->logicalSize = { crtc->width, crtc->height };
 
 	// check if this screen is part of a span group
 	bool inSpanGroup = false;
@@ -153,6 +154,7 @@ void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
 
 	    auto* vp = new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
 	    vp->globalPosition = { crtc->x, crtc->y };
+	    vp->logicalSize = { crtc->width, crtc->height };
 	    this->m_viewports[info->name] = vp;
 	}
 

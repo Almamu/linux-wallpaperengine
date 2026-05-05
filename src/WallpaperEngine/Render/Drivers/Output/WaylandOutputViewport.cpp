@@ -19,6 +19,7 @@ using namespace WallpaperEngine::Render::Drivers::Output;
 static void handleLSConfigure (void* data, zwlr_layer_surface_v1* surface, uint32_t serial, uint32_t w, uint32_t h) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
     viewport->size = { w, h };
+    viewport->logicalSize = { w, h };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
     viewport->resize ();
 
@@ -45,6 +46,7 @@ static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, 
 
     // update viewport size too
     viewport->size = { width, height };
+    viewport->logicalSize = { width, height };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
 
     if (viewport->layerSurface) {
