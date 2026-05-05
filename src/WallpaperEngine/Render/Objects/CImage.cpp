@@ -365,13 +365,13 @@ void CImage::setup () {
     }
 
     // extra render pass if there's any blending to be done
-    if (this->m_image.colorBlendMode > 0) {
+    if (this->m_image.colorBlendMode->value->getInt() > 0) {
 	this->m_materials.colorBlending.material
 	    = MaterialParser::load (this->getScene ().getScene ().project, "materials/util/effectpassthrough.json");
 	this->m_materials.colorBlending.override = std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
             .id = -1,
             .combos = {
-                {"BLENDMODE", this->m_image.colorBlendMode},
+                {"BLENDMODE", this->m_image.colorBlendMode->value->getInt()},
             },
             .constants = {},
             .textures = {},
@@ -521,7 +521,7 @@ void CImage::render () {
 #endif /* DEBUG */
 }
 
-const float& CImage::getBrightness () const { return this->m_image.brightness; }
+const float& CImage::getBrightness () const { return this->m_image.brightness->value->getFloat(); }
 
 const float& CImage::getUserAlpha () const { return this->m_image.alpha->value->getFloat (); }
 
