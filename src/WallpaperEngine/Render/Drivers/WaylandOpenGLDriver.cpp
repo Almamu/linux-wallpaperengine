@@ -246,6 +246,11 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 	zwlr_layer_surface_v1_destroy (viewport->layerSurface);
     }
 
+    if (viewport->xdgOutput) {
+	zxdg_output_v1_destroy (viewport->xdgOutput);
+	viewport->xdgOutput = nullptr;
+    }
+
     if (viewport->surface) {
 	wl_surface_destroy (viewport->surface);
     }
@@ -357,6 +362,14 @@ void WaylandOpenGLDriver::initGLEW () {
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {
+    // destroy xdg outputs
+    for (const auto& screen : this->m_screens) {
+	if (screen->xdgOutput) {
+	    zxdg_output_v1_destroy (screen->xdgOutput);
+	    screen->xdgOutput = nullptr;
+	}
+    }
+
     // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
