@@ -180,7 +180,8 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--fps <val>` | Limit frame rate |
 | `--window <XxYxWxH>` | Run in windowed mode with custom size/position |
 | `--screen-root <screen>` | Set as background for specific screen |
-| `--bg <id/path>` | Assign a background to a specific screen (use after `--screen-root`) |
+| `--screen-span <screen-1>,<screen-2>` | Stretch a single wallpaper across multiple screens |
+| `--bg <id/path>` | Assign a background to a specific screen (use after `--screen-root`/`--screen-span`) |
 | `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
 | `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
 | `--assets-dir <path>` | Set custom path for assets |
@@ -212,6 +213,12 @@ linux-wallpaperengine ~/backgrounds/1845706469/
 linux-wallpaperengine \
   --scaling stretch --screen-root eDP-1 --bg 2667198601 \
   --scaling fill --screen-root HDMI-1 --bg 2667198602
+```
+
+#### Stretch one wallpaper across multiple monitors
+```bash
+linux-wallpaperengine \
+  --scaling fill --screen-span HDMI-A-1,DP-2,DP-3 --bg 1845706469
 ```
 
 #### Run in a window
@@ -296,7 +303,7 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 
 ## 🧪 Wayland & X11 Support
 
-- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`.
+- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`. Uses `xdg-output-unstable-v1` for accurate monitor positioning (required for `--screen-span`).
 - **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
 > ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
