@@ -3,44 +3,15 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Drivers/VideoFactories.h"
 
-#include <cstdlib>
-#include <cstring>
-#include <sstream>
-
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <string>
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 
-namespace {
-    constexpr const char* defaultService = "org.linuxwallpaperengine.WaylandDetector";
-    constexpr const char* defaultObject = "/org/linuxwallpaperengine/WaylandDetector";
-    constexpr const char* method = "OnWindowChanged";
-
-    std::string toStringSafe (const char* value) {
-	if (value == nullptr) {
-	    return {};
-	}
-
-	return value;
-    }
-
-} // namespace
-
-const char* KDEWaylandFullScreenDetector::defaultServiceName () { return defaultService; }
-
-const char* KDEWaylandFullScreenDetector::objectPath () { return defaultObject; }
-
-const char* KDEWaylandFullScreenDetector::methodName () { return method; }
-
 KDEWaylandFullScreenDetector::KDEWaylandFullScreenDetector (Application::ApplicationContext& appContext) :
-    FullScreenDetector (appContext),
-    m_serviceName (toStringSafe (std::getenv ("KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE"))) {
-    if (m_serviceName.empty ()) {
-	m_serviceName = defaultServiceName ();
-    }
-
+    FullScreenDetector (appContext) {
     if (!initializeDBus ()) {
 	sLog.out (
 	    "KDE Wayland maximize detector could not initialize DBus. Falling back to the Wayland fullscreen detector"
@@ -69,11 +40,10 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
     dbus_connection_set_exit_on_disconnect (m_connection, false);
 
     dbus_error_init (&error);
-    const auto requestResult
-	= dbus_bus_request_name (m_connection, m_serviceName.c_str (), DBUS_NAME_FLAG_DO_NOT_QUEUE, &error);
+    const auto requestResult = dbus_bus_request_name (m_connection, kServiceName, DBUS_NAME_FLAG_DO_NOT_QUEUE, &error);
 
     if (dbus_error_is_set (&error)) {
-	sLog.error ("Failed to request DBus service ", m_serviceName, ": ", error.message);
+	sLog.error ("Failed to request DBus service ", kServiceName, ": ", error.message);
 	dbus_error_free (&error);
 	dbus_connection_unref (m_connection);
 	m_connection = nullptr;
@@ -82,7 +52,7 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
 
     if (requestResult != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
 	&& requestResult != DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER) {
-	sLog.error ("DBus service ", m_serviceName, " is already owned by another process");
+	sLog.error ("DBus service ", kServiceName, " is already owned by another process");
 	dbus_connection_unref (m_connection);
 	m_connection = nullptr;
 	return false;
@@ -93,7 +63,7 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
 	.message_function = &KDEWaylandFullScreenDetector::handleMessage,
     };
 
-    if (!dbus_connection_register_object_path (m_connection, objectPath (), &objectVTable, this)) {
+    if (!dbus_connection_register_object_path (m_connection, kObjectPath, &objectVTable, this)) {
 	sLog.error ("Failed to register DBus object path for KDE Wayland maximize detector");
 	dbus_connection_unref (m_connection);
 	m_connection = nullptr;
@@ -105,7 +75,7 @@ bool KDEWaylandFullScreenDetector::initializeDBus () {
 
 void KDEWaylandFullScreenDetector::stopDBus () {
     if (m_connection != nullptr) {
-	dbus_connection_unregister_object_path (m_connection, objectPath ());
+	dbus_connection_unregister_object_path (m_connection, kObjectPath);
 	dbus_connection_unref (m_connection);
 	m_connection = nullptr;
     }
@@ -127,7 +97,7 @@ DBusHandlerResult KDEWaylandFullScreenDetector::handleMessage (DBusMessage* mess
     }
 
     if (const auto* currentInterface = dbus_message_get_interface (message);
-	currentInterface == nullptr || std::strcmp (currentInterface, m_serviceName.c_str ()) != 0) {
+	currentInterface == nullptr || std::strcmp (currentInterface, kServiceName) != 0) {
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
@@ -140,7 +110,7 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
 	return false;
     }
 
-    if (std::strcmp (member, methodName ()) != 0) {
+    if (std::strcmp (member, kMethodName) != 0) {
 	return false;
     }
 
@@ -165,9 +135,7 @@ bool KDEWaylandFullScreenDetector::handleMethodCall (DBusMessage* message) {
 	return false;
     }
 
-    updateWindowState (
-	toStringSafe (windowKey), toStringSafe (appId), horizontal != false, vertical != false, fully != false
-    );
+    updateWindowState (windowKey, appId, horizontal != false, vertical != false, fully != false);
 
     if (m_connection != nullptr) {
 	DBusMessage* reply = dbus_message_new_method_return (message);
@@ -205,7 +173,7 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
 	    sLog.error ("DBus connection dropped unexpectedly");
 	    m_windowStates.clear ();
 	    m_activeWindowKey.clear ();
-	    dbus_connection_unregister_object_path (m_connection, objectPath ());
+	    dbus_connection_unregister_object_path (m_connection, kObjectPath);
 	    dbus_connection_unref (m_connection);
 	    m_connection = nullptr;
 	}
@@ -250,8 +218,6 @@ bool KDEWaylandFullScreenDetector::anythingFullscreen () const {
     return std::any_of (m_windowStates.begin (), m_windowStates.end (), [&] (const auto& e) {
 	return isRelevant (e.second);
     });
-
-    return false;
 }
 
 bool KDEWaylandFullScreenDetector::isInitialized () const { return m_connection != nullptr; }

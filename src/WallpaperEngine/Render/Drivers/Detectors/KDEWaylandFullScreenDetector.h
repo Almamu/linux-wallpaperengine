@@ -74,15 +74,6 @@ private:
 	std::string appId {}; ///< Wayland app-id / desktop file name, used for ignore-list matching.
     };
 
-    /** @return @c "org.linuxwallpaperengine.WaylandDetector" */
-    static const char* defaultServiceName ();
-
-    /** @return @c "/org/linuxwallpaperengine/WaylandDetector" */
-    static const char* objectPath ();
-
-    /** @return @c "OnWindowChanged" */
-    static const char* methodName ();
-
     /**
      * @brief Static C-linkage trampoline required by the libdbus object-path vtable.
      *
@@ -162,13 +153,9 @@ private:
     /** @brief Key of the most recently activated (focused) window. */
     mutable std::string m_activeWindowKey;
 
-    /**
-     * @brief D-Bus well-known service name to register under.
-     *
-     * Defaults to @c defaultServiceName() unless overridden by the
-     * @c KWIN_MAXIMIZE_DETECTOR_DBUS_SERVICE environment variable.
-     */
-    std::string m_serviceName;
+    static constexpr const char* kServiceName = "org.linuxwallpaperengine.WaylandDetector";
+    static constexpr const char* kObjectPath = "/org/linuxwallpaperengine/WaylandDetector";
+    static constexpr const char* kMethodName = "OnWindowChanged";
 };
 
 } // namespace WallpaperEngine::Render::Drivers::Detectors
