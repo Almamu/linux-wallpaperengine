@@ -180,7 +180,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--fps <val>` | Limit frame rate |
 | `--window <XxYxWxH>` | Run in windowed mode with custom size/position |
 | `--screen-root <screen>` | Set as background for specific screen |
-| `--screen-span <screen-1>,<screen-2>` | Stretch a single wallpaper across multiple screens |
+| `--screen-span <screen-1>,<screen-2>,...` | Stretch a single wallpaper across multiple screens |
 | `--bg <id/path>` | Assign a background to a specific screen (use after `--screen-root`/`--screen-span`) |
 | `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
 | `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
