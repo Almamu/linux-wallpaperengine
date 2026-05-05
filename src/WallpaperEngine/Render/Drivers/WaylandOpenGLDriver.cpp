@@ -279,7 +279,24 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
     bool any = false;
 
     for (const auto& o : this->m_screens) {
-	if (!context.settings.general.screenBackgrounds.contains (o->name)) {
+	bool shouldSetup = context.settings.general.screenBackgrounds.contains (o->name);
+
+	// also check if this screen is in any span group
+	if (!shouldSetup) {
+	    for (const auto& spanGroup : context.settings.general.spanGroups) {
+		for (const auto& screen : spanGroup.screens) {
+		    if (screen == o->name) {
+			shouldSetup = true;
+			break;
+		    }
+		}
+		if (shouldSetup) {
+		    break;
+		}
+	    }
+	}
+
+	if (!shouldSetup) {
 	    continue;
 	}
 

@@ -54,6 +54,14 @@ public:
 	PlaylistSettings settings;
     };
 
+    struct SpanGroup {
+	std::vector<std::string> screens;
+	std::filesystem::path background;
+	WallpaperEngine::Render::WallpaperState::TextureUVsScaling scaling
+	    = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::DefaultUVs;
+	TextureFlags clamp = TextureFlags_ClampUVs;
+    };
+
     struct {
 	/**
 	 * General settings
@@ -81,6 +89,8 @@ public:
 	    std::map<std::string, PlaylistDefinition> screenPlaylists;
 	    /** Playlist used in window mode */
 	    std::optional<PlaylistDefinition> defaultPlaylist;
+	    /** Span groups: multiple monitors sharing one stretched wallpaper */
+	    std::vector<SpanGroup> spanGroups;
 	} general;
 
 	/**
@@ -159,6 +169,7 @@ public:
             .screenClamps = {},
             .screenPlaylists = {},
             .defaultPlaylist = std::nullopt,
+            .spanGroups = {},
         },
         .render = {
             .mode = NORMAL_WINDOW,

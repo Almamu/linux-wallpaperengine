@@ -7,6 +7,8 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 
+#include <algorithm>
+
 using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
@@ -182,6 +184,12 @@ void CWallpaper::setupShaders () {
 
 void CWallpaper::setDestinationFramebuffer (GLuint framebuffer) { this->m_destFramebuffer = framebuffer; }
 
+void CWallpaper::setSpanInfo (const SpanInfo& spanInfo) { this->m_spanInfo = spanInfo; }
+
+const CWallpaper::SpanInfo* CWallpaper::getSpanInfo () const {
+    return this->m_spanInfo.has_value () ? &this->m_spanInfo.value () : nullptr;
+}
+
 void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     // update UVs if something has changed, otherwise use old values
     if (this->m_state.hasChanged (viewport, vflip, this->getWidth (), this->getHeight ())) {
@@ -190,18 +198,68 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     }
 }
 
-void CWallpaper::render (const glm::ivec4& viewport, const bool vflip) {
+void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition) {
+    // Get current frame counter from the driver to avoid redundant scene renders
+    const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
+    const bool needsSceneRender = (currentFrame != this->m_lastRenderedFrame);
+
 #if !NDEBUG
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene");
 #endif /* !NDEBUG */
-    this->renderFrame (viewport);
+    if (needsSceneRender) {
+	this->renderFrame (viewport);
+	this->m_lastRenderedFrame = currentFrame;
+    }
 #if !NDEBUG
     glPopDebugGroup ();
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene to output");
 #endif /* !NDEBUG */
-    // Update UVs coordinates according to scaling mode of this wallpaper
-    updateUVs (viewport, vflip);
-    auto [ustart, uend, vstart, vend] = this->m_state.getTextureUVs ();
+
+    float ustart, uend, vstart, vend;
+
+    if (this->m_spanInfo.has_value ()) {
+	// Span mode: scale wallpaper to fill (cover) the bounding box while preserving
+	// aspect ratio. Each monitor shows its positional slice.
+	const auto& span = this->m_spanInfo.value ();
+	const float spanW = static_cast<float> (span.totalBounds.z);
+	const float spanH = static_cast<float> (span.totalBounds.w);
+	const float spanX = static_cast<float> (span.totalBounds.x);
+	const float spanY = static_cast<float> (span.totalBounds.y);
+	const float wallW = static_cast<float> (this->getWidth ());
+	const float wallH = static_cast<float> (this->getHeight ());
+
+	// Scale wallpaper to fill the bounding box (cover, preserving aspect ratio)
+	const float scale = std::max (spanW / wallW, spanH / wallH);
+	const float scaledW = wallW * scale;
+	const float scaledH = wallH * scale;
+	// Center any excess
+	const float offsetX = (scaledW - spanW) / 2.0f;
+	const float offsetY = (scaledH - spanH) / 2.0f;
+
+	// Viewport position within the scaled wallpaper
+	const float left = (static_cast<float> (globalPosition.x) - spanX) + offsetX;
+	const float right = left + static_cast<float> (viewport.z);
+	const float top = (static_cast<float> (globalPosition.y) - spanY) + offsetY;
+	const float bottom = top + static_cast<float> (viewport.w);
+
+	ustart = left / scaledW;
+	uend = right / scaledW;
+	if (vflip) {
+	    vstart = top / scaledH;
+	    vend = bottom / scaledH;
+	} else {
+	    vstart = 1.0f - top / scaledH;
+	    vend = 1.0f - bottom / scaledH;
+	}
+    } else {
+	// Normal mode: compute UVs based on viewport dimensions and wallpaper resolution
+	updateUVs (viewport, vflip);
+	auto uvs = this->m_state.getTextureUVs ();
+	ustart = uvs.ustart;
+	uend = uvs.uend;
+	vstart = uvs.vstart;
+	vend = uvs.vend;
+    }
 
     const GLfloat texCoords[] = {
 	ustart, vstart, uend, vstart, ustart, vend, ustart, vend, uend, vstart, uend, vend,

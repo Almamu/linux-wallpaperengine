@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <optional>
 
 #include "WallpaperEngine/Audio/AudioContext.h"
 
@@ -36,6 +37,12 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider {
     friend class WallpaperEngine::Application::WallpaperApplication;
 
 public:
+    /** Information for span-mode rendering: one wallpaper across multiple viewports */
+    struct SpanInfo {
+	/** Bounding box of the entire span group (x, y, width, height) in global desktop coordinates */
+	glm::ivec4 totalBounds;
+    };
+
     template <class T> [[nodiscard]] const T* as () const {
 	if (is<T> ()) {
 	    return static_cast<const T*> (this);
@@ -59,7 +66,7 @@ public:
     /**
      * Performs a render pass of the wallpaper
      */
-    void render (const glm::ivec4& viewport, const bool vflip);
+    void render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition = {0, 0});
 
     /**
      * Pause the renderer
@@ -113,6 +120,16 @@ public:
      * @param framebuffer
      */
     void setDestinationFramebuffer (GLuint framebuffer);
+
+    /**
+     * Sets span info for this wallpaper, enabling span-mode rendering
+     */
+    void setSpanInfo (const SpanInfo& spanInfo);
+
+    /**
+     * @return The span info if set, or nullptr
+     */
+    [[nodiscard]] const SpanInfo* getSpanInfo () const;
 
     /**
      * @return The width of this wallpaper
@@ -184,5 +201,9 @@ private:
     AudioContext& m_audioContext;
     /** Current Wallpaper state */
     WallpaperState m_state;
+    /** Span info for multi-monitor spanning (optional) */
+    std::optional<SpanInfo> m_spanInfo = std::nullopt;
+    /** Frame counter to avoid redundant renderFrame calls when shared across viewports */
+    uint32_t m_lastRenderedFrame = UINT32_MAX;
 };
 } // namespace WallpaperEngine::Render

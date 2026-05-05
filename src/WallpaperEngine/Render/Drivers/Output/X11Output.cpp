@@ -119,17 +119,34 @@ void X11Output::loadScreenInfo () {
 	// add the screen to the list of screens
 	this->m_screens.push_back (new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height },
 							    info->name });
+	this->m_screens.back ()->globalPosition = { crtc->x, crtc->y };
+
+	// check if this screen is part of a span group
+	bool inSpanGroup = false;
+	for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		if (screen == info->name) {
+		    inSpanGroup = true;
+		    break;
+		}
+	    }
+	    if (inSpanGroup) {
+		break;
+	    }
+	}
 
 	// only keep info of registered screens
-	if (this->m_context.settings.general.screenBackgrounds.find (info->name)
-	    != this->m_context.settings.general.screenBackgrounds.end ()) {
+	if (inSpanGroup
+	    || this->m_context.settings.general.screenBackgrounds.find (info->name)
+		!= this->m_context.settings.general.screenBackgrounds.end ()) {
 	    sLog.out (
 		"Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x",
 		crtc->height
 	    );
 
-	    this->m_viewports[info->name]
-		= new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
+	    auto* vp = new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
+	    vp->globalPosition = { crtc->x, crtc->y };
+	    this->m_viewports[info->name] = vp;
 	}
 
 	XRRFreeCrtcInfo (crtc);
@@ -142,11 +159,26 @@ void X11Output::loadScreenInfo () {
     for (const auto& o : this->m_screens) {
 	const auto cur = this->m_context.settings.general.screenBackgrounds.find (o->name);
 
-	if (cur == this->m_context.settings.general.screenBackgrounds.end ()) {
-	    continue;
+	if (cur != this->m_context.settings.general.screenBackgrounds.end ()) {
+	    any = true;
+	    break;
 	}
 
-	any = true;
+	// also check span groups
+	for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		if (screen == o->name) {
+		    any = true;
+		    break;
+		}
+	    }
+	    if (any) {
+		break;
+	    }
+	}
+	if (any) {
+	    break;
+	}
     }
 
     if (!any) {

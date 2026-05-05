@@ -34,7 +34,8 @@ static void geometry (
     void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
     const char* make, const char* model, int32_t transform
 ) {
-    // ignored
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    viewport->globalPosition = { x, y };
 }
 
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
