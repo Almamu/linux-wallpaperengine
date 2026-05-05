@@ -325,6 +325,10 @@ void ApplicationContext::loadSettingsFromArgv () {
 		if (screen.empty ()) {
 		    continue;
 		}
+		if (this->settings.general.screenBackgrounds.find (screen)
+		    != this->settings.general.screenBackgrounds.end ()) {
+		    sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
+		}
 		// reject duplicates within this group
 		if (std::find (group.screens.begin (), group.screens.end (), screen) != group.screens.end ()) {
 		    sLog.exception ("--screen-span: duplicate screen name '", screen, "'");
