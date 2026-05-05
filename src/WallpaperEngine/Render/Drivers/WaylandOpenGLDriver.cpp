@@ -8,6 +8,7 @@
 #define static
 extern "C" {
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "xdg-output-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
 #include <linux/input-event-codes.h>
 }
@@ -15,6 +16,7 @@ extern "C" {
 #undef namespace
 #undef static
 
+#include <algorithm>
 #include <string.h>
 #include <unistd.h>
 
@@ -119,6 +121,10 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->seat
 	    = static_cast<wl_seat*> (wl_registry_bind (registry, name, &wl_seat_interface, 1));
 	wl_seat_add_listener (driver->getWaylandContext ()->seat, &seatListener, driver);
+    } else if (strcmp (interface, zxdg_output_manager_v1_interface.name) == 0) {
+	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
+	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
+	);
     }
 }
 
@@ -240,6 +246,11 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 	zwlr_layer_surface_v1_destroy (viewport->layerSurface);
     }
 
+    if (viewport->xdgOutput) {
+	zxdg_output_v1_destroy (viewport->xdgOutput);
+	viewport->xdgOutput = nullptr;
+    }
+
     if (viewport->surface) {
 	wl_surface_destroy (viewport->surface);
     }
@@ -257,6 +268,13 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
     VideoDriver (app, m_mouseInput), m_output (context, *this), m_requestedExit (false), m_frameCounter (0),
     m_context (context), m_mouseInput (*this) {
+    initWaylandRegistry ();
+    initEGL ();
+    setupOutputLayerSurfaces ();
+    initGLEW ();
+}
+
+void WaylandOpenGLDriver::initWaylandRegistry () {
     m_waylandContext.display = wl_display_connect (nullptr);
 
     if (!m_waylandContext.display) {
@@ -274,12 +292,39 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 	sLog.exception ("Failed to bind to required interfaces");
     }
 
-    initEGL ();
+    // If xdg-output-manager is available, use it to get logical output positions
+    if (m_waylandContext.xdgOutputManager) {
+	for (const auto& o : this->m_screens) {
+	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	}
+	wl_display_roundtrip (m_waylandContext.display);
+    } else if (!m_context.settings.general.spanGroups.empty ()) {
+	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
+    }
+}
 
+void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
     bool any = false;
 
     for (const auto& o : this->m_screens) {
-	if (!context.settings.general.screenBackgrounds.contains (o->name)) {
+	bool shouldSetup = m_context.settings.general.screenBackgrounds.contains (o->name);
+
+	// also check if this screen is in any span group
+	if (!shouldSetup) {
+	    for (const auto& spanGroup : m_context.settings.general.spanGroups) {
+		for (const auto& screen : spanGroup.screens) {
+		    if (screen == o->name) {
+			shouldSetup = true;
+			break;
+		    }
+		}
+		if (shouldSetup) {
+		    break;
+		}
+	    }
+	}
+
+	if (!shouldSetup) {
 	    continue;
 	}
 
@@ -297,19 +342,27 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 
 	sLog.error ("Requested: ");
 
-	for (const auto& o : context.settings.general.screenBackgrounds | std::views::keys) {
+	for (const auto& o : m_context.settings.general.screenBackgrounds | std::views::keys) {
 	    sLog.error ("  ", o);
+	}
+
+	for (const auto& spanGroup : m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		sLog.error ("  ", screen, " (span group)");
+	    }
 	}
 
 	sLog.exception ("Cannot continue...");
     }
+}
 
+void WaylandOpenGLDriver::initGLEW () {
     glewExperimental = GL_TRUE;
     if (const GLenum result = glewInit (); result != GLEW_OK) {
 	if (result == GLEW_ERROR_NO_GLX_DISPLAY) {
 	    sLog.out ("Failed to initialize GLEW, but continuing with EGL context: No GLX display");
 	} else {
-	    const char* error = reinterpret_cast<const char*>(glewGetErrorString (result));
+	    const char* error = reinterpret_cast<const char*> (glewGetErrorString (result));
 	    sLog.error ("Failed to initialize GLEW: ", error ? error : "Unknown error");
 	    sLog.exception ("Cannot continue...");
 	}
@@ -317,6 +370,14 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {
+    // destroy xdg outputs
+    for (const auto& screen : this->m_screens) {
+	if (screen->xdgOutput) {
+	    zxdg_output_v1_destroy (screen->xdgOutput);
+	    screen->xdgOutput = nullptr;
+	}
+    }
+
     // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 

@@ -6,6 +6,7 @@
 #define static
 extern "C" {
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "xdg-output-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
 }
 #undef class
@@ -18,6 +19,7 @@ using namespace WallpaperEngine::Render::Drivers::Output;
 static void handleLSConfigure (void* data, zwlr_layer_surface_v1* surface, uint32_t serial, uint32_t w, uint32_t h) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
     viewport->size = { w, h };
+    viewport->logicalSize = { w, h };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
     viewport->resize ();
 
@@ -34,13 +36,18 @@ static void geometry (
     void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
     const char* make, const char* model, int32_t transform
 ) {
-    // ignored
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    // only use geometry position as fallback if xdg-output hasn't provided one
+    if (!viewport->hasXdgLogicalPosition) {
+	viewport->globalPosition = { x, y };
+    }
+    sLog.debug ("SPAN DEBUG geometry: output '", viewport->name, "' position=(", x, ",", y, ") transform=", transform);
 }
 
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
-    // update viewport size too
+    // update viewport size (physical pixels; logicalSize comes from xdg-output or layer shell configure)
     viewport->size = { width, height };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
 
@@ -105,12 +112,52 @@ constexpr struct zwlr_layer_surface_v1_listener layerSurfaceListener = {
     .closed = handleLSClosed,
 };
 
+static void xdgOutputLogicalPosition (void* data, struct zxdg_output_v1* xdg_output, int32_t x, int32_t y) {
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    viewport->globalPosition = { x, y };
+    viewport->hasXdgLogicalPosition = true;
+    sLog.debug ("SPAN DEBUG xdg-output logical_position: '", viewport->name, "' position=(", x, ",", y, ")");
+}
+
+static void xdgOutputLogicalSize (void* data, struct zxdg_output_v1* xdg_output, int32_t width, int32_t height) {
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    viewport->logicalSize = { width, height };
+    if (viewport->initialized) {
+	viewport->getDriver ()->getOutput ().reset ();
+    }
+}
+
+static void xdgOutputDone (void* data, struct zxdg_output_v1* xdg_output) {
+    // deprecated since xdg-output v3, compositor uses wl_output.done instead
+}
+
+static void xdgOutputName (void* data, struct zxdg_output_v1* xdg_output, const char* name) {
+    // already handled by wl_output.name
+}
+
+static void xdgOutputDescription (void* data, struct zxdg_output_v1* xdg_output, const char* description) {
+    // ignored
+}
+
+constexpr struct zxdg_output_v1_listener xdgOutputListener = {
+    .logical_position = xdgOutputLogicalPosition,
+    .logical_size = xdgOutputLogicalSize,
+    .done = xdgOutputDone,
+    .name = xdgOutputName,
+    .description = xdgOutputDescription,
+};
+
 WaylandOutputViewport::WaylandOutputViewport (
     WaylandOpenGLDriver* driver, uint32_t waylandName, struct wl_registry* registry
 ) : OutputViewport ({ 0, 0, 0, 0 }, "", true), size ({ 0, 0 }), waylandName (waylandName), m_driver (driver) {
     // setup output listener
     this->output = static_cast<wl_output*> (wl_registry_bind (registry, waylandName, &wl_output_interface, 4));
     wl_output_add_listener (output, &outputListener, this);
+}
+
+void WaylandOutputViewport::setupXdgOutput (zxdg_output_manager_v1* manager) {
+    this->xdgOutput = zxdg_output_manager_v1_get_xdg_output (manager, this->output);
+    zxdg_output_v1_add_listener (this->xdgOutput, &xdgOutputListener, this);
 }
 
 void WaylandOutputViewport::setupLS () {

@@ -9,6 +9,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string_view>
 
 #include <argparse/argparse.hpp>
@@ -296,6 +297,11 @@ void ApplicationContext::loadSettingsFromArgv () {
 		!= this->settings.general.screenBackgrounds.end ()) {
 		sLog.exception ("Cannot specify the same screen more than once: ", value);
 	    }
+	    for (const auto& group : this->settings.general.spanGroups) {
+		if (std::find (group.screens.begin (), group.screens.end (), value) != group.screens.end ()) {
+		    sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
+		}
+	    }
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }
@@ -307,12 +313,64 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    this->settings.general.screenClamps[lastScreen] = this->settings.render.window.clamp;
 	})
 	.append ();
+    backgroundGroup.add_argument ("--screen-span")
+	.help ("Comma-separated list of screens to span a single wallpaper across")
+	.action ([this, &lastScreen] (const std::string& value) -> void {
+	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
+		sLog.exception ("Cannot run in both background and window mode");
+	    }
+
+	    this->settings.render.mode = DESKTOP_BACKGROUND;
+
+	    SpanGroup group;
+	    std::string screen;
+	    std::istringstream ss (value);
+
+	    while (std::getline (ss, screen, ',')) {
+		if (screen.empty ()) {
+		    continue;
+		}
+		if (this->settings.general.screenBackgrounds.find (screen)
+		    != this->settings.general.screenBackgrounds.end ()) {
+		    sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
+		}
+		// reject duplicates within this group
+		if (std::find (group.screens.begin (), group.screens.end (), screen) != group.screens.end ()) {
+		    sLog.exception ("--screen-span: duplicate screen name '", screen, "'");
+		}
+		// reject screens already claimed by another span group
+		for (const auto& existing : this->settings.general.spanGroups) {
+		    if (std::find (existing.screens.begin (), existing.screens.end (), screen)
+			!= existing.screens.end ()) {
+			sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
+		    }
+		}
+		group.screens.push_back (screen);
+	    }
+
+	    if (group.screens.size () < 2) {
+		sLog.exception ("--screen-span requires at least two comma-separated screen names");
+	    }
+
+	    group.scaling = this->settings.render.window.scalingMode;
+	    group.clamp = this->settings.render.window.clamp;
+	    this->settings.general.spanGroups.push_back (std::move (group));
+	    // set lastScreen to a synthetic name so --bg/--scaling/--clamp can target this group
+	    lastScreen = "span:" + value;
+	    // register the synthetic name in screenBackgrounds so the rest of the pipeline sees it
+	    this->settings.general.screenBackgrounds[lastScreen] = "";
+	})
+	.append ();
     backgroundGroup.add_argument ("-b", "--bg")
-	.help ("After --screen-root, specifies the background to use for the given screen")
+	.help ("After --screen-root or --screen-span, specifies the background to use")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
 	    this->settings.general.screenBackgrounds[lastScreen] = translateBackground (value);
 	    // set the default background to the last one used
 	    this->settings.general.defaultBackground = translateBackground (value);
+	    // if this targets a span group, update the group's background too
+	    if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
+		this->settings.general.spanGroups.back ().background = translateBackground (value);
+	    }
 	})
 	.append ();
     backgroundGroup.add_argument ("--playlist")
@@ -342,8 +400,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.append ();
     backgroundGroup.add_argument ("--scaling")
 	.help (
-	    "Scaling mode to use when rendering the background, this applies to the previous --window or --screen-root "
-	    "output, or the default background if no other background is specified"
+	    "Scaling mode to use when rendering the background, this applies to the previous --window, --screen-root, "
+	    "or --screen-span output, or the default background if no other background is specified"
 	)
 	.choices ("stretch", "fit", "fill", "default")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
@@ -363,6 +421,10 @@ void ApplicationContext::loadSettingsFromArgv () {
 
 	    if (this->settings.render.mode == DESKTOP_BACKGROUND) {
 		this->settings.general.screenScalings[lastScreen] = mode;
+		// also update span group if targeting one
+		if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
+		    this->settings.general.spanGroups.back ().scaling = mode;
+		}
 	    } else {
 		this->settings.render.window.scalingMode = mode;
 	    }
@@ -370,8 +432,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.append ();
     backgroundGroup.add_argument ("--clamp")
 	.help (
-	    "Clamp mode to use when rendering the background, this applies to the previous --window or --screen-root "
-	    "output, or the default background if no other background is specified"
+	    "Clamp mode to use when rendering the background, this applies to the previous --window, --screen-root, "
+	    "or --screen-span output, or the default background if no other background is specified"
 	)
 	.choices ("clamp", "border", "repeat")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
@@ -389,6 +451,10 @@ void ApplicationContext::loadSettingsFromArgv () {
 
 	    if (this->settings.render.mode == DESKTOP_BACKGROUND) {
 		this->settings.general.screenClamps[lastScreen] = flags;
+		// also update span group if targeting one
+		if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
+		    this->settings.general.spanGroups.back ().clamp = flags;
+		}
 	    } else {
 		this->settings.render.window.clamp = flags;
 	    }
@@ -520,6 +586,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	"    Runs two backgrounds on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
 	"  linux-wallpaperengine --screen-root HDMI-1 --screen-root HDMI-2 2317494988\n"
 	"    Runs the background 2317494988 on two screens, one on HDMI-1 and the other on HDMI-2\n\n"
+	"  linux-wallpaperengine --screen-span HDMI-1,HDMI-2 --bg 2317494988 --scaling fill\n"
+	"    Spans the background 2317494988 across HDMI-1 and HDMI-2 as a single stretched wallpaper\n\n"
     );
 
     try {
