@@ -298,6 +298,8 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
 	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
 	}
 	wl_display_roundtrip (m_waylandContext.display);
+    } else if (!m_context.settings.general.spanGroups.empty ()) {
+	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
     }
 }
 
@@ -354,7 +356,7 @@ void WaylandOpenGLDriver::initGLEW () {
 	if (result == GLEW_ERROR_NO_GLX_DISPLAY) {
 	    sLog.out ("Failed to initialize GLEW, but continuing with EGL context: No GLX display");
 	} else {
-	    const char* error = reinterpret_cast<const char*>(glewGetErrorString (result));
+	    const char* error = reinterpret_cast<const char*> (glewGetErrorString (result));
 	    sLog.error ("Failed to initialize GLEW: ", error ? error : "Unknown error");
 	    sLog.exception ("Cannot continue...");
 	}
