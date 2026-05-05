@@ -16,6 +16,7 @@ extern "C" {
 #undef namespace
 #undef static
 
+#include <algorithm>
 #include <string.h>
 #include <unistd.h>
 
@@ -122,7 +123,7 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	wl_seat_add_listener (driver->getWaylandContext ()->seat, &seatListener, driver);
     } else if (strcmp (interface, zxdg_output_manager_v1_interface.name) == 0) {
 	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
-	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, 3)
+	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
 	);
     }
 }
