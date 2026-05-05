@@ -756,6 +756,8 @@ void WallpaperApplication::prepareOutputs () {
 	    const int y = vp->globalPosition.y;
 	    const int w = vp->viewport.z;
 	    const int h = vp->viewport.w;
+	    sLog.out ("SPAN DEBUG prepareOutputs: screen '", screenName,
+		"' globalPos=(", x, ",", y, ") viewport=", w, "x", h);
 	    minX = std::min (minX, x);
 	    minY = std::min (minY, y);
 	    maxX = std::max (maxX, x + w);
@@ -766,6 +768,8 @@ void WallpaperApplication::prepareOutputs () {
 	    sLog.error ("No viewports found for span group, skipping");
 	    continue;
 	}
+
+	sLog.out ("SPAN DEBUG prepareOutputs: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")");
 
 	WallpaperEngine::Render::CWallpaper::SpanInfo spanInfo;
 	spanInfo.totalBounds = { minX, minY, maxX - minX, maxY - minY };

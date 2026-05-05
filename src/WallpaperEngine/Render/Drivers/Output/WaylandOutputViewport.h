@@ -16,6 +16,8 @@
 
 struct zwlr_layer_shell_v1;
 struct zwlr_layer_surface_v1;
+struct zxdg_output_v1;
+struct zxdg_output_manager_v1;
 
 namespace WallpaperEngine::Render::Drivers {
 class WaylandOpenGLDriver;
@@ -50,8 +52,10 @@ namespace Output {
 	wl_cursor* pointer = nullptr;
 	wl_surface* cursorSurface = nullptr;
 	bool callbackInitialized = false;
+	zxdg_output_v1* xdgOutput = nullptr;
 
 	void setupLS ();
+	void setupXdgOutput (zxdg_output_manager_v1* manager);
 
 	/**
 	 * Activates output's context for drawing

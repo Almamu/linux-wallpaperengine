@@ -8,6 +8,7 @@
 #define static
 extern "C" {
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "xdg-output-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
 #include <linux/input-event-codes.h>
 }
@@ -119,6 +120,10 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->seat
 	    = static_cast<wl_seat*> (wl_registry_bind (registry, name, &wl_seat_interface, 1));
 	wl_seat_add_listener (driver->getWaylandContext ()->seat, &seatListener, driver);
+    } else if (strcmp (interface, zxdg_output_manager_v1_interface.name) == 0) {
+	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
+	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, 3)
+	);
     }
 }
 
@@ -272,6 +277,14 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
     if (!m_waylandContext.compositor || !m_waylandContext.shm || !m_waylandContext.layerShell
 	|| this->m_screens.empty ()) {
 	sLog.exception ("Failed to bind to required interfaces");
+    }
+
+    // If xdg-output-manager is available, use it to get logical output positions
+    if (m_waylandContext.xdgOutputManager) {
+	for (const auto& o : this->m_screens) {
+	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	}
+	wl_display_roundtrip (m_waylandContext.display);
     }
 
     initEGL ();
