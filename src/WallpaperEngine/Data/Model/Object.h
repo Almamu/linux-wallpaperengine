@@ -107,9 +107,9 @@ struct ImageData {
     /** Parallax depth used for parallax scrolling */
     UserSettingUniquePtr parallaxDepth;
     /** The color blending mode for this image */
-    int colorBlendMode;
+    UserSettingUniquePtr colorBlendMode;
     /** The brightness of the image */
-    float brightness;
+    UserSettingUniquePtr brightness;
     /** The material in use for this image */
     ModelUniquePtr model;
     /** The effects applied to this image after the material is rendered */
