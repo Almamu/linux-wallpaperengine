@@ -143,6 +143,7 @@ if(BUILD_TESTING)
 endif()
 # try to enable wayland builds when possible
 pkg_check_modules(WAYLAND_SUPPORT wayland-cursor wayland-protocols egl wayland-egl)
+option(ENABLE_KDE_EXPERIMENTAL_FEATURES "Enable KDE-specific Wayland fullscreen detection" OFF)
 
 if(WAYLAND_SUPPORT_FOUND)
     find_program(WaylandScanner NAMES wayland-scanner)
@@ -196,6 +197,15 @@ if(WAYLAND_SUPPORT_FOUND)
         ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h
         ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.c
         ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h)
+
+    if(ENABLE_KDE_EXPERIMENTAL_FEATURES)
+        pkg_check_modules(DBUS REQUIRED dbus-1)
+        include_directories(${DBUS_INCLUDE_DIRS})
+        list(APPEND WAYLAND_LIBRARIES ${DBUS_LIBRARIES})
+        list(APPEND WAYLAND_SOURCES
+            src/WallpaperEngine/Render/Drivers/Detectors/KDEWaylandFullScreenDetector.cpp
+            src/WallpaperEngine/Render/Drivers/Detectors/KDEWaylandFullScreenDetector.h)
+    endif()
 endif()
 
 if(X11_FOUND)
@@ -569,6 +579,10 @@ endif()
 
 if(WAYLAND_SUPPORT_FOUND)
     target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_WAYLAND)
+endif()
+
+if(WAYLAND_SUPPORT_FOUND AND ENABLE_KDE_EXPERIMENTAL_FEATURES)
+    target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_KDE_EXPERIMENTAL_FEATURES)
 endif()
 
 if(WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)

@@ -1,8 +1,13 @@
 #include "WaylandFullScreenDetector.h"
 
+#ifdef ENABLE_KDE_EXPERIMENTAL_FEATURES
+#include "KDEWaylandFullScreenDetector.h"
+#endif
+
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Drivers/VideoFactories.h"
 #include "wlr-foreign-toplevel-management-unstable-v1-protocol.h"
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -84,6 +89,30 @@ namespace {
 	    }
 	}
     }
+
+#ifdef ENABLE_KDE_EXPERIMENTAL_FEATURES
+    bool isRunningUnderKDE () {
+	const char* desktopSession = std::getenv ("DESKTOP_SESSION");
+	if (desktopSession != nullptr) {
+	    std::string_view session (desktopSession);
+	    if (session.find ("kde") != std::string_view::npos || session.find ("plasma") != std::string_view::npos) {
+		return true;
+	    }
+	}
+
+	const char* xdgDesktop = std::getenv ("XDG_SESSION_DESKTOP");
+	if (xdgDesktop != nullptr && std::string_view (xdgDesktop) == "KDE") {
+	    return true;
+	}
+
+	const char* kdeSession = std::getenv ("KDE_FULL_SESSION");
+	if (kdeSession != nullptr && std::string (kdeSession) == "true") {
+	    return true;
+	}
+
+	return false;
+    }
+#endif
 
     bool isRelevant (
 	const WallpaperEngine::Application::ApplicationContext& ctx, const bool fullscreen, const bool activated,
@@ -258,6 +287,15 @@ void WaylandFullScreenDetector::reset () { }
 __attribute__ ((constructor)) void registerWaylandFullscreenDetector () {
     sVideoFactories.registerFullscreenDetector (
 	"wayland", [] (ApplicationContext& context, VideoDriver& driver) -> std::unique_ptr<FullScreenDetector> {
+#ifdef ENABLE_KDE_EXPERIMENTAL_FEATURES
+	    if (isRunningUnderKDE ()) {
+		auto detector = std::make_unique<KDEWaylandFullScreenDetector> (context);
+		if (!detector->isInitialized ()) {
+		    return std::make_unique<WaylandFullScreenDetector> (context);
+		}
+		return detector;
+	    }
+#endif
 	    return std::make_unique<WaylandFullScreenDetector> (context);
 	}
     );
