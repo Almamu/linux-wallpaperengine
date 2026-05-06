@@ -1,7 +1,6 @@
 #include "KDEWaylandFullScreenDetector.h"
 
 #include "WallpaperEngine/Logging/Log.h"
-#include "WallpaperEngine/Render/Drivers/VideoFactories.h"
 
 #include <algorithm>
 #include <cctype>
