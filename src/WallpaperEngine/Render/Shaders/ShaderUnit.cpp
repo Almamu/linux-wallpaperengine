@@ -373,7 +373,14 @@ std::string ShaderUnit::generateLightingV1 () const {
 
 void ShaderUnit::parseComboConfiguration (const std::string& content, const int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Failed to parse combo configuration in shader ", this->m_file, ": ", e.what ());
+	sLog.error ("Content: ", content);
+	return;
+    }
     const auto combo = data.require<std::string> ("combo", "cannot parse combo information");
     // ignore type as it seems to be used only on the editor
     // const auto type = data.find ("type");
@@ -408,7 +415,14 @@ void ShaderUnit::parseComboConfiguration (const std::string& content, const int 
 void ShaderUnit::parseParameterConfiguration (
     const std::string& type, const std::string& name, const std::string& content
 ) {
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Failed to parse parameter configuration in shader ", this->m_file, ": ", e.what ());
+	sLog.error ("Parameter: ", type, " ", name, ", content: ", content);
+	return;
+    }
     const auto material = data.optional ("material");
     const auto defvalue = data.optional ("default");
     // auto range = data.find ("range");

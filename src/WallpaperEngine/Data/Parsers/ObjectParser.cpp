@@ -249,12 +249,14 @@ std::vector<ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (co
 }
 
 ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it, const Project& project) {
+    const auto& properties = project.properties;
+
     return std::make_unique<ImageAnimationLayer> (ImageAnimationLayer {
 	.id = it.require<int> ("id", "Animation layer must have an id"),
-	.rate = it.require<float> ("rate", "Animation layer must have a rate"),
-	.visible = it.user ("visible", project.properties, false),
-	.blend = it.require<float> ("blend", "Animation layer must include blend"),
-	.animation = it.require<int> ("animation", "Animation layer must include an animation"),
+	.rate = it.user ("rate", properties, 1.0f),
+	.visible = it.user ("visible", properties, false),
+	.blend = it.user ("blend", properties, 1.0f),
+	.animation = it.user ("animation", properties, 0),
     });
 }
 

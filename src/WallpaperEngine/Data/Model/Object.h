@@ -82,10 +82,10 @@ struct ImageEffect {
  */
 struct ImageAnimationLayer {
     int id;
-    float rate;
+    UserSettingUniquePtr rate;
     UserSettingUniquePtr visible;
-    float blend;
-    int animation;
+    UserSettingUniquePtr blend;
+    UserSettingUniquePtr animation;
 };
 
 struct ImageData {
