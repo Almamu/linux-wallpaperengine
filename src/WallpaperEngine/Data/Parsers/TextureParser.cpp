@@ -92,6 +92,21 @@ MipmapSharedPtr TextureParser::parseMipmap (const BinaryReader& file, const Text
     return result;
 }
 
+FrameSharedPtr TextureParser::parseFrameV1 (const BinaryReader& file) {
+    auto result = std::make_shared<Frame> ();
+
+    result->frameNumber = file.nextUInt32 ();
+    result->frametime = file.nextFloat ();
+    result->x = static_cast<float> (file.nextUInt32 ());
+    result->y = static_cast<float> (file.nextUInt32 ());
+    result->width1 = static_cast<float> (file.nextUInt32 ());
+    std::ignore = file.nextUInt32 (); // unknown
+    std::ignore = file.nextUInt32 (); // unknown
+    result->height1 = static_cast<float> (file.nextUInt32 ());
+
+    return result;
+}
+
 FrameSharedPtr TextureParser::parseFrame (const BinaryReader& file) {
     auto result = std::make_shared<Frame> ();
 
@@ -195,7 +210,9 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
     // image is animated, keep parsing the rest of the image info
     file.next (magic, 9);
 
-    if (strncmp (magic, "TEXS0002", 9) == 0) {
+    if (strncmp (magic, "TEXS0001", 9) == 0) {
+	header.animatedVersion = AnimatedVersion_TEXS0001;
+    } else if (strncmp (magic, "TEXS0002", 9) == 0) {
 	header.animatedVersion = AnimatedVersion_TEXS0002;
     } else if (strncmp (magic, "TEXS0003", 9) == 0) {
 	header.animatedVersion = AnimatedVersion_TEXS0003;
@@ -211,11 +228,15 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
     }
 
     while (frameCount-- > 0) {
-	header.frames.push_back (parseFrame (file));
+	if (header.animatedVersion == AnimatedVersion_TEXS0001) {
+	    header.frames.push_back (parseFrameV1 (file));
+	} else {
+	    header.frames.push_back (parseFrame (file));
+	}
     }
 
-    // ensure gif width and height is right for TEXS0002
-    if (header.animatedVersion == AnimatedVersion_TEXS0002) {
+    // ensure gif width and height is right for TEXS0001, TEXS0002
+    if (header.animatedVersion == AnimatedVersion_TEXS0001 || header.animatedVersion == AnimatedVersion_TEXS0002) {
 	header.gifWidth = (*header.frames.begin ())->width1;
 	header.gifHeight = (*header.frames.begin ())->height1;
     }

@@ -21,6 +21,7 @@ public:
     );
     static MipmapSharedPtr parseMipmap (const BinaryReader& file, const Texture& header);
     static FrameSharedPtr parseFrame (const BinaryReader& file);
+    static FrameSharedPtr parseFrameV1 (const BinaryReader& file);
 
 private:
     static void parseTextureHeader (Texture& header, const BinaryReader& file);

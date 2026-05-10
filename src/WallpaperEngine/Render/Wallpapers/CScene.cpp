@@ -35,7 +35,33 @@ CScene::CScene (
 
     // detect size if the orthogonal project is auto
     if (scene->camera.projection.isAuto) {
-	// TODO: CALCULATE ORTHOGONAL PROJECTION BASED ON CONTENT'S SIZE HERE
+	glm::vec2 maxExtent = { 0.0f, 0.0f };
+
+	for (const auto& object : scene->objects) {
+	    if (!object->is<Image> ()) {
+		continue;
+	    }
+
+	    const auto* image = object->as<Image> ();
+	    if (!image->origin || !image->origin->value) {
+		continue;
+	    }
+
+	    const glm::vec3 origin = image->origin->value->getVec3 ();
+	    const glm::vec2 halfSize = image->size / 2.0f;
+
+	    maxExtent.x = glm::max (maxExtent.x, glm::abs (origin.x) + halfSize.x);
+	    maxExtent.y = glm::max (maxExtent.y, glm::abs (origin.y) + halfSize.y);
+	}
+
+	if (maxExtent.x > 0.0f && maxExtent.y > 0.0f) {
+	    width = maxExtent.x * 2.0f;
+	    height = maxExtent.y * 2.0f;
+	} else {
+	    width = this->getContext ().getOutput ().getFullWidth ();
+	    height = this->getContext ().getOutput ().getFullHeight ();
+	    sLog.debug ("Auto projection: falling back to screen resolution ", width, "x", height);
+	}
     }
 
     this->m_parallaxDisplacement = { 0, 0 };
@@ -338,7 +364,7 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
     this->m_mousePositionNormalized.y = uvs.vstart + normalizedMouseY * (uvs.vend - uvs.vstart);
 
     // Invert previous normalization of Y to match what the shader expects
-    double mouseY = 1.0 - normalizedMouseY; 
+    double mouseY = 1.0 - normalizedMouseY;
 
     this->m_mousePosition.x = this->m_mousePositionNormalized.x;
     this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);

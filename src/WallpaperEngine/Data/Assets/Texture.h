@@ -19,6 +19,7 @@ enum ContainerVersion {
 
 enum AnimatedVersion {
     AnimatedVersion_UNKNOWN = 0,
+    AnimatedVersion_TEXS0001 = 1,
     AnimatedVersion_TEXS0002 = 2,
     AnimatedVersion_TEXS0003 = 3,
 };

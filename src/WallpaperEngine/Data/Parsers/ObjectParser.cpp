@@ -116,7 +116,7 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .alpha = it.user ("alpha", properties, 1.0f),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
 	    .alignment = it.optional ("alignment", std::string ("center")),
-	    .size = it.optional ("size", glm::vec2 (0.0f)),
+	    .size = it.user ("size", project.properties, glm::vec2 (0.0f))->value->getVec2 (),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
 	    .colorBlendMode = it.optional ("colorBlendMode", 0),
 	    .brightness = it.optional ("brightness", 1.0f),
