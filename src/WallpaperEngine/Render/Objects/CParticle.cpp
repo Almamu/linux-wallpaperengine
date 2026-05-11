@@ -1840,12 +1840,13 @@ void CParticle::setupParticleUniforms () {
 }
 
 void CParticle::updateMatrices () {
-    // Build model matrix from particle object transform
     glm::vec3 scale = m_particle.scale->value->getVec3 ();
     glm::vec3 angles = m_particle.angles->value->getVec3 ();
 
     m_modelMatrix = glm::mat4 (1.0f);
     m_modelMatrix = glm::translate (m_modelMatrix, m_transformedOrigin);
+    this->applyParallaxToModelMatrix ();
+
     // Negate X and Z rotations to account for Y-flipped coordinate system
     m_modelMatrix = glm::rotate (m_modelMatrix, -angles.z, glm::vec3 (0, 0, 1));
     m_modelMatrix = glm::rotate (m_modelMatrix, angles.y, glm::vec3 (0, 1, 0));
@@ -1853,7 +1854,46 @@ void CParticle::updateMatrices () {
     m_modelMatrix = glm::scale (m_modelMatrix, scale);
     m_modelMatrixInverse = glm::inverse (m_modelMatrix);
 
-    // Build model-view-projection matrix
+    this->updateParticleViewProjection ();
+    m_mvpMatrix = m_viewProjectionMatrix * m_modelMatrix;
+    m_mvpMatrixInverse = glm::inverse (m_mvpMatrix);
+
+    m_orientationUp = glm::vec3 (0.0f, 1.0f, 0.0f);
+    m_orientationRight = glm::vec3 (1.0f, 0.0f, 0.0f);
+    m_orientationForward = glm::vec3 (0.0f, 0.0f, 1.0f);
+    m_viewUp = glm::vec3 (0.0f, 1.0f, 0.0f);
+    m_viewRight = glm::vec3 (1.0f, 0.0f, 0.0f);
+
+    this->updateParticleRenderVars ();
+}
+
+void CParticle::applyParallaxToModelMatrix () {
+    if (!getScene ().getScene ().camera.parallax.enabled
+	|| getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+	return;
+    }
+
+    const float parallaxAmount = getScene ().getScene ().camera.parallax.amount->value->getFloat ();
+    glm::vec2 depth = m_particle.parallaxDepth->value->getVec2 ();
+    constexpr float minimumParticleDepth = 0.65f;
+    if (std::abs (depth.x) < minimumParticleDepth) {
+	depth.x = depth.x < 0.0f ? -minimumParticleDepth : minimumParticleDepth;
+    }
+    if (std::abs (depth.y) < minimumParticleDepth) {
+	depth.y = depth.y < 0.0f ? -minimumParticleDepth : minimumParticleDepth;
+    }
+
+    const glm::vec2* displacement = getScene ().getParallaxDisplacement ();
+    const float referenceSize = static_cast<float> (getScene ().getWidth ());
+    const glm::vec3 parallaxOffset {
+	(depth.x + parallaxAmount) * displacement->x * referenceSize,
+	(depth.y + parallaxAmount) * displacement->y * referenceSize,
+	0.0f,
+    };
+    m_modelMatrix = glm::translate (m_modelMatrix, parallaxOffset);
+}
+
+void CParticle::updateParticleViewProjection () {
     if ((m_particle.flags & 4) != 0) {
 	// Perspective particles use a dedicated perspective projection
 	float width = getScene ().getCamera ().getWidth ();
@@ -1880,22 +1920,11 @@ void CParticle::updateMatrices () {
 	// so the cross product produces a visible XY perpendicular direction.
 	m_eyePosition = glm::vec3 (0.0f, 0.0f, 1000.0f);
     }
+}
 
-    m_mvpMatrix = m_viewProjectionMatrix * m_modelMatrix;
-    m_mvpMatrixInverse = glm::inverse (m_mvpMatrix);
-
-    // Orientation vectors for billboard computation (screen-aligned)
-    // These define the coordinate frame that common_particles.h uses for billboard orientation
-    m_orientationUp = glm::vec3 (0.0f, 1.0f, 0.0f);
-    m_orientationRight = glm::vec3 (1.0f, 0.0f, 0.0f);
-    m_orientationForward = glm::vec3 (0.0f, 0.0f, 1.0f);
-    m_viewUp = glm::vec3 (0.0f, 1.0f, 0.0f);
-    m_viewRight = glm::vec3 (1.0f, 0.0f, 0.0f);
-
-    // Update g_RenderVar0: trail parameters (.x=length, .y=maxLength, .z=minLength)
+void CParticle::updateParticleRenderVars () {
     m_renderVar0 = glm::vec4 (m_trailLength, m_trailMaxLength, m_trailMinLength, 0.0f);
 
-    // Update g_RenderVar1: spritesheet params (.x=frameWidth, .y=frameHeight, .z=numFrames, .w=textureRatio)
     if (m_spritesheetFrames > 0 && m_spritesheetCols > 0 && m_spritesheetRows > 0) {
 	float frameWidth = 1.0f / static_cast<float> (m_spritesheetCols);
 	float frameHeight = 1.0f / static_cast<float> (m_spritesheetRows);

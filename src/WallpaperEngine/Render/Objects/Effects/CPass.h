@@ -31,10 +31,11 @@ public:
     );
     ~CPass ();
 
-    void render ();
+	    void render ();
 
-    void setDestination (std::shared_ptr<const CFBO> drawTo);
-    void setInput (std::shared_ptr<const TextureProvider> input);
+	    void setDestination (std::shared_ptr<const CFBO> drawTo);
+	    void setInput (std::shared_ptr<const TextureProvider> input);
+	    void setPreviousInput (std::shared_ptr<const TextureProvider> input);
     void setTexCoord (GLuint texcoord);
     void setPosition (GLuint position);
     void setModelViewProjectionMatrix (const glm::mat4* projection);
@@ -110,6 +111,12 @@ private:
 	const GLuint* value;
     };
 
+    struct TextureAnimationState {
+	uint32_t currentTexture = 0;
+	glm::vec2 translation = { 0.0f, 0.0f };
+	glm::vec4 rotation = { 0.0f, 0.0f, 0.0f, 0.0f };
+    };
+
     static GLuint compileShader (const char* shader, GLuint type);
     void setupShaders ();
     void setupShaderVariables ();
@@ -145,6 +152,11 @@ private:
 
     void setupRenderFramebuffer () const;
     void setupRenderTexture ();
+    [[nodiscard]] std::shared_ptr<const TextureProvider> resolveTexture0 ();
+    [[nodiscard]] TextureAnimationState
+    resolveTextureAnimationState (const std::shared_ptr<const TextureProvider>& texture) const;
+    void bindTextureUnit (int index, const std::shared_ptr<const TextureProvider>& texture, uint32_t frame) const;
+    void bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const TextureProvider>& texture0) const;
     void setupRenderUniforms ();
     void setupRenderReferenceUniforms ();
     void setupRenderAttributes () const;
@@ -180,8 +192,10 @@ private:
 
     Render::Shaders::Shader* m_shader = nullptr;
 
-    std::shared_ptr<const CFBO> m_drawTo = nullptr;
-    std::shared_ptr<const TextureProvider> m_input = nullptr;
+	    std::shared_ptr<const CFBO> m_drawTo = nullptr;
+	    std::shared_ptr<const TextureProvider> m_input = nullptr;
+	    std::shared_ptr<const TextureProvider> m_previousInput = nullptr;
+	    glm::vec4 m_texture0Resolution = {};
 
     GLuint m_programID;
 

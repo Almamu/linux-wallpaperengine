@@ -54,8 +54,13 @@ CFBO::CFBO (
 	sLog.exception ("Framebuffers are not properly set");
     }
 
-    // clear the framebuffer
+    // Layer framebuffers must start transparent. The scene clear color is often opaque,
+    // and using it here makes empty layer areas render as solid rectangles.
+    GLfloat previousClearColor[4] = {};
+    glGetFloatv (GL_COLOR_CLEAR_VALUE, previousClearColor);
+    glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
     glClear (GL_COLOR_BUFFER_BIT);
+    glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 
     this->m_resolution = { textureWidth, textureHeight, realWidth, realHeight };
 

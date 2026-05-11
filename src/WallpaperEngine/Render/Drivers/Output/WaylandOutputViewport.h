@@ -34,6 +34,7 @@ namespace Output {
 
 	wl_output* output = nullptr;
 	glm::ivec2 size = {};
+	glm::ivec2 position = {};
 	uint32_t waylandName;
 	int scale = 1;
 	bool initialized = false;

@@ -6,6 +6,7 @@
 #include "ShaderConstantParser.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/gtc/constants.hpp>
@@ -13,6 +14,28 @@
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
+
+static void bindScriptContext (
+    const UserSettingUniquePtr& setting,
+    int objectId,
+    const std::string& objectName,
+    const std::string& propertyName
+) {
+    if (!setting || !setting->value) {
+	return;
+    }
+
+    auto* scripted = dynamic_cast<ScriptedDynamicValue*> (setting->value.get ());
+    if (!scripted) {
+	return;
+    }
+
+    scripted->setBindingContext (ScriptBindingContext {
+	.objectId = objectId,
+	.objectName = objectName,
+	.propertyName = propertyName,
+    });
+}
 
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
@@ -31,6 +54,9 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	    .dependencies = parseDependencies (it),
 	    .parent = it.optional<int> ("parent"),
 	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+	    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+	    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+	    .groupVisible = it.user ("visible", project.properties, true),
 	};
     } catch (const std::exception& e) {
 	sLog.error ("Error parsing object base data: ", e.what ());
@@ -45,8 +71,22 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 		name = std::to_string (nameIt->get<int> ());
 	    }
 	}
-	basedata = ObjectData { .id = id, .name = name, .dependencies = {} };
+		basedata = ObjectData {
+		    .id = id,
+		    .name = name,
+		    .dependencies = parseDependencies (it),
+		    .parent = it.optional<int> ("parent"),
+		    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+		    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+		    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+	    .groupVisible = it.user ("visible", project.properties, true),
+	};
     }
+
+    bindScriptContext (basedata.origin, basedata.id, basedata.name, "origin");
+    bindScriptContext (basedata.groupScale, basedata.id, basedata.name, "scale");
+    bindScriptContext (basedata.groupAngles, basedata.id, basedata.name, "angles");
+    bindScriptContext (basedata.groupVisible, basedata.id, basedata.name, "visible");
 
     if (imageIt != it.end () && imageIt->is_string ()) {
 	return parseImage (it, project, std::move (basedata), *imageIt);
@@ -55,14 +95,16 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     } else if (particleIt != it.end ()) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
-	sLog.error ("Text objects are not supported yet");
+	return parseText (it, project, std::move (basedata));
     } else if (lightIt != it.end ()) {
 	sLog.error ("Light objects are not supported yet");
     } else {
-	// dump the object for now, might want to change later
-	// TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY
-	// ANYTHING SPECIAL
-	sLog.error ("Unknown object type found: ", it.dump ());
+	if (!it.optional ("solid", false)) {
+	    // dump the object for now, might want to change later
+	    // TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY
+	    // ANYTHING SPECIAL
+	    sLog.error ("Unknown object type found: ", it.dump ());
+	}
     }
 
     return std::make_unique<Object> (std::move (basedata));
@@ -101,6 +143,51 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
     );
 }
 
+TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
+    auto text = it.user ("text", project.properties, std::string (""));
+    auto visible = it.user ("visible", project.properties, true);
+    auto color = it.user ("color", project.properties, glm::vec3 (1.0f));
+    auto alpha = it.user ("alpha", project.properties, 1.0f);
+    auto scale = it.user ("scale", project.properties, glm::vec3 (1.0f));
+    auto angles = it.user ("angles", project.properties, glm::vec3 (0.0f));
+    auto pointSize = it.user ("pointsize", project.properties, 12.0f);
+
+    bindScriptContext (text, base.id, base.name, "text");
+    bindScriptContext (visible, base.id, base.name, "visible");
+    bindScriptContext (color, base.id, base.name, "color");
+    bindScriptContext (alpha, base.id, base.name, "alpha");
+    bindScriptContext (scale, base.id, base.name, "scale");
+    bindScriptContext (angles, base.id, base.name, "angles");
+    bindScriptContext (pointSize, base.id, base.name, "pointsize");
+
+    if (color && color->value && color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
+	color->value->update (glm::vec3 (color->value->getIVec3 ()) / 255.0f);
+    }
+
+    std::string alignment = it.optional<std::string> ("alignment", "");
+    if (alignment.empty ()) {
+	const std::string horizontal = it.optional<std::string> ("horizontalalign", "center");
+	const std::string vertical = it.optional<std::string> ("verticalalign", "center");
+	alignment = horizontal + " " + vertical;
+    }
+
+    return std::make_unique<Text> (
+	std::move (base),
+	TextData {
+	    .text = std::move (text),
+	    .visible = std::move (visible),
+	    .color = std::move (color),
+	    .alpha = std::move (alpha),
+	    .scale = std::move (scale),
+	    .angles = std::move (angles),
+	    .pointSize = std::move (pointSize),
+	    .font = it.optional<std::string> ("font", ""),
+	    .alignment = alignment,
+	    .maxWidth = it.optional ("maxwidth", 0.0f),
+	}
+    );
+}
+
 ImageUniquePtr
 ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image) {
     const auto& properties = project.properties;
@@ -132,6 +219,36 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
     } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
 	result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
+    }
+
+    bindScriptContext (result->scale, result->id, result->name, "scale");
+    bindScriptContext (result->angles, result->id, result->name, "angles");
+    bindScriptContext (result->visible, result->id, result->name, "visible");
+    bindScriptContext (result->alpha, result->id, result->name, "alpha");
+    bindScriptContext (result->color, result->id, result->name, "color");
+    bindScriptContext (result->parallaxDepth, result->id, result->name, "parallaxDepth");
+
+    const auto instance = it.optional ("instance");
+    if (instance.has_value () && instance->is_object () && !result->model->material->passes.empty ()) {
+	auto& firstPass = **result->model->material->passes.begin ();
+	const auto instanceTextures = instance->optional ("textures");
+	if (instanceTextures.has_value ()) {
+	    const auto parsed = parseTextureMap (*instanceTextures);
+	    firstPass.textures.insert (parsed.begin (), parsed.end ());
+	}
+	const auto instanceUserTextures = instance->optional ("usertextures");
+	if (instanceUserTextures.has_value ()) {
+	    const auto parsed = parseTextureMap (*instanceUserTextures);
+	    firstPass.usertextures.insert (parsed.begin (), parsed.end ());
+	}
+    }
+
+    for (const auto& effect : result->effects) {
+	for (const auto& pass : effect->passOverrides) {
+	    for (const auto& [name, constant] : pass->constants) {
+		bindScriptContext (constant, result->id, result->name, name);
+	    }
+	}
     }
 
     return result;
@@ -205,6 +322,11 @@ TextureMap ObjectParser::parseTextureMap (const JSON& it) {
 
 	if (cur.is_null ()) {
 	    continue;
+	} else if (cur.is_object ()) {
+	    const auto nameIt = cur.find ("name");
+	    if (nameIt != cur.end () && nameIt->is_string ()) {
+		result.emplace (textureIndex, nameIt->get<std::string> ());
+	    }
 	} else {
 	    std::string texName = cur;
 	    if (!texName.empty ()) {
@@ -510,7 +632,7 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	    flags = flagsIt->get<uint32_t> ();
 	}
 
-	return std::make_unique<Particle> (
+	auto result = std::make_unique<Particle> (
 	    std::move (base),
 	    ParticleData {
 		.scale = it.user ("scale", properties, glm::vec3 (1.0f)),
@@ -533,6 +655,11 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 		.instanceOverride = std::move (instanceOverride),
 	    }
 	);
+	bindScriptContext (result->scale, result->id, result->name, "scale");
+	bindScriptContext (result->angles, result->id, result->name, "angles");
+	bindScriptContext (result->visible, result->id, result->name, "visible");
+	bindScriptContext (result->parallaxDepth, result->id, result->name, "parallaxDepth");
+	return result;
     } catch (nlohmann::json::exception& e) {
 	sLog.error ("Error parsing particle '", base.name, "': ", e.what ());
 	sLog.error ("Particle JSON: ", it.dump ());

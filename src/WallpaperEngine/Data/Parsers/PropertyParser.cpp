@@ -32,6 +32,9 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name
     if (type == "textinput") {
 	return parseTextInput (it, name);
     }
+    if (type == "usershortcut") {
+	return parseTextInput (it, name);
+    }
 
     if (type.has_value () && type != "group") {
 	// show the error and ignore this property
