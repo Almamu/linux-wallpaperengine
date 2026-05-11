@@ -115,11 +115,14 @@ public:
 	    copy = std::to_string (((color >> 16) & 0xFF) / 255.0) + " "
 		+ std::to_string (((color >> 8) & 0xFF) / 255.0) + " " + std::to_string ((color & 0xFF) / 255.0);
 	} else if (copy.find ('.') == std::string::npos) {
-	    // integer vector, convert it to float vector
+	    // Integer-looking values may already be normalized Wallpaper Engine colors ("1 0 1").
+	    // Only treat them as 0-255 colors when at least one channel is outside the normalized range.
 	    const auto intcolor = VectorBuilder::parse<glm::ivec3> (copy);
 
-	    copy = std::to_string (intcolor.r / 255.0) + " " + std::to_string (intcolor.g / 255.0) + " "
-		+ std::to_string (intcolor.b / 255.0);
+	    if (intcolor.r > 1 || intcolor.g > 1 || intcolor.b > 1) {
+		copy = std::to_string (intcolor.r / 255.0) + " " + std::to_string (intcolor.g / 255.0) + " "
+		    + std::to_string (intcolor.b / 255.0);
+	    }
 	}
 
 	// finally parse the string as a float vector

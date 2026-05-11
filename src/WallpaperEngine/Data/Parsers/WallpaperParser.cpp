@@ -39,8 +39,8 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
             .project = project
         }, SceneData {
             .colors = {
-                .ambient  = general.optional ("ambientcolor", glm::vec3 (0.0f)),
-                .skylight = general.optional ("skylightcolor", glm::vec3 (0.0f)),
+                .ambient = general.user ("ambientcolor", properties, glm::vec3 (0.0f))->value->getVec3 (),
+                .skylight = general.user ("skylightcolor", properties, glm::vec3 (0.0f))->value->getVec3 (),
                 .clear = general.user ("clearcolor", properties, glm::vec3 (1.0f)),
             },
             .camera = {

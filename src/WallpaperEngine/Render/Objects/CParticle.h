@@ -166,6 +166,9 @@ protected:
     void setupGeometryCallbacks ();
     void setupParticleUniforms ();
     void updateMatrices ();
+    void applyParallaxToModelMatrix ();
+    void updateParticleViewProjection ();
+    void updateParticleRenderVars ();
 
 private:
     const Particle& m_particle;

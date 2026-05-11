@@ -25,6 +25,10 @@ struct ObjectData {
     std::optional<int> parent;
     /** The point of origin of the object */
     UserSettingUniquePtr origin;
+    /** Transform fields for generic scene/group objects. Typed objects keep their own transform fields. */
+    UserSettingUniquePtr groupScale;
+    UserSettingUniquePtr groupAngles;
+    UserSettingUniquePtr groupVisible;
 };
 
 /**
@@ -123,6 +127,26 @@ public:
     explicit Image (ObjectData data, ImageData imageData) noexcept :
 	Object (std::move (data)), ImageData (std::move (imageData)) { };
     ~Image () override = default;
+};
+
+struct TextData {
+    UserSettingUniquePtr text;
+    UserSettingUniquePtr visible;
+    UserSettingUniquePtr color;
+    UserSettingUniquePtr alpha;
+    UserSettingUniquePtr scale;
+    UserSettingUniquePtr angles;
+    UserSettingUniquePtr pointSize;
+    std::string font;
+    std::string alignment;
+    float maxWidth;
+};
+
+class Text : public Object, public TextData {
+public:
+    explicit Text (ObjectData data, TextData textData) noexcept :
+	Object (std::move (data)), TextData (std::move (textData)) { };
+    ~Text () override = default;
 };
 
 struct SoundData {

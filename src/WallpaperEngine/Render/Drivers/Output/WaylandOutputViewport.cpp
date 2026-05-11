@@ -34,7 +34,8 @@ static void geometry (
     void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
     const char* make, const char* model, int32_t transform
 ) {
-    // ignored
+    const auto viewport = static_cast<WaylandOutputViewport*> (data);
+    viewport->position = { x, y };
 }
 
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
@@ -116,7 +117,8 @@ WaylandOutputViewport::WaylandOutputViewport (
 void WaylandOutputViewport::setupLS () {
     surface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM,
+	// Background layer lets desktop shells keep icons and panels above the wallpaper surface.
+	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
 	"linux-wallpaperengine"
     );
 

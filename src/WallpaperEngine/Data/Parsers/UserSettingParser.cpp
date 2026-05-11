@@ -4,8 +4,59 @@
 #include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
 
+#include <cstdlib>
+
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
+
+namespace {
+bool isVectorString (const std::string& str) {
+    if (str.find (' ') == std::string::npos) {
+	return false;
+    }
+
+    const auto parts = VectorBuilder::preparseSize (str);
+    if (parts < 2 || parts > 4) {
+	return false;
+    }
+
+    const char* ptr = str.c_str ();
+    for (int i = 0; i < parts; i++) {
+	char* end = nullptr;
+	std::strtof (ptr, &end);
+	if (end == ptr) {
+	    return false;
+	}
+	ptr = end;
+	while (*ptr == ' ') {
+	    ptr++;
+	}
+    }
+
+    return *ptr == '\0';
+}
+
+bool shouldParseStringAsVector (const PropertySharedPtr& property, const std::string& str) {
+    if (!isVectorString (str)) {
+	return false;
+    }
+    if (property == nullptr) {
+	return true;
+    }
+
+    switch (property->getType ()) {
+	case DynamicValue::UnderlyingType::Vec2:
+	case DynamicValue::UnderlyingType::Vec3:
+	case DynamicValue::UnderlyingType::Vec4:
+	case DynamicValue::UnderlyingType::IVec2:
+	case DynamicValue::UnderlyingType::IVec3:
+	case DynamicValue::UnderlyingType::IVec4:
+	    return true;
+	default:
+	    return false;
+    }
+}
+}
 
 UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties) {
     auto value = std::make_unique<DynamicValue> ();
@@ -52,13 +103,16 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
     if (valueIt.is_string ()) {
 	std::string str = valueIt;
 
-	// TODO: VALIDATE THIS IS RIGHT?
-	if (int size = VectorBuilder::preparseSize (str); size == 2) {
-	    value->update (static_cast<glm::vec2> (valueIt));
-	} else if (size == 3) {
-	    value->update (static_cast<glm::vec3> (valueIt));
+	if (!shouldParseStringAsVector (property, str)) {
+	    value->update (str);
 	} else {
-	    value->update (static_cast<glm::vec4> (valueIt));
+	    if (int size = VectorBuilder::preparseSize (str); size == 2) {
+		value->update (static_cast<glm::vec2> (valueIt));
+	    } else if (size == 3) {
+		value->update (static_cast<glm::vec3> (valueIt));
+	    } else {
+		value->update (static_cast<glm::vec4> (valueIt));
+	    }
 	}
     } else if (valueIt.is_number_integer ()) {
 	value->update (valueIt.get<int> ());
@@ -74,6 +128,17 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
     // If the setting has a script, wrap the base value in a ScriptedDynamicValue
     if (scriptSource.has_value ()) {
 	std::map<std::string, DynamicValueUniquePtr> scriptProps;
+
+	for (const auto& [key, prop] : properties) {
+	    if (!prop) {
+		continue;
+	    }
+
+	    auto propValue = std::make_unique<DynamicValue> ();
+	    propValue->update (*prop);
+	    propValue->connect (prop.get ());
+	    scriptProps[key] = std::move (propValue);
+	}
 
 	if (scriptPropsJson.has_value () && scriptPropsJson->is_object ()) {
 	    for (const auto& [key, propData] : scriptPropsJson->items ()) {
