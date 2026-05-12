@@ -103,10 +103,13 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	basedata = ObjectData {
 	    .id = it.require<int> ("id", "Object must have an id"),
 	    .name = it.require<std::string> ("name", "Object must have a name"),
-	    .dependencies = parseDependencies (it),
-	    .parent = it.optional<int> ("parent"),
-	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
-	};
+		.dependencies = parseDependencies (it),
+		.parent = it.optional<int> ("parent"),
+		.origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+		.groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+		.groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+		.groupVisible = it.user ("visible", project.properties, true),
+	    };
     } catch (const std::exception& e) {
 	sLog.error ("Error parsing object base data: ", e.what ());
 	const auto idIt = it.find ("id");
@@ -120,8 +123,15 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 		name = std::to_string (nameIt->get<int> ());
 	    }
 	}
-	basedata = ObjectData { .id = id, .name = name, .dependencies = {} };
-    }
+	    basedata = ObjectData {
+		.id = id,
+		.name = name,
+		.dependencies = {},
+		.groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+		.groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+		.groupVisible = it.user ("visible", project.properties, true),
+	    };
+	}
 
     if (imageIt != it.end () && imageIt->is_string ()) {
 	return parseImage (it, project, std::move (basedata), *imageIt);

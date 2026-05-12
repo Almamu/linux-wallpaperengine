@@ -5,6 +5,8 @@
 #include "WallpaperEngine/Input/MouseInput.h"
 
 #include <glm/vec2.hpp>
+#include <chrono>
+#include <optional>
 
 namespace WallpaperEngine::Render::Drivers {
 class WaylandOpenGLDriver;
@@ -39,12 +41,15 @@ public:
     [[nodiscard]] MouseClickStatus rightClick () const override;
 
 private:
+    [[nodiscard]] std::optional<glm::dvec2> queryHyprlandCursorPosition () const;
+
     /**
      * Wayland: Driver
      */
     const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& m_waylandDriver;
 
     glm::dvec2 m_pos = {};
+    std::chrono::steady_clock::time_point m_lastHyprlandQuery = {};
 };
 } // namespace WallpaperEngine::Input::Drivers
 
