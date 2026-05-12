@@ -230,8 +230,8 @@ CImage::~CImage () {
     this->m_texture->decrementUsageCount ();
 
     // delete passes first as they depend on the image's data
-    for (auto* pass : this->m_passes) {
-	delete pass;
+    for (const auto& entry : this->m_passes) {
+	delete entry.pass;
     }
 
     this->m_passes.clear ();
@@ -258,38 +258,27 @@ void CImage::setup () {
 		if(this->m_image.effects.empty ()) {
 			return;
 		}
-
-		// Some have attempted to declare effects with visible set to false.
-		bool allEffectsInvisible = true;
-		for (const auto& cur : this->m_image.effects) {
-			if (cur->visible->value->getBool()) {
-				allEffectsInvisible = false;
-				break;
-			}
-		}
-
-		if (allEffectsInvisible) {
-			return;
-		}
+		// Build passes even when every effect is currently invisible.
+		// The render loop checks visible->value each frame, so a later
+		// user-property change (e.g. toggling `vhs` on) can enable the
+		// effect without recreating the scene.
     }
 
     // copy pass to the composite layer
     for (const auto& cur : this->getImage ().model->material->passes) {
-	this->m_passes.push_back (
-	    new CPass (*this, std::make_shared<FBOProvider> (this), *cur, std::nullopt, std::nullopt, std::nullopt)
-	);
+	this->m_passes.push_back ({
+	    new CPass (*this, std::make_shared<FBOProvider> (this), *cur, std::nullopt, std::nullopt, std::nullopt),
+	    nullptr, // always-run: this is the image's base material, not an effect
+	});
     }
 
     // prepare the passes list
     if (!this->getImage ().effects.empty ()) {
-	// generate the effects used by this material
+	// Build passes for every effect regardless of its initial visible
+	// state. The render loop checks visible->value each frame and skips
+	// invisible effects, so changing the backing user property at runtime
+	// live-enables/disables the effect without recreating the scene.
 	for (const auto& cur : this->m_image.effects) {
-	    // do not add non-visible effects, this might need some adjustements tho as some effects might not be
-	    // visible but affect the output of the image...
-	    if (!cur->visible->value->getBool ()) {
-		continue;
-	    }
-
 	    const auto fboProvider = std::make_shared<FBOProvider> (this);
 
 	    // create all the fbos for this effect
@@ -339,9 +328,12 @@ void CImage::setup () {
 		    const auto& config = *this->m_virtualPassess.emplace_back (std::move (virtualPass));
 
 		    // build a pass for a copy shader
-		    this->m_passes.push_back (new CPass (
-			*this, fboProvider, config, std::nullopt, std::nullopt, (*curEffect)->target.value ()
-		    ));
+		    this->m_passes.push_back ({
+			new CPass (
+			    *this, fboProvider, config, std::nullopt, std::nullopt, (*curEffect)->target.value ()
+			),
+			cur.get (),
+		    });
 		} else {
 		    for (auto& pass : (*curEffect)->material.value ()->passes) {
 			const auto override = curOverride != endOverride
@@ -351,9 +343,10 @@ void CImage::setup () {
 			    ? *(*curEffect)->target
 			    : std::optional<std::reference_wrapper<std::string>> (std::nullopt);
 
-			this->m_passes.push_back (
-			    new CPass (*this, fboProvider, *pass, override, (*curEffect)->binds, target)
-			);
+			this->m_passes.push_back ({
+			    new CPass (*this, fboProvider, *pass, override, (*curEffect)->binds, target),
+			    cur.get (),
+			});
 		    }
 
 		    if (curOverride != endOverride) {
@@ -377,10 +370,14 @@ void CImage::setup () {
             .textures = {},
         });
 
-	this->m_passes.push_back (new CPass (
-	    *this, std::make_shared<FBOProvider> (this), **this->m_materials.colorBlending.material->passes.begin (),
-	    *this->m_materials.colorBlending.override, std::nullopt, std::nullopt
-	));
+	this->m_passes.push_back ({
+	    new CPass (
+		*this, std::make_shared<FBOProvider> (this),
+		**this->m_materials.colorBlending.material->passes.begin (),
+		*this->m_materials.colorBlending.override, std::nullopt, std::nullopt
+	    ),
+	    nullptr, // always-run: the color-blend pass isn't user-toggleable
+	});
     }
 
     // if there's more than one pass the blendmode has to be moved from the beginning to the end
@@ -388,8 +385,8 @@ void CImage::setup () {
 	const auto first = this->m_passes.begin ();
 	const auto last = this->m_passes.rbegin ();
 
-	(*last)->setBlendingMode ((*first)->getBlendingMode ());
-	(*first)->setBlendingMode (BlendingMode_Normal);
+	last->pass->setBlendingMode (first->pass->getBlendingMode ());
+	first->pass->setBlendingMode (BlendingMode_Normal);
     }
 
     CRenderable::setup ();
@@ -399,20 +396,31 @@ void CImage::setup () {
 }
 
 void CImage::setupPasses () {
-    // do a pass on everything and setup proper inputs and values
+    // do a pass on everything and setup proper inputs and values.
+    //
+    // Iterate only the *visible* pass entries so pin-pong destinations and
+    // the "last pass writes to scene FBO" flag reflect the currently-
+    // enabled effect set. Called per-frame from render() so toggling an
+    // effect's user property on/off immediately re-wires the chain.
     std::shared_ptr<const CFBO> drawTo = this->m_currentMainFBO;
     std::shared_ptr<const TextureProvider> asInput = this->getTexture ();
     GLuint texcoord = this->getTexCoordCopy ();
 
-    auto cur = this->m_passes.begin ();
-    auto end = this->m_passes.end ();
+    std::vector<PassEntry*> visibleEntries;
+    visibleEntries.reserve (this->m_passes.size ());
+    for (auto& entry : this->m_passes) {
+	if (entry.effect != nullptr && !entry.effect->visible->value->getBool ()) {
+	    continue;
+	}
+	visibleEntries.push_back (&entry);
+    }
+
+    auto cur = visibleEntries.begin ();
+    auto end = visibleEntries.end ();
     bool first = true;
 
     for (; cur != end; ++cur) {
-	// TODO: PROPERLY CHECK EFFECT'S VISIBILITY AND TAKE IT INTO ACCOUNT
-	// TODO: THIS REQUIRES ON-THE-FLY EVALUATION OF EFFECTS VISIBILITY TO FIGURE OUT
-	// TODO: WHICH ONE IS THE LAST + A FEW OTHER THINGS
-	Effects::CPass* pass = *cur;
+	Effects::CPass* pass = (*cur)->pass;
 	std::shared_ptr<const CFBO> prevDrawTo = drawTo;
 	GLuint spacePosition = (first) ? this->getCopySpacePosition () : this->getPassSpacePosition ();
 	const glm::mat4* projection = (first) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
@@ -486,7 +494,14 @@ void CImage::render () {
 	return;
     }
 
-    // TODO: DO NOT DRAW IMAGES THAT ARE NOT VISIBLE AND NOTHING DEPENDS ON THEM
+    // Skip invisible images so toggling a combo/user property that drives
+    // the image's `visible` flag (e.g. a version switcher) live-hides or
+    // live-shows the object without a respawn. The propagation from the
+    // combo's UserSetting to the conditional bool happens in DynamicValue.
+    // TODO: NOTHING-DEPENDS-ON-IT GATE — for now we always skip invisible.
+    if (!this->getImage ().visible->value->getBool ()) {
+	return;
+    }
 
     glColorMask (true, true, true, true);
 
@@ -506,14 +521,28 @@ void CImage::render () {
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
 #endif /* DEBUG */
 
-    auto cur = this->m_passes.begin ();
+    // Re-walk the pass chain each frame with current visibility so:
+    //   - destinations (pin-pong FBOs, scene FBO on the last-visible pass)
+    //     reflect whichever effects are currently toggled on
+    //   - the alpha-mask-off on the last pass matches what actually draws
+    // Setup already compiled shaders and allocated FBOs; this just re-points
+    // sources/destinations per frame.
+    this->setupPasses ();
 
-    for (const auto end = this->m_passes.end (); cur != end; ++cur) {
-	if (std::next (cur) == end) {
+    std::vector<Effects::CPass*> visible;
+    visible.reserve (this->m_passes.size ());
+    for (const auto& entry : this->m_passes) {
+	if (entry.effect != nullptr && !entry.effect->visible->value->getBool ()) {
+	    continue;
+	}
+	visible.push_back (entry.pass);
+    }
+
+    for (size_t i = 0; i < visible.size (); ++i) {
+	if (i + 1 == visible.size ()) {
 	    glColorMask (true, true, true, false);
 	}
-
-	(*cur)->render ();
+	visible[i]->render ();
     }
 
 #if !NDEBUG

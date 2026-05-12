@@ -90,7 +90,19 @@ private:
     std::vector<CEffect*> m_effects = {};
     Effects::CMaterial* m_material = nullptr;
     Effects::CMaterial* m_colorBlendMaterial = nullptr;
-    std::vector<Effects::CPass*> m_passes = {};
+    /**
+     * Each pass carries an optional reference to the ImageEffect that
+     * spawned it. Render checks effect->visible per-frame and skips
+     * invisible ones, so changing the backing user property at runtime
+     * live-enables/disables the effect without reloading the scene.
+     * A nullptr effect marks a pass that always runs (base material +
+     * color blend).
+     */
+    struct PassEntry {
+	Effects::CPass* pass;
+	const ImageEffect* effect; // may be null
+    };
+    std::vector<PassEntry> m_passes = {};
     std::vector<MaterialPassUniquePtr> m_virtualPassess = {};
 
     glm::vec4 m_pos = {};
