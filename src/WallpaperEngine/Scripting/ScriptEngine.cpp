@@ -6,10 +6,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <ctime>
 #include <cstring>
+#include <future>
 #include <optional>
 #include <poll.h>
 #include <signal.h>
@@ -116,8 +118,14 @@ bool readFirstLineUntil (
 	if (pollResult == 0) {
 	    return false;
 	}
-	if (pollResult < 0 || (readPoll.revents & (POLLERR | POLLNVAL))) {
-	    return true;
+	if (pollResult < 0) {
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    return false;
+	}
+	if (readPoll.revents & (POLLERR | POLLNVAL)) {
+	    return false;
 	}
 	if (!(readPoll.revents & POLLIN)) {
 	    return (readPoll.revents & POLLHUP) != 0;
@@ -154,14 +162,14 @@ bool waitForProcessUntil (pid_t pid, const std::chrono::steady_clock::time_point
     return false;
 }
 
-std::string processReadFirstLine (const std::string& program, const std::vector<std::string>& args) {
+std::optional<std::string> processReadFirstLine (const std::string& program, const std::vector<std::string>& args) {
     constexpr auto timeout = std::chrono::milliseconds (300);
     const auto deadline = std::chrono::steady_clock::now () + timeout;
 
     int outputFd = -1;
     const auto pid = spawnProcessWithStdout (program, args, outputFd);
     if (!pid.has_value ()) {
-	return {};
+	return std::string {};
     }
 
     std::string output;
@@ -170,10 +178,10 @@ std::string processReadFirstLine (const std::string& program, const std::vector<
 
     int status = 0;
     if (!readCompleted || !waitForProcessUntil (*pid, deadline, status)) {
-	return {};
+	return std::nullopt;
     }
     if (!WIFEXITED (status) || WEXITSTATUS (status) != 0) {
-	return {};
+	return std::string {};
     }
 
     return trimTrailingNewlines (output);
@@ -235,6 +243,10 @@ ScriptEngine::ScriptEngine () {
 }
 
 ScriptEngine::~ScriptEngine () {
+    if (this->m_mediaPollFuture.valid ()) {
+	this->m_mediaPollFuture.wait ();
+    }
+
     if (this->m_context) {
 	for (const auto& module : this->m_modules | std::views::values) {
 	    JS_FreeValue (this->m_context, module);
@@ -526,6 +538,41 @@ static void setObjectPropertyFromDynamicValue (JSContext* ctx, JSValue obj, cons
 		ctx, obj, name,
 		constructVectorObject (
 		    ctx, "Vec4", { value.getVec4 ().x, value.getVec4 ().y, value.getVec4 ().z, value.getVec4 ().w }
+		)
+	    );
+	    break;
+	case DynamicValue::IVec2:
+	    JS_SetPropertyStr (
+		ctx, obj, name,
+		constructVectorObject (
+		    ctx, "Vec2", { static_cast<double> (value.getIVec2 ().x), static_cast<double> (value.getIVec2 ().y) }
+		)
+	    );
+	    break;
+	case DynamicValue::IVec3:
+	    JS_SetPropertyStr (
+		ctx, obj, name,
+		constructVectorObject (
+		    ctx, "Vec3",
+		    {
+			static_cast<double> (value.getIVec3 ().x),
+			static_cast<double> (value.getIVec3 ().y),
+			static_cast<double> (value.getIVec3 ().z),
+		    }
+		)
+	    );
+	    break;
+	case DynamicValue::IVec4:
+	    JS_SetPropertyStr (
+		ctx, obj, name,
+		constructVectorObject (
+		    ctx, "Vec4",
+		    {
+			static_cast<double> (value.getIVec4 ().x),
+			static_cast<double> (value.getIVec4 ().y),
+			static_cast<double> (value.getIVec4 ().z),
+			static_cast<double> (value.getIVec4 ().w),
+		    }
 		)
 	    );
 	    break;
@@ -1043,57 +1090,82 @@ static DynamicValueUniquePtr currentBoundValue (
 }
 
 void ScriptEngine::refreshMediaState () {
+    auto buildMediaState = [] () -> std::optional<MediaState> {
+	const auto line = processReadFirstLine (
+	    "playerctl",
+	    { "metadata", "--format", "{{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{position}}\t{{mpris:artUrl}}" }
+	);
+
+	if (!line.has_value ()) {
+	    return std::nullopt;
+	}
+
+	MediaState next;
+	if (line->empty ()) {
+	    next.available = false;
+	    next.playbackState = 0;
+	    next.status = "Stopped";
+	    return next;
+	}
+
+	const auto parts = splitTabs (*line);
+	next.available = true;
+	next.status = parts.size () > 0 ? parts[0] : "";
+	next.title = parts.size () > 1 ? parts[1] : "";
+	next.artist = parts.size () > 2 ? parts[2] : "";
+	next.duration = (parts.size () > 3 ? parseDoubleOrZero (parts[3]) : 0.0) / 1000000.0;
+	next.position = (parts.size () > 4 ? parseDoubleOrZero (parts[4]) : 0.0) / 1000000.0;
+	next.artUrl = parts.size () > 5 ? parts[5] : "";
+
+	if (next.status == "Playing") {
+	    next.playbackState = 1;
+	} else if (next.status == "Paused") {
+	    next.playbackState = 2;
+	} else {
+	    next.playbackState = 0;
+	}
+
+	return next;
+    };
+
+    if (this->m_mediaPollFuture.valid ()
+	&& this->m_mediaPollFuture.wait_for (std::chrono::milliseconds (0)) == std::future_status::ready) {
+	try {
+	    auto next = this->m_mediaPollFuture.get ();
+	    if (next.has_value ()) {
+		this->m_mediaState = std::move (*next);
+		if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
+		    if (!this->m_mediaState.available) {
+			sLog.out ("Media debug: no playerctl media state");
+		    } else {
+			sLog.out (
+			    "Media debug: status=", this->m_mediaState.status,
+			    " title=", this->m_mediaState.title,
+			    " artist=", this->m_mediaState.artist,
+			    " duration=", this->m_mediaState.duration,
+			    " position=", this->m_mediaState.position
+			);
+		    }
+		}
+	    }
+	} catch (const std::exception& e) {
+	    if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
+		sLog.out ("Media debug: playerctl media poll failed: ", e.what ());
+	    }
+	}
+    }
+
+    if (this->m_mediaPollFuture.valid ()) {
+	return;
+    }
+
     const auto now = std::chrono::steady_clock::now ();
     if (this->m_lastMediaPoll.time_since_epoch ().count () != 0
 	&& now - this->m_lastMediaPoll < std::chrono::milliseconds (750)) {
 	return;
     }
     this->m_lastMediaPoll = now;
-
-    const std::string line = processReadFirstLine (
-	"playerctl",
-	{ "metadata", "--format", "{{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{position}}\t{{mpris:artUrl}}" }
-    );
-
-    MediaState next;
-    if (line.empty ()) {
-	next.available = false;
-	next.playbackState = 0;
-	next.status = "Stopped";
-	this->m_mediaState = std::move (next);
-	if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
-	    sLog.out ("Media debug: no playerctl media state");
-	}
-	return;
-    }
-
-    const auto parts = splitTabs (line);
-    next.available = true;
-    next.status = parts.size () > 0 ? parts[0] : "";
-    next.title = parts.size () > 1 ? parts[1] : "";
-    next.artist = parts.size () > 2 ? parts[2] : "";
-    next.duration = (parts.size () > 3 ? parseDoubleOrZero (parts[3]) : 0.0) / 1000000.0;
-    next.position = (parts.size () > 4 ? parseDoubleOrZero (parts[4]) : 0.0) / 1000000.0;
-    next.artUrl = parts.size () > 5 ? parts[5] : "";
-
-    if (next.status == "Playing") {
-	next.playbackState = 1;
-    } else if (next.status == "Paused") {
-	next.playbackState = 2;
-    } else {
-	next.playbackState = 0;
-    }
-
-    this->m_mediaState = std::move (next);
-    if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
-	sLog.out (
-	    "Media debug: status=", this->m_mediaState.status,
-	    " title=", this->m_mediaState.title,
-	    " artist=", this->m_mediaState.artist,
-	    " duration=", this->m_mediaState.duration,
-	    " position=", this->m_mediaState.position
-	);
-    }
+    this->m_mediaPollFuture = std::async (std::launch::async, buildMediaState);
 }
 
 static JSValue makeVec3Object (JSContext* ctx, float x, float y, float z) {

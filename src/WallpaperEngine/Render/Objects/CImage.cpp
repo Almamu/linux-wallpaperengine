@@ -550,11 +550,15 @@ void CImage::setupPuppetGeometryCallback (Effects::CPass* pass) const {
 	    }
 	},
 	[this] () {
-	    GLfloat previousClearColor[4] = {};
-	    glGetFloatv (GL_COLOR_CLEAR_VALUE, previousClearColor);
-	    glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
-	    glClear (GL_COLOR_BUFFER_BIT);
-	    glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
+	    GLint currentFramebuffer = 0;
+	    glGetIntegerv (GL_DRAW_FRAMEBUFFER_BINDING, &currentFramebuffer);
+	    if (currentFramebuffer != static_cast<GLint> (this->getScene ().getFBO ()->getFramebuffer ())) {
+		GLfloat previousClearColor[4] = {};
+		glGetFloatv (GL_COLOR_CLEAR_VALUE, previousClearColor);
+		glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
+		glClear (GL_COLOR_BUFFER_BIT);
+		glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
+	    }
 	    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, this->m_puppetIndices);
 	    glDrawElements (GL_TRIANGLES, this->m_puppetIndexCount, GL_UNSIGNED_SHORT, nullptr);
 	},

@@ -1,8 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <future>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -167,6 +169,7 @@ private:
     std::unordered_map<const void*, std::string> m_lastMediaTimeline = {};
     std::unordered_map<const void*, std::string> m_lastMediaThumbnail = {};
     std::chrono::steady_clock::time_point m_lastMediaPoll = {};
+    std::future<std::optional<MediaState>> m_mediaPollFuture = {};
     MediaState m_mediaState = {};
     bool m_builtinsInstalled = false;
 };
