@@ -593,7 +593,7 @@ struct TextData {
     /** Font reference from scene (e.g. "fonts/VCR_OSD_MONO.ttf" or "systemfont_arial") */
     std::string font;
     /** Font size in points */
-    float pointsize;
+    UserSettingUniquePtr pointsize;
     /** Bounding box size */
     glm::vec2 size;
     /** Scale (x, y, z) */
