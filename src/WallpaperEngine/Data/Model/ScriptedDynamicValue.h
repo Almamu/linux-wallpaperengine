@@ -1,12 +1,23 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 
 #include "DynamicValue.h"
 #include "Types.h"
 
+namespace WallpaperEngine::Render::Wallpapers {
+class CScene;
+}
+
 namespace WallpaperEngine::Data::Model {
+
+struct ScriptBindingContext {
+    int objectId = -1;
+    std::string objectName;
+    std::string propertyName;
+};
 
 /**
  * A DynamicValue whose value is computed by evaluating a WallpaperEngine script.
@@ -23,7 +34,11 @@ public:
 	DynamicValue baseValue
     );
 
-    ~ScriptedDynamicValue () override = default;
+    ~ScriptedDynamicValue () override;
+
+    void setBindingContext (ScriptBindingContext context);
+    [[nodiscard]] const std::optional<ScriptBindingContext>& getBindingContext () const;
+    void reevaluate (WallpaperEngine::Render::Wallpapers::CScene* scene);
 
 private:
     void reevaluate ();
@@ -31,5 +46,7 @@ private:
     std::string m_scriptSource;
     std::map<std::string, DynamicValueUniquePtr> m_scriptProps;
     DynamicValue m_baseValue;
+    std::optional<ScriptBindingContext> m_bindingContext = std::nullopt;
+    bool m_evaluating = false;
 };
 } // namespace WallpaperEngine::Data::Model
