@@ -30,6 +30,8 @@ Render::CObject* createImageObject (CScene& scene, const Image& imageData) {
 	image->setup ();
     } catch (std::runtime_error&) {
 	sLog.error ("Cannot setup image ", image->getImage ().name);
+	delete image;
+	return nullptr;
     }
     return image;
 }
@@ -45,6 +47,8 @@ Render::CObject* createParticleObject (CScene& scene, const Particle& particleDa
 	particle->setup ();
     } catch (std::runtime_error&) {
 	sLog.error ("Cannot setup particle ", particle->getParticle ().name);
+	delete particle;
+	return nullptr;
     }
     return particle;
 }

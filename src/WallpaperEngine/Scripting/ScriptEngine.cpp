@@ -512,30 +512,23 @@ static void setObjectPropertyFromDynamicValue (JSContext* ctx, JSValue obj, cons
 	case DynamicValue::String:
 	    JS_SetPropertyStr (ctx, obj, name, JS_NewString (ctx, value.getString ().c_str ()));
 	    break;
-	case DynamicValue::Vec2: {
-	    JSValue vec = JS_NewObject (ctx);
-	    JS_SetPropertyStr (ctx, vec, "x", JS_NewFloat64 (ctx, value.getVec2 ().x));
-	    JS_SetPropertyStr (ctx, vec, "y", JS_NewFloat64 (ctx, value.getVec2 ().y));
-	    JS_SetPropertyStr (ctx, obj, name, vec);
+	case DynamicValue::Vec2:
+	    JS_SetPropertyStr (ctx, obj, name, constructVectorObject (ctx, "Vec2", { value.getVec2 ().x, value.getVec2 ().y }));
 	    break;
-	}
-	case DynamicValue::Vec3: {
-	    JSValue vec = JS_NewObject (ctx);
-	    JS_SetPropertyStr (ctx, vec, "x", JS_NewFloat64 (ctx, value.getVec3 ().x));
-	    JS_SetPropertyStr (ctx, vec, "y", JS_NewFloat64 (ctx, value.getVec3 ().y));
-	    JS_SetPropertyStr (ctx, vec, "z", JS_NewFloat64 (ctx, value.getVec3 ().z));
-	    JS_SetPropertyStr (ctx, obj, name, vec);
+	case DynamicValue::Vec3:
+	    JS_SetPropertyStr (
+		ctx, obj, name,
+		constructVectorObject (ctx, "Vec3", { value.getVec3 ().x, value.getVec3 ().y, value.getVec3 ().z })
+	    );
 	    break;
-	}
-	case DynamicValue::Vec4: {
-	    JSValue vec = JS_NewObject (ctx);
-	    JS_SetPropertyStr (ctx, vec, "x", JS_NewFloat64 (ctx, value.getVec4 ().x));
-	    JS_SetPropertyStr (ctx, vec, "y", JS_NewFloat64 (ctx, value.getVec4 ().y));
-	    JS_SetPropertyStr (ctx, vec, "z", JS_NewFloat64 (ctx, value.getVec4 ().z));
-	    JS_SetPropertyStr (ctx, vec, "w", JS_NewFloat64 (ctx, value.getVec4 ().w));
-	    JS_SetPropertyStr (ctx, obj, name, vec);
+	case DynamicValue::Vec4:
+	    JS_SetPropertyStr (
+		ctx, obj, name,
+		constructVectorObject (
+		    ctx, "Vec4", { value.getVec4 ().x, value.getVec4 ().y, value.getVec4 ().z, value.getVec4 ().w }
+		)
+	    );
 	    break;
-	}
 	default:
 	    break;
     }
@@ -833,8 +826,11 @@ void ScriptEngine::releaseBinding (const void* bindingKey) {
 	    JS_FreeValue (this->m_context, module->second);
 	    this->m_modules.erase (module);
 	}
-    } else {
-	this->m_modules.erase (bindingKey);
+    } else if (const auto module = this->m_modules.find (bindingKey); module != this->m_modules.end ()) {
+	if (this->m_runtime) {
+	    JS_FreeValueRT (this->m_runtime, module->second);
+	}
+	this->m_modules.erase (module);
     }
 
     this->m_initializedModules.erase (bindingKey);
@@ -905,7 +901,11 @@ static void installSceneLayers (
     WallpaperEngine::Render::Wallpapers::CScene* scene,
     const ScriptBindingContext* bindingContext
 ) {
-    JSValue layers = JS_NewObject (ctx);
+    JSValue layers = JS_GetPropertyStr (ctx, global, "__layers");
+    if (JS_IsException (layers) || !JS_IsObject (layers)) {
+	JS_FreeValue (ctx, layers);
+	layers = JS_NewObject (ctx);
+    }
 
     JSValue layerList = JS_NewArray (ctx);
     JSValue ownerLayer = JS_UNDEFINED;
@@ -913,7 +913,13 @@ static void installSceneLayers (
     if (scene) {
 	uint32_t layerIndex = 0;
 	for (const auto& object : scene->getScene ().objects) {
-	    JSValue layer = JS_GetPropertyStr (ctx, layers, std::to_string (object->id).c_str ());
+	    const std::string id = std::to_string (object->id);
+	    JSValue layer = JS_GetPropertyStr (ctx, layers, id.c_str ());
+	    if ((JS_IsUndefined (layer) || JS_IsException (layer)) && !object->name.empty ()) {
+		JS_FreeValue (ctx, layer);
+		layer = JS_GetPropertyStr (ctx, layers, object->name.c_str ());
+	    }
+
 	    if (JS_IsUndefined (layer) || JS_IsException (layer)) {
 		JS_FreeValue (ctx, layer);
 		layer = buildLayerObject (ctx, *object);
@@ -921,7 +927,7 @@ static void installSceneLayers (
 		syncLayerObjectProperties (ctx, layer, *object);
 	    }
 
-	    JS_SetPropertyStr (ctx, layers, std::to_string (object->id).c_str (), JS_DupValue (ctx, layer));
+	    JS_SetPropertyStr (ctx, layers, id.c_str (), JS_DupValue (ctx, layer));
 	    JS_SetPropertyUint32 (ctx, layerList, layerIndex++, JS_DupValue (ctx, layer));
 	    if (!object->name.empty ()) {
 		JS_SetPropertyStr (ctx, layers, object->name.c_str (), JS_DupValue (ctx, layer));
@@ -940,7 +946,8 @@ static void installSceneLayers (
 	ownerLayer = JS_NewObject (ctx);
     }
 
-    JS_SetPropertyStr (ctx, global, "__layers", layers);
+    JS_SetPropertyStr (ctx, global, "__layers", JS_DupValue (ctx, layers));
+    JS_FreeValue (ctx, layers);
     JS_SetPropertyStr (ctx, global, "__layerList", layerList);
     JS_SetPropertyStr (ctx, global, "thisObject", JS_DupValue (ctx, ownerLayer));
     JS_SetPropertyStr (ctx, global, "thisLayer", ownerLayer);

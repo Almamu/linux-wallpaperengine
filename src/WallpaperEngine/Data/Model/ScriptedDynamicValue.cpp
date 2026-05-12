@@ -46,6 +46,10 @@ void ScriptedDynamicValue::reevaluate (WallpaperEngine::Render::Wallpapers::CSce
     }
 
     this->m_evaluating = true;
+    struct EvaluationGuard {
+	bool& evaluating;
+	~EvaluationGuard () { evaluating = false; }
+    } guard { this->m_evaluating };
 
     // Build raw pointer map for the engine
     std::map<std::string, DynamicValue*> propsMap;
@@ -67,6 +71,4 @@ void ScriptedDynamicValue::reevaluate (WallpaperEngine::Render::Wallpapers::CSce
     if (result) {
 	this->update (*result);
     }
-
-    this->m_evaluating = false;
 }

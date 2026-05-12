@@ -890,12 +890,13 @@ void CImage::pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::share
 
 void CImage::render () {
     // do not try to render something that did not initialize successfully
-    // non-visible materials do need to be rendered
     if (!this->m_initialized) {
 	return;
     }
 
-    // TODO: DO NOT DRAW IMAGES THAT ARE NOT VISIBLE AND NOTHING DEPENDS ON THEM
+    if (!this->getImage ().visible->value->getBool ()) {
+	return;
+    }
 
     glColorMask (true, true, true, true);
 
@@ -1103,6 +1104,10 @@ void CImage::updateScreenSpacePosition () {
 
     this->m_modelViewProjectionScreen = mvp;
     this->m_modelViewProjectionScreenInverse = glm::inverse (mvp);
+    if (this->getImage ().model->passthrough) {
+	this->m_modelViewProjectionCopy = this->m_modelViewProjectionScreen;
+	this->m_modelViewProjectionCopyInverse = this->m_modelViewProjectionScreenInverse;
+    }
 }
 
 const Image& CImage::getImage () const { return this->m_image; }
