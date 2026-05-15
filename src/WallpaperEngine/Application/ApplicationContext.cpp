@@ -392,7 +392,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    } else {
 		this->settings.render.window.clamp = flags;
 	    }
-	});
+	})
+	.append ();
 
     auto& performanceGroup = program.add_group ("Performance options");
 
