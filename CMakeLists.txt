@@ -499,7 +499,8 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Input/TestingMouseInput.h
         src/WallpaperEngine/Testing/Harnesses/RenderHarness.cpp
         src/WallpaperEngine/Testing/Harnesses/RenderHarness.h
-        src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp)
+        src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp
+        src/WallpaperEngine/Testing/Cases/PropertyParser.cpp)
 endif()
 
 add_library(
