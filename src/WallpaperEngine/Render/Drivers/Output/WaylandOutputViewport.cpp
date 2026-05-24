@@ -115,8 +115,26 @@ WaylandOutputViewport::WaylandOutputViewport (
 
 void WaylandOutputViewport::setupLS () {
     surface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
+
+    zwlr_layer_shell_v1_layer wlrLayer;
+    switch (m_driver->getApp ().getContext ().settings.render.wayland.layer) {
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BACKGROUND:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_TOP:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_OVERLAY:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
+	default:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+	    break;
+    }
+
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM,
+	m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer,
 	"linux-wallpaperengine"
     );
 
