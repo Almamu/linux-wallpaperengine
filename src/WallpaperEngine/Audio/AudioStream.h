@@ -173,8 +173,6 @@ private:
     int m_audioStream = NO_AUDIO_STREAM;
     /** File data pointer */
     ReadStreamSharedPtr m_buffer = nullptr;
-    /** The length of the file data pointer */
-    uint32_t m_length = 0;
 
     struct MyAVPacketList {
 	AVPacket* packet;

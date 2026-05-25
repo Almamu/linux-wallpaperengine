@@ -93,16 +93,8 @@ private:
      */
     const ComboMap& m_combos;
     /**
-     * The overriden combos
-     */
-    const ComboMap& m_overrideCombos;
-    /**
      * The list of textures the pass knows about
      */
     const TextureMap m_passTextures;
-    /**
-     * The list of the override textures
-     */
-    const TextureMap& m_overrideTextures;
 };
 } // namespace WallpaperEngine::Render::Shaders

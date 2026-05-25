@@ -28,8 +28,7 @@ Shader::Shader (
 	GLSLContext::UnitType_Fragment, filename, assetLocator.fragmentShader (filename), assetLocator, constants,
 	textures, overrideTextures, combos, overrideCombos
     ),
-    m_file (std::move (filename)), m_combos (combos), m_overrideCombos (overrideCombos), m_passTextures (textures),
-    m_overrideTextures (overrideTextures) {
+    m_file (std::move (filename)), m_combos (combos), m_passTextures (textures) {
     // link shaders between them
     this->m_vertex.linkToUnit (&this->m_fragment);
     this->m_fragment.linkToUnit (&this->m_vertex);

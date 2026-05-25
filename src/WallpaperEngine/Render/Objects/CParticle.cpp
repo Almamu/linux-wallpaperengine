@@ -413,15 +413,13 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     bool randomPeriodicEmission = (emitter.flags & 4) != 0;
 
     return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
-	    randomPeriodicEmission, emissionTimer = 0.0f, elapsedTime = 0.0f, delayTimer = emitter.delay,
-	    durationTimer = 0.0f, periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
+	    randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
+	    periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
 	    instantaneousEmitted
 	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
-
-	elapsedTime += dt;
 
 	// Handle delay
 	if (delayTimer > 0.0f) {
@@ -561,12 +559,11 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     }
 
     bool limitOnePerFrame = (emitter.flags & 2) != 0;
-    bool isRope = m_useRopeRenderer;
-    std::string particleName = m_particle.name;
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame, isRope,
-	    particleName, emissionTimer = 0.0f, remaining = emitter.instantaneous, lastSpawnTime = -1.0f,
-	    noEmitFrames = 0u] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, lifetime, limitOnePerFrame,
+	    emissionTimer = 0.0f,
+	    remaining
+	    = emitter.instantaneous] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
 	if (count >= particles.size ()) {
 	    return;
 	}
@@ -1328,7 +1325,7 @@ OperatorFunc CParticle::createVortexOperator (const VortexOperator& op) {
     bool maintainDistance = (flags & 2) != 0;
     bool ringShape = (flags & 4) != 0;
 
-    return [this, controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue,
+    return [controlPoint, axisValue, offsetValue, distanceInnerValue, distanceOuterValue, speedInnerValue,
 	    speedOuterValue, centerForceValue, ringRadiusValue, ringWidthValue, ringPullDistanceValue,
 	    ringPullForceValue, audioMode, infiniteAxis, maintainDistance, ringShape, speedOverride] (
 	       std::vector<ParticleInstance>& particles, uint32_t count,
@@ -1469,7 +1466,7 @@ OperatorFunc CParticle::createControlPointAttractOperator (const ControlPointAtt
     DynamicValue* thresholdValue = op.threshold->value.get ();
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
-    return [this, controlPoint, originValue, scaleValue, thresholdValue, speedOverride] (
+    return [controlPoint, originValue, scaleValue, thresholdValue, speedOverride] (
 	       std::vector<ParticleInstance>& particles, uint32_t count,
 	       const std::vector<ControlPointData>& controlPoints, float currentTime, float dt
 	   ) {
