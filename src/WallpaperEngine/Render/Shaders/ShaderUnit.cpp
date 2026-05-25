@@ -1,6 +1,7 @@
 #include "ShaderUnit.h"
 
 #include "WallpaperEngine/Logging/Log.h"
+#include <exception>
 #include <regex>
 #include <stack>
 #include <string>
@@ -417,16 +418,17 @@ std::string ShaderUnit::applyFragmentTexCoordCompatibility (std::string source) 
 	return source;
     }
 
+    const std::regex texCoordBeforeCast2 (R"(\bv_TexCoord\b(\s*[-+*/]\s*CAST2\s*\())");
+    const std::regex cast2BeforeTexCoord (R"((CAST2\s*\([^)]+\)\s*[-+*/]\s*)\bv_TexCoord\b)");
+
     const std::regex wideTexCoordDecl (R"(\bvarying\s+vec[34]\s+v_TexCoord\s*;)");
-    if (!std::regex_search (source, wideTexCoordDecl) || source.find ("v_TexCoord.xy") == std::string::npos) {
+    if (!std::regex_search (source, wideTexCoordDecl)
+	|| (!std::regex_search (source, texCoordBeforeCast2) && !std::regex_search (source, cast2BeforeTexCoord))) {
 	return source;
     }
 
     const std::string original = source;
-    const std::regex texCoordBeforeCast2 (R"(\bv_TexCoord\b(\s*[-+*/]\s*CAST2\s*\())");
     source = std::regex_replace (source, texCoordBeforeCast2, "v_TexCoord.xy$1");
-
-    const std::regex cast2BeforeTexCoord (R"((CAST2\s*\([^)]+\)\s*[-+*/]\s*)\bv_TexCoord\b)");
     source = std::regex_replace (source, cast2BeforeTexCoord, "$1v_TexCoord.xy");
 
     if (source != original) {
@@ -438,7 +440,13 @@ std::string ShaderUnit::applyFragmentTexCoordCompatibility (std::string source) 
 
 void ShaderUnit::parseComboConfiguration (const std::string& content, const int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Cannot parse combo metadata in shader ", this->m_file, ": ", e.what ());
+	return;
+    }
     const auto combo = data.require<std::string> ("combo", "cannot parse combo information");
     // ignore type as it seems to be used only on the editor
     // const auto type = data.find ("type");
@@ -473,7 +481,13 @@ void ShaderUnit::parseComboConfiguration (const std::string& content, const int 
 void ShaderUnit::parseParameterConfiguration (
     const std::string& type, const std::string& name, const std::string& content
 ) {
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Cannot parse parameter metadata for ", name, " in shader ", this->m_file, ": ", e.what ());
+	return;
+    }
     const auto material = data.optional ("material");
     const auto defvalue = data.optional ("default");
     // auto range = data.find ("range");

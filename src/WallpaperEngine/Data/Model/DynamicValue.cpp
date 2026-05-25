@@ -21,6 +21,8 @@ DynamicValue::DynamicValue (int value) { this->DynamicValue::update (value); }
 
 DynamicValue::DynamicValue (bool value) { this->DynamicValue::update (value); }
 
+DynamicValue::DynamicValue (const std::string& value) { this->DynamicValue::update (value); }
+
 DynamicValue::~DynamicValue () {
     if (this->m_aliveFlag) {
 	*this->m_aliveFlag = false;
@@ -240,7 +242,17 @@ void DynamicValue::update (const std::string& newValue) {
     this->m_type = UnderlyingType::String;
 
     if (this->m_condition.has_value ()) {
-	this->m_bool = this->m_condition.value ().condition == newValue;
+	const bool boolValue = this->m_condition.value ().condition == newValue;
+	this->m_ivec4 = glm::ivec4 (boolValue ? 1 : 0);
+	this->m_ivec3 = glm::ivec3 (boolValue ? 1 : 0);
+	this->m_ivec2 = glm::ivec2 (boolValue ? 1 : 0);
+	this->m_vec2 = glm::vec2 (boolValue ? 1.0f : 0.0f);
+	this->m_vec3 = glm::vec3 (boolValue ? 1.0f : 0.0f);
+	this->m_vec4 = glm::vec4 (boolValue ? 1.0f : 0.0f);
+	this->m_float = boolValue ? 1.0f : 0.0f;
+	this->m_int = boolValue ? 1 : 0;
+	this->m_bool = boolValue;
+	this->m_type = UnderlyingType::Boolean;
     }
 
     this->propagate ();
@@ -256,11 +268,21 @@ void DynamicValue::update (const DynamicValue& other) {
     this->m_float = other.getFloat ();
     this->m_int = other.getInt ();
     this->m_bool = other.getBool ();
+    this->m_string = other.getString ();
     this->m_type = other.getType ();
 
     if (this->m_condition.has_value () && other.getType () == UnderlyingType::String) {
-	// TODO: DOES THIS NEED TO HAPPEN WITH OTHER TYPES TOO?
-	this->m_bool = this->m_condition.value ().condition == other.getString ();
+	const bool boolValue = this->m_condition.value ().condition == other.getString ();
+	this->m_ivec4 = glm::ivec4 (boolValue ? 1 : 0);
+	this->m_ivec3 = glm::ivec3 (boolValue ? 1 : 0);
+	this->m_ivec2 = glm::ivec2 (boolValue ? 1 : 0);
+	this->m_vec2 = glm::vec2 (boolValue ? 1.0f : 0.0f);
+	this->m_vec3 = glm::vec3 (boolValue ? 1.0f : 0.0f);
+	this->m_vec4 = glm::vec4 (boolValue ? 1.0f : 0.0f);
+	this->m_float = boolValue ? 1.0f : 0.0f;
+	this->m_int = boolValue ? 1 : 0;
+	this->m_bool = boolValue;
+	this->m_type = UnderlyingType::Boolean;
     }
 
     this->propagate ();
