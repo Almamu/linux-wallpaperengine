@@ -96,6 +96,10 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 }
 
 void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userdata) {
+    if (info == nullptr) {
+	return;
+    }
+
     auto* recorder = static_cast<PulseAudioPlaybackRecorder::PulseAudioData*> (userdata);
 
     pa_sample_spec spec;
@@ -131,7 +135,10 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
 
 void pa_context_subscribe_cb (pa_context* ctx, pa_subscription_event_type_t t, uint32_t idx, void* userdata) {
     // sink changes mean re-take the stream
-    pa_context_get_server_info (ctx, &pa_server_info_cb, userdata);
+    pa_operation* o = pa_context_get_server_info (ctx, &pa_server_info_cb, userdata);
+    if (o) {
+	pa_operation_unref (o);
+    }
 }
 
 void pa_context_notify_cb (pa_context* ctx, void* userdata) {
@@ -151,7 +158,11 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
 		}
 
 		// context being ready means to fetch the sink too
-		pa_context_get_server_info (ctx, &pa_server_info_cb, userdata);
+		pa_operation* o2 = pa_context_get_server_info (ctx, &pa_server_info_cb, userdata);
+
+		if (o2) {
+		    pa_operation_unref (o2);
+		}
 
 		break;
 	    }
@@ -196,6 +207,7 @@ PulseAudioPlaybackRecorder::~PulseAudioPlaybackRecorder () {
     free (this->m_captureData.kisscfg);
 
     pa_context_disconnect (this->m_context);
+    pa_context_unref (this->m_context);
     pa_mainloop_free (this->m_mainloop);
 }
 
