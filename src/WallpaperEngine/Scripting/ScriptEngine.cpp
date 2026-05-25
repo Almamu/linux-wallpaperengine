@@ -483,6 +483,7 @@ static UserSetting* textSettingForProperty (const Text& text, const std::string&
     if (property == "visible") return text.visible.get ();
     if (property == "alpha") return text.alpha.get ();
     if (property == "color") return text.color.get ();
+    if (property == "pointSize") return text.pointSize.get ();
     return nullptr;
 }
 

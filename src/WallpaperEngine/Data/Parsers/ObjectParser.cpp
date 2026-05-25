@@ -250,7 +250,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	    .script = std::move (script),
 	    .scriptProperties = std::move (scriptProps),
 	    .font = it.optional ("font", std::string ()),
-	    .pointsize = it.user ("pointsize", properties, 32.0f),
+	    .pointSize = it.user ("pointsize", properties, 32.0f),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
 	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
@@ -267,6 +267,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
     bindScriptContext (result->color, result->id, result->name, "color");
     bindScriptContext (result->alpha, result->id, result->name, "alpha");
     bindScriptContext (result->scale, result->id, result->name, "scale");
+    bindScriptContext (result->pointSize, result->id, result->name, "pointSize");
 
     return result;
 }

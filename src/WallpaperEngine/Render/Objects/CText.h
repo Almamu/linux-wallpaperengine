@@ -61,6 +61,7 @@ private:
 
     const Text& m_text;
     std::string m_lastRenderedText;
+    unsigned int m_lastPixelSize = 0;
     Scripting::ScriptLayerHandle m_layerHandle = Scripting::kInvalidLayerHandle;
 
     FT_Library m_ftLibrary = nullptr;
