@@ -396,6 +396,29 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    }
 	});
 
+    backgroundGroup.add_argument ("--layer")
+	.help (
+	    "Wayland-only: which wlr-layer-shell layer to anchor the wallpaper to "
+	    "(background, bottom, top, overlay). Default: bottom. "
+	    "Use 'background' on niri to pair with the `place-within-backdrop` layer-rule, "
+	    "otherwise the wallpaper will be cloned to every workspace in the overview."
+	)
+	.choices ("background", "bottom", "top", "overlay")
+	.default_value (std::string ("bottom"))
+	.action ([this] (const std::string& value) -> void {
+	    if (value == "background") {
+		this->settings.render.wayland.layer = WAYLAND_LAYER_BACKGROUND;
+	    } else if (value == "bottom") {
+		this->settings.render.wayland.layer = WAYLAND_LAYER_BOTTOM;
+	    } else if (value == "top") {
+		this->settings.render.wayland.layer = WAYLAND_LAYER_TOP;
+	    } else if (value == "overlay") {
+		this->settings.render.wayland.layer = WAYLAND_LAYER_OVERLAY;
+	    } else {
+		sLog.exception ("Invalid wlr-layer-shell layer: ", value);
+	    }
+	});
+
     auto& performanceGroup = program.add_group ("Performance options");
 
     performanceGroup.add_argument ("-f", "--fps")

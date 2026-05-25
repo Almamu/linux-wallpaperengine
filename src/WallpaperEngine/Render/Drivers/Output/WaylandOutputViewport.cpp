@@ -116,9 +116,26 @@ WaylandOutputViewport::WaylandOutputViewport (
 
 void WaylandOutputViewport::setupLS () {
     surface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
+
+    zwlr_layer_shell_v1_layer wlrLayer;
+    switch (m_driver->getApp ().getContext ().settings.render.wayland.layer) {
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BACKGROUND:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_TOP:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_OVERLAY:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+	    break;
+	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
+	default:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+	    break;
+    }
+
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	// Background layer lets desktop shells keep icons and panels above the wallpaper surface.
-	m_driver->getWaylandContext ()->layerShell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
+	m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer,
 	"linux-wallpaperengine"
     );
 
@@ -130,6 +147,14 @@ void WaylandOutputViewport::setupLS () {
     if (m_driver->getApp ().getContext ().settings.mouse.enabled) {
 	wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
     }
+
+    // Mark the surface as fully opaque so the compositor can skip rendering
+    // anything below it and avoid alpha-blending. Wallpapers are by definition
+    // the bottommost visible content, so this is always a win.
+    wl_region* opaqueRegion = wl_compositor_create_region (m_driver->getWaylandContext ()->compositor);
+    wl_region_add (opaqueRegion, 0, 0, INT32_MAX, INT32_MAX);
+    wl_surface_set_opaque_region (surface, opaqueRegion);
+    wl_region_destroy (opaqueRegion);
 
     zwlr_layer_surface_v1_set_size (layerSurface, 0, 0);
     zwlr_layer_surface_v1_set_anchor (
