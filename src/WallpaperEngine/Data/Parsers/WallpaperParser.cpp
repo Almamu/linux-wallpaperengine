@@ -69,8 +69,8 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                     .up = camera.require <glm::vec3> ("up", "Camera must have an up position"),
                 },
                 .projection = {
-                    .width = projection.require <int> ("width", "Projection must have a width"),
-                    .height = projection.require <int> ("height", "Projection must have a height"),
+                    .width  = projection.optional ("auto", false) ? 0 : projection.require <int> ("width",  "Projection must have a width"),
+                    .height = projection.optional ("auto", false) ? 0 : projection.require <int> ("height", "Projection must have a height"),
                     .isAuto = projection.optional ("auto", false),
                     .nearz = camera.optional <float> ("nearz", 0.0f),
                     .farz = camera.optional <float> ("farz", 1000.0f),

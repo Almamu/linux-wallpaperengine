@@ -26,15 +26,47 @@ ScriptedDynamicValue::ScriptedDynamicValue (
     this->reevaluate ();
 }
 
-void ScriptedDynamicValue::reevaluate () {
+ScriptedDynamicValue::~ScriptedDynamicValue () {
+    WallpaperEngine::Scripting::ScriptEngine::instance ().releaseBinding (this);
+}
+
+void ScriptedDynamicValue::setBindingContext (ScriptBindingContext context) {
+    this->m_bindingContext = std::move (context);
+}
+
+const std::optional<ScriptBindingContext>& ScriptedDynamicValue::getBindingContext () const {
+    return this->m_bindingContext;
+}
+
+void ScriptedDynamicValue::reevaluate () { this->reevaluate (nullptr); }
+
+void ScriptedDynamicValue::reevaluate (WallpaperEngine::Render::Wallpapers::CScene* scene) {
+    if (this->m_evaluating) {
+	return;
+    }
+
+    this->m_evaluating = true;
+    struct EvaluationGuard {
+	bool& evaluating;
+	~EvaluationGuard () { evaluating = false; }
+    } guard { this->m_evaluating };
+
     // Build raw pointer map for the engine
     std::map<std::string, DynamicValue*> propsMap;
     for (const auto& [name, prop] : this->m_scriptProps) {
 	propsMap[name] = prop.get ();
     }
 
+    const DynamicValue& currentValue = this->getType () == DynamicValue::Null ? this->m_baseValue : *this;
+
     auto result = WallpaperEngine::Scripting::ScriptEngine::instance ().evaluate (
-	this->m_scriptSource, propsMap, this->m_baseValue);
+	this,
+	this->m_scriptSource,
+	propsMap,
+	currentValue,
+	scene,
+	this->m_bindingContext.has_value () ? &this->m_bindingContext.value () : nullptr
+    );
 
     if (result) {
 	this->update (*result);

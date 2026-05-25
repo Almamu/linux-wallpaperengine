@@ -40,6 +40,18 @@ public:
 	EXPLICIT_WINDOW = 2,
     };
 
+    /**
+     * Wayland-only: which wlr-layer-shell layer to anchor the wallpaper surface to.
+     * Different compositors treat layers differently; e.g. niri's
+     * `place-within-backdrop` layer-rule only applies to BACKGROUND surfaces.
+     */
+    enum WAYLAND_LAYER {
+	WAYLAND_LAYER_BACKGROUND = 0,
+	WAYLAND_LAYER_BOTTOM = 1,
+	WAYLAND_LAYER_TOP = 2,
+	WAYLAND_LAYER_OVERLAY = 3,
+    };
+
     struct PlaylistSettings {
 	uint32_t delayMinutes = 60;
 	std::string mode = "timer";
@@ -113,6 +125,15 @@ public:
 	     * Example: "firefox" will match "org.mozilla.firefox".
 	     */
 	    std::vector<std::string> fullscreenPauseIgnoreAppIds;
+	    /** Render debugging switches for scene compatibility work */
+	    struct {
+		bool baseOnly;
+		bool noSolidFinal;
+		bool passLog;
+		std::optional<int> objectFilter;
+		std::vector<int> skipObjects;
+		std::vector<int> skipEffects;
+	    } debug;
 
 	    struct {
 		/** The window size used in explicit window */
@@ -120,6 +141,11 @@ public:
 		TextureFlags clamp;
 		WallpaperEngine::Render::WallpaperState::TextureUVsScaling scalingMode;
 	    } window;
+
+	    struct {
+		/** Which wlr-layer-shell layer to use for desktop backgrounds */
+		WAYLAND_LAYER layer;
+	    } wayland;
 	} render;
 
 	/**
@@ -177,10 +203,21 @@ public:
             .pauseOnFullscreen = true,
             .pauseOnFullscreenOnlyWhenActive = false,
             .fullscreenPauseIgnoreAppIds = {},
+            .debug = {
+                .baseOnly = false,
+                .noSolidFinal = false,
+	                .passLog = false,
+	                .objectFilter = std::nullopt,
+	                .skipObjects = {},
+	                .skipEffects = {},
+	            },
             .window = {
                 .geometry = {},
                 .clamp = TextureFlags_ClampUVs,
                 .scalingMode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::DefaultUVs,
+            },
+            .wayland = {
+                .layer = WAYLAND_LAYER_BOTTOM,
             },
         },
         .audio = {
