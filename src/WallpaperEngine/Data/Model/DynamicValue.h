@@ -42,6 +42,7 @@ public:
     explicit DynamicValue (float value);
     explicit DynamicValue (int value);
     explicit DynamicValue (bool value);
+    explicit DynamicValue (const std::string& value);
     virtual ~DynamicValue ();
 
     [[nodiscard]] const glm::ivec4& getIVec4 () const;

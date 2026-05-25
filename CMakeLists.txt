@@ -35,6 +35,7 @@ find_package(MPV REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(FFMPEG REQUIRED)
 find_package(PulseAudio REQUIRED)
+find_package(Freetype REQUIRED)
 
 set(ENABLE_OPT OFF)
 set(SPIRV_CROSS_FORCE_PIC ON)
@@ -131,6 +132,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(TARGET_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
 
+# RPATH configuration: use build directories during development, but $ORIGIN after installation
+# NOTE: \$ORIGIN must be escaped because CMake treats $VAR as variable expansion.
+# IMPORTANT: This must be set BEFORE any add_executable()/add_library() calls in this directory.
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "\$ORIGIN;\$ORIGIN/lib;\$ORIGIN/lib64")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
@@ -170,6 +178,10 @@ if(WAYLAND_SUPPORT_FOUND)
         COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.h)
     add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
         COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.h
+        COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/unstable/xdg-output/xdg-output-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.h)
+    add_custom_command(OUTPUT ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.c
+        COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/unstable/xdg-output/xdg-output-unstable-v1.xml ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.c)
 
     include_directories(${WAYLAND_SUPPORT_INCLUDE_DIRS})
     include_directories(${WAYLAND_OUTPUT_DIR})
@@ -195,7 +207,9 @@ if(WAYLAND_SUPPORT_FOUND)
         ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.c
         ${WAYLAND_OUTPUT_DIR}/wlr-foreign-toplevel-management-unstable-v1-protocol.h
         ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.c
-        ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h)
+        ${WAYLAND_OUTPUT_DIR}/wlr-layer-shell-unstable-v1-protocol.h
+        ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.c
+        ${WAYLAND_OUTPUT_DIR}/xdg-output-unstable-v1-protocol.h)
 endif()
 
 if(X11_FOUND)
@@ -398,6 +412,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/Objects/CSound.cpp
     src/WallpaperEngine/Render/Objects/CParticle.h
     src/WallpaperEngine/Render/Objects/CParticle.cpp
+    src/WallpaperEngine/Render/Objects/CText.h
+    src/WallpaperEngine/Render/Objects/CText.cpp
 
     src/WallpaperEngine/Render/CFBO.h
     src/WallpaperEngine/Render/CFBO.cpp
@@ -510,6 +526,7 @@ target_link_libraries (linux-wallpaperengine-lib PUBLIC
     ${FFMPEG_LIBRARIES}
     ${MPV_LIBRARY}
     ${PULSEAUDIO_LIBRARY}
+    Freetype::Freetype
     ${WAYLAND_LIBRARIES}
     ${X11_LIBRARIES}
     kissfft
@@ -534,6 +551,7 @@ if (BUILD_TESTING)
         ${FFMPEG_LIBRARIES}
         ${MPV_LIBRARY}
         ${PULSEAUDIO_LIBRARY}
+        Freetype::Freetype
         ${WAYLAND_LIBRARIES}
         ${X11_LIBRARIES}
         kissfft
@@ -610,6 +628,18 @@ add_executable(linux-wallpaperengine
 
 target_link_libraries (linux-wallpaperengine PUBLIC linux-wallpaperengine-lib)
 
-# set some install parameters if not in debug mode
-install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .)
-install(FILES ${TARGET_OUTPUT_DIRECTORY}/${PROJECT_NAME} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ DESTINATION .)
+# Install the main executable and shared library via install(TARGETS)
+# so that CMake automatically strips/replaces the build-time RPATH.
+install(TARGETS linux-wallpaperengine
+    RUNTIME DESTINATION .
+)
+install(TARGETS linux-wallpaperengine-lib
+    LIBRARY DESTINATION .
+)
+
+# Install everything else from the output directory (CEF resources, helper binaries, etc.)
+# but exclude the files already handled by install(TARGETS) above.
+install(DIRECTORY ${TARGET_OUTPUT_DIRECTORY}/ DESTINATION .
+    PATTERN "linux-wallpaperengine" EXCLUDE
+    PATTERN "liblinux-wallpaperengine-lib.so" EXCLUDE
+)

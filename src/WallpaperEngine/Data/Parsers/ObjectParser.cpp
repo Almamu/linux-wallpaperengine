@@ -4,8 +4,10 @@
 #include "ModelParser.h"
 
 #include "ShaderConstantParser.h"
+#include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/gtc/constants.hpp>
@@ -14,12 +16,108 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
+namespace {
+// Wraps a string value in a UserSetting with a String-typed DynamicValue.
+// UserSettingParser would try to numeric-parse single-char strings like "-"/":",
+// so we bypass it for raw string script-property values.
+UserSettingUniquePtr makeStringSetting (const std::string& s) {
+    auto dv = std::make_unique<DynamicValue> ();
+    dv->update (s);
+    return std::make_unique<UserSetting> (UserSetting {
+	.value = std::move (dv),
+	.property = nullptr,
+	.condition = std::nullopt,
+    });
+}
+
+// Resolves the `script` field of a scripted text node: if it looks like a
+// single-line path ending in .js, read it through the asset locator.
+// Returns empty string on failure (caller treats empty script as static).
+std::string resolveScriptSource (std::string raw, const Project& project) {
+    const bool looksLikePath =
+	!raw.empty () && raw.find ('\n') == std::string::npos && raw.size () >= 3
+	&& raw.compare (raw.size () - 3, 3, ".js") == 0;
+
+    if (!looksLikePath || project.assetLocator == nullptr)
+	return raw;
+
+    try {
+	return project.assetLocator->readString (raw);
+    } catch (const std::exception& e) {
+	sLog.error ("CText: cannot load script asset '", raw, "': ", e.what ());
+	return {};
+    }
+}
+
+// Parses a text object's `scriptproperties` subtree into a map of UserSettings.
+// Plain string values bypass UserSettingParser (which stof-throws on "-"/":"),
+// object values with a string `value` field also go through the string path.
+std::map<std::string, UserSettingUniquePtr>
+parseScriptProperties (const JSON& propsObj, const Properties& properties) {
+    std::map<std::string, UserSettingUniquePtr> out;
+    for (const auto& [key, propData] : propsObj.items ()) {
+	try {
+	    if (propData.is_string ()) {
+		out.emplace (key, makeStringSetting (propData.template get<std::string> ()));
+		continue;
+	    }
+	    if (propData.is_object ()) {
+		if (const auto valueField = propData.find ("value");
+		    valueField != propData.end () && valueField->is_string ()) {
+		    out.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
+		    continue;
+		}
+	    }
+	    out.emplace (key, UserSettingParser::parse (propData, properties));
+	} catch (const std::exception& e) {
+	    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
+	}
+    }
+    return out;
+}
+
+// The `color` user setting may arrive as vec3 or ivec3; normalize to vec4 with
+// full alpha so downstream renderers can assume a uniform type.
+void widenColorToVec4 (DynamicValue& v) {
+    if (v.getType () == DynamicValue::UnderlyingType::Vec3) {
+	v.update (glm::vec4 (v.getVec3 (), 1.0f));
+    } else if (v.getType () == DynamicValue::UnderlyingType::IVec3) {
+	const glm::ivec3 icolor = v.getIVec3 ();
+	v.update (glm::vec4 (glm::vec3 (icolor), 255.0f) / 255.0f);
+    }
+}
+
+static void bindScriptContext (
+    const UserSettingUniquePtr& setting,
+    int objectId,
+    const std::string& objectName,
+    const std::string& propertyName
+) {
+    if (!setting || !setting->value) {
+	return;
+    }
+
+    auto* scripted = dynamic_cast<ScriptedDynamicValue*> (setting->value.get ());
+    if (!scripted) {
+	return;
+    }
+
+    scripted->setBindingContext (ScriptBindingContext {
+	.objectId = objectId,
+	.objectName = objectName,
+	.propertyName = propertyName,
+    });
+}
+} // namespace
+
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
     const auto particleIt = it.find ("particle");
     const auto textIt = it.find ("text");
     const auto lightIt = it.find ("light");
+    // use shape to refer to VolumeLight
+    const auto shapeIt = it.find ("shape");
 
     // Parse base object data
     // Some particle objects have numeric 'name' fields, so handle type mismatches gracefully
@@ -31,6 +129,9 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	    .dependencies = parseDependencies (it),
 	    .parent = it.optional<int> ("parent"),
 	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+	    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+	    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+	    .groupVisible = it.user ("visible", project.properties, true),
 	};
     } catch (const std::exception& e) {
 	sLog.error ("Error parsing object base data: ", e.what ());
@@ -45,8 +146,22 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 		name = std::to_string (nameIt->get<int> ());
 	    }
 	}
-	basedata = ObjectData { .id = id, .name = name, .dependencies = {} };
+	basedata = ObjectData {
+	    .id = id,
+	    .name = name,
+	    .dependencies = parseDependencies (it),
+	    .parent = it.optional<int> ("parent"),
+	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+	    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+	    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+	    .groupVisible = it.user ("visible", project.properties, true),
+	};
     }
+
+    bindScriptContext (basedata.origin, basedata.id, basedata.name, "origin");
+    bindScriptContext (basedata.groupScale, basedata.id, basedata.name, "scale");
+    bindScriptContext (basedata.groupAngles, basedata.id, basedata.name, "angles");
+    bindScriptContext (basedata.groupVisible, basedata.id, basedata.name, "visible");
 
     if (imageIt != it.end () && imageIt->is_string ()) {
 	return parseImage (it, project, std::move (basedata), *imageIt);
@@ -55,14 +170,18 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     } else if (particleIt != it.end ()) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
-	sLog.error ("Text objects are not supported yet");
+	return parseText (it, project, std::move (basedata));
     } else if (lightIt != it.end ()) {
 	sLog.error ("Light objects are not supported yet");
+    } else if (shapeIt != it.end ()) {
+	sLog.error ("VolumeLight objects are not supported yet");
     } else {
-	// dump the object for now, might want to change later
-	// TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY
-	// ANYTHING SPECIAL
-	sLog.error ("Unknown object type found: ", it.dump ());
+	if (!it.optional ("solid", false)) {
+	    // dump the object for now, might want to change later
+	    // TODO: RE-EVALUATE IF THIS MAKES SENSE, THERE'S OBJECTS THAT CONTAIN OTHER OBJECTS AND THUS AREN'T REALLY
+	    // ANYTHING SPECIAL
+	    sLog.error ("Unknown object type found: ", it.dump ());
+	}
     }
 
     return std::make_unique<Object> (std::move (basedata));
@@ -101,6 +220,57 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
     );
 }
 
+TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
+    const auto& properties = project.properties;
+    const auto textIt = it.require ("text", "Text object must have a text field");
+
+    std::string text;
+    std::string script;
+    std::map<std::string, UserSettingUniquePtr> scriptProps;
+
+    if (textIt.is_string ()) {
+	text = textIt.get<std::string> ();
+    } else if (textIt.is_object ()) {
+	// Scripted text: carries the JS source (either inline or as a .js asset path),
+	// an initial placeholder `value`, and typed initial values for scriptProperties.
+	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ())
+	    script = resolveScriptSource (*scriptIt, project);
+
+	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ())
+	    text = *valueIt;
+
+	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ())
+	    scriptProps = parseScriptProperties (*propsIt, properties);
+    }
+
+    auto result = std::make_unique<Text> (
+	std::move (base),
+	TextData {
+	    .text = std::move (text),
+	    .script = std::move (script),
+	    .scriptProperties = std::move (scriptProps),
+	    .font = it.optional ("font", std::string ()),
+	    .pointsize = it.user ("pointsize", properties, 32.0f),
+	    .size = it.optional ("size", glm::vec2 (0.0f)),
+	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
+	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
+	    .alpha = it.user ("alpha", properties, 1.0f),
+	    .visible = it.user ("visible", properties, true),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
+	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
+	    .padding = it.optional ("padding", 0),
+	}
+    );
+
+    widenColorToVec4 (*result->color->value);
+    bindScriptContext (result->visible, result->id, result->name, "visible");
+    bindScriptContext (result->color, result->id, result->name, "color");
+    bindScriptContext (result->alpha, result->id, result->name, "alpha");
+    bindScriptContext (result->scale, result->id, result->name, "scale");
+
+    return result;
+}
+
 ImageUniquePtr
 ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData base, const std::string& image) {
     const auto& properties = project.properties;
@@ -115,11 +285,11 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .visible = it.user ("visible", properties, true),
 	    .alpha = it.user ("alpha", properties, 1.0f),
 	    .color = it.user ("color", properties, glm::vec4 (1.0f)),
-	    .alignment = it.optional ("alignment", std::string ("center")),
-	    .size = it.optional ("size", glm::vec2 (0.0f)),
+	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
+	    .size = it.user ("size", project.properties, glm::vec2 (0.0f))->value->getVec2 (),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
-	    .colorBlendMode = it.optional ("colorBlendMode", 0),
-	    .brightness = it.optional ("brightness", 1.0f),
+	    .colorBlendMode = it.user ("colorBlendMode", properties, 0),
+	    .brightness = it.user ("brightness", properties, 1.0f),
 	    .model = ModelParser::load (project, image),
 	    .effects = effects.has_value () ? parseEffects (*effects, project) : std::vector<ImageEffectUniquePtr> {},
 	    .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers, project)
@@ -132,6 +302,36 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
     } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
 	result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
+    }
+
+    bindScriptContext (result->scale, result->id, result->name, "scale");
+    bindScriptContext (result->angles, result->id, result->name, "angles");
+    bindScriptContext (result->visible, result->id, result->name, "visible");
+    bindScriptContext (result->alpha, result->id, result->name, "alpha");
+    bindScriptContext (result->color, result->id, result->name, "color");
+    bindScriptContext (result->parallaxDepth, result->id, result->name, "parallaxDepth");
+
+    const auto instance = it.optional ("instance");
+    if (instance.has_value () && instance->is_object () && !result->model->material->passes.empty ()) {
+	auto& firstPass = **result->model->material->passes.begin ();
+	const auto instanceTextures = instance->optional ("textures");
+	if (instanceTextures.has_value ()) {
+	    const auto parsed = parseTextureMap (*instanceTextures);
+	    firstPass.textures.insert (parsed.begin (), parsed.end ());
+	}
+	const auto instanceUserTextures = instance->optional ("usertextures");
+	if (instanceUserTextures.has_value ()) {
+	    const auto parsed = parseTextureMap (*instanceUserTextures);
+	    firstPass.usertextures.insert (parsed.begin (), parsed.end ());
+	}
+    }
+
+    for (const auto& effect : result->effects) {
+	for (const auto& pass : effect->passOverrides) {
+	    for (const auto& [name, constant] : pass->constants) {
+		bindScriptContext (constant, result->id, result->name, name);
+	    }
+	}
     }
 
     return result;
@@ -205,6 +405,11 @@ TextureMap ObjectParser::parseTextureMap (const JSON& it) {
 
 	if (cur.is_null ()) {
 	    continue;
+	} else if (cur.is_object ()) {
+	    const auto nameIt = cur.find ("name");
+	    if (nameIt != cur.end () && nameIt->is_string ()) {
+		result.emplace (textureIndex, nameIt->get<std::string> ());
+	    }
 	} else {
 	    std::string texName = cur;
 	    if (!texName.empty ()) {
@@ -245,12 +450,14 @@ std::vector<ImageAnimationLayerUniquePtr> ObjectParser::parseAnimationLayers (co
 }
 
 ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it, const Project& project) {
+    const auto& properties = project.properties;
+
     return std::make_unique<ImageAnimationLayer> (ImageAnimationLayer {
-	.id = it.require ("id", "Animation layer must have an id"),
-	.rate = it.require ("rate", "Animation layer must have a rate"),
-	.visible = it.user ("visible", project.properties, false),
-	.blend = it.require ("blend", "Animation layer must include blend"),
-	.animation = it.require ("animation", "Animation layer must include an animation"),
+	.id = it.require<int> ("id", "Animation layer must have an id"),
+	.rate = it.user ("rate", properties, 1.0f),
+	.visible = it.user ("visible", properties, false),
+	.blend = it.user ("blend", properties, 1.0f),
+	.animation = it.user ("animation", properties, 0),
     });
 }
 
@@ -510,7 +717,7 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	    flags = flagsIt->get<uint32_t> ();
 	}
 
-	return std::make_unique<Particle> (
+	auto result = std::make_unique<Particle> (
 	    std::move (base),
 	    ParticleData {
 		.scale = it.user ("scale", properties, glm::vec3 (1.0f)),
@@ -533,6 +740,11 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 		.instanceOverride = std::move (instanceOverride),
 	    }
 	);
+	bindScriptContext (result->scale, result->id, result->name, "scale");
+	bindScriptContext (result->angles, result->id, result->name, "angles");
+	bindScriptContext (result->visible, result->id, result->name, "visible");
+	bindScriptContext (result->parallaxDepth, result->id, result->name, "parallaxDepth");
+	return result;
     } catch (nlohmann::json::exception& e) {
 	sLog.error ("Error parsing particle '", base.name, "': ", e.what ());
 	sLog.error ("Particle JSON: ", it.dump ());

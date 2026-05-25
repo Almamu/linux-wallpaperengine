@@ -1,6 +1,7 @@
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CParticle.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
+#include "WallpaperEngine/Render/Objects/CText.h"
 
 #include "WallpaperEngine/Render/WallpaperState.h"
 
@@ -9,6 +10,8 @@
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
+
+#include <ranges>
 
 extern float g_Time;
 extern float g_TimeLast;
@@ -19,6 +22,37 @@ using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
 using JSON = WallpaperEngine::Data::JSON::JSON;
+
+namespace {
+Render::CObject* createImageObject (CScene& scene, const Image& imageData) {
+    auto* image = new Objects::CImage (scene, imageData);
+    try {
+	image->setup ();
+    } catch (std::runtime_error&) {
+	sLog.error ("Cannot setup image ", image->getImage ().name);
+	delete image;
+	return nullptr;
+    }
+    return image;
+}
+
+Render::CObject* createParticleObject (CScene& scene, const Particle& particleData) {
+    if (scene.getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+	sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
+	return nullptr;
+    }
+
+    auto* particle = new Objects::CParticle (scene, particleData);
+    try {
+	particle->setup ();
+    } catch (std::runtime_error&) {
+	sLog.error ("Cannot setup particle ", particle->getParticle ().name);
+	delete particle;
+	return nullptr;
+    }
+    return particle;
+}
+}
 
 CScene::CScene (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
@@ -35,7 +69,33 @@ CScene::CScene (
 
     // detect size if the orthogonal project is auto
     if (scene->camera.projection.isAuto) {
-	// TODO: CALCULATE ORTHOGONAL PROJECTION BASED ON CONTENT'S SIZE HERE
+	glm::vec2 maxExtent = { 0.0f, 0.0f };
+
+	for (const auto& object : scene->objects) {
+	    if (!object->is<Image> ()) {
+		continue;
+	    }
+
+	    const auto* image = object->as<Image> ();
+	    if (!image->origin || !image->origin->value) {
+		continue;
+	    }
+
+	    const glm::vec3 origin = image->origin->value->getVec3 ();
+	    const glm::vec2 halfSize = image->size / 2.0f;
+
+	    maxExtent.x = glm::max (maxExtent.x, glm::abs (origin.x) + halfSize.x);
+	    maxExtent.y = glm::max (maxExtent.y, glm::abs (origin.y) + halfSize.y);
+	}
+
+	if (maxExtent.x > 0.0f && maxExtent.y > 0.0f) {
+	    width = maxExtent.x * 2.0f;
+	    height = maxExtent.y * 2.0f;
+	} else {
+	    width = this->getContext ().getOutput ().getFullWidth ();
+	    height = this->getContext ().getOutput ().getFullHeight ();
+	    sLog.debug ("Auto projection: falling back to screen resolution ", width, "x", height);
+	}
     }
 
     this->m_parallaxDisplacement = { 0, 0 };
@@ -69,6 +129,8 @@ CScene::CScene (
     for (const auto& object : scene->objects) {
 	this->addObjectToRenderOrder (*object);
     }
+
+    this->collectScriptedValues ();
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer = this->create (
@@ -186,41 +248,37 @@ Render::CObject* CScene::createObject (const Object& object) {
 	this->createObject (**dep);
     }
 
-    if (object.is<Image> ()) {
-	auto* image = new Objects::CImage (*this, *object.as<Image> ());
-
-	try {
-	    image->setup ();
-	} catch (std::runtime_error&) {
-	    // this error message is already printed, so just show extra info about it
-	    sLog.error ("Cannot setup image ", image->getImage ().name);
-	}
-
-	renderObject = image;
-    } else if (object.is<Sound> ()) {
-	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
-    } else if (object.is<Particle> ()) {
-	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
-	    sLog.debug ("Ignoring particle system (disabled in settings): ", object.as<Particle> ()->name);
-	    return nullptr;
-	}
-
-	auto* particle = new Objects::CParticle (*this, *object.as<Particle> ());
-
-	try {
-	    particle->setup ();
-	} catch (std::runtime_error&) {
-	    sLog.error ("Cannot setup particle ", particle->getParticle ().name);
-	}
-
-	renderObject = particle;
-    } else {
-	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
-	renderObject = new CObject (*this, object);
-    }
+    renderObject = this->dispatchObjectType (object);
 
     if (renderObject != nullptr) {
 	this->m_objects.emplace (renderObject->getId (), renderObject);
+    }
+
+    return renderObject;
+}
+
+Render::CObject* CScene::dispatchObjectType (const Object& object) {
+    Render::CObject* renderObject = nullptr;
+
+    if (object.is<Image> ()) {
+	renderObject = createImageObject (*this, *object.as<Image> ());
+    } else if (object.is<Sound> ()) {
+	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
+    } else if (object.is<Text> ()) {
+	auto* text = new Objects::CText (*this, *object.as<Text> ());
+	try {
+	    text->setup ();
+	} catch (std::runtime_error&) {
+	    sLog.error ("Cannot setup text ", text->getObject ().name);
+	    delete text;
+	    return nullptr;
+	}
+	renderObject = text;
+    } else if (object.is<Particle> ()) {
+	renderObject = createParticleObject (*this, *object.as<Particle> ());
+    } else {
+	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+	renderObject = new CObject (*this, object);
     }
 
     return renderObject;
@@ -261,23 +319,89 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
+void CScene::registerScriptedValue (const UserSettingUniquePtr& setting) {
+    if (!setting || !setting->value) {
+	return;
+    }
+
+    auto* scripted = dynamic_cast<ScriptedDynamicValue*> (setting->value.get ());
+    if (!scripted) {
+	return;
+    }
+
+    if (std::ranges::find (this->m_scriptedValues, scripted) == this->m_scriptedValues.end ()) {
+	this->m_scriptedValues.emplace_back (scripted);
+    }
+}
+
+void CScene::collectScriptedValues () {
+    this->m_scriptedValues.clear ();
+
+    for (const auto& object : this->getScene ().objects) {
+	this->registerScriptedValue (object->origin);
+	this->registerScriptedValue (object->groupScale);
+	this->registerScriptedValue (object->groupAngles);
+	this->registerScriptedValue (object->groupVisible);
+
+	if (object->is<Image> ()) {
+	    const auto* image = object->as<Image> ();
+	    this->registerScriptedValue (image->scale);
+	    this->registerScriptedValue (image->angles);
+	    this->registerScriptedValue (image->visible);
+	    this->registerScriptedValue (image->alpha);
+	    this->registerScriptedValue (image->color);
+	    this->registerScriptedValue (image->parallaxDepth);
+
+	    for (const auto& effect : image->effects) {
+		this->registerScriptedValue (effect->visible);
+		for (const auto& pass : effect->passOverrides) {
+		    for (const auto& constant : pass->constants | std::views::values) {
+			this->registerScriptedValue (constant);
+		    }
+		}
+	    }
+	} else if (object->is<Particle> ()) {
+	    const auto* particle = object->as<Particle> ();
+	    this->registerScriptedValue (particle->scale);
+	    this->registerScriptedValue (particle->angles);
+	    this->registerScriptedValue (particle->visible);
+	    this->registerScriptedValue (particle->parallaxDepth);
+	} else if (object->is<Text> ()) {
+	    const auto* text = object->as<Text> ();
+	    this->registerScriptedValue (text->visible);
+	    this->registerScriptedValue (text->color);
+	    this->registerScriptedValue (text->alpha);
+	    this->registerScriptedValue (text->scale);
+	}
+    }
+}
+
+void CScene::updateScriptedValues () {
+    for (const auto& scripted : this->m_scriptedValues) {
+	scripted->reevaluate (this);
+    }
+}
+
 Camera& CScene::getCamera () const { return *this->m_camera; }
 
 void CScene::renderFrame (const glm::ivec4& viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
 
+    this->updateScriptedValues ();
+
     // update the parallax position if required
     if (this->getScene ().camera.parallax.enabled->value->getBool ()
 	&& !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
 	const float influence = this->getScene ().camera.parallax.mouseInfluence->value->getFloat ();
 	const float amount = this->getScene ().camera.parallax.amount->value->getFloat ();
-	const float delay = glm::min (
-	    static_cast<float> (this->getScene ().camera.parallax.delay->value->getBool ()), g_Time - g_TimeLast
+	const float delay = glm::clamp (
+	    this->getScene ().camera.parallax.delay->value->getFloat () * (g_Time - g_TimeLast), 0.0f, 1.0f
 	);
 
+	const glm::vec2 centeredMouse = this->m_mousePosition - glm::vec2 (0.5f, 0.5f);
 	this->m_parallaxDisplacement
-	    = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
+	    = glm::mix (this->m_parallaxDisplacement, (centeredMouse * amount) * influence, delay);
     }
 
     // update main textures for images
@@ -311,6 +435,14 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (const auto& cur : this->m_objectsByRenderOrder) {
+	const auto& debug = this->getContext ().getApp ().getContext ().settings.render.debug;
+	if (debug.objectFilter.has_value () && cur->getId () != debug.objectFilter.value ()) {
+	    continue;
+	}
+	if (std::ranges::find (debug.skipObjects, cur->getId ()) != debug.skipObjects.end ()) {
+	    continue;
+	}
+
 	cur->render ();
     }
 }
@@ -338,7 +470,7 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
     this->m_mousePositionNormalized.y = uvs.vstart + normalizedMouseY * (uvs.vend - uvs.vstart);
 
     // Invert previous normalization of Y to match what the shader expects
-    double mouseY = 1.0 - normalizedMouseY; 
+    double mouseY = 1.0 - normalizedMouseY;
 
     this->m_mousePosition.x = this->m_mousePositionNormalized.x;
     this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
@@ -350,6 +482,20 @@ int CScene::getWidth () const { return this->m_camera->getWidth (); }
 
 int CScene::getHeight () const { return this->m_camera->getHeight (); }
 
+float CScene::getTime () const { return g_Time; }
+
+float CScene::getDeltaTime () const { return g_Time - g_TimeLast; }
+
+float CScene::getFps () const {
+    const float dt = g_Time - g_TimeLast;
+    // Guard against the first frame (where g_TimeLast is 0 so dt == g_Time)
+    // and division by zero on the very first call.
+    if (dt <= 1e-6f) {
+	return 60.0f;
+    }
+    return 1.0f / dt;
+}
+
 const glm::vec2* CScene::getMousePosition () const { return &this->m_mousePosition; }
 
 const glm::vec2* CScene::getMousePositionLast () const { return &this->m_mousePositionLast; }
@@ -360,4 +506,7 @@ const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_para
 
 const std::vector<CObject*>& CScene::getObjectsByRenderOrder () const { return this->m_objectsByRenderOrder; }
 
-const CObject* CScene::getObject (int id) const { return this->m_objects.at (id); }
+const CObject* CScene::getObject (int id) const {
+    const auto object = this->m_objects.find (id);
+    return object == this->m_objects.end () ? nullptr : object->second;
+}

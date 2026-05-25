@@ -1,6 +1,7 @@
 #include "ShaderUnit.h"
 
 #include "WallpaperEngine/Logging/Log.h"
+#include <exception>
 #include <regex>
 #include <stack>
 #include <string>
@@ -34,10 +35,16 @@
 	  "#define CAST3(x) (vec3(x))\n"                                                                               \
 	  "#define CAST4(x) (vec4(x))\n"                                                                               \
 	  "#define CAST3X3(x) (mat3(x))\n"                                                                             \
+	  "#define float2 vec2\n"                                                                                     \
+	  "#define float3 vec3\n"                                                                                     \
+	  "#define float4 vec4\n"                                                                                     \
+	  "#define int2 ivec2\n"                                                                                      \
+	  "#define int3 ivec3\n"                                                                                      \
+	  "#define int4 ivec4\n"                                                                                      \
 	  "#define saturate(x) (clamp(x, 0.0, 1.0))\n"                                                                 \
 	  "#define texSample2D texture\n"                                                                              \
 	  "#define texSample2DLod textureLod\n"                                                                        \
-	  "#define log10(x) log2(x) * 0.301029995663981\n"                                                             \
+	  "#define log10(x) (log2(x) * 0.301029995663981)\n"                                                             \
 	  "#define atan2 atan\n"                                                                                       \
 	  "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"                                                              \
 	  "#define ddx dFdx\n"                                                                                         \
@@ -71,9 +78,9 @@ void ShaderUnit::preprocess () {
     this->m_preprocessed = this->m_content;
     this->m_includes = "";
 
-    this->preprocessVariables ();
     this->preprocessIncludes ();
     this->preprocessRequires ();
+    this->preprocessVariables ();
 
     // replace gl_FragColor with the equivalent
     const std::string from = "gl_FragColor";
@@ -87,9 +94,6 @@ void ShaderUnit::preprocess () {
 }
 
 void ShaderUnit::preprocessVariables () {
-    this->m_preprocessed = this->m_content;
-    this->m_includes = "";
-
     size_t start = 0, end = 0;
     while ((end = this->m_preprocessed.find ('\n', start)) != std::string::npos) {
 	// Extract a line from the string
@@ -307,22 +311,142 @@ void ShaderUnit::preprocessIncludes () {
 
 void ShaderUnit::preprocessRequires () {
     size_t start = 0, end = 0;
-    // comment out requires
+
     while ((start = this->m_preprocessed.find ("#require", end)) != std::string::npos) {
-	// TODO: CHECK FOR ERRORS HERE
 	const size_t lineEnd = this->m_preprocessed.find_first_of ('\n', start);
-	sLog.out ("Shader has a require block ", this->m_preprocessed.substr (start, lineEnd - start));
-	// replace the first two letters with a comment so the filelength doesn't change
+
+	const size_t nameStart = start + std::string ("#require ").length ();
+
+	if (nameStart >= lineEnd) {
+	    sLog.error ("Malformed #require directive (no module name) in shader ", this->m_file);
+	    end = lineEnd;
+	    continue;
+	}
+
+	std::string moduleName = this->m_preprocessed.substr (nameStart, lineEnd - nameStart);
+
+	while (!moduleName.empty () && (moduleName.back () == ' ' || moduleName.back () == '\r')) {
+	    moduleName.pop_back ();
+	}
+
+	if (moduleName.empty ()) {
+	    sLog.error ("Malformed #require directive (empty module name) in shader ", this->m_file);
+	    end = lineEnd;
+	    continue;
+	}
+
+	sLog.out ("Resolving require module: ", moduleName, " in shader ", this->m_file);
+
+	std::string moduleCode = this->resolveRequireModule (moduleName);
+
+	// comment out the #require directive
 	this->m_preprocessed = this->m_preprocessed.replace (start, 2, "//");
 
-	// go to the end of the line
-	end = lineEnd;
+	if (!moduleCode.empty ()) {
+	    // insert the generated code directly into m_preprocessed at the #require location
+	    // (m_includes was already consumed by preprocessIncludes, so appending there would be lost)
+	    this->m_preprocessed.insert (start, moduleCode);
+	    end = start + moduleCode.length ();
+	} else {
+	    end = lineEnd;
+	}
     }
+}
+
+std::string ShaderUnit::resolveRequireModule (const std::string& moduleName) const {
+    if (moduleName == "LightingV1") {
+	return this->generateLightingV1 ();
+    }
+
+    sLog.error ("Unknown #require module: ", moduleName, " in shader ", this->m_file);
+    return "";
+}
+
+std::string ShaderUnit::generateLightingV1 () const {
+    // PerformLighting_V1 is dynamically generated by Wallpaper Engine based on the scene's
+    // light sources. Since linux-wallpaperengine does not yet support light objects, we
+    // generate a stub that returns no dynamic light contribution.
+    return "// begin of generated module LightingV1\n"
+	   "vec3 PerformLighting_V1(vec3 worldPos, vec3 albedo, vec3 normal, vec3 viewDir,\n"
+	   "    vec3 specularTint, vec3 baseReflectance, float roughness, float metallic)\n"
+	   "{\n"
+	   "    return vec3(0.0);\n"
+	   "}\n"
+	   "// end of generated module LightingV1\n";
+}
+
+std::string ShaderUnit::applyLinkedVaryingCompatibility (std::string source) const {
+    if (this->m_type != GLSLContext::UnitType_Vertex || this->m_link == nullptr) {
+	return source;
+    }
+
+    std::regex fragmentVec4Varying (R"(\bvarying\s+vec4\s+([A-Za-z_][A-Za-z0-9_]*)\s*;)");
+    std::smatch varyingMatch;
+    std::string linked = this->m_link->m_preprocessed;
+    size_t linkedOffset = 0;
+
+    while (std::regex_search (linked.cbegin () + linkedOffset, linked.cend (), varyingMatch, fragmentVec4Varying)) {
+	const std::string name = varyingMatch[1].str ();
+	linkedOffset += varyingMatch.position () + varyingMatch.length ();
+
+	const std::regex vertexVec2Decl ("\\bvarying\\s+vec2\\s+" + name + "\\s*;");
+	if (!std::regex_search (source, vertexVec2Decl)) {
+	    continue;
+	}
+
+	source = std::regex_replace (source, vertexVec2Decl, "varying vec4 " + name + ";");
+
+	const std::regex assignment ("(^|\\n)([ \\t]*)" + name + "\\s*=\\s*([^;\\n]+);");
+	std::smatch assignmentMatch;
+	size_t offset = 0;
+	while (std::regex_search (source.cbegin () + offset, source.cend (), assignmentMatch, assignment)) {
+	    const std::string prefix = assignmentMatch[1].str ();
+	    const std::string indent = assignmentMatch[2].str ();
+	    const std::string expression = assignmentMatch[3].str ();
+	    const std::string replacement = prefix + indent + name + " = vec4(" + expression + ", 0.0, 1.0);";
+	    const size_t position = offset + assignmentMatch.position ();
+	    source.replace (position, assignmentMatch.length (), replacement);
+	    offset = position + replacement.length ();
+	}
+    }
+
+    return source;
+}
+
+std::string ShaderUnit::applyFragmentTexCoordCompatibility (std::string source) const {
+    if (this->m_type != GLSLContext::UnitType_Fragment) {
+	return source;
+    }
+
+    const std::regex texCoordBeforeCast2 (R"(\bv_TexCoord\b(\s*[-+*/]\s*CAST2\s*\())");
+    const std::regex cast2BeforeTexCoord (R"((CAST2\s*\([^)]+\)\s*[-+*/]\s*)\bv_TexCoord\b)");
+
+    const std::regex wideTexCoordDecl (R"(\bvarying\s+vec[34]\s+v_TexCoord\s*;)");
+    if (!std::regex_search (source, wideTexCoordDecl)
+	|| (!std::regex_search (source, texCoordBeforeCast2) && !std::regex_search (source, cast2BeforeTexCoord))) {
+	return source;
+    }
+
+    const std::string original = source;
+    source = std::regex_replace (source, texCoordBeforeCast2, "v_TexCoord.xy$1");
+    source = std::regex_replace (source, cast2BeforeTexCoord, "$1v_TexCoord.xy");
+
+    if (source != original) {
+	sLog.out ("Applied fragment TexCoord vec2 compatibility in ", this->m_file);
+    }
+
+    return source;
 }
 
 void ShaderUnit::parseComboConfiguration (const std::string& content, const int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Cannot parse combo metadata in shader ", this->m_file, ": ", e.what ());
+	return;
+    }
     const auto combo = data.require<std::string> ("combo", "cannot parse combo information");
     // ignore type as it seems to be used only on the editor
     // const auto type = data.find ("type");
@@ -357,7 +481,13 @@ void ShaderUnit::parseComboConfiguration (const std::string& content, const int 
 void ShaderUnit::parseParameterConfiguration (
     const std::string& type, const std::string& name, const std::string& content
 ) {
-    const auto data = JSON::parse (content);
+    JSON data;
+    try {
+	data = JSON::parse (content);
+    } catch (const std::exception& e) {
+	sLog.error ("Cannot parse parameter metadata for ", name, " in shader ", this->m_file, ": ", e.what ());
+	return;
+    }
     const auto material = data.optional ("material");
     const auto defvalue = data.optional ("default");
     // auto range = data.find ("range");
@@ -584,7 +714,8 @@ const std::string& ShaderUnit::compile () {
     }
 
     // this should be the rest of the shader
-    this->m_final += this->m_preprocessed;
+    this->m_final
+	+= this->applyFragmentTexCoordCompatibility (this->applyLinkedVaryingCompatibility (this->m_preprocessed));
 
     // the pass itself handles shader compilation, the unit doesn't have enough information for this step
     return this->m_final;
