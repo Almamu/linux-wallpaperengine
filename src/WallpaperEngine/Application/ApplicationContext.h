@@ -103,6 +103,15 @@ public:
 	     * Example: "firefox" will match "org.mozilla.firefox".
 	     */
 	    std::vector<std::string> fullscreenPauseIgnoreAppIds;
+	    /** Render debugging switches for scene compatibility work */
+	    struct {
+		bool baseOnly;
+		bool noSolidFinal;
+		bool passLog;
+		std::optional<int> objectFilter;
+		std::vector<int> skipObjects;
+		std::vector<int> skipEffects;
+	    } debug;
 
 	    struct {
 		/** The window size used in explicit window */
@@ -166,6 +175,14 @@ public:
             .pauseOnFullscreen = true,
             .pauseOnFullscreenOnlyWhenActive = false,
             .fullscreenPauseIgnoreAppIds = {},
+            .debug = {
+                .baseOnly = false,
+                .noSolidFinal = false,
+	                .passLog = false,
+	                .objectFilter = std::nullopt,
+	                .skipObjects = {},
+	                .skipEffects = {},
+	            },
             .window = {
                 .geometry = {},
                 .clamp = TextureFlags_ClampUVs,
