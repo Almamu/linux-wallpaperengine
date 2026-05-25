@@ -24,7 +24,8 @@ void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
 
     // render the background
     if (const auto ref = this->m_wallpapers.find (viewport->name); ref != this->m_wallpapers.end ()) {
-	ref->second->render (viewport->viewport, this->getOutput ().renderVFlip ());
+	ref->second->render (viewport->viewport, this->getOutput ().renderVFlip (), viewport->globalPosition,
+	    viewport->logicalSize);
     }
 
 #if !NDEBUG
