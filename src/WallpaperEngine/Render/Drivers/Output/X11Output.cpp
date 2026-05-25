@@ -52,11 +52,12 @@ void X11Output::reset () {
 }
 
 void X11Output::free () {
-    // go through all the viewports and free them
-    for (const auto& [screen, viewport] : this->m_viewports) {
-	delete viewport;
+    // delete owned viewport objects (m_viewports holds non-owning aliases)
+    for (const auto& screen : this->m_screens) {
+	delete screen;
     }
 
+    this->m_screens.clear ();
     this->m_viewports.clear ();
 
     // free all the resources we've got
@@ -101,6 +102,13 @@ void X11Output::loadScreenInfo () {
 	return;
     }
 
+    discoverOutputs (screenResources);
+    XRRFreeScreenResources (screenResources);
+    validateOutputs ();
+    initX11Background ();
+}
+
+void X11Output::discoverOutputs (XRRScreenResources* screenResources) {
     for (int i = 0; i < screenResources->noutput; i++) {
 	const XRROutputInfo* info = XRRGetOutputInfo (this->m_display, screenResources, screenResources->outputs[i]);
 
@@ -116,37 +124,66 @@ void X11Output::loadScreenInfo () {
 	    continue;
 	}
 
-	// add the screen to the list of screens
-	this->m_screens.push_back (new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height },
-							    info->name });
+	// check if this screen is part of a span group
+	bool inSpanGroup = false;
+	for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		if (screen == info->name) {
+		    inSpanGroup = true;
+		    break;
+		}
+	    }
+	    if (inSpanGroup) {
+		break;
+	    }
+	}
 
 	// only keep info of registered screens
-	if (this->m_context.settings.general.screenBackgrounds.find (info->name)
-	    != this->m_context.settings.general.screenBackgrounds.end ()) {
+	if (inSpanGroup
+	    || this->m_context.settings.general.screenBackgrounds.find (info->name)
+		!= this->m_context.settings.general.screenBackgrounds.end ()) {
 	    sLog.out (
 		"Found requested screen: ", info->name, " -> ", crtc->x, "x", crtc->y, ":", crtc->width, "x",
 		crtc->height
 	    );
 
-	    this->m_viewports[info->name]
-		= new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
+	    auto* vp = new GLFWOutputViewport { { crtc->x, crtc->y, crtc->width, crtc->height }, info->name };
+	    vp->globalPosition = { crtc->x, crtc->y };
+	    vp->logicalSize = { crtc->width, crtc->height };
+	    this->m_screens.push_back (vp);
+	    this->m_viewports[info->name] = vp;
 	}
 
 	XRRFreeCrtcInfo (crtc);
     }
+}
 
-    XRRFreeScreenResources (screenResources);
-
+void X11Output::validateOutputs () const {
     bool any = false;
 
     for (const auto& o : this->m_screens) {
 	const auto cur = this->m_context.settings.general.screenBackgrounds.find (o->name);
 
-	if (cur == this->m_context.settings.general.screenBackgrounds.end ()) {
-	    continue;
+	if (cur != this->m_context.settings.general.screenBackgrounds.end ()) {
+	    any = true;
+	    break;
 	}
 
-	any = true;
+	// also check span groups
+	for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	    for (const auto& screen : spanGroup.screens) {
+		if (screen == o->name) {
+		    any = true;
+		    break;
+		}
+	    }
+	    if (any) {
+		break;
+	    }
+	}
+	if (any) {
+	    break;
+	}
     }
 
     if (!any) {
@@ -165,7 +202,9 @@ void X11Output::loadScreenInfo () {
 
 	sLog.exception ("Cannot continue...");
     }
+}
 
+void X11Output::initX11Background () {
     // create pixmap so we can draw things in there
     this->m_pixmap = XCreatePixmap (this->m_display, this->m_root, this->m_fullWidth, this->m_fullHeight, 24);
     this->m_gc = XCreateGC (this->m_display, this->m_pixmap, 0, nullptr);

@@ -54,11 +54,10 @@ void* GLFWWindowOutput::getImageBuffer () const { return nullptr; }
 uint32_t GLFWWindowOutput::getImageBufferSize () const { return 0; }
 
 void GLFWWindowOutput::updateRender () const {
-    if (this->m_context.settings.render.mode != Application::ApplicationContext::NORMAL_WINDOW) {
-	return;
-    }
-
-    // take the size from the driver (default window size)
+    // Track the current framebuffer dimensions regardless of window mode so
+    // runtime resizes (EXPLICIT_WINDOW mode via resizeWindow, WM-initiated
+    // host window resize) re-stretch the scene across the new viewport
+    // instead of cropping the original render at the old size.
     this->m_fullWidth = this->m_driver.getFramebufferSize ().x;
     this->m_fullHeight = this->m_driver.getFramebufferSize ().y;
 

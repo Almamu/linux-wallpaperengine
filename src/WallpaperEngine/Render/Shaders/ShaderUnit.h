@@ -96,6 +96,14 @@ private:
      * @return GLSL code defining PerformLighting_V1
      */
     [[nodiscard]] std::string generateLightingV1 () const;
+    /**
+     * Adjusts vertex varyings when a workshop shader declares a narrower vertex type than its fragment peer.
+     */
+    [[nodiscard]] std::string applyLinkedVaryingCompatibility (std::string source) const;
+    /**
+     * Adjusts fragment shaders that use wide texture coordinates as vec2 values in Wallpaper Engine effects.
+     */
+    [[nodiscard]] std::string applyFragmentTexCoordCompatibility (std::string source) const;
 
     /**
      * Parses a COMBO value to add the proper define to the code

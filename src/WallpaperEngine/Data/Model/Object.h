@@ -26,6 +26,10 @@ struct ObjectData {
     std::optional<int> parent;
     /** The point of origin of the object */
     UserSettingUniquePtr origin;
+    /** Transform fields for generic scene/group objects. Typed objects keep their own transform fields. */
+    UserSettingUniquePtr groupScale;
+    UserSettingUniquePtr groupAngles;
+    UserSettingUniquePtr groupVisible;
 };
 
 /**
@@ -593,7 +597,7 @@ struct TextData {
     /** Font reference from scene (e.g. "fonts/VCR_OSD_MONO.ttf" or "systemfont_arial") */
     std::string font;
     /** Font size in points */
-    float pointsize;
+    UserSettingUniquePtr pointsize;
     /** Bounding box size */
     glm::vec2 size;
     /** Scale (x, y, z) */

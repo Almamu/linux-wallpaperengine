@@ -21,6 +21,7 @@
 #endif /* DEMOMODE */
 
 #include <algorithm>
+#include <climits>
 #include <numeric>
 #include <unistd.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -182,12 +183,32 @@ void WallpaperApplication::loadBackgrounds () {
     }
 
     for (const auto& [screen, path] : this->m_context.settings.general.screenBackgrounds) {
-	// screens with no screen should use the default
+	// skip span group synthetic keys here, they're handled below
+	if (screen.rfind ("span:", 0) == 0) {
+	    continue;
+	}
+	// screens with no path should use the default
 	if (path.empty ()) {
 	    this->m_backgrounds[screen] = this->loadBackground (this->m_context.settings.general.defaultBackground);
 	} else {
 	    this->m_backgrounds[screen] = this->loadBackground (path);
 	}
+    }
+
+    // Load one background per span group
+    for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	if (spanGroup.screens.empty ()) {
+	    continue;
+	}
+
+	std::filesystem::path bgPath = spanGroup.background;
+	if (bgPath.empty ()) {
+	    bgPath = this->m_context.settings.general.defaultBackground;
+	}
+
+	// use the first screen's name as the group key for the loaded project
+	const std::string groupKey = "span:" + spanGroup.screens.front ();
+	this->m_backgrounds[groupKey] = this->loadBackground (bgPath);
     }
 }
 
@@ -692,8 +713,11 @@ void WallpaperApplication::prepareOutputs () {
     m_renderContext = std::make_unique<WallpaperEngine::Render::RenderContext> (*m_videoDriver, *this);
     // create a new background for each screen
 
-    // set all the specific wallpapers required
+    // set all the specific wallpapers required (skip span group synthetic keys)
     for (const auto& [background, info] : this->m_backgrounds) {
+	if (background.rfind ("span:", 0) == 0) {
+	    continue;
+	}
 	const auto scalingIt = this->m_context.settings.general.screenScalings.find (background);
 	const auto clampIt = this->m_context.settings.general.screenClamps.find (background);
 	const auto scaling = scalingIt != this->m_context.settings.general.screenScalings.end ()
@@ -709,6 +733,69 @@ void WallpaperApplication::prepareOutputs () {
 		*info->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), scaling, clamp
 	    )
 	);
+    }
+
+    // Set up span groups: one shared wallpaper per group, registered for each viewport
+    for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	if (spanGroup.screens.empty ()) {
+	    continue;
+	}
+
+	const std::string groupKey = "span:" + spanGroup.screens.front ();
+	const auto bgIt = this->m_backgrounds.find (groupKey);
+	if (bgIt == this->m_backgrounds.end ()) {
+	    continue;
+	}
+
+	// Compute the bounding box of all viewports in this span group
+	const auto& viewports = m_renderContext->getOutput ().getViewports ();
+	int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
+	bool anyFound = false;
+
+	for (const auto& screenName : spanGroup.screens) {
+	    const auto vpIt = viewports.find (screenName);
+	    if (vpIt == viewports.end ()) {
+		sLog.error ("Span group screen not found: ", screenName);
+		continue;
+	    }
+	    anyFound = true;
+	    const auto& vp = vpIt->second;
+	    const int x = vp->globalPosition.x;
+	    const int y = vp->globalPosition.y;
+	    const int w = vp->logicalSize.x;
+	    const int h = vp->logicalSize.y;
+	    sLog.debug ("SPAN DEBUG prepareOutputs: screen '", screenName,
+		"' globalPos=(", x, ",", y, ") logicalSize=", w, "x", h);
+	    minX = std::min (minX, x);
+	    minY = std::min (minY, y);
+	    maxX = std::max (maxX, x + w);
+	    maxY = std::max (maxY, y + h);
+	}
+
+	if (!anyFound) {
+	    sLog.error ("No viewports found for span group, skipping");
+	    continue;
+	}
+
+	sLog.debug ("SPAN DEBUG prepareOutputs: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")");
+
+	WallpaperEngine::Render::CWallpaper::SpanInfo spanInfo;
+	spanInfo.totalBounds = { minX, minY, maxX - minX, maxY - minY };
+
+	// Create one shared wallpaper with the span group's scaling mode
+	auto sharedWallpaper = WallpaperEngine::Render::CWallpaper::fromWallpaper (
+	    *bgIt->second->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), spanGroup.scaling,
+	    spanGroup.clamp
+	);
+
+	// Convert to shared_ptr so it can be registered for multiple viewports
+	std::shared_ptr<WallpaperEngine::Render::CWallpaper> shared (std::move (sharedWallpaper));
+	shared->setSpanInfo (spanInfo);
+
+	// Register the same wallpaper for each screen in the span group
+	for (const auto& screenName : spanGroup.screens) {
+	    m_renderContext->setWallpaper (screenName, shared);
+	}
     }
 }
 

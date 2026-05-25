@@ -5,6 +5,7 @@
 #include <string>
 
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
 
 #include "Output.h"
 #include "WallpaperEngine/Render/Drivers/VideoDriver.h"
@@ -26,6 +27,9 @@ public:
 
 private:
     void loadScreenInfo ();
+    void discoverOutputs (XRRScreenResources* screenResources);
+    void validateOutputs () const;
+    void initX11Background ();
     void free ();
 
     Display* m_display = nullptr;

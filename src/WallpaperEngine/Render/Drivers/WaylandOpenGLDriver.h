@@ -24,6 +24,7 @@ class WallpaperApplication;
 
 struct zwlr_layer_shell_v1;
 struct zwlr_layer_surface_v1;
+struct zxdg_output_manager_v1;
 
 namespace WallpaperEngine::Render::Drivers {
 using namespace WallpaperEngine::Application;
@@ -54,6 +55,7 @@ public:
 	wl_shm* shm = nullptr;
 	zwlr_layer_shell_v1* layerShell = nullptr;
 	wl_seat* seat = nullptr;
+	zxdg_output_manager_v1* xdgOutputManager = nullptr;
     };
 
     explicit WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app);
@@ -91,7 +93,10 @@ private:
     WaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
 
+    void initWaylandRegistry ();
+    void setupOutputLayerSurfaces ();
     void initEGL ();
+    void initGLEW ();
     void finishEGL () const;
 
     uint32_t m_frameCounter = 0;
