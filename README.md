@@ -138,6 +138,22 @@ cmake -DCMAKE_BUILD_TYPE='Release' ..
 make
 ```
 
+> ⚠️ Note for KDE Plasma users:
+
+KDE Plasma (Wayland) users who intend to use the “pause on fullscreen” feature are required to install an additional script from the [KWin Maximize Detector](https://github.com/LS-FCEFyN/Maximize-Detector) repository. They must also replace:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE='Release' ..
+```
+
+With:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE='Release' -DENABLE_KDE_EXPERIMENTAL_FEATURES=ON ..
+```
+
+
+
 Once the build process is finished, this should create a new `output` folder containing the app and all the required
 support files to run.
 
