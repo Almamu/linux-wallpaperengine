@@ -1,6 +1,7 @@
 #include "ShaderUnit.h"
 
 #include "WallpaperEngine/Logging/Log.h"
+#include <exception>
 #include <regex>
 #include <stack>
 #include <string>
@@ -34,6 +35,12 @@
 	  "#define CAST3(x) (vec3(x))\n"                                                                               \
 	  "#define CAST4(x) (vec4(x))\n"                                                                               \
 	  "#define CAST3X3(x) (mat3(x))\n"                                                                             \
+	  "#define float2 vec2\n"                                                                                     \
+	  "#define float3 vec3\n"                                                                                     \
+	  "#define float4 vec4\n"                                                                                     \
+	  "#define int2 ivec2\n"                                                                                      \
+	  "#define int3 ivec3\n"                                                                                      \
+	  "#define int4 ivec4\n"                                                                                      \
 	  "#define saturate(x) (clamp(x, 0.0, 1.0))\n"                                                                 \
 	  "#define texSample2D texture\n"                                                                              \
 	  "#define texSample2DLod textureLod\n"                                                                        \
@@ -71,9 +78,9 @@ void ShaderUnit::preprocess () {
     this->m_preprocessed = this->m_content;
     this->m_includes = "";
 
-    this->preprocessVariables ();
     this->preprocessIncludes ();
     this->preprocessRequires ();
+    this->preprocessVariables ();
 
     // replace gl_FragColor with the equivalent
     const std::string from = "gl_FragColor";
@@ -87,9 +94,6 @@ void ShaderUnit::preprocess () {
 }
 
 void ShaderUnit::preprocessVariables () {
-    this->m_preprocessed = this->m_content;
-    this->m_includes = "";
-
     size_t start = 0, end = 0;
     while ((end = this->m_preprocessed.find ('\n', start)) != std::string::npos) {
 	// Extract a line from the string
@@ -371,14 +375,76 @@ std::string ShaderUnit::generateLightingV1 () const {
 	   "// end of generated module LightingV1\n";
 }
 
+std::string ShaderUnit::applyLinkedVaryingCompatibility (std::string source) const {
+    if (this->m_type != GLSLContext::UnitType_Vertex || this->m_link == nullptr) {
+	return source;
+    }
+
+    std::regex fragmentVec4Varying (R"(\bvarying\s+vec4\s+([A-Za-z_][A-Za-z0-9_]*)\s*;)");
+    std::smatch varyingMatch;
+    std::string linked = this->m_link->m_preprocessed;
+    size_t linkedOffset = 0;
+
+    while (std::regex_search (linked.cbegin () + linkedOffset, linked.cend (), varyingMatch, fragmentVec4Varying)) {
+	const std::string name = varyingMatch[1].str ();
+	linkedOffset += varyingMatch.position () + varyingMatch.length ();
+
+	const std::regex vertexVec2Decl ("\\bvarying\\s+vec2\\s+" + name + "\\s*;");
+	if (!std::regex_search (source, vertexVec2Decl)) {
+	    continue;
+	}
+
+	source = std::regex_replace (source, vertexVec2Decl, "varying vec4 " + name + ";");
+
+	const std::regex assignment ("(^|\\n)([ \\t]*)" + name + "\\s*=\\s*([^;\\n]+);");
+	std::smatch assignmentMatch;
+	size_t offset = 0;
+	while (std::regex_search (source.cbegin () + offset, source.cend (), assignmentMatch, assignment)) {
+	    const std::string prefix = assignmentMatch[1].str ();
+	    const std::string indent = assignmentMatch[2].str ();
+	    const std::string expression = assignmentMatch[3].str ();
+	    const std::string replacement = prefix + indent + name + " = vec4(" + expression + ", 0.0, 1.0);";
+	    const size_t position = offset + assignmentMatch.position ();
+	    source.replace (position, assignmentMatch.length (), replacement);
+	    offset = position + replacement.length ();
+	}
+    }
+
+    return source;
+}
+
+std::string ShaderUnit::applyFragmentTexCoordCompatibility (std::string source) const {
+    if (this->m_type != GLSLContext::UnitType_Fragment) {
+	return source;
+    }
+
+    const std::regex texCoordBeforeCast2 (R"(\bv_TexCoord\b(\s*[-+*/]\s*CAST2\s*\())");
+    const std::regex cast2BeforeTexCoord (R"((CAST2\s*\([^)]+\)\s*[-+*/]\s*)\bv_TexCoord\b)");
+
+    const std::regex wideTexCoordDecl (R"(\bvarying\s+vec[34]\s+v_TexCoord\s*;)");
+    if (!std::regex_search (source, wideTexCoordDecl)
+	|| (!std::regex_search (source, texCoordBeforeCast2) && !std::regex_search (source, cast2BeforeTexCoord))) {
+	return source;
+    }
+
+    const std::string original = source;
+    source = std::regex_replace (source, texCoordBeforeCast2, "v_TexCoord.xy$1");
+    source = std::regex_replace (source, cast2BeforeTexCoord, "$1v_TexCoord.xy");
+
+    if (source != original) {
+	sLog.out ("Applied fragment TexCoord vec2 compatibility in ", this->m_file);
+    }
+
+    return source;
+}
+
 void ShaderUnit::parseComboConfiguration (const std::string& content, const int defaultValue) {
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
     JSON data;
     try {
 	data = JSON::parse (content);
     } catch (const std::exception& e) {
-	sLog.error ("Failed to parse combo configuration in shader ", this->m_file, ": ", e.what ());
-	sLog.error ("Content: ", content);
+	sLog.error ("Cannot parse combo metadata in shader ", this->m_file, ": ", e.what ());
 	return;
     }
     const auto combo = data.require<std::string> ("combo", "cannot parse combo information");
@@ -419,8 +485,7 @@ void ShaderUnit::parseParameterConfiguration (
     try {
 	data = JSON::parse (content);
     } catch (const std::exception& e) {
-	sLog.error ("Failed to parse parameter configuration in shader ", this->m_file, ": ", e.what ());
-	sLog.error ("Parameter: ", type, " ", name, ", content: ", content);
+	sLog.error ("Cannot parse parameter metadata for ", name, " in shader ", this->m_file, ": ", e.what ());
 	return;
     }
     const auto material = data.optional ("material");
@@ -649,7 +714,8 @@ const std::string& ShaderUnit::compile () {
     }
 
     // this should be the rest of the shader
-    this->m_final += this->m_preprocessed;
+    this->m_final
+	+= this->applyFragmentTexCoordCompatibility (this->applyLinkedVaryingCompatibility (this->m_preprocessed));
 
     // the pass itself handles shader compilation, the unit doesn't have enough information for this step
     return this->m_final;

@@ -10,6 +10,7 @@
 #include "../TextureProvider.h"
 
 #include <glm/vec3.hpp>
+#include <vector>
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -63,12 +64,42 @@ protected:
 
     void updateScreenSpacePosition ();
 
+    struct ResolvedTransform {
+	glm::vec3 origin;
+	glm::vec3 scale;
+	float angle;
+    };
+
+    [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object, int depth = 0) const;
+
 private:
+    bool loadPuppetMesh (const glm::vec2& size);
+    void updatePuppetPositionBuffer (const glm::vec2& size);
+    void setupPuppetGeometryCallback (Effects::CPass* pass) const;
+    void updateGeometryBuffers ();
+    [[nodiscard]] glm::vec2 resolveGeometrySize (float sceneWidth, float sceneHeight, glm::vec3& origin) const;
+    void updateScenePosition (const glm::vec3& origin, const glm::vec2& size, const glm::vec3& scale, float sceneWidth, float sceneHeight);
+    void uploadGeometryBuffers (const glm::vec2& size);
+    [[nodiscard]] bool shouldRenderFinalPass (bool isLastPass) const;
+    bool configurePassTarget (
+	Effects::CPass* pass,
+	std::shared_ptr<const CFBO>& drawTo,
+	const std::shared_ptr<const TextureProvider>& asInput,
+	std::shared_ptr<const TextureProvider>& effectInput,
+	bool& inTargetEffectSequence
+    );
+
     GLuint m_sceneSpacePosition;
     GLuint m_copySpacePosition;
     GLuint m_passSpacePosition;
     GLuint m_texcoordCopy;
     GLuint m_texcoordPass;
+    GLuint m_puppetSpacePosition = GL_NONE;
+    GLuint m_puppetTexCoord = GL_NONE;
+    GLuint m_puppetIndices = GL_NONE;
+    GLsizei m_puppetIndexCount = 0;
+    bool m_hasPuppetMesh = false;
+    std::vector<GLfloat> m_puppetRawPositions = {};
 
     glm::mat4 m_modelViewProjectionScreen = {};
     glm::mat4 m_modelViewProjectionPass = {};
@@ -95,6 +126,7 @@ private:
 
     glm::vec4 m_pos = {};
     glm::vec3 m_sceneCenter = {};
+    glm::vec2 m_size = {};
 
     bool m_initialized = false;
 
@@ -103,6 +135,8 @@ private:
 	    MaterialUniquePtr material;
 	    ImageEffectPassOverrideUniquePtr override;
 	} colorBlending;
+	std::vector<MaterialUniquePtr> compatibilityMaterials = {};
+	std::vector<ImageEffectPassOverrideUniquePtr> compatibilityOverrides = {};
     } m_materials;
 };
 } // namespace WallpaperEngine::Render::Objects

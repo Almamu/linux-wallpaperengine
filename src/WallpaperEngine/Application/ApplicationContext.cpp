@@ -9,6 +9,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <stdexcept>
 #include <string_view>
 
 #include <argparse/argparse.hpp>
@@ -531,6 +533,44 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.help ("Dumps the structure of the backgrounds")
 	.flag ()
 	.store_into (this->settings.general.dumpStructure);
+
+    debuggingGroup.add_argument ("--render-debug")
+	.help (
+		    "Scene render debug mode: base-only, no-solid-final, pass-log, object=<id>, skip-object=<id>, or skip-effect=<id>. Can be repeated."
+	)
+	.action ([this] (const std::string& value) -> void {
+	    const auto parseDebugId = [&value] (const std::string& prefix) -> std::optional<int> {
+		try {
+		    return std::stoi (value.substr (prefix.length ()));
+		} catch (const std::invalid_argument&) {
+		    sLog.exception ("Invalid numeric value for --render-debug ", value);
+		} catch (const std::out_of_range&) {
+		    sLog.exception ("Out-of-range numeric value for --render-debug ", value);
+		}
+		return std::nullopt;
+	    };
+
+	    if (value == "base-only") {
+		this->settings.render.debug.baseOnly = true;
+	    } else if (value == "no-solid-final") {
+		this->settings.render.debug.noSolidFinal = true;
+	    } else if (value == "pass-log") {
+		this->settings.render.debug.passLog = true;
+	    } else if (value.rfind ("object=", 0) == 0) {
+		this->settings.render.debug.objectFilter = parseDebugId ("object=");
+	    } else if (value.rfind ("skip-object=", 0) == 0) {
+		if (const auto id = parseDebugId ("skip-object="); id.has_value ()) {
+		    this->settings.render.debug.skipObjects.emplace_back (*id);
+		}
+	    } else if (value.rfind ("skip-effect=", 0) == 0) {
+		if (const auto id = parseDebugId ("skip-effect="); id.has_value ()) {
+		    this->settings.render.debug.skipEffects.emplace_back (*id);
+		}
+	    } else {
+		sLog.exception ("Invalid render debug mode: ", value);
+	    }
+	})
+	.append ();
 
     program.add_epilog (
 	"Usage examples:\n"

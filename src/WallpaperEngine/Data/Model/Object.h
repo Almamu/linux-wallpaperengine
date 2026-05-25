@@ -26,6 +26,10 @@ struct ObjectData {
     std::optional<int> parent;
     /** The point of origin of the object */
     UserSettingUniquePtr origin;
+    /** Transform fields for generic scene/group objects. Typed objects keep their own transform fields. */
+    UserSettingUniquePtr groupScale;
+    UserSettingUniquePtr groupAngles;
+    UserSettingUniquePtr groupVisible;
 };
 
 /**
