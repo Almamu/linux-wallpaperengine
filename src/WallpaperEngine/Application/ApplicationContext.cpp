@@ -394,7 +394,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    } else {
 		this->settings.render.window.clamp = flags;
 	    }
-	});
+	})
+	.append ();
 
     backgroundGroup.add_argument ("--layer")
 	.help (
