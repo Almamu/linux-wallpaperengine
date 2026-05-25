@@ -179,7 +179,7 @@ unsigned int CText::computeEffectivePixelSize () const {
 	? std::min (1.0f / avgScale, 32.0f)
 	: 1.0f;
     return std::max<unsigned int> (
-	1u, static_cast<unsigned int> (static_cast<float> (m_text.pointsize) * compensate));
+	1u, static_cast<unsigned int> (m_text.pointsize->value->getFloat () * compensate));
 }
 
 void CText::initScriptLayer () {
