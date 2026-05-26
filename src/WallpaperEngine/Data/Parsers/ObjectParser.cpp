@@ -17,19 +17,6 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 namespace {
-// Wraps a string value in a UserSetting with a String-typed DynamicValue.
-// UserSettingParser would try to numeric-parse single-char strings like "-"/":",
-// so we bypass it for raw string script-property values.
-UserSettingUniquePtr makeStringSetting (const std::string& s) {
-    auto dv = std::make_unique<DynamicValue> ();
-    dv->update (s);
-    return std::make_unique<UserSetting> (UserSetting {
-	.value = std::move (dv),
-	.property = nullptr,
-	.condition = std::nullopt,
-    });
-}
-
 // Resolves the `script` field of a scripted text node: if it looks like a
 // single-line path ending in .js, read it through the asset locator.
 // Returns empty string on failure (caller treats empty script as static).
@@ -58,13 +45,13 @@ parseScriptProperties (const JSON& propsObj, const Properties& properties) {
     for (const auto& [key, propData] : propsObj.items ()) {
 	try {
 	    if (propData.is_string ()) {
-		out.emplace (key, makeStringSetting (propData.template get<std::string> ()));
+		out.emplace (key, WallpaperEngine::Data::Builders::UserSettingBuilder::fromValue (propData.template get<std::string> ()));
 		continue;
 	    }
 	    if (propData.is_object ()) {
 		if (const auto valueField = propData.find ("value");
 		    valueField != propData.end () && valueField->is_string ()) {
-		    out.emplace (key, makeStringSetting (valueField->template get<std::string> ()));
+		    out.emplace (key, WallpaperEngine::Data::Builders::UserSettingBuilder::fromValue (valueField->template get<std::string> ()));
 		    continue;
 		}
 	    }
@@ -489,43 +476,17 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 		    .renderers = {},
 		    .controlPoints = {},
 		    .children = {},
-		    .instanceOverride
-		    = { .enabled
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (false),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.alpha
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.size
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.lifetime
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.rate
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.speed
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.count
-			= std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (1.0f),
-								       .property = nullptr,
-								       .condition = std::nullopt }),
-			.color = std::make_unique<UserSetting> (UserSetting {
-			    .value = std::make_unique<DynamicValue> (glm::vec3 (1.0f)),
-			    .property = nullptr,
-			    .condition = std::nullopt }),
-			.colorn = std::make_unique<UserSetting> (UserSetting {
-			    .value = std::make_unique<DynamicValue> (glm::vec3 (1.0f)),
-			    .property = nullptr,
-			    .condition = std::nullopt }) },
+		    .instanceOverride = {
+		        .enabled = Builders::UserSettingBuilder::fromValue(false),
+			.alpha = Builders::UserSettingBuilder::fromValue(1.0f),
+			.size = Builders::UserSettingBuilder::fromValue(1.0f),
+			.lifetime = Builders::UserSettingBuilder::fromValue(1.0f),
+			.rate = Builders::UserSettingBuilder::fromValue(1.0f),
+			.speed = Builders::UserSettingBuilder::fromValue(1.0f),
+			.count = Builders::UserSettingBuilder::fromValue(1.0f),
+			.color = Builders::UserSettingBuilder::fromValue(1.0f),
+			.colorn = Builders::UserSettingBuilder::fromValue(1.0f),
+		    },
 		}
 	    );
 	}
@@ -628,29 +589,16 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	}
 
 	// Parse instance override
-	ParticleInstanceOverride instanceOverride = {
-	    .enabled = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (false), .property = nullptr, .condition = std::nullopt }),
-	    .alpha = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .size = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .lifetime = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .rate = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .speed = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .count = std::make_unique<UserSetting> (UserSetting {
-		.value = std::make_unique<DynamicValue> (1.0f), .property = nullptr, .condition = std::nullopt }),
-	    .color
-	    = std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (glm::vec3 (1.0f)),
-							   .property = nullptr,
-							   .condition = std::nullopt }),
-	    .colorn
-	    = std::make_unique<UserSetting> (UserSetting { .value = std::make_unique<DynamicValue> (glm::vec3 (1.0f)),
-							   .property = nullptr,
-							   .condition = std::nullopt })
+        ParticleInstanceOverride instanceOverride = {
+	    .enabled = Builders::UserSettingBuilder::fromValue(false),
+            .alpha = Builders::UserSettingBuilder::fromValue(1.0f),
+            .size = Builders::UserSettingBuilder::fromValue(1.0f),
+            .lifetime = Builders::UserSettingBuilder::fromValue(1.0f),
+            .rate = Builders::UserSettingBuilder::fromValue(1.0f),
+            .speed = Builders::UserSettingBuilder::fromValue(1.0f),
+            .count = Builders::UserSettingBuilder::fromValue(1.0f),
+            .color = Builders::UserSettingBuilder::fromValue(1.0f),
+            .colorn = Builders::UserSettingBuilder::fromValue(1.0f),
 	};
 	const auto instanceOverrideIt = it.optional ("instanceoverride");
 	if (instanceOverrideIt.has_value ()) {

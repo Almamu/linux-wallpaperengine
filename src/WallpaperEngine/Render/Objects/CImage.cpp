@@ -3,13 +3,16 @@
 #include "CRenderable.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstring>
 #include <iterator>
 #include <optional>
 #include <sstream>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/rotate_vector.hpp>
+#undef GLM_ENABLE_EXPERIMENTAL
 
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Material.h"
@@ -29,20 +32,6 @@ glm::vec2 rotateVec2 (const glm::vec2& value, float angle) {
     const float cosAngle = std::cos (angle);
     const float sinAngle = std::sin (angle);
     return { value.x * cosAngle - value.y * sinAngle, value.x * sinAngle + value.y * cosAngle };
-}
-
-UserSettingUniquePtr makeStaticSetting (const glm::vec3& value) {
-    auto dynamicValue = std::make_unique<DynamicValue> (value);
-    return std::make_unique<UserSetting> (
-	UserSetting { .value = std::move (dynamicValue), .property = nullptr, .condition = std::nullopt }
-    );
-}
-
-UserSettingUniquePtr makeStaticSetting (float value) {
-    auto dynamicValue = std::make_unique<DynamicValue> (value);
-    return std::make_unique<UserSetting> (
-	UserSetting { .value = std::move (dynamicValue), .property = nullptr, .condition = std::nullopt }
-    );
 }
 
 bool isMagentaNeonTint (const glm::vec3& color) {
@@ -730,8 +719,8 @@ void CImage::setup () {
 		.constants = {},
 		.textures = {},
 	    });
-	    tintOverride->constants.emplace ("color", makeStaticSetting (magentaCompositeTint.value ()));
-	    tintOverride->constants.emplace ("alpha", makeStaticSetting (1.0f));
+	    tintOverride->constants.emplace ("color", UserSettingBuilder::fromValue (magentaCompositeTint.value ()));
+	    tintOverride->constants.emplace ("alpha", UserSettingBuilder::fromValue (1.0f));
 
 	    this->m_materials.compatibilityMaterials.emplace_back (
 		MaterialParser::load (this->getScene ().getScene ().project, "materials/effects/tint.json")
