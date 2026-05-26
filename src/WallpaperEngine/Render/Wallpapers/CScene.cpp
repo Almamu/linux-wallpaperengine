@@ -372,6 +372,7 @@ void CScene::collectScriptedValues () {
 	    this->registerScriptedValue (text->color);
 	    this->registerScriptedValue (text->alpha);
 	    this->registerScriptedValue (text->scale);
+	    this->registerScriptedValue (text->pointSize);
 	}
     }
 }

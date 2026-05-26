@@ -146,7 +146,7 @@ std::optional<glm::dvec2> WaylandMouseInput::queryHyprlandCursorPosition () cons
     }
 
     constexpr const char* request = "j/cursorpos";
-    if (send (fd, request, std::strlen (request), 0) < 0) {
+    if (send (fd, request, std::strlen (request), MSG_NOSIGNAL) < 0) {
 	close (fd);
 	return std::nullopt;
     }

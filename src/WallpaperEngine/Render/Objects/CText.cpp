@@ -101,7 +101,8 @@ void CText::setup () {
     if (!loadEmbeddedFont () && !loadSystemFont ())
 	return;
 
-    FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (computeEffectivePixelSize ()));
+    m_lastPixelSize = computeEffectivePixelSize ();
+    FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
 
     buildShader ();
     // Scripted text may have an empty placeholder; use a single space so the
@@ -179,7 +180,7 @@ unsigned int CText::computeEffectivePixelSize () const {
 	? std::min (1.0f / avgScale, 32.0f)
 	: 1.0f;
     return std::max<unsigned int> (
-	1u, static_cast<unsigned int> (m_text.pointsize->value->getFloat () * compensate));
+	1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
 }
 
 void CText::initScriptLayer () {
@@ -337,6 +338,7 @@ void CText::render () {
     if (!m_valid) return;
     if (!m_text.visible->value->getBool ()) return;
 
+    std::string renderedText = m_lastRenderedText;
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {
 	auto& se = Scripting::ScriptEngine::instance ();
 	se.tickLayer (
@@ -346,9 +348,16 @@ void CText::render () {
 	    static_cast<double> (getScene ().getFps ())
 	);
 	const std::string current = se.layerText (m_layerHandle);
-	if (current != m_lastRenderedText) {
-	    rebuildTextureFrom (current.empty () ? std::string (" ") : current);
-	}
+	renderedText = current.empty () ? std::string (" ") : current;
+    }
+
+    const unsigned int pixelSize = computeEffectivePixelSize ();
+    if (pixelSize != m_lastPixelSize) {
+	m_lastPixelSize = pixelSize;
+	FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
+	rebuildTextureFrom (renderedText);
+    } else if (renderedText != m_lastRenderedText) {
+	rebuildTextureFrom (renderedText);
     }
 
     const glm::vec4 color = m_text.color->value->getVec4 ();

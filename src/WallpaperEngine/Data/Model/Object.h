@@ -596,8 +596,8 @@ struct TextData {
     std::map<std::string, UserSettingUniquePtr> scriptProperties;
     /** Font reference from scene (e.g. "fonts/VCR_OSD_MONO.ttf" or "systemfont_arial") */
     std::string font;
-    /** Font size in points */
-    UserSettingUniquePtr pointsize;
+    /** Font size in points, optionally bound to a user setting or script */
+    UserSettingUniquePtr pointSize;
     /** Bounding box size */
     glm::vec2 size;
     /** Scale (x, y, z) */
