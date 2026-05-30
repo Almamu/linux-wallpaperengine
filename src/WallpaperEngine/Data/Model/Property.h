@@ -3,6 +3,7 @@
 #include "../Builders/ColorBuilder.h"
 #include "../Utils/TypeCaster.h"
 #include "DynamicValue.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <map>
 #include <string>
