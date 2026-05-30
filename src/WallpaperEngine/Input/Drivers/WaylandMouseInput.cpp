@@ -91,15 +91,16 @@ WallpaperEngine::Input::MouseClickStatus WaylandMouseInput::leftClick () const {
     return MouseClickStatus::Released;
 }
 
-const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport* WaylandMouseInput::getActiveOutputViewport () const {
+const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport*
+WaylandMouseInput::getActiveOutputViewport () const {
     if (this->m_waylandDriver.viewportInFocus && this->m_waylandDriver.viewportInFocus->rendering) {
-        return this->m_waylandDriver.viewportInFocus;
+	return this->m_waylandDriver.viewportInFocus;
     }
 
     for (const auto* viewport : this->m_waylandDriver.m_screens) {
-        if (viewport && viewport->rendering) {
-            return viewport;
-        }
+	if (viewport && viewport->rendering) {
+	    return viewport;
+	}
     }
 
     return nullptr;

@@ -227,31 +227,31 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
     if (object.is<Image> ()) {
-        renderObject = new Objects::CImage (*this, *object.as<Image> ());
+	renderObject = new Objects::CImage (*this, *object.as<Image> ());
     } else if (object.is<Sound> ()) {
 	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
     } else if (object.is<Text> ()) {
 	renderObject = new Objects::CText (*this, *object.as<Text> ());
     } else if (object.is<Particle> ()) {
-        const auto& particleData = *object.as<Particle> ();
+	const auto& particleData = *object.as<Particle> ();
 
-        if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
-            sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
-            return nullptr;
-        }
+	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+	    sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
+	    return nullptr;
+	}
 
-        renderObject = new Objects::CParticle (*this, particleData);
+	renderObject = new Objects::CParticle (*this, particleData);
     } else {
 	sLog.error ("Unknown object type, creating placeholder, empty object: ", object.id);
 	renderObject = new CObject (*this, object);
     }
 
     try {
-        renderObject->setup ();
+	renderObject->setup ();
     } catch (const std::exception& e) {
-        sLog.error ("Failed to setup object ", object.id, ": ", e.what ());
-        delete renderObject;
-        renderObject = nullptr;
+	sLog.error ("Failed to setup object ", object.id, ": ", e.what ());
+	delete renderObject;
+	renderObject = nullptr;
     }
 
     return renderObject;

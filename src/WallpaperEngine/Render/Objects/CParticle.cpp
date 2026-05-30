@@ -387,132 +387,136 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     bool limitOnePerFrame = (emitter.flags & 2) != 0;
     bool randomPeriodicEmission = (emitter.flags & 4) != 0;
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
-	    randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
-	    periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
-	    instantaneousEmitted
-	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
-	if (count >= particles.size ()) {
-	    return;
-	}
-
-	// Handle delay
-	if (delayTimer > 0.0f) {
-	    delayTimer -= dt;
-	    return;
-	}
-
-	// Handle duration
-	if (emitter.duration > 0.0f) {
-	    durationTimer += dt;
-	    if (durationTimer >= emitter.duration) {
+    return
+	[this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
+	 randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
+	 periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
+	 instantaneousEmitted = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+	    if (count >= particles.size ()) {
 		return;
 	    }
-	}
 
-	// Handle random periodic emission
-	if (randomPeriodicEmission) {
-	    periodicTimer += dt;
+	    // Handle delay
+	    if (delayTimer > 0.0f) {
+		delayTimer -= dt;
+		return;
+	    }
 
-	    if (!emitting) {
-		if (periodicTimer >= periodicDelay) {
-		    emitting = true;
-		    periodicTimer = 0.0f;
-		    periodicDuration = WallpaperEngine::Maths::randomFloat (m_rng, emitter.minPeriodicDuration, emitter.maxPeriodicDuration);
+	    // Handle duration
+	    if (emitter.duration > 0.0f) {
+		durationTimer += dt;
+		if (durationTimer >= emitter.duration) {
+		    return;
+		}
+	    }
+
+	    // Handle random periodic emission
+	    if (randomPeriodicEmission) {
+		periodicTimer += dt;
+
+		if (!emitting) {
+		    if (periodicTimer >= periodicDelay) {
+			emitting = true;
+			periodicTimer = 0.0f;
+			periodicDuration = WallpaperEngine::Maths::randomFloat (
+			    m_rng, emitter.minPeriodicDuration, emitter.maxPeriodicDuration
+			);
+		    } else {
+			return;
+		    }
 		} else {
-		    return;
+		    if (periodicTimer >= periodicDuration) {
+			emitting = false;
+			periodicTimer = 0.0f;
+			periodicDelay = WallpaperEngine::Maths::randomFloat (
+			    m_rng, emitter.minPeriodicDelay, emitter.maxPeriodicDelay
+			);
+			return;
+		    }
 		}
-	    } else {
-		if (periodicTimer >= periodicDuration) {
-		    emitting = false;
-		    periodicTimer = 0.0f;
-		    periodicDelay = WallpaperEngine::Maths::randomFloat (m_rng, emitter.minPeriodicDelay, emitter.maxPeriodicDelay);
-		    return;
+	    }
+
+	    // TODO: Audio processing (audioProcessingMode, audioProcessingBounds, etc.)
+
+	    // Handle instantaneous emission
+	    uint32_t toEmit = 0;
+	    if (emitter.instantaneous > 0 && !instantaneousEmitted) {
+		toEmit = emitter.instantaneous;
+		instantaneousEmitted = true;
+	    }
+
+	    // Rate-based emission with optional cap at 1 per frame
+	    if (emitter.rate > 0.0f) {
+		emissionTimer += dt * rate;
+		uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
+		emissionTimer -= static_cast<float> (rateEmit);
+		// limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+		if (limitOnePerFrame && rateEmit > 1) {
+		    rateEmit = 1;
 		}
-	    }
-	}
-
-	// TODO: Audio processing (audioProcessingMode, audioProcessingBounds, etc.)
-
-	// Handle instantaneous emission
-	uint32_t toEmit = 0;
-	if (emitter.instantaneous > 0 && !instantaneousEmitted) {
-	    toEmit = emitter.instantaneous;
-	    instantaneousEmitted = true;
-	}
-
-	// Rate-based emission with optional cap at 1 per frame
-	if (emitter.rate > 0.0f) {
-	    emissionTimer += dt * rate;
-	    uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
-	    emissionTimer -= static_cast<float> (rateEmit);
-	    // limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
-	    if (limitOnePerFrame && rateEmit > 1) {
-		rateEmit = 1;
-	    }
-	    toEmit += rateEmit;
-	}
-
-	// Emit particles
-	for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
-	    auto& p = particles[count];
-
-	    glm::vec3 spawnOrigin = transformedEmitterOrigin;
-	    if (controlPointIndex >= 0 && controlPointIndex < static_cast<int> (m_controlPoints.size ())) {
-		spawnOrigin += m_controlPoints[controlPointIndex].position;
+		toEmit += rateEmit;
 	    }
 
-	    // Generate random position within box volume centered on origin
-	    // This creates a centered box (or hollow box if distanceMin > 0)
-	    glm::vec3 randomPos;
-	    for (int axis = 0; axis < 3; axis++) {
-		float minDist = emitter.distanceMin[axis];
-		float maxDist = emitter.distanceMax[axis];
-		// Generate value in [minDist, maxDist]
-		float dist = WallpaperEngine::Maths::randomFloat (m_rng, minDist, maxDist);
-		// Randomly flip sign to center the distribution
-		if (WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) < 0.5f) {
-		    dist = -dist;
+	    // Emit particles
+	    for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
+		auto& p = particles[count];
+
+		glm::vec3 spawnOrigin = transformedEmitterOrigin;
+		if (controlPointIndex >= 0 && controlPointIndex < static_cast<int> (m_controlPoints.size ())) {
+		    spawnOrigin += m_controlPoints[controlPointIndex].position;
 		}
-		randomPos[axis] = dist;
+
+		// Generate random position within box volume centered on origin
+		// This creates a centered box (or hollow box if distanceMin > 0)
+		glm::vec3 randomPos;
+		for (int axis = 0; axis < 3; axis++) {
+		    float minDist = emitter.distanceMin[axis];
+		    float maxDist = emitter.distanceMax[axis];
+		    // Generate value in [minDist, maxDist]
+		    float dist = WallpaperEngine::Maths::randomFloat (m_rng, minDist, maxDist);
+		    // Randomly flip sign to center the distribution
+		    if (WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) < 0.5f) {
+			dist = -dist;
+		    }
+		    randomPos[axis] = dist;
+		}
+		randomPos *= flippedDirections;
+
+		p.position = spawnOrigin + randomPos;
+
+		// Emitter does not set velocity - initializers handle that
+		p.velocity = glm::vec3 (0.0f);
+		p.acceleration = glm::vec3 (0.0f);
+		p.rotation = glm::vec3 (0.0f);
+		p.angularVelocity = glm::vec3 (0.0f);
+		p.angularAcceleration = glm::vec3 (0.0f);
+
+		p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
+		p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
+		p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
+		p.lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
+		p.age = 0.0f;
+		p.alive = true;
+		p.frame = -1.0f;
+
+		p.initial.color = p.color;
+		p.initial.alpha = p.alpha;
+		p.initial.size = p.size;
+		p.initial.lifetime = p.lifetime;
+
+		// Reset oscillator state for reused particles
+		p.oscillateAlpha = {};
+		p.oscillateSize = {};
+		p.oscillatePosition = {};
+
+		// Apply initializers
+		for (auto& init : m_initializers) {
+		    init (p);
+		}
+
+		count++;
 	    }
-	    randomPos *= flippedDirections;
-
-	    p.position = spawnOrigin + randomPos;
-
-	    // Emitter does not set velocity - initializers handle that
-	    p.velocity = glm::vec3 (0.0f);
-	    p.acceleration = glm::vec3 (0.0f);
-	    p.rotation = glm::vec3 (0.0f);
-	    p.angularVelocity = glm::vec3 (0.0f);
-	    p.angularAcceleration = glm::vec3 (0.0f);
-
-	    p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
-	    p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
-	    p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
-	    p.lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
-	    p.age = 0.0f;
-	    p.alive = true;
-	    p.frame = -1.0f;
-
-	    p.initial.color = p.color;
-	    p.initial.alpha = p.alpha;
-	    p.initial.size = p.size;
-	    p.initial.lifetime = p.lifetime;
-
-	    // Reset oscillator state for reused particles
-	    p.oscillateAlpha = {};
-	    p.oscillateSize = {};
-	    p.oscillatePosition = {};
-
-	    // Apply initializers
-	    for (auto& init : m_initializers) {
-		init (p);
-	    }
-
-	    count++;
-	}
-    };
+	};
 }
 
 EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
@@ -583,7 +587,8 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 		float radiusXY = std::sqrt (WallpaperEngine::Maths::randomFloat (m_rng, minRadiusSq, maxRadiusSq));
 
 		randomPos = glm::vec3 (
-		    radiusXY * std::cos (angle), radiusXY * std::sin (angle), WallpaperEngine::Maths::randomFloat (m_rng, -maxRadius, maxRadius)
+		    radiusXY * std::cos (angle), radiusXY * std::sin (angle),
+		    WallpaperEngine::Maths::randomFloat (m_rng, -maxRadius, maxRadius)
 		);
 
 		randomPos *= emitter.directions;
@@ -710,7 +715,8 @@ InitializerFunc CParticle::createColorRandomInitializer (const ColorRandomInitia
     DynamicValue* colorOverride = m_particle.instanceOverride.colorn->value.get ();
 
     return [this, minValue, maxValue, colorOverride] (ParticleInstance& p) {
-	p.color = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * colorOverride->getVec3 ();
+	p.color = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * colorOverride->getVec3 ();
 	p.initial.color = p.color;
     };
 }
@@ -740,7 +746,8 @@ InitializerFunc CParticle::createAlphaRandomInitializer (const AlphaRandomInitia
     DynamicValue* alphaOverride = m_particle.instanceOverride.alpha->value.get ();
 
     return [this, minValue, maxValue, alphaOverride] (ParticleInstance& p) {
-	p.alpha = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * alphaOverride->getFloat ();
+	p.alpha = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ())
+	    * alphaOverride->getFloat ();
 	p.initial.alpha = p.alpha;
     };
 }
@@ -751,7 +758,8 @@ InitializerFunc CParticle::createLifetimeRandomInitializer (const LifetimeRandom
     DynamicValue* lifetimeOverride = m_particle.instanceOverride.lifetime->value.get ();
 
     return [this, minValue, maxValue, lifetimeOverride] (ParticleInstance& p) {
-	p.lifetime = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * lifetimeOverride->getFloat ();
+	p.lifetime = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ())
+	    * lifetimeOverride->getFloat ();
 	p.initial.lifetime = p.lifetime;
     };
 }
@@ -762,7 +770,8 @@ InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandom
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
     return [this, minValue, maxValue, speedOverride] (ParticleInstance& p) {
-	glm::vec3 vel = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * speedOverride->getFloat ();
+	glm::vec3 vel = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * speedOverride->getFloat ();
 	vel.y = -vel.y;
 	p.velocity += vel;
     };
@@ -774,7 +783,8 @@ InitializerFunc CParticle::createRotationRandomInitializer (const RotationRandom
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
     return [this, minValue, maxValue, speedOverride] (ParticleInstance& p) {
-	p.rotation = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * speedOverride->getFloat ();
+	p.rotation = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * speedOverride->getFloat ();
     };
 }
 
@@ -1237,8 +1247,10 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     // DynamicValue* audioFreqEndValue = op.audioProcessingFrequencyEnd->value.get ();
 
     // Phase and speed are randomized once per operator instance, not per particle
-    const float phase = WallpaperEngine::Maths::randomFloat (m_rng, phaseMinValue->getFloat (), phaseMaxValue->getFloat ());
-    const float turbSpeed = WallpaperEngine::Maths::randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
+    const float phase
+	= WallpaperEngine::Maths::randomFloat (m_rng, phaseMinValue->getFloat (), phaseMaxValue->getFloat ());
+    const float turbSpeed
+	= WallpaperEngine::Maths::randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
 
     return [scaleValue, timeScaleValue, maskValue, speedOverride, phase, turbSpeed] (
 	       std::vector<ParticleInstance>& particles, uint32_t count, const std::vector<ControlPointData>&,
@@ -1507,7 +1519,8 @@ OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperat
 		if (!p.oscillateAlpha.initialized) {
 		    p.oscillateAlpha.frequency = WallpaperEngine::Maths::randomFloat (m_rng, freqMin, freqMax);
 		    p.oscillateAlpha.scale = WallpaperEngine::Maths::randomFloat (m_rng, scaleMin, scaleMax);
-		    p.oscillateAlpha.phase = WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+		    p.oscillateAlpha.phase
+			= WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
 		    p.oscillateAlpha.base = p.alpha; // Capture initial base
 		    p.oscillateAlpha.initialized = true;
 		}
@@ -1550,7 +1563,8 @@ OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator
 		if (!p.oscillateSize.initialized) {
 		    p.oscillateSize.frequency = WallpaperEngine::Maths::randomFloat (m_rng, freqMin, freqMax);
 		    p.oscillateSize.scale = WallpaperEngine::Maths::randomFloat (m_rng, scaleMin, scaleMax);
-		    p.oscillateSize.phase = WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+		    p.oscillateSize.phase
+			= WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
 		    p.oscillateSize.base = p.size; // Capture initial base
 		    p.oscillateSize.initialized = true;
 		}
