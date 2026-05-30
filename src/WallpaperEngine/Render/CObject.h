@@ -16,6 +16,7 @@ public:
     CObject (Wallpapers::CScene& scene, const Object& object);
     virtual ~CObject () override = default;
 
+    virtual void setup ();
     virtual void render ();
 
     [[nodiscard]] Wallpapers::CScene& getScene () const;

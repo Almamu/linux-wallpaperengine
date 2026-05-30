@@ -13,23 +13,6 @@
 
 using namespace WallpaperEngine::Input::Drivers;
 
-namespace {
-const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport*
-getActiveViewport (const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& driver) {
-    if (driver.viewportInFocus && driver.viewportInFocus->rendering) {
-	return driver.viewportInFocus;
-    }
-
-    for (const auto* viewport : driver.m_screens) {
-	if (viewport && viewport->rendering) {
-	    return viewport;
-	}
-    }
-
-    return nullptr;
-}
-}
-
 WaylandMouseInput::WaylandMouseInput (const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& driver) :
     m_waylandDriver (driver) { }
 
@@ -79,7 +62,8 @@ glm::dvec2 WaylandMouseInput::position () const {
 	return { 0, 0 };
     }
 
-    const auto* viewport = getActiveViewport (m_waylandDriver);
+    const auto* viewport = this->getActiveOutputViewport ();
+
     if (!viewport) {
 	return { 0, 0 };
     }
@@ -99,12 +83,26 @@ glm::dvec2 WaylandMouseInput::position () const {
 }
 
 WallpaperEngine::Input::MouseClickStatus WaylandMouseInput::leftClick () const {
-    const auto* viewport = getActiveViewport (m_waylandDriver);
+    const auto* viewport = this->getActiveOutputViewport ();
     if (viewport) {
 	return viewport->leftClick;
     }
 
     return MouseClickStatus::Released;
+}
+
+const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport* WaylandMouseInput::getActiveOutputViewport () const {
+    if (this->m_waylandDriver.viewportInFocus && this->m_waylandDriver.viewportInFocus->rendering) {
+        return this->m_waylandDriver.viewportInFocus;
+    }
+
+    for (const auto* viewport : this->m_waylandDriver.m_screens) {
+        if (viewport && viewport->rendering) {
+            return viewport;
+        }
+    }
+
+    return nullptr;
 }
 
 std::optional<glm::dvec2> WaylandMouseInput::queryHyprlandCursorPosition () const {
@@ -173,7 +171,8 @@ std::optional<glm::dvec2> WaylandMouseInput::queryHyprlandCursorPosition () cons
 }
 
 WallpaperEngine::Input::MouseClickStatus WaylandMouseInput::rightClick () const {
-    const auto* viewport = getActiveViewport (m_waylandDriver);
+    const auto* viewport = this->getActiveOutputViewport ();
+
     if (viewport) {
 	return viewport->rightClick;
     }

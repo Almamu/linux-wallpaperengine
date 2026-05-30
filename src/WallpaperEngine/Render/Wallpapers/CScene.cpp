@@ -22,37 +22,6 @@ using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
 
-namespace {
-Render::CObject* createImageObject (CScene& scene, const Image& imageData) {
-    auto* image = new Objects::CImage (scene, imageData);
-    try {
-	image->setup ();
-    } catch (std::runtime_error&) {
-	sLog.error ("Cannot setup image ", image->getImage ().name);
-	delete image;
-	return nullptr;
-    }
-    return image;
-}
-
-Render::CObject* createParticleObject (CScene& scene, const Particle& particleData) {
-    if (scene.getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
-	sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
-	return nullptr;
-    }
-
-    auto* particle = new Objects::CParticle (scene, particleData);
-    try {
-	particle->setup ();
-    } catch (std::runtime_error&) {
-	sLog.error ("Cannot setup particle ", particle->getParticle ().name);
-	delete particle;
-	return nullptr;
-    }
-    return particle;
-}
-}
-
 CScene::CScene (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
     const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
@@ -258,24 +227,31 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
     if (object.is<Image> ()) {
-	renderObject = createImageObject (*this, *object.as<Image> ());
+        renderObject = new Objects::CImage (*this, *object.as<Image> ());
     } else if (object.is<Sound> ()) {
 	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
     } else if (object.is<Text> ()) {
-	auto* text = new Objects::CText (*this, *object.as<Text> ());
-	try {
-	    text->setup ();
-	} catch (std::runtime_error&) {
-	    sLog.error ("Cannot setup text ", text->getObject ().name);
-	    delete text;
-	    return nullptr;
-	}
-	renderObject = text;
+	renderObject = new Objects::CText (*this, *object.as<Text> ());
     } else if (object.is<Particle> ()) {
-	renderObject = createParticleObject (*this, *object.as<Particle> ());
+        const auto& particleData = *object.as<Particle> ();
+
+        if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+            sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
+            return nullptr;
+        }
+
+        renderObject = new Objects::CParticle (*this, particleData);
     } else {
-	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+	sLog.error ("Unknown object type, creating placeholder, empty object: ", object.id);
 	renderObject = new CObject (*this, object);
+    }
+
+    try {
+        renderObject->setup ();
+    } catch (const std::exception& e) {
+        sLog.error ("Failed to setup object ", object.id, ": ", e.what ());
+        delete renderObject;
+        renderObject = nullptr;
     }
 
     return renderObject;

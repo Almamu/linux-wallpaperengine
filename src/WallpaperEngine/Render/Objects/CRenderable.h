@@ -20,7 +20,7 @@ public:
 
     [[nodiscard]] double getAnimationTime () const;
 
-    virtual void setup ();
+    void setup () override;
 
     [[nodiscard]] virtual const float& getBrightness () const = 0;
     [[nodiscard]] virtual const float& getUserAlpha () const = 0;

@@ -9,6 +9,9 @@
 #include <optional>
 
 namespace WallpaperEngine::Render::Drivers {
+namespace Output {
+    class WaylandOutputViewport;
+}
 class WaylandOpenGLDriver;
 };
 
@@ -41,6 +44,7 @@ public:
     [[nodiscard]] MouseClickStatus rightClick () const override;
 
 private:
+    [[nodiscard]] const Render::Drivers::Output::WaylandOutputViewport* getActiveOutputViewport () const;
     [[nodiscard]] std::optional<glm::dvec2> queryHyprlandCursorPosition () const;
 
     /**

@@ -26,6 +26,8 @@ void CRenderable::detectTexture () {
 }
 
 void CRenderable::setup () {
+    CObject::setup ();
+
     // calculate full animation time (if any)
     this->m_animationTime = 0.0f;
 

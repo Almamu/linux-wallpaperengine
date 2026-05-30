@@ -12,8 +12,8 @@
 namespace WallpaperEngine::Render {
 using namespace WallpaperEngine::Data::Assets;
 /**
- * Base interface that describes the minimum information required for a texture
- * to be displayed by the engine
+ * Base interface that describes the minimum information required for the engine
+ * to display a texture
  */
 class TextureProvider {
 public:
