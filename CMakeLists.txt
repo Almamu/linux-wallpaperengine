@@ -476,6 +476,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Parsers/PropertyParser.h
     src/WallpaperEngine/Data/Parsers/TextureParser.cpp
     src/WallpaperEngine/Data/Parsers/TextureParser.h
+    src/WallpaperEngine/Data/Builders/ColorBuilder.h
+    src/WallpaperEngine/Data/Builders/ColorBuilder.cpp
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
@@ -489,8 +491,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h
     src/WallpaperEngine/Scripting/ScriptEngine.h
     src/WallpaperEngine/Scripting/ScriptEngine.cpp
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.h
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp)
+    src/WallpaperEngine/Scripting/CScriptableObject.h
+    src/WallpaperEngine/Scripting/CScriptableObject.cpp)
 
 if(BUILD_TESTING)
     add_executable(

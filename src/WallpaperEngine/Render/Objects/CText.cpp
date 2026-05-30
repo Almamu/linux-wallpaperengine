@@ -73,7 +73,15 @@ GLuint compileShader (GLenum type, const char* source) {
 }
 } // namespace
 
-CText::CText (Wallpapers::CScene& scene, const Text& text) : CObject (scene, text), m_text (text) {}
+CText::CText (Wallpapers::CScene& scene, const Text& text)
+    : CObject (scene, text), CScriptableObject (scene, text), m_text (text) {
+    this->registerProperty ("color", *text.color->value);
+    this->registerProperty ("alpha", *text.alpha->value);
+    this->registerProperty ("origin", *text.origin->value);
+    this->registerProperty ("scale", *text.scale->value);
+    this->registerProperty ("visible", *text.visible->value);
+    this->registerProperty ("pointSize", *text.pointSize->value);
+}
 
 CText::~CText () {
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {

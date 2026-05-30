@@ -1,6 +1,7 @@
 #include "ScriptEngine.h"
 #include "WallpaperEngine/Audio/AudioContext.h"
 #include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
@@ -329,122 +330,119 @@ JSValue ScriptEngine::dynamicValueToJS (const DynamicValue& value) const {
     }
 }
 
-DynamicValueUniquePtr ScriptEngine::jsToDynamicValue (JSValue val, DynamicValue::UnderlyingType hint) const {
+void ScriptEngine::jsToDynamicValue (JSValue val, DynamicValue& source) const {
     JSContext* ctx = this->m_context;
-    auto result = std::make_unique<DynamicValue> ();
 
     if (JS_IsException (val)) {
-	return result;
+	return;
     }
-
-    auto updateString = [&] {
-	const char* str = JS_ToCString (ctx, val);
-	result->update (str == nullptr ? "" : str);
-	JS_FreeCString (ctx, str);
-    };
 
     // scalar types returned directly
     int tag = JS_VALUE_GET_TAG (val);
+
+    if (tag == JS_TAG_UNDEFINED || tag == JS_TAG_UNINITIALIZED || tag == JS_TAG_NULL) {
+        source.update (DynamicValue::UpdateSource::Script);
+        return;
+    }
+
     if (tag == JS_TAG_INT) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	int32_t i;
-	JS_ToInt32 (ctx, &i, val);
-	if (hint == DynamicValue::Float) {
-	    result->update (static_cast<float> (i));
-	} else {
-	    result->update (static_cast<int> (i));
-	}
-	return result;
+        source.update (JS_VALUE_GET_INT (val), DynamicValue::UpdateSource::Script);
+        return;
     }
+
     if (tag == JS_TAG_BOOL) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	result->update (static_cast<bool> (JS_ToBool (ctx, val)));
-	return result;
+	source.update (static_cast<bool> (JS_VALUE_GET_BOOL (val)), DynamicValue::UpdateSource::Script);
     }
+
     if (JS_TAG_IS_FLOAT64 (tag)) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	double d;
-	JS_ToFloat64 (ctx, &d, val);
-	result->update (static_cast<float> (d));
-	return result;
+	source.update (static_cast<float> (JS_VALUE_GET_FLOAT64(val)), DynamicValue::UpdateSource::Script);
+	return;
     }
+
     if (tag == JS_TAG_STRING) {
 	const char* str = JS_ToCString (ctx, val);
-	result->update (str == nullptr ? "" : str);
+	source.update (str == nullptr ? "" : str, DynamicValue::UpdateSource::Script);
 	JS_FreeCString (ctx, str);
-	return result;
+        return;
     }
 
-    // object - extract x/y/z/w properties based on the hint type
+    // look into the object and extract x/y/z/w properties
     if (tag == JS_TAG_OBJECT) {
-	auto readFloat = [&] (const char* prop) -> float {
-	    JSValue v = JS_GetPropertyStr (ctx, val, prop);
-	    double d = 0.0;
-	    if (!JS_IsException (v) && !JS_IsUndefined (v)) {
-		JS_ToFloat64 (ctx, &d, v);
-	    }
-	    JS_FreeValue (ctx, v);
-	    return static_cast<float> (d);
-	};
+        JSValue x = JS_GetPropertyStr (ctx, val, "x");
+        JSValue y = JS_GetPropertyStr (ctx, val, "y");
+        JSValue z = JS_GetPropertyStr (ctx, val, "z");
+        JSValue w = JS_GetPropertyStr (ctx, val, "w");
+        int xTag = JS_VALUE_GET_TAG (x);
+        int yTag = JS_VALUE_GET_TAG (y);
+        int zTag = JS_VALUE_GET_TAG (z);
+        int wTag = JS_VALUE_GET_TAG (w);
+        ScopeGuard guard([=] {
+            JS_FreeValue (ctx, x);
+            JS_FreeValue (ctx, y);
+            JS_FreeValue (ctx, z);
+            JS_FreeValue (ctx, w);
+        });
 
-	auto readInt = [&] (const char* prop) -> int {
-	    JSValue v = JS_GetPropertyStr (ctx, val, prop);
-	    int32_t i = 0;
-	    if (!JS_IsException (v) && !JS_IsUndefined (v)) {
-		JS_ToInt32 (ctx, &i, v);
-	    }
-	    JS_FreeValue (ctx, v);
-	    return static_cast<int> (i);
-	};
+        if (xTag == JS_TAG_UNDEFINED || xTag == JS_TAG_UNINITIALIZED || xTag == JS_TAG_NULL ||
+            yTag == JS_TAG_UNDEFINED || yTag == JS_TAG_UNINITIALIZED || yTag == JS_TAG_NULL) {
+            sLog.exception ("Vector's x and y components must have a value");
+        }
 
-	switch (hint) {
-	    case DynamicValue::Vec2:
-		result->update (glm::vec2 (readFloat ("x"), readFloat ("y")));
-		break;
-	    case DynamicValue::Vec3:
-		result->update (glm::vec3 (readFloat ("x"), readFloat ("y"), readFloat ("z")));
-		break;
-	    case DynamicValue::Vec4:
-		result->update (
-		    glm::vec4 (readFloat ("x"), readFloat ("y"), readFloat ("z"), readFloat ("w")));
-		break;
-	    case DynamicValue::IVec2:
-		result->update (glm::ivec2 (readInt ("x"), readInt ("y")));
-		break;
-	    case DynamicValue::IVec3:
-		result->update (glm::ivec3 (readInt ("x"), readInt ("y"), readInt ("z")));
-		break;
-	    case DynamicValue::IVec4:
-		result->update (
-		    glm::ivec4 (readInt ("x"), readInt ("y"), readInt ("z"), readInt ("w")));
-		break;
-	    default: {
-		// try to read as vec3 by default (most common for origin/angles)
-		float x = readFloat ("x");
-		float y = readFloat ("y");
-		float z = readFloat ("z");
-		result->update (glm::vec3 (x, y, z));
-		break;
-	    }
-	}
-	return result;
+        if (xTag == JS_TAG_FLOAT64 || yTag == JS_TAG_FLOAT64 || zTag == JS_TAG_FLOAT64 || wTag == JS_TAG_FLOAT64) {
+            float xVal = 0.0f, yVal = 0.0f, zVal = 0.0f, wVal = 0.0f;
+
+            // TODO: DO WE REALLY NEED ALL THIS CASTING? WOULD CHECKING TYPE AND ACCESSING INT/FLOAT VERSION BE ENOUGH?
+            xVal = xTag == JS_TAG_FLOAT64 ? JS_VALUE_GET_FLOAT64 (x) : JS_VALUE_GET_INT (x);
+            yVal = yTag == JS_TAG_FLOAT64 ? JS_VALUE_GET_FLOAT64 (y) : JS_VALUE_GET_INT (y);
+
+            if (zTag != JS_TAG_UNDEFINED && zTag != JS_TAG_UNINITIALIZED && zTag != JS_TAG_NULL) {
+                zVal = zTag == JS_TAG_FLOAT64 ? JS_VALUE_GET_FLOAT64 (z) : JS_VALUE_GET_INT (z);
+            }
+
+            if (wTag != JS_TAG_UNDEFINED && wTag != JS_TAG_UNINITIALIZED && wTag != JS_TAG_NULL) {
+                wVal = wTag == JS_TAG_FLOAT64 ? JS_VALUE_GET_FLOAT64 (w) : JS_VALUE_GET_INT (w);
+            }
+
+            // any float component means float vector
+            if (wTag != JS_TAG_UNDEFINED && wTag != JS_TAG_NULL) {
+                source.update(glm::vec4(xVal, yVal, zVal, wVal), DynamicValue::UpdateSource::Script);
+                return;
+            }
+
+            if (zTag != JS_TAG_UNDEFINED && zTag != JS_TAG_NULL) {
+                source.update(glm::vec3(xVal, yVal, zVal), DynamicValue::UpdateSource::Script);
+                return;
+            }
+
+            source.update(glm::vec2(xVal, yVal), DynamicValue::UpdateSource::Script);
+        } else {
+            int xVal = 0, yVal = 0, zVal = 0, wVal = 0;
+
+            xVal = JS_VALUE_GET_INT(x);
+            yVal = JS_VALUE_GET_INT(y);
+
+            if (zTag != JS_TAG_UNDEFINED && zTag != JS_TAG_UNINITIALIZED && zTag != JS_TAG_NULL) {
+                zVal = JS_VALUE_GET_INT(z);
+            }
+
+            if (wTag != JS_TAG_UNDEFINED && wTag != JS_TAG_UNINITIALIZED && wTag != JS_TAG_NULL) {
+                wVal = JS_VALUE_GET_INT(w);
+            }
+
+            // all integers is a integer vector
+            if (wTag != JS_TAG_UNDEFINED && wTag != JS_TAG_NULL) {
+                source.update(glm::ivec4(xVal, yVal, zVal, wVal), DynamicValue::UpdateSource::Script);
+                return;
+            }
+
+            if (zTag != JS_TAG_UNDEFINED && zTag != JS_TAG_UNINITIALIZED && zTag != JS_TAG_NULL) {
+                source.update(glm::ivec3(xVal, yVal, zVal), DynamicValue::UpdateSource::Script);
+                return;
+            }
+
+            source.update(glm::ivec2(xVal, yVal), DynamicValue::UpdateSource::Script);
+        }
     }
-
-    // fallback: try as float
-    double d;
-    if (JS_ToFloat64 (ctx, &d, val) == 0) {
-	result->update (static_cast<float> (d));
-    }
-    return result;
 }
 
 /// Helper to check for and log JS exceptions
@@ -891,13 +889,11 @@ void ScriptEngine::releaseBinding (const void* bindingKey) {
 static JSValue buildScriptPropertiesObject (
     JSContext* ctx,
     ScriptEngine& engine,
-    const std::map<std::string, DynamicValue*>& scriptProperties
+    const std::map<std::string, DynamicValue&>& scriptProperties
 ) {
     JSValue propsObj = JS_NewObject (ctx);
     for (const auto& [name, dynVal] : scriptProperties) {
-	if (dynVal) {
-	    JS_SetPropertyStr (ctx, propsObj, name.c_str (), engine.dynamicValueToJS (*dynVal));
-	}
+	JS_SetPropertyStr (ctx, propsObj, name.c_str (), engine.dynamicValueToJS (dynVal));
     }
     return propsObj;
 }
@@ -947,7 +943,7 @@ static void installSceneLayers (
     JSContext* ctx,
     JSValue global,
     WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
+    const ScriptContext* bindingContext
 ) {
     JSValue layers = JS_GetPropertyStr (ctx, global, "__layers");
     if (JS_IsException (layers) || !JS_IsObject (layers)) {
@@ -982,7 +978,7 @@ static void installSceneLayers (
 	    }
 
 	    if (bindingContext
-		&& (object->id == bindingContext->objectId || object->name == bindingContext->objectName)) {
+		&& (object->id == bindingContext->object.id || object->name == bindingContext->object.name)) {
 		ownerLayer = JS_DupValue (ctx, layer);
 	    }
 
@@ -1015,10 +1011,7 @@ static void applyLayerProperty (
 
     JSValue jsValue = JS_GetPropertyStr (ctx, layer, property);
     if (!JS_IsUndefined (jsValue) && !JS_IsException (jsValue)) {
-	auto value = engine.jsToDynamicValue (jsValue, setting->value->getType ());
-	if (value) {
-	    setting->value->update (*value);
-	}
+	engine.jsToDynamicValue (jsValue, *setting->value);
     }
     JS_FreeValue (ctx, jsValue);
 }
@@ -1060,34 +1053,6 @@ static void applyLayerUpdates (
     }
 
     JS_FreeValue (ctx, layers);
-}
-
-static DynamicValueUniquePtr currentBoundValue (
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext,
-    const DynamicValue& fallback
-) {
-    auto result = std::make_unique<DynamicValue> ();
-    result->update (fallback);
-
-    if (!scene || !bindingContext) {
-	return result;
-    }
-
-    const auto it = std::ranges::find_if (scene->getScene ().objects, [bindingContext] (const auto& object) {
-	return object->id == bindingContext->objectId || object->name == bindingContext->objectName;
-    });
-
-    if (it == scene->getScene ().objects.end ()) {
-	return result;
-    }
-
-    const auto* setting = settingForProperty (**it, bindingContext->propertyName);
-    if (setting && setting->value) {
-	result->update (*setting->value);
-    }
-
-    return result;
 }
 
 void ScriptEngine::refreshMediaState () {
@@ -1283,9 +1248,9 @@ void ScriptEngine::updateSceneInputGlobals (JSContext* ctx, JSValue globalObj, W
 
     const glm::vec2 mouse = *scene->getMousePosition ();
     DynamicValue cursorPosition;
-    cursorPosition.update (glm::vec2 (mouse.x, mouse.y));
+    cursorPosition.update (glm::vec2 (mouse.x, mouse.y), DynamicValue::UpdateSource::Script);
     DynamicValue cursorWorldPosition;
-    cursorWorldPosition.update (glm::vec3 (mouse.x * scene->getWidth (), mouse.y * scene->getHeight (), 0.0f));
+    cursorWorldPosition.update (glm::vec3 (mouse.x * scene->getWidth (), mouse.y * scene->getHeight (), 0.0f), DynamicValue::UpdateSource::Script);
     JS_SetPropertyStr (ctx, input, "cursorPosition", this->dynamicValueToJS (cursorPosition));
     JS_SetPropertyStr (ctx, input, "cursorWorldPosition", this->dynamicValueToJS (cursorWorldPosition));
     JS_SetPropertyStr (ctx, globalObj, "input", input);
@@ -1347,13 +1312,13 @@ void ScriptEngine::runIntervals (JSContext* ctx, JSValue globalObj, const std::s
 DynamicValueUniquePtr ScriptEngine::fallbackTextValue (const std::string& scriptSource) const {
     auto fallback = std::make_unique<DynamicValue> ();
     if (scriptSource.find ("event.title") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.title, 32));
+	fallback->update (shortenMediaText (this->m_mediaState.title, 32), DynamicValue::UpdateSource::Script);
     } else if (scriptSource.find ("event.artist") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.artist, 28));
+	fallback->update (shortenMediaText (this->m_mediaState.artist, 28), DynamicValue::UpdateSource::Script);
     } else if (scriptSource.find ("event.position") != std::string::npos || scriptSource.find ("displayPosition") != std::string::npos) {
-	fallback->update (formatMediaTime (this->m_mediaState.position));
+	fallback->update (formatMediaTime (this->m_mediaState.position), DynamicValue::UpdateSource::Script);
     } else if (scriptSource.find ("event.duration") != std::string::npos) {
-	fallback->update (formatMediaTime (this->m_mediaState.duration));
+	fallback->update (formatMediaTime (this->m_mediaState.duration), DynamicValue::UpdateSource::Script);
     }
     return fallback;
 }
@@ -1361,35 +1326,39 @@ DynamicValueUniquePtr ScriptEngine::fallbackTextValue (const std::string& script
 void ScriptEngine::applyTextFallback (DynamicValue& value, const std::string& scriptSource) const {
     auto fallback = this->fallbackTextValue (scriptSource);
     if (fallback->getType () != DynamicValue::Null) {
-	value.update (*fallback);
+	value.update (*fallback, DynamicValue::UpdateSource::Script);
     }
 }
 
-void ScriptEngine::logTextEvaluationDebug (const ScriptBindingContext* bindingContext) const {
+void ScriptEngine::logTextEvaluationDebug (const ScriptContext* bindingContext) const {
+    // TODO: REWRITE THIS TO PROPERLY HANDLE TEXT INSTEAD OF HAVING A SPECIFIC EXCEPTION
+    /*
     if (
 	std::getenv ("LWE_MEDIA_DEBUG") == nullptr || bindingContext == nullptr
-	|| bindingContext->propertyName != "text"
+	|| bindingContext->property != "text"
     ) {
 	return;
-    }
+    }*/
 
     sLog.out (
-	"Media debug: evaluating text object=", bindingContext->objectId,
-	" name=", bindingContext->objectName
+	"Media debug: evaluating text object=", bindingContext->object.id,
+	" name=", bindingContext->object.name
     );
 }
 
-void ScriptEngine::logTextResultDebug (const ScriptBindingContext* bindingContext, const DynamicValueUniquePtr& dynResult) const {
+void ScriptEngine::logTextResultDebug (const ScriptContext* bindingContext, const DynamicValueUniquePtr& dynResult) const {
+    // TODO: REWRITE THIS TO PROPERLY HANDLE TEXT INSTEAD OF HAVING A SPECIFIC EXCEPTION
+    /*
     if (
 	std::getenv ("LWE_MEDIA_DEBUG") == nullptr || bindingContext == nullptr || !dynResult
-	|| bindingContext->propertyName != "text"
+	|| bindingContext->property != "text"
     ) {
 	return;
     }
-
+*/
     sLog.out (
-	"Media debug: text result object=", bindingContext->objectId,
-	" name=", bindingContext->objectName,
+	"Media debug: text result object=", bindingContext->object.id,
+	" name=", bindingContext->object.name,
 	" type=", static_cast<int> (dynResult->getType ()),
 	" value=", dynResult->getType () == DynamicValue::String ? dynResult->getString () : "<non-string>"
     );
@@ -1408,55 +1377,19 @@ JSValue ScriptEngine::callUpdate (JSContext* ctx, JSValue module, const DynamicV
     return result;
 }
 
-DynamicValueUniquePtr ScriptEngine::resolveUndefinedResult (
-    const std::string& scriptSource,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) const {
-    if (bindingContext != nullptr && bindingContext->propertyName == "text") {
-	auto fallback = this->fallbackTextValue (scriptSource);
-	if (fallback->getType () != DynamicValue::Null) {
-	    return fallback;
-	}
-    }
-    return currentBoundValue (scene, bindingContext, currentValue);
-}
+void ScriptEngine::resolveEvaluationResult (JSContext* ctx, JSValue result, DynamicValue& currentValue) const {
+    ScopeGuard guard ([&] () { JS_FreeValue (ctx, result); });
 
-DynamicValueUniquePtr ScriptEngine::resolveEvaluationResult (
-    JSContext* ctx,
-    JSValue result,
-    const std::string& scriptSource,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) const {
     if (JS_IsException (result)) {
-	logJSException (ctx, "update");
-	JS_FreeValue (ctx, result);
-	auto fallback = std::make_unique<DynamicValue> ();
-	fallback->update (currentValue);
-	return fallback;
+        return;
     }
 
     if (JS_IsUndefined (result)) {
-	JS_FreeValue (ctx, result);
-	return this->resolveUndefinedResult (scriptSource, currentValue, scene, bindingContext);
+        currentValue.update(DynamicValue::Script);
+        return;
     }
 
-    auto dynResult = this->jsToDynamicValue (result, currentValue.getType ());
-    JS_FreeValue (ctx, result);
-    if (
-	bindingContext != nullptr && bindingContext->propertyName == "text" && dynResult
-	&& (
-	    dynResult->getType () != DynamicValue::String
-	    || dynResult->getString ().empty ()
-	)
-    ) {
-	this->applyTextFallback (*dynResult, scriptSource);
-    }
-    this->logTextResultDebug (bindingContext, dynResult);
-    return dynResult;
+    this->jsToDynamicValue (result, currentValue);
 }
 
 // ---------------------------------------------------------------------------
@@ -1702,19 +1635,16 @@ void ScriptEngine::destroyLayer (ScriptLayerHandle handle) {
     this->m_layerInitialized.erase (handle);
 }
 
-DynamicValueUniquePtr ScriptEngine::evaluate (
+void ScriptEngine::evaluate (
     const void* bindingKey,
     const std::string& scriptSource,
-    const std::map<std::string, DynamicValue*>& scriptProperties,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
+    const std::map<std::string, DynamicValue&>& scriptProperties,
+    DynamicValue& currentValue,
+    Wallpapers::CScene* scene,
+    const ScriptContext* bindingContext
 ) {
     if (!this->m_context) {
-	sLog.error ("ScriptEngine: No JS context available");
-	auto fallback = std::make_unique<DynamicValue> ();
-	fallback->update (currentValue);
-	return fallback;
+	sLog.exception ("ScriptEngine: No JS context available");
     }
 
     this->installBuiltins ();
@@ -1742,6 +1672,7 @@ DynamicValueUniquePtr ScriptEngine::evaluate (
     this->runIntervals (ctx, globalObj, bindingKeyString);
 
     JSValue result = this->callUpdate (ctx, module, currentValue);
+
     if (!JS_IsException (result)) {
 	applyLayerUpdates (ctx, *this, globalObj, scene);
     }
@@ -1750,5 +1681,5 @@ DynamicValueUniquePtr ScriptEngine::evaluate (
     JS_FreeValue (ctx, globalObj);
     JS_FreeValue (ctx, propsObj);
 
-    return this->resolveEvaluationResult (ctx, result, scriptSource, currentValue, scene, bindingContext);
+    this->resolveEvaluationResult (ctx, result, currentValue);
 }

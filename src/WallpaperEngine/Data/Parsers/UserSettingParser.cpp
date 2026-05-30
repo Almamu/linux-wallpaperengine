@@ -1,14 +1,12 @@
 #include "UserSettingParser.h"
 
 #include "WallpaperEngine/Data/Model/Property.h"
-#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
-#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
-UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties) {
+UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties, int objectId, const std::string& objectName, const std::string& propertyName) {
     auto value = std::make_unique<DynamicValue> ();
     PropertySharedPtr property;
     std::optional<ConditionInfo> condition;
@@ -51,49 +49,42 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 
     // actual value parsing
     if (valueIt.is_string ()) {
+        // TODO: THINK ABOUT HOW TO APPROACH COLOR PARSING OR ENFORCING IT AFTER
 	std::string str = valueIt;
+        int size = VectorBuilder::preparseSize (str);
 
-	// TODO: VALIDATE THIS IS RIGHT?
-	if (int size = VectorBuilder::preparseSize (str); size == 1) {
-	    size_t parsed = 0;
-	    const float scalar = std::stof (str, &parsed);
-	    if (parsed != str.size ()) {
-		sLog.exception ("Invalid scalar format: ", str);
-	    }
-	    value->update (scalar);
-	} else if (size == 2) {
-	    value->update (static_cast<glm::vec2> (valueIt));
-	} else if (size == 3) {
-	    value->update (static_cast<glm::vec3> (valueIt));
-	} else if (size == 4) {
-	    value->update (static_cast<glm::vec4> (valueIt));
-	} else {
-	    // preparseSize returned 0: no spaces found — try parsing as a scalar float,
-	    // fall back to a plain string for non-numeric values (e.g. "bottom", "center").
+	if (size == 1) {
+	    // scalar? text value?
 	    std::size_t parsed = 0;
 	    try {
-		float f = std::stof (str, &parsed);
-		if (parsed == str.size ()) {
-		    value->update (f);
-		} else {
-		    value->update (str);
-		}
+	        float f = std::stof (str, &parsed);
+
+	        if (parsed == str.size ()) {
+	            value->update (f, DynamicValue::UpdateSource::Initialization);
+	        } else {
+	            value->update (str, DynamicValue::UpdateSource::Initialization);
+	        }
 	    } catch (const std::exception&) {
-		value->update (str);
+	        value->update (str, DynamicValue::UpdateSource::Initialization);
 	    }
+	} else if (size == 2) {
+	    value->update (static_cast<glm::vec2> (valueIt), DynamicValue::UpdateSource::Initialization);
+	} else if (size == 3) {
+	    value->update (static_cast<glm::vec3> (valueIt), DynamicValue::UpdateSource::Initialization);
+	} else {
+	    value->update (static_cast<glm::vec4> (valueIt), DynamicValue::UpdateSource::Initialization);
 	}
     } else if (valueIt.is_number_integer ()) {
-	value->update (valueIt.get<int> ());
+	value->update (valueIt.get<int> (), DynamicValue::UpdateSource::Initialization);
     } else if (valueIt.is_number_float ()) {
-	value->update (valueIt.get<float> ());
+	value->update (valueIt.get<float> (), DynamicValue::UpdateSource::Initialization);
     } else if (valueIt.is_boolean ()) {
-	value->update (valueIt.get<bool> ());
+	value->update (valueIt.get<bool> (), DynamicValue::UpdateSource::Initialization);
     } else if (valueIt.is_null ()) {
 	// null value with no connection to property
-	value->update ();
+	value->update (DynamicValue::UpdateSource::Initialization);
     }
 
-    // If the setting has a script, wrap the base value in a ScriptedDynamicValue
     if (scriptSource.has_value ()) {
 	std::map<std::string, DynamicValueUniquePtr> scriptProps;
 
@@ -104,11 +95,15 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	    }
 	}
 
-	value = std::make_unique<ScriptedDynamicValue> (
-	    std::move (scriptSource.value ()),
-	    std::move (scriptProps),
-	    std::move (*value)
-	);
+        value->setScriptContext ({
+            .object = {
+                .id = objectId,
+                .name = objectName,
+            },
+        });
+
+        value->setScriptSource (scriptSource.value ());
+        // TODO: BRING BACK SCRIPT PROPS
     }
 
     // TODO: This might need to be removed if it causes issues with default values

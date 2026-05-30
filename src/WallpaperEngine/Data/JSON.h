@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Builders/ColorBuilder.h"
+
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
 #include <nlohmann/json.hpp>
@@ -44,6 +46,9 @@ public:
     template <int length, typename type, glm::qualifier qualifier>
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
 	return VectorBuilder::parse<length, type, qualifier> (this->base ().get<std::string> ());
+    }
+    [[nodiscard]] Model::Color get () const {
+        return ColorBuilder::parse (this->base ().get<std::string> ());
     }
     [[nodiscard]] base_type require (const std::string& key, const std::string& message) const {
 	auto base = this->base ();

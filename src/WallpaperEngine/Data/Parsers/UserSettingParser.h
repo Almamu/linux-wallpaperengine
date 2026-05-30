@@ -11,6 +11,6 @@ using namespace WallpaperEngine::Data::Model;
 
 class UserSettingParser {
 public:
-    static UserSettingUniquePtr parse (const json& data, const Properties& properties);
+    static UserSettingUniquePtr parse (const json& data, const Properties& properties, int objectId = -1, const std::string& objectName = "", const std::string& propertyName = "");
 };
 } // namespace WallpaperEngine::Data::Parsers

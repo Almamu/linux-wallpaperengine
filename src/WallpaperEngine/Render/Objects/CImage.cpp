@@ -175,12 +175,21 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
 }
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    CRenderable (scene, image, *image.model->material), m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE),
-    m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (),
-    m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),
+    CObject(scene, image), CRenderable (scene, image, *image.model->material), CScriptableObject (scene, image),
+    m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE),
+    m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (), m_modelViewProjectionPass (glm::mat4 (1.0)),
+    m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),
     m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)), m_modelViewProjectionCopyInverse (),
-    m_modelMatrix (), m_viewProjectionMatrix (), m_image (image), m_material (nullptr), m_colorBlendMaterial (nullptr),
-    m_pos (), m_initialized (false) {
+    m_modelMatrix (), m_viewProjectionMatrix (), m_image (image), m_pos (), m_initialized (false) {
+    // register any properties in use on this object
+    this->registerProperty ("origin", *image.origin->value);
+    this->registerProperty ("scale", *image.scale->value);
+    this->registerProperty ("angles", *image.angles->value);
+    this->registerProperty ("visible", *image.visible->value);
+    this->registerProperty ("alpha", *image.alpha->value);
+    this->registerProperty ("color", *image.color->value);
+    this->registerProperty ("parallaxDepth", *image.parallaxDepth->value);
+
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());
     auto scene_height = static_cast<float> (scene.getHeight ());
@@ -1120,10 +1129,6 @@ void CImage::updateScreenSpacePosition () {
 }
 
 const Image& CImage::getImage () const { return this->m_image; }
-
-const std::vector<CEffect*>& CImage::getEffects () const { return this->m_effects; }
-
-const Effects::CMaterial* CImage::getMaterial () const { return this->m_material; }
 
 glm::vec2 CImage::getSize () const {
     if (this->m_texture == nullptr) {

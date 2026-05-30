@@ -38,7 +38,7 @@ public:
 	const char* third = second ? strchr (second + 1, ' ') : nullptr;
 
 	if (first == nullptr) {
-	    return 0;
+	    return 1;
 	}
 
 	if (second == nullptr) {

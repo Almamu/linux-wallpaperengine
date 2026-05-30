@@ -10,7 +10,6 @@
 #include <unordered_set>
 
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
-#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 
 extern "C" {
@@ -44,13 +43,13 @@ public:
      * @param currentValue The current value to pass to update()
      * @return The modified value from update(), or a copy of currentValue on error
      */
-    DynamicValueUniquePtr evaluate (
+    void evaluate (
 	const void* bindingKey,
 	const std::string& scriptSource,
-	const std::map<std::string, DynamicValue*>& scriptProperties,
-	const DynamicValue& currentValue,
+	const std::map<std::string, DynamicValue&>& scriptProperties,
+	DynamicValue& currentValue,
 	WallpaperEngine::Render::Wallpapers::CScene* scene = nullptr,
-	const ScriptBindingContext* bindingContext = nullptr
+	const ScriptContext* bindingContext = nullptr
     );
 
     // -------------------------------------------------------------------
@@ -108,7 +107,7 @@ public:
     void destroyLayer (ScriptLayerHandle handle);
 
     JSValue dynamicValueToJS (const DynamicValue& value) const;
-    DynamicValueUniquePtr jsToDynamicValue (JSValue val, DynamicValue::UnderlyingType hint) const;
+    void jsToDynamicValue (JSValue val, DynamicValue& source) const;
     void releaseBinding (const void* bindingKey);
 
 private:
@@ -125,23 +124,10 @@ private:
     void runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const;
     DynamicValueUniquePtr fallbackTextValue (const std::string& scriptSource) const;
     void applyTextFallback (DynamicValue& value, const std::string& scriptSource) const;
-    void logTextEvaluationDebug (const ScriptBindingContext* bindingContext) const;
-    void logTextResultDebug (const ScriptBindingContext* bindingContext, const DynamicValueUniquePtr& dynResult) const;
+    void logTextEvaluationDebug (const ScriptContext* bindingContext) const;
+    void logTextResultDebug (const ScriptContext* bindingContext, const DynamicValueUniquePtr& dynResult) const;
     JSValue callUpdate (JSContext* ctx, JSValue module, const DynamicValue& currentValue) const;
-    DynamicValueUniquePtr resolveUndefinedResult (
-	const std::string& scriptSource,
-	const DynamicValue& currentValue,
-	WallpaperEngine::Render::Wallpapers::CScene* scene,
-	const ScriptBindingContext* bindingContext
-    ) const;
-    DynamicValueUniquePtr resolveEvaluationResult (
-	JSContext* ctx,
-	JSValue result,
-	const std::string& scriptSource,
-	const DynamicValue& currentValue,
-	WallpaperEngine::Render::Wallpapers::CScene* scene,
-	const ScriptBindingContext* bindingContext
-    ) const;
+    void resolveEvaluationResult (JSContext* ctx, JSValue result, DynamicValue& currentValue) const;
 
     struct MediaState {
 	int playbackState = 0;

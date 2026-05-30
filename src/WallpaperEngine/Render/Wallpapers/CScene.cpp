@@ -21,7 +21,6 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
-using JSON = WallpaperEngine::Data::JSON::JSON;
 
 namespace {
 Render::CObject* createImageObject (CScene& scene, const Image& imageData) {
@@ -129,8 +128,6 @@ CScene::CScene (
     for (const auto& object : scene->objects) {
 	this->addObjectToRenderOrder (*object);
     }
-
-    this->collectScriptedValues ();
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer = this->create (
@@ -319,77 +316,11 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
-void CScene::registerScriptedValue (const UserSettingUniquePtr& setting) {
-    if (!setting || !setting->value) {
-	return;
-    }
-
-    auto* scripted = dynamic_cast<ScriptedDynamicValue*> (setting->value.get ());
-    if (!scripted) {
-	return;
-    }
-
-    if (std::ranges::find (this->m_scriptedValues, scripted) == this->m_scriptedValues.end ()) {
-	this->m_scriptedValues.emplace_back (scripted);
-    }
-}
-
-void CScene::collectScriptedValues () {
-    this->m_scriptedValues.clear ();
-
-    for (const auto& object : this->getScene ().objects) {
-	this->registerScriptedValue (object->origin);
-	this->registerScriptedValue (object->groupScale);
-	this->registerScriptedValue (object->groupAngles);
-	this->registerScriptedValue (object->groupVisible);
-
-	if (object->is<Image> ()) {
-	    const auto* image = object->as<Image> ();
-	    this->registerScriptedValue (image->scale);
-	    this->registerScriptedValue (image->angles);
-	    this->registerScriptedValue (image->visible);
-	    this->registerScriptedValue (image->alpha);
-	    this->registerScriptedValue (image->color);
-	    this->registerScriptedValue (image->parallaxDepth);
-
-	    for (const auto& effect : image->effects) {
-		this->registerScriptedValue (effect->visible);
-		for (const auto& pass : effect->passOverrides) {
-		    for (const auto& constant : pass->constants | std::views::values) {
-			this->registerScriptedValue (constant);
-		    }
-		}
-	    }
-	} else if (object->is<Particle> ()) {
-	    const auto* particle = object->as<Particle> ();
-	    this->registerScriptedValue (particle->scale);
-	    this->registerScriptedValue (particle->angles);
-	    this->registerScriptedValue (particle->visible);
-	    this->registerScriptedValue (particle->parallaxDepth);
-	} else if (object->is<Text> ()) {
-	    const auto* text = object->as<Text> ();
-	    this->registerScriptedValue (text->visible);
-	    this->registerScriptedValue (text->color);
-	    this->registerScriptedValue (text->alpha);
-	    this->registerScriptedValue (text->scale);
-	    this->registerScriptedValue (text->pointSize);
-	}
-    }
-}
-
-void CScene::updateScriptedValues () {
-    for (const auto& scripted : this->m_scriptedValues) {
-	scripted->reevaluate (this);
-    }
-}
-
 Camera& CScene::getCamera () const { return *this->m_camera; }
 
 void CScene::renderFrame (const glm::ivec4& viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
-
-    this->updateScriptedValues ();
 
     // update the parallax position if required
     if (this->getScene ().camera.parallax.enabled->value->getBool ()
@@ -407,6 +338,10 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 
     // update main textures for images
     for (const auto& cur : this->m_objectsByRenderOrder) {
+        if (cur->is<CScriptableObject>()) {
+            cur->as<CScriptableObject>()->reevaluate();
+        }
+
 	if (!cur->is<Objects::CImage> ()) {
 	    continue;
 	}

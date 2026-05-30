@@ -8,22 +8,21 @@
 #include "WallpaperEngine/Render/Shaders/Shader.h"
 
 #include "../TextureProvider.h"
+#include "WallpaperEngine/Scripting/CScriptableObject.h"
 
 #include <glm/vec3.hpp>
 #include <vector>
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
-
+using namespace WallpaperEngine::Scripting;
 namespace WallpaperEngine::Render::Objects::Effects {
 class CMaterial;
 class CPass;
 } // namespace WallpaperEngine::Render::Objects::Effects
 
 namespace WallpaperEngine::Render::Objects {
-class CEffect;
-
-class CImage final : public CRenderable {
+class CImage final : public CRenderable, public CScriptableObject {
     friend CObject;
 
 public:
@@ -34,8 +33,6 @@ public:
     void render () override;
 
     [[nodiscard]] const Image& getImage () const;
-    [[nodiscard]] const std::vector<CEffect*>& getEffects () const;
-    [[nodiscard]] const Effects::CMaterial* getMaterial () const;
     [[nodiscard]] glm::vec2 getSize () const;
 
     [[nodiscard]] GLuint getSceneSpacePosition () const;
@@ -124,9 +121,6 @@ private:
 
     const Image& m_image;
 
-    std::vector<CEffect*> m_effects = {};
-    Effects::CMaterial* m_material = nullptr;
-    Effects::CMaterial* m_colorBlendMaterial = nullptr;
     std::vector<Effects::CPass*> m_passes = {};
     std::vector<MaterialPassUniquePtr> m_virtualPassess = {};
 

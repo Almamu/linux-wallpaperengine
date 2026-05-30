@@ -497,7 +497,7 @@ void WallpaperApplication::setupPropertiesForProject (const Project& project) {
 	if (override != this->m_context.settings.general.properties.end ()) {
 	    sLog.out ("Applying override value for ", key);
 
-	    cur->update (override->second);
+	    cur->update (override->second, DynamicValue::UpdateSource::User);
 	}
 
 	if (this->m_context.settings.general.onlyListProperties) {

@@ -2,7 +2,6 @@
 
 #include "WallpaperEngine/Render/Camera.h"
 
-#include "WallpaperEngine/Data/Model/ScriptedDynamicValue.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 
 namespace WallpaperEngine::Render {
@@ -54,16 +53,13 @@ private:
     Render::CObject* createObject (const Object& object);
     Render::CObject* dispatchObjectType (const Object& object);
     void addObjectToRenderOrder (const Object& object);
-    void collectScriptedValues ();
-    void registerScriptedValue (const UserSettingUniquePtr& setting);
-    void updateScriptedValues ();
 
     std::unique_ptr<Camera> m_camera;
     ObjectUniquePtr m_bloomObjectData;
     CObject* m_bloomObject = nullptr;
     std::map<int, CObject*> m_objects = {};
     std::vector<CObject*> m_objectsByRenderOrder = {};
-    std::vector<ScriptedDynamicValue*> m_scriptedValues = {};
+    std::vector<DynamicValue*> m_scriptedValues = {};
     glm::vec2 m_mousePosition = {};
     glm::vec2 m_mousePositionLast = {};
     glm::vec2 m_mousePositionNormalized = {};
