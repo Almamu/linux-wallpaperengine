@@ -492,7 +492,10 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Scripting/ScriptEngine.h
     src/WallpaperEngine/Scripting/ScriptEngine.cpp
     src/WallpaperEngine/Scripting/CScriptableObject.h
-    src/WallpaperEngine/Scripting/CScriptableObject.cpp)
+    src/WallpaperEngine/Scripting/CScriptableObject.cpp
+
+    src/WallpaperEngine/Maths.h
+    src/WallpaperEngine/Maths.cpp)
 
 if(BUILD_TESTING)
     add_executable(

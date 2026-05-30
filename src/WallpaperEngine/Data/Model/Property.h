@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Builders/ColorBuilder.h"
 #include "../Utils/TypeCaster.h"
 #include "DynamicValue.h"
 
