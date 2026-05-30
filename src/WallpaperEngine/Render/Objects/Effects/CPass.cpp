@@ -51,11 +51,15 @@ CPass::CPass (
     Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)),
     m_pass (pass), m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE), m_target (target),
-    m_blendingmode (pass.blending) {
+    m_blendingmode (pass.blending), m_vao (GL_NONE) {
     this->setupShaders ();
+    glGenVertexArrays(1, &m_vao);
 }
 
 CPass::~CPass () {
+    glDeleteVertexArrays(1, &m_vao);
+    this->m_vao = GL_NONE;
+
     // destroy shader programs
     if (!glIsProgram(this->m_programID)) return; // program already invalid or deleted
 
@@ -396,6 +400,9 @@ void CPass::cleanupRenderSetup () {
 }
 
 void CPass::render () {
+    // set the VAO for now
+    glBindVertexArray (this->m_vao);
+
     const auto& debug = this->getContext ().getApp ().getContext ().settings.render.debug;
     if (debug.passLog) {
 	sLog.out (
