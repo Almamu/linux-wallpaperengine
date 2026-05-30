@@ -42,7 +42,7 @@ public:
     CText (Wallpapers::CScene& scene, const Text& text);
     ~CText () override;
 
-    void setup ();
+    void setup () override;
     void render () override;
 
 private:
