@@ -8,14 +8,8 @@
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Scripting;
 
-CScriptableObject::CScriptableObject (Wallpapers::CScene& scene, const Object& object)
-    : CObject (scene, object) {
-    this->m_context = {
-        .object = {
-            .id = object.id,
-            .name = object.name
-        }
-    };
+CScriptableObject::CScriptableObject (Wallpapers::CScene& scene, const Object& object) : CObject (scene, object) {
+    this->m_context = { .object = { .id = object.id, .name = object.name } };
 
     // register common dynamic values
     this->registerProperty ("origin", *object.origin->value);
@@ -30,30 +24,23 @@ void CScriptableObject::registerProperty (const std::string& name, DynamicValue&
 
 void CScriptableObject::reevaluate () {
     if (this->m_evaluating) {
-        return;
+	return;
     }
 
     this->m_evaluating = true;
 
-    ScopeGuard guard([this] {
-        this->m_evaluating = false;
-    });
+    ScopeGuard guard ([this] { this->m_evaluating = false; });
 
     // evaluate all the properties that need it
     for (auto& property : this->m_properties | std::views::values) {
-        const auto& source = property.getScriptSource ();
+	const auto& source = property.getScriptSource ();
 
-        if (!source.has_value()) {
-            continue;
-        }
+	if (!source.has_value ()) {
+	    continue;
+	}
 
-        ScriptEngine::instance ().evaluate (
-	    this,
-	    *source,
-	    this->m_properties,
-	    property,
-	    &this->getScene (),
-	    &this->m_context
-        );
+	ScriptEngine::instance ().evaluate (
+	    this, *source, this->m_properties, property, &this->getScene (), &this->m_context
+	);
     }
 }

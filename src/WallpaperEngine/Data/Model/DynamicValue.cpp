@@ -6,17 +6,29 @@
 
 using namespace WallpaperEngine::Data::Model;
 
-DynamicValue::DynamicValue (const glm::ivec4& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::ivec4& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const glm::ivec3& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::ivec3& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const glm::ivec2& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::ivec2& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const glm::vec4& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::vec4& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const glm::vec3& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::vec3& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const glm::vec2& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const glm::vec2& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
 DynamicValue::DynamicValue (float value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
 
@@ -24,9 +36,13 @@ DynamicValue::DynamicValue (int value) { this->DynamicValue::update (value, Upda
 
 DynamicValue::DynamicValue (bool value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
 
-DynamicValue::DynamicValue (const std::string& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const std::string& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
-DynamicValue::DynamicValue (const Model::Color& value) { this->DynamicValue::update (value, UpdateSource::Initialization); }
+DynamicValue::DynamicValue (const Model::Color& value) {
+    this->DynamicValue::update (value, UpdateSource::Initialization);
+}
 
 DynamicValue::~DynamicValue () {
     // TODO: PROPERLY FIX THESE
@@ -87,9 +103,9 @@ std::string DynamicValue::toString () const {
 		+ std::to_string (this->m_ivec4.z) + ", " + std::to_string (this->m_ivec4.w);
 	case UnderlyingType::String:
 	    return this->m_string;
-        case UnderlyingType::Color:
-            return std::to_string (this->m_color.r) + ", " + std::to_string (this->m_color.g) + ", "
-                + std::to_string (this->m_color.b) + ", " + std::to_string (this->m_color.a);
+	case UnderlyingType::Color:
+	    return std::to_string (this->m_color.r) + ", " + std::to_string (this->m_color.g) + ", "
+		+ std::to_string (this->m_color.b) + ", " + std::to_string (this->m_color.a);
 	default:
 	    return "Unknown conversion for dynamic value of type: " + std::to_string (static_cast<int> (this->m_type));
     }
@@ -273,7 +289,7 @@ void DynamicValue::update (const std::string& newValue, UpdateSource source) {
 	this->m_float = boolValue ? 1.0f : 0.0f;
 	this->m_int = boolValue ? 1 : 0;
 	this->m_bool = boolValue;
-        this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
+	this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
 	this->m_type = UnderlyingType::Boolean;
     }
 
@@ -294,7 +310,7 @@ void DynamicValue::update (const Model::Color& newValue, UpdateSource source) {
     this->m_color = newValue;
     this->m_type = UnderlyingType::Color;
 
-    this->propagate(source);
+    this->propagate (source);
 }
 
 void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
@@ -322,7 +338,7 @@ void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
 	this->m_float = boolValue ? 1.0f : 0.0f;
 	this->m_int = boolValue ? 1 : 0;
 	this->m_bool = boolValue;
-        this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
+	this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
 	this->m_type = UnderlyingType::Boolean;
     }
 
@@ -393,25 +409,15 @@ void DynamicValue::disconnect () {
 
 void DynamicValue::attachCondition (const ConditionInfo& condition) { this->m_condition = condition; }
 
-void DynamicValue::setScriptSource (const std::string& source) {
-    this->m_scriptSource = source;
-}
+void DynamicValue::setScriptSource (const std::string& source) { this->m_scriptSource = source; }
 
-void DynamicValue::clearScriptSource () {
-    this->m_scriptSource = std::nullopt;
-}
+void DynamicValue::clearScriptSource () { this->m_scriptSource = std::nullopt; }
 
-void DynamicValue::setScriptContext (const ScriptContext& context) {
-    this->m_scriptContext = context;
-}
+void DynamicValue::setScriptContext (const ScriptContext& context) { this->m_scriptContext = context; }
 
-const std::optional<ScriptContext>& DynamicValue::getScriptContext () const {
-    return this->m_scriptContext;
-}
+const std::optional<ScriptContext>& DynamicValue::getScriptContext () const { return this->m_scriptContext; }
 
-const std::optional<std::string>& DynamicValue::getScriptSource () const {
-    return this->m_scriptSource;
-}
+const std::optional<std::string>& DynamicValue::getScriptSource () const { return this->m_scriptSource; }
 
 void DynamicValue::propagate (UpdateSource source) const {
     for (const auto& callback : this->m_listeners) {

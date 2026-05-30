@@ -47,9 +47,7 @@ public:
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
 	return VectorBuilder::parse<length, type, qualifier> (this->base ().get<std::string> ());
     }
-    [[nodiscard]] Model::Color get () const {
-        return ColorBuilder::parse (this->base ().get<std::string> ());
-    }
+    [[nodiscard]] Model::Color get () const { return ColorBuilder::parse (this->base ().get<std::string> ()); }
     [[nodiscard]] base_type require (const std::string& key, const std::string& message) const {
 	auto base = this->base ();
 	const auto it = base.find (key);

@@ -67,7 +67,8 @@ protected:
 	float angle;
     };
 
-    [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
+    [[nodiscard]] ResolvedTransform
+    resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
 
     /**
      * Computes the object's own transform (origin/scale/angle) without walking the
@@ -81,14 +82,14 @@ private:
     void setupPuppetGeometryCallback (Effects::CPass* pass) const;
     ResolvedTransform updateGeometryBuffers ();
     [[nodiscard]] glm::vec2 resolveGeometrySize (float sceneWidth, float sceneHeight, glm::vec3& origin) const;
-    void updateScenePosition (const glm::vec3& origin, const glm::vec2& size, const glm::vec3& scale, float sceneWidth, float sceneHeight);
+    void updateScenePosition (
+	const glm::vec3& origin, const glm::vec2& size, const glm::vec3& scale, float sceneWidth, float sceneHeight
+    );
     void uploadGeometryBuffers (const glm::vec2& size);
     [[nodiscard]] bool shouldRenderFinalPass (bool isLastPass) const;
     bool configurePassTarget (
-	Effects::CPass* pass,
-	std::shared_ptr<const CFBO>& drawTo,
-	const std::shared_ptr<const TextureProvider>& asInput,
-	std::shared_ptr<const TextureProvider>& effectInput,
+	Effects::CPass* pass, std::shared_ptr<const CFBO>& drawTo,
+	const std::shared_ptr<const TextureProvider>& asInput, std::shared_ptr<const TextureProvider>& effectInput,
 	bool& inTargetEffectSequence
     );
 

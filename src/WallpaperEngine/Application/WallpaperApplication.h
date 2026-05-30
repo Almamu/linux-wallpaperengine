@@ -35,15 +35,15 @@ public:
     /**
      * Prepares the application for rendering.
      */
-    void setup();
+    void setup ();
     /**
      * Renders a frame of the application.
      */
-    void render();
+    void render ();
     /**
      * Cleans up all the resources used by the application.
      */
-    static void cleanup();
+    static void cleanup ();
     /**
      * Shows the application until it's closed
      */

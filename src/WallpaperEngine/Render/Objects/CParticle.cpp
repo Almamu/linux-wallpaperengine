@@ -49,10 +49,8 @@ inline float fadeValue (float life, float startTime, float endTime, float startV
 }
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
-    CObject (scene, particle),
-    CRenderable (scene, particle, *particle.material->material),
-    CScriptableObject(scene, particle),
-    m_particle (particle) {
+    CObject (scene, particle), CRenderable (scene, particle, *particle.material->material),
+    CScriptableObject (scene, particle), m_particle (particle) {
     this->registerProperty ("scale", *particle.scale->value);
     this->registerProperty ("angles", *particle.angles->value);
     this->registerProperty ("visible", *particle.visible->value);

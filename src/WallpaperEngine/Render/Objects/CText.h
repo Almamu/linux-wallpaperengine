@@ -78,8 +78,8 @@ private:
     GLint m_uColor = -1;
     GLint m_uTexture = -1;
 
-    glm::ivec2 m_textureSize = {0, 0};
-    glm::vec2 m_quadSize = {0.0f, 0.0f};
+    glm::ivec2 m_textureSize = { 0, 0 };
+    glm::vec2 m_quadSize = { 0.0f, 0.0f };
 
     bool m_valid = false;
 };

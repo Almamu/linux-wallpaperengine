@@ -9,8 +9,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string_view>
 
@@ -603,7 +603,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 
     debuggingGroup.add_argument ("--render-debug")
 	.help (
-		    "Scene render debug mode: base-only, no-solid-final, pass-log, object=<id>, skip-object=<id>, or skip-effect=<id>. Can be repeated."
+	    "Scene render debug mode: base-only, no-solid-final, pass-log, object=<id>, skip-object=<id>, or "
+	    "skip-effect=<id>. Can be repeated."
 	)
 	.action ([this] (const std::string& value) -> void {
 	    const auto parseDebugId = [&value] (const std::string& prefix) -> std::optional<int> {

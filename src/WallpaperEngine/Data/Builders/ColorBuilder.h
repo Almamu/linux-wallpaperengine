@@ -17,6 +17,6 @@ public:
      */
     static const Model::Color Black;
 
-    static WallpaperEngine::Data::Model::Color parse(const std::string& value, float alpha = 1.0f);
+    static WallpaperEngine::Data::Model::Color parse (const std::string& value, float alpha = 1.0f);
 };
 }

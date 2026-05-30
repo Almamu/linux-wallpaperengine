@@ -4,8 +4,8 @@
 
 #include "WallpaperEngine/Input/MouseInput.h"
 
-#include <glm/vec2.hpp>
 #include <chrono>
+#include <glm/vec2.hpp>
 #include <optional>
 
 namespace WallpaperEngine::Render::Drivers {

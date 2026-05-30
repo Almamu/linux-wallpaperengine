@@ -18,8 +18,8 @@ struct ConditionInfo {
 // TODO: CHANGE THIS TO HOLD A REFERENCE TO THE OBJECT AND EXPOSE THE RIGHT PROPERTY MAP
 struct ScriptContext {
     struct Object {
-        int id;
-        std::string name;
+	int id;
+	std::string name;
     } object;
 };
 
@@ -40,13 +40,13 @@ public:
 	Int = 8,
 	Boolean = 9,
 	String = 10,
-        Color = 11,
+	Color = 11,
     };
 
     enum UpdateSource {
-        Initialization = 0,
-        Script = 1,
-        User = 2,
+	Initialization = 0,
+	Script = 1,
+	User = 2,
     };
 
     DynamicValue () = default;

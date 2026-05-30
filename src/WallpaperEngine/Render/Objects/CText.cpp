@@ -73,8 +73,8 @@ GLuint compileShader (GLenum type, const char* source) {
 }
 } // namespace
 
-CText::CText (Wallpapers::CScene& scene, const Text& text)
-    : CObject (scene, text), CScriptableObject (scene, text), m_text (text) {
+CText::CText (Wallpapers::CScene& scene, const Text& text) :
+    CObject (scene, text), CScriptableObject (scene, text), m_text (text) {
     this->registerProperty ("color", *text.color->value);
     this->registerProperty ("alpha", *text.alpha->value);
     this->registerProperty ("origin", *text.origin->value);
@@ -88,26 +88,41 @@ CText::~CText () {
 	Scripting::ScriptEngine::instance ().destroyLayer (m_layerHandle);
 	m_layerHandle = Scripting::kInvalidLayerHandle;
     }
-    if (m_vbo != 0) glDeleteBuffers (1, &m_vbo);
-    if (m_vao != 0) glDeleteVertexArrays (1, &m_vao);
-    if (m_program != 0) glDeleteProgram (m_program);
-    if (m_texture != 0) glDeleteTextures (1, &m_texture);
-    if (m_ftFace != nullptr) FT_Done_Face (m_ftFace);
-    if (m_ftLibrary != nullptr) FT_Done_FreeType (m_ftLibrary);
+    if (m_vbo != 0) {
+	glDeleteBuffers (1, &m_vbo);
+    }
+    if (m_vao != 0) {
+	glDeleteVertexArrays (1, &m_vao);
+    }
+    if (m_program != 0) {
+	glDeleteProgram (m_program);
+    }
+    if (m_texture != 0) {
+	glDeleteTextures (1, &m_texture);
+    }
+    if (m_ftFace != nullptr) {
+	FT_Done_Face (m_ftFace);
+    }
+    if (m_ftLibrary != nullptr) {
+	FT_Done_FreeType (m_ftLibrary);
+    }
 }
 
 void CText::setup () {
     const bool scripted = !m_text.script.empty ();
 
     // Nothing to render and no script to produce text later → bail.
-    if (m_text.text.empty () && !scripted)
+    if (m_text.text.empty () && !scripted) {
 	return;
+    }
 
-    if (!initFreeType ())
+    if (!initFreeType ()) {
 	return;
+    }
 
-    if (!loadEmbeddedFont () && !loadSystemFont ())
+    if (!loadEmbeddedFont () && !loadSystemFont ()) {
 	return;
+    }
 
     m_lastPixelSize = computeEffectivePixelSize ();
     FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
@@ -117,15 +132,17 @@ void CText::setup () {
     // glyph texture has non-zero dimensions until the script produces a value.
     rebuildTextureFrom (m_text.text.empty () ? std::string (" ") : m_text.text);
 
-    if (scripted)
+    if (scripted) {
 	initScriptLayer ();
+    }
 
     m_valid = m_texture != 0 && m_program != 0 && m_vao != 0;
 }
 
 bool CText::initFreeType () {
-    if (FT_Init_FreeType (&m_ftLibrary) == 0)
+    if (FT_Init_FreeType (&m_ftLibrary) == 0) {
 	return true;
+    }
     sLog.error ("CText: FT_Init_FreeType failed for object ", m_text.name);
     return false;
 }
@@ -134,8 +151,9 @@ bool CText::loadEmbeddedFont () {
     // Wallpapers packed in .pkg don't expose physical paths, so we read the font
     // into memory and use FT_New_Memory_Face. m_fontData must outlive the face.
     // `systemfont_*` references signal "use a system font"; let the fallback handle them.
-    if (m_text.font.empty () || m_text.font.rfind ("systemfont_", 0) == 0)
+    if (m_text.font.empty () || m_text.font.rfind ("systemfont_", 0) == 0) {
 	return false;
+    }
 
     try {
 	auto stream = getAssetLocator ().read (m_text.font);
@@ -145,9 +163,12 @@ bool CText::loadEmbeddedFont () {
 	m_fontData.resize (static_cast<size_t> (size));
 	stream->read (reinterpret_cast<char*> (m_fontData.data ()), size);
 
-	if (FT_New_Memory_Face (m_ftLibrary, m_fontData.data (),
-		static_cast<FT_Long> (m_fontData.size ()), 0, &m_ftFace) == 0)
+	if (FT_New_Memory_Face (
+		m_ftLibrary, m_fontData.data (), static_cast<FT_Long> (m_fontData.size ()), 0, &m_ftFace
+	    )
+	    == 0) {
 	    return true;
+	}
 
 	sLog.error ("CText: FT_New_Memory_Face failed for '", m_text.font, "', falling back to system font");
     } catch (const std::exception& e) {
@@ -184,24 +205,21 @@ unsigned int CText::computeEffectivePixelSize () const {
     // the on-screen size matches the intended pointsize.
     const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
     const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
-    const float compensate = (avgScale > 0.0f && avgScale < 1.0f)
-	? std::min (1.0f / avgScale, 32.0f)
-	: 1.0f;
-    return std::max<unsigned int> (
-	1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
+    const float compensate = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
+    return std::max<unsigned int> (1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
 }
 
 void CText::initScriptLayer () {
     std::map<std::string, DynamicValue*> initialProps;
     for (const auto& [k, setting] : m_text.scriptProperties) {
-	if (setting && setting->value)
+	if (setting && setting->value) {
 	    initialProps.emplace (k, setting->value.get ());
+	}
     }
-    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
-	m_text.script, initialProps, m_text.text
-    );
-    if (m_layerHandle == Scripting::kInvalidLayerHandle)
+    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (m_text.script, initialProps, m_text.text);
+    if (m_layerHandle == Scripting::kInvalidLayerHandle) {
 	sLog.error ("CText: createLayerScript failed for '", m_text.name, "'");
+    }
 }
 
 void CText::rebuildTextureFrom (const std::string& text) {
@@ -245,7 +263,9 @@ void CText::rebuildTextureFrom (const std::string& text) {
 	    for (unsigned int col = 0; col < bmp.width; ++col) {
 		const int dstX = originX + static_cast<int> (col);
 		const int dstY = originY + static_cast<int> (row);
-		if (dstX < 0 || dstX >= width || dstY < 0 || dstY >= height) continue;
+		if (dstX < 0 || dstX >= width || dstY < 0 || dstY >= height) {
+		    continue;
+		}
 		pixels[static_cast<size_t> (dstY) * width + dstX] = bmp.buffer[row * bmp.pitch + col];
 	    }
 	}
@@ -267,8 +287,8 @@ void CText::rebuildTextureFrom (const std::string& text) {
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
-    m_textureSize = {width, height};
-    m_quadSize = {static_cast<float> (width), static_cast<float> (height)};
+    m_textureSize = { width, height };
+    m_quadSize = { static_cast<float> (width), static_cast<float> (height) };
     m_lastRenderedText = text;
 
     uploadQuadVertices ();
@@ -278,8 +298,12 @@ void CText::buildShader () {
     GLuint vs = compileShader (GL_VERTEX_SHADER, kVertexShader);
     GLuint fs = compileShader (GL_FRAGMENT_SHADER, kFragmentShader);
     if (vs == 0 || fs == 0) {
-	if (vs) glDeleteShader (vs);
-	if (fs) glDeleteShader (fs);
+	if (vs) {
+	    glDeleteShader (vs);
+	}
+	if (fs) {
+	    glDeleteShader (fs);
+	}
 	return;
     }
 
@@ -317,12 +341,8 @@ void CText::uploadQuadVertices () {
     // lower GL y) appears at screen top. UV.v=0 here = FT glyph top → shows at screen top ✓
     const float verts[] = {
 	// pos        // uv
-	-hx, -hy, 0.0f, 0.0f,
-	 hx, -hy, 1.0f, 0.0f,
-	 hx,  hy, 1.0f, 1.0f,
-	-hx, -hy, 0.0f, 0.0f,
-	 hx,  hy, 1.0f, 1.0f,
-	-hx,  hy, 0.0f, 1.0f,
+	-hx, -hy, 0.0f, 0.0f, hx, -hy, 1.0f, 0.0f, hx,  hy, 1.0f, 1.0f,
+	-hx, -hy, 0.0f, 0.0f, hx, hy,  1.0f, 1.0f, -hx, hy, 0.0f, 1.0f,
     };
 
     const bool firstUpload = (m_vao == 0);
@@ -337,23 +357,27 @@ void CText::uploadQuadVertices () {
 	glEnableVertexAttribArray (0);
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (0));
 	glEnableVertexAttribArray (1);
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (2 * sizeof (float)));
+	glVertexAttribPointer (
+	    1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof (float), reinterpret_cast<void*> (2 * sizeof (float))
+	);
     }
     glBindVertexArray (0);
 }
 
 void CText::render () {
-    if (!m_valid) return;
-    if (!m_text.visible->value->getBool ()) return;
+    if (!m_valid) {
+	return;
+    }
+    if (!m_text.visible->value->getBool ()) {
+	return;
+    }
 
     std::string renderedText = m_lastRenderedText;
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {
 	auto& se = Scripting::ScriptEngine::instance ();
 	se.tickLayer (
-	    m_layerHandle,
-	    static_cast<double> (getScene ().getTime ()),
-	    static_cast<double> (getScene ().getDeltaTime ()),
-	    static_cast<double> (getScene ().getFps ())
+	    m_layerHandle, static_cast<double> (getScene ().getTime ()),
+	    static_cast<double> (getScene ().getDeltaTime ()), static_cast<double> (getScene ().getFps ())
 	);
 	const std::string current = se.layerText (m_layerHandle);
 	renderedText = current.empty () ? std::string (" ") : current;
@@ -390,9 +414,7 @@ void CText::render () {
     glm::mat4 model = glm::translate (glm::mat4 (1.0f), gl_origin);
     model = glm::scale (model, scale);
 
-    const glm::mat4 mvp = getScene ().getCamera ().getProjection ()
-			  * getScene ().getCamera ().getLookAt ()
-			  * model;
+    const glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
 
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

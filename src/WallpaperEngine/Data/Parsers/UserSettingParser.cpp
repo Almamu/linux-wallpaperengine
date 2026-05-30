@@ -6,7 +6,10 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
 
-UserSettingUniquePtr UserSettingParser::parse (const json& data, const Properties& properties, int objectId, const std::string& objectName, const std::string& propertyName) {
+UserSettingUniquePtr UserSettingParser::parse (
+    const json& data, const Properties& properties, int objectId, const std::string& objectName,
+    const std::string& propertyName
+) {
     auto value = std::make_unique<DynamicValue> ();
     PropertySharedPtr property;
     std::optional<ConditionInfo> condition;
@@ -49,23 +52,23 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 
     // actual value parsing
     if (valueIt.is_string ()) {
-        // TODO: THINK ABOUT HOW TO APPROACH COLOR PARSING OR ENFORCING IT AFTER
+	// TODO: THINK ABOUT HOW TO APPROACH COLOR PARSING OR ENFORCING IT AFTER
 	std::string str = valueIt;
-        int size = VectorBuilder::preparseSize (str);
+	int size = VectorBuilder::preparseSize (str);
 
 	if (size == 1) {
 	    // scalar? text value?
 	    std::size_t parsed = 0;
 	    try {
-	        float f = std::stof (str, &parsed);
+		float f = std::stof (str, &parsed);
 
-	        if (parsed == str.size ()) {
-	            value->update (f, DynamicValue::UpdateSource::Initialization);
-	        } else {
-	            value->update (str, DynamicValue::UpdateSource::Initialization);
-	        }
+		if (parsed == str.size ()) {
+		    value->update (f, DynamicValue::UpdateSource::Initialization);
+		} else {
+		    value->update (str, DynamicValue::UpdateSource::Initialization);
+		}
 	    } catch (const std::exception&) {
-	        value->update (str, DynamicValue::UpdateSource::Initialization);
+		value->update (str, DynamicValue::UpdateSource::Initialization);
 	    }
 	} else if (size == 2) {
 	    value->update (static_cast<glm::vec2> (valueIt), DynamicValue::UpdateSource::Initialization);
@@ -95,15 +98,15 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	    }
 	}
 
-        value->setScriptContext ({
+	value->setScriptContext ({
             .object = {
                 .id = objectId,
                 .name = objectName,
             },
         });
 
-        value->setScriptSource (scriptSource.value ());
-        // TODO: BRING BACK SCRIPT PROPS
+	value->setScriptSource (scriptSource.value ());
+	// TODO: BRING BACK SCRIPT PROPS
     }
 
     // TODO: This might need to be removed if it causes issues with default values

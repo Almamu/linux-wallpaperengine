@@ -35,16 +35,16 @@
 	  "#define CAST3(x) (vec3(x))\n"                                                                               \
 	  "#define CAST4(x) (vec4(x))\n"                                                                               \
 	  "#define CAST3X3(x) (mat3(x))\n"                                                                             \
-	  "#define float2 vec2\n"                                                                                     \
-	  "#define float3 vec3\n"                                                                                     \
-	  "#define float4 vec4\n"                                                                                     \
-	  "#define int2 ivec2\n"                                                                                      \
-	  "#define int3 ivec3\n"                                                                                      \
-	  "#define int4 ivec4\n"                                                                                      \
+	  "#define float2 vec2\n"                                                                                      \
+	  "#define float3 vec3\n"                                                                                      \
+	  "#define float4 vec4\n"                                                                                      \
+	  "#define int2 ivec2\n"                                                                                       \
+	  "#define int3 ivec3\n"                                                                                       \
+	  "#define int4 ivec4\n"                                                                                       \
 	  "#define saturate(x) (clamp(x, 0.0, 1.0))\n"                                                                 \
 	  "#define texSample2D texture\n"                                                                              \
 	  "#define texSample2DLod textureLod\n"                                                                        \
-	  "#define log10(x) (log2(x) * 0.301029995663981)\n"                                                             \
+	  "#define log10(x) (log2(x) * 0.301029995663981)\n"                                                           \
 	  "#define atan2 atan\n"                                                                                       \
 	  "#define fmod(x, y) ((x)-(y)*trunc((x)/(y)))\n"                                                              \
 	  "#define ddx dFdx\n"                                                                                         \

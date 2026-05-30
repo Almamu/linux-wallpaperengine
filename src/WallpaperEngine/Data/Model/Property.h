@@ -66,7 +66,9 @@ public:
     }
 
     using Property::update;
-    void update (const std::string& value, UpdateSource source) override { this->update (value == "true" || value == "1", source); }
+    void update (const std::string& value, UpdateSource source) override {
+	this->update (value == "true" || value == "1", source);
+    }
 
     [[nodiscard]] std::string dump () const override {
 	std::stringstream ss;
@@ -87,7 +89,7 @@ public:
 
     using Property::update;
     void update (const std::string& value, UpdateSource source) override {
-        this->update (ColorBuilder::parse (value), source);
+	this->update (ColorBuilder::parse (value), source);
     }
 
     [[nodiscard]] std::string dump () const override {
@@ -140,9 +142,7 @@ public:
     explicit PropertyText (PropertyData data) : Property (std::move (data)) { }
 
     using Property::update;
-    void update (const std::string& value, UpdateSource source) override {
-	this->DynamicValue::update (value, source);
-    }
+    void update (const std::string& value, UpdateSource source) override { this->DynamicValue::update (value, source); }
 
     [[nodiscard]] std::string toString () const override { return this->text; }
 
@@ -163,9 +163,7 @@ public:
 	this->PropertySceneTexture::update (value, UpdateSource::Initialization);
     }
 
-    void update (const std::string& value, UpdateSource source) override {
-        this->DynamicValue::update (value, source);
-    }
+    void update (const std::string& value, UpdateSource source) override { this->DynamicValue::update (value, source); }
 
     [[nodiscard]] std::string dump () const override {
 	std::stringstream ss;
@@ -187,9 +185,7 @@ public:
 	this->PropertyFile::update (value, UpdateSource::Initialization);
     }
 
-    void update (const std::string& value, UpdateSource source) override {
-        this->DynamicValue::update (value, source);
-    }
+    void update (const std::string& value, UpdateSource source) override { this->DynamicValue::update (value, source); }
 
     [[nodiscard]] std::string dump () const override {
 	std::stringstream ss;
@@ -211,9 +207,7 @@ public:
 	this->PropertyTextInput::update (value, UpdateSource::Initialization);
     }
 
-    void update (const std::string& value, UpdateSource source) override {
-        this->DynamicValue::update (value, source);
-    }
+    void update (const std::string& value, UpdateSource source) override { this->DynamicValue::update (value, source); }
 
     [[nodiscard]] std::string dump () const override {
 	std::stringstream ss;

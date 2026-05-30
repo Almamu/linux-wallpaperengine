@@ -8,8 +8,8 @@
 #include <optional>
 #include <sstream>
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
@@ -34,9 +34,7 @@ glm::vec2 rotateVec2 (const glm::vec2& value, float angle) {
     return { value.x * cosAngle - value.y * sinAngle, value.x * sinAngle + value.y * cosAngle };
 }
 
-bool isMagentaNeonTint (const glm::vec3& color) {
-    return color.r > 0.55f && color.g < 0.25f && color.b > 0.45f;
-}
+bool isMagentaNeonTint (const glm::vec3& color) { return color.r > 0.55f && color.g < 0.25f && color.b > 0.45f; }
 
 std::optional<glm::vec3> findMagentaCompositeTint (const Image& image, const std::vector<int>& skippedEffectIds) {
     for (const auto& effect : image.effects) {
@@ -108,7 +106,9 @@ std::optional<PuppetMeshBlock> findPuppetMeshBlock (
 	    continue;
 	}
 
-	return PuppetMeshBlock { .headerOffset = offset, .vertexBytes = candidateVertexBytes, .indexBytes = candidateIndexBytes };
+	return PuppetMeshBlock { .headerOffset = offset,
+				 .vertexBytes = candidateVertexBytes,
+				 .indexBytes = candidateIndexBytes };
     }
 
     return std::nullopt;
@@ -175,10 +175,10 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
 }
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    CObject(scene, image), CRenderable (scene, image, *image.model->material), CScriptableObject (scene, image),
-    m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE), m_texcoordCopy (GL_NONE),
-    m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (), m_modelViewProjectionPass (glm::mat4 (1.0)),
-    m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),
+    CObject (scene, image), CRenderable (scene, image, *image.model->material), CScriptableObject (scene, image),
+    m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE),
+    m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (),
+    m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),
     m_modelViewProjectionPassInverse (glm::inverse (m_modelViewProjectionPass)), m_modelViewProjectionCopyInverse (),
     m_modelMatrix (), m_viewProjectionMatrix (), m_image (image), m_pos (), m_initialized (false) {
     // register any properties in use on this object
@@ -220,8 +220,10 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     if ((size.x == 0.0f || size.y == 0.0f) && this->m_texture != nullptr) {
 	size.x = static_cast<float> (this->m_texture->getRealWidth ());
 	size.y = static_cast<float> (this->m_texture->getRealHeight ());
-    } else if ((size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
-	       && this->getImage ().model->height.has_value ()) {
+    } else if (
+	(size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
+	&& this->getImage ().model->height.has_value ()
+    ) {
 	size.x = static_cast<float> (this->getImage ().model->width.value ());
 	size.y = static_cast<float> (this->getImage ().model->height.value ());
     }
@@ -296,9 +298,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 	    / static_cast<float> (this->getTexture ()->getTextureHeight (0));
     }
     // calculate the correct texCoord limits for the texture based on the texture screen size and real size
-    else if (this->getTexture () != nullptr
-	     && (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
-		 || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())) {
+    else if (
+	this->getTexture () != nullptr
+	&& (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
+	    || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())
+    ) {
 	// Account for padding in non-power-of-two textures: clamp UVs to the real content
 	width = static_cast<float> (this->getTexture ()->getRealWidth ())
 	    / static_cast<float> (this->getTexture ()->getTextureWidth (0));
@@ -378,11 +382,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_hasPuppetMesh = this->loadPuppetMesh (size);
 
     // compute the center of the image in scene space for rotation
-    this->m_sceneCenter = glm::vec3 (
-	(this->m_pos.x + this->m_pos.z) / 2.0f,
-	(this->m_pos.y + this->m_pos.w) / 2.0f,
-	0.0f
-    );
+    this->m_sceneCenter
+	= glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
 
     this->m_modelViewProjectionScreen
 	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt ();
@@ -443,7 +444,8 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	constexpr size_t positionOffset = 0;
 	constexpr size_t uvOffset = 72;
 
-	const std::string puppetVersion = data.size () >= markerSize ? std::string (data.data (), strlen ("MDLV0021")) : "";
+	const std::string puppetVersion
+	    = data.size () >= markerSize ? std::string (data.data (), strlen ("MDLV0021")) : "";
 	if (puppetVersion != "MDLV0021" && puppetVersion != "MDLV0023") {
 	    sLog.error ("Unsupported puppet model header ", puppetVersion, " in ", *this->getImage ().model->puppet);
 	    return false;
@@ -456,7 +458,7 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 		}
 	    }
 	    return data.size ();
-	} ();
+	}();
 
 	const auto meshBlock = findPuppetMeshBlock (data, markerSize, mdlsOffset, meshHeaderSize, vertexStride);
 	if (!meshBlock.has_value ()) {
@@ -513,8 +515,8 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 
 	this->m_puppetIndexCount = static_cast<GLsizei> (indices.size ());
 	sLog.out (
-	    "Loaded puppet mesh ", *this->getImage ().model->puppet, " version=", puppetVersion, " vertices=", vertexCount,
-	    " indices=", this->m_puppetIndexCount
+	    "Loaded puppet mesh ", *this->getImage ().model->puppet, " version=", puppetVersion,
+	    " vertices=", vertexCount, " indices=", this->m_puppetIndexCount
 	);
 
 	return true;
@@ -570,7 +572,9 @@ void CImage::setupPuppetGeometryCallback (Effects::CPass* pass) const {
 		glGetFloatv (GL_COLOR_CLEAR_VALUE, previousClearColor);
 		glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
 		glClear (GL_COLOR_BUFFER_BIT);
-		glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
+		glClearColor (
+		    previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]
+		);
 	    }
 	    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, this->m_puppetIndices);
 	    glDrawElements (GL_TRIANGLES, this->m_puppetIndexCount, GL_UNSIGNED_SHORT, nullptr);
@@ -600,23 +604,23 @@ void CImage::setup () {
     // COMPOSITE_B
     // TODO: SUPPORT PASSTHROUGH (IT'S A SHADER)
     if (this->m_image.model->passthrough) {
-		// passthrough images without effects are bad, do not draw them
-		if(this->m_image.effects.empty ()) {
-			return;
-		}
+	// passthrough images without effects are bad, do not draw them
+	if (this->m_image.effects.empty ()) {
+	    return;
+	}
 
-		// Some have attempted to declare effects with visible set to false.
-		bool allEffectsInvisible = true;
-		for (const auto& cur : this->m_image.effects) {
-			if (cur->visible->value->getBool()) {
-				allEffectsInvisible = false;
-				break;
-			}
-		}
+	// Some have attempted to declare effects with visible set to false.
+	bool allEffectsInvisible = true;
+	for (const auto& cur : this->m_image.effects) {
+	    if (cur->visible->value->getBool ()) {
+		allEffectsInvisible = false;
+		break;
+	    }
+	}
 
-		if (allEffectsInvisible) {
-			return;
-		}
+	if (allEffectsInvisible) {
+	    return;
+	}
     }
 
     const auto& debug = this->getScene ().getContext ().getApp ().getContext ().settings.render.debug;
@@ -745,7 +749,7 @@ void CImage::setup () {
     }
 
     // extra render pass if there's any blending to be done
-    if (!debug.baseOnly && this->m_image.colorBlendMode->value->getInt() > 0) {
+    if (!debug.baseOnly && this->m_image.colorBlendMode->value->getInt () > 0) {
 	this->m_materials.colorBlending.material
 	    = MaterialParser::load (this->getScene ().getScene ().project, "materials/util/effectpassthrough.json");
 	this->m_materials.colorBlending.override = std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
@@ -801,7 +805,8 @@ void CImage::setupPasses () {
 	GLuint spacePosition = (isFirstPass)
 	    ? (this->m_hasPuppetMesh ? this->m_puppetSpacePosition : this->getCopySpacePosition ())
 	    : this->getPassSpacePosition ();
-	const glm::mat4* projection = (isFirstPass) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
+	const glm::mat4* projection
+	    = (isFirstPass) ? &this->m_modelViewProjectionCopy : &this->m_modelViewProjectionPass;
 	const glm::mat4* inverseProjection
 	    = (isFirstPass) ? &this->m_modelViewProjectionCopyInverse : &this->m_modelViewProjectionPassInverse;
 	first = false;
@@ -857,11 +862,8 @@ bool CImage::shouldRenderFinalPass (bool isLastPass) const {
 }
 
 bool CImage::configurePassTarget (
-    Effects::CPass* pass,
-    std::shared_ptr<const CFBO>& drawTo,
-    const std::shared_ptr<const TextureProvider>& asInput,
-    std::shared_ptr<const TextureProvider>& effectInput,
-    bool& inTargetEffectSequence
+    Effects::CPass* pass, std::shared_ptr<const CFBO>& drawTo, const std::shared_ptr<const TextureProvider>& asInput,
+    std::shared_ptr<const TextureProvider>& effectInput, bool& inTargetEffectSequence
 ) {
     if (!pass->getTarget ().has_value ()) {
 	return false;
@@ -948,7 +950,7 @@ void CImage::render () {
 #endif /* DEBUG */
 }
 
-const float& CImage::getBrightness () const { return this->m_image.brightness->value->getFloat(); }
+const float& CImage::getBrightness () const { return this->m_image.brightness->value->getFloat (); }
 
 const float& CImage::getUserAlpha () const { return this->m_image.alpha->value->getFloat (); }
 
@@ -966,8 +968,10 @@ glm::vec2 CImage::resolveGeometrySize (float sceneWidth, float sceneHeight, glm:
     if ((size.x == 0.0f || size.y == 0.0f) && this->m_texture != nullptr) {
 	size.x = static_cast<float> (this->m_texture->getRealWidth ());
 	size.y = static_cast<float> (this->m_texture->getRealHeight ());
-    } else if ((size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
-	       && this->getImage ().model->height.has_value ()) {
+    } else if (
+	(size.x == 0.0f || size.y == 0.0f) && this->getImage ().model->width.has_value ()
+	&& this->getImage ().model->height.has_value ()
+    ) {
 	size.x = static_cast<float> (this->getImage ().model->width.value ());
 	size.y = static_cast<float> (this->getImage ().model->height.value ());
     }
@@ -1018,13 +1022,9 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
 
     float width = 1.0f;
     float height = 1.0f;
-    if (
-	this->getTexture () != nullptr && !this->getTexture ()->isAnimated ()
-	&& (
-	    this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
-	    || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ()
-	)
-    ) {
+    if (this->getTexture () != nullptr && !this->getTexture ()->isAnimated ()
+	&& (this->getTexture ()->getTextureWidth (0) != this->getTexture ()->getRealWidth ()
+	    || this->getTexture ()->getTextureHeight (0) != this->getTexture ()->getRealHeight ())) {
 	width = static_cast<float> (this->getTexture ()->getRealWidth ())
 	    / static_cast<float> (this->getTexture ()->getTextureWidth (0));
 	height = static_cast<float> (this->getTexture ()->getRealHeight ())
@@ -1065,7 +1065,8 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordCopy);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordCopy), texcoordCopy, GL_DYNAMIC_DRAW);
 
-    this->m_sceneCenter = glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
+    this->m_sceneCenter
+	= glm::vec3 ((this->m_pos.x + this->m_pos.z) / 2.0f, (this->m_pos.y + this->m_pos.w) / 2.0f, 0.0f);
     this->m_modelViewProjectionCopy = this->getImage ().model->passthrough
 	? this->m_modelViewProjectionScreen
 	: glm::ortho<float> (0.0, size.x, 0.0, size.y);
@@ -1104,9 +1105,8 @@ void CImage::updateScreenSpacePosition () {
 	rotModel = glm::translate (rotModel, -this->m_sceneCenter);
     }
 
-    glm::mat4 mvp = this->getScene ().getCamera ().getProjection ()
-		   * this->getScene ().getCamera ().getLookAt ()
-		   * rotModel;
+    glm::mat4 mvp
+	= this->getScene ().getCamera ().getProjection () * this->getScene ().getCamera ().getLookAt () * rotModel;
 
     // Apply parallax displacement if enabled
     if (this->getScene ().getScene ().camera.parallax.enabled

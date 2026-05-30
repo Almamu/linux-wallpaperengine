@@ -1,9 +1,9 @@
 #include "WaylandMouseInput.h"
 #include "WallpaperEngine/Render/Drivers/WaylandOpenGLDriver.h"
-#include <glm/common.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <glm/common.hpp>
 #include <regex>
 #include <string>
 #include <sys/socket.h>
@@ -14,9 +14,8 @@
 using namespace WallpaperEngine::Input::Drivers;
 
 namespace {
-const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport* getActiveViewport (
-    const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& driver
-) {
+const WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport*
+getActiveViewport (const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& driver) {
     if (driver.viewportInFocus && driver.viewportInFocus->rendering) {
 	return driver.viewportInFocus;
     }
@@ -124,10 +123,8 @@ std::optional<glm::dvec2> WaylandMouseInput::queryHyprlandCursorPosition () cons
 
     timeval timeout {};
     timeout.tv_usec = 50000;
-    if (
-	setsockopt (fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout)) != 0
-	|| setsockopt (fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout)) != 0
-    ) {
+    if (setsockopt (fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout)) != 0
+	|| setsockopt (fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout)) != 0) {
 	close (fd);
 	return std::nullopt;
     }

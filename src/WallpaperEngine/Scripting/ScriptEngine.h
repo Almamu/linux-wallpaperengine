@@ -44,12 +44,9 @@ public:
      * @return The modified value from update(), or a copy of currentValue on error
      */
     void evaluate (
-	const void* bindingKey,
-	const std::string& scriptSource,
-	const std::map<std::string, DynamicValue&>& scriptProperties,
-	DynamicValue& currentValue,
-	WallpaperEngine::Render::Wallpapers::CScene* scene = nullptr,
-	const ScriptContext* bindingContext = nullptr
+	const void* bindingKey, const std::string& scriptSource,
+	const std::map<std::string, DynamicValue&>& scriptProperties, DynamicValue& currentValue,
+	WallpaperEngine::Render::Wallpapers::CScene* scene = nullptr, const ScriptContext* bindingContext = nullptr
     );
 
     // -------------------------------------------------------------------
@@ -81,8 +78,7 @@ public:
      * @return A positive handle, or kInvalidLayerHandle if evaluation failed.
      */
     ScriptLayerHandle createLayerScript (
-	const std::string& scriptSource,
-	const std::map<std::string, DynamicValue*>& initialScriptProps,
+	const std::string& scriptSource, const std::map<std::string, DynamicValue*>& initialScriptProps,
 	const std::string& initialText
     );
 
@@ -118,9 +114,12 @@ private:
     void refreshMediaState ();
     void dispatchMediaEvents (JSValue module, const void* bindingKey);
     void updateRuntimeGlobals (JSContext* ctx, JSValue globalObj) const;
-    void updateSceneInputGlobals (JSContext* ctx, JSValue globalObj, WallpaperEngine::Render::Wallpapers::CScene* scene);
+    void
+    updateSceneInputGlobals (JSContext* ctx, JSValue globalObj, WallpaperEngine::Render::Wallpapers::CScene* scene);
     void callModuleWithProps (JSContext* ctx, JSValue module, const char* name, JSValue propsObj) const;
-    void initializeModuleIfNeeded (JSContext* ctx, JSValue module, const void* bindingKey, const DynamicValue& currentValue, bool hasScene);
+    void initializeModuleIfNeeded (
+	JSContext* ctx, JSValue module, const void* bindingKey, const DynamicValue& currentValue, bool hasScene
+    );
     void runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const;
     DynamicValueUniquePtr fallbackTextValue (const std::string& scriptSource) const;
     void applyTextFallback (DynamicValue& value, const std::string& scriptSource) const;
