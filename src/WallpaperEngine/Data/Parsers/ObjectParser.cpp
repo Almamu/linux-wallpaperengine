@@ -16,63 +16,6 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
-namespace {
-// Resolves the `script` field of a scripted text node: if it looks like a
-// single-line path ending in .js, read it through the asset locator.
-// Returns empty string on failure (caller treats empty script as static).
-std::string resolveScriptSource (std::string raw, const Project& project) {
-    const bool looksLikePath = !raw.empty () && raw.find ('\n') == std::string::npos && raw.size () >= 3
-	&& raw.compare (raw.size () - 3, 3, ".js") == 0;
-
-    if (!looksLikePath || project.assetLocator == nullptr) {
-	return raw;
-    }
-
-    try {
-	return project.assetLocator->readString (raw);
-    } catch (const std::exception& e) {
-	sLog.error ("CText: cannot load script asset '", raw, "': ", e.what ());
-	return {};
-    }
-}
-
-// Parses a text object's `scriptproperties` subtree into a map of UserSettings.
-// Plain string values bypass UserSettingParser (which stof-throws on "-"/":"),
-// object values with a string `value` field also go through the string path.
-std::map<std::string, UserSettingUniquePtr> parseScriptProperties (const JSON& propsObj, const Properties& properties) {
-    std::map<std::string, UserSettingUniquePtr> out;
-    for (const auto& [key, propData] : propsObj.items ()) {
-	try {
-	    if (propData.is_string ()) {
-		out.emplace (
-		    key,
-		    WallpaperEngine::Data::Builders::UserSettingBuilder::fromValue (
-			propData.template get<std::string> ()
-		    )
-		);
-		continue;
-	    }
-	    if (propData.is_object ()) {
-		if (const auto valueField = propData.find ("value");
-		    valueField != propData.end () && valueField->is_string ()) {
-		    out.emplace (
-			key,
-			WallpaperEngine::Data::Builders::UserSettingBuilder::fromValue (
-			    valueField->template get<std::string> ()
-			)
-		    );
-		    continue;
-		}
-	    }
-	    out.emplace (key, UserSettingParser::parse (propData, properties));
-	} catch (const std::exception& e) {
-	    sLog.error ("CText: failed to parse scriptProperty '", key, "': ", e.what ());
-	}
-    }
-    return out;
-}
-} // namespace
-
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
@@ -179,51 +122,22 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
 }
 
 TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
-    const auto& properties = project.properties;
-    const auto textIt = it.require ("text", "Text object must have a text field");
-
-    std::string text;
-    std::string script;
-    std::map<std::string, UserSettingUniquePtr> scriptProps;
-
-    if (textIt.is_string ()) {
-	text = textIt.get<std::string> ();
-    } else if (textIt.is_object ()) {
-	// Scripted text: carries the JS source (either inline or as a .js asset path),
-	// an initial placeholder `value`, and typed initial values for scriptProperties.
-	if (const auto scriptIt = textIt.optional<std::string> ("script"); scriptIt.has_value ()) {
-	    script = resolveScriptSource (*scriptIt, project);
-	}
-
-	if (const auto valueIt = textIt.optional<std::string> ("value"); valueIt.has_value ()) {
-	    text = *valueIt;
-	}
-
-	if (const auto propsIt = textIt.find ("scriptproperties"); propsIt != textIt.end () && propsIt->is_object ()) {
-	    scriptProps = parseScriptProperties (*propsIt, properties);
-	}
-    }
-
-    auto result = std::make_unique<Text> (
+    return std::make_unique<Text> (
 	std::move (base),
 	TextData {
-	    .text = std::move (text),
-	    .script = std::move (script),
-	    .scriptProperties = std::move (scriptProps),
+	    .text = it.user ("text", project.properties),
 	    .font = it.optional ("font", std::string ()),
-	    .pointSize = it.user ("pointsize", properties, 32.0f),
+	    .pointSize = it.user ("pointsize", project.properties, 32.0f),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
-	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
-	    .color = it.user ("color", properties, Builders::ColorBuilder::White),
-	    .alpha = it.user ("alpha", properties, 1.0f),
-	    .visible = it.user ("visible", properties, true),
+	    .scale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+	    .color = it.user ("color", project.properties, Builders::ColorBuilder::White),
+	    .alpha = it.user ("alpha", project.properties, 1.0f),
+	    .visible = it.user ("visible", project.properties, true),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
 	    .padding = it.optional ("padding", 0),
 	}
     );
-
-    return result;
 }
 
 ImageUniquePtr
@@ -264,19 +178,6 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	if (instanceUserTextures.has_value ()) {
 	    const auto parsed = parseTextureMap (*instanceUserTextures);
 	    firstPass.usertextures.insert (parsed.begin (), parsed.end ());
-	}
-    }
-
-    for (const auto& effect : result->effects) {
-	for (const auto& pass : effect->passOverrides) {
-	    for (const auto& [name, constant] : pass->constants) {
-		constant->value->setScriptContext({
-	            .object = {
-	                .id = result->id,
-	                .name = result->name,
-	            },
-	        });
-	    }
 	}
     }
 

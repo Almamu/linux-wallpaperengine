@@ -454,6 +454,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Utils/BinaryReader.h
     src/WallpaperEngine/Data/Utils/MemoryStream.h
     src/WallpaperEngine/Data/Utils/SFINAE.h
+    src/WallpaperEngine/Data/Parsers/DynamicValueParser.h
+    src/WallpaperEngine/Data/Parsers/DynamicValueParser.cpp
     src/WallpaperEngine/Data/Parsers/EffectParser.cpp
     src/WallpaperEngine/Data/Parsers/EffectParser.h
     src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
@@ -491,8 +493,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h
     src/WallpaperEngine/Scripting/ScriptEngine.h
     src/WallpaperEngine/Scripting/ScriptEngine.cpp
-    src/WallpaperEngine/Scripting/CScriptableObject.h
-    src/WallpaperEngine/Scripting/CScriptableObject.cpp
+    src/WallpaperEngine/Scripting/ScriptableObject.h
+    src/WallpaperEngine/Scripting/ScriptableObject.cpp
 
     src/WallpaperEngine/Maths.h
     src/WallpaperEngine/Maths.cpp)

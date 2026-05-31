@@ -4,7 +4,7 @@
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
-#include "WallpaperEngine/Scripting/CScriptableObject.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 #include <functional>
 #include <glm/mat4x4.hpp>
@@ -105,7 +105,7 @@ using InitializerFunc = std::function<void (ParticleInstance&)>;
 using OperatorFunc = std::function<
     void (std::vector<ParticleInstance>&, uint32_t, const std::vector<ControlPointData>&, float, float)>;
 
-class CParticle final : public CRenderable, public Scripting::CScriptableObject {
+class CParticle final : public CRenderable, public Scripting::ScriptableObject {
     friend CObject;
 
 public:

@@ -74,12 +74,14 @@ GLuint compileShader (GLenum type, const char* source) {
 } // namespace
 
 CText::CText (Wallpapers::CScene& scene, const Text& text) :
-    CObject (scene, text), CScriptableObject (scene, text), m_text (text) {
+    CObject (scene, text), ScriptableObject (scene, text), m_text (text) {
     this->registerProperty ("color", *text.color->value);
     this->registerProperty ("alpha", *text.alpha->value);
     this->registerProperty ("origin", *text.origin->value);
     this->registerProperty ("scale", *text.scale->value);
     this->registerProperty ("visible", *text.visible->value);
+    this->registerProperty ("pointSize", *text.pointSize->value);
+    this->registerProperty ("text", *text.text->value);
     this->registerProperty ("pointSize", *text.pointSize->value);
 }
 
@@ -109,10 +111,11 @@ CText::~CText () {
 }
 
 void CText::setup () {
-    const bool scripted = !m_text.script.empty ();
+    const bool scripted = m_text.text->value->getScriptSource ().has_value ();
+    const auto& text = m_text.text->value->getString ();
 
     // Nothing to render and no script to produce text later → bail.
-    if (m_text.text.empty () && !scripted) {
+    if (text.empty () && !scripted) {
 	return;
     }
 
@@ -130,7 +133,7 @@ void CText::setup () {
     buildShader ();
     // Scripted text may have an empty placeholder; use a single space so the
     // glyph texture has non-zero dimensions until the script produces a value.
-    rebuildTextureFrom (m_text.text.empty () ? std::string (" ") : m_text.text);
+    rebuildTextureFrom (text.empty () ? std::string (" ") : text);
 
     if (scripted) {
 	initScriptLayer ();
@@ -210,13 +213,16 @@ unsigned int CText::computeEffectivePixelSize () const {
 }
 
 void CText::initScriptLayer () {
-    std::map<std::string, DynamicValue*> initialProps;
-    for (const auto& [k, setting] : m_text.scriptProperties) {
-	if (setting && setting->value) {
-	    initialProps.emplace (k, setting->value.get ());
-	}
+    const auto& script = m_text.text->value->getScriptSource ();
+
+    if (!script.has_value ()) {
+	return;
     }
-    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (m_text.script, initialProps, m_text.text);
+
+    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
+	*script, m_text.text->value->getProperties (), m_text.text->value->getString ()
+    );
+
     if (m_layerHandle == Scripting::kInvalidLayerHandle) {
 	sLog.error ("CText: createLayerScript failed for '", m_text.name, "'");
     }

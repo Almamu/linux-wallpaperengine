@@ -314,8 +314,8 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 
     // update main textures for images
     for (const auto& cur : this->m_objectsByRenderOrder) {
-	if (cur->is<CScriptableObject> ()) {
-	    cur->as<CScriptableObject> ()->reevaluate ();
+	if (cur->is<ScriptableObject> ()) {
+	    cur->as<ScriptableObject> ()->reevaluate ();
 	}
 
 	if (!cur->is<Objects::CImage> ()) {

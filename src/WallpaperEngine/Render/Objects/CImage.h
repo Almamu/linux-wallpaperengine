@@ -8,7 +8,7 @@
 #include "WallpaperEngine/Render/Shaders/Shader.h"
 
 #include "../TextureProvider.h"
-#include "WallpaperEngine/Scripting/CScriptableObject.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 #include <glm/vec3.hpp>
 #include <vector>
@@ -22,7 +22,7 @@ class CPass;
 } // namespace WallpaperEngine::Render::Objects::Effects
 
 namespace WallpaperEngine::Render::Objects {
-class CImage final : public CRenderable, public CScriptableObject {
+class CImage final : public CRenderable, public ScriptableObject {
     friend CObject;
 
 public:

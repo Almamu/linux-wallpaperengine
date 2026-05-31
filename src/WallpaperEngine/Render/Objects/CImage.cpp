@@ -175,7 +175,7 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
 }
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
-    CObject (scene, image), CRenderable (scene, image, *image.model->material), CScriptableObject (scene, image),
+    CObject (scene, image), CRenderable (scene, image, *image.model->material), ScriptableObject (scene, image),
     m_sceneSpacePosition (GL_NONE), m_copySpacePosition (GL_NONE), m_passSpacePosition (GL_NONE),
     m_texcoordCopy (GL_NONE), m_texcoordPass (GL_NONE), m_modelViewProjectionScreen (),
     m_modelViewProjectionPass (glm::mat4 (1.0)), m_modelViewProjectionCopy (), m_modelViewProjectionScreenInverse (),

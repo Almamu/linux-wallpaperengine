@@ -5,17 +5,19 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <list>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 
 namespace WallpaperEngine::Data::Model {
+class DynamicValue;
+
 struct ConditionInfo {
     std::string name;
     std::string condition;
 };
 
-// TODO: CHANGE THIS TO HOLD A REFERENCE TO THE OBJECT AND EXPOSE THE RIGHT PROPERTY MAP
 struct ScriptContext {
     struct Object {
 	int id;
@@ -50,6 +52,7 @@ public:
     };
 
     DynamicValue () = default;
+    DynamicValue (const DynamicValue& other);
     explicit DynamicValue (const glm::ivec4& value);
     explicit DynamicValue (const glm::ivec3& value);
     explicit DynamicValue (const glm::ivec2& value);
@@ -137,17 +140,15 @@ public:
     /**
      * @return The current script source associated with this dynamic value
      */
-    const std::optional<std::string>& getScriptSource () const;
+    [[nodiscard]] const std::optional<std::string>& getScriptSource () const;
     /**
-     * Associates a script context with the dynamic value to provide the necessary environment for script execution
-     *
-     * @param context
+     * @return The script properties associated with this dynamic value (if any)
      */
-    void setScriptContext (const ScriptContext& context);
+    [[nodiscard]] const std::map<std::string, DynamicValue>& getProperties () const;
     /**
-     * @return The associated script context for this dynamic value
+     * Updates the script properties associated with this dynamic value
      */
-    const std::optional<ScriptContext>& getScriptContext () const;
+    void setProperties (const std::map<std::string, DynamicValue>& properties);
 
 private:
     /**
@@ -158,7 +159,6 @@ private:
     std::shared_ptr<bool> m_aliveFlag = std::make_shared<bool> (true);
     std::list<std::function<void (const DynamicValue&, UpdateSource)>> m_listeners = {};
     std::vector<std::function<void ()>> m_connections = {};
-    std::optional<ScriptContext> m_scriptContext = std::nullopt;
     std::optional<std::string> m_scriptSource = std::nullopt;
     bool m_evaluating = false;
 
@@ -175,5 +175,7 @@ private:
     std::string m_string;
     UnderlyingType m_type = Null;
     std::optional<ConditionInfo> m_condition = std::nullopt;
+    /** All the properties this script takes in */
+    std::map<std::string, DynamicValue> m_properties;
 };
 }

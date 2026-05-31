@@ -1,4 +1,5 @@
 #pragma once
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Render/CObject.h"
 
@@ -7,11 +8,15 @@ class CScene;
 }
 
 namespace WallpaperEngine::Scripting {
-class CScriptableObject : virtual public CObject {
+class ScriptableObject : virtual public CObject {
 public:
-    CScriptableObject (Wallpapers::CScene& scene, const Object& object);
-    virtual ~CScriptableObject () = default;
+    ScriptableObject (Wallpapers::CScene& scene, const Object& object);
+    virtual ~ScriptableObject () = default;
     virtual void reevaluate ();
+
+    DynamicValue& getProperty (const std::string& name);
+
+    const std::map<std::string, DynamicValue&>& getProperties () const;
 
 protected:
     void registerProperty (const std::string& name, DynamicValue& value);

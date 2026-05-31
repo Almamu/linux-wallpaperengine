@@ -1,4 +1,4 @@
-#include "CScriptableObject.h"
+#include "ScriptableObject.h"
 
 #include "ScriptEngine.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
@@ -8,7 +8,7 @@
 using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Scripting;
 
-CScriptableObject::CScriptableObject (Wallpapers::CScene& scene, const Object& object) : CObject (scene, object) {
+ScriptableObject::ScriptableObject (Wallpapers::CScene& scene, const Object& object) : CObject (scene, object) {
     this->m_context = { .object = { .id = object.id, .name = object.name } };
 
     // register common dynamic values
@@ -18,11 +18,23 @@ CScriptableObject::CScriptableObject (Wallpapers::CScene& scene, const Object& o
     this->registerProperty ("visible", *object.groupVisible->value);
 }
 
-void CScriptableObject::registerProperty (const std::string& name, DynamicValue& value) {
+DynamicValue& ScriptableObject::getProperty (const std::string& name) {
+    const auto it = this->m_properties.find (name);
+
+    if (it == this->m_properties.end ()) {
+	sLog.exception ("Property '" + name + "' not found on object '" + this->m_context.object.name + "'");
+    }
+
+    return it->second;
+}
+
+const std::map<std::string, DynamicValue&>& ScriptableObject::getProperties () const { return this->m_properties; }
+
+void ScriptableObject::registerProperty (const std::string& name, DynamicValue& value) {
     this->m_properties.emplace (name, value);
 }
 
-void CScriptableObject::reevaluate () {
+void ScriptableObject::reevaluate () {
     if (this->m_evaluating) {
 	return;
     }
@@ -39,8 +51,6 @@ void CScriptableObject::reevaluate () {
 	    continue;
 	}
 
-	ScriptEngine::instance ().evaluate (
-	    this, *source, this->m_properties, property, &this->getScene (), &this->m_context
-	);
+	ScriptEngine::instance ().evaluate (this, *source, property, &this->getScene (), &this->m_context);
     }
 }

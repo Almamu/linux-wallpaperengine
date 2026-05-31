@@ -1,10 +1,15 @@
 #include "DynamicValue.h"
+#include "UserSetting.h"
 
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 
 using namespace WallpaperEngine::Data::Model;
+
+DynamicValue::DynamicValue (const DynamicValue& other) {
+    this->DynamicValue::update (other, UpdateSource::Initialization);
+}
 
 DynamicValue::DynamicValue (const glm::ivec4& value) {
     this->DynamicValue::update (value, UpdateSource::Initialization);
@@ -413,11 +418,13 @@ void DynamicValue::setScriptSource (const std::string& source) { this->m_scriptS
 
 void DynamicValue::clearScriptSource () { this->m_scriptSource = std::nullopt; }
 
-void DynamicValue::setScriptContext (const ScriptContext& context) { this->m_scriptContext = context; }
-
-const std::optional<ScriptContext>& DynamicValue::getScriptContext () const { return this->m_scriptContext; }
-
 const std::optional<std::string>& DynamicValue::getScriptSource () const { return this->m_scriptSource; }
+
+const std::map<std::string, DynamicValue>& DynamicValue::getProperties () const { return this->m_properties; }
+
+void DynamicValue::setProperties (const std::map<std::string, DynamicValue>& properties) {
+    this->m_properties = properties;
+}
 
 void DynamicValue::propagate (UpdateSource source) const {
     for (const auto& callback : this->m_listeners) {

@@ -19,7 +19,7 @@ using namespace WallpaperEngine::Data::Model;
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     CObject (scene, particle), CRenderable (scene, particle, *particle.material->material),
-    CScriptableObject (scene, particle), m_particle (particle) {
+    ScriptableObject (scene, particle), m_particle (particle) {
     this->registerProperty ("scale", *particle.scale->value);
     this->registerProperty ("angles", *particle.angles->value);
     this->registerProperty ("visible", *particle.visible->value);

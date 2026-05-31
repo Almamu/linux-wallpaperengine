@@ -39,13 +39,11 @@ public:
      * Evaluate a WallpaperEngine script's update() function.
      *
      * @param scriptSource The full JS script text (ES6 module with export function update(value))
-     * @param scriptProperties Map of property name to current DynamicValue*
      * @param currentValue The current value to pass to update()
      * @return The modified value from update(), or a copy of currentValue on error
      */
     void evaluate (
-	const void* bindingKey, const std::string& scriptSource,
-	const std::map<std::string, DynamicValue&>& scriptProperties, DynamicValue& currentValue,
+	const void* bindingKey, const std::string& scriptSource, DynamicValue& currentValue,
 	WallpaperEngine::Render::Wallpapers::CScene* scene = nullptr, const ScriptContext* bindingContext = nullptr
     );
 
@@ -78,7 +76,7 @@ public:
      * @return A positive handle, or kInvalidLayerHandle if evaluation failed.
      */
     ScriptLayerHandle createLayerScript (
-	const std::string& scriptSource, const std::map<std::string, DynamicValue*>& initialScriptProps,
+	const std::string& scriptSource, const std::map<std::string, DynamicValue>& initialScriptProps,
 	const std::string& initialText
     );
 
@@ -102,8 +100,6 @@ public:
      */
     void destroyLayer (ScriptLayerHandle handle);
 
-    JSValue dynamicValueToJS (const DynamicValue& value) const;
-    void jsToDynamicValue (JSValue val, DynamicValue& source) const;
     void releaseBinding (const void* bindingKey);
 
 private:
