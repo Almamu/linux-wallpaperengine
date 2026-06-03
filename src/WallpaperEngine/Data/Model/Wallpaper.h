@@ -39,8 +39,8 @@ public:
 
 struct SceneData {
     struct {
-	glm::vec3 ambient;
-	glm::vec3 skylight;
+	UserSettingUniquePtr ambient;
+	UserSettingUniquePtr skylight;
 	UserSettingUniquePtr clear;
     } colors;
     /**
@@ -48,7 +48,7 @@ struct SceneData {
      */
     struct Camera {
 	/** Enable fade effect */
-	bool fade;
+	UserSettingUniquePtr fade;
 	/** Used by the software to allow the users to preview the background or not? */
 	bool preview;
 
@@ -99,9 +99,9 @@ struct SceneData {
 	    int width;
 	    int height;
 	    bool isAuto;
-	    float nearz;
-	    float farz;
-	    float fov;
+	    UserSettingUniquePtr nearz;
+	    UserSettingUniquePtr farz;
+	    UserSettingUniquePtr fov;
 	} projection;
     } camera;
 

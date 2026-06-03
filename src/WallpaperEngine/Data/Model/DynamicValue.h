@@ -32,9 +32,6 @@ class DynamicValue {
 public:
     enum UnderlyingType {
 	Null = 0,
-	IVec4 = 1,
-	IVec3 = 2,
-	IVec2 = 3,
 	Vec4 = 4,
 	Vec3 = 5,
 	Vec2 = 6,
@@ -42,7 +39,6 @@ public:
 	Int = 8,
 	Boolean = 9,
 	String = 10,
-	Color = 11,
     };
 
     enum UpdateSource {
@@ -53,9 +49,6 @@ public:
 
     DynamicValue () = default;
     DynamicValue (const DynamicValue& other);
-    explicit DynamicValue (const glm::ivec4& value);
-    explicit DynamicValue (const glm::ivec3& value);
-    explicit DynamicValue (const glm::ivec2& value);
     explicit DynamicValue (const glm::vec4& value);
     explicit DynamicValue (const glm::vec3& value);
     explicit DynamicValue (const glm::vec2& value);
@@ -66,9 +59,6 @@ public:
     explicit DynamicValue (const Model::Color& value);
     virtual ~DynamicValue ();
 
-    [[nodiscard]] const glm::ivec4& getIVec4 () const;
-    [[nodiscard]] const glm::ivec3& getIVec3 () const;
-    [[nodiscard]] const glm::ivec2& getIVec2 () const;
     [[nodiscard]] const glm::vec4& getVec4 () const;
     [[nodiscard]] const glm::vec3& getVec3 () const;
     [[nodiscard]] const glm::vec2& getVec2 () const;
@@ -76,7 +66,6 @@ public:
     [[nodiscard]] const int& getInt () const;
     [[nodiscard]] const bool& getBool () const;
     [[nodiscard]] const std::string& getString () const;
-    [[nodiscard]] const Model::Color& getColor () const;
     [[nodiscard]] UnderlyingType getType () const;
     [[nodiscard]] virtual std::string toString () const;
 
@@ -86,9 +75,6 @@ public:
     virtual void update (const glm::vec2& newValue, UpdateSource source);
     virtual void update (const glm::vec3& newValue, UpdateSource source);
     virtual void update (const glm::vec4& newValue, UpdateSource source);
-    virtual void update (const glm::ivec2& newValue, UpdateSource source);
-    virtual void update (const glm::ivec3& newValue, UpdateSource source);
-    virtual void update (const glm::ivec4& newValue, UpdateSource source);
     virtual void update (const std::string& newValue, UpdateSource source);
     virtual void update (const Model::Color& newValue, UpdateSource source);
     virtual void update (const DynamicValue& other, UpdateSource source);
@@ -144,7 +130,7 @@ public:
     /**
      * @return The script properties associated with this dynamic value (if any)
      */
-    [[nodiscard]] const std::map<std::string, DynamicValue>& getProperties () const;
+    [[nodiscard]] std::map<std::string, DynamicValue>& getProperties ();
     /**
      * Updates the script properties associated with this dynamic value
      */
@@ -162,13 +148,9 @@ private:
     std::optional<std::string> m_scriptSource = std::nullopt;
     bool m_evaluating = false;
 
-    glm::ivec4 m_ivec4 = {};
-    glm::ivec3 m_ivec3 = {};
-    glm::ivec2 m_ivec2 = {};
     glm::vec4 m_vec4 = {};
     glm::vec3 m_vec3 = {};
     glm::vec2 m_vec2 = {};
-    Model::Color m_color = {};
     float m_float = 0.0f;
     int m_int = 0;
     bool m_bool = false;

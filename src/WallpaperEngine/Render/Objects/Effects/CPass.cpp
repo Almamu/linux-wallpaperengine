@@ -754,8 +754,8 @@ void CPass::setupUniforms () {
     const auto& recorder = this->m_renderable.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
-    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
-    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
+    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient->value->getVec3 ());
+    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight->value->getVec3 ());
     // register variables like brightness and alpha with some default value
     this->addUniform ("g_Brightness", renderable.getBrightness ());
     this->addUniform ("g_UserAlpha", renderable.getUserAlpha ());

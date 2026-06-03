@@ -12,8 +12,6 @@ namespace WallpaperEngine::Logging {
  */
 class Log {
 public:
-    Log ();
-
     void addOutput (std::ostream* stream);
     void addError (std::ostream* stream);
 
@@ -75,6 +73,8 @@ public:
     static Log& get ();
 
 private:
+    Log ();
+
     template <typename... Data> std::string buildBuffer (Data... data) {
 	// buffer the string first
 	std::stringbuf buffer;

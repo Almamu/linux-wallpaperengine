@@ -39,12 +39,12 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
             .project = project
         }, SceneData {
             .colors = {
-                .ambient  = general.optional ("ambientcolor", glm::vec3 (0.0f)),
-                .skylight = general.optional ("skylightcolor", glm::vec3 (0.0f)),
+                .ambient  = general.user ("ambientcolor", properties, glm::vec3 (0.0f)),
+                .skylight = general.user ("skylightcolor", properties, glm::vec3 (0.0f)),
                 .clear = general.user ("clearcolor", properties, glm::vec3 (1.0f)),
             },
             .camera = {
-                .fade = general.optional ("camerafade", false),
+                .fade = general.user ("camerafade", properties, false),
                 .preview = general.optional ("camerapreview", false),
                 .bloom = {
                     .enabled = general.user ("bloom", properties, false),
@@ -72,9 +72,9 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                     .width  = projection.optional ("auto", false) ? 0 : projection.require <int> ("width",  "Projection must have a width"),
                     .height = projection.optional ("auto", false) ? 0 : projection.require <int> ("height", "Projection must have a height"),
                     .isAuto = projection.optional ("auto", false),
-                    .nearz = camera.optional <float> ("nearz", 0.0f),
-                    .farz = camera.optional <float> ("farz", 1000.0f),
-                    .fov = camera.optional <float> ("fov", 50.0f)
+                    .nearz = camera.user ("nearz", properties, 0.0f),
+                    .farz = camera.user ("farz", properties, 1000.0f),
+                    .fov = camera.user ("fov", properties, 50.0f)
                 }
             },
             .objects = parseObjects (objects, project),

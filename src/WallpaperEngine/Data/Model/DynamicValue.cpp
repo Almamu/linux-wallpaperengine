@@ -11,18 +11,6 @@ DynamicValue::DynamicValue (const DynamicValue& other) {
     this->DynamicValue::update (other, UpdateSource::Initialization);
 }
 
-DynamicValue::DynamicValue (const glm::ivec4& value) {
-    this->DynamicValue::update (value, UpdateSource::Initialization);
-}
-
-DynamicValue::DynamicValue (const glm::ivec3& value) {
-    this->DynamicValue::update (value, UpdateSource::Initialization);
-}
-
-DynamicValue::DynamicValue (const glm::ivec2& value) {
-    this->DynamicValue::update (value, UpdateSource::Initialization);
-}
-
 DynamicValue::DynamicValue (const glm::vec4& value) {
     this->DynamicValue::update (value, UpdateSource::Initialization);
 }
@@ -58,12 +46,6 @@ DynamicValue::~DynamicValue () {
     this->m_listeners.clear ();
 }
 
-const glm::ivec4& DynamicValue::getIVec4 () const { return this->m_ivec4; }
-
-const glm::ivec3& DynamicValue::getIVec3 () const { return this->m_ivec3; }
-
-const glm::ivec2& DynamicValue::getIVec2 () const { return this->m_ivec2; }
-
 const glm::vec4& DynamicValue::getVec4 () const { return this->m_vec4; }
 
 const glm::vec3& DynamicValue::getVec3 () const { return this->m_vec3; }
@@ -77,8 +59,6 @@ const int& DynamicValue::getInt () const { return this->m_int; }
 const bool& DynamicValue::getBool () const { return this->m_bool; }
 
 const std::string& DynamicValue::getString () const { return this->m_string; }
-
-const Color& DynamicValue::getColor () const { return this->m_color; }
 
 DynamicValue::UnderlyingType DynamicValue::getType () const { return this->m_type; }
 
@@ -98,28 +78,14 @@ std::string DynamicValue::toString () const {
 	case UnderlyingType::Vec4:
 	    return std::to_string (this->m_vec4.x) + ", " + std::to_string (this->m_vec4.y) + ", "
 		+ std::to_string (this->m_vec4.z) + ", " + std::to_string (this->m_vec4.w);
-	case UnderlyingType::IVec2:
-	    return std::to_string (this->m_ivec2.x) + ", " + std::to_string (this->m_ivec2.y);
-	case UnderlyingType::IVec3:
-	    return std::to_string (this->m_ivec3.x) + ", " + std::to_string (this->m_ivec3.y) + ", "
-		+ std::to_string (this->m_ivec3.z);
-	case UnderlyingType::IVec4:
-	    return std::to_string (this->m_ivec4.x) + ", " + std::to_string (this->m_ivec4.y) + ", "
-		+ std::to_string (this->m_ivec4.z) + ", " + std::to_string (this->m_ivec4.w);
 	case UnderlyingType::String:
 	    return this->m_string;
-	case UnderlyingType::Color:
-	    return std::to_string (this->m_color.r) + ", " + std::to_string (this->m_color.g) + ", "
-		+ std::to_string (this->m_color.b) + ", " + std::to_string (this->m_color.a);
 	default:
 	    return "Unknown conversion for dynamic value of type: " + std::to_string (static_cast<int> (this->m_type));
     }
 }
 
 void DynamicValue::update (const float newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (static_cast<int> (newValue));
-    this->m_ivec3 = glm::ivec3 (static_cast<int> (newValue));
-    this->m_ivec2 = glm::ivec2 (static_cast<int> (newValue));
     this->m_vec4 = glm::vec4 (newValue);
     this->m_vec3 = glm::vec3 (newValue);
     this->m_vec2 = glm::vec2 (newValue);
@@ -127,16 +93,12 @@ void DynamicValue::update (const float newValue, UpdateSource source) {
     this->m_int = static_cast<int> (newValue);
     this->m_bool = static_cast<int> (newValue) != 0;
     this->m_string = "";
-    this->m_color = Model::Color (newValue);
     this->m_type = UnderlyingType::Float;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const int newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
     this->m_vec4 = glm::vec4 (static_cast<float> (newValue));
     this->m_vec3 = glm::vec3 (static_cast<float> (newValue));
     this->m_vec2 = glm::vec2 (static_cast<float> (newValue));
@@ -144,16 +106,12 @@ void DynamicValue::update (const int newValue, UpdateSource source) {
     this->m_int = newValue;
     this->m_bool = newValue != 0;
     this->m_string = "";
-    this->m_color = Model::Color (static_cast<float> (newValue));
     this->m_type = UnderlyingType::Int;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const bool newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
     this->m_vec4 = glm::vec4 (newValue);
     this->m_vec3 = glm::vec3 (newValue);
     this->m_vec2 = glm::vec2 (newValue);
@@ -161,16 +119,12 @@ void DynamicValue::update (const bool newValue, UpdateSource source) {
     this->m_int = newValue;
     this->m_bool = newValue;
     this->m_string = "";
-    this->m_color = Model::Color (newValue);
     this->m_type = UnderlyingType::Boolean;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const glm::vec2& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue, 0, 0);
-    this->m_ivec3 = glm::ivec3 (newValue, 0);
-    this->m_ivec2 = glm::ivec2 (newValue);
     this->m_vec2 = newValue;
     this->m_vec3 = glm::vec3 (newValue, 0.0f);
     this->m_vec4 = glm::vec4 (newValue, 0.0f, 0.0f);
@@ -178,16 +132,12 @@ void DynamicValue::update (const glm::vec2& newValue, UpdateSource source) {
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
     this->m_string = "";
-    this->m_color = Model::Color (newValue.r, newValue.g, 0.0f, 0.0f);
     this->m_type = UnderlyingType::Vec2;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const glm::vec3& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue, 0);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
     this->m_vec2 = glm::vec2 (newValue);
     this->m_vec3 = newValue;
     this->m_vec4 = glm::vec4 (newValue, 0.0f);
@@ -195,16 +145,12 @@ void DynamicValue::update (const glm::vec3& newValue, UpdateSource source) {
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
     this->m_string = "";
-    this->m_color = Model::Color (newValue.r, newValue.g, newValue.b, 0.0f);
     this->m_type = UnderlyingType::Vec3;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const glm::vec4& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
     this->m_vec2 = glm::vec2 (newValue);
     this->m_vec3 = glm::vec3 (newValue);
     this->m_vec4 = newValue;
@@ -212,67 +158,12 @@ void DynamicValue::update (const glm::vec4& newValue, UpdateSource source) {
     this->m_int = static_cast<int> (newValue.x);
     this->m_bool = newValue.x != 0.0f;
     this->m_string = "";
-    this->m_color = Model::Color (newValue.r, newValue.g, newValue.b, newValue.a);
     this->m_type = UnderlyingType::Vec4;
 
     this->propagate (source);
 }
 
-void DynamicValue::update (const glm::ivec2& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue, 0, 0);
-    this->m_ivec3 = glm::ivec3 (newValue, 0);
-    this->m_ivec2 = glm::ivec2 (newValue);
-    this->m_vec2 = newValue;
-    this->m_vec3 = glm::vec3 (newValue, 0.0f);
-    this->m_vec4 = glm::vec4 (newValue, 0.0f, 0.0f);
-    this->m_float = static_cast<float> (newValue.x);
-    this->m_int = static_cast<int> (newValue.x);
-    this->m_bool = newValue.x != 0;
-    this->m_string = "";
-    this->m_color = Model::Color (newValue.r / 255.0f, newValue.g / 255.0f, 0.0f, 0.0f);
-    this->m_type = UnderlyingType::IVec2;
-
-    this->propagate (source);
-}
-
-void DynamicValue::update (const glm::ivec3& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue, 0);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
-    this->m_vec2 = glm::vec2 (newValue);
-    this->m_vec3 = newValue;
-    this->m_vec4 = glm::vec4 (newValue, 0.0f);
-    this->m_float = static_cast<float> (newValue.x);
-    this->m_int = static_cast<int> (newValue.x);
-    this->m_bool = newValue.x != 0;
-    this->m_string = "";
-    this->m_color = Model::Color (newValue.r / 255.0f, newValue.g / 255.0f, newValue.b / 255.0f, 0.0f);
-    this->m_type = UnderlyingType::IVec3;
-
-    this->propagate (source);
-}
-
-void DynamicValue::update (const glm::ivec4& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (newValue);
-    this->m_ivec3 = glm::ivec3 (newValue);
-    this->m_ivec2 = glm::ivec2 (newValue);
-    this->m_vec2 = glm::vec2 (newValue);
-    this->m_vec3 = glm::vec3 (newValue);
-    this->m_vec4 = newValue;
-    this->m_float = static_cast<float> (newValue.x);
-    this->m_int = static_cast<int> (newValue.x);
-    this->m_bool = newValue.x != 0;
-    this->m_string = "";
-    this->m_color = Model::Color (newValue.r / 255.0f, newValue.g / 255.0f, newValue.b / 255.0f, newValue.a / 255.0f);
-    this->m_type = UnderlyingType::IVec4;
-
-    this->propagate (source);
-}
-
 void DynamicValue::update (const std::string& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (0);
-    this->m_ivec3 = glm::ivec3 (0);
-    this->m_ivec2 = glm::ivec2 (0);
     this->m_vec2 = glm::vec2 (0.0f);
     this->m_vec3 = glm::vec3 (0.0f);
     this->m_vec4 = glm::vec4 (0.0f);
@@ -280,21 +171,16 @@ void DynamicValue::update (const std::string& newValue, UpdateSource source) {
     this->m_int = 0;
     this->m_bool = false;
     this->m_string = newValue;
-    this->m_color = Model::Color (0.0f);
     this->m_type = UnderlyingType::String;
 
     if (this->m_condition.has_value ()) {
 	const bool boolValue = this->m_condition.value ().condition == newValue;
-	this->m_ivec4 = glm::ivec4 (boolValue ? 1 : 0);
-	this->m_ivec3 = glm::ivec3 (boolValue ? 1 : 0);
-	this->m_ivec2 = glm::ivec2 (boolValue ? 1 : 0);
 	this->m_vec2 = glm::vec2 (boolValue ? 1.0f : 0.0f);
 	this->m_vec3 = glm::vec3 (boolValue ? 1.0f : 0.0f);
 	this->m_vec4 = glm::vec4 (boolValue ? 1.0f : 0.0f);
 	this->m_float = boolValue ? 1.0f : 0.0f;
 	this->m_int = boolValue ? 1 : 0;
 	this->m_bool = boolValue;
-	this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
 	this->m_type = UnderlyingType::Boolean;
     }
 
@@ -302,9 +188,6 @@ void DynamicValue::update (const std::string& newValue, UpdateSource source) {
 }
 
 void DynamicValue::update (const Model::Color& newValue, UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (255 * newValue.r, 255 * newValue.g, 255 * newValue.b, 255 * newValue.a);
-    this->m_ivec3 = glm::ivec3 (255 * newValue.r, 255 * newValue.g, 255 * newValue.b);
-    this->m_ivec2 = glm::ivec2 (255 * newValue.r, 255 * newValue.g);
     this->m_vec2 = glm::vec2 (newValue.r, newValue.g);
     this->m_vec3 = glm::vec3 (newValue.r, newValue.g, newValue.b);
     this->m_vec4 = glm::vec4 (newValue.r, newValue.g, newValue.b, newValue.a);
@@ -312,16 +195,12 @@ void DynamicValue::update (const Model::Color& newValue, UpdateSource source) {
     this->m_int = 255 * newValue.r;
     this->m_bool = newValue.a != 0.0f;
     this->m_string = "";
-    this->m_color = newValue;
-    this->m_type = UnderlyingType::Color;
+    this->m_type = UnderlyingType::Vec4;
 
     this->propagate (source);
 }
 
 void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
-    this->m_ivec4 = other.getIVec4 ();
-    this->m_ivec3 = other.getIVec3 ();
-    this->m_ivec2 = other.getIVec2 ();
     this->m_vec2 = other.getVec2 ();
     this->m_vec3 = other.getVec3 ();
     this->m_vec4 = other.getVec4 ();
@@ -329,21 +208,16 @@ void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
     this->m_int = other.getInt ();
     this->m_bool = other.getBool ();
     this->m_string = other.getString ();
-    this->m_color = other.getColor ();
     this->m_type = other.getType ();
 
     if (this->m_condition.has_value () && other.getType () == UnderlyingType::String) {
 	const bool boolValue = this->m_condition.value ().condition == other.getString ();
-	this->m_ivec4 = glm::ivec4 (boolValue ? 1 : 0);
-	this->m_ivec3 = glm::ivec3 (boolValue ? 1 : 0);
-	this->m_ivec2 = glm::ivec2 (boolValue ? 1 : 0);
 	this->m_vec2 = glm::vec2 (boolValue ? 1.0f : 0.0f);
 	this->m_vec3 = glm::vec3 (boolValue ? 1.0f : 0.0f);
 	this->m_vec4 = glm::vec4 (boolValue ? 1.0f : 0.0f);
 	this->m_float = boolValue ? 1.0f : 0.0f;
 	this->m_int = boolValue ? 1 : 0;
 	this->m_bool = boolValue;
-	this->m_color = Model::Color (boolValue ? 1.0f : 0.0f);
 	this->m_type = UnderlyingType::Boolean;
     }
 
@@ -351,16 +225,12 @@ void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
 }
 
 void DynamicValue::update (UpdateSource source) {
-    this->m_ivec4 = glm::ivec4 (0);
-    this->m_ivec3 = glm::ivec3 (0);
-    this->m_ivec2 = glm::ivec2 (0);
     this->m_vec2 = glm::vec2 (0.0f);
     this->m_vec3 = glm::vec3 (0.0f);
     this->m_vec4 = glm::vec4 (0.0f);
     this->m_float = 0.0f;
     this->m_int = 0;
     this->m_bool = false;
-    this->m_color = Model::Color (0.0f);
     this->m_type = UnderlyingType::Null;
 
     this->propagate (source);
@@ -420,7 +290,7 @@ void DynamicValue::clearScriptSource () { this->m_scriptSource = std::nullopt; }
 
 const std::optional<std::string>& DynamicValue::getScriptSource () const { return this->m_scriptSource; }
 
-const std::map<std::string, DynamicValue>& DynamicValue::getProperties () const { return this->m_properties; }
+std::map<std::string, DynamicValue>& DynamicValue::getProperties () { return this->m_properties; }
 
 void DynamicValue::setProperties (const std::map<std::string, DynamicValue>& properties) {
     this->m_properties = properties;

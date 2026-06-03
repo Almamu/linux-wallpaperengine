@@ -3,6 +3,7 @@
 #include "WallpaperEngine/Render/Camera.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
+#include "WallpaperEngine/Scripting/ScriptEngine.h"
 
 namespace WallpaperEngine::Render {
 class Camera;
@@ -21,6 +22,7 @@ public:
 
     ~CScene () override;
 
+    [[nodiscard]] Scripting::ScriptEngine& getScriptEngine () const;
     [[nodiscard]] Camera& getCamera () const;
 
     [[nodiscard]] const Scene& getScene () const;
@@ -54,6 +56,7 @@ private:
     Render::CObject* dispatchObjectType (const Object& object);
     void addObjectToRenderOrder (const Object& object);
 
+    std::unique_ptr<Scripting::ScriptEngine> m_scriptEngine;
     std::unique_ptr<Camera> m_camera;
     ObjectUniquePtr m_bloomObjectData;
     CObject* m_bloomObject = nullptr;

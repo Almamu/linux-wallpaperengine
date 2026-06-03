@@ -87,7 +87,7 @@ CText::CText (Wallpapers::CScene& scene, const Text& text) :
 
 CText::~CText () {
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {
-	Scripting::ScriptEngine::instance ().destroyLayer (m_layerHandle);
+	this->getScene ().getScriptEngine ().destroyLayer (m_layerHandle);
 	m_layerHandle = Scripting::kInvalidLayerHandle;
     }
     if (m_vbo != 0) {
@@ -219,7 +219,7 @@ void CText::initScriptLayer () {
 	return;
     }
 
-    m_layerHandle = Scripting::ScriptEngine::instance ().createLayerScript (
+    m_layerHandle = this->getScene ().getScriptEngine ().createLayerScript (
 	*script, m_text.text->value->getProperties (), m_text.text->value->getString ()
     );
 
@@ -380,7 +380,7 @@ void CText::render () {
 
     std::string renderedText = m_lastRenderedText;
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {
-	auto& se = Scripting::ScriptEngine::instance ();
+	auto& se = this->getScene ().getScriptEngine ();
 	se.tickLayer (
 	    m_layerHandle, static_cast<double> (getScene ().getTime ()),
 	    static_cast<double> (getScene ().getDeltaTime ()), static_cast<double> (getScene ().getFps ())

@@ -29,6 +29,8 @@ CScene::CScene (
     // caller should check this, if not a std::bad_cast is good to throw
     auto scene = wallpaper.as<Scene> ();
 
+    // setup scripting engine
+    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this);
     // setup the scene camera
     this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 
@@ -292,6 +294,7 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
+ScriptEngine& CScene::getScriptEngine () const { return *this->m_scriptEngine; }
 Camera& CScene::getCamera () const { return *this->m_camera; }
 
 void CScene::renderFrame (const glm::ivec4& viewport) {
@@ -312,12 +315,11 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	    = glm::mix (this->m_parallaxDisplacement, (centeredMouse * amount) * influence, delay);
     }
 
+    // run a tick in the javascript logic
+    this->getScriptEngine ().tick ();
+
     // update main textures for images
     for (const auto& cur : this->m_objectsByRenderOrder) {
-	if (cur->is<ScriptableObject> ()) {
-	    cur->as<ScriptableObject> ()->reevaluate ();
-	}
-
 	if (!cur->is<Objects::CImage> ()) {
 	    continue;
 	}

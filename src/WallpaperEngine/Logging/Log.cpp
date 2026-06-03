@@ -9,7 +9,7 @@ Log::Log () { assert (this->sInstance == nullptr); }
 
 Log& Log::get () {
     if (sInstance == nullptr) {
-	sInstance = std::make_unique<Log> ();
+	sInstance = std::unique_ptr<Log> (new Log ());
     }
 
     return *sInstance;
