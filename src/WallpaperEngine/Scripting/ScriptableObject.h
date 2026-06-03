@@ -25,7 +25,6 @@ protected:
     void registerProperty (const std::string& name, DynamicValue& value);
 
 private:
-    bool m_evaluating = false;
     std::map<std::string, PropertyEntry> m_properties;
 };
 }
