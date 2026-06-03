@@ -146,7 +146,6 @@ private:
     std::list<std::function<void (const DynamicValue&, UpdateSource)>> m_listeners = {};
     std::vector<std::function<void ()>> m_connections = {};
     std::optional<std::string> m_scriptSource = std::nullopt;
-    bool m_evaluating = false;
 
     glm::vec4 m_vec4 = {};
     glm::vec3 m_vec3 = {};
