@@ -993,6 +993,8 @@ template <int components> void VectorAdapter<components>::free (uint32_t vectorI
     }
 }
 
+namespace WallpaperEngine::Scripting::Adapters {
 template class VectorAdapter<2>;
 template class VectorAdapter<3>;
 template class VectorAdapter<4>;
+} // namespace WallpaperEngine::Scripting::Adapters
