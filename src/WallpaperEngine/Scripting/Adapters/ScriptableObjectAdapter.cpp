@@ -85,7 +85,7 @@ int scriptableobject_property_set (
 }
 
 ScriptableObjectAdapter::ScriptableObjectAdapter (ScriptEngine& engine, std::string name) :
-    ObjectAdapter (engine), m_exoticMethods (), m_name (std::move(name)) {
+    ObjectAdapter (engine), m_exoticMethods (), m_name (std::move (name)) {
     this->registerType (
 	{
 	    .class_name = m_name.c_str (),

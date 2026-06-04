@@ -427,8 +427,7 @@ JSValue vector_normalize (JSContext* ctx, JSValueConst this_val, int argc, JSVal
     const auto* newContainer = static_cast<VectorOpaqueContainer<components>*> (JS_GetAnyOpaque (newVector, &classId));
 
     newContainer->value.update (
-        glm::normalize (vector_get<components> (container->value)),
-        DynamicValue::UpdateSource::Script
+	glm::normalize (vector_get<components> (container->value)), DynamicValue::UpdateSource::Script
     );
 
     return newVector;
@@ -836,15 +835,11 @@ VectorAdapter<components>::VectorAdapter (ScriptEngine& engine) :
     JS_DupValue (this->m_engine.getContext (), m_prototype);
 
     JSValue ctor = JS_NewCFunctionMagic (
-        this->m_engine.getContext (), vector_constructor<components>, this->m_name.c_str (), 1,
-        JS_CFUNC_constructor_magic, this->m_instanceId
+	this->m_engine.getContext (), vector_constructor<components>, this->m_name.c_str (), 1,
+	JS_CFUNC_constructor_magic, this->m_instanceId
     );
 
-    JS_SetConstructor (
-	this->m_engine.getContext (),
-	ctor,
-	m_prototype
-    );
+    JS_SetConstructor (this->m_engine.getContext (), ctor, m_prototype);
     JS_DefinePropertyValueStr (
 	this->m_engine.getContext (), m_prototype, "copy",
 	JS_NewCFunction (this->m_engine.getContext (), vector_copy<components>, "copy", 0), JS_PROP_ENUMERABLE

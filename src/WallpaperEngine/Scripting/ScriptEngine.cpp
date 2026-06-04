@@ -985,8 +985,8 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
     JSValue result = this->call (module, 1, args, "update");
 
     ScopeGuard guard2 ([this, args, result] () {
-        JS_FreeValue (this->m_context, result);
-        JS_FreeValue (this->m_context, args[0]);
+	JS_FreeValue (this->m_context, result);
+	JS_FreeValue (this->m_context, args[0]);
     });
 
     if (JS_IsException (result)) {
