@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Color.h"
+#include "Types.h"
 
 #include <functional>
 #include <glm/glm.hpp>
@@ -130,11 +131,11 @@ public:
     /**
      * @return The script properties associated with this dynamic value (if any)
      */
-    [[nodiscard]] std::map<std::string, DynamicValue>& getProperties ();
+    [[nodiscard]] std::map<std::string, UserSettingUniquePtr>& getProperties ();
     /**
      * Updates the script properties associated with this dynamic value
      */
-    void setProperties (const std::map<std::string, DynamicValue>& properties);
+    void setProperties (std::map<std::string, UserSettingUniquePtr> properties);
 
 private:
     /**
@@ -157,6 +158,6 @@ private:
     UnderlyingType m_type = Null;
     std::optional<ConditionInfo> m_condition = std::nullopt;
     /** All the properties this script takes in */
-    std::map<std::string, DynamicValue> m_properties;
+    std::map<std::string, UserSettingUniquePtr> m_properties;
 };
 }

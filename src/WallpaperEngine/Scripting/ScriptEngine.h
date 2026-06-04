@@ -106,7 +106,7 @@ public:
      * @return A positive handle, or kInvalidLayerHandle if evaluation failed.
      */
     ScriptLayerHandle createLayerScript (
-	const std::string& scriptSource, std::map<std::string, DynamicValue>& initialScriptProps,
+	const std::string& scriptSource, std::map<std::string, UserSettingUniquePtr>& initialScriptProps,
 	const std::string& initialText
     );
 

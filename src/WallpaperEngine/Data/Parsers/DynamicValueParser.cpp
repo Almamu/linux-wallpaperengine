@@ -1,4 +1,6 @@
 #include "DynamicValueParser.h"
+
+#include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
 
 using namespace WallpaperEngine::Data::Parsers;
@@ -62,15 +64,15 @@ DynamicValueUniquePtr DynamicValueParser::parse (const json& data, const Propert
     }
 
     if (scriptSource.has_value ()) {
-	std::map<std::string, DynamicValue> scriptProps;
+	std::map<std::string, UserSettingUniquePtr> scriptProps;
 
 	if (scriptPropsJson.has_value () && scriptPropsJson->is_object ()) {
 	    for (const auto& [key, propData] : scriptPropsJson->items ()) {
-		scriptProps[key] = *parse (propData, properties, false);
+		scriptProps[key] = UserSettingParser::parse (propData, properties);
 	    }
 	}
 
-	value->setProperties (scriptProps);
+	value->setProperties (std::move (scriptProps));
 	value->setScriptSource (scriptSource.value ());
     }
 

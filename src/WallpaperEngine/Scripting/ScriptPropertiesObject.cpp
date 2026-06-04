@@ -41,7 +41,7 @@ JSValue scriptproperties_property_get (JSContext* ctx, JSValueConst obj_val, JSA
 	    return JS_UNDEFINED;
 	}
 
-	return container->object.getEngine ().dynamicToJs (it->second);
+	return container->object.getEngine ().dynamicToJs (*it->second->value);
     } catch (const std::exception& e) {
 	return JS_EXCEPTION;
     }

@@ -698,7 +698,7 @@ void ScriptEngine::ensureLayerRegistry () {
 }
 
 ScriptLayerHandle ScriptEngine::createLayerScript (
-    const std::string& scriptSource, std::map<std::string, DynamicValue>& initialScriptProps,
+    const std::string& scriptSource, std::map<std::string, UserSettingUniquePtr>& initialScriptProps,
     const std::string& initialText
 ) {
     if (!this->m_context) {
@@ -715,7 +715,7 @@ ScriptLayerHandle ScriptEngine::createLayerScript (
     JSValue seedProps = JS_NewObject (ctx);
 
     for (auto& [name, dynVal] : initialScriptProps) {
-	JS_SetPropertyStr (ctx, seedProps, name.c_str (), this->dynamicToJs (dynVal));
+	JS_SetPropertyStr (ctx, seedProps, name.c_str (), this->dynamicToJs (*dynVal->value));
     }
 
     JS_SetPropertyStr (ctx, globalObj, "__layerSeedProps", seedProps);
@@ -995,7 +995,7 @@ void ScriptEngine::tick () {
 
     // run all update methods
     for (auto& module : this->m_scriptModules | std::views::values) {
-        this->m_runningModule = &module;
+	this->m_runningModule = &module;
 
 	JSValue args[] = { this->dynamicToJs (module.value) };
 	JSValue result = this->call (module.module, 1, args, "update");

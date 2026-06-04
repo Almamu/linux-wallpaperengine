@@ -290,10 +290,10 @@ void DynamicValue::clearScriptSource () { this->m_scriptSource = std::nullopt; }
 
 const std::optional<std::string>& DynamicValue::getScriptSource () const { return this->m_scriptSource; }
 
-std::map<std::string, DynamicValue>& DynamicValue::getProperties () { return this->m_properties; }
+std::map<std::string, UserSettingUniquePtr>& DynamicValue::getProperties () { return this->m_properties; }
 
-void DynamicValue::setProperties (const std::map<std::string, DynamicValue>& properties) {
-    this->m_properties = properties;
+void DynamicValue::setProperties (std::map<std::string, UserSettingUniquePtr> properties) {
+    this->m_properties = std::move (properties);
 }
 
 void DynamicValue::propagate (UpdateSource source) const {
