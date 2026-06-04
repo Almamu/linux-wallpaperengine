@@ -990,6 +990,7 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 
 void ScriptEngine::tick () {
     // run intervals
+    this->m_engineObject->tick ();
 
     // run any pending notifications
 

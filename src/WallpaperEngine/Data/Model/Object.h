@@ -611,6 +611,7 @@ struct TextData {
     std::string verticalalign;
     /** Padding inside the bounding box */
     int padding;
+    // TODO: PARSE LIMITS TOO!
 };
 
 class Text : public Object, public TextData {
