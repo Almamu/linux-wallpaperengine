@@ -298,12 +298,8 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	}
     );
 
-    // color should be a vec4 for alpha, but it's read as vec3
-    if (result->color->value->getType () == DynamicValue::UnderlyingType::Vec3) {
-	result->color->value->update (glm::vec4 (result->color->value->getVec3 (), 1.0f));
-    } else if (result->color->value->getType () == DynamicValue::UnderlyingType::IVec3) {
-	result->color->value->update (glm::vec4 (result->color->value->getIVec3 (), 255));
-    }
+    // color may arrive as vec3 or ivec3; normalize to a vec4 with full alpha
+    widenColorToVec4 (*result->color->value);
 
     bindScriptContext (result->scale, result->id, result->name, "scale");
     bindScriptContext (result->angles, result->id, result->name, "angles");
