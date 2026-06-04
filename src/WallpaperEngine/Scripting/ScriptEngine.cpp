@@ -1,28 +1,42 @@
 #include "ScriptEngine.h"
+
+#include "Adapters/ScriptableObjectAdapter.h"
+#include "Modules/ColorModule.h"
+#include "Modules/MathModule.h"
+#include "Modules/ScriptModule.h"
+#include "ScriptPropertiesObject.h"
+#include "ScriptableObject.h"
 #include "WallpaperEngine/Audio/AudioContext.h"
 #include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Render/CObject.h"
+#include "WallpaperEngine/Render/Objects/CSound.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "quickjs.h"
 
 #include <algorithm>
 #include <array>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
-#include <ctime>
 #include <cstring>
+#include <ctime>
 #include <future>
 #include <optional>
 #include <poll.h>
+#include <ranges>
 #include <signal.h>
 #include <spawn.h>
-#include <ranges>
 #include <sstream>
 #include <string_view>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
+namespace WallpaperEngine::Render::Objects {
+class CSound;
+}
 using namespace WallpaperEngine::Scripting;
 using namespace WallpaperEngine::Data::Model;
 
@@ -30,8 +44,111 @@ extern char** environ;
 extern float g_Time;
 extern float g_TimeLast;
 
-static std::unique_ptr<ScriptEngine> sScriptEngine;
-static const auto sStartTime = std::chrono::steady_clock::now ();
+JSModuleDef* scriptengine_module_loader (JSContext* ctx, const char* module, void* opaque) {
+    const auto* scriptEngine = static_cast<ScriptEngine*> (opaque);
+
+    const auto& modules = scriptEngine->getModules ();
+    const auto it = modules.find (module);
+
+    if (it == modules.end ()) {
+	return nullptr;
+    }
+
+    return it->second->getDefinition ();
+}
+
+JSValue ScriptEngine::dynamicToJs (DynamicValue& value) const {
+    switch (value.getType ()) {
+	case DynamicValue::Null:
+	    return JS_NULL;
+	case DynamicValue::String:
+	    return JS_NewString (this->m_context, value.getString ().c_str ());
+	case DynamicValue::Float:
+	    return JS_NewFloat64 (this->m_context, value.getFloat ());
+	case DynamicValue::Int:
+	    return JS_NewInt32 (this->m_context, value.getInt ());
+	case DynamicValue::Boolean:
+	    return JS_NewBool (this->m_context, value.getBool ());
+	case DynamicValue::Vec2:
+	    return this->m_adapters.vec2->instantiate (value);
+	case DynamicValue::Vec3:
+	    return this->m_adapters.vec3->instantiate (value);
+	case DynamicValue::Vec4:
+	    return this->m_adapters.vec4->instantiate (value);
+	default:
+	    return JS_UNDEFINED;
+    }
+}
+
+static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source) {
+    if (JS_IsException (val)) {
+	return;
+    }
+
+    // scalar types returned directly
+    int tag = JS_VALUE_GET_TAG (val);
+
+    if (tag == JS_TAG_UNDEFINED || tag == JS_TAG_UNINITIALIZED || tag == JS_TAG_NULL) {
+	source.update (DynamicValue::UpdateSource::Script);
+	return;
+    }
+
+    if (tag == JS_TAG_INT) {
+	source.update (JS_VALUE_GET_INT (val), DynamicValue::UpdateSource::Script);
+	return;
+    }
+
+    if (tag == JS_TAG_BOOL) {
+	source.update (static_cast<bool> (JS_VALUE_GET_BOOL (val)), DynamicValue::UpdateSource::Script);
+    }
+
+    if (JS_TAG_IS_FLOAT64 (tag)) {
+	source.update (static_cast<float> (JS_VALUE_GET_FLOAT64 (val)), DynamicValue::UpdateSource::Script);
+	return;
+    }
+
+    if (tag == JS_TAG_STRING) {
+	const char* str = JS_ToCString (ctx, val);
+	source.update (str == nullptr ? "" : str, DynamicValue::UpdateSource::Script);
+	JS_FreeCString (ctx, str);
+	return;
+    }
+
+    // look into the object and extract x/y/z/w properties
+    if (tag == JS_TAG_OBJECT) {
+	JSValue x = JS_GetPropertyStr (ctx, val, "x");
+	JSValue y = JS_GetPropertyStr (ctx, val, "y");
+	JSValue z = JS_GetPropertyStr (ctx, val, "z");
+	JSValue w = JS_GetPropertyStr (ctx, val, "w");
+	ScopeGuard guard ([=] {
+	    JS_FreeValue (ctx, x);
+	    JS_FreeValue (ctx, y);
+	    JS_FreeValue (ctx, z);
+	    JS_FreeValue (ctx, w);
+	});
+
+	if (!JS_IsNumber (x) || JS_IsNumber (y)) {
+	    sLog.exception ("Vector's x and y components must be numbers");
+	}
+
+	double xVal = 0.0f, yVal = 0.0f, zVal = 0.0f, wVal = 0.0f;
+
+	JS_ToFloat64 (ctx, &xVal, x);
+	JS_ToFloat64 (ctx, &yVal, y);
+
+	if (!JS_IsNumber (z)) {
+	    source.update (glm::vec2 (xVal, yVal), DynamicValue::UpdateSource::Script);
+	    return;
+	}
+
+	if (!JS_IsNumber (w)) {
+	    source.update (glm::vec3 (xVal, yVal, zVal), DynamicValue::UpdateSource::Script);
+	    return;
+	}
+
+	source.update (glm::vec4 (xVal, yVal, zVal, wVal), DynamicValue::UpdateSource::Script);
+    }
+}
 
 namespace {
 std::string trimTrailingNewlines (std::string value) {
@@ -64,9 +181,8 @@ double parseDoubleOrZero (const std::string& value) {
     }
 }
 
-std::optional<pid_t> spawnProcessWithStdout (
-    const std::string& program, const std::vector<std::string>& args, int& readFd
-) {
+std::optional<pid_t>
+spawnProcessWithStdout (const std::string& program, const std::vector<std::string>& args, int& readFd) {
     int outputPipe[2] {};
     if (pipe (outputPipe) != 0) {
 	return std::nullopt;
@@ -100,14 +216,11 @@ std::optional<pid_t> spawnProcessWithStdout (
     return pid;
 }
 
-bool readFirstLineUntil (
-    int readFd, const std::chrono::steady_clock::time_point& deadline, std::string& output
-) {
+bool readFirstLineUntil (int readFd, const std::chrono::steady_clock::time_point& deadline, std::string& output) {
     std::array<char, 512> buffer {};
     while (std::chrono::steady_clock::now () < deadline) {
-	const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds> (
-	    deadline - std::chrono::steady_clock::now ()
-	);
+	const auto remaining
+	    = std::chrono::duration_cast<std::chrono::milliseconds> (deadline - std::chrono::steady_clock::now ());
 	pollfd readPoll {
 	    .fd = readFd,
 	    .events = POLLIN,
@@ -219,27 +332,64 @@ std::string shortenMediaText (const std::string& value, size_t maxLength) {
 }
 }
 
-ScriptEngine& ScriptEngine::instance () {
-    if (!sScriptEngine) {
-	sScriptEngine = std::unique_ptr<ScriptEngine> (new ScriptEngine ());
-    }
-    return *sScriptEngine;
-}
-
-ScriptEngine::ScriptEngine () {
+ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
     this->m_runtime = JS_NewRuntime ();
+
     if (!this->m_runtime) {
-	sLog.error ("ScriptEngine: Failed to create JS runtime");
-	return;
+	sLog.exception ("ScriptEngine: Failed to create JS runtime");
     }
+
+    // debug leaks on termination
+    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS);
 
     this->m_context = JS_NewContext (this->m_runtime);
+
     if (!this->m_context) {
-	sLog.error ("ScriptEngine: Failed to create JS context");
 	JS_FreeRuntime (this->m_runtime);
-	this->m_runtime = nullptr;
-	return;
+	sLog.exception ("ScriptEngine: Failed to create JS context");
     }
+
+    this->m_globalThis = JS_GetGlobalObject (this->m_context);
+
+    this->m_adapters = {
+	.vec4 = std::unique_ptr<Adapters::VectorAdapter<4>> (new Adapters::VectorAdapter<4> (*this)),
+	.vec3 = std::unique_ptr<Adapters::VectorAdapter<3>> (new Adapters::VectorAdapter<3> (*this)),
+	.vec2 = std::unique_ptr<Adapters::VectorAdapter<2>> (new Adapters::VectorAdapter<2> (*this)),
+	.object
+	= std::unique_ptr<Adapters::ScriptableObjectAdapter> (new Adapters::ScriptableObjectAdapter (*this, "ILayer")),
+    };
+
+    this->m_engineObject = std::make_unique<EngineObject> (*this, scene);
+    this->m_inputObject = std::make_unique<InputObject> (*this, scene);
+    this->m_sceneObject = std::make_unique<SceneObject> (*this, scene);
+    this->m_consoleObject = std::make_unique<ConsoleObject> (*this, scene);
+    this->m_scriptPropertiesObject = std::make_unique<ScriptPropertiesObject> (*this, scene);
+
+    auto wemath = std::make_unique<Modules::MathModule> (*this);
+    auto wecolor = std::make_unique<Modules::ColorModule> (*this);
+
+    this->m_modules.emplace (wemath->getName (), std::move (wemath));
+    this->m_modules.emplace (wecolor->getName (), std::move (wecolor));
+
+    JS_SetModuleLoaderFunc (this->m_runtime, nullptr, scriptengine_module_loader, this);
+    // setup scene objects and other things
+    this->installBuiltins ();
+    // add engine to the global
+    JS_DefinePropertyValueStr (
+	this->m_context, this->m_globalThis, "engine", this->m_engineObject->getInstance (), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_context, this->m_globalThis, "input", this->m_inputObject->getInstance (), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_context, this->m_globalThis, "thisScene", this->m_sceneObject->getInstance (), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_context, this->m_globalThis, "console", this->m_consoleObject->getInstance (), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_context, this->m_globalThis, "shared", JS_NewObject (this->m_context), JS_PROP_ENUMERABLE
+    );
 }
 
 ScriptEngine::~ScriptEngine () {
@@ -247,12 +397,24 @@ ScriptEngine::~ScriptEngine () {
 	this->m_mediaPollFuture.wait ();
     }
 
-    if (this->m_context) {
-	for (const auto& module : this->m_modules | std::views::values) {
-	    JS_FreeValue (this->m_context, module);
-	}
+    for (const auto& module : this->m_scriptModules | std::views::values) {
+	JS_FreeValue (this->m_context, module.module);
     }
+
+    JS_FreeValue (this->m_context, this->m_globalThis);
+
+    this->m_adapters.vec4.reset ();
+    this->m_adapters.vec3.reset ();
+    this->m_adapters.vec2.reset ();
+    this->m_adapters.object.reset ();
+
+    this->m_consoleObject.reset ();
+    this->m_engineObject.reset ();
+    this->m_inputObject.reset ();
+    this->m_sceneObject.reset ();
+    this->m_scriptPropertiesObject.reset ();
     this->m_modules.clear ();
+    this->m_scriptModules.clear ();
 
     if (this->m_context) {
 	JS_FreeContext (this->m_context);
@@ -260,191 +422,6 @@ ScriptEngine::~ScriptEngine () {
     if (this->m_runtime) {
 	JS_FreeRuntime (this->m_runtime);
     }
-}
-
-static JSValue constructVectorObject (JSContext* ctx, const char* name, const std::vector<double>& values) {
-    auto constructPlainObject = [&] () {
-	JSValue obj = JS_NewObject (ctx);
-	if (!values.empty ()) JS_SetPropertyStr (ctx, obj, "x", JS_NewFloat64 (ctx, values[0]));
-	if (values.size () > 1) JS_SetPropertyStr (ctx, obj, "y", JS_NewFloat64 (ctx, values[1]));
-	if (values.size () > 2) JS_SetPropertyStr (ctx, obj, "z", JS_NewFloat64 (ctx, values[2]));
-	if (values.size () > 3) JS_SetPropertyStr (ctx, obj, "w", JS_NewFloat64 (ctx, values[3]));
-	return obj;
-    };
-
-    JSValue global = JS_GetGlobalObject (ctx);
-    JSValue ctor = JS_GetPropertyStr (ctx, global, name);
-    JS_FreeValue (ctx, global);
-
-    if (!JS_IsFunction (ctx, ctor)) {
-	JS_FreeValue (ctx, ctor);
-	return constructPlainObject ();
-    }
-
-    std::vector<JSValue> args;
-    args.reserve (values.size ());
-    for (const auto& v : values) {
-	args.emplace_back (JS_NewFloat64 (ctx, v));
-    }
-
-    JSValue obj = JS_CallConstructor (ctx, ctor, args.size (), args.data ());
-    for (auto& arg : args) {
-	JS_FreeValue (ctx, arg);
-    }
-    JS_FreeValue (ctx, ctor);
-    if (JS_IsException (obj)) {
-	JSValue exception = JS_GetException (ctx);
-	JS_FreeValue (ctx, exception);
-	return constructPlainObject ();
-    }
-    return obj;
-}
-
-JSValue ScriptEngine::dynamicValueToJS (const DynamicValue& value) const {
-    JSContext* ctx = this->m_context;
-
-    switch (value.getType ()) {
-	case DynamicValue::String:
-	    return JS_NewString (ctx, value.getString ().c_str ());
-	case DynamicValue::Float:
-	    return JS_NewFloat64 (ctx, value.getFloat ());
-	case DynamicValue::Int:
-	    return JS_NewInt32 (ctx, value.getInt ());
-	case DynamicValue::Boolean:
-	    return JS_NewBool (ctx, value.getBool ());
-	case DynamicValue::Vec2:
-	    return constructVectorObject (ctx, "Vec2", { value.getVec2 ().x, value.getVec2 ().y });
-	case DynamicValue::Vec3:
-	    return constructVectorObject (ctx, "Vec3", { value.getVec3 ().x, value.getVec3 ().y, value.getVec3 ().z });
-	case DynamicValue::Vec4:
-	    return constructVectorObject (ctx, "Vec4", { value.getVec4 ().x, value.getVec4 ().y, value.getVec4 ().z, value.getVec4 ().w });
-	case DynamicValue::IVec2:
-	    return constructVectorObject (ctx, "Vec2", { value.getIVec2 ().x, value.getIVec2 ().y });
-	case DynamicValue::IVec3:
-	    return constructVectorObject (ctx, "Vec3", { value.getIVec3 ().x, value.getIVec3 ().y, value.getIVec3 ().z });
-	case DynamicValue::IVec4:
-	    return constructVectorObject (ctx, "Vec4", { value.getIVec4 ().x, value.getIVec4 ().y, value.getIVec4 ().z, value.getIVec4 ().w });
-	default:
-	    return JS_UNDEFINED;
-    }
-}
-
-DynamicValueUniquePtr ScriptEngine::jsToDynamicValue (JSValue val, DynamicValue::UnderlyingType hint) const {
-    JSContext* ctx = this->m_context;
-    auto result = std::make_unique<DynamicValue> ();
-
-    if (JS_IsException (val)) {
-	return result;
-    }
-
-    auto updateString = [&] {
-	const char* str = JS_ToCString (ctx, val);
-	result->update (str == nullptr ? "" : str);
-	JS_FreeCString (ctx, str);
-    };
-
-    // scalar types returned directly
-    int tag = JS_VALUE_GET_TAG (val);
-    if (tag == JS_TAG_INT) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	int32_t i;
-	JS_ToInt32 (ctx, &i, val);
-	if (hint == DynamicValue::Float) {
-	    result->update (static_cast<float> (i));
-	} else {
-	    result->update (static_cast<int> (i));
-	}
-	return result;
-    }
-    if (tag == JS_TAG_BOOL) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	result->update (static_cast<bool> (JS_ToBool (ctx, val)));
-	return result;
-    }
-    if (JS_TAG_IS_FLOAT64 (tag)) {
-	if (hint == DynamicValue::String) {
-	    updateString ();
-	    return result;
-	}
-	double d;
-	JS_ToFloat64 (ctx, &d, val);
-	result->update (static_cast<float> (d));
-	return result;
-    }
-    if (tag == JS_TAG_STRING) {
-	const char* str = JS_ToCString (ctx, val);
-	result->update (str == nullptr ? "" : str);
-	JS_FreeCString (ctx, str);
-	return result;
-    }
-
-    // object - extract x/y/z/w properties based on the hint type
-    if (tag == JS_TAG_OBJECT) {
-	auto readFloat = [&] (const char* prop) -> float {
-	    JSValue v = JS_GetPropertyStr (ctx, val, prop);
-	    double d = 0.0;
-	    if (!JS_IsException (v) && !JS_IsUndefined (v)) {
-		JS_ToFloat64 (ctx, &d, v);
-	    }
-	    JS_FreeValue (ctx, v);
-	    return static_cast<float> (d);
-	};
-
-	auto readInt = [&] (const char* prop) -> int {
-	    JSValue v = JS_GetPropertyStr (ctx, val, prop);
-	    int32_t i = 0;
-	    if (!JS_IsException (v) && !JS_IsUndefined (v)) {
-		JS_ToInt32 (ctx, &i, v);
-	    }
-	    JS_FreeValue (ctx, v);
-	    return static_cast<int> (i);
-	};
-
-	switch (hint) {
-	    case DynamicValue::Vec2:
-		result->update (glm::vec2 (readFloat ("x"), readFloat ("y")));
-		break;
-	    case DynamicValue::Vec3:
-		result->update (glm::vec3 (readFloat ("x"), readFloat ("y"), readFloat ("z")));
-		break;
-	    case DynamicValue::Vec4:
-		result->update (
-		    glm::vec4 (readFloat ("x"), readFloat ("y"), readFloat ("z"), readFloat ("w")));
-		break;
-	    case DynamicValue::IVec2:
-		result->update (glm::ivec2 (readInt ("x"), readInt ("y")));
-		break;
-	    case DynamicValue::IVec3:
-		result->update (glm::ivec3 (readInt ("x"), readInt ("y"), readInt ("z")));
-		break;
-	    case DynamicValue::IVec4:
-		result->update (
-		    glm::ivec4 (readInt ("x"), readInt ("y"), readInt ("z"), readInt ("w")));
-		break;
-	    default: {
-		// try to read as vec3 by default (most common for origin/angles)
-		float x = readFloat ("x");
-		float y = readFloat ("y");
-		float z = readFloat ("z");
-		result->update (glm::vec3 (x, y, z));
-		break;
-	    }
-	}
-	return result;
-    }
-
-    // fallback: try as float
-    double d;
-    if (JS_ToFloat64 (ctx, &d, val) == 0) {
-	result->update (static_cast<float> (d));
-    }
-    return result;
 }
 
 /// Helper to check for and log JS exceptions
@@ -460,264 +437,13 @@ static void logJSException (JSContext* ctx, const char* context) {
     JS_FreeValue (ctx, exc);
 }
 
-static UserSetting* imageSettingForProperty (const Image& image, const std::string& property) {
-    if (property == "scale") return image.scale.get ();
-    if (property == "angles") return image.angles.get ();
-    if (property == "visible") return image.visible.get ();
-    if (property == "alpha") return image.alpha.get ();
-    if (property == "color") return image.color.get ();
-    if (property == "parallaxDepth") return image.parallaxDepth.get ();
-    return nullptr;
-}
-
-static UserSetting* particleSettingForProperty (const Particle& particle, const std::string& property) {
-    if (property == "scale") return particle.scale.get ();
-    if (property == "angles") return particle.angles.get ();
-    if (property == "visible") return particle.visible.get ();
-    if (property == "parallaxDepth") return particle.parallaxDepth.get ();
-    return nullptr;
-}
-
-static UserSetting* textSettingForProperty (const Text& text, const std::string& property) {
-    if (property == "scale") return text.scale.get ();
-    if (property == "visible") return text.visible.get ();
-    if (property == "alpha") return text.alpha.get ();
-    if (property == "color") return text.color.get ();
-    if (property == "pointSize") return text.pointSize.get ();
-    return nullptr;
-}
-
-static UserSetting* settingForProperty (const Object& object, const std::string& property) {
-    if (property == "origin") {
-	return object.origin.get ();
-    }
-
-    if (object.is<Image> ()) {
-	return imageSettingForProperty (*object.as<Image> (), property);
-    }
-
-    if (object.is<Particle> ()) {
-	return particleSettingForProperty (*object.as<Particle> (), property);
-    }
-
-    if (object.is<Text> ()) {
-	return textSettingForProperty (*object.as<Text> (), property);
-    }
-
-    if (property == "scale") return object.groupScale.get ();
-    if (property == "angles") return object.groupAngles.get ();
-    if (property == "visible") return object.groupVisible.get ();
-
-    return nullptr;
-}
-
-static void setObjectPropertyFromDynamicValue (JSContext* ctx, JSValue obj, const char* name, const DynamicValue& value) {
-    switch (value.getType ()) {
-	case DynamicValue::Float:
-	    JS_SetPropertyStr (ctx, obj, name, JS_NewFloat64 (ctx, value.getFloat ()));
-	    break;
-	case DynamicValue::Int:
-	    JS_SetPropertyStr (ctx, obj, name, JS_NewInt32 (ctx, value.getInt ()));
-	    break;
-	case DynamicValue::Boolean:
-	    JS_SetPropertyStr (ctx, obj, name, JS_NewBool (ctx, value.getBool ()));
-	    break;
-	case DynamicValue::String:
-	    JS_SetPropertyStr (ctx, obj, name, JS_NewString (ctx, value.getString ().c_str ()));
-	    break;
-	case DynamicValue::Vec2:
-	    JS_SetPropertyStr (ctx, obj, name, constructVectorObject (ctx, "Vec2", { value.getVec2 ().x, value.getVec2 ().y }));
-	    break;
-	case DynamicValue::Vec3:
-	    JS_SetPropertyStr (
-		ctx, obj, name,
-		constructVectorObject (ctx, "Vec3", { value.getVec3 ().x, value.getVec3 ().y, value.getVec3 ().z })
-	    );
-	    break;
-	case DynamicValue::Vec4:
-	    JS_SetPropertyStr (
-		ctx, obj, name,
-		constructVectorObject (
-		    ctx, "Vec4", { value.getVec4 ().x, value.getVec4 ().y, value.getVec4 ().z, value.getVec4 ().w }
-		)
-	    );
-	    break;
-	case DynamicValue::IVec2:
-	    JS_SetPropertyStr (
-		ctx, obj, name,
-		constructVectorObject (
-		    ctx, "Vec2", { static_cast<double> (value.getIVec2 ().x), static_cast<double> (value.getIVec2 ().y) }
-		)
-	    );
-	    break;
-	case DynamicValue::IVec3:
-	    JS_SetPropertyStr (
-		ctx, obj, name,
-		constructVectorObject (
-		    ctx, "Vec3",
-		    {
-			static_cast<double> (value.getIVec3 ().x),
-			static_cast<double> (value.getIVec3 ().y),
-			static_cast<double> (value.getIVec3 ().z),
-		    }
-		)
-	    );
-	    break;
-	case DynamicValue::IVec4:
-	    JS_SetPropertyStr (
-		ctx, obj, name,
-		constructVectorObject (
-		    ctx, "Vec4",
-		    {
-			static_cast<double> (value.getIVec4 ().x),
-			static_cast<double> (value.getIVec4 ().y),
-			static_cast<double> (value.getIVec4 ().z),
-			static_cast<double> (value.getIVec4 ().w),
-		    }
-		)
-	    );
-	    break;
-	default:
-	    break;
-    }
-}
-
-static void updateAudioArray (JSContext* ctx, JSValue global, const char* name, const float* values, int count) {
-    JSValue audio = JS_GetPropertyStr (ctx, global, name);
-    if (JS_IsUndefined (audio)) {
-	audio = JS_NewObject (ctx);
-    }
-
-    auto setChannel = [&] (const char* channel) {
-	JSValue array = JS_NewArray (ctx);
-	for (int i = 0; i < count; i++) {
-	    JS_SetPropertyUint32 (ctx, array, i, JS_NewFloat64 (ctx, values[i]));
-	}
-	JS_SetPropertyStr (ctx, audio, channel, array);
-    };
-
-    setChannel ("average");
-    // PlaybackRecorder currently exposes averaged samples only. Mirror that
-    // data into WE's stereo fields until separate channels are available.
-    setChannel ("left");
-    setChannel ("right");
-
-    JS_SetPropertyStr (ctx, global, name, audio);
-}
-
 void ScriptEngine::installBuiltins () {
     if (this->m_builtinsInstalled || !this->m_context) {
 	return;
     }
 
     static constexpr const char* builtins = R"JS(
-globalThis.__weNum = function(v, fallback) {
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : fallback;
-};
-globalThis.__weParts = function(v) {
-  if (typeof v === 'string') return v.trim().split(/\s+/).map(Number);
-  if (typeof v === 'number') return [v, v, v, v];
-  if (v && typeof v === 'object') return [v.x || 0, v.y || 0, v.z || 0, v.w || 0];
-  return [0, 0, 0, 0];
-};
-globalThis.Vec2 = class Vec2 {
-  constructor(x, y) { const p = __weParts(x); this.x = __weNum(x, p[0] || 0); this.y = __weNum(y, p[1] || 0); }
-  copy() { return new Vec2(this.x, this.y); }
-  add(v) { const p = __weParts(v); return new Vec2(this.x + p[0], this.y + p[1]); }
-  subtract(v) { const p = __weParts(v); return new Vec2(this.x - p[0], this.y - p[1]); }
-  multiply(v) { const p = __weParts(v); return new Vec2(this.x * p[0], this.y * p[1]); }
-  divide(v) { const p = __weParts(v); return new Vec2(this.x / p[0], this.y / p[1]); }
-  toString() { return this.x + ' ' + this.y; }
-};
-globalThis.Vec3 = class Vec3 {
-  constructor(x, y, z) { const p = __weParts(x); this.x = __weNum(x, p[0] || 0); this.y = __weNum(y, p[1] || 0); this.z = __weNum(z, p[2] || 0); }
-  copy() { return new Vec3(this.x, this.y, this.z); }
-  equals(v) { return Math.abs(this.x - v.x) < 0.0001 && Math.abs(this.y - v.y) < 0.0001 && Math.abs(this.z - v.z) < 0.0001; }
-  lengthSqr() { return this.x * this.x + this.y * this.y + this.z * this.z; }
-  length() { return Math.sqrt(this.lengthSqr()); }
-  normalize() { const l = this.length(); return l ? this.divide(l) : new Vec3(0, 0, 0); }
-  add(v) { const p = __weParts(v); return new Vec3(this.x + p[0], this.y + p[1], this.z + p[2]); }
-  subtract(v) { const p = __weParts(v); return new Vec3(this.x - p[0], this.y - p[1], this.z - p[2]); }
-  multiply(v) { const p = __weParts(v); return new Vec3(this.x * p[0], this.y * p[1], this.z * p[2]); }
-  divide(v) { const p = __weParts(v); return new Vec3(this.x / p[0], this.y / p[1], this.z / p[2]); }
-  dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
-  cross(v) { return new Vec3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x); }
-  mix(v, a) { return new Vec3(this.x + (v.x - this.x) * a, this.y + (v.y - this.y) * a, this.z + (v.z - this.z) * a); }
-  min(v) { return new Vec3(Math.min(this.x, v.x), Math.min(this.y, v.y), Math.min(this.z, v.z)); }
-  max(v) { return new Vec3(Math.max(this.x, v.x), Math.max(this.y, v.y), Math.max(this.z, v.z)); }
-  abs() { return new Vec3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z)); }
-  sign() { return new Vec3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z)); }
-  round() { return new Vec3(Math.round(this.x), Math.round(this.y), Math.round(this.z)); }
-  floor() { return new Vec3(Math.floor(this.x), Math.floor(this.y), Math.floor(this.z)); }
-  ceil() { return new Vec3(Math.ceil(this.x), Math.ceil(this.y), Math.ceil(this.z)); }
-  toString() { return this.x + ' ' + this.y + ' ' + this.z; }
-};
-globalThis.Vec4 = class Vec4 {
-  constructor(x, y, z, w) { const p = __weParts(x); this.x = __weNum(x, p[0] || 0); this.y = __weNum(y, p[1] || 0); this.z = __weNum(z, p[2] || 0); this.w = __weNum(w, p[3] || 0); }
-  copy() { return new Vec4(this.x, this.y, this.z, this.w); }
-  toString() { return this.x + ' ' + this.y + ' ' + this.z + ' ' + this.w; }
-};
-globalThis.WEColor = {
-  rgb2hsv(c) {
-    const r = c.x, g = c.y, b = c.z, max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-    let h = 0;
-    if (d !== 0) h = max === r ? (((g - b) / d) % 6) : max === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
-    h = ((h / 6) + 1) % 1;
-    return new Vec3(h, max === 0 ? 0 : d / max, max);
-  },
-  hsv2rgb(c) {
-    const h = ((c.x % 1) + 1) % 1, s = c.y, v = c.z, i = Math.floor(h * 6), f = h * 6 - i;
-    const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-    switch (i % 6) { case 0: return new Vec3(v, t, p); case 1: return new Vec3(q, v, p); case 2: return new Vec3(p, v, t); case 3: return new Vec3(p, q, v); case 4: return new Vec3(t, p, v); default: return new Vec3(v, p, q); }
-  }
-};
-globalThis.WEMath = {
-  smoothStep(edge0, edge1, x) {
-    edge0 = Number(edge0); edge1 = Number(edge1); x = Number(x);
-    if (!Number.isFinite(edge0) || !Number.isFinite(edge1) || !Number.isFinite(x)) return 0;
-    if (edge0 === edge1) return x < edge0 ? 0 : 1;
-    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-    return t * t * (3 - 2 * t);
-  },
-  smootherStep(edge0, edge1, x) {
-    edge0 = Number(edge0); edge1 = Number(edge1); x = Number(x);
-    if (!Number.isFinite(edge0) || !Number.isFinite(edge1) || !Number.isFinite(x)) return 0;
-    if (edge0 === edge1) return x < edge0 ? 0 : 1;
-    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-    return t * t * t * (t * (t * 6 - 15) + 10);
-  },
-  clamp(x, min, max) {
-    x = Number(x); min = Number(min); max = Number(max);
-    if (!Number.isFinite(x)) return 0;
-    return Math.max(min, Math.min(max, x));
-  },
-  saturate(x) {
-    x = Number(x);
-    if (!Number.isFinite(x)) return 0;
-    return Math.max(0, Math.min(1, x));
-  },
-  mix(a, b, t) {
-    a = Number(a); b = Number(b); t = Number(t);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(t)) return 0;
-    return a + (b - a) * t;
-  },
-  lerp(a, b, t) {
-    a = Number(a); b = Number(b); t = Number(t);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(t)) return 0;
-    return a + (b - a) * t;
-  }
-};
-globalThis.__audio16 = { average: Array(16).fill(0), left: Array(16).fill(0), right: Array(16).fill(0) };
-globalThis.__audio32 = { average: Array(32).fill(0), left: Array(32).fill(0), right: Array(32).fill(0) };
-globalThis.__audio64 = { average: Array(64).fill(0), left: Array(64).fill(0), right: Array(64).fill(0) };
 globalThis.__intervals = Object.create(null);
-globalThis.__weIntervalBucket = function(bindingKey) {
-  const key = String(bindingKey || globalThis.__currentBindingKey || 'default');
-  if (!globalThis.__intervals[key]) globalThis.__intervals[key] = [];
-  return globalThis.__intervals[key];
-};
-globalThis.shared = globalThis.shared || {};
 globalThis.localStorage = globalThis.localStorage || {
   __data: Object.create(null),
   get(key) {
@@ -733,74 +459,10 @@ globalThis.MediaPlaybackEvent = globalThis.MediaPlaybackEvent || {
   PLAYBACK_PLAYING: 1,
   PLAYBACK_PAUSED: 2
 };
-globalThis.input = globalThis.input || {
-  cursorPosition: new Vec2(0, 0),
-  cursorWorldPosition: new Vec3(0, 0, 0)
-};
-globalThis.console = globalThis.console || {
-  log() {},
-  warn() {},
-  error() {},
-  info() {}
-};
-globalThis.__weRunIntervals = function(bindingKey) {
-  for (const interval of globalThis.__weIntervalBucket(bindingKey)) {
-    if (!interval.active || typeof interval.callback !== 'function') continue;
-    if (engine.runtime < interval.next) continue;
-    interval.next = engine.runtime + interval.delay;
-    interval.callback();
-  }
-};
-globalThis.__missingLayer = { origin: new Vec3(0, 0, 0), scale: new Vec3(1, 1, 1), angles: new Vec3(0, 0, 0), visible: false, alpha: 0, color: new Vec4(0, 0, 0, 0), parallaxDepth: new Vec2(0, 0) };
-globalThis.engine = {
-  runtime: 0,
-  frametime: 0,
-  AUDIO_RESOLUTION_16: 16,
-  AUDIO_RESOLUTION_32: 32,
-  AUDIO_RESOLUTION_64: 64,
-  registerAudioBuffers(resolution) {
-    if (resolution === 64) return globalThis.__audio64;
-    if (resolution === 32) return globalThis.__audio32;
-    return globalThis.__audio16;
-  },
-  setInterval(callback, delayMs) {
-    const interval = {
-      callback,
-      delay: Math.max(0.001, Number(delayMs || 0) / 1000),
-      next: this.runtime + Math.max(0.001, Number(delayMs || 0) / 1000),
-      active: true
-    };
-    globalThis.__weIntervalBucket().push(interval);
-    return function() { interval.active = false; };
-  },
-  openUserShortcut() {
-    return undefined;
-  }
-};
-globalThis.thisScene = {
-  getLayer(name) {
-    const key = String(name);
-    return globalThis.__layers && globalThis.__layers[key] ? globalThis.__layers[key] : globalThis.__missingLayer;
-  },
-  enumerateLayers() {
-    return globalThis.__layerList || [];
-  }
-};
-globalThis.createScriptProperties = function() {
-  const props = globalThis.__scriptProps || {};
-  const builder = {};
-  for (const name of ['addSlider', 'addCheckbox', 'addCombo', 'addColor', 'addText']) {
-    builder[name] = function(opts) {
-      if (!(opts.name in props)) props[opts.name] = opts.value;
-      return builder;
-    };
-  }
-  builder.finish = function() { return props; };
-  return builder;
-};
 )JS";
 
-    JSValue result = JS_Eval (this->m_context, builtins, strlen (builtins), "<scene-script-builtins>", JS_EVAL_TYPE_GLOBAL);
+    JSValue result
+	= JS_Eval (this->m_context, builtins, strlen (builtins), "<scene-script-builtins>", JS_EVAL_TYPE_GLOBAL);
     if (JS_IsException (result)) {
 	logJSException (this->m_context, "installBuiltins");
     }
@@ -808,293 +470,12 @@ globalThis.createScriptProperties = function() {
     this->m_builtinsInstalled = true;
 }
 
-JSValue ScriptEngine::ensureModule (const void* bindingKey, const std::string& scriptSource) {
-    const auto existing = this->m_modules.find (bindingKey);
-    if (existing != this->m_modules.end ()) {
-	return existing->second;
-    }
-
-    std::string body = scriptSource;
-    size_t pos;
-    const auto removeAll = [&body] (const std::string& pattern) {
-	size_t position;
-	while ((position = body.find (pattern)) != std::string::npos) {
-	    body.erase (position, pattern.length ());
-	}
-    };
-    removeAll ("'use strict';");
-    removeAll ("\"use strict\";");
-    removeAll ("import * as WEColor from 'WEColor';");
-    removeAll ("import * as WEColor from \"WEColor\";");
-    removeAll ("import * as WEMath from 'WEMath';");
-    removeAll ("import * as WEMath from \"WEMath\";");
-    while ((pos = body.find ("export ")) != std::string::npos) body.erase (pos, 7);
-
-    std::ostringstream wrapper;
-    wrapper << "(function() {\n"
-	    << body << "\n"
-	    << "return {\n"
-	    << "  update: typeof update === 'function' ? update : null,\n"
-	    << "  init: typeof init === 'function' ? init : null,\n"
-	    << "  applyUserProperties: typeof applyUserProperties === 'function' ? applyUserProperties : null,\n"
-	    << "  mediaPropertiesChanged: typeof mediaPropertiesChanged === 'function' ? mediaPropertiesChanged : null,\n"
-	    << "  mediaPlaybackChanged: typeof mediaPlaybackChanged === 'function' ? mediaPlaybackChanged : null,\n"
-	    << "  mediaTimelineChanged: typeof mediaTimelineChanged === 'function' ? mediaTimelineChanged : null,\n"
-	    << "  mediaThumbnailChanged: typeof mediaThumbnailChanged === 'function' ? mediaThumbnailChanged : null,\n"
-	    << "  setScriptProperties: function(props) { if (typeof scriptProperties !== 'undefined' && scriptProperties) Object.assign(scriptProperties, props); }\n"
-	    << "};\n"
-	    << "})();\n";
-
-    const std::string source = wrapper.str ();
-    JSValue module = JS_Eval (this->m_context, source.c_str (), source.size (), "<scene-script-module>", JS_EVAL_TYPE_GLOBAL);
-    if (JS_IsException (module)) {
-	logJSException (this->m_context, "module");
-	JS_FreeValue (this->m_context, module);
-	module = JS_NewObject (this->m_context);
-    }
-
-    this->m_modules.emplace (bindingKey, module);
-    return module;
-}
-
-void ScriptEngine::releaseBinding (const void* bindingKey) {
-    if (this->m_context) {
-	JSValue global = JS_GetGlobalObject (this->m_context);
-	JSValue intervals = JS_GetPropertyStr (this->m_context, global, "__intervals");
-	if (JS_IsObject (intervals)) {
-	    const std::string key = std::to_string (reinterpret_cast<uintptr_t> (bindingKey));
-	    JSAtom keyAtom = JS_NewAtom (this->m_context, key.c_str ());
-	    JS_DeleteProperty (this->m_context, intervals, keyAtom, 0);
-	    JS_FreeAtom (this->m_context, keyAtom);
-	}
-	JS_FreeValue (this->m_context, intervals);
-	JS_FreeValue (this->m_context, global);
-
-	if (const auto module = this->m_modules.find (bindingKey); module != this->m_modules.end ()) {
-	    JS_FreeValue (this->m_context, module->second);
-	    this->m_modules.erase (module);
-	}
-    } else if (const auto module = this->m_modules.find (bindingKey); module != this->m_modules.end ()) {
-	if (this->m_runtime) {
-	    JS_FreeValueRT (this->m_runtime, module->second);
-	}
-	this->m_modules.erase (module);
-    }
-
-    this->m_initializedModules.erase (bindingKey);
-    this->m_lastMediaProperties.erase (bindingKey);
-    this->m_lastMediaPlayback.erase (bindingKey);
-    this->m_lastMediaTimeline.erase (bindingKey);
-    this->m_lastMediaThumbnail.erase (bindingKey);
-}
-
-static JSValue buildScriptPropertiesObject (
-    JSContext* ctx,
-    ScriptEngine& engine,
-    const std::map<std::string, DynamicValue*>& scriptProperties
-) {
-    JSValue propsObj = JS_NewObject (ctx);
-    for (const auto& [name, dynVal] : scriptProperties) {
-	if (dynVal) {
-	    JS_SetPropertyStr (ctx, propsObj, name.c_str (), engine.dynamicValueToJS (*dynVal));
-	}
-    }
-    return propsObj;
-}
-
-static JSValue jsNoop (JSContext*, JSValueConst, int, JSValueConst*) { return JS_UNDEFINED; }
-static JSValue jsZero (JSContext* ctx, JSValueConst, int, JSValueConst*) { return JS_NewInt32 (ctx, 0); }
-
-static JSValue jsGetTextureAnimation (JSContext* ctx, JSValueConst, int, JSValueConst*) {
-    JSValue animation = JS_NewObject (ctx);
-    JS_SetPropertyStr (ctx, animation, "pause", JS_NewCFunction (ctx, jsNoop, "pause", 0));
-    JS_SetPropertyStr (ctx, animation, "play", JS_NewCFunction (ctx, jsNoop, "play", 0));
-    JS_SetPropertyStr (ctx, animation, "stop", JS_NewCFunction (ctx, jsNoop, "stop", 0));
-    JS_SetPropertyStr (ctx, animation, "setFrame", JS_NewCFunction (ctx, jsNoop, "setFrame", 1));
-    JS_SetPropertyStr (ctx, animation, "getFrame", JS_NewCFunction (ctx, jsZero, "getFrame", 0));
-    return animation;
-}
-
-static void syncLayerObjectProperties (JSContext* ctx, JSValue layer, const Object& object) {
-    JS_SetPropertyStr (ctx, layer, "id", JS_NewInt32 (ctx, object.id));
-    JS_SetPropertyStr (ctx, layer, "name", JS_NewString (ctx, object.name.c_str ()));
-    JS_SetPropertyStr (
-	ctx, layer, "getTextureAnimation", JS_NewCFunction (ctx, jsGetTextureAnimation, "getTextureAnimation", 0)
-    );
-    JS_SetPropertyStr (ctx, layer, "getAnimation", JS_NewCFunction (ctx, jsGetTextureAnimation, "getAnimation", 0));
-
-    for (const char* property : { "origin", "text", "scale", "angles", "visible", "alpha", "color", "parallaxDepth", "pointSize" }) {
-	if (const auto* setting = settingForProperty (object, property); setting && setting->value) {
-	    setObjectPropertyFromDynamicValue (ctx, layer, property, *setting->value);
-	}
-    }
-
-    if (object.is<Sound> ()) {
-	JS_SetPropertyStr (ctx, layer, "volume", JS_NewFloat64 (ctx, 1.0));
-	JS_SetPropertyStr (ctx, layer, "play", JS_NewCFunction (ctx, jsNoop, "play", 0));
-	JS_SetPropertyStr (ctx, layer, "stop", JS_NewCFunction (ctx, jsNoop, "stop", 0));
-    }
-}
-
-static JSValue buildLayerObject (JSContext* ctx, const Object& object) {
-    JSValue layer = JS_NewObject (ctx);
-    syncLayerObjectProperties (ctx, layer, object);
-
-    return layer;
-}
-
-static void installSceneLayers (
-    JSContext* ctx,
-    JSValue global,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) {
-    JSValue layers = JS_GetPropertyStr (ctx, global, "__layers");
-    if (JS_IsException (layers) || !JS_IsObject (layers)) {
-	JS_FreeValue (ctx, layers);
-	layers = JS_NewObject (ctx);
-    }
-
-    JSValue layerList = JS_NewArray (ctx);
-    JSValue ownerLayer = JS_UNDEFINED;
-
-    if (scene) {
-	uint32_t layerIndex = 0;
-	for (const auto& object : scene->getScene ().objects) {
-	    const std::string id = std::to_string (object->id);
-	    JSValue layer = JS_GetPropertyStr (ctx, layers, id.c_str ());
-	    if ((JS_IsUndefined (layer) || JS_IsException (layer)) && !object->name.empty ()) {
-		JS_FreeValue (ctx, layer);
-		layer = JS_GetPropertyStr (ctx, layers, object->name.c_str ());
-	    }
-
-	    if (JS_IsUndefined (layer) || JS_IsException (layer)) {
-		JS_FreeValue (ctx, layer);
-		layer = buildLayerObject (ctx, *object);
-	    } else {
-		syncLayerObjectProperties (ctx, layer, *object);
-	    }
-
-	    JS_SetPropertyStr (ctx, layers, id.c_str (), JS_DupValue (ctx, layer));
-	    JS_SetPropertyUint32 (ctx, layerList, layerIndex++, JS_DupValue (ctx, layer));
-	    if (!object->name.empty ()) {
-		JS_SetPropertyStr (ctx, layers, object->name.c_str (), JS_DupValue (ctx, layer));
-	    }
-
-	    if (bindingContext
-		&& (object->id == bindingContext->objectId || object->name == bindingContext->objectName)) {
-		ownerLayer = JS_DupValue (ctx, layer);
-	    }
-
-	    JS_FreeValue (ctx, layer);
-	}
-    }
-
-    if (JS_IsUndefined (ownerLayer)) {
-	ownerLayer = JS_NewObject (ctx);
-    }
-
-    JS_SetPropertyStr (ctx, global, "__layers", JS_DupValue (ctx, layers));
-    JS_FreeValue (ctx, layers);
-    JS_SetPropertyStr (ctx, global, "__layerList", layerList);
-    JS_SetPropertyStr (ctx, global, "thisObject", JS_DupValue (ctx, ownerLayer));
-    JS_SetPropertyStr (ctx, global, "thisLayer", ownerLayer);
-}
-
-static void applyLayerProperty (
-    JSContext* ctx,
-    ScriptEngine& engine,
-    JSValue layer,
-    const Object& object,
-    const char* property
-) {
-    auto* setting = settingForProperty (object, property);
-    if (!setting || !setting->value) {
-	return;
-    }
-
-    JSValue jsValue = JS_GetPropertyStr (ctx, layer, property);
-    if (!JS_IsUndefined (jsValue) && !JS_IsException (jsValue)) {
-	auto value = engine.jsToDynamicValue (jsValue, setting->value->getType ());
-	if (value) {
-	    setting->value->update (*value);
-	}
-    }
-    JS_FreeValue (ctx, jsValue);
-}
-
-static void applyLayerUpdates (
-    JSContext* ctx,
-    ScriptEngine& engine,
-    JSValue global,
-    WallpaperEngine::Render::Wallpapers::CScene* scene
-) {
-    if (!scene) {
-	return;
-    }
-
-    JSValue layers = JS_GetPropertyStr (ctx, global, "__layers");
-    if (JS_IsUndefined (layers) || JS_IsException (layers)) {
-	JS_FreeValue (ctx, layers);
-	return;
-    }
-
-    for (const auto& object : scene->getScene ().objects) {
-	JSValue layer = JS_GetPropertyStr (ctx, layers, std::to_string (object->id).c_str ());
-	if (JS_IsUndefined (layer)) {
-	    JS_FreeValue (ctx, layer);
-	    if (!object->name.empty ()) {
-		layer = JS_GetPropertyStr (ctx, layers, object->name.c_str ());
-	    }
-	}
-	if (JS_IsUndefined (layer) || JS_IsException (layer)) {
-	    JS_FreeValue (ctx, layer);
-	    continue;
-	}
-
-	for (const char* property : { "origin", "text", "scale", "angles", "visible", "alpha", "color", "parallaxDepth", "pointSize" }) {
-	    applyLayerProperty (ctx, engine, layer, *object, property);
-	}
-
-	JS_FreeValue (ctx, layer);
-    }
-
-    JS_FreeValue (ctx, layers);
-}
-
-static DynamicValueUniquePtr currentBoundValue (
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext,
-    const DynamicValue& fallback
-) {
-    auto result = std::make_unique<DynamicValue> ();
-    result->update (fallback);
-
-    if (!scene || !bindingContext) {
-	return result;
-    }
-
-    const auto it = std::ranges::find_if (scene->getScene ().objects, [bindingContext] (const auto& object) {
-	return object->id == bindingContext->objectId || object->name == bindingContext->objectName;
-    });
-
-    if (it == scene->getScene ().objects.end ()) {
-	return result;
-    }
-
-    const auto* setting = settingForProperty (**it, bindingContext->propertyName);
-    if (setting && setting->value) {
-	result->update (*setting->value);
-    }
-
-    return result;
-}
-
 void ScriptEngine::refreshMediaState () {
     auto buildMediaState = [] () -> std::optional<MediaState> {
 	const auto line = processReadFirstLine (
 	    "playerctl",
-	    { "metadata", "--format", "{{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{position}}\t{{mpris:artUrl}}" }
+	    { "metadata", "--format",
+	      "{{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{position}}\t{{mpris:artUrl}}" }
 	);
 
 	if (!line.has_value ()) {
@@ -1140,10 +521,8 @@ void ScriptEngine::refreshMediaState () {
 			sLog.out ("Media debug: no playerctl media state");
 		    } else {
 			sLog.out (
-			    "Media debug: status=", this->m_mediaState.status,
-			    " title=", this->m_mediaState.title,
-			    " artist=", this->m_mediaState.artist,
-			    " duration=", this->m_mediaState.duration,
+			    "Media debug: status=", this->m_mediaState.status, " title=", this->m_mediaState.title,
+			    " artist=", this->m_mediaState.artist, " duration=", this->m_mediaState.duration,
 			    " position=", this->m_mediaState.position
 			);
 		    }
@@ -1177,7 +556,8 @@ static JSValue makeVec3Object (JSContext* ctx, float x, float y, float z) {
     return result;
 }
 
-static bool callModuleFunction (JSContext* ctx, JSValue module, const char* name, JSValue event, const char* logContext) {
+static bool
+callModuleFunction (JSContext* ctx, JSValue module, const char* name, JSValue event, const char* logContext) {
     JSValue function = JS_GetPropertyStr (ctx, module, name);
     if (JS_IsFunction (ctx, function)) {
 	JSValue args[] = { event };
@@ -1210,8 +590,7 @@ void ScriptEngine::dispatchMediaEvents (JSValue module, const void* bindingKey) 
 	if (calledProperties && std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
 	    sLog.out (
 		"Media debug: dispatched properties key=", reinterpret_cast<uintptr_t> (bindingKey),
-		" title=", this->m_mediaState.title,
-		" artist=", this->m_mediaState.artist
+		" title=", this->m_mediaState.title, " artist=", this->m_mediaState.artist
 	    );
 	}
 	JS_FreeValue (ctx, propertiesEvent);
@@ -1227,7 +606,8 @@ void ScriptEngine::dispatchMediaEvents (JSValue module, const void* bindingKey) 
     }
 
     const int roundedPosition = static_cast<int> (std::max (0.0, this->m_mediaState.position));
-    const std::string timelineSignature = std::to_string (roundedPosition) + "\n" + std::to_string (this->m_mediaState.duration);
+    const std::string timelineSignature
+	= std::to_string (roundedPosition) + "\n" + std::to_string (this->m_mediaState.duration);
     if (this->m_lastMediaTimeline.find (bindingKey) == this->m_lastMediaTimeline.end ()
 	|| this->m_lastMediaTimeline[bindingKey] != timelineSignature) {
 	this->m_lastMediaTimeline[bindingKey] = timelineSignature;
@@ -1251,46 +631,6 @@ void ScriptEngine::dispatchMediaEvents (JSValue module, const void* bindingKey) 
     }
 }
 
-void ScriptEngine::updateRuntimeGlobals (JSContext* ctx, JSValue globalObj) const {
-    const auto runtimeSeconds = std::chrono::duration<double> (std::chrono::steady_clock::now () - sStartTime).count ();
-    JSValue engine = JS_GetPropertyStr (ctx, globalObj, "engine");
-    JS_SetPropertyStr (ctx, engine, "runtime", JS_NewFloat64 (ctx, runtimeSeconds));
-    JS_SetPropertyStr (ctx, engine, "frametime", JS_NewFloat64 (ctx, g_Time - g_TimeLast));
-    std::time_t now = std::time (nullptr);
-    std::tm localTime {};
-    localtime_r (&now, &localTime);
-    const auto secondsOfDay = localTime.tm_hour * 3600 + localTime.tm_min * 60 + localTime.tm_sec;
-    JS_SetPropertyStr (ctx, engine, "timeOfDay", JS_NewFloat64 (ctx, static_cast<double> (secondsOfDay) / 86400.0));
-    JS_FreeValue (ctx, engine);
-}
-
-void ScriptEngine::updateSceneInputGlobals (JSContext* ctx, JSValue globalObj, WallpaperEngine::Render::Wallpapers::CScene* scene) {
-    if (scene == nullptr) {
-	return;
-    }
-
-    auto& recorder = scene->getAudioContext ().getRecorder ();
-    recorder.update ();
-    updateAudioArray (ctx, globalObj, "__audio16", recorder.audio16, 16);
-    updateAudioArray (ctx, globalObj, "__audio32", recorder.audio32, 32);
-    updateAudioArray (ctx, globalObj, "__audio64", recorder.audio64, 64);
-
-    JSValue input = JS_GetPropertyStr (ctx, globalObj, "input");
-    if (JS_IsUndefined (input) || JS_IsException (input)) {
-	JS_FreeValue (ctx, input);
-	input = JS_NewObject (ctx);
-    }
-
-    const glm::vec2 mouse = *scene->getMousePosition ();
-    DynamicValue cursorPosition;
-    cursorPosition.update (glm::vec2 (mouse.x, mouse.y));
-    DynamicValue cursorWorldPosition;
-    cursorWorldPosition.update (glm::vec3 (mouse.x * scene->getWidth (), mouse.y * scene->getHeight (), 0.0f));
-    JS_SetPropertyStr (ctx, input, "cursorPosition", this->dynamicValueToJS (cursorPosition));
-    JS_SetPropertyStr (ctx, input, "cursorWorldPosition", this->dynamicValueToJS (cursorWorldPosition));
-    JS_SetPropertyStr (ctx, globalObj, "input", input);
-}
-
 void ScriptEngine::callModuleWithProps (JSContext* ctx, JSValue module, const char* name, JSValue propsObj) const {
     JSValue function = JS_GetPropertyStr (ctx, module, name);
     if (JS_IsFunction (ctx, function)) {
@@ -1302,32 +642,6 @@ void ScriptEngine::callModuleWithProps (JSContext* ctx, JSValue module, const ch
 	JS_FreeValue (ctx, result);
     }
     JS_FreeValue (ctx, function);
-}
-
-void ScriptEngine::initializeModuleIfNeeded (
-    JSContext* ctx, JSValue module, const void* bindingKey, const DynamicValue& currentValue, bool hasScene
-) {
-    if (!hasScene || this->m_initializedModules.contains (bindingKey)) {
-	return;
-    }
-
-    JSValue init = JS_GetPropertyStr (ctx, module, "init");
-    bool initOk = true;
-    if (JS_IsFunction (ctx, init)) {
-	JSValue current = this->dynamicValueToJS (currentValue);
-	JSValue args[] = { current };
-	JSValue initResult = JS_Call (ctx, init, JS_UNDEFINED, 1, args);
-	if (JS_IsException (initResult)) {
-	    logJSException (ctx, "init");
-	    initOk = false;
-	}
-	JS_FreeValue (ctx, initResult);
-	JS_FreeValue (ctx, current);
-    }
-    JS_FreeValue (ctx, init);
-    if (initOk) {
-	this->m_initializedModules.insert (bindingKey);
-    }
 }
 
 void ScriptEngine::runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const {
@@ -1347,13 +661,16 @@ void ScriptEngine::runIntervals (JSContext* ctx, JSValue globalObj, const std::s
 DynamicValueUniquePtr ScriptEngine::fallbackTextValue (const std::string& scriptSource) const {
     auto fallback = std::make_unique<DynamicValue> ();
     if (scriptSource.find ("event.title") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.title, 32));
+	fallback->update (shortenMediaText (this->m_mediaState.title, 32), DynamicValue::UpdateSource::Script);
     } else if (scriptSource.find ("event.artist") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.artist, 28));
-    } else if (scriptSource.find ("event.position") != std::string::npos || scriptSource.find ("displayPosition") != std::string::npos) {
-	fallback->update (formatMediaTime (this->m_mediaState.position));
+	fallback->update (shortenMediaText (this->m_mediaState.artist, 28), DynamicValue::UpdateSource::Script);
+    } else if (
+	scriptSource.find ("event.position") != std::string::npos
+	|| scriptSource.find ("displayPosition") != std::string::npos
+    ) {
+	fallback->update (formatMediaTime (this->m_mediaState.position), DynamicValue::UpdateSource::Script);
     } else if (scriptSource.find ("event.duration") != std::string::npos) {
-	fallback->update (formatMediaTime (this->m_mediaState.duration));
+	fallback->update (formatMediaTime (this->m_mediaState.duration), DynamicValue::UpdateSource::Script);
     }
     return fallback;
 }
@@ -1361,102 +678,8 @@ DynamicValueUniquePtr ScriptEngine::fallbackTextValue (const std::string& script
 void ScriptEngine::applyTextFallback (DynamicValue& value, const std::string& scriptSource) const {
     auto fallback = this->fallbackTextValue (scriptSource);
     if (fallback->getType () != DynamicValue::Null) {
-	value.update (*fallback);
+	value.update (*fallback, DynamicValue::UpdateSource::Script);
     }
-}
-
-void ScriptEngine::logTextEvaluationDebug (const ScriptBindingContext* bindingContext) const {
-    if (
-	std::getenv ("LWE_MEDIA_DEBUG") == nullptr || bindingContext == nullptr
-	|| bindingContext->propertyName != "text"
-    ) {
-	return;
-    }
-
-    sLog.out (
-	"Media debug: evaluating text object=", bindingContext->objectId,
-	" name=", bindingContext->objectName
-    );
-}
-
-void ScriptEngine::logTextResultDebug (const ScriptBindingContext* bindingContext, const DynamicValueUniquePtr& dynResult) const {
-    if (
-	std::getenv ("LWE_MEDIA_DEBUG") == nullptr || bindingContext == nullptr || !dynResult
-	|| bindingContext->propertyName != "text"
-    ) {
-	return;
-    }
-
-    sLog.out (
-	"Media debug: text result object=", bindingContext->objectId,
-	" name=", bindingContext->objectName,
-	" type=", static_cast<int> (dynResult->getType ()),
-	" value=", dynResult->getType () == DynamicValue::String ? dynResult->getString () : "<non-string>"
-    );
-}
-
-JSValue ScriptEngine::callUpdate (JSContext* ctx, JSValue module, const DynamicValue& currentValue) const {
-    JSValue update = JS_GetPropertyStr (ctx, module, "update");
-    JSValue current = this->dynamicValueToJS (currentValue);
-    JSValue result = JS_UNDEFINED;
-    if (JS_IsFunction (ctx, update)) {
-	JSValue args[] = { current };
-	result = JS_Call (ctx, update, JS_UNDEFINED, 1, args);
-    }
-    JS_FreeValue (ctx, update);
-    JS_FreeValue (ctx, current);
-    return result;
-}
-
-DynamicValueUniquePtr ScriptEngine::resolveUndefinedResult (
-    const std::string& scriptSource,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) const {
-    if (bindingContext != nullptr && bindingContext->propertyName == "text") {
-	auto fallback = this->fallbackTextValue (scriptSource);
-	if (fallback->getType () != DynamicValue::Null) {
-	    return fallback;
-	}
-    }
-    return currentBoundValue (scene, bindingContext, currentValue);
-}
-
-DynamicValueUniquePtr ScriptEngine::resolveEvaluationResult (
-    JSContext* ctx,
-    JSValue result,
-    const std::string& scriptSource,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) const {
-    if (JS_IsException (result)) {
-	logJSException (ctx, "update");
-	JS_FreeValue (ctx, result);
-	auto fallback = std::make_unique<DynamicValue> ();
-	fallback->update (currentValue);
-	return fallback;
-    }
-
-    if (JS_IsUndefined (result)) {
-	JS_FreeValue (ctx, result);
-	return this->resolveUndefinedResult (scriptSource, currentValue, scene, bindingContext);
-    }
-
-    auto dynResult = this->jsToDynamicValue (result, currentValue.getType ());
-    JS_FreeValue (ctx, result);
-    if (
-	bindingContext != nullptr && bindingContext->propertyName == "text" && dynResult
-	&& (
-	    dynResult->getType () != DynamicValue::String
-	    || dynResult->getString ().empty ()
-	)
-    ) {
-	this->applyTextFallback (*dynResult, scriptSource);
-    }
-    this->logTextResultDebug (bindingContext, dynResult);
-    return dynResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -1475,14 +698,14 @@ void ScriptEngine::ensureLayerRegistry () {
 }
 
 ScriptLayerHandle ScriptEngine::createLayerScript (
-    const std::string& scriptSource,
-    const std::map<std::string, DynamicValue*>& initialScriptProps,
+    const std::string& scriptSource, std::map<std::string, UserSettingUniquePtr>& initialScriptProps,
     const std::string& initialText
 ) {
     if (!this->m_context) {
 	sLog.error ("ScriptEngine: No JS context available");
 	return kInvalidLayerHandle;
     }
+
     this->ensureLayerRegistry ();
 
     JSContext* ctx = this->m_context;
@@ -1490,11 +713,11 @@ ScriptLayerHandle ScriptEngine::createLayerScript (
 
     // Seed initial scriptProperties and text as temporary globals the IIFE reads.
     JSValue seedProps = JS_NewObject (ctx);
-    for (const auto& [name, dynVal] : initialScriptProps) {
-	if (dynVal) {
-	    JS_SetPropertyStr (ctx, seedProps, name.c_str (), this->dynamicValueToJS (*dynVal));
-	}
+
+    for (auto& [name, dynVal] : initialScriptProps) {
+	JS_SetPropertyStr (ctx, seedProps, name.c_str (), this->dynamicToJs (*dynVal->value));
     }
+
     JS_SetPropertyStr (ctx, globalObj, "__layerSeedProps", seedProps);
     JS_SetPropertyStr (ctx, globalObj, "__layerSeedText", JS_NewString (ctx, initialText.c_str ()));
 
@@ -1517,60 +740,62 @@ ScriptLayerHandle ScriptEngine::createLayerScript (
     // The IIFE gives every layer its own closure for top-level vars and
     // functions, so two layers that both define `function update()` or a
     // top-level `var scriptProperties` don't clobber each other. Lifecycle
-	    // hooks are captured into globalThis.__textLayers[id] so tick/destroy can
+    // hooks are captured into globalThis.__textLayers[id] so tick/destroy can
     // reach them later. `typeof init === 'function'` is safe even when
     // `init` was never declared — bare-identifier `typeof` never throws.
     std::ostringstream wrapper;
-    wrapper << "(function() {\n"
-	    << "  var __id = " << id << ";\n"
-	    << "  var __props = Object.assign({}, globalThis.__layerSeedProps || {});\n"
-	    << "  var thisLayer = { text: String(globalThis.__layerSeedText || '') };\n"
-	    << "  var thisScene = {\n"
-	    << "    get time()        { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
-	    << "    get currentTime() { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
-	    << "    get dt()          { var c = globalThis.__sceneCtx; return c ? c.dt   : 0; },\n"
-	    << "    get fps()         { var c = globalThis.__sceneCtx; return c ? c.fps  : 60; },\n"
-	    << "  };\n"
-	    // Minimal WE `engine` shim. Real Wallpaper Engine exposes a broad API
-	    // (media events, audio buffer, user input); we provide just enough for
-	    // the common built-in text scripts to run without ReferenceError.
-	    // `frametime` is the per-frame delta in seconds (what InsertFPS reads).
-	    << "  var engine = {\n"
-	    << "    get frametime() { var c = globalThis.__sceneCtx; return c ? c.dt : 0; },\n"
-	    << "    get time()      { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
-	    << "  };\n"
-	    << "  function createScriptProperties() {\n"
-	    << "    var builder = {\n"
-	    << "      addSlider:   function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
-	    << "      addCheckbox: function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
-	    << "      addCombo:    function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
-	    << "      addColor:    function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
-	    << "      addText:     function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
-	    << "      finish:      function(){ return __props; }\n"
-	    << "    };\n"
-	    << "    return builder;\n"
-	    << "  }\n"
-	    << body << "\n"
-	    // `_tick` wraps the user's `update()` so both WE text conventions work:
-	    //   A) `export function update() { thisLayer.text = …; }` (mutates in place)
-	    //   B) `export function update(value) { …; return value; }` (returns new text)
-	    // We pass the current text in, and if the return value is a string we
-	    // adopt it as the new `thisLayer.text`. Non-string / undefined return
-	    // leaves `thisLayer.text` as whatever the function assigned itself.
-	    << "  globalThis.__textLayers[__id] = {\n"
-	    << "    thisLayer: thisLayer,\n"
-	    << "    thisScene: thisScene,\n"
-	    << "    _init:    (typeof init    === 'function') ? init    : null,\n"
-	    << "    _destroy: (typeof destroy === 'function') ? destroy : null,\n"
-	    << "    _tick:    (typeof update  === 'function')\n"
-	    << "              ? function() {\n"
-	    << "                  var r = update(thisLayer.text);\n"
-	    << "                  if (typeof r === 'string') thisLayer.text = r;\n"
-	    << "                }\n"
-	    << "              : null,\n"
-	    << "    _scriptProperties: (typeof scriptProperties !== 'undefined') ? scriptProperties : __props\n"
-	    << "  };\n"
-	    << "})();\n";
+    wrapper
+	<< "(function() {\n"
+	<< "  var __id = " << id << ";\n"
+	<< "  var __props = Object.assign({}, globalThis.__layerSeedProps || {});\n"
+	<< "  var thisLayer = { text: String(globalThis.__layerSeedText || '') };\n"
+	<< "  var thisScene = {\n"
+	<< "    get time()        { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
+	<< "    get currentTime() { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
+	<< "    get dt()          { var c = globalThis.__sceneCtx; return c ? c.dt   : 0; },\n"
+	<< "    get fps()         { var c = globalThis.__sceneCtx; return c ? c.fps  : 60; },\n"
+	<< "  };\n"
+	// Minimal WE `engine` shim. Real Wallpaper Engine exposes a broad API
+	// (media events, audio buffer, user input); we provide just enough for
+	// the common built-in text scripts to run without ReferenceError.
+	// `frametime` is the per-frame delta in seconds (what InsertFPS reads).
+	<< "  var engine = {\n"
+	<< "    get frametime() { var c = globalThis.__sceneCtx; return c ? c.dt : 0; },\n"
+	<< "    get time()      { var c = globalThis.__sceneCtx; return c ? c.time : 0; },\n"
+	<< "  };\n"
+	<< "  function createScriptProperties() {\n"
+	<< "    var builder = {\n"
+	<< "      addSlider:   function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
+	<< "      addCheckbox: function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
+	<< "      addCombo:    function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
+	<< "      addColor:    function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
+	<< "      addText:     function(o){ if (!(o.name in __props)) __props[o.name] = o.value; return builder; },\n"
+	<< "      finish:      function(){ return __props; }\n"
+	<< "    };\n"
+	<< "    return builder;\n"
+	<< "  }\n"
+	<< body
+	<< "\n"
+	// `_tick` wraps the user's `update()` so both WE text conventions work:
+	//   A) `export function update() { thisLayer.text = …; }` (mutates in place)
+	//   B) `export function update(value) { …; return value; }` (returns new text)
+	// We pass the current text in, and if the return value is a string we
+	// adopt it as the new `thisLayer.text`. Non-string / undefined return
+	// leaves `thisLayer.text` as whatever the function assigned itself.
+	<< "  globalThis.__textLayers[__id] = {\n"
+	<< "    thisLayer: thisLayer,\n"
+	<< "    thisScene: thisScene,\n"
+	<< "    _init:    (typeof init    === 'function') ? init    : null,\n"
+	<< "    _destroy: (typeof destroy === 'function') ? destroy : null,\n"
+	<< "    _tick:    (typeof update  === 'function')\n"
+	<< "              ? function() {\n"
+	<< "                  var r = update(thisLayer.text);\n"
+	<< "                  if (typeof r === 'string') thisLayer.text = r;\n"
+	<< "                }\n"
+	<< "              : null,\n"
+	<< "    _scriptProperties: (typeof scriptProperties !== 'undefined') ? scriptProperties : __props\n"
+	<< "  };\n"
+	<< "})();\n";
 
     const std::string evalScript = wrapper.str ();
     JSValue result = JS_Eval (ctx, evalScript.c_str (), evalScript.size (), "<layer-script>", JS_EVAL_TYPE_GLOBAL);
@@ -1600,8 +825,8 @@ void ScriptEngine::tickLayer (ScriptLayerHandle handle, double time, double delt
 
     JSValue sceneCtx = JS_NewObject (ctx);
     JS_SetPropertyStr (ctx, sceneCtx, "time", JS_NewFloat64 (ctx, time));
-    JS_SetPropertyStr (ctx, sceneCtx, "dt",   JS_NewFloat64 (ctx, deltaTime));
-    JS_SetPropertyStr (ctx, sceneCtx, "fps",  JS_NewFloat64 (ctx, fps));
+    JS_SetPropertyStr (ctx, sceneCtx, "dt", JS_NewFloat64 (ctx, deltaTime));
+    JS_SetPropertyStr (ctx, sceneCtx, "fps", JS_NewFloat64 (ctx, fps));
     JS_SetPropertyStr (ctx, globalObj, "__sceneCtx", sceneCtx);
 
     JSValue layers = JS_GetPropertyStr (ctx, globalObj, "__textLayers");
@@ -1702,53 +927,88 @@ void ScriptEngine::destroyLayer (ScriptLayerHandle handle) {
     this->m_layerInitialized.erase (handle);
 }
 
-DynamicValueUniquePtr ScriptEngine::evaluate (
-    const void* bindingKey,
-    const std::string& scriptSource,
-    const std::map<std::string, DynamicValue*>& scriptProperties,
-    const DynamicValue& currentValue,
-    WallpaperEngine::Render::Wallpapers::CScene* scene,
-    const ScriptBindingContext* bindingContext
-) {
-    if (!this->m_context) {
-	sLog.error ("ScriptEngine: No JS context available");
-	auto fallback = std::make_unique<DynamicValue> ();
-	fallback->update (currentValue);
-	return fallback;
+JSValue ScriptEngine::call (JSValue module, int argc, JSValue argv[], const char* name) {
+    // check if there's an update method and run it
+    JSValue function = JS_GetPropertyStr (this->m_context, module, name);
+    ScopeGuard guard ([&] () { JS_FreeValue (this->m_context, function); });
+
+    if (!JS_IsFunction (this->m_context, function)) {
+	return JS_UNDEFINED;
     }
 
-    this->installBuiltins ();
+    return JS_Call (this->m_context, function, module, argc, argv);
+}
 
-    JSContext* ctx = this->m_context;
-    JSValue globalObj = JS_GetGlobalObject (ctx);
-    const std::string bindingKeyString = std::to_string (reinterpret_cast<uintptr_t> (bindingKey));
-    JS_SetPropertyStr (ctx, globalObj, "__currentBindingKey", JS_NewString (ctx, bindingKeyString.c_str ()));
+void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentValue, ScriptableObject& object) {
+    const auto source = currentValue.getScriptSource ();
 
-    this->updateRuntimeGlobals (ctx, globalObj);
-    this->updateSceneInputGlobals (ctx, globalObj, scene);
-
-    JSValue propsObj = buildScriptPropertiesObject (ctx, *this, scriptProperties);
-    JS_SetPropertyStr (ctx, globalObj, "__scriptProps", JS_DupValue (ctx, propsObj));
-    installSceneLayers (ctx, globalObj, scene, bindingContext);
-
-    JSValue module = this->ensureModule (bindingKey, scriptSource);
-    this->logTextEvaluationDebug (bindingContext);
-
-    this->callModuleWithProps (ctx, module, "setScriptProperties", propsObj);
-    this->initializeModuleIfNeeded (ctx, module, bindingKey, currentValue, scene != nullptr);
-    this->callModuleWithProps (ctx, module, "applyUserProperties", propsObj);
-
-    this->dispatchMediaEvents (module, bindingKey);
-    this->runIntervals (ctx, globalObj, bindingKeyString);
-
-    JSValue result = this->callUpdate (ctx, module, currentValue);
-    if (!JS_IsException (result)) {
-	applyLayerUpdates (ctx, *this, globalObj, scene);
+    if (!source.has_value ()) {
+	return;
     }
 
-    JS_SetPropertyStr (ctx, globalObj, "__scriptProps", JS_UNDEFINED);
-    JS_FreeValue (ctx, globalObj);
-    JS_FreeValue (ctx, propsObj);
+    auto it = this->m_scriptModules.find (key);
 
-    return this->resolveEvaluationResult (ctx, result, scriptSource, currentValue, scene, bindingContext);
+    if (it != this->m_scriptModules.end ()) {
+	return;
+    }
+
+    // load the script and store it
+    JSValue module = JS_Eval (this->m_context, source->c_str (), source->size (), key.c_str (), JS_EVAL_TYPE_MODULE);
+
+    auto inserted = this->m_scriptModules.emplace (
+	key,
+	LoadedModule {
+	    .value = currentValue,
+	    .module = module,
+	}
+    );
+
+    if (!inserted.second) {
+	return;
+    }
+
+    JS_SetPropertyStr (this->m_context, this->m_globalThis, "thisLayer", this->m_adapters.object->instantiate (object));
+
+    // script properties do not need update as they're connected directly to the source data
+    this->m_runningModule = &inserted.first->second;
+
+    // check if there's an update method and run it
+    JSValue args[] = { this->dynamicToJs (currentValue) };
+    JSValue result = this->call (module, 1, args, "update");
+
+    ScopeGuard guard2 ([this, args, result] () {
+	JS_FreeValue (this->m_context, result);
+	JS_FreeValue (this->m_context, args[0]);
+    });
+
+    if (JS_IsException (result)) {
+	return;
+    }
+
+    jsToDynamicValue (this->m_context, result, currentValue);
+}
+
+void ScriptEngine::tick () {
+    // run intervals
+    this->m_engineObject->tick ();
+
+    // run any pending notifications
+
+    // run all update methods
+    for (auto& module : this->m_scriptModules | std::views::values) {
+	this->m_runningModule = &module;
+
+	JSValue args[] = { this->dynamicToJs (module.value) };
+	JSValue result = this->call (module.module, 1, args, "update");
+	ScopeGuard guard ([result, args, this] () {
+	    JS_FreeValue (this->m_context, result);
+	    JS_FreeValue (this->m_context, args[0]);
+	});
+
+	if (JS_IsException (result)) {
+	    continue;
+	}
+
+	jsToDynamicValue (this->m_context, result, module.value);
+    }
 }

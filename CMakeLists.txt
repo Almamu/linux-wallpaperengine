@@ -454,6 +454,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Utils/BinaryReader.h
     src/WallpaperEngine/Data/Utils/MemoryStream.h
     src/WallpaperEngine/Data/Utils/SFINAE.h
+    src/WallpaperEngine/Data/Parsers/DynamicValueParser.h
+    src/WallpaperEngine/Data/Parsers/DynamicValueParser.cpp
     src/WallpaperEngine/Data/Parsers/EffectParser.cpp
     src/WallpaperEngine/Data/Parsers/EffectParser.h
     src/WallpaperEngine/Data/Parsers/ProjectParser.cpp
@@ -476,6 +478,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Parsers/PropertyParser.h
     src/WallpaperEngine/Data/Parsers/TextureParser.cpp
     src/WallpaperEngine/Data/Parsers/TextureParser.h
+    src/WallpaperEngine/Data/Builders/ColorBuilder.h
+    src/WallpaperEngine/Data/Builders/ColorBuilder.cpp
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
@@ -487,10 +491,38 @@ set(COMMON_SOURCES
     src/WallpaperEngine/VideoPlayback/MPV/GLPlayer.h
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.cpp
     src/WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.h
+
+    src/WallpaperEngine/Scripting/Adapters/ObjectAdapter.h
+    src/WallpaperEngine/Scripting/Adapters/ObjectAdapter.cpp
+    src/WallpaperEngine/Scripting/Adapters/VectorAdapter.h
+    src/WallpaperEngine/Scripting/Adapters/VectorAdapter.cpp
+    src/WallpaperEngine/Scripting/Adapters/ScriptableObjectAdapter.h
+    src/WallpaperEngine/Scripting/Adapters/ScriptableObjectAdapter.cpp
+
+    src/WallpaperEngine/Scripting/Modules/ColorModule.h
+    src/WallpaperEngine/Scripting/Modules/ColorModule.cpp
+    src/WallpaperEngine/Scripting/Modules/MathModule.h
+    src/WallpaperEngine/Scripting/Modules/MathModule.cpp
+    src/WallpaperEngine/Scripting/Modules/ScriptModule.h
+    src/WallpaperEngine/Scripting/Modules/ScriptModule.cpp
+
+    src/WallpaperEngine/Scripting/ConsoleObject.h
+    src/WallpaperEngine/Scripting/ConsoleObject.cpp
+    src/WallpaperEngine/Scripting/EngineObject.h
+    src/WallpaperEngine/Scripting/EngineObject.cpp
+    src/WallpaperEngine/Scripting/InputObject.h
+    src/WallpaperEngine/Scripting/InputObject.cpp
+    src/WallpaperEngine/Scripting/SceneObject.h
+    src/WallpaperEngine/Scripting/SceneObject.cpp
     src/WallpaperEngine/Scripting/ScriptEngine.h
+    src/WallpaperEngine/Scripting/ScriptPropertiesObject.h
+    src/WallpaperEngine/Scripting/ScriptPropertiesObject.cpp
     src/WallpaperEngine/Scripting/ScriptEngine.cpp
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.h
-    src/WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp)
+    src/WallpaperEngine/Scripting/ScriptableObject.h
+    src/WallpaperEngine/Scripting/ScriptableObject.cpp
+
+    src/WallpaperEngine/Maths.h
+    src/WallpaperEngine/Maths.cpp)
 
 if(BUILD_TESTING)
     add_executable(

@@ -21,38 +21,6 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
-using JSON = WallpaperEngine::Data::JSON::JSON;
-
-namespace {
-Render::CObject* createImageObject (CScene& scene, const Image& imageData) {
-    auto* image = new Objects::CImage (scene, imageData);
-    try {
-	image->setup ();
-    } catch (std::runtime_error&) {
-	sLog.error ("Cannot setup image ", image->getImage ().name);
-	delete image;
-	return nullptr;
-    }
-    return image;
-}
-
-Render::CObject* createParticleObject (CScene& scene, const Particle& particleData) {
-    if (scene.getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
-	sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
-	return nullptr;
-    }
-
-    auto* particle = new Objects::CParticle (scene, particleData);
-    try {
-	particle->setup ();
-    } catch (std::runtime_error&) {
-	sLog.error ("Cannot setup particle ", particle->getParticle ().name);
-	delete particle;
-	return nullptr;
-    }
-    return particle;
-}
-}
 
 CScene::CScene (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
@@ -61,6 +29,8 @@ CScene::CScene (
     // caller should check this, if not a std::bad_cast is good to throw
     auto scene = wallpaper.as<Scene> ();
 
+    // setup scripting engine
+    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this);
     // setup the scene camera
     this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 
@@ -129,8 +99,6 @@ CScene::CScene (
     for (const auto& object : scene->objects) {
 	this->addObjectToRenderOrder (*object);
     }
-
-    this->collectScriptedValues ();
 
     // create extra framebuffers for the bloom effect
     this->_rt_4FrameBuffer = this->create (
@@ -261,24 +229,31 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
     Render::CObject* renderObject = nullptr;
 
     if (object.is<Image> ()) {
-	renderObject = createImageObject (*this, *object.as<Image> ());
+	renderObject = new Objects::CImage (*this, *object.as<Image> ());
     } else if (object.is<Sound> ()) {
 	renderObject = new Objects::CSound (*this, *object.as<Sound> ());
     } else if (object.is<Text> ()) {
-	auto* text = new Objects::CText (*this, *object.as<Text> ());
-	try {
-	    text->setup ();
-	} catch (std::runtime_error&) {
-	    sLog.error ("Cannot setup text ", text->getObject ().name);
-	    delete text;
+	renderObject = new Objects::CText (*this, *object.as<Text> ());
+    } else if (object.is<Particle> ()) {
+	const auto& particleData = *object.as<Particle> ();
+
+	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+	    sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
 	    return nullptr;
 	}
-	renderObject = text;
-    } else if (object.is<Particle> ()) {
-	renderObject = createParticleObject (*this, *object.as<Particle> ());
+
+	renderObject = new Objects::CParticle (*this, particleData);
     } else {
-	sLog.debug ("Unknown object type, creating placeholder, empty object: ", object.id);
+	sLog.error ("Unknown object type, creating placeholder, empty object: ", object.id);
 	renderObject = new CObject (*this, object);
+    }
+
+    try {
+	renderObject->setup ();
+    } catch (const std::exception& e) {
+	sLog.error ("Failed to setup object ", object.id, ": ", e.what ());
+	delete renderObject;
+	renderObject = nullptr;
     }
 
     return renderObject;
@@ -319,77 +294,12 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
-void CScene::registerScriptedValue (const UserSettingUniquePtr& setting) {
-    if (!setting || !setting->value) {
-	return;
-    }
-
-    auto* scripted = dynamic_cast<ScriptedDynamicValue*> (setting->value.get ());
-    if (!scripted) {
-	return;
-    }
-
-    if (std::ranges::find (this->m_scriptedValues, scripted) == this->m_scriptedValues.end ()) {
-	this->m_scriptedValues.emplace_back (scripted);
-    }
-}
-
-void CScene::collectScriptedValues () {
-    this->m_scriptedValues.clear ();
-
-    for (const auto& object : this->getScene ().objects) {
-	this->registerScriptedValue (object->origin);
-	this->registerScriptedValue (object->groupScale);
-	this->registerScriptedValue (object->groupAngles);
-	this->registerScriptedValue (object->groupVisible);
-
-	if (object->is<Image> ()) {
-	    const auto* image = object->as<Image> ();
-	    this->registerScriptedValue (image->scale);
-	    this->registerScriptedValue (image->angles);
-	    this->registerScriptedValue (image->visible);
-	    this->registerScriptedValue (image->alpha);
-	    this->registerScriptedValue (image->color);
-	    this->registerScriptedValue (image->parallaxDepth);
-
-	    for (const auto& effect : image->effects) {
-		this->registerScriptedValue (effect->visible);
-		for (const auto& pass : effect->passOverrides) {
-		    for (const auto& constant : pass->constants | std::views::values) {
-			this->registerScriptedValue (constant);
-		    }
-		}
-	    }
-	} else if (object->is<Particle> ()) {
-	    const auto* particle = object->as<Particle> ();
-	    this->registerScriptedValue (particle->scale);
-	    this->registerScriptedValue (particle->angles);
-	    this->registerScriptedValue (particle->visible);
-	    this->registerScriptedValue (particle->parallaxDepth);
-	} else if (object->is<Text> ()) {
-	    const auto* text = object->as<Text> ();
-	    this->registerScriptedValue (text->visible);
-	    this->registerScriptedValue (text->color);
-	    this->registerScriptedValue (text->alpha);
-	    this->registerScriptedValue (text->scale);
-	    this->registerScriptedValue (text->pointSize);
-	}
-    }
-}
-
-void CScene::updateScriptedValues () {
-    for (const auto& scripted : this->m_scriptedValues) {
-	scripted->reevaluate (this);
-    }
-}
-
+ScriptEngine& CScene::getScriptEngine () const { return *this->m_scriptEngine; }
 Camera& CScene::getCamera () const { return *this->m_camera; }
 
 void CScene::renderFrame (const glm::ivec4& viewport) {
     // ensure the virtual mouse position is up to date
     this->updateMouse (viewport);
-
-    this->updateScriptedValues ();
 
     // update the parallax position if required
     if (this->getScene ().camera.parallax.enabled->value->getBool ()
@@ -404,6 +314,9 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	this->m_parallaxDisplacement
 	    = glm::mix (this->m_parallaxDisplacement, (centeredMouse * amount) * influence, delay);
     }
+
+    // run a tick in the javascript logic
+    this->getScriptEngine ().tick ();
 
     // update main textures for images
     for (const auto& cur : this->m_objectsByRenderOrder) {

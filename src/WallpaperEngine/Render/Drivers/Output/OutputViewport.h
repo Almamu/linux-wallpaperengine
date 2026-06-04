@@ -13,9 +13,9 @@ public:
     glm::ivec4 viewport;
     std::string name;
     /** Global position of this viewport in the combined desktop coordinate space */
-    glm::ivec2 globalPosition = {0, 0};
+    glm::ivec2 globalPosition = { 0, 0 };
     /** Logical (unscaled) size in the same coordinate space as globalPosition */
-    glm::ivec2 logicalSize = {0, 0};
+    glm::ivec2 logicalSize = { 0, 0 };
 
     /** Whether this viewport is single in the framebuffer or shares space with more viewports */
     bool single;

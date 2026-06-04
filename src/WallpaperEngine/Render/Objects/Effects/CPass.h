@@ -31,11 +31,11 @@ public:
     );
     ~CPass ();
 
-	    void render ();
+    void render ();
 
-	    void setDestination (std::shared_ptr<const CFBO> drawTo);
-	    void setInput (std::shared_ptr<const TextureProvider> input);
-	    void setPreviousInput (std::shared_ptr<const TextureProvider> input);
+    void setDestination (std::shared_ptr<const CFBO> drawTo);
+    void setInput (std::shared_ptr<const TextureProvider> input);
+    void setPreviousInput (std::shared_ptr<const TextureProvider> input);
     void setTexCoord (GLuint texcoord);
     void setPosition (GLuint position);
     void setModelViewProjectionMatrix (const glm::mat4* projection);
@@ -192,10 +192,10 @@ private:
 
     Render::Shaders::Shader* m_shader = nullptr;
 
-	    std::shared_ptr<const CFBO> m_drawTo = nullptr;
-	    std::shared_ptr<const TextureProvider> m_input = nullptr;
-	    std::shared_ptr<const TextureProvider> m_previousInput = nullptr;
-	    glm::vec4 m_texture0Resolution = {};
+    std::shared_ptr<const CFBO> m_drawTo = nullptr;
+    std::shared_ptr<const TextureProvider> m_input = nullptr;
+    std::shared_ptr<const TextureProvider> m_previousInput = nullptr;
+    glm::vec4 m_texture0Resolution = {};
 
     GLuint m_programID;
 
@@ -204,6 +204,7 @@ private:
     GLint g_Texture0Translation;
     GLuint a_TexCoord;
     GLuint a_Position;
+    GLuint m_vao;
 
     // Custom geometry callbacks (for particles, etc.)
     GeometryCallback m_setupAttribsCallback;

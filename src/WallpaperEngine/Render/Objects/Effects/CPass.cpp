@@ -51,27 +51,35 @@ CPass::CPass (
     Helpers::ContextAware (renderable), m_renderable (renderable), m_fboProvider (std::move (fboProvider)),
     m_pass (pass), m_binds (binds.has_value () ? binds.value ().get () : DEFAULT_BINDS),
     m_override (override.has_value () ? override.value ().get () : DEFAULT_OVERRIDE), m_target (target),
-    m_blendingmode (pass.blending) {
+    m_blendingmode (pass.blending), m_vao (GL_NONE) {
     this->setupShaders ();
+    glGenVertexArrays (1, &m_vao);
 }
 
 CPass::~CPass () {
+    glDeleteVertexArrays (1, &m_vao);
+    this->m_vao = GL_NONE;
+
     // destroy shader programs
-    if (!glIsProgram(this->m_programID)) return; // program already invalid or deleted
-
-    GLint shaderCount = 0;
-    glGetProgramiv(this->m_programID, GL_ATTACHED_SHADERS, &shaderCount);
-
-    if (shaderCount > 0) {
-        std::vector<GLuint> attachedShaders(shaderCount);
-        glGetAttachedShaders(this->m_programID, shaderCount, nullptr, attachedShaders.data());
-
-        for (GLuint s : attachedShaders) {
-            if (glIsShader(s)) glDeleteShader(s);
-        }
+    if (!glIsProgram (this->m_programID)) {
+	return; // program already invalid or deleted
     }
 
-    glDeleteProgram(this->m_programID);
+    GLint shaderCount = 0;
+    glGetProgramiv (this->m_programID, GL_ATTACHED_SHADERS, &shaderCount);
+
+    if (shaderCount > 0) {
+	std::vector<GLuint> attachedShaders (shaderCount);
+	glGetAttachedShaders (this->m_programID, shaderCount, nullptr, attachedShaders.data ());
+
+	for (GLuint s : attachedShaders) {
+	    if (glIsShader (s)) {
+		glDeleteShader (s);
+	    }
+	}
+    }
+
+    glDeleteProgram (this->m_programID);
     this->m_programID = 0;
 }
 
@@ -201,15 +209,15 @@ void CPass::setupRenderTexture () {
 std::shared_ptr<const TextureProvider> CPass::resolveTexture0 () {
     auto texture0 = this->resolveTexture (this->m_input, 0, this->m_input);
     if (const auto texture0Override = this->m_textures.find (0); texture0Override != this->m_textures.end ()) {
-	texture0 = texture0Override->second == nullptr ? (this->m_previousInput ?: this->m_input) : texture0Override->second;
+	texture0
+	    = texture0Override->second == nullptr ? (this->m_previousInput ?: this->m_input) : texture0Override->second;
     }
 
     return texture0;
 }
 
-CPass::TextureAnimationState CPass::resolveTextureAnimationState (
-    const std::shared_ptr<const TextureProvider>& texture
-) const {
+CPass::TextureAnimationState
+CPass::resolveTextureAnimationState (const std::shared_ptr<const TextureProvider>& texture) const {
     TextureAnimationState state;
 
     if (texture == nullptr || !texture->isAnimated ()) {
@@ -217,8 +225,7 @@ CPass::TextureAnimationState CPass::resolveTextureAnimationState (
     }
 
     double currentRenderTime = fmod (
-	static_cast<double> (this->getContext ().getDriver ().getRenderTime ()),
-	this->m_renderable.getAnimationTime ()
+	static_cast<double> (this->getContext ().getDriver ().getRenderTime ()), this->m_renderable.getAnimationTime ()
     );
 
     for (const auto& frameCur : texture->getFrames ()) {
@@ -242,9 +249,7 @@ CPass::TextureAnimationState CPass::resolveTextureAnimationState (
     return state;
 }
 
-void CPass::bindTextureUnit (
-    int index, const std::shared_ptr<const TextureProvider>& texture, uint32_t frame
-) const {
+void CPass::bindTextureUnit (int index, const std::shared_ptr<const TextureProvider>& texture, uint32_t frame) const {
     if (texture == nullptr) {
 	return;
     }
@@ -253,9 +258,7 @@ void CPass::bindTextureUnit (
     glBindTexture (GL_TEXTURE_2D, texture->getTextureID (frame));
 }
 
-void CPass::bindTextureOverrides (
-    uint32_t currentTexture, std::shared_ptr<const TextureProvider>& texture0
-) const {
+void CPass::bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const TextureProvider>& texture0) const {
     for (const auto& [index, expectedTexture] : this->m_textures) {
 	auto texture = expectedTexture == nullptr ? (this->m_previousInput ?: this->m_input) : expectedTexture;
 	if (texture == nullptr) {
@@ -396,11 +399,14 @@ void CPass::cleanupRenderSetup () {
 }
 
 void CPass::render () {
+    // set the VAO for now
+    glBindVertexArray (this->m_vao);
+
     const auto& debug = this->getContext ().getApp ().getContext ().settings.render.debug;
     if (debug.passLog) {
 	sLog.out (
-	    "Render pass object=", this->m_renderable.getId (), " shader=", this->m_pass.shader, " target=",
-	    this->m_target.has_value () ? this->m_target.value ().get () : std::string ("<screen/local>"),
+	    "Render pass object=", this->m_renderable.getId (), " shader=", this->m_pass.shader,
+	    " target=", this->m_target.has_value () ? this->m_target.value ().get () : std::string ("<screen/local>"),
 	    " drawTo=", this->m_drawTo ? this->m_drawTo->getName () : std::string ("<null>"),
 	    " drawSize=", textureSizeLabel (this->m_drawTo), " inputSize=", textureSizeLabel (this->m_input)
 	);
@@ -411,16 +417,18 @@ void CPass::render () {
 	    }
 
 	    switch (uniform->second->type) {
-		case Vector3: {
-		    const auto* v = static_cast<const glm::vec3*> (uniform->second->value);
-		    sLog.out ("  uniform ", uniformName, "=", v->x, " ", v->y, " ", v->z);
-		    break;
-		}
-		case Float: {
-		    const auto* v = static_cast<const float*> (uniform->second->value);
-		    sLog.out ("  uniform ", uniformName, "=", *v);
-		    break;
-		}
+		case Vector3:
+		    {
+			const auto* v = static_cast<const glm::vec3*> (uniform->second->value);
+			sLog.out ("  uniform ", uniformName, "=", v->x, " ", v->y, " ", v->z);
+			break;
+		    }
+		case Float:
+		    {
+			const auto* v = static_cast<const float*> (uniform->second->value);
+			sLog.out ("  uniform ", uniformName, "=", *v);
+			break;
+		    }
 		default:
 		    break;
 	    }
@@ -561,8 +569,8 @@ void CPass::setupShaders () {
     }
 
     this->m_shader = new Render::Shaders::Shader (
-	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos,
-	passTextures, this->m_override.textures, this->m_override.constants
+	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos, passTextures,
+	this->m_override.textures, this->m_override.constants
     );
 
     const auto [vertex, fragment]
@@ -746,8 +754,8 @@ void CPass::setupUniforms () {
     const auto& recorder = this->m_renderable.getScene ().getAudioContext ().getRecorder ();
 
     // lighting variables
-    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient);
-    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight);
+    this->addUniform ("g_LightAmbientColor", sceneData.colors.ambient->value->getVec3 ());
+    this->addUniform ("g_LightSkylightColor", sceneData.colors.skylight->value->getVec3 ());
     // register variables like brightness and alpha with some default value
     this->addUniform ("g_Brightness", renderable.getBrightness ());
     this->addUniform ("g_UserAlpha", renderable.getUserAlpha ());

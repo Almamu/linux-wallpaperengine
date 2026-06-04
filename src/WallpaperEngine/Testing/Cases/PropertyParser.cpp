@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "WallpaperEngine/Data/Parsers/PropertyParser.h"
 #include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Data/Parsers/PropertyParser.h"
 
 using WallpaperEngine::Data::JSON::JSON;
 using WallpaperEngine::Data::Model::DynamicValue;

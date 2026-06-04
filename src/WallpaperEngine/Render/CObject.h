@@ -11,29 +11,12 @@ class CScene;
 }
 
 namespace WallpaperEngine::Render {
-class CObject : public Helpers::ContextAware {
+class CObject : public Helpers::ContextAware, public TypeCaster {
 public:
-    template <class T> [[nodiscard]] const T* as () const {
-	if (is<T> ()) {
-	    return static_cast<const T*> (this);
-	}
-
-	throw std::bad_cast ();
-    }
-
-    template <class T> [[nodiscard]] T* as () {
-	if (is<T> ()) {
-	    return static_cast<T*> (this);
-	}
-
-	throw std::bad_cast ();
-    }
-
-    template <class T> [[nodiscard]] bool is () const { return typeid (*this) == typeid (T); }
-
     CObject (Wallpapers::CScene& scene, const Object& object);
     virtual ~CObject () override = default;
 
+    virtual void setup ();
     virtual void render ();
 
     [[nodiscard]] Wallpapers::CScene& getScene () const;

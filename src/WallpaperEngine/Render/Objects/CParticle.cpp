@@ -1,6 +1,8 @@
 #include "CParticle.h"
+
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Maths.h"
 #include "WallpaperEngine/Render/Utils/NoiseUtils.h"
 
 #include <GL/glew.h>
@@ -15,41 +17,14 @@ using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render::Utils;
 using namespace WallpaperEngine::Data::Model;
 
-namespace {
-// Helper: Random float in range
-inline float randomFloat (std::mt19937& rng, float min, float max) {
-    if (max < min) {
-	std::swap (min, max);
-    }
-    std::uniform_real_distribution<float> dist (min, max);
-    return dist (rng);
-}
-
-// Helper: Random vec3 in range
-inline glm::vec3 randomVec3 (std::mt19937& rng, const glm::vec3& min, const glm::vec3& max) {
-    return glm::vec3 (
-	randomFloat (rng, min.x, max.x), randomFloat (rng, min.y, max.y), randomFloat (rng, min.z, max.z)
-    );
-}
-
-// Helper: Linear interpolation
-inline float lerp (float t, float a, float b) { return a + t * (b - a); }
-
-// Helper: Fade value change over lifetime
-inline float fadeValue (float life, float startTime, float endTime, float startValue, float endValue) {
-    if (life <= startTime) {
-	return startValue;
-    } else if (life >= endTime) {
-	return endValue;
-    } else {
-	float t = (life - startTime) / (endTime - startTime);
-	return lerp (t, startValue, endValue);
-    }
-}
-}
-
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
-    CRenderable (scene, particle, *particle.material->material), m_particle (particle) {
+    CObject (scene, particle), CRenderable (scene, particle, *particle.material->material),
+    ScriptableObject (scene, particle), m_particle (particle) {
+    this->registerProperty ("scale", *particle.scale->value);
+    this->registerProperty ("angles", *particle.angles->value);
+    this->registerProperty ("visible", *particle.visible->value);
+    this->registerProperty ("parallaxDepth", *particle.parallaxDepth->value);
+
     this->detectTexture ();
     // Initialize random number generator with time-based seed
     std::random_device rd;
@@ -412,132 +387,136 @@ EmitterFunc CParticle::createBoxEmitter (const ParticleEmitter& emitter) {
     bool limitOnePerFrame = (emitter.flags & 2) != 0;
     bool randomPeriodicEmission = (emitter.flags & 4) != 0;
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
-	    randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
-	    periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
-	    instantaneousEmitted
-	    = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
-	if (count >= particles.size ()) {
-	    return;
-	}
-
-	// Handle delay
-	if (delayTimer > 0.0f) {
-	    delayTimer -= dt;
-	    return;
-	}
-
-	// Handle duration
-	if (emitter.duration > 0.0f) {
-	    durationTimer += dt;
-	    if (durationTimer >= emitter.duration) {
+    return
+	[this, emitter, transformedEmitterOrigin, controlPointIndex, rate, flippedDirections, limitOnePerFrame,
+	 randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
+	 periodicTimer = 0.0f, periodicDuration = 0.0f, periodicDelay = 0.0f, emitting = false,
+	 instantaneousEmitted = false] (std::vector<ParticleInstance>& particles, uint32_t& count, float dt) mutable {
+	    if (count >= particles.size ()) {
 		return;
 	    }
-	}
 
-	// Handle random periodic emission
-	if (randomPeriodicEmission) {
-	    periodicTimer += dt;
+	    // Handle delay
+	    if (delayTimer > 0.0f) {
+		delayTimer -= dt;
+		return;
+	    }
 
-	    if (!emitting) {
-		if (periodicTimer >= periodicDelay) {
-		    emitting = true;
-		    periodicTimer = 0.0f;
-		    periodicDuration = randomFloat (m_rng, emitter.minPeriodicDuration, emitter.maxPeriodicDuration);
+	    // Handle duration
+	    if (emitter.duration > 0.0f) {
+		durationTimer += dt;
+		if (durationTimer >= emitter.duration) {
+		    return;
+		}
+	    }
+
+	    // Handle random periodic emission
+	    if (randomPeriodicEmission) {
+		periodicTimer += dt;
+
+		if (!emitting) {
+		    if (periodicTimer >= periodicDelay) {
+			emitting = true;
+			periodicTimer = 0.0f;
+			periodicDuration = WallpaperEngine::Maths::randomFloat (
+			    m_rng, emitter.minPeriodicDuration, emitter.maxPeriodicDuration
+			);
+		    } else {
+			return;
+		    }
 		} else {
-		    return;
+		    if (periodicTimer >= periodicDuration) {
+			emitting = false;
+			periodicTimer = 0.0f;
+			periodicDelay = WallpaperEngine::Maths::randomFloat (
+			    m_rng, emitter.minPeriodicDelay, emitter.maxPeriodicDelay
+			);
+			return;
+		    }
 		}
-	    } else {
-		if (periodicTimer >= periodicDuration) {
-		    emitting = false;
-		    periodicTimer = 0.0f;
-		    periodicDelay = randomFloat (m_rng, emitter.minPeriodicDelay, emitter.maxPeriodicDelay);
-		    return;
+	    }
+
+	    // TODO: Audio processing (audioProcessingMode, audioProcessingBounds, etc.)
+
+	    // Handle instantaneous emission
+	    uint32_t toEmit = 0;
+	    if (emitter.instantaneous > 0 && !instantaneousEmitted) {
+		toEmit = emitter.instantaneous;
+		instantaneousEmitted = true;
+	    }
+
+	    // Rate-based emission with optional cap at 1 per frame
+	    if (emitter.rate > 0.0f) {
+		emissionTimer += dt * rate;
+		uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
+		emissionTimer -= static_cast<float> (rateEmit);
+		// limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
+		if (limitOnePerFrame && rateEmit > 1) {
+		    rateEmit = 1;
 		}
-	    }
-	}
-
-	// TODO: Audio processing (audioProcessingMode, audioProcessingBounds, etc.)
-
-	// Handle instantaneous emission
-	uint32_t toEmit = 0;
-	if (emitter.instantaneous > 0 && !instantaneousEmitted) {
-	    toEmit = emitter.instantaneous;
-	    instantaneousEmitted = true;
-	}
-
-	// Rate-based emission with optional cap at 1 per frame
-	if (emitter.rate > 0.0f) {
-	    emissionTimer += dt * rate;
-	    uint32_t rateEmit = static_cast<uint32_t> (emissionTimer);
-	    emissionTimer -= static_cast<float> (rateEmit);
-	    // limitOnePerFrame (flags bit 1): cap at 1 to prevent rope artifacts
-	    if (limitOnePerFrame && rateEmit > 1) {
-		rateEmit = 1;
-	    }
-	    toEmit += rateEmit;
-	}
-
-	// Emit particles
-	for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
-	    auto& p = particles[count];
-
-	    glm::vec3 spawnOrigin = transformedEmitterOrigin;
-	    if (controlPointIndex >= 0 && controlPointIndex < static_cast<int> (m_controlPoints.size ())) {
-		spawnOrigin += m_controlPoints[controlPointIndex].position;
+		toEmit += rateEmit;
 	    }
 
-	    // Generate random position within box volume centered on origin
-	    // This creates a centered box (or hollow box if distanceMin > 0)
-	    glm::vec3 randomPos;
-	    for (int axis = 0; axis < 3; axis++) {
-		float minDist = emitter.distanceMin[axis];
-		float maxDist = emitter.distanceMax[axis];
-		// Generate value in [minDist, maxDist]
-		float dist = randomFloat (m_rng, minDist, maxDist);
-		// Randomly flip sign to center the distribution
-		if (randomFloat (m_rng, 0.0f, 1.0f) < 0.5f) {
-		    dist = -dist;
+	    // Emit particles
+	    for (uint32_t i = 0; i < toEmit && count < particles.size (); i++) {
+		auto& p = particles[count];
+
+		glm::vec3 spawnOrigin = transformedEmitterOrigin;
+		if (controlPointIndex >= 0 && controlPointIndex < static_cast<int> (m_controlPoints.size ())) {
+		    spawnOrigin += m_controlPoints[controlPointIndex].position;
 		}
-		randomPos[axis] = dist;
+
+		// Generate random position within box volume centered on origin
+		// This creates a centered box (or hollow box if distanceMin > 0)
+		glm::vec3 randomPos;
+		for (int axis = 0; axis < 3; axis++) {
+		    float minDist = emitter.distanceMin[axis];
+		    float maxDist = emitter.distanceMax[axis];
+		    // Generate value in [minDist, maxDist]
+		    float dist = WallpaperEngine::Maths::randomFloat (m_rng, minDist, maxDist);
+		    // Randomly flip sign to center the distribution
+		    if (WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) < 0.5f) {
+			dist = -dist;
+		    }
+		    randomPos[axis] = dist;
+		}
+		randomPos *= flippedDirections;
+
+		p.position = spawnOrigin + randomPos;
+
+		// Emitter does not set velocity - initializers handle that
+		p.velocity = glm::vec3 (0.0f);
+		p.acceleration = glm::vec3 (0.0f);
+		p.rotation = glm::vec3 (0.0f);
+		p.angularVelocity = glm::vec3 (0.0f);
+		p.angularAcceleration = glm::vec3 (0.0f);
+
+		p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
+		p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
+		p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
+		p.lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
+		p.age = 0.0f;
+		p.alive = true;
+		p.frame = -1.0f;
+
+		p.initial.color = p.color;
+		p.initial.alpha = p.alpha;
+		p.initial.size = p.size;
+		p.initial.lifetime = p.lifetime;
+
+		// Reset oscillator state for reused particles
+		p.oscillateAlpha = {};
+		p.oscillateSize = {};
+		p.oscillatePosition = {};
+
+		// Apply initializers
+		for (auto& init : m_initializers) {
+		    init (p);
+		}
+
+		count++;
 	    }
-	    randomPos *= flippedDirections;
-
-	    p.position = spawnOrigin + randomPos;
-
-	    // Emitter does not set velocity - initializers handle that
-	    p.velocity = glm::vec3 (0.0f);
-	    p.acceleration = glm::vec3 (0.0f);
-	    p.rotation = glm::vec3 (0.0f);
-	    p.angularVelocity = glm::vec3 (0.0f);
-	    p.angularAcceleration = glm::vec3 (0.0f);
-
-	    p.color = glm::vec3 (1.0f) * m_particle.instanceOverride.colorn->value->getVec3 ();
-	    p.alpha = 1.0f * m_particle.instanceOverride.alpha->value->getFloat ();
-	    p.size = 20.0f * m_particle.instanceOverride.size->value->getFloat ();
-	    p.lifetime = 1.0f * m_particle.instanceOverride.lifetime->value->getFloat ();
-	    p.age = 0.0f;
-	    p.alive = true;
-	    p.frame = -1.0f;
-
-	    p.initial.color = p.color;
-	    p.initial.alpha = p.alpha;
-	    p.initial.size = p.size;
-	    p.initial.lifetime = p.lifetime;
-
-	    // Reset oscillator state for reused particles
-	    p.oscillateAlpha = {};
-	    p.oscillateSize = {};
-	    p.oscillatePosition = {};
-
-	    // Apply initializers
-	    for (auto& init : m_initializers) {
-		init (p);
-	    }
-
-	    count++;
-	}
-    };
+	};
 }
 
 EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
@@ -598,24 +577,25 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 	    // Perspective particles (flags & 4 != 0): use 3D spherical shell distribution
 	    if ((m_particle.flags & 4) == 0) {
 		// 2D disk distribution with random Z offset
-		float angle = randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
+		float angle = WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
 		float minRadius = emitter.distanceMin.x;
 		float maxRadius = emitter.distanceMax.x;
 
 		// Use sqrt for uniform area distribution in annulus
 		float minRadiusSq = minRadius * minRadius;
 		float maxRadiusSq = maxRadius * maxRadius;
-		float radiusXY = std::sqrt (randomFloat (m_rng, minRadiusSq, maxRadiusSq));
+		float radiusXY = std::sqrt (WallpaperEngine::Maths::randomFloat (m_rng, minRadiusSq, maxRadiusSq));
 
 		randomPos = glm::vec3 (
-		    radiusXY * std::cos (angle), radiusXY * std::sin (angle), randomFloat (m_rng, -maxRadius, maxRadius)
+		    radiusXY * std::cos (angle), radiusXY * std::sin (angle),
+		    WallpaperEngine::Maths::randomFloat (m_rng, -maxRadius, maxRadius)
 		);
 
 		randomPos *= emitter.directions;
 	    } else {
 		// 3D spherical shell distribution
-		float theta = randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
-		float cosTheta = randomFloat (m_rng, -1.0f, 1.0f);
+		float theta = WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
+		float cosTheta = WallpaperEngine::Maths::randomFloat (m_rng, -1.0f, 1.0f);
 		float sinTheta = std::sqrt (1.0f - cosTheta * cosTheta);
 
 		randomPos = glm::vec3 (sinTheta * std::cos (theta), sinTheta * std::sin (theta), cosTheta);
@@ -625,7 +605,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 		float maxRadius = emitter.distanceMax.x;
 		float minRadiusCubed = minRadius * minRadius * minRadius;
 		float maxRadiusCubed = maxRadius * maxRadius * maxRadius;
-		float radius = std::cbrt (randomFloat (m_rng, minRadiusCubed, maxRadiusCubed));
+		float radius = std::cbrt (WallpaperEngine::Maths::randomFloat (m_rng, minRadiusCubed, maxRadiusCubed));
 
 		randomPos *= radius;
 		randomPos *= emitter.directions;
@@ -648,7 +628,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 		// Velocity pointing outward from ellipsoid (randomPos already includes directions scaling)
 		glm::vec3 direction
 		    = glm::length (randomPos) > 0.0f ? glm::normalize (randomPos) : glm::vec3 (0.0f, 1.0f, 0.0f);
-		float speed = randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
+		float speed = WallpaperEngine::Maths::randomFloat (m_rng, emitter.speedMin, emitter.speedMax);
 		p.velocity = direction * speed;
 	    } else {
 		// No emitter speed specified, velocity will be set by initializers
@@ -735,7 +715,8 @@ InitializerFunc CParticle::createColorRandomInitializer (const ColorRandomInitia
     DynamicValue* colorOverride = m_particle.instanceOverride.colorn->value.get ();
 
     return [this, minValue, maxValue, colorOverride] (ParticleInstance& p) {
-	p.color = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * colorOverride->getVec3 ();
+	p.color = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * colorOverride->getVec3 ();
 	p.initial.color = p.color;
     };
 }
@@ -747,7 +728,7 @@ InitializerFunc CParticle::createSizeRandomInitializer (const SizeRandomInitiali
     DynamicValue* sizeOverride = m_particle.instanceOverride.size->value.get ();
 
     return [this, minValue, maxValue, exponentValue, sizeOverride] (ParticleInstance& p) {
-	float t = randomFloat (m_rng, 0.0f, 1.0f);
+	float t = WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f);
 	float exponent = exponentValue->getFloat ();
 	float min = minValue->getFloat ();
 	float max = maxValue->getFloat ();
@@ -765,7 +746,8 @@ InitializerFunc CParticle::createAlphaRandomInitializer (const AlphaRandomInitia
     DynamicValue* alphaOverride = m_particle.instanceOverride.alpha->value.get ();
 
     return [this, minValue, maxValue, alphaOverride] (ParticleInstance& p) {
-	p.alpha = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * alphaOverride->getFloat ();
+	p.alpha = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ())
+	    * alphaOverride->getFloat ();
 	p.initial.alpha = p.alpha;
     };
 }
@@ -776,7 +758,8 @@ InitializerFunc CParticle::createLifetimeRandomInitializer (const LifetimeRandom
     DynamicValue* lifetimeOverride = m_particle.instanceOverride.lifetime->value.get ();
 
     return [this, minValue, maxValue, lifetimeOverride] (ParticleInstance& p) {
-	p.lifetime = randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ()) * lifetimeOverride->getFloat ();
+	p.lifetime = WallpaperEngine::Maths::randomFloat (m_rng, minValue->getFloat (), maxValue->getFloat ())
+	    * lifetimeOverride->getFloat ();
 	p.initial.lifetime = p.lifetime;
     };
 }
@@ -787,7 +770,8 @@ InitializerFunc CParticle::createVelocityRandomInitializer (const VelocityRandom
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
     return [this, minValue, maxValue, speedOverride] (ParticleInstance& p) {
-	glm::vec3 vel = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * speedOverride->getFloat ();
+	glm::vec3 vel = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * speedOverride->getFloat ();
 	vel.y = -vel.y;
 	p.velocity += vel;
     };
@@ -799,7 +783,8 @@ InitializerFunc CParticle::createRotationRandomInitializer (const RotationRandom
     DynamicValue* speedOverride = m_particle.instanceOverride.speed->value.get ();
 
     return [this, minValue, maxValue, speedOverride] (ParticleInstance& p) {
-	p.rotation = randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ()) * speedOverride->getFloat ();
+	p.rotation = WallpaperEngine::Maths::randomVec3 (m_rng, minValue->getVec3 (), maxValue->getVec3 ())
+	    * speedOverride->getFloat ();
     };
 }
 
@@ -820,7 +805,7 @@ InitializerFunc CParticle::createAngularVelocityRandomInitializer (const Angular
 	// exponent >= 2: bias towards min
 	glm::vec3 result;
 	for (int i = 0; i < 3; i++) {
-	    float t = randomFloat (m_rng, 0.0f, 1.0f);
+	    float t = WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f);
 	    t = std::pow (t, exponent);
 	    result[i] = minVec[i] + t * (maxVec[i] - minVec[i]);
 	}
@@ -862,7 +847,7 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 	    right = glm::vec3 (1.0f, 0.0f, 0.0f);
 	}
 
-	float speed = randomFloat (m_rng, speedMin->getFloat (), speedMax->getFloat ());
+	float speed = WallpaperEngine::Maths::randomFloat (m_rng, speedMin->getFloat (), speedMax->getFloat ());
 	float scale = scaleVal->getFloat ();
 	float offset = offsetVal->getFloat ();
 	float timeScale = timeScaleVal->getFloat ();
@@ -877,7 +862,7 @@ InitializerFunc CParticle::createTurbulentVelocityRandomInitializer (const Turbu
 	noisePos += glm::vec3 (static_cast<float> (m_time) * timeScale);
 
 	// Phase adds per-particle randomization to noise position
-	float phase = randomFloat (m_rng, phaseMin, phaseMax);
+	float phase = WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax);
 	glm::vec3 samplePos = noisePos + glm::vec3 (phase, phase * 0.7f, phase * 1.3f);
 
 	// Sample curl noise for direction and normalize
@@ -965,7 +950,7 @@ CParticle::createMapSequenceAroundControlPointInitializer (const MapSequenceArou
 	// Set velocity based on angle and speed range
 	glm::vec3 speedMin = speedMinValue->getVec3 ();
 	glm::vec3 speedMax = speedMaxValue->getVec3 ();
-	glm::vec3 speed = randomVec3 (m_rng, speedMin, speedMax);
+	glm::vec3 speed = WallpaperEngine::Maths::randomVec3 (m_rng, speedMin, speedMax);
 
 	// Flip Y before rotation to convert to centered space
 	speed.y = -speed.y;
@@ -1134,10 +1119,10 @@ OperatorFunc CParticle::createAlphaFadeOperator (const AlphaFadeOperator& op) {
 		float life = p.getLifetimePos ();
 
 		if (life <= fadeInTime) {
-		    float fade = fadeValue (life, 0.0f, fadeInTime, 0.0f, 1.0f);
+		    float fade = WallpaperEngine::Maths::fadeValue (life, 0.0f, fadeInTime, 0.0f, 1.0f);
 		    p.alpha = p.initial.alpha * fade;
 		} else if (life > fadeOutTime) {
-		    float fade = 1.0f - fadeValue (life, fadeOutTime, 1.0f, 0.0f, 1.0f);
+		    float fade = 1.0f - WallpaperEngine::Maths::fadeValue (life, fadeOutTime, 1.0f, 0.0f, 1.0f);
 		    p.alpha = p.initial.alpha * fade;
 		} else {
 		    p.alpha = p.initial.alpha;
@@ -1171,7 +1156,7 @@ OperatorFunc CParticle::createSizeChangeOperator (const SizeChangeOperator& op) 
 		}
 
 		float life = p.getLifetimePos ();
-		float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
+		float multiplier = WallpaperEngine::Maths::fadeValue (life, startTime, endTime, startValue, endValue);
 		p.size = p.initial.size * multiplier;
 
 		// Update oscillator base so oscillateSize combines properly
@@ -1202,7 +1187,7 @@ OperatorFunc CParticle::createAlphaChangeOperator (const AlphaChangeOperator& op
 		}
 
 		float life = p.getLifetimePos ();
-		float multiplier = fadeValue (life, startTime, endTime, startValue, endValue);
+		float multiplier = WallpaperEngine::Maths::fadeValue (life, startTime, endTime, startValue, endValue);
 		p.alpha = p.initial.alpha * multiplier;
 
 		// Update oscillator base so oscillateAlpha combines properly
@@ -1235,9 +1220,9 @@ OperatorFunc CParticle::createColorChangeOperator (const ColorChangeOperator& op
 		float life = p.getLifetimePos ();
 
 		glm::vec3 color;
-		color.r = fadeValue (life, startTime, endTime, startValue.r, endValue.r);
-		color.g = fadeValue (life, startTime, endTime, startValue.g, endValue.g);
-		color.b = fadeValue (life, startTime, endTime, startValue.b, endValue.b);
+		color.r = WallpaperEngine::Maths::fadeValue (life, startTime, endTime, startValue.r, endValue.r);
+		color.g = WallpaperEngine::Maths::fadeValue (life, startTime, endTime, startValue.g, endValue.g);
+		color.b = WallpaperEngine::Maths::fadeValue (life, startTime, endTime, startValue.b, endValue.b);
 
 		p.color = p.initial.color * color;
 	    }
@@ -1262,8 +1247,10 @@ OperatorFunc CParticle::createTurbulenceOperator (const TurbulenceOperator& op) 
     // DynamicValue* audioFreqEndValue = op.audioProcessingFrequencyEnd->value.get ();
 
     // Phase and speed are randomized once per operator instance, not per particle
-    const float phase = randomFloat (m_rng, phaseMinValue->getFloat (), phaseMaxValue->getFloat ());
-    const float turbSpeed = randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
+    const float phase
+	= WallpaperEngine::Maths::randomFloat (m_rng, phaseMinValue->getFloat (), phaseMaxValue->getFloat ());
+    const float turbSpeed
+	= WallpaperEngine::Maths::randomFloat (m_rng, speedMinValue->getFloat (), speedMaxValue->getFloat ());
 
     return [scaleValue, timeScaleValue, maskValue, speedOverride, phase, turbSpeed] (
 	       std::vector<ParticleInstance>& particles, uint32_t count, const std::vector<ControlPointData>&,
@@ -1530,9 +1517,10 @@ OperatorFunc CParticle::createOscillateAlphaOperator (const OscillateAlphaOperat
 
 		// Initialize per-particle oscillator values on first use
 		if (!p.oscillateAlpha.initialized) {
-		    p.oscillateAlpha.frequency = randomFloat (m_rng, freqMin, freqMax);
-		    p.oscillateAlpha.scale = randomFloat (m_rng, scaleMin, scaleMax);
-		    p.oscillateAlpha.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+		    p.oscillateAlpha.frequency = WallpaperEngine::Maths::randomFloat (m_rng, freqMin, freqMax);
+		    p.oscillateAlpha.scale = WallpaperEngine::Maths::randomFloat (m_rng, scaleMin, scaleMax);
+		    p.oscillateAlpha.phase
+			= WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
 		    p.oscillateAlpha.base = p.alpha; // Capture initial base
 		    p.oscillateAlpha.initialized = true;
 		}
@@ -1573,9 +1561,10 @@ OperatorFunc CParticle::createOscillateSizeOperator (const OscillateSizeOperator
 
 		// Initialize per-particle oscillator values on first use
 		if (!p.oscillateSize.initialized) {
-		    p.oscillateSize.frequency = randomFloat (m_rng, freqMin, freqMax);
-		    p.oscillateSize.scale = randomFloat (m_rng, scaleMin, scaleMax);
-		    p.oscillateSize.phase = randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+		    p.oscillateSize.frequency = WallpaperEngine::Maths::randomFloat (m_rng, freqMin, freqMax);
+		    p.oscillateSize.scale = WallpaperEngine::Maths::randomFloat (m_rng, scaleMin, scaleMax);
+		    p.oscillateSize.phase
+			= WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
 		    p.oscillateSize.base = p.size; // Capture initial base
 		    p.oscillateSize.initialized = true;
 		}
@@ -1621,10 +1610,10 @@ OperatorFunc CParticle::createOscillatePositionOperator (const OscillatePosition
 	    // Initialize per-particle oscillator values on first use (per axis)
 	    if (!p.oscillatePosition.initialized) {
 		for (int axis = 0; axis < 3; axis++) {
-		    p.oscillatePosition.frequency[axis] = randomFloat (m_rng, freqMin, freqMax);
-		    p.oscillatePosition.scale[axis] = randomFloat (m_rng, scaleMin, scaleMax);
+		    p.oscillatePosition.frequency[axis] = WallpaperEngine::Maths::randomFloat (m_rng, freqMin, freqMax);
+		    p.oscillatePosition.scale[axis] = WallpaperEngine::Maths::randomFloat (m_rng, scaleMin, scaleMax);
 		    p.oscillatePosition.phase[axis]
-			= randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
+			= WallpaperEngine::Maths::randomFloat (m_rng, phaseMin, phaseMax + 2.0f * glm::pi<float> ());
 		}
 		p.oscillatePosition.initialized = true;
 	    }
@@ -2055,7 +2044,7 @@ void CParticle::renderSprites () {
     }
 
 #if !NDEBUG
-    std::string str = "Rendering particles ";
+    std::string str = "Particles ";
     str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
 	+ ")";
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
@@ -2292,7 +2281,7 @@ void CParticle::renderRope () {
     }
 
 #if !NDEBUG
-    std::string str = "Rendering rope particles ";
+    std::string str = "Rope particles ";
     str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
 	+ ")";
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());

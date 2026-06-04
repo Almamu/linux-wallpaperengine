@@ -52,9 +52,8 @@ std::vector<char*> makeArgv (const std::string& program, const std::vector<std::
     return argv;
 }
 
-std::optional<pid_t> spawnProcessWithStdout (
-    const std::string& program, const std::vector<std::string>& args, int& readFd
-) {
+std::optional<pid_t>
+spawnProcessWithStdout (const std::string& program, const std::vector<std::string>& args, int& readFd) {
     int outputPipe[2] {};
     if (pipe (outputPipe) != 0) {
 	return std::nullopt;
@@ -99,9 +98,8 @@ bool waitForProcessUntil (pid_t pid, const std::chrono::steady_clock::time_point
 }
 
 bool pollReadable (int readFd, const std::chrono::steady_clock::time_point& deadline) {
-    const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds> (
-	deadline - std::chrono::steady_clock::now ()
-    );
+    const auto remaining
+	= std::chrono::duration_cast<std::chrono::milliseconds> (deadline - std::chrono::steady_clock::now ());
     if (remaining.count () <= 0) {
 	return false;
     }
@@ -152,9 +150,8 @@ std::string processReadFirstLine (const std::string& program, const std::vector<
     return trimTrailingNewlines (output);
 }
 
-std::vector<char> processReadBytes (
-    const std::string& program, const std::vector<std::string>& args, std::chrono::milliseconds timeout
-) {
+std::vector<char>
+processReadBytes (const std::string& program, const std::vector<std::string>& args, std::chrono::milliseconds timeout) {
     const auto deadline = std::chrono::steady_clock::now () + timeout;
 
     int outputFd = -1;
@@ -310,7 +307,8 @@ std::shared_ptr<const TextureProvider> tryCreateImageTexture (RenderContext& con
     int height = 0;
     int channels = 0;
     if (!stbi_info_from_memory (
-	    reinterpret_cast<const stbi_uc*> (bytes.data ()), static_cast<int> (bytes.size ()), &width, &height, &channels
+	    reinterpret_cast<const stbi_uc*> (bytes.data ()), static_cast<int> (bytes.size ()), &width, &height,
+	    &channels
 	)) {
 	return nullptr;
     }
@@ -344,7 +342,9 @@ std::shared_ptr<const TextureProvider> tryLoadMediaThumbnailUrl (RenderContext& 
 	    bytes = readFileBytes (*path);
 	}
     } else if (artUrl.rfind ("http://", 0) == 0 || artUrl.rfind ("https://", 0) == 0) {
-	bytes = processReadBytes ("curl", { "-L", "-s", "--max-time", "3", "--output", "-", artUrl }, std::chrono::milliseconds (3500));
+	bytes = processReadBytes (
+	    "curl", { "-L", "-s", "--max-time", "3", "--output", "-", artUrl }, std::chrono::milliseconds (3500)
+	);
     }
 
     return tryCreateImageTexture (context, bytes);

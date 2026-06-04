@@ -10,7 +10,7 @@ using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render::Objects {
-class CRenderable : public CObject, public FBOProvider {
+class CRenderable : virtual public CObject, public FBOProvider {
     friend CObject;
 
 public:
@@ -20,7 +20,7 @@ public:
 
     [[nodiscard]] double getAnimationTime () const;
 
-    virtual void setup ();
+    void setup () override;
 
     [[nodiscard]] virtual const float& getBrightness () const = 0;
     [[nodiscard]] virtual const float& getUserAlpha () const = 0;

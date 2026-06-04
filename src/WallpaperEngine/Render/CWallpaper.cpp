@@ -196,8 +196,9 @@ void CWallpaper::updateUVs (const glm::ivec4& viewport, const bool vflip) {
     }
 }
 
-void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition,
-    const glm::ivec2& logicalSize) {
+void CWallpaper::render (
+    const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition, const glm::ivec2& logicalSize
+) {
     // Get current frame counter from the driver to avoid redundant scene renders
     const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
     const bool needsSceneRender = (currentFrame != this->m_lastRenderedFrame);
@@ -250,12 +251,13 @@ void CWallpaper::render (const glm::ivec4& viewport, const bool vflip, const glm
 
 	// Log span debug info only on first few frames
 	if (this->m_lastRenderedFrame < 5) {
-	    sLog.debug ("SPAN DEBUG: viewport=", viewport.z, "x", viewport.w,
-		" globalPos=(", globalPosition.x, ",", globalPosition.y, ")",
-		" span=(", span.totalBounds.x, ",", span.totalBounds.y, ",", span.totalBounds.z, ",", span.totalBounds.w, ")",
-		" rel=[", relLeft, ",", relRight, "]x[", relTop, ",", relBottom, "]",
-		" baseUV=[", baseUstart, ",", baseUend, "]x[", baseVstart, ",", baseVend, "]",
-		" finalUV=[", ustart, ",", uend, "]x[", vstart, ",", vend, "]");
+	    sLog.debug (
+		"SPAN DEBUG: viewport=", viewport.z, "x", viewport.w, " globalPos=(", globalPosition.x, ",",
+		globalPosition.y, ")", " span=(", span.totalBounds.x, ",", span.totalBounds.y, ",", span.totalBounds.z,
+		",", span.totalBounds.w, ")", " rel=[", relLeft, ",", relRight, "]x[", relTop, ",", relBottom, "]",
+		" baseUV=[", baseUstart, ",", baseUend, "]x[", baseVstart, ",", baseVend, "]", " finalUV=[", ustart,
+		",", uend, "]x[", vstart, ",", vend, "]"
+	    );
 	}
     } else {
 	// Normal mode: compute UVs based on viewport dimensions and wallpaper resolution

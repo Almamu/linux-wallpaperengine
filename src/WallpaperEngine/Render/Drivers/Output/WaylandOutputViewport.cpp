@@ -181,8 +181,7 @@ void WaylandOutputViewport::setupLS () {
     }
 
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer,
-	"linux-wallpaperengine"
+	m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer, "linux-wallpaperengine"
     );
 
     if (!layerSurface) {

@@ -9,6 +9,7 @@
 
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 // Forward-declare FreeType types to avoid leaking the header into users.
 struct FT_LibraryRec_;
@@ -36,12 +37,12 @@ using namespace WallpaperEngine::Data::Model;
  * the data model but renders an empty string — the Wallpaper Engine JS
  * runtime required to evaluate it is out of scope for Phase 1.
  */
-class CText final : public CObject {
+class CText final : virtual public CObject, public Scripting::ScriptableObject {
 public:
     CText (Wallpapers::CScene& scene, const Text& text);
     ~CText () override;
 
-    void setup ();
+    void setup () override;
     void render () override;
 
 private:
@@ -77,8 +78,8 @@ private:
     GLint m_uColor = -1;
     GLint m_uTexture = -1;
 
-    glm::ivec2 m_textureSize = {0, 0};
-    glm::vec2 m_quadSize = {0.0f, 0.0f};
+    glm::ivec2 m_textureSize = { 0, 0 };
+    glm::vec2 m_quadSize = { 0.0f, 0.0f };
 
     bool m_valid = false;
 };
