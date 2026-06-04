@@ -39,29 +39,10 @@ JSValue scriptableobject_property_get (JSContext* ctx, JSValueConst obj_val, JSA
 	// find the property inside, otherwise return undefined
 	auto& property = container->object.getProperty (name);
 
-	switch (property.getType ()) {
-	    case DynamicValue::Null:
-		return JS_NULL;
-	    case DynamicValue::Vec4:
-		return container->adapter.getEngine ().getAdapters ().vec4->instantiate (property);
-	    case DynamicValue::Vec3:
-		return container->adapter.getEngine ().getAdapters ().vec3->instantiate (property);
-	    case DynamicValue::Vec2:
-		return container->adapter.getEngine ().getAdapters ().vec2->instantiate (property);
-	    case DynamicValue::Float:
-		return JS_NewFloat64 (ctx, property.getFloat ());
-	    case DynamicValue::Int:
-		return JS_NewInt32 (ctx, property.getInt ());
-	    case DynamicValue::Boolean:
-		return JS_NewBool (ctx, property.getBool ());
-	    case DynamicValue::String:
-		return JS_NewString (ctx, property.getString ().c_str ());
-	}
+	return container->adapter.getEngine ().dynamicToJs (property);
     } catch (const std::exception& e) {
 	return JS_UNDEFINED;
     }
-
-    return JS_UNDEFINED;
 }
 
 int scriptableobject_property_set (

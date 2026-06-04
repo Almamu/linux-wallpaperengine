@@ -28,6 +28,7 @@ class CScene;
 }
 
 namespace WallpaperEngine::Scripting {
+class ScriptPropertiesObject;
 namespace Adapters {
     class ScriptableObjectAdapter;
 }
@@ -39,6 +40,10 @@ static constexpr ScriptLayerHandle kInvalidLayerHandle = 0;
 
 class ScriptEngine {
 public:
+    struct LoadedModule {
+	DynamicValue& value;
+	JSValue module;
+    };
     struct JSObjectAdapters {
 	std::unique_ptr<Adapters::VectorAdapter<4>> vec4;
 	std::unique_ptr<Adapters::VectorAdapter<3>> vec3;
@@ -53,6 +58,9 @@ public:
 
     JSRuntime* getRuntime () const { return m_runtime; }
     JSContext* getContext () const { return m_context; }
+    JSValue getGlobalThis () const { return m_globalThis; }
+    LoadedModule* getRunningModule () const { return m_runningModule; }
+    JSValue dynamicToJs (DynamicValue& value) const;
 
     /**
      * Evaluate a WallpaperEngine script's update() function.
@@ -127,11 +135,6 @@ public:
     const std::map<std::string, std::unique_ptr<Modules::ScriptModule>>& getModules () const { return m_modules; }
 
 private:
-    struct LoadedModule {
-	DynamicValue& value;
-	JSValue module;
-    };
-
     JSValue call (JSValue module, int argc, JSValueConst argv[], const char* name);
 
     void installBuiltins ();
@@ -141,8 +144,6 @@ private:
     void runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const;
     DynamicValueUniquePtr fallbackTextValue (const std::string& scriptSource) const;
     void applyTextFallback (DynamicValue& value, const std::string& scriptSource) const;
-
-    JSValue dynamicToJs (DynamicValue& value) const;
 
     struct MediaState {
 	int playbackState = 0;
@@ -161,15 +162,17 @@ private:
     JSRuntime* m_runtime = nullptr;
     JSContext* m_context = nullptr;
     JSValue m_globalThis;
-    JSValue m_scriptProps;
     Render::Wallpapers::CScene& m_scene;
     std::unique_ptr<EngineObject> m_engineObject;
     std::unique_ptr<InputObject> m_inputObject;
     std::unique_ptr<SceneObject> m_sceneObject;
     std::unique_ptr<ConsoleObject> m_consoleObject;
+    std::unique_ptr<ScriptPropertiesObject> m_scriptPropertiesObject;
 
     std::map<std::string, std::unique_ptr<Modules::ScriptModule>> m_modules = {};
     std::map<std::string, LoadedModule> m_scriptModules = {};
+
+    LoadedModule* m_runningModule = nullptr;
 
     ScriptLayerHandle m_nextLayerId = 1;
     bool m_layerRegistryReady = false;

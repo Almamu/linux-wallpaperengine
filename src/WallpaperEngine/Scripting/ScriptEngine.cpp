@@ -4,6 +4,7 @@
 #include "Modules/ColorModule.h"
 #include "Modules/MathModule.h"
 #include "Modules/ScriptModule.h"
+#include "ScriptPropertiesObject.h"
 #include "ScriptableObject.h"
 #include "WallpaperEngine/Audio/AudioContext.h"
 #include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
@@ -58,6 +59,8 @@ JSModuleDef* scriptengine_module_loader (JSContext* ctx, const char* module, voi
 
 JSValue ScriptEngine::dynamicToJs (DynamicValue& value) const {
     switch (value.getType ()) {
+	case DynamicValue::Null:
+	    return JS_NULL;
 	case DynamicValue::String:
 	    return JS_NewString (this->m_context, value.getString ().c_str ());
 	case DynamicValue::Float:
@@ -130,7 +133,6 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 
 	double xVal = 0.0f, yVal = 0.0f, zVal = 0.0f, wVal = 0.0f;
 
-	// TODO: DO WE REALLY NEED ALL THIS CASTING? WOULD CHECKING TYPE AND ACCESSING INT/FLOAT VERSION BE ENOUGH?
 	JS_ToFloat64 (ctx, &xVal, x);
 	JS_ToFloat64 (ctx, &yVal, y);
 
@@ -361,6 +363,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
     this->m_inputObject = std::make_unique<InputObject> (*this, scene);
     this->m_sceneObject = std::make_unique<SceneObject> (*this, scene);
     this->m_consoleObject = std::make_unique<ConsoleObject> (*this, scene);
+    this->m_scriptPropertiesObject = std::make_unique<ScriptPropertiesObject> (*this, scene);
 
     auto wemath = std::make_unique<Modules::MathModule> (*this);
     auto wecolor = std::make_unique<Modules::ColorModule> (*this);
@@ -398,7 +401,6 @@ ScriptEngine::~ScriptEngine () {
 	JS_FreeValue (this->m_context, module.module);
     }
 
-    JS_FreeValue (this->m_context, this->m_scriptProps);
     JS_FreeValue (this->m_context, this->m_globalThis);
 
     this->m_adapters.vec4.reset ();
@@ -410,6 +412,7 @@ ScriptEngine::~ScriptEngine () {
     this->m_engineObject.reset ();
     this->m_inputObject.reset ();
     this->m_sceneObject.reset ();
+    this->m_scriptPropertiesObject.reset ();
     this->m_modules.clear ();
     this->m_scriptModules.clear ();
 
@@ -455,18 +458,6 @@ globalThis.MediaPlaybackEvent = globalThis.MediaPlaybackEvent || {
   PLAYBACK_STOPPED: 0,
   PLAYBACK_PLAYING: 1,
   PLAYBACK_PAUSED: 2
-};
-globalThis.createScriptProperties = function() {
-  const props = globalThis.__scriptProps || {};
-  const builder = {};
-  for (const name of ['addSlider', 'addCheckbox', 'addCombo', 'addColor', 'addText']) {
-    builder[name] = function(opts) {
-      if (!(opts.name in props)) props[opts.name] = opts.value;
-      return builder;
-    };
-  }
-  builder.finish = function() { return props; };
-  return builder;
 };
 )JS";
 
