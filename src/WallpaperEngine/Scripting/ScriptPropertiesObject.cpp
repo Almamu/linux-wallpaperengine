@@ -126,7 +126,7 @@ ScriptPropertiesObject::ScriptPropertiesObject (ScriptEngine& engine, Render::Wa
     };
     JS_NewClassID (this->m_engine.getRuntime (), &this->m_creatorClassId);
     JS_NewClass (this->m_engine.getRuntime (), this->m_creatorClassId, &this->m_creatorDefinition);
-    this->m_creatorPrototype = JS_NewObjectClass (this->m_engine.getContext (), this->m_creatorClassId);
+    this->m_creatorPrototype = JS_NewObject (this->m_engine.getContext ());
 
     this->m_propertiesDefinition = {
 	.class_name = "IScriptProperties",
@@ -135,10 +135,12 @@ ScriptPropertiesObject::ScriptPropertiesObject (ScriptEngine& engine, Render::Wa
     };
     JS_NewClassID (this->m_engine.getRuntime (), &this->m_propertiesClassId);
     JS_NewClass (this->m_engine.getRuntime (), this->m_propertiesClassId, &this->m_propertiesDefinition);
-    this->m_propertiesPrototype = JS_NewObjectClass (this->m_engine.getContext (), this->m_propertiesClassId);
+    this->m_propertiesPrototype = JS_NewObject (this->m_engine.getContext ());
+
+    JS_DupValue (this->m_engine.getContext (), this->m_propertiesPrototype);
+    JS_DupValue (this->m_engine.getContext (), this->m_creatorPrototype);
 
     // set properties
-    JS_SetOpaque (this->m_creatorPrototype, this);
     JS_DefinePropertyValueStr (
 	this->m_engine.getContext (), this->m_creatorPrototype, "addSlider",
 	JS_NewCFunction (this->m_engine.getContext (), scriptpropertiescreator_add, "addSlider", 0), JS_PROP_ENUMERABLE
