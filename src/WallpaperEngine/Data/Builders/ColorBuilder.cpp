@@ -49,22 +49,21 @@ WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, 
 	);
     }
 
-    if (copy.find ('.') == std::string::npos) {
-	glm::ivec4 final;
+    int vectorSize = VectorBuilder::preparseSize (copy);
 
-	try {
-	    final = VectorBuilder::parse<glm::ivec4> (copy);
-	} catch (const std::exception&) {
-	    final = glm::ivec4 (VectorBuilder::parse<glm::ivec3> (copy), alpha * 255);
-	}
+    if (vectorSize != 3 && vectorSize != 4) {
+	throw std::invalid_argument ("Invalid color value");
+    }
+
+    if (copy.find ('.') == std::string::npos) {
+	const auto final = vectorSize == 3 ? glm::ivec4 (VectorBuilder::parse<glm::ivec3> (copy), alpha * 255)
+					   : VectorBuilder::parse<glm::ivec4> (copy);
 
 	return { final.r / 255.0f, final.g / 255.0f, final.b / 255.0f, final.a / 255.0f };
     }
 
-    // this should be already a normalized color, so attempting vec4 and falling back to vec3 should be safe
-    try {
-	return WallpaperEngine::Data::Model::Color (VectorBuilder::parse<glm::vec4> (copy));
-    } catch (const std::exception&) {
-	return WallpaperEngine::Data::Model::Color (VectorBuilder::parse<glm::vec3> (copy), alpha);
-    }
+    return Model::Color (
+	vectorSize == 3 ? glm::vec4 (VectorBuilder::parse<glm::vec3> (copy), alpha)
+			: VectorBuilder::parse<glm::vec4> (copy)
+    );
 }
