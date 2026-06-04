@@ -337,6 +337,9 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
 	sLog.exception ("ScriptEngine: Failed to create JS runtime");
     }
 
+    // debug leaks on termination
+    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS);
+
     this->m_context = JS_NewContext (this->m_runtime);
 
     if (!this->m_context) {
@@ -394,6 +397,9 @@ ScriptEngine::~ScriptEngine () {
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
     }
+
+    JS_FreeValue (this->m_context, this->m_scriptProps);
+    JS_FreeValue (this->m_context, this->m_globalThis);
 
     this->m_adapters.vec4.reset ();
     this->m_adapters.vec3.reset ();
@@ -939,10 +945,7 @@ JSValue ScriptEngine::call (JSValue module, int argc, JSValue argv[], const char
 	return JS_UNDEFINED;
     }
 
-    JSValue result = JS_Call (this->m_context, function, module, argc, argv);
-    ScopeGuard guard2 ([&] () { JS_FreeValue (this->m_context, result); });
-
-    return result;
+    return JS_Call (this->m_context, function, module, argc, argv);
 }
 
 void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentValue, ScriptableObject& object) {
@@ -981,7 +984,10 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
     JSValue args[] = { this->dynamicToJs (currentValue) };
     JSValue result = this->call (module, 1, args, "update");
 
-    ScopeGuard guard2 ([this, result] () { JS_FreeValue (this->m_context, result); });
+    ScopeGuard guard2 ([this, args, result] () {
+        JS_FreeValue (this->m_context, result);
+        JS_FreeValue (this->m_context, args[0]);
+    });
 
     if (JS_IsException (result)) {
 	return;
@@ -999,7 +1005,10 @@ void ScriptEngine::tick () {
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JSValue args[] = { this->dynamicToJs (module.value) };
 	JSValue result = this->call (module.module, 1, args, "update");
-	ScopeGuard guard ([result, this] () { JS_FreeValue (this->m_context, result); });
+	ScopeGuard guard ([result, args, this] () {
+	    JS_FreeValue (this->m_context, result);
+	    JS_FreeValue (this->m_context, args[0]);
+	});
 
 	if (JS_IsException (result)) {
 	    continue;

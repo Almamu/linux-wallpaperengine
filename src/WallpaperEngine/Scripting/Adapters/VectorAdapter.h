@@ -21,7 +21,8 @@ public:
     void free (uint32_t vectorId);
 
 private:
-    int m_instanceId;
+    JSValue m_prototype;
+    uint32_t m_instanceId;
     std::string m_name;
     JSClassExoticMethods m_exoticMethods;
     std::map<uint32_t, Data::Model::DynamicValueUniquePtr> m_values;

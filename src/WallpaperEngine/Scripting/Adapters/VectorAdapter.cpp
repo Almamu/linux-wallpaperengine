@@ -424,10 +424,12 @@ JSValue vector_normalize (JSContext* ctx, JSValueConst this_val, int argc, JSVal
 
     JSValue newVector = container->adapter.instantiate (container->value, true);
 
-    const auto* newContainer = static_cast<VectorOpaqueContainer<components>*> (JS_GetAnyOpaque (this_val, &classId));
-    auto vector = vector_get<components> (newContainer->value);
+    const auto* newContainer = static_cast<VectorOpaqueContainer<components>*> (JS_GetAnyOpaque (newVector, &classId));
 
-    container->value.update (glm::normalize (vector), DynamicValue::UpdateSource::Script);
+    newContainer->value.update (
+        glm::normalize (vector_get<components> (container->value)),
+        DynamicValue::UpdateSource::Script
+    );
 
     return newVector;
 }
@@ -829,103 +831,111 @@ VectorAdapter<components>::VectorAdapter (ScriptEngine& engine) :
     );
 
     // build the prototype for the Vector and assign the required methods
-    JSValue proto = JS_NewObject (this->m_engine.getContext ());
+    m_prototype = JS_NewObject (this->m_engine.getContext ());
+
+    JS_DupValue (this->m_engine.getContext (), m_prototype);
+
+    JSValue ctor = JS_NewCFunctionMagic (
+        this->m_engine.getContext (), vector_constructor<components>, this->m_name.c_str (), 1,
+        JS_CFUNC_constructor_magic, this->m_instanceId
+    );
+
     JS_SetConstructor (
 	this->m_engine.getContext (),
-	JS_NewCFunctionMagic (
-	    this->m_engine.getContext (), vector_constructor<components>, this->m_name.c_str (), 1,
-	    JS_CFUNC_constructor_magic, this->m_instanceId
-	),
-	proto
+	ctor,
+	m_prototype
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "copy",
+	this->m_engine.getContext (), m_prototype, "copy",
 	JS_NewCFunction (this->m_engine.getContext (), vector_copy<components>, "copy", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "equals",
+	this->m_engine.getContext (), m_prototype, "equals",
 	JS_NewCFunction (this->m_engine.getContext (), vector_equals<components>, "equals", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "length",
+	this->m_engine.getContext (), m_prototype, "length",
 	JS_NewCFunction (this->m_engine.getContext (), vector_length<components>, "length", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "lengthSqr",
+	this->m_engine.getContext (), m_prototype, "lengthSqr",
 	JS_NewCFunction (this->m_engine.getContext (), vector_length<components>, "lengthSqr", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "normalize",
+	this->m_engine.getContext (), m_prototype, "normalize",
 	JS_NewCFunction (this->m_engine.getContext (), vector_normalize<components>, "normalize", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "add",
+	this->m_engine.getContext (), m_prototype, "add",
 	JS_NewCFunction (this->m_engine.getContext (), vector_add<components>, "add", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "subtract",
+	this->m_engine.getContext (), m_prototype, "subtract",
 	JS_NewCFunction (this->m_engine.getContext (), vector_subtract<components>, "subtract", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "multiply",
+	this->m_engine.getContext (), m_prototype, "multiply",
 	JS_NewCFunction (this->m_engine.getContext (), vector_multiply<components>, "multiply", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "divide",
+	this->m_engine.getContext (), m_prototype, "divide",
 	JS_NewCFunction (this->m_engine.getContext (), vector_divide<components>, "divide", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "dot",
+	this->m_engine.getContext (), m_prototype, "dot",
 	JS_NewCFunction (this->m_engine.getContext (), vector_dot<components>, "dot", 1), JS_PROP_ENUMERABLE
     );
     if constexpr (components == 3) {
 	JS_DefinePropertyValueStr (
-	    this->m_engine.getContext (), proto, "cross",
+	    this->m_engine.getContext (), m_prototype, "cross",
 	    JS_NewCFunction (this->m_engine.getContext (), vector_cross<components>, "cross", 1), JS_PROP_ENUMERABLE
 	);
     }
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "mix",
+	this->m_engine.getContext (), m_prototype, "mix",
 	JS_NewCFunction (this->m_engine.getContext (), vector_mix<components>, "mix", 2), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "min",
+	this->m_engine.getContext (), m_prototype, "min",
 	JS_NewCFunction (this->m_engine.getContext (), vector_min<components>, "min", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "max",
+	this->m_engine.getContext (), m_prototype, "max",
 	JS_NewCFunction (this->m_engine.getContext (), vector_max<components>, "max", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "abs",
+	this->m_engine.getContext (), m_prototype, "abs",
 	JS_NewCFunction (this->m_engine.getContext (), vector_abs<components>, "abs", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "sign",
+	this->m_engine.getContext (), m_prototype, "sign",
 	JS_NewCFunction (this->m_engine.getContext (), vector_sign<components>, "sign", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "round",
+	this->m_engine.getContext (), m_prototype, "round",
 	JS_NewCFunction (this->m_engine.getContext (), vector_round<components>, "round", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "floor",
+	this->m_engine.getContext (), m_prototype, "floor",
 	JS_NewCFunction (this->m_engine.getContext (), vector_floor<components>, "floor", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "ceil",
+	this->m_engine.getContext (), m_prototype, "ceil",
 	JS_NewCFunction (this->m_engine.getContext (), vector_ceil<components>, "ceil", 0), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (
-	this->m_engine.getContext (), proto, "toString",
+	this->m_engine.getContext (), m_prototype, "toString",
 	JS_NewCFunction (this->m_engine.getContext (), vector_toString<components>, "toString", 0), JS_PROP_ENUMERABLE
     );
 
-    JS_SetClassProto (this->m_engine.getContext (), this->m_classId, proto);
+    JS_SetClassProto (this->m_engine.getContext (), this->m_classId, m_prototype);
+    JS_FreeValue (this->m_engine.getContext (), ctor);
 }
 
 template <int components> VectorAdapter<components>::~VectorAdapter () {
     vectorAdapterInstances<components>.erase (this->m_instanceId);
+
+    JS_FreeValue (this->m_engine.getContext (), m_prototype);
 }
 
 template <int components> JSValue VectorAdapter<components>::instantiate (ScriptableObject& object) {

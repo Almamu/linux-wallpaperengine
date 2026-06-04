@@ -5,7 +5,7 @@
 namespace WallpaperEngine::Scripting::Adapters {
 class ScriptableObjectAdapter : public ObjectAdapter {
 public:
-    explicit ScriptableObjectAdapter (ScriptEngine& engine, const std::string& name);
+    explicit ScriptableObjectAdapter (ScriptEngine& engine, std::string name);
 
     JSValue instantiate (ScriptableObject& object) override;
     JSValue instantiate (Data::Model::DynamicValue& value) override;

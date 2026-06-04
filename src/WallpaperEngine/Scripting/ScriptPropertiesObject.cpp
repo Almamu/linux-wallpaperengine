@@ -63,4 +63,5 @@ ScriptPropertiesObject::ScriptPropertiesObject (ScriptEngine& engine, Render::Wa
 
 ScriptPropertiesObject::~ScriptPropertiesObject () {
     JS_FreeValue (this->m_engine.getContext (), this->m_creatorInstance);
+    JS_FreeValue (this->m_engine.getContext (), this->m_propertiesInstance);
 }

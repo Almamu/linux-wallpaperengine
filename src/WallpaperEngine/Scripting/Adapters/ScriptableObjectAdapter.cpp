@@ -1,5 +1,7 @@
 #include "ScriptableObjectAdapter.h"
 
+#include <utility>
+
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 #include "WallpaperEngine/Scripting/ScriptableObject.h"
@@ -82,8 +84,8 @@ int scriptableobject_property_set (
     return 0;
 }
 
-ScriptableObjectAdapter::ScriptableObjectAdapter (ScriptEngine& engine, const std::string& name) :
-    ObjectAdapter (engine), m_exoticMethods (), m_name (std::move (name)) {
+ScriptableObjectAdapter::ScriptableObjectAdapter (ScriptEngine& engine, std::string name) :
+    ObjectAdapter (engine), m_exoticMethods (), m_name (std::move(name)) {
     this->registerType (
 	{
 	    .class_name = m_name.c_str (),
