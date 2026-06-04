@@ -2044,7 +2044,7 @@ void CParticle::renderSprites () {
     }
 
 #if !NDEBUG
-    std::string str = "Rendering particles ";
+    std::string str = "Particles ";
     str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
 	+ ")";
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
@@ -2281,7 +2281,7 @@ void CParticle::renderRope () {
     }
 
 #if !NDEBUG
-    std::string str = "Rendering rope particles ";
+    std::string str = "Rope particles ";
     str += this->getParticle ().name + " (" + std::to_string (this->getId ()) + ", " + this->getParticle ().particleFile
 	+ ")";
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());

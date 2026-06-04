@@ -378,6 +378,10 @@ void CText::render () {
 	return;
     }
 
+#if !NDEBUG
+    std::string str = "Text " + this->getObject ().name + " (" + std::to_string (this->getObject ().id) + ")";
+    glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, str.c_str ());
+#endif /* DEBUG */
     std::string renderedText = m_lastRenderedText;
     if (m_layerHandle != Scripting::kInvalidLayerHandle) {
 	auto& se = this->getScene ().getScriptEngine ();
@@ -436,4 +440,7 @@ void CText::render () {
     glBindVertexArray (m_vao);
     glDrawArrays (GL_TRIANGLES, 0, 6);
     glBindVertexArray (0);
+#if !NDEBUG
+    glPopDebugGroup ();
+#endif /* DEBUG */
 }

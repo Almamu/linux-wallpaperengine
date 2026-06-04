@@ -923,7 +923,7 @@ void CImage::render () {
     this->updateScreenSpacePosition ();
 
 #if !NDEBUG
-    std::string str = "Rendering ";
+    std::string str = "Image ";
 
     if (this->getScene ().getScene ().camera.bloom.enabled->value->getBool () && this->getId () == -1) {
 	str += "bloom";
