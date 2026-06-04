@@ -163,8 +163,8 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
     ResolvedTransform resolved = localTransform (*chain[count - 1]);
     for (int i = count - 2; i >= 0; --i) {
 	ResolvedTransform local = localTransform (*chain[i]);
-	const glm::vec2 offset =
-	    rotateVec2 ({ local.origin.x * resolved.scale.x, local.origin.y * resolved.scale.y }, resolved.angle);
+	const glm::vec2 offset
+	    = rotateVec2 ({ local.origin.x * resolved.scale.x, local.origin.y * resolved.scale.y }, resolved.angle);
 	local.origin.x = resolved.origin.x + offset.x;
 	local.origin.y = resolved.origin.y + offset.y;
 	local.origin.z = resolved.origin.z + local.origin.z * resolved.scale.z;

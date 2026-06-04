@@ -67,8 +67,7 @@ protected:
 	float angle;
     };
 
-    [[nodiscard]] ResolvedTransform
-    resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
+    [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
 
     /**
      * Computes the object's own transform (origin/scale/angle) without walking the
