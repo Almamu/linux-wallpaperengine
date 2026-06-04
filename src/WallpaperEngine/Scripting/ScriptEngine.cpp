@@ -970,6 +970,7 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
     JS_SetPropertyStr (this->m_context, this->m_globalThis, "thisLayer", this->m_adapters.object->instantiate (object));
 
     // script properties do not need update as they're connected directly to the source data
+    this->m_runningModule = &inserted.first->second;
 
     // check if there's an update method and run it
     JSValue args[] = { this->dynamicToJs (currentValue) };
@@ -993,7 +994,9 @@ void ScriptEngine::tick () {
     // run any pending notifications
 
     // run all update methods
-    for (const auto& module : this->m_scriptModules | std::views::values) {
+    for (auto& module : this->m_scriptModules | std::views::values) {
+        this->m_runningModule = &module;
+
 	JSValue args[] = { this->dynamicToJs (module.value) };
 	JSValue result = this->call (module.module, 1, args, "update");
 	ScopeGuard guard ([result, args, this] () {
