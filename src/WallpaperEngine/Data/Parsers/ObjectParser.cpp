@@ -130,7 +130,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	    .pointSize = it.user ("pointsize", project.properties, 32.0f),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
 	    .scale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
-	    .color = it.user ("color", project.properties, Builders::ColorBuilder::White),
+	    .color = it.color ("color", project.properties, Builders::ColorBuilder::White),
 	    .alpha = it.user ("alpha", project.properties, 1.0f),
 	    .visible = it.user ("visible", project.properties, true),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
@@ -153,7 +153,7 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .angles = it.user ("angles", properties, glm::vec3 (0.0f)),
 	    .visible = it.user ("visible", properties, true),
 	    .alpha = it.user ("alpha", properties, 1.0f),
-	    .color = it.user ("color", properties, Builders::ColorBuilder::White),
+	    .color = it.color ("color", properties, Builders::ColorBuilder::White),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .size = it.user ("size", properties, glm::vec2 (0.0f))->value->getVec2 (),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
@@ -648,8 +648,8 @@ ParticleInitializerUniquePtr ObjectParser::parseParticleInitializer (const JSON&
 
     if (name == "colorrandom") {
 	return std::make_unique<ColorRandomInitializer> (
-	    it.user ("min", properties, Builders::ColorBuilder::Black),
-	    it.user ("max", properties, Builders::ColorBuilder::White)
+	    it.color ("min", properties, Builders::ColorBuilder::Black),
+	    it.color ("max", properties, Builders::ColorBuilder::White)
 	);
     } else if (name == "sizerandom") {
 	return std::make_unique<SizeRandomInitializer> (

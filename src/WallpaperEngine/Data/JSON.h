@@ -103,6 +103,7 @@ public:
     template <typename T>
     [[nodiscard]] UserSettingUniquePtr
     user (const std::string& key, const Properties& properties, T defaultValue) const {
+        static_assert (std::is_same_v<T, Color> == false, "Use color() for color properties");
 	const auto value = this->optional (key);
 
 	if (!value.has_value ()) {
@@ -112,6 +113,19 @@ public:
 	// performs a second lookup, but handles the actual call to UserSettingParser outside of this header
 	// this resolving the include loop
 	return this->user (key, properties);
+    }
+    [[nodiscard]] UserSettingUniquePtr color (const std::string& key, const Properties& properties) const;
+    [[nodiscard]] UserSettingUniquePtr
+    color (const std::string& key, const Properties& properties, Color defaultValue) const {
+	const auto value = this->optional (key);
+
+	if (!value.has_value ()) {
+	    return UserSettingBuilder::fromValue<Color> (defaultValue);
+	}
+
+	// performs a second lookup, but handles the actual call to UserSettingParser outside of this header
+	// this resolving the include loop
+	return this->color (key, properties);
     }
 
     template <int length, typename type, glm::qualifier qualifier> operator glm::vec<length, type, qualifier> () const {
