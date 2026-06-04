@@ -126,8 +126,7 @@ std::optional<PuppetMeshBlock> findPuppetMeshBlock (
 }
 }
 
-CImage::ResolvedTransform CImage::resolveTransform (const Object& object, const int depth) const {
-    constexpr int kMaxParentDepth = 32;
+CImage::ResolvedTransform CImage::localTransform (const Object& object) {
     glm::vec3 origin = object.origin->value->getVec3 ();
     glm::vec3 scale = glm::vec3 (1.0f);
     float angle = 0.0f;
@@ -144,30 +143,46 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object, const 
 	angle = object.groupAngles->value->getVec3 ().z;
     }
 
-    if (!object.parent.has_value ()) {
-	return { origin, scale, angle };
-    }
-
-    if (depth >= kMaxParentDepth) {
-	sLog.error ("Parent transform chain is too deep; possible cycle at object id=", object.id);
-	return { origin, scale, angle };
-    }
-
-    const auto* parentObject = this->getScene ().getObject (object.parent.value ());
-    if (parentObject == nullptr) {
-	return { origin, scale, angle };
-    }
-
-    const auto& parent = parentObject->getObject ();
-    const auto parentTransform = this->resolveTransform (parent, depth + 1);
-    const glm::vec2 local = rotateVec2 ({ origin.x * parentTransform.scale.x, origin.y * parentTransform.scale.y }, parentTransform.angle);
-    origin.x = parentTransform.origin.x + local.x;
-    origin.y = parentTransform.origin.y + local.y;
-    origin.z = parentTransform.origin.z + origin.z * parentTransform.scale.z;
-    scale *= parentTransform.scale;
-    angle += parentTransform.angle;
-
     return { origin, scale, angle };
+}
+
+CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const {
+    constexpr int kMaxParentDepth = 32;
+
+    // Walk up the parent chain leaf-first, bounded by kMaxParentDepth to guard
+    // against cycles. chain[0] is the requested object; the last entry is the root.
+    const Object* chain[kMaxParentDepth + 1];
+    int count = 0;
+    const Object* current = &object;
+    chain[count++] = current;
+
+    while (current->parent.has_value ()) {
+	if (count > kMaxParentDepth) {
+	    sLog.error ("Parent transform chain is too deep; possible cycle at object id=", current->id);
+	    break;
+	}
+	const auto* parentObject = this->getScene ().getObject (current->parent.value ());
+	if (parentObject == nullptr) {
+	    break;
+	}
+	current = &parentObject->getObject ();
+	chain[count++] = current;
+    }
+
+    // Accumulate top-down: the root's local transform is already its resolved
+    // transform, then fold each child onto its already-resolved parent.
+    ResolvedTransform resolved = localTransform (*chain[count - 1]);
+    for (int i = count - 2; i >= 0; --i) {
+	ResolvedTransform local = localTransform (*chain[i]);
+	const glm::vec2 offset =
+	    rotateVec2 ({ local.origin.x * resolved.scale.x, local.origin.y * resolved.scale.y }, resolved.angle);
+	local.origin.x = resolved.origin.x + offset.x;
+	local.origin.y = resolved.origin.y + offset.y;
+	local.origin.z = resolved.origin.z + local.origin.z * resolved.scale.z;
+	resolved = { local.origin, local.scale * resolved.scale, local.angle + resolved.angle };
+    }
+
+    return resolved;
 }
 
 CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
@@ -1060,7 +1075,7 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
 }
 
-void CImage::updateGeometryBuffers () {
+CImage::ResolvedTransform CImage::updateGeometryBuffers () {
     auto sceneWidth = static_cast<float> (this->getScene ().getWidth ());
     auto sceneHeight = static_cast<float> (this->getScene ().getHeight ());
     const auto transform = this->resolveTransform (this->getImage ());
@@ -1075,14 +1090,15 @@ void CImage::updateGeometryBuffers () {
 
     this->updateScenePosition (origin, size, scale, sceneWidth, sceneHeight);
     this->uploadGeometryBuffers (size);
+    return transform;
 }
 
 void CImage::updateScreenSpacePosition () {
-    this->updateGeometryBuffers ();
+    const ResolvedTransform transform = this->updateGeometryBuffers ();
 
     // Build rotation from angles (already in radians from scene.json — see CParticle.cpp:2119)
     // Negate X and Z rotations to account for Y-flipped coordinate system (CParticle.cpp:2120)
-    const float angle = this->resolveTransform (this->getImage ()).angle;
+    const float angle = transform.angle;
     glm::mat4 rotModel = glm::mat4 (1.0f);
     if (angle != 0.0f) {
 	rotModel = glm::translate (rotModel, this->m_sceneCenter);
