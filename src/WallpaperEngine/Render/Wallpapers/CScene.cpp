@@ -24,13 +24,14 @@ using namespace WallpaperEngine::Render::Wallpapers;
 
 CScene::CScene (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
-) : CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode) {
+    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode, Media::MediaSource& mediaSource
+) : CWallpaper (wallpaper, context, audioContext, scalingMode, clampMode),
+    m_mediaSource (mediaSource) {
     // caller should check this, if not a std::bad_cast is good to throw
     auto scene = wallpaper.as<Scene> ();
 
     // setup scripting engine
-    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this);
+    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this, this->m_mediaSource);
     // setup the scene camera
     this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 

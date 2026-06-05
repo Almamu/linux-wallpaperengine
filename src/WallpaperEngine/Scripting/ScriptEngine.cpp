@@ -45,6 +45,41 @@ extern char** environ;
 extern float g_Time;
 extern float g_TimeLast;
 
+void scriptengine_dump (JSContext* ctx, JSValueConst obj) {
+    JSPropertyEnum* props;
+    uint32_t len;
+
+    if (JS_GetOwnPropertyNames(
+            ctx,
+            &props,
+            &len,
+            obj,
+            JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK) < 0)
+        return;
+
+    for (uint32_t i = 0; i < len; ++i)
+    {
+        const char* name =
+            JS_AtomToCString(ctx, props[i].atom);
+
+        JSValue val =
+            JS_GetProperty(ctx, obj, props[i].atom);
+
+        const char* value_str =
+            JS_ToCString(ctx, val);
+
+        printf("%s = %s\n",
+               name,
+               value_str ? value_str : "<non-string>");
+
+        JS_FreeCString(ctx, value_str);
+        JS_FreeValue(ctx, val);
+        JS_FreeCString(ctx, name);
+    }
+
+    js_free(ctx, props);
+}
+
 JSModuleDef* scriptengine_module_loader (JSContext* ctx, const char* module, void* opaque) {
     const auto* scriptEngine = static_cast<ScriptEngine*> (opaque);
 
@@ -151,189 +186,11 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
     }
 }
 
-namespace {
-std::string trimTrailingNewlines (std::string value) {
-    while (!value.empty () && (value.back () == '\n' || value.back () == '\r')) {
-	value.pop_back ();
-    }
-    return value;
-}
+ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) : m_scene (scene), m_mediaSource (mediaSource) {
+    this->m_unregisterMediaUpdateCallback = mediaSource.addListener([this] (Media::MediaSource::MediaInfo& info) {
+        this->notifyMediaUpdate (info);
+    });
 
-std::vector<std::string> splitTabs (const std::string& value) {
-    std::vector<std::string> result;
-    size_t start = 0;
-    while (start <= value.size ()) {
-	const size_t end = value.find ('\t', start);
-	if (end == std::string::npos) {
-	    result.emplace_back (value.substr (start));
-	    break;
-	}
-	result.emplace_back (value.substr (start, end - start));
-	start = end + 1;
-    }
-    return result;
-}
-
-double parseDoubleOrZero (const std::string& value) {
-    try {
-	return std::stod (value);
-    } catch (...) {
-	return 0.0;
-    }
-}
-
-std::optional<pid_t>
-spawnProcessWithStdout (const std::string& program, const std::vector<std::string>& args, int& readFd) {
-    int outputPipe[2] {};
-    if (pipe (outputPipe) != 0) {
-	return std::nullopt;
-    }
-
-    posix_spawn_file_actions_t actions;
-    posix_spawn_file_actions_init (&actions);
-    posix_spawn_file_actions_adddup2 (&actions, outputPipe[1], STDOUT_FILENO);
-    posix_spawn_file_actions_addclose (&actions, outputPipe[0]);
-    posix_spawn_file_actions_addclose (&actions, outputPipe[1]);
-
-    std::vector<char*> argv;
-    argv.reserve (args.size () + 2);
-    argv.push_back (const_cast<char*> (program.c_str ()));
-    for (const auto& arg : args) {
-	argv.push_back (const_cast<char*> (arg.c_str ()));
-    }
-    argv.push_back (nullptr);
-
-    pid_t pid = 0;
-    const int spawnResult = posix_spawnp (&pid, program.c_str (), &actions, nullptr, argv.data (), environ);
-    posix_spawn_file_actions_destroy (&actions);
-    close (outputPipe[1]);
-
-    if (spawnResult != 0) {
-	close (outputPipe[0]);
-	return std::nullopt;
-    }
-
-    readFd = outputPipe[0];
-    return pid;
-}
-
-bool readFirstLineUntil (int readFd, const std::chrono::steady_clock::time_point& deadline, std::string& output) {
-    std::array<char, 512> buffer {};
-    while (std::chrono::steady_clock::now () < deadline) {
-	const auto remaining
-	    = std::chrono::duration_cast<std::chrono::milliseconds> (deadline - std::chrono::steady_clock::now ());
-	pollfd readPoll {
-	    .fd = readFd,
-	    .events = POLLIN,
-	    .revents = 0,
-	};
-
-	const int pollResult = poll (&readPoll, 1, static_cast<int> (std::max (remaining.count (), int64_t { 1 })));
-	if (pollResult == 0) {
-	    return false;
-	}
-	if (pollResult < 0) {
-	    if (errno == EINTR) {
-		continue;
-	    }
-	    return false;
-	}
-	if (readPoll.revents & (POLLERR | POLLNVAL)) {
-	    return false;
-	}
-	if (!(readPoll.revents & POLLIN)) {
-	    return (readPoll.revents & POLLHUP) != 0;
-	}
-
-	const ssize_t bytesRead = read (readFd, buffer.data (), buffer.size ());
-	if (bytesRead <= 0) {
-	    return true;
-	}
-	output.append (buffer.data (), static_cast<size_t> (bytesRead));
-	if (const auto newline = output.find ('\n'); newline != std::string::npos) {
-	    output.erase (newline + 1);
-	    return true;
-	}
-    }
-
-    return false;
-}
-
-bool waitForProcessUntil (pid_t pid, const std::chrono::steady_clock::time_point& deadline, int& status) {
-    while (std::chrono::steady_clock::now () < deadline) {
-	const pid_t waitResult = waitpid (pid, &status, WNOHANG);
-	if (waitResult == pid) {
-	    return true;
-	}
-	if (waitResult < 0) {
-	    return false;
-	}
-	usleep (1000);
-    }
-
-    kill (pid, SIGKILL);
-    waitpid (pid, &status, 0);
-    return false;
-}
-
-std::optional<std::string> processReadFirstLine (const std::string& program, const std::vector<std::string>& args) {
-    constexpr auto timeout = std::chrono::milliseconds (300);
-    const auto deadline = std::chrono::steady_clock::now () + timeout;
-
-    int outputFd = -1;
-    const auto pid = spawnProcessWithStdout (program, args, outputFd);
-    if (!pid.has_value ()) {
-	return std::string {};
-    }
-
-    std::string output;
-    const bool readCompleted = readFirstLineUntil (outputFd, deadline, output);
-    close (outputFd);
-
-    int status = 0;
-    if (!readCompleted || !waitForProcessUntil (*pid, deadline, status)) {
-	return std::nullopt;
-    }
-    if (!WIFEXITED (status) || WEXITSTATUS (status) != 0) {
-	return std::string {};
-    }
-
-    return trimTrailingNewlines (output);
-}
-
-std::string formatMediaTime (double seconds) {
-    const auto totalSeconds = static_cast<int> (std::max (0.0, std::floor (seconds)));
-    const int hours = totalSeconds / 3600;
-    const int minutes = (totalSeconds % 3600) / 60;
-    const int remainingSeconds = totalSeconds % 60;
-
-    std::ostringstream stream;
-    if (hours > 0) {
-	stream << hours << ":";
-	if (minutes < 10) {
-	    stream << "0";
-	}
-    }
-    stream << minutes << ":";
-    if (remainingSeconds < 10) {
-	stream << "0";
-    }
-    stream << remainingSeconds;
-    return stream.str ();
-}
-
-std::string shortenMediaText (const std::string& value, size_t maxLength) {
-    if (value.size () <= maxLength) {
-	return value;
-    }
-    if (maxLength <= 3) {
-	return value.substr (0, maxLength);
-    }
-    return value.substr (0, maxLength - 3) + "...";
-}
-}
-
-ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
     this->m_runtime = JS_NewRuntime ();
 
     if (!this->m_runtime) {
@@ -341,7 +198,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
     }
 
     // debug leaks on termination
-    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS);
+    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS | JS_DUMP_BYTECODE_FINAL);
 
     this->m_context = JS_NewContext (this->m_runtime);
 
@@ -394,9 +251,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
 }
 
 ScriptEngine::~ScriptEngine () {
-    if (this->m_mediaPollFuture.valid ()) {
-	this->m_mediaPollFuture.wait ();
-    }
+    this->m_unregisterMediaUpdateCallback();
 
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
@@ -452,218 +307,6 @@ void ScriptEngine::installBuiltins () {
     }
     JS_FreeValue (this->m_context, result);
     this->m_builtinsInstalled = true;
-}
-
-void ScriptEngine::refreshMediaState () {
-    auto buildMediaState = [] () -> std::optional<MediaState> {
-	const auto line = processReadFirstLine (
-	    "playerctl",
-	    { "metadata", "--format",
-	      "{{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{position}}\t{{mpris:artUrl}}" }
-	);
-
-	if (!line.has_value ()) {
-	    return std::nullopt;
-	}
-
-	MediaState next;
-	if (line->empty ()) {
-	    next.available = false;
-	    next.playbackState = 0;
-	    next.status = "Stopped";
-	    return next;
-	}
-
-	const auto parts = splitTabs (*line);
-	next.available = true;
-	next.status = parts.size () > 0 ? parts[0] : "";
-	next.title = parts.size () > 1 ? parts[1] : "";
-	next.artist = parts.size () > 2 ? parts[2] : "";
-	next.duration = (parts.size () > 3 ? parseDoubleOrZero (parts[3]) : 0.0) / 1000000.0;
-	next.position = (parts.size () > 4 ? parseDoubleOrZero (parts[4]) : 0.0) / 1000000.0;
-	next.artUrl = parts.size () > 5 ? parts[5] : "";
-
-	if (next.status == "Playing") {
-	    next.playbackState = 1;
-	} else if (next.status == "Paused") {
-	    next.playbackState = 2;
-	} else {
-	    next.playbackState = 0;
-	}
-
-	return next;
-    };
-
-    if (this->m_mediaPollFuture.valid ()
-	&& this->m_mediaPollFuture.wait_for (std::chrono::milliseconds (0)) == std::future_status::ready) {
-	try {
-	    auto next = this->m_mediaPollFuture.get ();
-	    if (next.has_value ()) {
-		this->m_mediaState = std::move (*next);
-		if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
-		    if (!this->m_mediaState.available) {
-			sLog.out ("Media debug: no playerctl media state");
-		    } else {
-			sLog.out (
-			    "Media debug: status=", this->m_mediaState.status, " title=", this->m_mediaState.title,
-			    " artist=", this->m_mediaState.artist, " duration=", this->m_mediaState.duration,
-			    " position=", this->m_mediaState.position
-			);
-		    }
-		}
-	    }
-	} catch (const std::exception& e) {
-	    if (std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
-		sLog.out ("Media debug: playerctl media poll failed: ", e.what ());
-	    }
-	}
-    }
-
-    if (this->m_mediaPollFuture.valid ()) {
-	return;
-    }
-
-    const auto now = std::chrono::steady_clock::now ();
-    if (this->m_lastMediaPoll.time_since_epoch ().count () != 0
-	&& now - this->m_lastMediaPoll < std::chrono::milliseconds (750)) {
-	return;
-    }
-    this->m_lastMediaPoll = now;
-    this->m_mediaPollFuture = std::async (std::launch::async, buildMediaState);
-}
-
-static JSValue makeVec3Object (JSContext* ctx, float x, float y, float z) {
-    JSValue result = JS_NewObject (ctx);
-    JS_SetPropertyStr (ctx, result, "x", JS_NewFloat64 (ctx, x));
-    JS_SetPropertyStr (ctx, result, "y", JS_NewFloat64 (ctx, y));
-    JS_SetPropertyStr (ctx, result, "z", JS_NewFloat64 (ctx, z));
-    return result;
-}
-
-static bool
-callModuleFunction (JSContext* ctx, JSValue module, const char* name, JSValue event, const char* logContext) {
-    JSValue function = JS_GetPropertyStr (ctx, module, name);
-    if (JS_IsFunction (ctx, function)) {
-	JSValue args[] = { event };
-	JSValue result = JS_Call (ctx, function, JS_UNDEFINED, 1, args);
-	if (JS_IsException (result)) {
-	    logJSException (ctx, logContext);
-	}
-	JS_FreeValue (ctx, result);
-	JS_FreeValue (ctx, function);
-	return true;
-    }
-    JS_FreeValue (ctx, function);
-    return false;
-}
-
-void ScriptEngine::dispatchMediaEvents (JSValue module, const void* bindingKey) {
-    this->refreshMediaState ();
-    JSContext* ctx = this->m_context;
-
-    const std::string propertiesSignature = this->m_mediaState.title + "\n" + this->m_mediaState.artist;
-    if (this->m_lastMediaProperties.find (bindingKey) == this->m_lastMediaProperties.end ()
-	|| this->m_lastMediaProperties[bindingKey] != propertiesSignature) {
-	this->m_lastMediaProperties[bindingKey] = propertiesSignature;
-	JSValue propertiesEvent = JS_NewObject (ctx);
-	JS_SetPropertyStr (ctx, propertiesEvent, "title", JS_NewString (ctx, this->m_mediaState.title.c_str ()));
-	JS_SetPropertyStr (ctx, propertiesEvent, "artist", JS_NewString (ctx, this->m_mediaState.artist.c_str ()));
-	JS_SetPropertyStr (ctx, propertiesEvent, "albumTitle", JS_NewString (ctx, ""));
-	const bool calledProperties
-	    = callModuleFunction (ctx, module, "mediaPropertiesChanged", propertiesEvent, "mediaPropertiesChanged");
-	if (calledProperties && std::getenv ("LWE_MEDIA_DEBUG") != nullptr) {
-	    sLog.out (
-		"Media debug: dispatched properties key=", reinterpret_cast<uintptr_t> (bindingKey),
-		" title=", this->m_mediaState.title, " artist=", this->m_mediaState.artist
-	    );
-	}
-	JS_FreeValue (ctx, propertiesEvent);
-    }
-
-    const std::string playbackSignature = std::to_string (this->m_mediaState.playbackState);
-    if (this->m_lastMediaPlayback[bindingKey] != playbackSignature) {
-	this->m_lastMediaPlayback[bindingKey] = playbackSignature;
-	JSValue event = JS_NewObject (ctx);
-	JS_SetPropertyStr (ctx, event, "state", JS_NewInt32 (ctx, this->m_mediaState.playbackState));
-	callModuleFunction (ctx, module, "mediaPlaybackChanged", event, "mediaPlaybackChanged");
-	JS_FreeValue (ctx, event);
-    }
-
-    const int roundedPosition = static_cast<int> (std::max (0.0, this->m_mediaState.position));
-    const std::string timelineSignature
-	= std::to_string (roundedPosition) + "\n" + std::to_string (this->m_mediaState.duration);
-    if (this->m_lastMediaTimeline.find (bindingKey) == this->m_lastMediaTimeline.end ()
-	|| this->m_lastMediaTimeline[bindingKey] != timelineSignature) {
-	this->m_lastMediaTimeline[bindingKey] = timelineSignature;
-	JSValue timelineEvent = JS_NewObject (ctx);
-	JS_SetPropertyStr (ctx, timelineEvent, "position", JS_NewFloat64 (ctx, this->m_mediaState.position));
-	JS_SetPropertyStr (ctx, timelineEvent, "duration", JS_NewFloat64 (ctx, this->m_mediaState.duration));
-	callModuleFunction (ctx, module, "mediaTimelineChanged", timelineEvent, "mediaTimelineChanged");
-	JS_FreeValue (ctx, timelineEvent);
-    }
-
-    if (this->m_lastMediaThumbnail[bindingKey] != this->m_mediaState.artUrl) {
-	this->m_lastMediaThumbnail[bindingKey] = this->m_mediaState.artUrl;
-	JSValue event = JS_NewObject (ctx);
-	JS_SetPropertyStr (ctx, event, "url", JS_NewString (ctx, this->m_mediaState.artUrl.c_str ()));
-	JS_SetPropertyStr (ctx, event, "primaryColor", makeVec3Object (ctx, 0.12f, 0.12f, 0.12f));
-	JS_SetPropertyStr (ctx, event, "secondaryColor", makeVec3Object (ctx, 0.0f, 0.0f, 0.0f));
-	JS_SetPropertyStr (ctx, event, "tertiaryColor", makeVec3Object (ctx, 0.25f, 0.25f, 0.25f));
-	JS_SetPropertyStr (ctx, event, "highContrastColor", makeVec3Object (ctx, 1.0f, 1.0f, 1.0f));
-	callModuleFunction (ctx, module, "mediaThumbnailChanged", event, "mediaThumbnailChanged");
-	JS_FreeValue (ctx, event);
-    }
-}
-
-void ScriptEngine::callModuleWithProps (JSContext* ctx, JSValue module, const char* name, JSValue propsObj) const {
-    JSValue function = JS_GetPropertyStr (ctx, module, name);
-    if (JS_IsFunction (ctx, function)) {
-	JSValue args[] = { propsObj };
-	JSValue result = JS_Call (ctx, function, JS_UNDEFINED, 1, args);
-	if (JS_IsException (result)) {
-	    logJSException (ctx, name);
-	}
-	JS_FreeValue (ctx, result);
-    }
-    JS_FreeValue (ctx, function);
-}
-
-void ScriptEngine::runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const {
-    JSValue runIntervals = JS_GetPropertyStr (ctx, globalObj, "__weRunIntervals");
-    if (JS_IsFunction (ctx, runIntervals)) {
-	JSValue args[] = { JS_NewString (ctx, bindingKeyString.c_str ()) };
-	JSValue intervalResult = JS_Call (ctx, runIntervals, JS_UNDEFINED, 1, args);
-	if (JS_IsException (intervalResult)) {
-	    logJSException (ctx, "setInterval");
-	}
-	JS_FreeValue (ctx, args[0]);
-	JS_FreeValue (ctx, intervalResult);
-    }
-    JS_FreeValue (ctx, runIntervals);
-}
-
-DynamicValueUniquePtr ScriptEngine::fallbackTextValue (const std::string& scriptSource) const {
-    auto fallback = std::make_unique<DynamicValue> ();
-    if (scriptSource.find ("event.title") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.title, 32), DynamicValue::UpdateSource::Script);
-    } else if (scriptSource.find ("event.artist") != std::string::npos) {
-	fallback->update (shortenMediaText (this->m_mediaState.artist, 28), DynamicValue::UpdateSource::Script);
-    } else if (
-	scriptSource.find ("event.position") != std::string::npos
-	|| scriptSource.find ("displayPosition") != std::string::npos
-    ) {
-	fallback->update (formatMediaTime (this->m_mediaState.position), DynamicValue::UpdateSource::Script);
-    } else if (scriptSource.find ("event.duration") != std::string::npos) {
-	fallback->update (formatMediaTime (this->m_mediaState.duration), DynamicValue::UpdateSource::Script);
-    }
-    return fallback;
-}
-
-void ScriptEngine::applyTextFallback (DynamicValue& value, const std::string& scriptSource) const {
-    auto fallback = this->fallbackTextValue (scriptSource);
-    if (fallback->getType () != DynamicValue::Null) {
-	value.update (*fallback, DynamicValue::UpdateSource::Script);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -995,4 +638,67 @@ void ScriptEngine::tick () {
 
 	jsToDynamicValue (this->m_context, result, module.value);
     }
+}
+
+void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media) {
+    JSContext* ctx = this->m_context;
+
+    DynamicValue primaryColorValue(glm::vec3(0.12f, 0.12f, 0.12f));
+    DynamicValue secondaryColorValue(glm::vec3(0.0f, 0.0f, 0.0f));
+    DynamicValue tertiaryColorValue(glm::vec3(0.25f, 0.25f, 0.25f));
+    DynamicValue highContrastColorValue(glm::vec3(1.0f, 1.0f, 1.0f));
+
+    // TODO: PROCESS THESE COLORS INSTEAD OF HARDCODING THEM
+    JSValue primaryColor = this->m_adapters.vec3->instantiate(primaryColorValue, true);
+    JSValue secondaryColor = this->m_adapters.vec3->instantiate(secondaryColorValue, true);
+    JSValue tertiaryColor = this->m_adapters.vec3->instantiate(tertiaryColorValue, true);
+    JSValue highContrastColor = this->m_adapters.vec3->instantiate(highContrastColorValue, true);
+
+    JSValue propertiesEvent = JS_NewObject (ctx);
+
+    // set properties
+    JS_SetPropertyStr (ctx, propertiesEvent, "title", JS_NewString (ctx, media.title.c_str ()));
+    JS_SetPropertyStr (ctx, propertiesEvent, "artist", JS_NewString (ctx, media.artist.c_str ()));
+    JS_SetPropertyStr (ctx, propertiesEvent, "albumTitle", JS_NewString (ctx, media.album.c_str ()));
+
+    JSValue playbackEvent = JS_NewObject (ctx);
+
+    JS_SetPropertyStr (ctx, playbackEvent, "state", JS_NewInt32 (ctx, media.playbackState));
+
+    JSValue mediaTimelineEvent = JS_NewObject (ctx);
+
+    JS_SetPropertyStr (ctx, mediaTimelineEvent, "position", JS_NewFloat64 (ctx, media.position));
+    JS_SetPropertyStr (ctx, mediaTimelineEvent, "duration", JS_NewFloat64 (ctx, media.duration));
+
+    JSValue mediaThumbnailEvent = JS_NewObject (ctx);
+
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "hasThumbnail", JS_NewBool(ctx, media.url.has_value()));
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "primaryColor", primaryColor);
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "secondaryColor", secondaryColor);
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "tertiaryColor", tertiaryColor);
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "highContrastColor", highContrastColor);
+
+    JSValue propertiesArgs[] = { propertiesEvent };
+    JSValue playbackArgs[] = { playbackEvent };
+    JSValue mediaTimelineArgs[] = { mediaTimelineEvent };
+    JSValue mediaThumbnailArgs[] = { mediaThumbnailEvent };
+
+    for (auto& module : this->m_scriptModules | std::views::values) {
+        // call all methods
+        JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
+        JSValue result2 = this->call (module.module, 1, playbackArgs, "mediaPlaybackChanged");
+        JSValue result3 = this->call (module.module, 1, mediaTimelineArgs, "mediaTimelineChanged");
+        JSValue result4 = this->call (module.module, 1, mediaThumbnailArgs, "mediaThumbnailChanged");
+
+        JS_FreeValue (ctx, result1);
+        JS_FreeValue (ctx, result2);
+        JS_FreeValue (ctx, result3);
+        JS_FreeValue (ctx, result4);
+    }
+
+    // free all created objects as we don't keep a ref to them anymore
+    JS_FreeValue (ctx, propertiesEvent);
+    JS_FreeValue (ctx, playbackEvent);
+    JS_FreeValue (ctx, mediaTimelineEvent);
+    JS_FreeValue (ctx, mediaThumbnailEvent);
 }

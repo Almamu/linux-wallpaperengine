@@ -15,6 +15,7 @@
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Debugging/CallStack.h"
+#include "WallpaperEngine/Media/DBusMediaSource.h"
 
 #if DEMOMODE
 #include "recording.h"
@@ -440,7 +441,7 @@ void WallpaperApplication::advancePlaylist (
 		screen,
 		WallpaperEngine::Render::CWallpaper::fromWallpaper (
 		    *this->m_backgrounds[screen]->wallpaper, *this->m_renderContext, *this->m_audioContext,
-		    this->m_browserContext.get (), scaling, clamp
+		    this->m_browserContext.get (), scaling, clamp, *m_mediaSource
 		)
 	    );
 	}
@@ -706,6 +707,8 @@ void WallpaperApplication::setupAudio () {
     );
     // initialize audio context
     m_audioContext = std::make_unique<WallpaperEngine::Audio::AudioContext> (*m_audioDriver);
+    // initialize player dbus (update every 2 seconds)
+    m_mediaSource = std::make_unique<WallpaperEngine::Media::DBusMediaSource> (std::chrono::milliseconds (2000));
 }
 
 void WallpaperApplication::prepareOutputs () {
@@ -730,7 +733,7 @@ void WallpaperApplication::prepareOutputs () {
 	m_renderContext->setWallpaper (
 	    background,
 	    WallpaperEngine::Render::CWallpaper::fromWallpaper (
-		*info->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), scaling, clamp
+		*info->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), scaling, clamp, *m_mediaSource
 	    )
 	);
     }
@@ -789,7 +792,7 @@ void WallpaperApplication::prepareOutputs () {
 	// Create one shared wallpaper with the span group's scaling mode
 	auto sharedWallpaper = WallpaperEngine::Render::CWallpaper::fromWallpaper (
 	    *bgIt->second->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), spanGroup.scaling,
-	    spanGroup.clamp
+	    spanGroup.clamp, *m_mediaSource
 	);
 
 	// Convert to shared_ptr so it can be registered for multiple viewports
@@ -875,6 +878,8 @@ void WallpaperApplication::render () {
 	g_Time = m_videoDriver->getRenderTime ();
 	// update audio recorder
 	m_audioDriver->update ();
+        // update the media source
+        m_mediaSource->update ();
 	// update input information
 	m_videoDriver->getInputContext ().update ();
 	// process driver events

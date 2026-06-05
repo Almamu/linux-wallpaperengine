@@ -11,6 +11,7 @@
 #include "WallpaperEngine/Render/RenderContext.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
+#include "WallpaperEngine/Media/MediaSource.h"
 
 #include "FBOProvider.h"
 #include "WallpaperState.h"
@@ -157,7 +158,7 @@ public:
     static std::unique_ptr<CWallpaper> fromWallpaper (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
 	WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
-	const uint32_t& clampMode
+	const uint32_t& clampMode, Media::MediaSource& mediaSource
     );
 
 protected:

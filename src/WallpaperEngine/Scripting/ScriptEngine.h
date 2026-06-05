@@ -18,7 +18,11 @@
 
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
+#include "WallpaperEngine/Media/MediaSource.h"
 
+namespace WallpaperEngine::Media {
+class MediaSource;
+}
 extern "C" {
 #include "quickjs.h"
 }
@@ -52,7 +56,7 @@ public:
     };
 
     ~ScriptEngine ();
-    ScriptEngine (Render::Wallpapers::CScene& scene);
+    ScriptEngine (Render::Wallpapers::CScene& scene, Media::MediaSource& mediaSource);
     ScriptEngine (const ScriptEngine&) = delete;
     ScriptEngine& operator= (const ScriptEngine&) = delete;
 
@@ -138,23 +142,8 @@ private:
     JSValue call (JSValue module, int argc, JSValueConst argv[], const char* name);
 
     void installBuiltins ();
-    void refreshMediaState ();
-    void dispatchMediaEvents (JSValue module, const void* bindingKey);
-    void callModuleWithProps (JSContext* ctx, JSValue module, const char* name, JSValue propsObj) const;
-    void runIntervals (JSContext* ctx, JSValue globalObj, const std::string& bindingKeyString) const;
-    DynamicValueUniquePtr fallbackTextValue (const std::string& scriptSource) const;
-    void applyTextFallback (DynamicValue& value, const std::string& scriptSource) const;
 
-    struct MediaState {
-	int playbackState = 0;
-	std::string status = "Stopped";
-	std::string title;
-	std::string artist;
-	std::string artUrl;
-	double duration = 0.0;
-	double position = 0.0;
-	bool available = false;
-    };
+    void notifyMediaUpdate (const Media::MediaSource::MediaInfo& media);
 
     // Installs globalThis.__layers and related helpers. Called lazily.
     void ensureLayerRegistry ();
@@ -177,15 +166,9 @@ private:
     ScriptLayerHandle m_nextLayerId = 1;
     bool m_layerRegistryReady = false;
     std::map<ScriptLayerHandle, bool> m_layerInitialized;
-    std::unordered_set<const void*> m_initializedModules = {};
-    std::unordered_map<const void*, std::string> m_lastMediaProperties = {};
-    std::unordered_map<const void*, std::string> m_lastMediaPlayback = {};
-    std::unordered_map<const void*, std::string> m_lastMediaTimeline = {};
-    std::unordered_map<const void*, std::string> m_lastMediaThumbnail = {};
-    std::chrono::steady_clock::time_point m_lastMediaPoll = {};
-    std::future<std::optional<MediaState>> m_mediaPollFuture = {};
-    MediaState m_mediaState = {};
     bool m_builtinsInstalled = false;
+    Media::MediaSource& m_mediaSource;
+    std::function<void()> m_unregisterMediaUpdateCallback;
 
     JSObjectAdapters m_adapters;
 };

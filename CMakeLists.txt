@@ -28,6 +28,7 @@ find_package(X11)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 
+find_package(DBus REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(SDL2 REQUIRED)
@@ -290,7 +291,8 @@ include_directories(
     ${PULSEAUDIO_INCLUDE_DIR}
     ${CEF_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}
-    ${X11_INCLUDES})
+    ${X11_INCLUDES}
+    ${DBUS_INCLUDE_DIRS})
 
 set(COMMON_SOURCES
     src/External/MimeTypes/MimeTypes.cpp
@@ -349,6 +351,11 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Input/MouseInput.h
     src/WallpaperEngine/Input/Drivers/GLFWMouseInput.cpp
     src/WallpaperEngine/Input/Drivers/GLFWMouseInput.h
+
+    src/WallpaperEngine/Media/MediaSource.h
+    src/WallpaperEngine/Media/MediaSource.cpp
+    src/WallpaperEngine/Media/DBusMediaSource.h
+    src/WallpaperEngine/Media/DBusMediaSource.cpp
 
     src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.cpp
@@ -577,6 +584,7 @@ target_link_libraries (linux-wallpaperengine-lib PUBLIC
     Freetype::Freetype
     ${WAYLAND_LIBRARIES}
     ${X11_LIBRARIES}
+    ${DBUS_LIBRARIES}
     kissfft
     glslang
     spirv-cross-core
