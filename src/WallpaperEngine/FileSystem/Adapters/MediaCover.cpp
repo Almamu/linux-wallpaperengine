@@ -25,9 +25,11 @@ ReadStreamSharedPtr MediaCoverAdapter::open (const std::filesystem::path& path) 
     std::string album = *source.getMediaInfo ().url;
 
     if (album.starts_with ("file://")) {
-        album = album.substr (7);
+	album = album.substr (7);
     } else {
-        throw std::filesystem::filesystem_error ("Only file:// URLs are supported for media covers", album, std::error_code ());
+	throw std::filesystem::filesystem_error (
+	    "Only file:// URLs are supported for media covers", album, std::error_code ()
+	);
     }
 
     std::filesystem::path file = std::filesystem::absolute (album);

@@ -39,7 +39,7 @@ ReadStreamSharedPtr Container::read (const std::filesystem::path& path) const {
     ReadStreamSharedPtr result = this->resolveAdapterForFile (path).open (normalized);
 
     if (result->fail ()) {
-        throw std::runtime_error ("Failed to open file: " + normalized.string ());
+	throw std::runtime_error ("Failed to open file: " + normalized.string ());
     }
 
     return result;

@@ -21,17 +21,18 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Assets;
 
 TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) {
-    this->m_mediaCallback
-	= this->getContext ().getMediaSource ().addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& data) {
-	      if (this->m_currentThumbnail == nullptr || this->m_previousThumbnail == nullptr) {
-		  return;
-	      }
+    this->m_mediaCallback = this->getContext ().getMediaSource ().addAlbumArtListener (
+	[this] (const Media::MediaSource::MediaInfo& data) {
+	    if (this->m_currentThumbnail == nullptr || this->m_previousThumbnail == nullptr) {
+		return;
+	    }
 
-	      // copy over pixel data and setup the new texture with the new data
-	      this->m_previousThumbnail->swap (*this->m_currentThumbnail);
-	      // finally load the new image
-	      this->m_currentThumbnail->load (data);
-	  });
+	    // copy over pixel data and setup the new texture with the new data
+	    this->m_previousThumbnail->swap (*this->m_currentThumbnail);
+	    // finally load the new image
+	    this->m_currentThumbnail->load (data);
+	}
+    );
 }
 
 TextureCache::~TextureCache () { this->m_mediaCallback (); }

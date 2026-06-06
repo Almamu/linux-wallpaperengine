@@ -96,13 +96,13 @@ void AlbumTexture::load (const Media::MediaSource::MediaInfo& data) const {
 		= stbi_load_from_callbacks (&album_texture_callbacks, contents.get (), &width, &height, &channels, 4);
 
 	    if (dataptr == nullptr) {
-	        continue;
+		continue;
 	    }
 
 	    ScopeGuard guard ([dataptr] { stbi_image_free (dataptr); });
 
 	    if (width == 0 || height == 0) {
-	        continue;
+		continue;
 	    }
 
 	    this->m_width = width;

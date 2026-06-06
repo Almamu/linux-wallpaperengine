@@ -122,7 +122,7 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 		const char* artist = nullptr;
 		dbus_message_iter_get_basic (&arr, &artist);
 		this->m_mediaInfo.artist = artist ?: "";
-	        metadataUpdate = true;
+		metadataUpdate = true;
 	    }
 	} else if (keyStr == "xesam:album") {
 	    const char* album = nullptr;
@@ -153,11 +153,11 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
     );
 
     if (metadataUpdate) {
-        this->fireMetadataListeners ();
+	this->fireMetadataListeners ();
     }
 
     if (albumUpdate) {
-        this->fireAlbumArtListeners ();
+	this->fireAlbumArtListeners ();
     }
 }
 
