@@ -11,6 +11,7 @@
 using namespace WallpaperEngine::Render;
 
 namespace WallpaperEngine::Render {
+class AlbumTexture;
 namespace Helpers {
     class ContextAware;
 }
@@ -20,6 +21,7 @@ class RenderContext;
 class TextureCache final : Helpers::ContextAware {
 public:
     explicit TextureCache (RenderContext& context);
+    ~TextureCache () override;
 
     /**
      * Checks if the given texture was already loaded and returns it
@@ -39,7 +41,13 @@ public:
     void store (const std::string& name, std::shared_ptr<const TextureProvider> texture);
 
 private:
+    /** The previous album thumbnail texture */
+    std::shared_ptr<const AlbumTexture> m_previousThumbnail = nullptr;
+    /** The current album thumbnail texture */
+    std::shared_ptr<const AlbumTexture> m_currentThumbnail = nullptr;
     /** Cached textures */
     std::map<std::string, std::shared_ptr<const TextureProvider>> m_textureCache = {};
+    /** The callback to de-register media events */
+    std::function<void ()> m_mediaCallback;
 };
 } // namespace WallpaperEngine::Render

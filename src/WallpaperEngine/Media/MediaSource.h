@@ -9,20 +9,20 @@ namespace WallpaperEngine::Media {
 class MediaSource {
 public:
     enum PlaybackState {
-        Stopped = 0,
-        Playing = 1,
-        Paused = 2,
+	Stopped = 0,
+	Playing = 1,
+	Paused = 2,
     };
 
     struct MediaInfo {
-        PlaybackState playbackState;
-        std::string title;
-        std::string artist;
-        std::string album;
-        std::optional<std::string> url;
-        double duration;
-        double position;
-        bool available;
+	PlaybackState playbackState;
+	std::string title;
+	std::string artist;
+	std::string album;
+	std::optional<std::string> url;
+	double duration;
+	double position;
+	bool available;
     };
 
     explicit MediaSource (std::chrono::milliseconds updateInterval);
@@ -35,7 +35,7 @@ public:
      *
      * @return A function that can be called to remove the listener
      */
-    std::function<void()> addListener (std::function<void (MediaInfo&)> listener);
+    std::function<void ()> addListener (std::function<void (MediaInfo&)> listener);
 
     [[nodiscard]] const MediaInfo& getMediaInfo () const { return m_mediaInfo; }
 

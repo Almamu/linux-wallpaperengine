@@ -17,8 +17,7 @@ class CScene final : public CWallpaper {
 public:
     CScene (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode,
-	Media::MediaSource& mediaSource
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
     );
 
     ~CScene () override;
@@ -72,6 +71,5 @@ private:
     std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;
     std::shared_ptr<const CFBO> _rt_Bloom = nullptr;
     std::shared_ptr<const CFBO> _rt_shadowAtlas = nullptr;
-    Media::MediaSource& m_mediaSource;
 };
 } // namespace WallpaperEngine::Render::Wallpaper

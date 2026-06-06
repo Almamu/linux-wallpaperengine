@@ -89,6 +89,11 @@ private:
      */
     AssetLocatorUniquePtr setupAssetLocator (const std::string& bg) const;
     /**
+     * Initializes subsystems required for application operation
+     */
+    void initializeSubsystems ();
+
+    /**
      * Loads projects based off the settings
      */
     void loadBackgrounds ();

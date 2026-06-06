@@ -94,3 +94,5 @@ Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) co
 	"Cannot find requested file in any of the mountpoints", path, std::error_code ()
     );
 }
+
+void Container::registerAdapterFactory (FactoryUniquePtr factory) { this->m_factories.push_back (std::move (factory)); }

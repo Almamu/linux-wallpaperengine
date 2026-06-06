@@ -49,35 +49,25 @@ void scriptengine_dump (JSContext* ctx, JSValueConst obj) {
     JSPropertyEnum* props;
     uint32_t len;
 
-    if (JS_GetOwnPropertyNames(
-            ctx,
-            &props,
-            &len,
-            obj,
-            JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK) < 0)
-        return;
-
-    for (uint32_t i = 0; i < len; ++i)
-    {
-        const char* name =
-            JS_AtomToCString(ctx, props[i].atom);
-
-        JSValue val =
-            JS_GetProperty(ctx, obj, props[i].atom);
-
-        const char* value_str =
-            JS_ToCString(ctx, val);
-
-        printf("%s = %s\n",
-               name,
-               value_str ? value_str : "<non-string>");
-
-        JS_FreeCString(ctx, value_str);
-        JS_FreeValue(ctx, val);
-        JS_FreeCString(ctx, name);
+    if (JS_GetOwnPropertyNames (ctx, &props, &len, obj, JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK) < 0) {
+	return;
     }
 
-    js_free(ctx, props);
+    for (uint32_t i = 0; i < len; ++i) {
+	const char* name = JS_AtomToCString (ctx, props[i].atom);
+
+	JSValue val = JS_GetProperty (ctx, obj, props[i].atom);
+
+	const char* value_str = JS_ToCString (ctx, val);
+
+	printf ("%s = %s\n", name, value_str ? value_str : "<non-string>");
+
+	JS_FreeCString (ctx, value_str);
+	JS_FreeValue (ctx, val);
+	JS_FreeCString (ctx, name);
+    }
+
+    js_free (ctx, props);
 }
 
 JSModuleDef* scriptengine_module_loader (JSContext* ctx, const char* module, void* opaque) {
@@ -186,10 +176,10 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
     }
 }
 
-ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) : m_scene (scene), m_mediaSource (mediaSource) {
-    this->m_unregisterMediaUpdateCallback = mediaSource.addListener([this] (Media::MediaSource::MediaInfo& info) {
-        this->notifyMediaUpdate (info);
-    });
+ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) :
+    m_scene (scene), m_mediaSource (mediaSource) {
+    this->m_unregisterMediaUpdateCallback
+	= mediaSource.addListener ([this] (Media::MediaSource::MediaInfo& info) { this->notifyMediaUpdate (info); });
 
     this->m_runtime = JS_NewRuntime ();
 
@@ -251,7 +241,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& media
 }
 
 ScriptEngine::~ScriptEngine () {
-    this->m_unregisterMediaUpdateCallback();
+    this->m_unregisterMediaUpdateCallback ();
 
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
@@ -643,16 +633,16 @@ void ScriptEngine::tick () {
 void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media) {
     JSContext* ctx = this->m_context;
 
-    DynamicValue primaryColorValue(glm::vec3(0.12f, 0.12f, 0.12f));
-    DynamicValue secondaryColorValue(glm::vec3(0.0f, 0.0f, 0.0f));
-    DynamicValue tertiaryColorValue(glm::vec3(0.25f, 0.25f, 0.25f));
-    DynamicValue highContrastColorValue(glm::vec3(1.0f, 1.0f, 1.0f));
+    DynamicValue primaryColorValue (glm::vec3 (0.12f, 0.12f, 0.12f));
+    DynamicValue secondaryColorValue (glm::vec3 (0.0f, 0.0f, 0.0f));
+    DynamicValue tertiaryColorValue (glm::vec3 (0.25f, 0.25f, 0.25f));
+    DynamicValue highContrastColorValue (glm::vec3 (1.0f, 1.0f, 1.0f));
 
     // TODO: PROCESS THESE COLORS INSTEAD OF HARDCODING THEM
-    JSValue primaryColor = this->m_adapters.vec3->instantiate(primaryColorValue, true);
-    JSValue secondaryColor = this->m_adapters.vec3->instantiate(secondaryColorValue, true);
-    JSValue tertiaryColor = this->m_adapters.vec3->instantiate(tertiaryColorValue, true);
-    JSValue highContrastColor = this->m_adapters.vec3->instantiate(highContrastColorValue, true);
+    JSValue primaryColor = this->m_adapters.vec3->instantiate (primaryColorValue, true);
+    JSValue secondaryColor = this->m_adapters.vec3->instantiate (secondaryColorValue, true);
+    JSValue tertiaryColor = this->m_adapters.vec3->instantiate (tertiaryColorValue, true);
+    JSValue highContrastColor = this->m_adapters.vec3->instantiate (highContrastColorValue, true);
 
     JSValue propertiesEvent = JS_NewObject (ctx);
 
@@ -672,7 +662,7 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
 
     JSValue mediaThumbnailEvent = JS_NewObject (ctx);
 
-    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "hasThumbnail", JS_NewBool(ctx, media.url.has_value()));
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "hasThumbnail", JS_NewBool (ctx, media.url.has_value ()));
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "primaryColor", primaryColor);
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "secondaryColor", secondaryColor);
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "tertiaryColor", tertiaryColor);
@@ -684,16 +674,16 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
     JSValue mediaThumbnailArgs[] = { mediaThumbnailEvent };
 
     for (auto& module : this->m_scriptModules | std::views::values) {
-        // call all methods
-        JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
-        JSValue result2 = this->call (module.module, 1, playbackArgs, "mediaPlaybackChanged");
-        JSValue result3 = this->call (module.module, 1, mediaTimelineArgs, "mediaTimelineChanged");
-        JSValue result4 = this->call (module.module, 1, mediaThumbnailArgs, "mediaThumbnailChanged");
+	// call all methods
+	JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
+	JSValue result2 = this->call (module.module, 1, playbackArgs, "mediaPlaybackChanged");
+	JSValue result3 = this->call (module.module, 1, mediaTimelineArgs, "mediaTimelineChanged");
+	JSValue result4 = this->call (module.module, 1, mediaThumbnailArgs, "mediaThumbnailChanged");
 
-        JS_FreeValue (ctx, result1);
-        JS_FreeValue (ctx, result2);
-        JS_FreeValue (ctx, result3);
-        JS_FreeValue (ctx, result4);
+	JS_FreeValue (ctx, result1);
+	JS_FreeValue (ctx, result2);
+	JS_FreeValue (ctx, result3);
+	JS_FreeValue (ctx, result4);
     }
 
     // free all created objects as we don't keep a ref to them anymore

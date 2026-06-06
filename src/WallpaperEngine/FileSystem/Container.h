@@ -52,6 +52,11 @@ public:
      */
     VirtualAdapter& getVFS () const;
 
+    /**
+     * @param factory The factory to register for this container
+     */
+    void registerAdapterFactory (FactoryUniquePtr factory);
+
 private:
     /**
      * Searches for an adapter to handle the given file

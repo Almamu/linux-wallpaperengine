@@ -326,6 +326,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/FileSystem/Adapters/Package.h
     src/WallpaperEngine/FileSystem/Adapters/Virtual.cpp
     src/WallpaperEngine/FileSystem/Adapters/Virtual.h
+    src/WallpaperEngine/FileSystem/Adapters/MediaCover.h
+    src/WallpaperEngine/FileSystem/Adapters/MediaCover.cpp
 
     src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.cpp
     src/WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.h
@@ -424,6 +426,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/CObject.cpp
     src/WallpaperEngine/Render/CTexture.cpp
     src/WallpaperEngine/Render/CTexture.h
+    src/WallpaperEngine/Render/AlbumTexture.h
+    src/WallpaperEngine/Render/AlbumTexture.cpp
     src/WallpaperEngine/Render/TextureProvider.h
 
     src/WallpaperEngine/Render/Objects/CRenderable.cpp

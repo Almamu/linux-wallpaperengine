@@ -8,8 +8,11 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 
 namespace WallpaperEngine::Render {
-RenderContext::RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app) :
-    m_driver (driver), m_app (app), m_textureCache (new TextureCache (*this)) { }
+RenderContext::RenderContext (
+    Drivers::VideoDriver& driver, WallpaperApplication& app, Media::MediaSource& mediaSource
+) :
+    m_driver (driver), m_app (app), m_mediaSource (mediaSource),
+    m_textureCache (std::make_unique<TextureCache> (*this)) { }
 
 void RenderContext::render (Drivers::Output::OutputViewport* viewport) {
     viewport->makeCurrent ();
@@ -62,5 +65,7 @@ std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std:
 const std::map<std::string, std::shared_ptr<CWallpaper>>& RenderContext::getWallpapers () const {
     return this->m_wallpapers;
 }
+
+Media::MediaSource& RenderContext::getMediaSource () const { return this->m_mediaSource; }
 
 } // namespace WallpaperEngine::Render
