@@ -614,6 +614,7 @@ if (BUILD_TESTING)
         Freetype::Freetype
         ${WAYLAND_LIBRARIES}
         ${X11_LIBRARIES}
+        ${DBUS_LIBRARIES}
         kissfft
         glslang
         spirv-cross-core
