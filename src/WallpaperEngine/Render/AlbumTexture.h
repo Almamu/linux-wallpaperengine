@@ -30,7 +30,7 @@ public:
     void update () const override;
 
     void swap (const AlbumTexture& other) const noexcept;
-    void load (Media::MediaSource::MediaInfo& data) const;
+    void load (const Media::MediaSource::MediaInfo& data) const;
 
 private:
     std::vector<FrameSharedPtr> m_frames;

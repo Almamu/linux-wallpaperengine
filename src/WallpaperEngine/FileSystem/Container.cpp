@@ -36,7 +36,13 @@ Container::Container () {
 ReadStreamSharedPtr Container::read (const std::filesystem::path& path) const {
     const auto normalized = normalize_path (path);
 
-    return this->resolveAdapterForFile (path).open (normalized);
+    ReadStreamSharedPtr result = this->resolveAdapterForFile (path).open (normalized);
+
+    if (result->fail ()) {
+        throw std::runtime_error ("Failed to open file: " + normalized.string ());
+    }
+
+    return result;
 }
 
 std::string Container::readString (const std::filesystem::path& path) const {

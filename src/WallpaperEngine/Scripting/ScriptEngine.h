@@ -169,6 +169,7 @@ private:
     bool m_builtinsInstalled = false;
     Media::MediaSource& m_mediaSource;
     std::function<void ()> m_unregisterMediaUpdateCallback;
+    std::function<void ()> m_unregisterAlbumArtUpdateCallback;
 
     JSObjectAdapters m_adapters;
 };

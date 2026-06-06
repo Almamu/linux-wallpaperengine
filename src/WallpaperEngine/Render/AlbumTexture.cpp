@@ -2,6 +2,7 @@
 
 #include "RenderContext.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Media/MediaSource.h"
 #include "stb_image.h"
 
@@ -83,7 +84,7 @@ void AlbumTexture::swap (const AlbumTexture& other) const noexcept {
     delete[] pixels;
 }
 
-void AlbumTexture::load (Media::MediaSource::MediaInfo& data) const {
+void AlbumTexture::load (const Media::MediaSource::MediaInfo& data) const {
     for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
 	try {
 	    // try to open the file in any of the asset locators
@@ -94,6 +95,16 @@ void AlbumTexture::load (Media::MediaSource::MediaInfo& data) const {
 	    auto* dataptr
 		= stbi_load_from_callbacks (&album_texture_callbacks, contents.get (), &width, &height, &channels, 4);
 
+	    if (dataptr == nullptr) {
+	        continue;
+	    }
+
+	    ScopeGuard guard ([dataptr] { stbi_image_free (dataptr); });
+
+	    if (width == 0 || height == 0) {
+	        continue;
+	    }
+
 	    this->m_width = width;
 	    this->m_height = height;
 	    this->m_resolution = glm::vec4 (this->m_width, this->m_height, this->m_width, this->m_height);
@@ -101,7 +112,6 @@ void AlbumTexture::load (Media::MediaSource::MediaInfo& data) const {
 	    // setup texture contents
 	    glBindTexture (GL_TEXTURE_2D, this->m_textureID);
 	    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataptr);
-	    stbi_image_free (dataptr);
 	    return;
 	} catch (AssetLoadException&) {
 	    // shouldn't really happen, but can be ignored gracefully

@@ -1,5 +1,7 @@
 #include "MediaSource.h"
 
+#include <ranges>
+
 using namespace WallpaperEngine::Media;
 
 MediaSource::MediaSource (std::chrono::milliseconds updateInterval) :
@@ -8,7 +10,7 @@ MediaSource::MediaSource (std::chrono::milliseconds updateInterval) :
 	    .playbackState = PlaybackState::Stopped,
 	    .title = "",
 	    .artist = "",
-	    .url = "",
+	    .url = std::nullopt,
 	    .duration = 0.0f,
 	    .position = 0.0f,
 	    .available = false,
@@ -25,16 +27,30 @@ void MediaSource::update () {
     this->performUpdate ();
 }
 
-std::function<void ()> MediaSource::addListener (std::function<void (MediaInfo&)> listener) {
-    int listenerId = ++m_listenerId;
+std::function<void ()> MediaSource::addMetadataListener (std::function<void (const MediaInfo&)> listener) {
+    int listenerId = ++m_metadataListenerId;
 
-    m_listeners.emplace (listenerId, listener);
+    m_metadataListeners.emplace (listenerId, listener);
 
-    return [this, listenerId] () { m_listeners.erase (listenerId); };
+    return [this, listenerId] () { m_metadataListeners.erase (listenerId); };
 }
 
-void MediaSource::fireListeners () {
-    for (auto& [id, listener] : m_listeners) {
+std::function<void ()> MediaSource::addAlbumArtListener (std::function<void (const MediaInfo&)> listener) {
+    int listenerId = ++m_albumArtListenerId;
+
+    m_albumArtListeners.emplace (listenerId, listener);
+
+    return [this, listenerId] () { m_albumArtListeners.erase (listenerId); };
+}
+
+void MediaSource::fireMetadataListeners () {
+    for (auto& listener : m_metadataListeners | std::views::values) {
+	listener (m_mediaInfo);
+    }
+}
+
+void MediaSource::fireAlbumArtListeners () {
+    for (auto& listener : m_albumArtListeners | std::views::values) {
 	listener (m_mediaInfo);
     }
 }

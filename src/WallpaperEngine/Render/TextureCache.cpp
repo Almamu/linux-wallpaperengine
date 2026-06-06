@@ -22,7 +22,7 @@ using namespace WallpaperEngine::Data::Assets;
 
 TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) {
     this->m_mediaCallback
-	= this->getContext ().getMediaSource ().addListener ([this] (Media::MediaSource::MediaInfo& data) {
+	= this->getContext ().getMediaSource ().addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& data) {
 	      if (this->m_currentThumbnail == nullptr || this->m_previousThumbnail == nullptr) {
 		  return;
 	      }

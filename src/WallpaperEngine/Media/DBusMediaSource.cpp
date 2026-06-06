@@ -91,6 +91,9 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
     DBusMessageIter dict;
     dbus_message_iter_recurse (&variant, &dict);
 
+    bool metadataUpdate = false;
+    bool albumUpdate = false;
+
     while (dbus_message_iter_get_arg_type (&dict) == DBUS_TYPE_DICT_ENTRY) {
 	DBusMessageIter entry;
 	dbus_message_iter_recurse (&dict, &entry);
@@ -109,6 +112,7 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	    dbus_message_iter_get_basic (&value, &title);
 
 	    this->m_mediaInfo.title = title ?: "";
+	    metadataUpdate = true;
 	} else if (keyStr == "xesam:artist") {
 	    DBusMessageIter arr;
 
@@ -118,22 +122,26 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 		const char* artist = nullptr;
 		dbus_message_iter_get_basic (&arr, &artist);
 		this->m_mediaInfo.artist = artist ?: "";
+	        metadataUpdate = true;
 	    }
 	} else if (keyStr == "xesam:album") {
 	    const char* album = nullptr;
 	    dbus_message_iter_get_basic (&value, &album);
 
 	    this->m_mediaInfo.album = album ?: "";
+	    metadataUpdate = true;
 	} else if (keyStr == "mpris:artUrl") {
 	    const char* artUrl = nullptr;
 	    dbus_message_iter_get_basic (&value, &artUrl);
 
 	    this->m_mediaInfo.url = artUrl ?: "";
+	    albumUpdate = true;
 	} else if (keyStr == "mpris:length") {
 	    int64_t length = 0;
 	    dbus_message_iter_get_basic (&value, &length);
 
 	    this->m_mediaInfo.duration = length;
+	    metadataUpdate = true;
 	}
 
 	dbus_message_iter_next (&dict);
@@ -144,7 +152,13 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	",album=", this->m_mediaInfo.album, ",url=", this->m_mediaInfo.url.has_value () ? *this->m_mediaInfo.url : ""
     );
 
-    this->fireListeners ();
+    if (metadataUpdate) {
+        this->fireMetadataListeners ();
+    }
+
+    if (albumUpdate) {
+        this->fireAlbumArtListeners ();
+    }
 }
 
 void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant) {
@@ -160,7 +174,7 @@ void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant) {
 	this->m_mediaInfo.playbackState = PlaybackState::Stopped;
     }
 
-    this->fireListeners ();
+    this->fireMetadataListeners ();
 }
 
 void DBusMediaSource::parsePosition (DBusMessageIter& variant) {
@@ -168,7 +182,7 @@ void DBusMediaSource::parsePosition (DBusMessageIter& variant) {
     dbus_message_iter_get_basic (&variant, &position);
     this->m_mediaInfo.position = position;
 
-    this->fireListeners ();
+    this->fireMetadataListeners ();
 }
 
 void DBusMediaSource::update () {
@@ -216,5 +230,5 @@ void DBusMediaSource::performUpdate () {
 
     dbus_message_unref (reply);
 
-    this->fireListeners ();
+    this->fireMetadataListeners ();
 }

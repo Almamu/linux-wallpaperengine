@@ -179,7 +179,15 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) :
     m_scene (scene), m_mediaSource (mediaSource) {
     this->m_unregisterMediaUpdateCallback
-	= mediaSource.addListener ([this] (Media::MediaSource::MediaInfo& info) { this->notifyMediaUpdate (info); });
+	= mediaSource.addMetadataListener ([this] (const Media::MediaSource::MediaInfo& info) {
+	    this->notifyMediaUpdate (info);
+	});
+
+    this->m_unregisterAlbumArtUpdateCallback
+	= mediaSource.addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& info) {
+	    // TODO: SEPARATE THESE INTO THEIR OWN UPDATES SO JS ONLY RECEIVES THE MEANINGFUL UPDATES
+	    this->notifyMediaUpdate (info);
+	});
 
     this->m_runtime = JS_NewRuntime ();
 

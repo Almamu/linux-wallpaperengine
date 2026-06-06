@@ -21,6 +21,10 @@ void initLogging () {
 }
 
 int main (int argc, char* argv[]) {
+    std::filesystem::path test = "file:///test.png";
+    std::cout << test.filename () << std::endl;
+    std::cout << test.has_root_directory () << std::endl;
+    std::cout << test.root_directory () << std::endl;
     try {
 	// if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
 	bool enableLogging = true;

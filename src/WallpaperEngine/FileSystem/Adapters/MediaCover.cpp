@@ -22,7 +22,15 @@ ReadStreamSharedPtr MediaCoverAdapter::open (const std::filesystem::path& path) 
 	throw std::filesystem::filesystem_error ("Media source does not have a valid URL", path, std::error_code ());
     }
 
-    std::filesystem::path file = std::filesystem::absolute (*source.getMediaInfo ().url);
+    std::string album = *source.getMediaInfo ().url;
+
+    if (album.starts_with ("file://")) {
+        album = album.substr (7);
+    } else {
+        throw std::filesystem::filesystem_error ("Only file:// URLs are supported for media covers", album, std::error_code ());
+    }
+
+    std::filesystem::path file = std::filesystem::absolute (album);
 
     if (std::filesystem::exists (file) == false) {
 	throw std::filesystem::filesystem_error ("Media file does not exist", file, std::error_code ());
@@ -32,10 +40,10 @@ ReadStreamSharedPtr MediaCoverAdapter::open (const std::filesystem::path& path) 
 	throw std::filesystem::filesystem_error ("Media file is not a regular file", file, std::error_code ());
     }
 
-    return std::make_shared<std::ifstream> (source.getMediaInfo ().url.value ());
+    return std::make_shared<std::ifstream> (file);
 }
 
-bool MediaCoverAdapter::exists (const std::filesystem::path& path) const { return path == "$mediaThumbnail"; }
+bool MediaCoverAdapter::exists (const std::filesystem::path& path) const { return path == ""; }
 
 std::filesystem::path MediaCoverAdapter::physicalPath (const std::filesystem::path& path) const {
     sLog.exception ("MediaCoverAdapter does not support realpath");
