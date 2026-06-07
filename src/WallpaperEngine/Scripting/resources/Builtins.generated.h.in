@@ -1,0 +1,7 @@
+// This file is auto-generated from builtins.js by CMake (configure_file). Do not edit.
+#pragma once
+
+namespace WallpaperEngine::Scripting {
+inline constexpr const char* SCENE_SCRIPT_BUILTINS = R"JS(
+@WPENGINE_SCRIPT_BUILTINS@)JS";
+} // namespace WallpaperEngine::Scripting
