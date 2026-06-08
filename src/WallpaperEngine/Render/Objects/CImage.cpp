@@ -19,6 +19,8 @@
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "WallpaperEngine/Data/Utils/BinaryReader.h"
+#include "WallpaperEngine/Data/Utils/MemoryStream.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine;
@@ -26,6 +28,7 @@ using namespace WallpaperEngine::Render::Objects;
 using namespace WallpaperEngine::Render::Objects::Effects;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Builders;
+using namespace WallpaperEngine::Data::Utils;
 
 namespace {
 glm::vec2 rotateVec2 (const glm::vec2& value, float angle) {
@@ -68,18 +71,6 @@ std::optional<glm::vec3> findMagentaCompositeTint (const Image& image, const std
     return std::nullopt;
 }
 
-uint32_t readU32 (const std::vector<char>& data, const size_t offset) {
-    uint32_t value = 0;
-    std::memcpy (&value, data.data () + offset, sizeof (value));
-    return value;
-}
-
-float readFloat (const std::vector<char>& data, const size_t offset) {
-    float value = 0.0f;
-    std::memcpy (&value, data.data () + offset, sizeof (value));
-    return value;
-}
-
 struct PuppetMeshBlock {
     size_t headerOffset = 0;
     uint32_t vertexBytes = 0;
@@ -87,10 +78,11 @@ struct PuppetMeshBlock {
 };
 
 std::optional<PuppetMeshBlock> findPuppetMeshBlock (
-    const std::vector<char>& data, size_t markerSize, size_t mdlsOffset, size_t meshHeaderSize, size_t vertexStride
+    const BinaryReader& reader, size_t markerSize, size_t mdlsOffset, size_t meshHeaderSize, size_t vertexStride
 ) {
     for (size_t offset = markerSize; offset + meshHeaderSize + sizeof (uint32_t) < mdlsOffset; offset++) {
-	const uint32_t candidateVertexBytes = readU32 (data, offset + sizeof (uint32_t));
+	reader.base ().seekg (static_cast<std::streamoff> (offset + sizeof (uint32_t)), std::ios::beg);
+	const uint32_t candidateVertexBytes = reader.nextUInt32 ();
 	const size_t verticesOffset = offset + meshHeaderSize;
 	const size_t indexLengthOffset = verticesOffset + candidateVertexBytes;
 
@@ -99,7 +91,8 @@ std::optional<PuppetMeshBlock> findPuppetMeshBlock (
 	    continue;
 	}
 
-	const uint32_t candidateIndexBytes = readU32 (data, indexLengthOffset);
+	reader.base ().seekg (static_cast<std::streamoff> (indexLengthOffset), std::ios::beg);
+	const uint32_t candidateIndexBytes = reader.nextUInt32 ();
 	const size_t indicesOffset = indexLengthOffset + sizeof (uint32_t);
 	if (candidateIndexBytes == 0 || candidateIndexBytes % (sizeof (uint16_t) * 3) != 0
 	    || indicesOffset + candidateIndexBytes > mdlsOffset) {
@@ -460,7 +453,10 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	    return data.size ();
 	}();
 
-	const auto meshBlock = findPuppetMeshBlock (data, markerSize, mdlsOffset, meshHeaderSize, vertexStride);
+	auto meshBuffer = std::make_unique<char[]> (data.size ());
+	std::copy (data.begin (), data.end (), meshBuffer.get ());
+	const BinaryReader reader (std::make_shared<MemoryStream> (std::move (meshBuffer), data.size ()));
+	const auto meshBlock = findPuppetMeshBlock (reader, markerSize, mdlsOffset, meshHeaderSize, vertexStride);
 	if (!meshBlock.has_value ()) {
 	    sLog.error ("Could not find a usable MDLV mesh block in ", *this->getImage ().model->puppet);
 	    return false;
@@ -480,11 +476,13 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 
 	for (size_t index = 0; index < vertexCount; index++) {
 	    const size_t vertexOffset = verticesOffset + index * vertexStride;
-	    const float x = readFloat (data, vertexOffset + positionOffset);
-	    const float y = readFloat (data, vertexOffset + positionOffset + sizeof (float));
-	    const float z = readFloat (data, vertexOffset + positionOffset + sizeof (float) * 2);
-	    const float u = readFloat (data, vertexOffset + uvOffset);
-	    const float v = readFloat (data, vertexOffset + uvOffset + sizeof (float));
+	    reader.base ().seekg (static_cast<std::streamoff> (vertexOffset + positionOffset), std::ios::beg);
+	    const float x = reader.nextFloat ();
+	    const float y = reader.nextFloat ();
+	    const float z = reader.nextFloat ();
+	    reader.base ().seekg (static_cast<std::streamoff> (vertexOffset + uvOffset), std::ios::beg);
+	    const float u = reader.nextFloat ();
+	    const float v = reader.nextFloat ();
 
 	    this->m_puppetRawPositions.push_back (x);
 	    this->m_puppetRawPositions.push_back (y);
@@ -493,9 +491,10 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	    texcoords.push_back (v);
 	}
 
+	reader.base ().seekg (static_cast<std::streamoff> (indicesOffset), std::ios::beg);
 	for (size_t index = 0; index < indexCount; index++) {
 	    uint16_t value = 0;
-	    std::memcpy (&value, data.data () + indicesOffset + index * sizeof (uint16_t), sizeof (value));
+	    reader.next (reinterpret_cast<char*> (&value), sizeof (value));
 	    if (value >= vertexCount) {
 		sLog.error ("Invalid puppet mesh index ", value, " in ", *this->getImage ().model->puppet);
 		return false;
