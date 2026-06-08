@@ -196,7 +196,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& media
     }
 
     // debug leaks on termination
-    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS | JS_DUMP_BYTECODE_FINAL);
+    JS_SetDumpFlags (this->m_runtime, JS_DUMP_LEAKS);
 
     this->m_context = JS_NewContext (this->m_runtime);
 

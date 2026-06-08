@@ -26,7 +26,7 @@ public:
     };
 
     explicit MediaSource (std::chrono::milliseconds updateInterval);
-    virtual ~MediaSource () = default;
+    virtual ~MediaSource ();
 
     virtual void update ();
 
@@ -50,6 +50,7 @@ protected:
     void fireAlbumArtListeners ();
     virtual void performUpdate () = 0;
 
+    std::shared_ptr<bool> m_aliveFlag;
     uint32_t m_metadataListenerId = 0;
     std::map<uint32_t, std::function<void (MediaInfo&)>> m_metadataListeners;
     uint32_t m_albumArtListenerId = 0;

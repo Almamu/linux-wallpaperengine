@@ -1,9 +1,6 @@
-//
-// Created by almamu on 4/6/26.
-//
-
 #include "DBusMediaSource.h"
 
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Media;
@@ -48,14 +45,11 @@ DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* 
 	if (keyStr == "Metadata") {
 	    mediaSource->parseMetadata (value);
 	} else if (keyStr == "PlaybackStatus") {
-	    mediaSource->parsePlaybackStatus (value);
+	    mediaSource->parsePlaybackStatus (value, dbus_message_get_sender (message));
 	}
 
 	dbus_message_iter_next (&changed);
     }
-
-    const char* sender = dbus_message_get_sender (message);
-    std::string service = sender ?: "";
 
     return DBUS_HANDLER_RESULT_HANDLED;
 }
@@ -79,6 +73,9 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
     );
 
     dbus_connection_flush (this->m_connection);
+
+    this->detectPlayer ();
+    this->initialStatusFetch ();
 }
 
 DBusMediaSource::~DBusMediaSource () {
@@ -161,12 +158,16 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
     }
 }
 
-void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant) {
+void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant, const char* sender) {
     const char* status = nullptr;
     dbus_message_iter_get_basic (&variant, &status);
     std::string statusStr = status ?: "";
 
     if (statusStr == "Playing") {
+	if (sender != nullptr) {
+	    this->m_currentPlayer = sender;
+	}
+
 	this->m_mediaInfo.playbackState = PlaybackState::Playing;
     } else if (statusStr == "Paused") {
 	this->m_mediaInfo.playbackState = PlaybackState::Paused;
@@ -195,23 +196,128 @@ void DBusMediaSource::update () {
 	;
 }
 
-void DBusMediaSource::performUpdate () {
-    // send message to get position
-    DBusMessage* msg = dbus_message_new_method_call (
-	"org.mpris.MediaPlayer2.Player", "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get"
-    );
-
-    const char* iface = "org.mpris.MediaPlayer2.Player";
-    const char* prop = "Position";
-
-    dbus_message_append_args (msg, DBUS_TYPE_STRING, &iface, DBUS_TYPE_STRING, &prop, DBUS_TYPE_INVALID);
-
+DBusMessage* DBusMediaSource::dbusMessage (
+    const char* bus_name, const char* path, const char* interface, const char* method, const char* iface,
+    const char* prop
+) {
     DBusError err;
     dbus_error_init (&err);
 
-    DBusMessage* reply = dbus_connection_send_with_reply_and_block (this->m_connection, msg, -1, &err);
+    DBusMessage* msg = dbus_message_new_method_call (bus_name, path, interface, method);
+    Data::Utils::ScopeGuard guard ([msg] { dbus_message_unref (msg); });
 
-    dbus_message_unref (msg);
+    if (iface != nullptr && prop != nullptr) {
+	dbus_message_append_args (msg, DBUS_TYPE_STRING, &iface, DBUS_TYPE_STRING, &prop, DBUS_TYPE_INVALID);
+    }
+
+    DBusMessage* reply = dbus_connection_send_with_reply_and_block (m_connection, msg, -1, &err);
+
+    if (reply == nullptr) {
+	sLog.error ("DBus error: ", err.message, " (", err.name, ")");
+	return nullptr;
+    }
+
+    return reply;
+}
+
+void DBusMediaSource::detectPlayer () {
+    DBusMessage* reply
+	= this->dbusMessage ("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames");
+
+    if (reply == nullptr) {
+	return;
+    }
+
+    Data::Utils::ScopeGuard guard ([reply] { dbus_message_unref (reply); });
+    std::vector<std::string> players;
+    DBusMessageIter iter;
+    dbus_message_iter_init (reply, &iter);
+
+    if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_ARRAY) {
+	return;
+    }
+
+    DBusMessageIter array;
+    dbus_message_iter_recurse (&iter, &array);
+
+    while (dbus_message_iter_get_arg_type (&array) != DBUS_TYPE_INVALID) {
+	char* name;
+	dbus_message_iter_get_basic (&array, &name);
+
+	std::string service = name;
+
+	if (service.starts_with ("org.mpris.MediaPlayer2.")) {
+	    players.push_back (service);
+	}
+
+	dbus_message_iter_next (&array);
+    }
+
+    if (players.empty ()) {
+	return;
+    }
+
+    for (const auto& player : players) {
+	// also get playback status
+	reply = this->dbusMessage (
+	    player.c_str (), "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get",
+	    "org.mpris.MediaPlayer2.Player", "PlaybackStatus"
+	);
+
+	if (reply == nullptr) {
+	    return;
+	}
+
+	DBusMessageIter outer;
+	dbus_message_iter_init (reply, &outer);
+	DBusMessageIter variant;
+	dbus_message_iter_recurse (&outer, &variant);
+
+	this->parsePlaybackStatus (variant, player.c_str ());
+
+	if (this->m_currentPlayer.has_value ()) {
+	    break;
+	}
+    }
+}
+
+void DBusMediaSource::initialStatusFetch () {
+    if (this->m_currentPlayer.has_value () == false) {
+	return;
+    }
+
+    DBusMessage* reply = this->dbusMessage (
+	this->m_currentPlayer.value ().c_str (), "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get",
+	"org.mpris.MediaPlayer2.Player", "Metadata"
+    );
+
+    if (reply == nullptr) {
+	return;
+    }
+
+    DBusMessageIter outer;
+    dbus_message_iter_init (reply, &outer);
+
+    DBusMessageIter variant;
+    dbus_message_iter_recurse (&outer, &variant);
+
+    this->parseMetadata (variant);
+
+    dbus_message_unref (reply);
+
+    this->fireMetadataListeners ();
+}
+
+void DBusMediaSource::performUpdate () {
+    // nothing to do if no player is detected
+    if (!this->m_currentPlayer.has_value ()) {
+	return;
+    }
+
+    DBusMessage* reply = this->dbusMessage (
+	this->m_currentPlayer.value ().c_str (), "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get",
+	"org.mpris.MediaPlayer2.Player", "Position"
+    );
 
     if (reply == nullptr) {
 	return;
