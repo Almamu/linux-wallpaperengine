@@ -14,7 +14,6 @@ public:
     static MaterialUniquePtr parse (const JSON& it, const std::string& filename, const Project& project);
     static std::vector<MaterialPassUniquePtr> parsePasses (const JSON& it, const Project& project);
     static MaterialPassUniquePtr parsePass (const JSON& it, const Project& project);
-    static std::map<int, std::string> parseTextures (const JSON& it);
     static std::map<std::string, int> parseCombos (const JSON& it);
     static BlendingMode parseBlendMode (const std::string& mode);
     static CullingMode parseCullMode (const std::string& mode);
