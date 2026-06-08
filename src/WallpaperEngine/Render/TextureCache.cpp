@@ -27,8 +27,11 @@ TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (con
 		return;
 	    }
 
-	    // copy over pixel data and setup the new texture with the new data
-	    this->m_previousThumbnail->swap (*this->m_currentThumbnail);
+	    if (this->m_currentThumbnail->isReady ()) {
+	        // copy over pixel data and setup the new texture with the new data
+                this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
+	    }
+
 	    // finally load the new image
 	    this->m_currentThumbnail->load ();
 	}
@@ -81,6 +84,10 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 
 	    auto parsedTexture = TextureParser::parse (stream, filename, metadataLoader);
 	    auto texture = std::make_shared<CTexture> (this->getContext (), std::move (parsedTexture));
+
+#if !NDEBUG
+	    glObjectLabel (GL_TEXTURE, texture->getTextureID (0), -1, filename.c_str ());
+#endif
 
 	    this->store (filename, texture);
 

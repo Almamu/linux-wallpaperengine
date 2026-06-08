@@ -37,6 +37,7 @@ public:
     void incrementUsageCount () const override;
     void decrementUsageCount () const override;
     void update () const override;
+    bool isReady () const override;
 
 private:
     GLuint m_framebuffer = GL_NONE;

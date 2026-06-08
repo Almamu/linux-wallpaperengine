@@ -34,7 +34,7 @@ AlbumTexture::AlbumTexture (RenderContext& context) : Helpers::ContextAware (con
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
 
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -43,6 +43,7 @@ AlbumTexture::AlbumTexture (RenderContext& context) : Helpers::ContextAware (con
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
+
 }
 
 AlbumTexture::~AlbumTexture () { glDeleteTextures (1, &this->m_textureID); }
@@ -66,22 +67,30 @@ void AlbumTexture::incrementUsageCount () const { }
 void AlbumTexture::decrementUsageCount () const { }
 void AlbumTexture::update () const { }
 
-void AlbumTexture::swap (const AlbumTexture& other) const noexcept {
-    uint8_t* pixels = new uint8_t[other.m_width * other.m_height * 4];
+void AlbumTexture::copyContents (const TextureProvider& other) const noexcept {
+    // fallback to gpu -> cpu -> gpu copy
+    // RGBA8 texture: 4 bytes per pixel
+    size_t bufferSize = other.getTextureWidth (0) * other.getTextureHeight (0) * 4;
 
-    // copy over the other texture data into this one
-    glBindTexture (GL_TEXTURE_2D, other.m_textureID);
-    glGetnTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, other.m_width * other.m_height * 4, pixels);
+    uint8_t* buffer = new uint8_t[bufferSize];
 
+    // Read the source texture
+    glBindTexture (GL_TEXTURE_2D, other.getTextureID (0));
+    glGetnTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufferSize, buffer);
+
+    // Upload into another texture
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, other.m_width, other.m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D (
+	GL_TEXTURE_2D, 0, GL_RGBA8, other.getTextureWidth (0), other.getTextureHeight (0), 0, GL_RGBA,
+	GL_UNSIGNED_BYTE, buffer
+    );
+
+    delete[] buffer;
 
     // copy over the important metadata
-    this->m_width = other.m_width;
-    this->m_height = other.m_height;
-    this->m_resolution = other.m_resolution;
-
-    delete[] pixels;
+    this->m_width = other.getTextureWidth (0);
+    this->m_height = other.getTextureHeight (0);
+    this->m_resolution = *other.getResolution ();
 }
 
 void AlbumTexture::load () const {
@@ -114,7 +123,12 @@ void AlbumTexture::load () const {
 	    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataptr);
 	    return;
 	} catch (AssetLoadException&) {
-	    // shouldn't really happen, but can be ignored gracefully
+	    // this is expected if the thumbnail is not available
 	}
     }
+}
+
+bool AlbumTexture::isReady () const {
+    // these are only ready to be rendered if their content's are present
+    return this->m_width > 0 && this->m_height > 0;
 }

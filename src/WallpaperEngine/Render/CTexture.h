@@ -58,6 +58,7 @@ public:
      * Some textures need to be updated
      */
     void update () const override;
+    bool isReady() const override;
 
 private:
     /**

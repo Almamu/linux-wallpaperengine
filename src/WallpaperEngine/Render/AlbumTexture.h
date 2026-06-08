@@ -29,8 +29,9 @@ public:
     void decrementUsageCount () const override;
     void update () const override;
 
-    void swap (const AlbumTexture& other) const noexcept;
+    void copyContents (const TextureProvider& other) const noexcept;
     void load () const;
+    bool isReady() const override;
 
 private:
     std::vector<FrameSharedPtr> m_frames;

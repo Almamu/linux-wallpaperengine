@@ -78,6 +78,10 @@ public:
      * @return Duration of spritesheet animation in seconds
      */
     [[nodiscard]] virtual float getSpritesheetDuration () const = 0;
+    /**
+     * @return If this texture is ready to be used or not
+     */
+    virtual bool isReady () const = 0;
 
     /**
      * Increments the usage count of the texture
