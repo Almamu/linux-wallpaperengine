@@ -67,8 +67,15 @@ std::map<int, std::string> MaterialParser::parseTextures (const JSON& it) {
     for (const auto& cur : it) {
 	if (!cur.is_null ()) {
 	    if (!cur.is_string ()) {
-		sLog.error ("Detected a non-string texture, most likely a special value: ", cur.dump ());
-		result.emplace (index, "");
+		const auto name = cur.optional<std::string> ("name");
+		const auto type = cur.optional<std::string> ("type");
+
+		if (type != "system" || !name.has_value ()) {
+		    sLog.error ("Detected a non-string texture, most likely a special value: ", cur.dump ());
+		    result.emplace (index, "");
+		}
+
+		result.emplace (index, *name);
 	    } else {
 		result.emplace (index, cur);
 	    }

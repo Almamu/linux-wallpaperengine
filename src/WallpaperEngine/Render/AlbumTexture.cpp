@@ -84,7 +84,7 @@ void AlbumTexture::swap (const AlbumTexture& other) const noexcept {
     delete[] pixels;
 }
 
-void AlbumTexture::load (const Media::MediaSource::MediaInfo& data) const {
+void AlbumTexture::load () const {
     for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
 	try {
 	    // try to open the file in any of the asset locators

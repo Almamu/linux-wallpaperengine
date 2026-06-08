@@ -30,7 +30,7 @@ TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (con
 	    // copy over pixel data and setup the new texture with the new data
 	    this->m_previousThumbnail->swap (*this->m_currentThumbnail);
 	    // finally load the new image
-	    this->m_currentThumbnail->load (data);
+	    this->m_currentThumbnail->load ();
 	}
     );
 }
@@ -45,7 +45,19 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
     if (filename == "$mediaThumbnail" || filename == "$mediaPreviousThumbnail") {
 	// these textures are special cases, so make sure they're created only upon request
 	this->m_currentThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+
+#if !NDEBUG
+	glObjectLabel (GL_TEXTURE, this->m_currentThumbnail->getTextureID (0), -1, "$mediaThumbnail");
+#endif
+
 	this->m_previousThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+
+#if !NDEBUG
+	glObjectLabel (GL_TEXTURE, this->m_previousThumbnail->getTextureID (0), -1, "$mediaPreviousThumbnail");
+#endif
+
+	// load the latest texture
+	this->m_currentThumbnail->load ();
 
 	// add these to the cache and return the right one
 	this->store ("$mediaThumbnail", this->m_currentThumbnail);
