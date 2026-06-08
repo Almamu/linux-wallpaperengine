@@ -707,6 +707,18 @@ void CPass::setupTextureUniforms () {
 	}
     }
 
+    for (const auto& [index, textureName] : this->m_override.usertextures) {
+        try {
+            if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
+                this->m_textures[index] = this->resolveFBO (textureName);
+            } else if (!textureName.empty ()) {
+                this->m_textures[index] = this->getContext ().resolveTexture (textureName);
+            }
+        } catch (std::runtime_error& ex) {
+            sLog.error ("Cannot resolve user texture ", textureName, " for override ", ex.what ());
+        }
+    }
+
     // binds are set last as they're the most important to be set
     for (const auto& [index, bind] : this->m_binds) {
 	if (bind == "previous") {

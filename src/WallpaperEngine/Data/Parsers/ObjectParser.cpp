@@ -233,6 +233,7 @@ ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, 
     const auto& combos = it.optional ("combos");
     const auto& textures = it.optional ("textures");
     const auto& constants = it.optional ("constantshadervalues");
+    const auto& usertextures = it.optional ("usertextures");
 
     // TODO: PARSE CONSTANT SHADER VALUES AND FIND REFS?
     return std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
@@ -241,6 +242,7 @@ ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, 
 	.constants
 	= constants.has_value () ? ShaderConstantParser::parse (constants.value (), project) : ShaderConstantMap {},
 	.textures = textures.has_value () ? TextureParser::parseTextureMap (textures.value ()) : TextureMap {},
+        .usertextures = usertextures.has_value () ? TextureParser::parseTextureMap (usertextures.value ()) : TextureMap {},
     });
 }
 
