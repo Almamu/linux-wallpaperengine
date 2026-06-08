@@ -259,7 +259,22 @@ set_target_properties(ceflib
 ADD_LOGICAL_TARGET(libcef_lib "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 PRINT_CEF_CONFIG()
 
+# Embed scene-script builtins (builtins.js) into a generated header, so the JS can
+# live in its own file (lint/syntax-highlight friendly) instead of an inline literal.
+# Added to the global include_directories so both the library and the tests target
+# (which recompiles the common sources) can find the generated header.
+set(WPENGINE_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(WPENGINE_BUILTINS_JS "${CMAKE_CURRENT_SOURCE_DIR}/src/WallpaperEngine/Scripting/resources/builtins.js")
+file(READ "${WPENGINE_BUILTINS_JS}" WPENGINE_SCRIPT_BUILTINS)
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/WallpaperEngine/Scripting/resources/Builtins.generated.h.in"
+    "${WPENGINE_GENERATED_DIR}/WallpaperEngine/Scripting/Builtins.generated.h"
+    @ONLY)
+# re-run configuration (regenerating the header) whenever the .js changes
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${WPENGINE_BUILTINS_JS}")
+
 include_directories(
+    ${WPENGINE_GENERATED_DIR}
     src
     src/External/glslang-WallpaperEngine
     src/External/SPIRV-Cross-WallpaperEngine
