@@ -43,7 +43,6 @@ AlbumTexture::AlbumTexture (RenderContext& context) : Helpers::ContextAware (con
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 8.0f);
-
 }
 
 AlbumTexture::~AlbumTexture () { glDeleteTextures (1, &this->m_textureID); }

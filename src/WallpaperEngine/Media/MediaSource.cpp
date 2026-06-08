@@ -14,7 +14,6 @@ MediaSource::MediaSource (std::chrono::milliseconds updateInterval) :
 							 .duration = 0.0f,
 							 .position = 0.0f,
 							 .available = false,
-
 						     }
 						 ),
     m_updateInterval (updateInterval) { }
