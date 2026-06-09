@@ -304,8 +304,6 @@ void DBusMediaSource::initialStatusFetch () {
     this->parseMetadata (variant);
 
     dbus_message_unref (reply);
-
-    this->fireMetadataListeners ();
 }
 
 void DBusMediaSource::performUpdate () {

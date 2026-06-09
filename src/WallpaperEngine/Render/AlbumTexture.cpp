@@ -80,8 +80,8 @@ void AlbumTexture::copyContents (const TextureProvider& other) const noexcept {
     // Upload into another texture
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
     glTexImage2D (
-	GL_TEXTURE_2D, 0, GL_RGBA8, other.getTextureWidth (0), other.getTextureHeight (0), 0, GL_RGBA,
-	GL_UNSIGNED_BYTE, buffer
+	GL_TEXTURE_2D, 0, GL_RGBA8, other.getTextureWidth (0), other.getTextureHeight (0), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+	buffer
     );
 
     delete[] buffer;
@@ -93,6 +93,9 @@ void AlbumTexture::copyContents (const TextureProvider& other) const noexcept {
 }
 
 void AlbumTexture::load () const {
+    this->m_width = 0;
+    this->m_height = 0;
+
     for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
 	try {
 	    // try to open the file in any of the asset locators

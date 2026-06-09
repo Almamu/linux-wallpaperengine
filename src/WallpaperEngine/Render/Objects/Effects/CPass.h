@@ -66,8 +66,8 @@ public:
 
 private:
     struct TextureChainEntry {
-        std::shared_ptr<const TextureProvider> texture;
-        std::shared_ptr<TextureChainEntry> next;
+	std::shared_ptr<const TextureProvider> texture;
+	std::shared_ptr<TextureChainEntry> next;
     };
 
     enum UniformType {

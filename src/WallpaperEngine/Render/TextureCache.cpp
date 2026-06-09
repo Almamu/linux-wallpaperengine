@@ -28,8 +28,8 @@ TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (con
 	    }
 
 	    if (this->m_currentThumbnail->isReady ()) {
-	        // copy over pixel data and setup the new texture with the new data
-                this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
+		// copy over pixel data and setup the new texture with the new data
+		this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
 	    }
 
 	    // finally load the new image
@@ -45,7 +45,8 @@ std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string&
 	return found->second;
     }
 
-    if (filename == "$mediaThumbnail" || filename == "$mediaPreviousThumbnail") {
+    if ((filename == "$mediaThumbnail" || filename == "$mediaPreviousThumbnail") && this->m_currentThumbnail == nullptr
+	&& this->m_previousThumbnail == nullptr) {
 	// these textures are special cases, so make sure they're created only upon request
 	this->m_currentThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
 

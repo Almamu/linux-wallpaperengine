@@ -142,7 +142,7 @@ TextureMap TextureParser::parseTextureMap (const JSON& it) {
 	    if (nameIt != cur.end () && nameIt->is_string ()) {
 		result.emplace (textureIndex, nameIt->get<std::string> ());
 	    }
-	} else {
+	} else if (cur.is_string ()) {
 	    std::string texName = cur;
 	    if (!texName.empty ()) {
 		result.emplace (textureIndex, texName);

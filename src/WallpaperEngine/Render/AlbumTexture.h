@@ -31,7 +31,7 @@ public:
 
     void copyContents (const TextureProvider& other) const noexcept;
     void load () const;
-    bool isReady() const override;
+    bool isReady () const override;
 
 private:
     std::vector<FrameSharedPtr> m_frames;
