@@ -43,16 +43,12 @@ TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (con
 
     this->m_mediaCallback = this->getContext ().getMediaSource ().addAlbumArtListener (
 	[this] (const Media::MediaSource::MediaInfo& data) {
-	    if (this->m_currentThumbnail == nullptr || this->m_previousThumbnail == nullptr) {
-		return;
-	    }
-
 	    if (this->m_currentThumbnail->isReady ()) {
 		// copy over pixel data and setup the new texture with the new data
 		this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
 	    }
 
-	    // finally load the new image
+	    // load the next image
 	    this->m_currentThumbnail->load ();
 	}
     );
