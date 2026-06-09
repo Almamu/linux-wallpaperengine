@@ -111,8 +111,8 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	    std::string titleStr = title ?: "";
 
 	    if (this->m_mediaInfo.title != titleStr) {
-	        this->m_mediaInfo.title = titleStr;
-	        metadataUpdate = true;
+		this->m_mediaInfo.title = titleStr;
+		metadataUpdate = true;
 	    }
 	} else if (keyStr == "xesam:artist") {
 	    DBusMessageIter arr;
@@ -123,12 +123,12 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 		const char* artist = nullptr;
 		dbus_message_iter_get_basic (&arr, &artist);
 
-	        std::string artistStr = artist ?: "";
+		std::string artistStr = artist ?: "";
 
-	        if (this->m_mediaInfo.artist != artistStr) {
-	            this->m_mediaInfo.artist = artistStr;
-	            metadataUpdate = true;
-	        }
+		if (this->m_mediaInfo.artist != artistStr) {
+		    this->m_mediaInfo.artist = artistStr;
+		    metadataUpdate = true;
+		}
 	    }
 	} else if (keyStr == "xesam:album") {
 	    const char* album = nullptr;
@@ -137,8 +137,8 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	    std::string albumStr = album ?: "";
 
 	    if (this->m_mediaInfo.album != albumStr) {
-	        this->m_mediaInfo.album = albumStr;
-	        albumUpdate = true;
+		this->m_mediaInfo.album = albumStr;
+		albumUpdate = true;
 	    }
 	} else if (keyStr == "mpris:artUrl") {
 	    const char* artUrl = nullptr;
@@ -146,23 +146,23 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 
 	    std::string artUrlStr = artUrl ?: "";
 
-	    if (artUrlStr.empty() && this->m_mediaInfo.url.has_value ()) {
-	        this->m_mediaInfo.url.reset ();
-	        albumUpdate = true;
+	    if (artUrlStr.empty () && this->m_mediaInfo.url.has_value ()) {
+		this->m_mediaInfo.url.reset ();
+		albumUpdate = true;
 	    } else if (this->m_mediaInfo.url.has_value () && artUrlStr != *this->m_mediaInfo.url) {
-	        this->m_mediaInfo.url = artUrlStr;
-	        albumUpdate = true;
+		this->m_mediaInfo.url = artUrlStr;
+		albumUpdate = true;
 	    } else if (!this->m_mediaInfo.url.has_value ()) {
-	        this->m_mediaInfo.url = artUrlStr;
-	        albumUpdate = true;
+		this->m_mediaInfo.url = artUrlStr;
+		albumUpdate = true;
 	    }
 	} else if (keyStr == "mpris:length") {
 	    int64_t length = 0;
 	    dbus_message_iter_get_basic (&value, &length);
 
 	    if (this->m_mediaInfo.duration != length) {
-	        this->m_mediaInfo.duration = length;
-	        metadataUpdate = true;
+		this->m_mediaInfo.duration = length;
+		metadataUpdate = true;
 	    }
 	}
 
@@ -202,8 +202,8 @@ void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant, const char*
     }
 
     if (newState != this->m_mediaInfo.playbackState) {
-        this->m_mediaInfo.playbackState = newState;
-        this->fireMetadataListeners ();
+	this->m_mediaInfo.playbackState = newState;
+	this->fireMetadataListeners ();
     }
 }
 
@@ -212,8 +212,8 @@ void DBusMediaSource::parsePosition (DBusMessageIter& variant) {
     dbus_message_iter_get_basic (&variant, &position);
 
     if (this->m_mediaInfo.position != position) {
-        this->m_mediaInfo.position = position;
-        this->fireMetadataListeners ();
+	this->m_mediaInfo.position = position;
+	this->fireMetadataListeners ();
     }
 }
 
@@ -299,7 +299,7 @@ void DBusMediaSource::detectPlayer () {
 	    return;
 	}
 
-        Data::Utils::ScopeGuard guard2([reply] { dbus_message_unref (reply); });
+	Data::Utils::ScopeGuard guard2 ([reply] { dbus_message_unref (reply); });
 
 	DBusMessageIter outer;
 	dbus_message_iter_init (reply, &outer);
@@ -328,7 +328,7 @@ void DBusMediaSource::initialStatusFetch () {
 	return;
     }
 
-    Data::Utils::ScopeGuard guard([reply] { dbus_message_unref (reply); });
+    Data::Utils::ScopeGuard guard ([reply] { dbus_message_unref (reply); });
     DBusMessageIter outer;
     dbus_message_iter_init (reply, &outer);
 
@@ -353,7 +353,7 @@ void DBusMediaSource::performUpdate () {
 	return;
     }
 
-    Data::Utils::ScopeGuard guard([reply] { dbus_message_unref (reply); });
+    Data::Utils::ScopeGuard guard ([reply] { dbus_message_unref (reply); });
     DBusMessageIter outer;
     dbus_message_iter_init (reply, &outer);
 
@@ -364,7 +364,7 @@ void DBusMediaSource::performUpdate () {
     dbus_message_iter_get_basic (&variant, &position);
 
     if (this->m_mediaInfo.position != position) {
-        this->m_mediaInfo.position = position;
-        this->fireMetadataListeners ();
+	this->m_mediaInfo.position = position;
+	this->fireMetadataListeners ();
     }
 }
