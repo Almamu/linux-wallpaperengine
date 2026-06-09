@@ -29,7 +29,6 @@ private:
     static std::vector<ImageEffectPassOverrideUniquePtr>
     parseEffectPassOverrides (const JSON& it, const Project& project);
     static ImageEffectPassOverrideUniquePtr parseEffectPass (const JSON& it, const Project& project);
-    static TextureMap parseTextureMap (const JSON& it);
     static ComboMap parseComboMap (const JSON& it);
     static std::vector<ImageAnimationLayerUniquePtr> parseAnimationLayers (const JSON& it, const Project& project);
     static ImageAnimationLayerUniquePtr parseAnimationLayer (const JSON& it, const Project& project);

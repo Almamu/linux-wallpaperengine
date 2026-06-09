@@ -1,5 +1,6 @@
 #include "MaterialParser.h"
 
+#include "TextureParser.h"
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Parsers/ShaderConstantParser.h"
@@ -48,36 +49,11 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const Project& 
 	.depthtest = parseDepthtestMode (it.optional ("depthtest", std::string ("disabled"))),
 	.depthwrite = parseDepthwriteMode (it.optional ("depthwrite", std::string ("disabled"))),
 	.shader = it.require<std::string> ("shader", "Material pass must have a shader"),
-	.textures = textures.has_value () ? parseTextures (*textures) : TextureMap {},
-	.usertextures = usertextures.has_value () ? parseTextures (*usertextures) : TextureMap {},
+	.textures = textures.has_value () ? TextureParser::parseTextureMap (*textures) : TextureMap {},
+	.usertextures = usertextures.has_value () ? TextureParser::parseTextureMap (*usertextures) : TextureMap {},
 	.combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
 	.constants = constants.has_value () ? ShaderConstantParser::parse (*constants, project) : ShaderConstantMap {},
     });
-}
-
-std::map<int, std::string> MaterialParser::parseTextures (const JSON& it) {
-    std::map<int, std::string> result = {};
-
-    if (!it.is_array ()) {
-	return result;
-    }
-
-    int index = 0;
-
-    for (const auto& cur : it) {
-	if (!cur.is_null ()) {
-	    if (!cur.is_string ()) {
-		sLog.error ("Detected a non-string texture, most likely a special value: ", cur.dump ());
-		result.emplace (index, "");
-	    } else {
-		result.emplace (index, cur);
-	    }
-	}
-
-	index++;
-    }
-
-    return result;
 }
 
 std::map<std::string, int> MaterialParser::parseCombos (const JSON& it) {

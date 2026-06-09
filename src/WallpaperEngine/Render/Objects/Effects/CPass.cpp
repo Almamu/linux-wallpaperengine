@@ -208,12 +208,39 @@ void CPass::setupRenderTexture () {
 
 std::shared_ptr<const TextureProvider> CPass::resolveTexture0 () {
     auto texture0 = this->resolveTexture (this->m_input, 0, this->m_input);
-    if (const auto texture0Override = this->m_textures.find (0); texture0Override != this->m_textures.end ()) {
-	texture0
-	    = texture0Override->second == nullptr ? (this->m_previousInput ?: this->m_input) : texture0Override->second;
+    const auto it = this->m_textures.find (0);
+
+    if (it == this->m_textures.end ()) {
+	return texture0;
     }
 
-    return texture0;
+    auto& chain = it->second;
+
+    do {
+	texture0 = chain->texture;
+
+	if (texture0 == nullptr) {
+	    if (this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
+		return this->m_previousInput;
+	    }
+
+	    if (this->m_input != nullptr && this->m_input->isReady ()) {
+		return this->m_input;
+	    }
+	} else if (texture0->isReady ()) {
+	    return texture0;
+	}
+
+	chain = chain->next;
+    } while (chain != nullptr);
+
+    // got to the end of the chain, use previous input or current input if available
+    if (this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
+	return this->m_previousInput;
+    }
+
+    // last resort, doesn't matter if the input is ready or not
+    return this->m_input;
 }
 
 CPass::TextureAnimationState
@@ -259,15 +286,41 @@ void CPass::bindTextureUnit (int index, const std::shared_ptr<const TextureProvi
 }
 
 void CPass::bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const TextureProvider>& texture0) const {
-    for (const auto& [index, expectedTexture] : this->m_textures) {
-	auto texture = expectedTexture == nullptr ? (this->m_previousInput ?: this->m_input) : expectedTexture;
-	if (texture == nullptr) {
-	    continue;
+    for (auto [index, chain] : this->m_textures) {
+	// find the expected texture
+	auto expectedTexture = chain->texture;
+
+	do {
+	    if (expectedTexture == nullptr) {
+		if (this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
+		    expectedTexture = this->m_previousInput;
+		    break;
+		}
+
+		if (this->m_input != nullptr && this->m_input->isReady ()) {
+		    expectedTexture = this->m_input;
+		    break;
+		}
+	    } else if (expectedTexture->isReady ()) {
+		break;
+	    }
+
+	    chain = chain->next;
+	    expectedTexture = chain == nullptr ? nullptr : chain->texture;
+	} while (chain != nullptr);
+
+	if (expectedTexture == nullptr && this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
+	    expectedTexture = this->m_previousInput;
 	}
 
-	this->bindTextureUnit (index, texture, index == 0 ? currentTexture : 0);
+	if (expectedTexture == nullptr) {
+	    expectedTexture = this->m_input;
+	}
+
+	this->bindTextureUnit (index, expectedTexture, index == 0 ? currentTexture : 0);
+
 	if (index == 0) {
-	    texture0 = texture;
+	    texture0 = expectedTexture;
 	}
     }
 }
@@ -648,11 +701,15 @@ void CPass::setupTextureUniforms () {
     // and then try with fragment's and override any existing
     for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
 	try {
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		this->m_textures[index] = this->resolveFBO (textureName);
-	    } else if (!textureName.empty ()) {
-		this->m_textures[index] = this->getContext ().resolveTexture (textureName);
-	    }
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    // create chain entry
+	    this->m_textures[index] = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = nullptr,
+	    });
 	} catch (std::runtime_error& ex) {
 	    sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
 	}
@@ -660,11 +717,17 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
 	try {
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		this->m_textures[index] = this->resolveFBO (textureName);
-	    } else if (!textureName.empty ()) {
-		this->m_textures[index] = this->getContext ().resolveTexture (textureName);
-	    }
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    const auto it = this->m_textures.find (index);
+	    const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = it != this->m_textures.end () ? it->second : nullptr,
+	    });
+
+	    this->m_textures[index] = chain;
 	} catch (std::runtime_error& ex) {
 	    sLog.error ("Cannot resolve texture ", textureName, " for fragment shader ", ex.what ());
 	}
@@ -672,11 +735,17 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_pass.textures) {
 	try {
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		this->m_textures[index] = this->resolveFBO (textureName);
-	    } else if (!textureName.empty ()) {
-		this->m_textures[index] = this->getContext ().resolveTexture (textureName);
-	    }
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    const auto it = this->m_textures.find (index);
+	    const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = it != this->m_textures.end () ? it->second : nullptr,
+	    });
+
+	    this->m_textures[index] = chain;
 	} catch (std::runtime_error& ex) {
 	    sLog.error ("Cannot resolve texture ", textureName, " for pass ", ex.what ());
 	}
@@ -684,11 +753,17 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_pass.usertextures) {
 	try {
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		this->m_textures[index] = this->resolveFBO (textureName);
-	    } else if (!textureName.empty ()) {
-		this->m_textures[index] = this->getContext ().resolveTexture (textureName);
-	    }
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    const auto it = this->m_textures.find (index);
+	    const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = it != this->m_textures.end () ? it->second : nullptr,
+	    });
+
+	    this->m_textures[index] = chain;
 	} catch (std::runtime_error& ex) {
 	    sLog.error ("Cannot resolve user texture ", textureName, " for pass ", ex.what ());
 	}
@@ -697,25 +772,50 @@ void CPass::setupTextureUniforms () {
     // override any texture
     for (const auto& [index, textureName] : this->m_override.textures) {
 	try {
-	    if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-		this->m_textures[index] = this->resolveFBO (textureName);
-	    } else if (!textureName.empty ()) {
-		this->m_textures[index] = this->getContext ().resolveTexture (textureName);
-	    }
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    const auto it = this->m_textures.find (index);
+	    const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = it != this->m_textures.end () ? it->second : nullptr,
+	    });
+
+	    this->m_textures[index] = chain;
 	} catch (std::runtime_error& ex) {
 	    sLog.error ("Cannot resolve texture ", textureName, " for override ", ex.what ());
 	}
     }
 
+    for (const auto& [index, textureName] : this->m_override.usertextures) {
+	try {
+	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
+		? this->resolveFBO (textureName)
+		: this->getContext ().resolveTexture (textureName);
+
+	    const auto it = this->m_textures.find (index);
+	    const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = texture,
+		.next = it != this->m_textures.end () ? it->second : nullptr,
+	    });
+
+	    this->m_textures[index] = chain;
+	} catch (std::runtime_error& ex) {
+	    sLog.error ("Cannot resolve user texture ", textureName, " for override ", ex.what ());
+	}
+    }
+
     // binds are set last as they're the most important to be set
     for (const auto& [index, bind] : this->m_binds) {
-	if (bind == "previous") {
-	    // use nullptr as indication for "previous" texture
-	    this->m_textures[index] = nullptr;
-	} else if (!bind.empty ()) {
-	    // a normal bind, search for the corresponding FBO and set it
-	    this->m_textures[index] = this->resolveFBO (bind);
-	}
+	const auto texture = bind == "previous" ? nullptr : this->resolveFBO (bind);
+	const auto it = this->m_textures.find (index);
+	const auto chain = std::make_shared<TextureChainEntry> (TextureChainEntry {
+	    .texture = texture,
+	    .next = it != this->m_textures.end () ? it->second : nullptr,
+	});
+
+	this->m_textures[index] = chain;
     }
 
     // resolve the main texture
@@ -738,7 +838,7 @@ void CPass::setupTextureUniforms () {
 
 	namestream << "g_Texture" << textureIndex << "Resolution";
 
-	texture = this->resolveTexture (expectedTexture, textureIndex, texture);
+	texture = this->resolveTexture (expectedTexture->texture, textureIndex, texture);
 	this->addUniform (namestream.str (), texture->getResolution ());
     }
 

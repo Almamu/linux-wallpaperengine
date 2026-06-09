@@ -16,6 +16,9 @@ namespace WallpaperEngine {
 namespace Application {
     class WallpaperApplication;
 }
+namespace Media {
+    class MediaSource;
+}
 
 namespace Render {
     namespace Drivers {
@@ -32,7 +35,7 @@ namespace Render {
 
     class RenderContext {
     public:
-	RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app);
+	RenderContext (Drivers::VideoDriver& driver, WallpaperApplication& app, Media::MediaSource& mediaSource);
 
 	void render (Drivers::Output::OutputViewport* viewport);
 	void setWallpaper (const std::string& display, std::shared_ptr<CWallpaper> wallpaper);
@@ -43,6 +46,7 @@ namespace Render {
 	[[nodiscard]] const Drivers::Output::Output& getOutput () const;
 	[[nodiscard]] std::shared_ptr<const TextureProvider> resolveTexture (const std::string& name) const;
 	[[nodiscard]] const std::map<std::string, std::shared_ptr<CWallpaper>>& getWallpapers () const;
+	[[nodiscard]] Media::MediaSource& getMediaSource () const;
 
     private:
 	/** Video driver in use */
@@ -51,8 +55,10 @@ namespace Render {
 	std::map<std::string, std::shared_ptr<CWallpaper>> m_wallpapers = {};
 	/** App that holds the render context */
 	WallpaperApplication& m_app;
+	/** Source for the media playback information */
+	Media::MediaSource& m_mediaSource;
 	/** Texture cache for the render */
-	TextureCache* m_textureCache = nullptr;
+	std::unique_ptr<TextureCache> m_textureCache = nullptr;
     };
 } // namespace Render
 } // namespace WallpaperEngine

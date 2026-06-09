@@ -4,6 +4,7 @@
 #include "ModelParser.h"
 
 #include "ShaderConstantParser.h"
+#include "TextureParser.h"
 #include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Builders/ColorBuilder.h"
 #include "WallpaperEngine/Data/Model/Object.h"
@@ -167,16 +168,20 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
     );
 
     const auto instance = it.optional ("instance");
+
     if (instance.has_value () && instance->is_object () && !result->model->material->passes.empty ()) {
 	auto& firstPass = **result->model->material->passes.begin ();
 	const auto instanceTextures = instance->optional ("textures");
+
 	if (instanceTextures.has_value ()) {
-	    const auto parsed = parseTextureMap (*instanceTextures);
+	    const auto parsed = TextureParser::parseTextureMap (*instanceTextures);
 	    firstPass.textures.insert (parsed.begin (), parsed.end ());
 	}
+
 	const auto instanceUserTextures = instance->optional ("usertextures");
+
 	if (instanceUserTextures.has_value ()) {
-	    const auto parsed = parseTextureMap (*instanceUserTextures);
+	    const auto parsed = TextureParser::parseTextureMap (*instanceUserTextures);
 	    firstPass.usertextures.insert (parsed.begin (), parsed.end ());
 	}
     }
@@ -228,6 +233,7 @@ ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, 
     const auto& combos = it.optional ("combos");
     const auto& textures = it.optional ("textures");
     const auto& constants = it.optional ("constantshadervalues");
+    const auto& usertextures = it.optional ("usertextures");
 
     // TODO: PARSE CONSTANT SHADER VALUES AND FIND REFS?
     return std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
@@ -235,37 +241,10 @@ ImageEffectPassOverrideUniquePtr ObjectParser::parseEffectPass (const JSON& it, 
 	.combos = combos.has_value () ? parseComboMap (combos.value ()) : ComboMap {},
 	.constants
 	= constants.has_value () ? ShaderConstantParser::parse (constants.value (), project) : ShaderConstantMap {},
-	.textures = textures.has_value () ? parseTextureMap (textures.value ()) : TextureMap {},
+	.textures = textures.has_value () ? TextureParser::parseTextureMap (textures.value ()) : TextureMap {},
+	.usertextures
+	= usertextures.has_value () ? TextureParser::parseTextureMap (usertextures.value ()) : TextureMap {},
     });
-}
-
-TextureMap ObjectParser::parseTextureMap (const JSON& it) {
-    if (!it.is_array ()) {
-	return {};
-    }
-
-    TextureMap result = {};
-    int textureIndex = -1;
-
-    for (const auto& cur : it) {
-	textureIndex++;
-
-	if (cur.is_null ()) {
-	    continue;
-	} else if (cur.is_object ()) {
-	    const auto nameIt = cur.find ("name");
-	    if (nameIt != cur.end () && nameIt->is_string ()) {
-		result.emplace (textureIndex, nameIt->get<std::string> ());
-	    }
-	} else {
-	    std::string texName = cur;
-	    if (!texName.empty ()) {
-		result.emplace (textureIndex, texName);
-	    }
-	}
-    }
-
-    return result;
 }
 
 ComboMap ObjectParser::parseComboMap (const JSON& it) {

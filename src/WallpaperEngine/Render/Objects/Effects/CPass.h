@@ -65,6 +65,11 @@ public:
     void addUniform (const std::string& name, const glm::mat4* value);
 
 private:
+    struct TextureChainEntry {
+	std::shared_ptr<const TextureProvider> texture;
+	std::shared_ptr<TextureChainEntry> next;
+    };
+
     enum UniformType {
 	Float = 0,
 	Matrix3 = 1,
@@ -188,7 +193,7 @@ private:
     /**
      * Contains the final map of textures to be used
      */
-    std::map<int, std::shared_ptr<const TextureProvider>> m_textures = {};
+    std::map<int, std::shared_ptr<TextureChainEntry>> m_textures = {};
 
     Render::Shaders::Shader* m_shader = nullptr;
 

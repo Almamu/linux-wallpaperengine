@@ -263,3 +263,6 @@ void CTexture::update () const {
 	this->m_player->render ();
     }
 }
+
+// CTextures are always ready to be rendered at all times
+bool CTexture::isReady () const { return true; }

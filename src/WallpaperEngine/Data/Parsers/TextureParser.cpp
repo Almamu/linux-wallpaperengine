@@ -122,6 +122,37 @@ FrameSharedPtr TextureParser::parseFrame (const BinaryReader& file) {
     return result;
 }
 
+TextureMap TextureParser::parseTextureMap (const JSON& it) {
+    if (!it.is_array ()) {
+	return {};
+    }
+
+    TextureMap result = {};
+    int textureIndex = -1;
+
+    for (const auto& cur : it) {
+	textureIndex++;
+
+	if (cur.is_null ()) {
+	    continue;
+	}
+
+	if (cur.is_object ()) {
+	    const auto nameIt = cur.find ("name");
+	    if (nameIt != cur.end () && nameIt->is_string ()) {
+		result.emplace (textureIndex, nameIt->get<std::string> ());
+	    }
+	} else if (cur.is_string ()) {
+	    std::string texName = cur;
+	    if (!texName.empty ()) {
+		result.emplace (textureIndex, texName);
+	    }
+	}
+    }
+
+    return result;
+}
+
 TextureFormat TextureParser::parseTextureFormat (uint32_t value) {
     switch (value) {
 	case TextureFormat_UNKNOWN:

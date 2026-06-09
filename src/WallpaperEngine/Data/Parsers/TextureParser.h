@@ -5,12 +5,15 @@
 #include <functional>
 #include <iostream>
 
+#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"
 
 namespace WallpaperEngine::Data::Parsers {
+using JSON = WallpaperEngine::Data::JSON::JSON;
 using namespace WallpaperEngine::Data::Utils;
 using namespace WallpaperEngine::Data::Assets;
+using namespace WallpaperEngine::Data::Model;
 
 class TextureParser {
 public:
@@ -22,6 +25,7 @@ public:
     static MipmapSharedPtr parseMipmap (const BinaryReader& file, const Texture& header);
     static FrameSharedPtr parseFrame (const BinaryReader& file);
     static FrameSharedPtr parseFrameV1 (const BinaryReader& file);
+    static TextureMap parseTextureMap (const JSON& it);
 
 private:
     static void parseTextureHeader (Texture& header, const BinaryReader& file);

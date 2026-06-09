@@ -18,6 +18,7 @@
 #include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
 
 #include "WallpaperEngine/Data/Model/Types.h"
+#include "WallpaperEngine/Media/MediaSource.h"
 
 #include <set>
 
@@ -87,6 +88,11 @@ private:
      * @param bg
      */
     AssetLocatorUniquePtr setupAssetLocator (const std::string& bg) const;
+    /**
+     * Initializes subsystems required for application operation
+     */
+    void initializeSubsystems ();
+
     /**
      * Loads projects based off the settings
      */
@@ -169,6 +175,7 @@ private:
     std::unique_ptr<WallpaperEngine::Render::Drivers::VideoDriver> m_videoDriver = nullptr;
     std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> m_fullScreenDetector = nullptr;
     std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
+    std::unique_ptr<WallpaperEngine::Media::MediaSource> m_mediaSource = nullptr;
     std::mt19937 m_playlistRng { std::random_device {}() };
     bool m_isPaused = false;
     bool m_screenShotTaken = false;

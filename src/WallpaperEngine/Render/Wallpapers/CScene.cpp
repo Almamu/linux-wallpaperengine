@@ -30,7 +30,7 @@ CScene::CScene (
     auto scene = wallpaper.as<Scene> ();
 
     // setup scripting engine
-    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this);
+    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this, context.getMediaSource ());
     // setup the scene camera
     this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 

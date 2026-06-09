@@ -36,7 +36,13 @@ Container::Container () {
 ReadStreamSharedPtr Container::read (const std::filesystem::path& path) const {
     const auto normalized = normalize_path (path);
 
-    return this->resolveAdapterForFile (path).open (normalized);
+    ReadStreamSharedPtr result = this->resolveAdapterForFile (path).open (normalized);
+
+    if (result->fail ()) {
+	throw std::runtime_error ("Failed to open file: " + normalized.string ());
+    }
+
+    return result;
 }
 
 std::string Container::readString (const std::filesystem::path& path) const {
@@ -94,3 +100,5 @@ Adapter& Container::resolveAdapterForFile (const std::filesystem::path& path) co
 	"Cannot find requested file in any of the mountpoints", path, std::error_code ()
     );
 }
+
+void Container::registerAdapterFactory (FactoryUniquePtr factory) { this->m_factories.push_back (std::move (factory)); }
