@@ -18,10 +18,6 @@
     path = src/External/MimeTypes
     url = https://github.com/lasselukkari/MimeTypes.git
 	branch = master
-[submodule "src/External/kissfft"]
-	path = src/External/kissfft
-	url = https://github.com/mborgerding/kissfft.git
-	branch = master
 [submodule "src/External/argparse"]
 	path = src/External/argparse
 	url = https://github.com/p-ranav/argparse.git
@@ -32,3 +28,9 @@
 [submodule "src/External/quickjs"]
 	path = src/External/quickjs
 	url = https://github.com/quickjs-ng/quickjs.git
+[submodule "src/External/kissfft-WallpaperEngine"]
+	path = src/External/kissfft-WallpaperEngine
+	url = https://github.com/Almamu/kissfft-WallpaperEngine.git
+[submodule "src/External/source-parsers"]
+	path = src/External/source-parsers
+	url = https://github.com/tasbox-org/source-parsers.git
