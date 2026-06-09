@@ -9,6 +9,7 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Logging/Log.cpp
     WallpaperEngine/Debugging/CallStack.cpp
     WallpaperEngine/Utils/UUID.cpp
+    WallpaperEngine/Maths.cpp
     Steam/FileSystem/FileSystem.cpp)
 
 add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})

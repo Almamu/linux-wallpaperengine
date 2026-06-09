@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/PropertyParser.h"
+#include "PropertyParser.h"
 #include "../Model/Property.h"
 
 using namespace WallpaperEngine::Data::Parsers;

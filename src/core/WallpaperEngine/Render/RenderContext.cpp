@@ -3,22 +3,23 @@
 #include "CWallpaper.h"
 #include "RenderContext.h"
 
+#include "AlbumTexture.h"
 #include "CTexture.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Data/Parsers/TextureParser.h"
 
 namespace WallpaperEngine::Render {
-RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator) :
-    m_textureCache (*context.texture_cache), m_context (context), m_locator (locator) {
+RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator, Media::MediaSource& mediaSource) :
+    m_textureCache (*context.texture_cache), m_context (context), m_locator (locator), m_mediaSource (mediaSource) {
     // these textures are special cases, so make sure they're created only upon request
-    this->m_currentThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+    this->m_currentThumbnail = std::make_shared<AlbumTexture> (*this);
 
 #if !NDEBUG
     glObjectLabel (GL_TEXTURE, this->m_currentThumbnail->getTextureID (0), -1, "$mediaThumbnail");
 #endif
 
-    this->m_previousThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+    this->m_previousThumbnail = std::make_shared<AlbumTexture> (*this);
 
 #if !NDEBUG
     glObjectLabel (GL_TEXTURE, this->m_previousThumbnail->getTextureID (0), -1, "$mediaPreviousThumbnail");
@@ -28,20 +29,19 @@ RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator) :
     this->m_currentThumbnail->load ();
 
     // add these to the cache and return the right one
-    this->store ("$mediaThumbnail", this->m_currentThumbnail);
-    this->store ("$mediaPreviousThumbnail", this->m_previousThumbnail);
+    this->m_textureCache.store ("$mediaThumbnail", this->m_currentThumbnail);
+    this->m_textureCache.store ("$mediaPreviousThumbnail", this->m_previousThumbnail);
 
-    this->m_mediaCallback = this->getContext ().getMediaSource ().addAlbumArtListener (
-	[this] (const Media::MediaSource::MediaInfo& data) {
-	    if (this->m_currentThumbnail->isReady ()) {
-		// copy over pixel data and setup the new texture with the new data
-		this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
-	    }
+    this->m_mediaCallback
+	= this->getMediaSource ().addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& data) {
+	      if (this->m_currentThumbnail->isReady ()) {
+		  // copy over pixel data and setup the new texture with the new data
+		  this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
+	      }
 
-	    // load the next image
-	    this->m_currentThumbnail->load ();
-	}
-    );
+	      // load the next image
+	      this->m_currentThumbnail->load ();
+	  });
 }
 
 const Context& RenderContext::getContext () const { return this->m_context; }
@@ -68,5 +68,7 @@ std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std:
 }
 
 const Assets::AssetLocator& RenderContext::getAssetLocator () const { return this->m_locator; }
+
+Media::MediaSource& RenderContext::getMediaSource () const { return this->m_mediaSource; }
 
 } // namespace WallpaperEngine::Render

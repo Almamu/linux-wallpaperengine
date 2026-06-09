@@ -1,8 +1,8 @@
-#include "../../../../WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "MaterialParser.h"
 
-#include "../../../../WallpaperEngine/Data/Parsers/TextureParser.h"
 #include "../Model/Material.h"
 #include "../Model/Project.h"
+#include "TextureParser.h"
 #include "WallpaperEngine/Data/Parsers/ShaderConstantParser.h"
 #include "WallpaperEngine/FileSystem/Container.h"
 

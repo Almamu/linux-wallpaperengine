@@ -51,10 +51,12 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Render/Camera.cpp
     WallpaperEngine/Render/CObject.cpp
     WallpaperEngine/Render/CTexture.cpp
+    WallpaperEngine/Render/AlbumTexture.cpp
 
     WallpaperEngine/Render/Objects/CRenderable.cpp
     WallpaperEngine/Render/Objects/CImage.cpp
     WallpaperEngine/Render/Objects/CSound.cpp
+    WallpaperEngine/Render/Objects/CText.cpp
     WallpaperEngine/Render/Objects/CParticle.cpp
 
     WallpaperEngine/Render/CFBO.cpp
@@ -63,7 +65,6 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/WebBrowser/IPC/WebManager.cpp
 
     WallpaperEngine/Data/Model/DynamicValue.cpp
-    WallpaperEngine/Data/Model/ScriptedDynamicValue.cpp
     WallpaperEngine/Data/Utils/BinaryReader.cpp
     WallpaperEngine/Data/Parsers/EffectParser.cpp
     WallpaperEngine/Data/Parsers/ProjectParser.cpp
@@ -98,17 +99,33 @@ set(TARGET_LIBRARIES
     PkgConfig::ffmpeg
     PkgConfig::mpv
     kissfft::kissfft
+    Freetype::Freetype
     glslang
     spirv-cross-core
     spirv-cross-glsl
     qjs)
+
+# Embed scene-script builtins (builtins.js) into a generated header, so the JS can
+# live in its own file (lint/syntax-highlight friendly) instead of an inline literal.
+# Added to the global include_directories so both the library and the tests target
+# (which recompiles the common sources) can find the generated header.
+set(WPENGINE_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(WPENGINE_BUILTINS_JS "${CMAKE_CURRENT_SOURCE_DIR}/WallpaperEngine/Scripting/resources/builtins.js")
+file(READ "${WPENGINE_BUILTINS_JS}" WPENGINE_SCRIPT_BUILTINS)
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/WallpaperEngine/Scripting/resources/Builtins.generated.h.in"
+    "${WPENGINE_GENERATED_DIR}/WallpaperEngine/Scripting/Builtins.generated.h"
+    @ONLY)
+# re-run configuration (regenerating the header) whenever the .js changes
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${WPENGINE_BUILTINS_JS}")
 
 add_library(${TARGET_NAME}-object OBJECT ${TARGET_SOURCE_FILES})
 target_include_directories(${TARGET_NAME}-object PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/include
     ${EXTERNAL_DEPS_DIR}/MimeTypes
-    ${EXTERNAL_DEPS_DIR}/stb)
+    ${EXTERNAL_DEPS_DIR}/stb
+    ${WPENGINE_GENERATED_DIR})
 
 target_compile_definitions(${TARGET_NAME}-object PRIVATE
         WPENGINE_WEBHELPER_PATH="${CMAKE_INSTALL_FULL_BINDIR}/linux-wallpaperengine-webhelper")
@@ -127,6 +144,7 @@ pkg_check_modules(zlib REQUIRED IMPORTED_TARGET zlib)
 pkg_check_modules(mpv REQUIRED IMPORTED_TARGET mpv)
 pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET libavformat libavcodec libswresample libswscale libavutil)
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
+find_package(Freetype REQUIRED)
 
 # generate the version file that will be exported with the installation
 configure_file(
@@ -172,7 +190,6 @@ install(TARGETS ${TARGET_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/linux-wallpaperengine)
-
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/generated/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/linux-wallpaperengine/ DESTINATION include/${PROJECT_NAME})

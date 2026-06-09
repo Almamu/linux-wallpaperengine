@@ -8,6 +8,7 @@
 #include "WallpaperEngine/Render/Shaders/Shader.h"
 
 #include "../TextureProvider.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 #include <glm/vec3.hpp>
 

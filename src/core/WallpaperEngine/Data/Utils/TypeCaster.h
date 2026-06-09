@@ -27,6 +27,8 @@ public:
 	throw std::bad_cast ();
     }
 
+    template <class T> [[nodiscard]] T* asOrNull () { return dynamic_cast<T*> (this); }
+
     template <class T> [[nodiscard]] bool is () const { return dynamic_cast<const T*> (this) != nullptr; }
 };
 } // namespace WallpaperEngine::Data::Utils

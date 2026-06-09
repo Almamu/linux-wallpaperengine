@@ -1,4 +1,4 @@
-#include "../../../WallpaperEngine/Data/JSON.h"
+#include "JSON.h"
 
 #include "Parsers/UserSettingParser.h"
 

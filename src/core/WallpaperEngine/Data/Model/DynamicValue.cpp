@@ -1,9 +1,9 @@
-#include "../../../../WallpaperEngine/Data/Model/DynamicValue.h"
-#include "../../../../WallpaperEngine/Data/Model/UserSetting.h"
+#include "DynamicValue.h"
+#include "UserSetting.h"
 
-#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 
 using namespace WallpaperEngine::Data::Model;
 

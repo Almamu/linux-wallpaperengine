@@ -1,6 +1,5 @@
 #include "ScriptEngine.h"
 
-#include "../../../common/WallpaperEngine/Utils/ScopeGuard.h"
 #include "Adapters/ScriptableObjectAdapter.h"
 #include "Modules/ColorModule.h"
 #include "Modules/MathModule.h"
@@ -8,12 +7,12 @@
 #include "ScriptPropertiesObject.h"
 #include "ScriptableObject.h"
 #include "WallpaperEngine/Audio/AudioContext.h"
-#include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Scripting/Builtins.generated.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "quickjs.h"
 
 #include <algorithm>

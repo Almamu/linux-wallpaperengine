@@ -1,5 +1,5 @@
-#include "../../../../WallpaperEngine/Data/Parsers/EffectParser.h"
-#include "../../../../WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "EffectParser.h"
+#include "MaterialParser.h"
 
 #include "../Model/DynamicValue.h"
 #include "../Model/Effect.h"

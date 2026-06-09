@@ -237,10 +237,10 @@ wp_project_property* WallpaperEngine::Project::propertyListNext () {
     } else if (const auto color = property->second->asOrNull<PropertyColor> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_color {
 	    .base = { .type = wp_property_type_color, .name = color->name.c_str () },
-	    .r = color->getIVec4 ().r,
-	    .g = color->getIVec4 ().g,
-	    .b = color->getIVec4 ().b,
-	    .a = color->getIVec4 ().a,
+	    .r = color->getVec4 ().r,
+	    .g = color->getVec4 ().g,
+	    .b = color->getVec4 ().b,
+	    .a = color->getVec4 ().a,
 	});
     } else if (const auto text = property->second->asOrNull<PropertyText> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_text {
@@ -301,7 +301,7 @@ void WallpaperEngine::Project::propertySet (const std::string& key, bool value) 
 	sLog.exception ("Property not found");
     }
 
-    it->second->update (value);
+    it->second->update (value, DynamicValue::UpdateSource::User);
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, const std::string& value) {
@@ -311,7 +311,7 @@ void WallpaperEngine::Project::propertySet (const std::string& key, const std::s
 	sLog.exception ("Property not found");
     }
 
-    it->second->update (value);
+    it->second->update (value, DynamicValue::UpdateSource::User);
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, float value) {
@@ -321,7 +321,7 @@ void WallpaperEngine::Project::propertySet (const std::string& key, float value)
 	sLog.exception ("Property not found");
     }
 
-    it->second->update (value);
+    it->second->update (value, DynamicValue::UpdateSource::User);
 }
 
 void WallpaperEngine::Project::propertySet (const std::string& key, glm::vec4 value) {
@@ -331,7 +331,7 @@ void WallpaperEngine::Project::propertySet (const std::string& key, glm::vec4 va
 	sLog.exception ("Property not found");
     }
 
-    it->second->update (value);
+    it->second->update (value, DynamicValue::UpdateSource::User);
 }
 
 void WallpaperEngine::Project::propertySet (const wp_project_property* property, float value) {

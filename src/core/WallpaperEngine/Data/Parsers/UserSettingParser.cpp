@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/UserSettingParser.h"
+#include "UserSettingParser.h"
 #include "DynamicValueParser.h"
 
 #include "../Model/Property.h"

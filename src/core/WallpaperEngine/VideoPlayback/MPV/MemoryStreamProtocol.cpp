@@ -1,6 +1,7 @@
 #include "MemoryStreamProtocol.h"
 
 #include "GLPlayer.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <mpv/stream_cb.h>
 

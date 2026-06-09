@@ -1,15 +1,17 @@
 #include "AlbumTexture.h"
 
-#include "../../common/WallpaperEngine/Utils/ScopeGuard.h"
 #include "RenderContext.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
+#include "WallpaperEngine/Assets/AssetLocator.h"
+#include "WallpaperEngine/Data/Utils/BinaryReader.h"
 #include "WallpaperEngine/Media/MediaSource.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "stb_image.h"
 
 using namespace WallpaperEngine::Render;
 
 int albumtexture_read (void* user, char* data, int size) {
-    auto* stream = static_cast<ReadStream*> (user);
+    auto* stream = static_cast<WallpaperEngine::Data::Utils::ReadStream*> (user);
 
     stream->read (data, size);
 
@@ -17,11 +19,11 @@ int albumtexture_read (void* user, char* data, int size) {
 }
 
 void albumtexture_skip (void* user, int n) {
-    auto* stream = static_cast<ReadStream*> (user);
+    auto* stream = static_cast<WallpaperEngine::Data::Utils::ReadStream*> (user);
     stream->seekg (n, std::ios::cur);
 }
 
-int albumtexture_eof (void* user) { return static_cast<ReadStream*> (user)->eof (); }
+int albumtexture_eof (void* user) { return static_cast<WallpaperEngine::Data::Utils::ReadStream*> (user)->eof (); }
 
 stbi_io_callbacks album_texture_callbacks
     = { .read = albumtexture_read, .skip = albumtexture_skip, .eof = albumtexture_eof };
@@ -96,37 +98,37 @@ void AlbumTexture::load () const {
     this->m_width = 0;
     this->m_height = 0;
 
-    for (const auto& project : this->getContext ().getApp ().getBackgrounds () | std::views::values) {
-	try {
-	    // try to open the file in any of the asset locators
-	    auto contents = project->assetLocator->read ("$mediaThumbnail");
+    const auto& assetLocator = this->getContext ().getAssetLocator ();
 
-	    int width, height, channels;
+    try {
+	// try to open the file in any of the asset locators
+	auto contents = assetLocator.read ("$mediaThumbnail");
 
-	    auto* dataptr
-		= stbi_load_from_callbacks (&album_texture_callbacks, contents.get (), &width, &height, &channels, 4);
+	int width, height, channels;
 
-	    if (dataptr == nullptr) {
-		continue;
-	    }
+	auto* dataptr
+	    = stbi_load_from_callbacks (&album_texture_callbacks, contents.get (), &width, &height, &channels, 4);
 
-	    ScopeGuard guard ([dataptr] { stbi_image_free (dataptr); });
-
-	    if (width == 0 || height == 0) {
-		continue;
-	    }
-
-	    this->m_width = width;
-	    this->m_height = height;
-	    this->m_resolution = glm::vec4 (this->m_width, this->m_height, this->m_width, this->m_height);
-
-	    // setup texture contents
-	    glBindTexture (GL_TEXTURE_2D, this->m_textureID);
-	    glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataptr);
+	if (dataptr == nullptr) {
 	    return;
-	} catch (AssetLoadException&) {
-	    // this is expected if the thumbnail is not available
 	}
+
+	Data::Utils::ScopeGuard guard ([dataptr] { stbi_image_free (dataptr); });
+
+	if (width == 0 || height == 0) {
+	    return;
+	}
+
+	this->m_width = width;
+	this->m_height = height;
+	this->m_resolution = glm::vec4 (this->m_width, this->m_height, this->m_width, this->m_height);
+
+	// setup texture contents
+	glBindTexture (GL_TEXTURE_2D, this->m_textureID);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataptr);
+	return;
+    } catch (Assets::AssetLoadException&) {
+	// this is expected if the thumbnail is not available
     }
 }
 

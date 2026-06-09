@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/PackageParser.h"
+#include "PackageParser.h"
 
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"
 #include "WallpaperEngine/Logging/Log.h"

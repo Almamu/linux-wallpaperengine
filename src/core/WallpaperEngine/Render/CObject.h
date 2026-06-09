@@ -20,7 +20,7 @@ public:
     virtual void render ();
 
     [[nodiscard]] Wallpapers::CScene& getScene () const;
-    [[nodiscard]] const AssetLocator& getAssetLocator () const;
+    [[nodiscard]] const Assets::AssetLocator& getAssetLocator () const;
     [[nodiscard]] int getId () const;
     [[nodiscard]] const Object& getObject () const;
 

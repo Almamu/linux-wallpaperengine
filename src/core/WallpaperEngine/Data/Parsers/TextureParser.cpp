@@ -4,9 +4,9 @@
 #include <lz4.h>
 #include <nlohmann/json.hpp>
 
-#include "../../../../WallpaperEngine/Data/Parsers/TextureParser.h"
-#include "../../../../common/WallpaperEngine/Logging/Log.h"
+#include "TextureParser.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Parsers;

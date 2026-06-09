@@ -3,9 +3,11 @@
 #include "MemoryStreamProtocol.h"
 #include "WallpaperEngine/Render/RenderContext.h"
 
-#include <GL/glew.h>
+#include <filesystem>
+#include <glad/glad.h>
 #include <mpv/client.h>
 #include <mpv/render.h>
+#include <optional>
 #include <string>
 
 namespace WallpaperEngine::VideoPlayback::MPV {

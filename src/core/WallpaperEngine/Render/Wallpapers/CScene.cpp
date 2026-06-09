@@ -9,6 +9,8 @@
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
+#include "WallpaperEngine/Render/Objects/CText.h"
+#include "WallpaperEngine/Scripting/ScriptEngine.h"
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render;
@@ -230,7 +232,7 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
     } else if (object.is<Particle> ()) {
 	const auto& particleData = *object.as<Particle> ();
 
-	if (this->getContext ().getApp ().getContext ().settings.general.disableParticles == true) {
+	if (this->getContext ().getContext ().config.disableParticles) {
 	    sLog.debug ("Ignoring particle system (disabled in settings): ", particleData.name);
 	    return nullptr;
 	}
@@ -287,27 +289,26 @@ void CScene::addObjectToRenderOrder (const Object& object) {
     }
 }
 
-ScriptEngine& CScene::getScriptEngine () const { return *this->m_scriptEngine; }
+Scripting::ScriptEngine& CScene::getScriptEngine () const { return *this->m_scriptEngine; }
 Camera& CScene::getCamera () const { return *this->m_camera; }
 
-void CScene::renderFrame (const glm::ivec4& viewport) {
+void CScene::renderFrame () {
     // ensure the virtual mouse position is up to date
-    this->updateMouse (viewport);
+    this->updateMouse ();
 
     // update the parallax position if required
     if (this->getScene ().camera.parallax.enabled->value->getBool ()
-	&& !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+	&& !this->getContext ().getContext ().config.disableParallax) {
 	const float influence = this->getScene ().camera.parallax.mouseInfluence->value->getFloat ();
 	const float amount = this->getScene ().camera.parallax.amount->value->getFloat ();
-	const float delay = glm::clamp (
-	    this->getScene ().camera.parallax.delay->value->getFloat () * (g_Time - g_TimeLast), 0.0f, 1.0f
+	const float delay = glm::min (
+	    static_cast<float> (this->getScene ().camera.parallax.delay->value->getBool ()),
+	    this->getContext ().getContext ().renderTime - this->getContext ().getContext ().renderTimeLast
 	);
 
-	const glm::vec2 centeredMouse = this->m_mousePosition - glm::vec2 (0.5f, 0.5f);
 	this->m_parallaxDisplacement
-	    = glm::mix (this->m_parallaxDisplacement, (centeredMouse * amount) * influence, delay);
+	    = glm::mix (this->m_parallaxDisplacement, (this->m_mousePosition * amount) * influence, delay);
     }
-
     // run a tick in the javascript logic
     this->getScriptEngine ().tick ();
 
@@ -354,33 +355,17 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     }
 }
 
-void CScene::updateMouse (const glm::ivec4& viewport) {
+void CScene::updateMouse () {
     // update virtual mouse position first
-    const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
+    // TODO: BETTER NAME THIS AND CHECK LOGIC
+    const glm::dvec2 position = this->getLiveMousePosition ();
 
-    // rollover the position to the last
+    // roll over the position to the last
     this->m_mousePositionLast = this->m_mousePosition;
 
-    // calculate the current position of the mouse in viewport space [0, 1]
-    double mouseX = glm::clamp ((position.x - viewport.x) / viewport.z, 0.0, 1.0);
-    // Normalize Y coordinate (OpenGL convention: 0=bottom, 1=top)
-    // Particle code expects this convention: 0=bottom results in negative Y (down), 1=top results in positive Y (up)
-    double normalizedMouseY = glm::clamp ((position.y - viewport.y) / viewport.w, 0.0, 1.0);
-
-    // Account for UV cropping when using fill/fit scaling modes
-    // The scene may be rendered larger than viewport and cropped via UVs
-    const auto uvs = this->getState ().getTextureUVs ();
-
-    // Map mouse position from viewport space to scene UV space
-    // UVs define what portion of the scene texture is visible
-    this->m_mousePositionNormalized.x = uvs.ustart + mouseX * (uvs.uend - uvs.ustart);
-    this->m_mousePositionNormalized.y = uvs.vstart + normalizedMouseY * (uvs.vend - uvs.vstart);
-
-    // Invert previous normalization of Y to match what the shader expects
-    double mouseY = 1.0 - normalizedMouseY;
-
-    this->m_mousePosition.x = this->m_mousePositionNormalized.x;
-    this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
+    // position is already inside the background, convert it to viewport space
+    this->m_mousePosition.x = position.x / this->getWidth ();
+    this->m_mousePosition.y = position.y / this->getHeight ();
 }
 
 const Scene& CScene::getScene () const { return *this->getWallpaperData ().as<Scene> (); }
@@ -389,12 +374,14 @@ int CScene::getWidth () const { return this->m_camera->getWidth (); }
 
 int CScene::getHeight () const { return this->m_camera->getHeight (); }
 
-float CScene::getTime () const { return g_Time; }
+float CScene::getTime () const { return this->getContext ().getContext ().renderTime; }
 
-float CScene::getDeltaTime () const { return g_Time - g_TimeLast; }
+float CScene::getDeltaTime () const {
+    return this->getContext ().getContext ().renderTime - this->getContext ().getContext ().renderTimeLast;
+}
 
 float CScene::getFps () const {
-    const float dt = g_Time - g_TimeLast;
+    const float dt = this->getContext ().getContext ().renderTime - this->getContext ().getContext ().renderTimeLast;
     // Guard against the first frame (where g_TimeLast is 0 so dt == g_Time)
     // and division by zero on the very first call.
     if (dt <= 1e-6f) {

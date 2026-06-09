@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/WallpaperParser.h"
+#include "WallpaperParser.h"
 
 #include "../Model/Project.h"
 #include "../Model/Wallpaper.h"

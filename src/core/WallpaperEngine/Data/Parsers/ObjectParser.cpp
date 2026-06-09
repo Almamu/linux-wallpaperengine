@@ -1,15 +1,15 @@
-#include "../../../../WallpaperEngine/Data/Parsers/ObjectParser.h"
+#include "ObjectParser.h"
 #include "EffectParser.h"
 #include "MaterialParser.h"
 #include "ModelParser.h"
 
-#include "../../../../WallpaperEngine/Data/Parsers/ShaderConstantParser.h"
-#include "../../../../WallpaperEngine/Data/Parsers/TextureParser.h"
-#include "../../../../WallpaperEngine/Data/Parsers/UserSettingParser.h"
-#include "../../../../common/WallpaperEngine/Logging/Log.h"
 #include "../Model/Object.h"
 #include "../Model/Project.h"
+#include "ShaderConstantParser.h"
+#include "TextureParser.h"
+#include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Builders/ColorBuilder.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <glm/gtc/constants.hpp>
 #include <sstream>

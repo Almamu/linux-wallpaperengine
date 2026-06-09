@@ -4,6 +4,7 @@
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 #include <functional>
 #include <glm/mat4x4.hpp>

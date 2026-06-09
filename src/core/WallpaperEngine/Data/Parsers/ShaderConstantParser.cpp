@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/ShaderConstantParser.h"
+#include "ShaderConstantParser.h"
 
 #include "../Model/Project.h"
 #include "WallpaperEngine/Data/Parsers/UserSettingParser.h"

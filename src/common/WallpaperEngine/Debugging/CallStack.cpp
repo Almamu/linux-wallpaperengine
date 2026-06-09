@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // mailto: zhangjunqcc@gmail.com
 //
 
-#include "../../../WallpaperEngine/Debugging/CallStack.h"
+#include "CallStack.h"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>

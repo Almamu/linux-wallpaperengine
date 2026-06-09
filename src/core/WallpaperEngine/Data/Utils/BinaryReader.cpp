@@ -1,7 +1,7 @@
 #include <bit>
 #include <iostream>
 
-#include "../../../../WallpaperEngine/Data/Utils/BinaryReader.h"
+#include "BinaryReader.h"
 
 #include <cstring>
 

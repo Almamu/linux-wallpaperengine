@@ -3,7 +3,9 @@
 #include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Maths.h"
 #include "WallpaperEngine/Render/Utils/NoiseUtils.h"
+#include "WallpaperEngine/Scripting/ScriptableObject.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,7 +19,7 @@ using namespace WallpaperEngine::Data::Model;
 
 CParticle::CParticle (Wallpapers::CScene& scene, const Particle& particle) :
     CObject (scene, particle), CRenderable (scene, particle, *particle.material->material),
-    ScriptableObject (scene, particle), m_particle (particle) {
+    Scripting::ScriptableObject (scene, particle), m_particle (particle) {
     this->registerProperty ("scale", *particle.scale->value);
     this->registerProperty ("angles", *particle.angles->value);
     this->registerProperty ("visible", *particle.visible->value);
@@ -1853,7 +1855,7 @@ void CParticle::updateMatrices () {
 
 void CParticle::applyParallaxToModelMatrix () {
     if (!getScene ().getScene ().camera.parallax.enabled
-	|| getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
+	|| getScene ().getContext ().getContext ().config.disableParallax) {
 	return;
     }
 
@@ -2186,7 +2188,8 @@ void CParticle::renderRope () {
     // UV scrolling: shift UV along the rope over time (1 UV cycle per second)
     float scrollOffset = 0.0f;
     if (m_ropeUVScrolling && usableLength > 0.0f) {
-	scrollOffset = std::fmod (static_cast<float> (g_Time), 10000.0f) * usableLength;
+	scrollOffset
+	    = std::fmod (static_cast<float> (this->getContext ().getContext ().renderTime), 10000.0f) * usableLength;
     }
 
     for (uint32_t s = 0; s < totalSubSegments; s++) {

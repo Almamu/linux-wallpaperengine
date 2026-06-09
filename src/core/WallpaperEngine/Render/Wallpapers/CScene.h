@@ -5,6 +5,9 @@
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "linux-wallpaperengine/project.h"
 
+namespace WallpaperEngine::Scripting {
+class ScriptEngine;
+}
 namespace WallpaperEngine::Render {
 class Camera;
 class CObject;
@@ -43,8 +46,8 @@ public:
     [[nodiscard]] const CObject* getObject (int id) const;
 
 protected:
-    void renderFrame (const glm::ivec4& viewport) override;
-    void updateMouse (const glm::ivec4& viewport);
+    void renderFrame () override;
+    void updateMouse ();
 
     friend class CWallpaper;
 

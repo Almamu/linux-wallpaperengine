@@ -1,12 +1,12 @@
 #include <algorithm>
 
-#include "../../../../WallpaperEngine/Data/Parsers/ProjectParser.h"
+#include "ProjectParser.h"
 #include "WallpaperEngine/Logging/Log.h"
 
-#include "../../../../WallpaperEngine/Data/Parsers/WallpaperParser.h"
+#include "WallpaperParser.h"
 
-#include "../../../../WallpaperEngine/Data/Parsers/PropertyParser.h"
 #include "../Model/Wallpaper.h"
+#include "PropertyParser.h"
 #include "WallpaperEngine/FileSystem/Container.h"
 
 using namespace WallpaperEngine::Data::Parsers;

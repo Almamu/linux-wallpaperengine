@@ -1,4 +1,4 @@
-#include "../../../../WallpaperEngine/Data/Parsers/ModelParser.h"
+#include "ModelParser.h"
 #include "MaterialParser.h"
 
 #include "../Model/DynamicValue.h"

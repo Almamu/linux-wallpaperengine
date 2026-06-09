@@ -1,6 +1,7 @@
 #include "GLPlayer.h"
 
-#include "../../../../common/WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Context.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 #include <mpv/render_gl.h>
 #include <mpv/stream_cb.h>
@@ -8,7 +9,9 @@
 using namespace WallpaperEngine::VideoPlayback::MPV;
 
 void* get_proc_address (void* ctx, const char* name) {
-    return static_cast<GLPlayer*> (ctx)->getContext ().getDriver ().getProcAddress (name);
+    const auto gl_proc_address = static_cast<GLPlayer*> (ctx)->getContext ().getContext ().gl_proc_address;
+
+    return gl_proc_address->get_proc_address (gl_proc_address->user_parameter, name);
 }
 
 GLPlayer::GLPlayer (
