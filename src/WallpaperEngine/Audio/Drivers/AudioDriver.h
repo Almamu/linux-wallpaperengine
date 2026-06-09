@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "../../../frontend/WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Audio/AudioStream.h"
 #include "WallpaperEngine/Audio/Drivers/Detectors/AudioPlayingDetector.h"
 #include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"

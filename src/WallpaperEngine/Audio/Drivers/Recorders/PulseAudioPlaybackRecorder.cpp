@@ -1,5 +1,5 @@
 #include "PulseAudioPlaybackRecorder.h"
-#include "WallpaperEngine/Logging/Log.h"
+#include "../../../../common/WallpaperEngine/Logging/Log.h"
 #include <cmath>
 #include <cstring>
 #include <glm/common.hpp>

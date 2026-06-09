@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "../../../../frontend/WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h"
 
 namespace WallpaperEngine {

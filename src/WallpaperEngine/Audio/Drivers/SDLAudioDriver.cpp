@@ -1,5 +1,5 @@
 #include "SDLAudioDriver.h"
-#include "WallpaperEngine/Logging/Log.h"
+#include "../../../common/WallpaperEngine/Logging/Log.h"
 
 #define SDL_AUDIO_BUFFER_SIZE 4096
 #define MAX_AUDIO_FRAME_SIZE 192000

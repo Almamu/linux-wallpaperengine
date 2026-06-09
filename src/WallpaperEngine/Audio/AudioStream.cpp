@@ -1,5 +1,5 @@
 #include "AudioStream.h"
-#include "WallpaperEngine/Logging/Log.h"
+#include "../../common/WallpaperEngine/Logging/Log.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>

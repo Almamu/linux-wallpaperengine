@@ -1,0 +1,159 @@
+#include "Environment.h"
+
+#include "WallpaperEngine/Logging/Log.h"
+#include "glad/glad.h"
+
+#include <GLFW/glfw3.h>
+
+using namespace WallpaperEngine::Desktop::Universal;
+using namespace WallpaperEngine::Application;
+
+void CustomGLFWErrorHandler (int errorCode, const char* reason) { sLog.error ("GLFW error ", errorCode, ": ", reason); }
+
+static float get_time (void* user_parameter) { return glfwGetTime (); }
+
+static void* get_proc_address (void* user_parameter, const char* name) {
+    return reinterpret_cast<void*> (glfwGetProcAddress (name));
+}
+
+static double mouse_x;
+static double mouse_y;
+
+static double get_x (void* user_parameter) {
+    const auto window = static_cast<GLFWwindow*> (user_parameter);
+
+    glfwGetCursorPos (window, &mouse_x, &mouse_y);
+
+    return mouse_x;
+}
+
+static double get_y (void* user_parameter) {
+    const auto window = static_cast<GLFWwindow*> (user_parameter);
+
+    glfwGetCursorPos (window, &mouse_x, &mouse_y);
+
+    return mouse_y;
+}
+
+static int is_pressed (void* user_parameter, int button) {
+    const auto window = static_cast<GLFWwindow*> (user_parameter);
+    int result = 0;
+
+    if (button & WP_MOUSE_INPUT_BUTTON_RIGHT) {
+	result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_RIGHT;
+    }
+
+    if (button & WP_MOUSE_INPUT_BUTTON_LEFT) {
+	result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_LEFT;
+    }
+
+    if (button & WP_MOUSE_INPUT_BUTTON_MIDDLE) {
+	result |= glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS * WP_MOUSE_INPUT_BUTTON_MIDDLE;
+    }
+
+    return result;
+}
+
+Environment::Environment (
+    ApplicationContext& context, ScreenAvailableNotification& availableNotification,
+    ScreenUnavailableNotification& unavailableNotification
+) :
+    Desktop::Environment (context, availableNotification, unavailableNotification),
+    m_output (nullptr, { 0, 0, 640, 480 }), m_framecount (0) {
+    glfwSetErrorCallback (CustomGLFWErrorHandler);
+
+    if (glfwInit () == GLFW_FALSE) {
+	sLog.exception ("Failed to initialize GLFW");
+    }
+
+    this->counter = { .user_parameter = this, .get_time = get_time };
+
+    glfwWindowHint (GLFW_SAMPLES, 4);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // set x11-specific hints
+    glfwWindowHintString (GLFW_X11_CLASS_NAME, "linux-wallpaperengine");
+    glfwWindowHintString (GLFW_X11_INSTANCE_NAME, "linux-wallpaperengine");
+
+    // for forced window mode setting some hints disables borders, etc
+    if (this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW) {
+	glfwWindowHint (GLFW_DECORATED, GLFW_FALSE);
+	glfwWindowHint (GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint (GLFW_FLOATING, GLFW_TRUE);
+    }
+
+#if !NDEBUG
+    glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
+
+    this->m_window = glfwCreateWindow (640, 480, "", nullptr, nullptr);
+
+    if (this->m_window == nullptr) {
+	sLog.exception ("Failed to create GLFW window");
+    }
+
+    if (this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW) {
+	// TODO: ADD SUPPORT FOR MULTIPLE WINDOWS!
+	glfwSetWindowPos (
+	    this->m_window, this->m_context.settings.render.window.geometry.x,
+	    this->m_context.settings.render.window.geometry.y
+	);
+	glfwSetWindowSize (
+	    this->m_window, this->m_context.settings.render.window.geometry.z,
+	    this->m_context.settings.render.window.geometry.w
+	);
+    }
+
+    glfwMakeContextCurrent (this->m_window);
+
+    // initalize glad
+    if (!gladLoadGLLoader (reinterpret_cast<GLADloadproc> (glfwGetProcAddress))) {
+	sLog.exception ("Failed to initialize glad");
+    }
+
+    // finally set the right gl_proc_address calls
+    this->gl_proc_address = { .user_parameter = this, .get_proc_address = get_proc_address };
+    this->mouse_input = { .user_parameter = this->m_window, .get_x = get_x, .get_y = get_y, .is_pressed = is_pressed };
+}
+
+Environment::~Environment () {
+    Environment::onScreenUnavailable (DEFAULT_SCREEN_NAME, &this->m_output);
+
+    if (this->m_window) {
+	glfwDestroyWindow (this->m_window);
+    }
+
+    glfwTerminate ();
+}
+
+void Environment::render () {
+    static bool notifiedScreenAvailable = false;
+
+    // notify the app that there's a screen available
+    if (notifiedScreenAvailable == false) {
+	Environment::onScreenAvailable (DEFAULT_SCREEN_NAME, &this->m_output);
+	notifiedScreenAvailable = true;
+    }
+
+    int width;
+    int height;
+
+    glfwGetFramebufferSize (this->m_window, &width, &height);
+
+    this->m_output.setViewport ({ 0, 0, width, height });
+    this->m_output.render ();
+
+    glfwSwapBuffers (this->m_window);
+    glfwPollEvents ();
+}
+
+void Environment::detectFullscreen () {
+    // glfw does not support fullscreen detection for now
+    // in the future this should be separated from the render
+    // but should be more than enough for now
+}
+
+uint64_t Environment::getCurrentFrame () { return this->m_framecount; }
+
+bool Environment::isCloseRequested () { return glfwWindowShouldClose (this->m_window); }

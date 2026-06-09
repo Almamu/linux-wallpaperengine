@@ -3,7 +3,7 @@
 #include <libavutil/samplefmt.h>
 #include <vector>
 
-#include "WallpaperEngine/Application/ApplicationContext.h"
+#include "../../frontend/WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Audio/Drivers/Recorders/PulseAudioPlaybackRecorder.h"
 
 namespace WallpaperEngine {
