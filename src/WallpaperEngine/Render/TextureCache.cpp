@@ -21,6 +21,26 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Assets;
 
 TextureCache::TextureCache (RenderContext& context) : Helpers::ContextAware (context) {
+    // these textures are special cases, so make sure they're created only upon request
+    this->m_currentThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+
+#if !NDEBUG
+    glObjectLabel (GL_TEXTURE, this->m_currentThumbnail->getTextureID (0), -1, "$mediaThumbnail");
+#endif
+
+    this->m_previousThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
+
+#if !NDEBUG
+    glObjectLabel (GL_TEXTURE, this->m_previousThumbnail->getTextureID (0), -1, "$mediaPreviousThumbnail");
+#endif
+
+    // load the latest texture (if available)
+    this->m_currentThumbnail->load ();
+
+    // add these to the cache and return the right one
+    this->store ("$mediaThumbnail", this->m_currentThumbnail);
+    this->store ("$mediaPreviousThumbnail", this->m_previousThumbnail);
+
     this->m_mediaCallback = this->getContext ().getMediaSource ().addAlbumArtListener (
 	[this] (const Media::MediaSource::MediaInfo& data) {
 	    if (this->m_currentThumbnail == nullptr || this->m_previousThumbnail == nullptr) {
@@ -43,31 +63,6 @@ TextureCache::~TextureCache () { this->m_mediaCallback (); }
 std::shared_ptr<const TextureProvider> TextureCache::resolve (const std::string& filename) {
     if (const auto found = this->m_textureCache.find (filename); found != this->m_textureCache.end ()) {
 	return found->second;
-    }
-
-    if ((filename == "$mediaThumbnail" || filename == "$mediaPreviousThumbnail") && this->m_currentThumbnail == nullptr
-	&& this->m_previousThumbnail == nullptr) {
-	// these textures are special cases, so make sure they're created only upon request
-	this->m_currentThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
-
-#if !NDEBUG
-	glObjectLabel (GL_TEXTURE, this->m_currentThumbnail->getTextureID (0), -1, "$mediaThumbnail");
-#endif
-
-	this->m_previousThumbnail = std::make_shared<AlbumTexture> (this->getContext ());
-
-#if !NDEBUG
-	glObjectLabel (GL_TEXTURE, this->m_previousThumbnail->getTextureID (0), -1, "$mediaPreviousThumbnail");
-#endif
-
-	// load the latest texture
-	this->m_currentThumbnail->load ();
-
-	// add these to the cache and return the right one
-	this->store ("$mediaThumbnail", this->m_currentThumbnail);
-	this->store ("$mediaPreviousThumbnail", this->m_previousThumbnail);
-
-	return filename == "$mediaThumbnail" ? this->m_currentThumbnail : this->m_previousThumbnail;
     }
 
     // search for the texture in all the different containers just in case

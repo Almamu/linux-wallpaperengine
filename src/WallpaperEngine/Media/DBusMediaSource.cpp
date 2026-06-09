@@ -108,8 +108,12 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	    const char* title = nullptr;
 	    dbus_message_iter_get_basic (&value, &title);
 
-	    this->m_mediaInfo.title = title ?: "";
-	    metadataUpdate = true;
+	    std::string titleStr = title ?: "";
+
+	    if (this->m_mediaInfo.title != titleStr) {
+	        this->m_mediaInfo.title = titleStr;
+	        metadataUpdate = true;
+	    }
 	} else if (keyStr == "xesam:artist") {
 	    DBusMessageIter arr;
 
@@ -118,27 +122,48 @@ void DBusMediaSource::parseMetadata (DBusMessageIter& variant) {
 	    if (dbus_message_iter_get_arg_type (&arr) == DBUS_TYPE_STRING) {
 		const char* artist = nullptr;
 		dbus_message_iter_get_basic (&arr, &artist);
-		this->m_mediaInfo.artist = artist ?: "";
-		metadataUpdate = true;
+
+	        std::string artistStr = artist ?: "";
+
+	        if (this->m_mediaInfo.artist != artistStr) {
+	            this->m_mediaInfo.artist = artistStr;
+	            metadataUpdate = true;
+	        }
 	    }
 	} else if (keyStr == "xesam:album") {
 	    const char* album = nullptr;
 	    dbus_message_iter_get_basic (&value, &album);
 
-	    this->m_mediaInfo.album = album ?: "";
-	    metadataUpdate = true;
+	    std::string albumStr = album ?: "";
+
+	    if (this->m_mediaInfo.album != albumStr) {
+	        this->m_mediaInfo.album = albumStr;
+	        albumUpdate = true;
+	    }
 	} else if (keyStr == "mpris:artUrl") {
 	    const char* artUrl = nullptr;
 	    dbus_message_iter_get_basic (&value, &artUrl);
 
-	    this->m_mediaInfo.url = artUrl ?: "";
-	    albumUpdate = true;
+	    std::string artUrlStr = artUrl ?: "";
+
+	    if (artUrlStr.empty() && this->m_mediaInfo.url.has_value ()) {
+	        this->m_mediaInfo.url.reset ();
+	        albumUpdate = true;
+	    } else if (this->m_mediaInfo.url.has_value () && artUrlStr != *this->m_mediaInfo.url) {
+	        this->m_mediaInfo.url = artUrlStr;
+	        albumUpdate = true;
+	    } else if (!this->m_mediaInfo.url.has_value ()) {
+	        this->m_mediaInfo.url = artUrlStr;
+	        albumUpdate = true;
+	    }
 	} else if (keyStr == "mpris:length") {
 	    int64_t length = 0;
 	    dbus_message_iter_get_basic (&value, &length);
 
-	    this->m_mediaInfo.duration = length;
-	    metadataUpdate = true;
+	    if (this->m_mediaInfo.duration != length) {
+	        this->m_mediaInfo.duration = length;
+	        metadataUpdate = true;
+	    }
 	}
 
 	dbus_message_iter_next (&dict);
@@ -162,28 +187,34 @@ void DBusMediaSource::parsePlaybackStatus (DBusMessageIter& variant, const char*
     const char* status = nullptr;
     dbus_message_iter_get_basic (&variant, &status);
     std::string statusStr = status ?: "";
+    PlaybackState newState = this->m_mediaInfo.playbackState;
 
     if (statusStr == "Playing") {
 	if (sender != nullptr) {
 	    this->m_currentPlayer = sender;
 	}
 
-	this->m_mediaInfo.playbackState = PlaybackState::Playing;
+	newState = PlaybackState::Playing;
     } else if (statusStr == "Paused") {
-	this->m_mediaInfo.playbackState = PlaybackState::Paused;
+	newState = PlaybackState::Paused;
     } else {
-	this->m_mediaInfo.playbackState = PlaybackState::Stopped;
+	newState = PlaybackState::Stopped;
     }
 
-    this->fireMetadataListeners ();
+    if (newState != this->m_mediaInfo.playbackState) {
+        this->m_mediaInfo.playbackState = newState;
+        this->fireMetadataListeners ();
+    }
 }
 
 void DBusMediaSource::parsePosition (DBusMessageIter& variant) {
     int64_t position = 0;
     dbus_message_iter_get_basic (&variant, &position);
-    this->m_mediaInfo.position = position;
 
-    this->fireMetadataListeners ();
+    if (this->m_mediaInfo.position != position) {
+        this->m_mediaInfo.position = position;
+        this->fireMetadataListeners ();
+    }
 }
 
 void DBusMediaSource::update () {
@@ -268,6 +299,8 @@ void DBusMediaSource::detectPlayer () {
 	    return;
 	}
 
+        Data::Utils::ScopeGuard guard2([reply] { dbus_message_unref (reply); });
+
 	DBusMessageIter outer;
 	dbus_message_iter_init (reply, &outer);
 	DBusMessageIter variant;
@@ -295,6 +328,7 @@ void DBusMediaSource::initialStatusFetch () {
 	return;
     }
 
+    Data::Utils::ScopeGuard guard([reply] { dbus_message_unref (reply); });
     DBusMessageIter outer;
     dbus_message_iter_init (reply, &outer);
 
@@ -302,8 +336,6 @@ void DBusMediaSource::initialStatusFetch () {
     dbus_message_iter_recurse (&outer, &variant);
 
     this->parseMetadata (variant);
-
-    dbus_message_unref (reply);
 }
 
 void DBusMediaSource::performUpdate () {
@@ -321,6 +353,7 @@ void DBusMediaSource::performUpdate () {
 	return;
     }
 
+    Data::Utils::ScopeGuard guard([reply] { dbus_message_unref (reply); });
     DBusMessageIter outer;
     dbus_message_iter_init (reply, &outer);
 
@@ -330,9 +363,8 @@ void DBusMediaSource::performUpdate () {
     dbus_int64_t position = 0;
     dbus_message_iter_get_basic (&variant, &position);
 
-    this->m_mediaInfo.position = position;
-
-    dbus_message_unref (reply);
-
-    this->fireMetadataListeners ();
+    if (this->m_mediaInfo.position != position) {
+        this->m_mediaInfo.position = position;
+        this->fireMetadataListeners ();
+    }
 }
