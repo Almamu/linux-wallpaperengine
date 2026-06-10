@@ -188,19 +188,19 @@ jobs:
       - name: Configure CMake for library
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_INSTALL_PREFIX="/usr" -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
+        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_INSTALL_PREFIX="/usr" -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
 
       - name: Build library
-        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine-core linux-wallpaperengine-webhelper
+        run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --target linux-wallpaperengine-core linux-wallpaperengine-webhelper
 
       - name: Install library
         run: sudo cmake --install ${{ github.workspace }}/build
 
       - name: Configure CMake for frontend
-        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -DWPBUILD_FRONTEND=ON -DCMAKE_INSTALL_PREFIX="/usr" -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
+        run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -DWPBUILD_FRONTEND=ON -DCMAKE_INSTALL_PREFIX="/usr" -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
 
       - name: Build frontend
-        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine
+        run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --target linux-wallpaperengine
 
       - name: Install frontend
         run: sudo cmake --install ${{ github.workspace }}/build
