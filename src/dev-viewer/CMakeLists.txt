@@ -2,6 +2,7 @@ set(TARGET_NAME linux-wallpaperengine-dev-viewer)
 set(TARGET_SOURCE_FILES
     $<TARGET_OBJECTS:linux-wallpaperengine-common-object>
     $<TARGET_OBJECTS:linux-wallpaperengine-core-object>
+    recording.cpp
     WallpaperEngine/Development/SimpleBackgroundViewer.cpp)
 set(TARGET_LIBRARIES
     linux-wallpaperengine-common-object

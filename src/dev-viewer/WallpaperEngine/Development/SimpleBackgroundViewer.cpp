@@ -1,4 +1,5 @@
 #include "WallpaperEngine/Logging/Log.h"
+#include "recording.h"
 
 #include "argparse/argparse.hpp"
 #include "glad/glad.h"
@@ -16,6 +17,8 @@ std::string assetsPath;
 std::string steamPath;
 std::string wallpaper;
 std::map<std::string, std::string> properties;
+double videoRecordTime = 0.0f;
+std::string recordBackground = "";
 int framebufferWidth = 1280;
 int framebufferHeight = 720;
 
@@ -75,6 +78,24 @@ void parseArgs (const int argc, char* argv[]) {
 	.help ("Dumps the structure of the background")
 	.flag ()
 	.store_into (dumpStructure);
+
+    program.add_argument ("-r", "--record")
+        .help ("Enables output recording and optionally specifies the file name")
+        .action ([] (const std::string& value) -> void {
+            if (value.empty()) {
+                recordBackground = "output.webm";
+            } else {
+                recordBackground = value;
+            }
+
+            if (videoRecordTime < 1.0f) {
+                videoRecordTime = 5.0f;
+            }
+        });
+
+    program.add_argument ("-t", "--record-time")
+        .help ("Specifies the number of seconds to record video")
+        .store_into (videoRecordTime);
 
     program.parse_known_args (argc, argv);
 }
@@ -165,6 +186,14 @@ int main (const int argc, char* argv[]) {
 
     const int width = wp_project_get_width (project);
     const int height = wp_project_get_height (project);
+    std::vector<uint8_t> pixels;
+    RecordingSession session;
+
+    if (!recordBackground.empty ()) {
+        session.start(recordBackground.c_str (), width, height);
+        // reserve frame size
+        pixels.reserve(width * height * 3);
+    }
 
     GLuint framebuffer;
     GLuint texture;
@@ -334,6 +363,8 @@ int main (const int argc, char* argv[]) {
     // maximum 30 fps as it's more than enough
     constexpr double minimumTime = 1.0f / 30;
 
+    std::chrono::time_point current = std::chrono::system_clock::now ();
+
     while (keepRunning) {
 	const double startTime = glfwGetTime ();
 
@@ -344,6 +375,23 @@ int main (const int argc, char* argv[]) {
 	glViewport (0, 0, framebufferWidth, framebufferHeight);
 
 	glBindFramebuffer (GL_FRAMEBUFFER, 0);
+
+        // get pixel data and write it to the video output if that's actually running
+        if (session.isRunning ()) {
+            glPixelStorei (GL_PACK_ALIGNMENT, 1);
+            glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
+            // TODO: ASYNC THIS SO IT DOESN'T LAG THE MAIN THREAD
+            session.submitFrame (pixels.data ());
+
+            // has time expired
+            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now () - current);
+            double diffTime = diff.count () / 1000;
+
+            if (diffTime > videoRecordTime) {
+                // close the output
+                session.stop ();
+            }
+        }
 
 	glBindVertexArray (vaoBuffer);
 
@@ -385,6 +433,11 @@ int main (const int argc, char* argv[]) {
 	if (const double diffTime = glfwGetTime () - startTime; diffTime < minimumTime) {
 	    usleep (static_cast<unsigned int> ((minimumTime - diffTime) * CLOCKS_PER_SEC));
 	}
+    }
+
+    // ensure the encoder is closed
+    if (session.isRunning ()) {
+        session.stop ();
     }
 
     // remove signal handlers before exiting the app
