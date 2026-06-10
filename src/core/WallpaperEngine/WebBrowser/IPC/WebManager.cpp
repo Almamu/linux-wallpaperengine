@@ -33,7 +33,7 @@ WebManager& WebManager::get () {
 
 void WebManager::init () {
     if (m_running) {
-        return;
+	return;
     }
 
     spawnWebhelper ();
