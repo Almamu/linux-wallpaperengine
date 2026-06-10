@@ -67,7 +67,7 @@ public:
     void playbackStateChange (wp_media_playback_state state);
     void playbackPositionAndDurationChange (double position, double duration);
 
-    static Project* loadId (Context* context, wp_mouse_input* mouse_input, const int id);
+    static Project* loadId (Context* context, wp_mouse_input* mouse_input, const unsigned long int id);
     static Project* loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id);
     static Project* loadFolder (Context* context, wp_mouse_input* mouse_input, const char* folder);
 };

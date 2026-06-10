@@ -9,7 +9,7 @@
 	return result;                                                                                                 \
     }
 
-WPENGINE_API wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, const int id) {
+WPENGINE_API wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, const unsigned long int id) {
     WPENGINE_PROJECT_API_BEGIN
     return WallpaperEngine::Project::loadId (static_cast<WallpaperEngine::Context*> (context), mouse_input, id);
     WPENGINE_PROJECT_API_END (nullptr);

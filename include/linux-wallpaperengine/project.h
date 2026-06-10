@@ -172,7 +172,7 @@ struct wp_project_property_boolean {
  *
  * @return The project if was loaded successfully, NULL otherwise
  */
-WPENGINE_API wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, int id);
+WPENGINE_API wp_project* wp_project_load_id (wp_context* context, wp_mouse_input* mouse_input, unsigned long int id);
 
 /**
  * Loads the given background ID from the backgrounds folder

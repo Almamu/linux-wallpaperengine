@@ -485,7 +485,7 @@ void WallpaperEngine::Project::playbackStateChange (wp_media_playback_state stat
 }
 
 WallpaperEngine::Project*
-WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const int id) {
+WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const unsigned long int id) {
     return new Project (context, mouse_input, context->config.backgrounds_dir / std::to_string (id));
 }
 
