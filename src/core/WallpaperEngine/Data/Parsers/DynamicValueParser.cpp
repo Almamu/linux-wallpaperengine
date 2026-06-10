@@ -1,15 +1,15 @@
-#include "../../../../WallpaperEngine/Data/Parsers/DynamicValueParser.h"
+#include "DynamicValueParser.h"
 
-#include "../../../../WallpaperEngine/Data/Parsers/UserSettingParser.h"
+#include "UserSettingParser.h"
 #include "../Model/DynamicValue.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 
-DynamicValueUniquePtr DynamicValueParser::parse (const json& data, const Properties& properties, bool expectColor) {
+DynamicValueUniquePtr DynamicValueParser::parse (const JSON& data, const Properties& properties, bool expectColor) {
     auto value = std::make_unique<DynamicValue> ();
     auto valueIt = data;
     std::optional<std::string> scriptSource = std::nullopt;
-    std::optional<json> scriptPropsJson = std::nullopt;
+    std::optional<JSON> scriptPropsJson = std::nullopt;
 
     if (data.is_object ()) {
 	const auto user = data.optional ("user");

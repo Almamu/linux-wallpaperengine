@@ -1,14 +1,12 @@
 #include "EngineObject.h"
 #include "ScriptEngine.h"
+#include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 #include <ranges>
 
 using namespace WallpaperEngine::Scripting;
-
-extern float g_Time;
-extern float g_TimeLast;
-extern float g_Daytime;
 
 static uint32_t EngineInstanceId = 0;
 std::map<uint32_t, EngineObject&> engineInstances;
@@ -19,16 +17,43 @@ JSValue engine_open_user_shortcut (JSContext* ctx, JSValueConst this_val, int ar
     return JS_UNDEFINED;
 }
 
-JSValue engine_get_frametime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
-    return JS_NewFloat64 (ctx, g_Time - g_TimeLast);
+JSValue engine_get_frametime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+    const auto it = engineInstances.find (magic);
+
+    if (it == engineInstances.end ()) {
+        return JS_EXCEPTION;
+    }
+
+    return JS_NewFloat64 (
+        ctx,
+        it->second.getScene ().getContext ().getContext ().renderTime - it->second.getScene ().getContext ().getContext ().renderTimeLast
+    );
 }
 
-JSValue engine_get_runtime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
-    return JS_NewFloat64 (ctx, g_Time);
+JSValue engine_get_runtime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+    const auto it = engineInstances.find (magic);
+
+    if (it == engineInstances.end ()) {
+        return JS_EXCEPTION;
+    }
+
+    return JS_NewFloat64 (
+        ctx,
+        it->second.getScene ().getContext ().getContext ().renderTime
+    );
 }
 
-JSValue engine_get_daytime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
-    return JS_NewFloat64 (ctx, g_Daytime);
+JSValue engine_get_daytime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+    const auto it = engineInstances.find (magic);
+
+    if (it == engineInstances.end ()) {
+        return JS_EXCEPTION;
+    }
+
+    return JS_NewFloat64 (
+        ctx,
+        it->second.getScene ().getContext ().getContext ().daytime
+    );
 }
 
 JSValue engine_stop_interval (
@@ -148,17 +173,17 @@ EngineObject::EngineObject (ScriptEngine& engine, Render::Wallpapers::CScene& sc
     JS_SetOpaque (this->m_instance, this);
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "frametime"),
-	JS_NewCFunction (this->m_engine.getContext (), engine_get_frametime, "get", 0),
+	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_frametime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "runtime"),
-	JS_NewCFunction (this->m_engine.getContext (), engine_get_runtime, "get", 0),
+	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_runtime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "timeOfDay"),
-	JS_NewCFunction (this->m_engine.getContext (), engine_get_daytime, "get", 0),
+	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_daytime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (

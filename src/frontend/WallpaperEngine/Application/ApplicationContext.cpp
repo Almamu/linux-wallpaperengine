@@ -82,11 +82,16 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    if (this->settings.general.backgrounds.contains (value)) {
 		sLog.exception ("Cannot specify the same screen more than once: ", value);
 	    }
-	    for (const auto& group : this->settings.general.spanGroups) {
-		if (std::find (group.screens.begin (), group.screens.end (), value) != group.screens.end ()) {
-		    sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
-		}
+
+	    std::string spanFilter = ":" + value + ":";
+
+	    // ensure the screen is not part of a span group either
+	    for (const auto& screen : this->settings.general.backgrounds | std::views::keys) {
+	        if (screen.find (spanFilter) != std::string::npos) {
+	            sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
+	        }
 	    }
+
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }
@@ -107,55 +112,56 @@ void ApplicationContext::loadSettingsFromArgv () {
 
 	    this->settings.render.mode = DESKTOP_BACKGROUND;
 
-	    SpanGroup group;
 	    std::string screen;
 	    std::istringstream ss (value);
+	    std::map<std::string, bool> screensInSpan;
 
 	    while (std::getline (ss, screen, ',')) {
 		if (screen.empty ()) {
 		    continue;
 		}
-		if (this->settings.general.screenBackgrounds.find (screen)
-		    != this->settings.general.screenBackgrounds.end ()) {
-		    sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
-		}
-		// reject duplicates within this group
-		if (std::find (group.screens.begin (), group.screens.end (), screen) != group.screens.end ()) {
-		    sLog.exception ("--screen-span: duplicate screen name '", screen, "'");
-		}
-		// reject screens already claimed by another span group
-		for (const auto& existing : this->settings.general.spanGroups) {
-		    if (std::find (existing.screens.begin (), existing.screens.end (), screen)
-			!= existing.screens.end ()) {
-			sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
-		    }
-		}
-		group.screens.push_back (screen);
+
+	        // this ensures unique screen names, having duplicates there is not a big issue
+	        screensInSpan.insert_or_assign (screen, true);
 	    }
 
-	    if (group.screens.size () < 2) {
-		sLog.exception ("--screen-span requires at least two comma-separated screen names");
+	    if (screensInSpan.size () < 2) {
+	        sLog.exception ("--screen-span requires at least two comma-separated screen names");
 	    }
 
-	    group.scaling = this->settings.render.window.scalingMode;
-	    group.clamp = this->settings.render.window.clamp;
-	    this->settings.general.spanGroups.push_back (std::move (group));
-	    // set lastScreen to a synthetic name so --bg/--scaling/--clamp can target this group
-	    lastScreen = "span:" + value;
-	    // register the synthetic name in screenBackgrounds so the rest of the pipeline sees it
-	    this->settings.general.screenBackgrounds[lastScreen] = "";
+	    // check for screens in use
+	    for (const auto& screen : screensInSpan | std::views::keys) {
+	        std::string screenGroupFilter = ":" + screen + ":";
+
+	        if (this->settings.general.backgrounds.contains (screen)) {
+	            sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
+	        }
+
+	        // reject screens claimed by other span groups
+	        for (const auto& registeredScreen : this->settings.general.backgrounds | std::views::keys) {
+	            if (registeredScreen.find (screenGroupFilter) == std::string::npos) {
+	                continue;
+	            }
+
+	            sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
+	        }
+	    }
+
+	    lastScreen = "span:";
+
+	    for (const auto& screen : screensInSpan | std::views::keys) {
+	        lastScreen += screen + ":";
+	    }
+
+	    this->settings.general.backgrounds[lastScreen] = "";
+            this->settings.general.scalings[lastScreen] = this->settings.general.scalings[DEFAULT_SCREEN_NAME];
+            this->settings.general.clamps[lastScreen] = this->settings.general.clamps[DEFAULT_SCREEN_NAME];
 	})
 	.append ();
     backgroundGroup.add_argument ("-b", "--bg")
 	.help ("After --screen-root or --screen-span, specifies the background to use")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
-	    this->settings.general.screenBackgrounds[lastScreen] = value;
-	    // set the default background to the last one used
-	    this->settings.general.defaultBackground = value;
-	    // if this targets a span group, update the group's background too
-	    if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
-		this->settings.general.spanGroups.back ().background = value;
-	    }
+	    this->settings.general.backgrounds[lastScreen] = value;
 	})
 	.append ();
     backgroundGroup.add_argument ("--playlist")
@@ -189,10 +195,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    }
 
 	    this->settings.general.scalings[lastScreen] = mode;
-
-	    if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
-		this->settings.general.spanGroups.back ().scaling = mode;
-	    }
 	})
 	.append ();
     backgroundGroup.add_argument ("--clamp")
@@ -215,10 +217,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    }
 
 	    this->settings.general.clamps[lastScreen] = mode;
-
-	    if (lastScreen.rfind ("span:", 0) == 0 && !this->settings.general.spanGroups.empty ()) {
-		this->settings.general.spanGroups.back ().clamp = mode
-	    }
 	})
 	.append ();
 

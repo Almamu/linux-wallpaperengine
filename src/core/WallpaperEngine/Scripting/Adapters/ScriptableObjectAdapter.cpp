@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 #include "WallpaperEngine/Scripting/ScriptableObject.h"
 

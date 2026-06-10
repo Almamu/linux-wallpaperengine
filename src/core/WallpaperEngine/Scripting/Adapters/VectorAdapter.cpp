@@ -2,7 +2,7 @@
 
 #include "../ScriptEngine.h"
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
-#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 
 #include <variant>
 

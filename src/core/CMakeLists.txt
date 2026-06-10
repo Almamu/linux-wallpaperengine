@@ -64,6 +64,8 @@ set(TARGET_SOURCE_FILES
 
     WallpaperEngine/WebBrowser/IPC/WebManager.cpp
 
+    WallpaperEngine/Data/Builders/ColorBuilder.cpp
+    WallpaperEngine/Data/Builders/VectorBuilder.cpp
     WallpaperEngine/Data/Model/DynamicValue.cpp
     WallpaperEngine/Data/Utils/BinaryReader.cpp
     WallpaperEngine/Data/Parsers/EffectParser.cpp
@@ -78,12 +80,25 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/Data/Parsers/PropertyParser.cpp
     WallpaperEngine/Data/Parsers/TextureParser.cpp
     WallpaperEngine/Data/Parsers/ConfigParser.cpp
+    WallpaperEngine/Data/Parsers/DynamicValueParser.cpp
     WallpaperEngine/Data/Dumpers/StringPrinter.cpp
     WallpaperEngine/Data/JSON.cpp
 
     WallpaperEngine/VideoPlayback/MPV/GLPlayer.cpp
     WallpaperEngine/VideoPlayback/MPV/MemoryStreamProtocol.cpp
 
+    WallpaperEngine/Scripting/Adapters/VectorAdapter.cpp
+    WallpaperEngine/Scripting/Adapters/ObjectAdapter.cpp
+    WallpaperEngine/Scripting/Adapters/ScriptableObjectAdapter.cpp
+    WallpaperEngine/Scripting/Modules/ColorModule.cpp
+    WallpaperEngine/Scripting/Modules/MathModule.cpp
+    WallpaperEngine/Scripting/Modules/ScriptModule.cpp
+    WallpaperEngine/Scripting/ConsoleObject.cpp
+    WallpaperEngine/Scripting/EngineObject.cpp
+    WallpaperEngine/Scripting/InputObject.cpp
+    WallpaperEngine/Scripting/SceneObject.cpp
+    WallpaperEngine/Scripting/ScriptableObject.cpp
+    WallpaperEngine/Scripting/ScriptPropertiesObject.cpp
     WallpaperEngine/Scripting/ScriptEngine.cpp
 
     WallpaperEngine/Configuration.cpp
