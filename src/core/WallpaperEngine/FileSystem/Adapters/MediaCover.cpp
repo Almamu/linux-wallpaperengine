@@ -7,7 +7,6 @@
 #include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Logging/Log.h"
-#include "WallpaperEngine/Media/MediaSource.h"
 
 using namespace WallpaperEngine::FileSystem;
 using namespace WallpaperEngine::FileSystem::Adapters;

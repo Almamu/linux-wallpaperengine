@@ -18,7 +18,6 @@
 
 #include "../Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
-#include "WallpaperEngine/Media/MediaSource.h"
 #include "linux-wallpaperengine/context.h"
 
 namespace WallpaperEngine::Media {

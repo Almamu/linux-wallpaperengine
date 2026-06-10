@@ -4,7 +4,6 @@
 #include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"
-#include "WallpaperEngine/Media/MediaSource.h"
 #include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "stb_image.h"
 

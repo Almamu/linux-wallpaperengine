@@ -2,7 +2,6 @@
 
 #include "Helpers/ContextAware.h"
 #include "TextureProvider.h"
-#include "WallpaperEngine/Media/MediaSource.h"
 
 namespace WallpaperEngine::Render {
 class AlbumTexture : public TextureProvider, public Helpers::ContextAware {
