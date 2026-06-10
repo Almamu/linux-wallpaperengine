@@ -80,22 +80,22 @@ void parseArgs (const int argc, char* argv[]) {
 	.store_into (dumpStructure);
 
     program.add_argument ("-r", "--record")
-        .help ("Enables output recording and optionally specifies the file name")
-        .action ([] (const std::string& value) -> void {
-            if (value.empty()) {
-                recordBackground = "output.webm";
-            } else {
-                recordBackground = value;
-            }
+	.help ("Enables output recording and optionally specifies the file name")
+	.action ([] (const std::string& value) -> void {
+	    if (value.empty ()) {
+		recordBackground = "output.webm";
+	    } else {
+		recordBackground = value;
+	    }
 
-            if (videoRecordTime < 1.0f) {
-                videoRecordTime = 5.0f;
-            }
-        });
+	    if (videoRecordTime < 1.0f) {
+		videoRecordTime = 5.0f;
+	    }
+	});
 
     program.add_argument ("-t", "--record-time")
-        .help ("Specifies the number of seconds to record video")
-        .store_into (videoRecordTime);
+	.help ("Specifies the number of seconds to record video")
+	.store_into (videoRecordTime);
 
     program.parse_known_args (argc, argv);
 }
@@ -190,9 +190,9 @@ int main (const int argc, char* argv[]) {
     RecordingSession session;
 
     if (!recordBackground.empty ()) {
-        session.start(recordBackground.c_str (), width, height);
-        // reserve frame size
-        pixels.reserve(width * height * 3);
+	session.start (recordBackground.c_str (), width, height);
+	// reserve frame size
+	pixels.reserve (width * height * 3);
     }
 
     GLuint framebuffer;
@@ -207,8 +207,8 @@ int main (const int argc, char* argv[]) {
 				     -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
     // initialize glad
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc> (glfwGetProcAddress))) {
-        sLog.exception ("Cannot initialize GLAD");
+    if (!gladLoadGLLoader (reinterpret_cast<GLADloadproc> (glfwGetProcAddress))) {
+	sLog.exception ("Cannot initialize GLAD");
     }
 
     glGenVertexArrays (1, &vaoBuffer);
@@ -376,22 +376,23 @@ int main (const int argc, char* argv[]) {
 
 	glBindFramebuffer (GL_FRAMEBUFFER, 0);
 
-        // get pixel data and write it to the video output if that's actually running
-        if (session.isRunning ()) {
-            glPixelStorei (GL_PACK_ALIGNMENT, 1);
-            glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
-            // TODO: ASYNC THIS SO IT DOESN'T LAG THE MAIN THREAD
-            session.submitFrame (pixels.data ());
+	// get pixel data and write it to the video output if that's actually running
+	if (session.isRunning ()) {
+	    glPixelStorei (GL_PACK_ALIGNMENT, 1);
+	    glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
+	    // TODO: ASYNC THIS SO IT DOESN'T LAG THE MAIN THREAD
+	    session.submitFrame (pixels.data ());
 
-            // has time expired
-            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now () - current);
-            double diffTime = diff.count () / 1000;
+	    // has time expired
+	    auto diff
+		= std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now () - current);
+	    double diffTime = diff.count () / 1000;
 
-            if (diffTime > videoRecordTime) {
-                // close the output
-                session.stop ();
-            }
-        }
+	    if (diffTime > videoRecordTime) {
+		// close the output
+		session.stop ();
+	    }
+	}
 
 	glBindVertexArray (vaoBuffer);
 
@@ -437,7 +438,7 @@ int main (const int argc, char* argv[]) {
 
     // ensure the encoder is closed
     if (session.isRunning ()) {
-        session.stop ();
+	session.stop ();
     }
 
     // remove signal handlers before exiting the app

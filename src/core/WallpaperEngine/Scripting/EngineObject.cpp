@@ -21,12 +21,13 @@ JSValue engine_get_frametime (JSContext* ctx, JSValueConst this_val, int argc, J
     const auto it = engineInstances.find (magic);
 
     if (it == engineInstances.end ()) {
-        return JS_EXCEPTION;
+	return JS_EXCEPTION;
     }
 
     return JS_NewFloat64 (
-        ctx,
-        it->second.getScene ().getContext ().getContext ().renderTime - it->second.getScene ().getContext ().getContext ().renderTimeLast
+	ctx,
+	it->second.getScene ().getContext ().getContext ().renderTime
+	    - it->second.getScene ().getContext ().getContext ().renderTimeLast
     );
 }
 
@@ -34,26 +35,20 @@ JSValue engine_get_runtime (JSContext* ctx, JSValueConst this_val, int argc, JSV
     const auto it = engineInstances.find (magic);
 
     if (it == engineInstances.end ()) {
-        return JS_EXCEPTION;
+	return JS_EXCEPTION;
     }
 
-    return JS_NewFloat64 (
-        ctx,
-        it->second.getScene ().getContext ().getContext ().renderTime
-    );
+    return JS_NewFloat64 (ctx, it->second.getScene ().getContext ().getContext ().renderTime);
 }
 
 JSValue engine_get_daytime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
     const auto it = engineInstances.find (magic);
 
     if (it == engineInstances.end ()) {
-        return JS_EXCEPTION;
+	return JS_EXCEPTION;
     }
 
-    return JS_NewFloat64 (
-        ctx,
-        it->second.getScene ().getContext ().getContext ().daytime
-    );
+    return JS_NewFloat64 (ctx, it->second.getScene ().getContext ().getContext ().daytime);
 }
 
 JSValue engine_stop_interval (
@@ -173,17 +168,23 @@ EngineObject::EngineObject (ScriptEngine& engine, Render::Wallpapers::CScene& sc
     JS_SetOpaque (this->m_instance, this);
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "frametime"),
-	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_frametime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
+	JS_NewCFunctionMagic (
+	    this->m_engine.getContext (), engine_get_frametime, "get", 0, JS_CFUNC_generic, this->m_instanceId
+	),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "runtime"),
-	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_runtime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
+	JS_NewCFunctionMagic (
+	    this->m_engine.getContext (), engine_get_runtime, "get", 0, JS_CFUNC_generic, this->m_instanceId
+	),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "timeOfDay"),
-	JS_NewCFunctionMagic (this->m_engine.getContext (), engine_get_daytime, "get", 0, JS_CFUNC_generic, this->m_instanceId),
+	JS_NewCFunctionMagic (
+	    this->m_engine.getContext (), engine_get_daytime, "get", 0, JS_CFUNC_generic, this->m_instanceId
+	),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (

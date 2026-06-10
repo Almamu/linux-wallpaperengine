@@ -8,124 +8,98 @@ const int FRAME_COUNT = FPS * 5;
 
 RecordingSession::~RecordingSession () {
     if (m_running) {
-        this->stop();
+	this->stop ();
     }
 }
 
-void RecordingSession::submitFrame(const uint8_t* rgb)
-{
-    if (!m_running)
-        return;
+void RecordingSession::submitFrame (const uint8_t* rgb) {
+    if (!m_running) {
+	return;
+    }
 
     Frame frame;
 
-    size_t size =
-        m_sourceWidth *
-        m_sourceHeight *
-        3;
+    size_t size = m_sourceWidth * m_sourceHeight * 3;
 
-    frame.rgb.resize(size);
+    frame.rgb.resize (size);
 
-    memcpy(
-        frame.rgb.data(),
-        rgb,
-        size);
+    memcpy (frame.rgb.data (), rgb, size);
 
     {
-        std::lock_guard lock(m_mutex);
+	std::lock_guard lock (m_mutex);
 
-        if (m_queue.size() >= MAX_QUEUE_SIZE)
-            m_queue.pop();
+	if (m_queue.size () >= MAX_QUEUE_SIZE) {
+	    m_queue.pop ();
+	}
 
-        m_queue.push(std::move(frame));
+	m_queue.push (std::move (frame));
     }
 
-    m_cv.notify_one();
+    m_cv.notify_one ();
 }
 
-void RecordingSession::workerLoop()
-{
-    while (true)
-    {
-        Frame frame;
+void RecordingSession::workerLoop () {
+    while (true) {
+	Frame frame;
 
-        {
-            std::unique_lock lock(m_mutex);
+	{
+	    std::unique_lock lock (m_mutex);
 
-            m_cv.wait(lock, [&]
-            {
-                return !m_queue.empty() || !m_running;
-            });
+	    m_cv.wait (lock, [&] { return !m_queue.empty () || !m_running; });
 
-            if (!m_running && m_queue.empty())
-                break;
+	    if (!m_running && m_queue.empty ()) {
+		break;
+	    }
 
-            frame = std::move(m_queue.front());
-            m_queue.pop();
-        }
+	    frame = std::move (m_queue.front ());
+	    m_queue.pop ();
+	}
 
-        av_image_fill_arrays(
-            m_rgbFrame->data,
-            m_rgbFrame->linesize,
-            frame.rgb.data(),
-            AV_PIX_FMT_RGB24,
-            m_sourceWidth,
-            m_sourceHeight,
-            1);
+	av_image_fill_arrays (
+	    m_rgbFrame->data, m_rgbFrame->linesize, frame.rgb.data (), AV_PIX_FMT_RGB24, m_sourceWidth, m_sourceHeight,
+	    1
+	);
 
-        sws_scale(
-            m_swsContext,
-            m_rgbFrame->data,
-            m_rgbFrame->linesize,
-            0,
-            m_sourceHeight,
-            m_videoFrame->data,
-            m_videoFrame->linesize);
+	sws_scale (
+	    m_swsContext, m_rgbFrame->data, m_rgbFrame->linesize, 0, m_sourceHeight, m_videoFrame->data,
+	    m_videoFrame->linesize
+	);
 
-        m_videoFrame->pts = m_frameCount++;
+	m_videoFrame->pts = m_frameCount++;
 
-        int ret =
-            avcodec_send_frame(
-                m_codecContext,
-                m_videoFrame);
+	int ret = avcodec_send_frame (m_codecContext, m_videoFrame);
 
-        if (ret < 0)
-            continue;
+	if (ret < 0) {
+	    continue;
+	}
 
-        AVPacket pkt;
+	AVPacket pkt;
 
-        av_init_packet(&pkt);
+	av_init_packet (&pkt);
 
-        while (true)
-        {
-            ret =
-                avcodec_receive_packet(
-                    m_codecContext,
-                    &pkt);
+	while (true) {
+	    ret = avcodec_receive_packet (m_codecContext, &pkt);
 
-            if (ret == AVERROR(EAGAIN))
-                break;
+	    if (ret == AVERROR (EAGAIN)) {
+		break;
+	    }
 
-            if (ret == AVERROR_EOF)
-                break;
+	    if (ret == AVERROR_EOF) {
+		break;
+	    }
 
-            if (ret < 0)
-                break;
+	    if (ret < 0) {
+		break;
+	    }
 
-            av_packet_rescale_ts(
-                &pkt,
-                m_codecContext->time_base,
-                m_stream->time_base);
+	    av_packet_rescale_ts (&pkt, m_codecContext->time_base, m_stream->time_base);
 
-            pkt.stream_index =
-                m_stream->index;
+	    pkt.stream_index = m_stream->index;
 
-            av_interleaved_write_frame(
-                m_formatContext,
-                &pkt);
+	    av_interleaved_write_frame (m_formatContext, &pkt);
 
-            av_packet_unref(&pkt);
-        }
+	    av_packet_unref (&pkt);
+	}
     }
 }
 
@@ -215,81 +189,66 @@ bool RecordingSession::start (const char* filename, int sourceWidth, int sourceH
 
     // Set up YUV conversion context (RGB to YUV)
     this->m_swsContext = sws_getContext (
-        // source
+	// source
 	this->m_sourceWidth, this->m_sourceHeight, AV_PIX_FMT_RGB24,
 	// destination
-	this->m_width, this->m_height, AV_PIX_FMT_YUV420P,
-	SWS_BICUBIC, nullptr, nullptr,
-	nullptr
+	this->m_width, this->m_height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr
     );
 
     m_running = true;
 
-    m_worker =
-        std::thread(
-            &RecordingSession::workerLoop,
-            this);
+    m_worker = std::thread (&RecordingSession::workerLoop, this);
 
     return true;
 }
 
-void RecordingSession::stop()
-{
-    if (!m_running)
-        return;
-
-    {
-        std::lock_guard lock(m_mutex);
-        m_running = false;
+void RecordingSession::stop () {
+    if (!m_running) {
+	return;
     }
 
-    m_cv.notify_one();
+    {
+	std::lock_guard lock (m_mutex);
+	m_running = false;
+    }
 
-    m_worker.join();
+    m_cv.notify_one ();
+
+    m_worker.join ();
 
     //
     // flush encoder
     //
 
-    avcodec_send_frame(m_codecContext, nullptr);
+    avcodec_send_frame (m_codecContext, nullptr);
 
     AVPacket pkt;
 
-    av_init_packet(&pkt);
+    av_init_packet (&pkt);
 
-    while (avcodec_receive_packet(m_codecContext, &pkt) == 0)
-    {
-        av_packet_rescale_ts(
-            &pkt,
-            m_codecContext->time_base,
-            m_stream->time_base);
+    while (avcodec_receive_packet (m_codecContext, &pkt) == 0) {
+	av_packet_rescale_ts (&pkt, m_codecContext->time_base, m_stream->time_base);
 
-        pkt.stream_index =
-            m_stream->index;
+	pkt.stream_index = m_stream->index;
 
-        av_interleaved_write_frame(
-            m_formatContext,
-            &pkt);
+	av_interleaved_write_frame (m_formatContext, &pkt);
 
-        av_packet_unref(&pkt);
+	av_packet_unref (&pkt);
     }
 
-    av_write_trailer(m_formatContext);
+    av_write_trailer (m_formatContext);
 
-    av_frame_free(&m_videoFrame);
-    av_frame_free(&m_rgbFrame);
+    av_frame_free (&m_videoFrame);
+    av_frame_free (&m_rgbFrame);
 
-    sws_freeContext(m_swsContext);
+    sws_freeContext (m_swsContext);
 
-    avcodec_free_context(&m_codecContext);
+    avcodec_free_context (&m_codecContext);
 
-    if (m_formatContext)
-    {
-        avio_closep(&m_formatContext->pb);
-        avformat_free_context(m_formatContext);
+    if (m_formatContext) {
+	avio_closep (&m_formatContext->pb);
+	avformat_free_context (m_formatContext);
     }
 }
 
-bool RecordingSession::isRunning () {
-    return m_running;
-}
+bool RecordingSession::isRunning () { return m_running; }

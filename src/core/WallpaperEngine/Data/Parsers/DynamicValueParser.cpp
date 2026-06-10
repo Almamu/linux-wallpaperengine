@@ -1,7 +1,7 @@
 #include "DynamicValueParser.h"
 
-#include "UserSettingParser.h"
 #include "../Model/DynamicValue.h"
+#include "UserSettingParser.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 

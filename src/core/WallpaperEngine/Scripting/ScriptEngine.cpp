@@ -175,8 +175,7 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
     }
 }
 
-ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) :
-    m_scene (scene) {
+ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) : m_scene (scene) {
     this->m_runtime = JS_NewRuntime ();
 
     if (!this->m_runtime) {
@@ -242,7 +241,7 @@ ScriptEngine::~ScriptEngine () {
     }
 
     for (const auto& events : this->m_queuedEvents | std::views::values) {
-        JS_FreeValue (this->m_context, events);
+	JS_FreeValue (this->m_context, events);
     }
 
     JS_FreeValue (this->m_context, this->m_globalThis);

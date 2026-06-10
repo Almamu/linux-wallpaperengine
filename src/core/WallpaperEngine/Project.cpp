@@ -37,10 +37,12 @@ void* wp_context_call_gl_proc_address (const char* name) {
  *
  * @return
  */
-AssetLocatorUniquePtr wp_setup_asset_locator (const WallpaperEngine::Project& project, const Configuration& config, const std::filesystem::path& path) {
+AssetLocatorUniquePtr wp_setup_asset_locator (
+    const WallpaperEngine::Project& project, const Configuration& config, const std::filesystem::path& path
+) {
     auto container = std::make_unique<Container> ();
 
-    container->registerAdapterFactory (std::make_unique <MediaCoverFactory> (project));
+    container->registerAdapterFactory (std::make_unique<MediaCoverFactory> (project));
     container->mount ("$mediaThumbnail", "$mediaThumbnail");
     container->mount (path, "/");
 
@@ -394,35 +396,35 @@ void WallpaperEngine::Project::trackMetadataChange (const char* title, const cha
     std::string artistStr = artist ?: "";
     std::string albumStr = album ?: "";
 
-    if (titleStr.empty()) {
-        this->mediaInfo.title = std::nullopt;
+    if (titleStr.empty ()) {
+	this->mediaInfo.title = std::nullopt;
     } else {
-        this->mediaInfo.title = titleStr;
+	this->mediaInfo.title = titleStr;
     }
 
-    if (artistStr.empty()) {
-        this->mediaInfo.artist = std::nullopt;
+    if (artistStr.empty ()) {
+	this->mediaInfo.artist = std::nullopt;
     } else {
-        this->mediaInfo.artist = artistStr;
+	this->mediaInfo.artist = artistStr;
     }
 
-    if (albumStr.empty()) {
-        this->mediaInfo.album = std::nullopt;
+    if (albumStr.empty ()) {
+	this->mediaInfo.album = std::nullopt;
     } else {
-        this->mediaInfo.album = albumStr;
+	this->mediaInfo.album = albumStr;
     }
 
     // notify the scene if needed
     if (this->wallpaper == nullptr) {
-        return;
+	return;
     }
 
     if (!this->wallpaper->is<Wallpapers::CScene> ()) {
-        return;
+	return;
     }
 
     this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyTrackMetadataChange (
-        this->mediaInfo.title, this->mediaInfo.artist, this->mediaInfo.album
+	this->mediaInfo.title, this->mediaInfo.artist, this->mediaInfo.album
     );
 }
 
@@ -436,20 +438,18 @@ void WallpaperEngine::Project::albumArtUrlChange (const char* url) {
     }
 
     if (this->renderContext == nullptr) {
-        return;
+	return;
     }
 
     if (this->wallpaper == nullptr) {
-        return;
+	return;
     }
 
     if (!this->wallpaper->is<Wallpapers::CScene> ()) {
-        return;
+	return;
     }
 
-    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyAlbumArtUrlChange (
-        this->mediaInfo.url
-    );
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyAlbumArtUrlChange (this->mediaInfo.url);
 
     this->renderContext->albumArtUrlChange (this->mediaInfo.url);
 }
@@ -459,15 +459,15 @@ void WallpaperEngine::Project::playbackPositionAndDurationChange (double positio
     this->mediaInfo.duration = duration;
 
     if (this->wallpaper == nullptr) {
-        return;
+	return;
     }
 
     if (!this->wallpaper->is<Wallpapers::CScene> ()) {
-        return;
+	return;
     }
 
     this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackPositionAndDurationChange (
-        this->mediaInfo.position, this->mediaInfo.duration
+	this->mediaInfo.position, this->mediaInfo.duration
     );
 }
 
@@ -475,21 +475,17 @@ void WallpaperEngine::Project::playbackStateChange (wp_media_playback_state stat
     this->mediaInfo.state = state;
 
     if (this->wallpaper == nullptr) {
-        return;
+	return;
     }
 
     if (!this->wallpaper->is<Wallpapers::CScene> ()) {
-        return;
+	return;
     }
 
-    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackStateChange (
-        this->mediaInfo.state
-    );
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackStateChange (this->mediaInfo.state);
 }
 
-const WallpaperEngine::Project::MediaInfo& WallpaperEngine::Project::getMediaInfo () const {
-    return this->mediaInfo;
-}
+const WallpaperEngine::Project::MediaInfo& WallpaperEngine::Project::getMediaInfo () const { return this->mediaInfo; }
 
 WallpaperEngine::Project*
 WallpaperEngine::Project::loadId (Context* context, wp_mouse_input* mouse_input, const unsigned long int id) {

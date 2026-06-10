@@ -2,9 +2,9 @@
 
 #include <utility>
 
-#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 #include "WallpaperEngine/Scripting/ScriptableObject.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Utils;

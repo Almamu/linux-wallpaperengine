@@ -2,8 +2,8 @@
 
 #include "EngineObject.h"
 #include "ScriptEngine.h"
-#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 
 using namespace WallpaperEngine::Scripting;
 

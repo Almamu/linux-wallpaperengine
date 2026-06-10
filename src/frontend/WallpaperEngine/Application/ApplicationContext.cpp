@@ -87,9 +87,9 @@ void ApplicationContext::loadSettingsFromArgv () {
 
 	    // ensure the screen is not part of a span group either
 	    for (const auto& screen : this->settings.general.backgrounds | std::views::keys) {
-	        if (screen.find (spanFilter) != std::string::npos) {
-	            sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
-	        }
+		if (screen.find (spanFilter) != std::string::npos) {
+		    sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
+		}
 	    }
 
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
@@ -121,41 +121,41 @@ void ApplicationContext::loadSettingsFromArgv () {
 		    continue;
 		}
 
-	        // this ensures unique screen names, having duplicates there is not a big issue
-	        screensInSpan.insert_or_assign (screen, true);
+		// this ensures unique screen names, having duplicates there is not a big issue
+		screensInSpan.insert_or_assign (screen, true);
 	    }
 
 	    if (screensInSpan.size () < 2) {
-	        sLog.exception ("--screen-span requires at least two comma-separated screen names");
+		sLog.exception ("--screen-span requires at least two comma-separated screen names");
 	    }
 
 	    // check for screens in use
 	    for (const auto& screen : screensInSpan | std::views::keys) {
-	        std::string screenGroupFilter = ":" + screen + ":";
+		std::string screenGroupFilter = ":" + screen + ":";
 
-	        if (this->settings.general.backgrounds.contains (screen)) {
-	            sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
-	        }
+		if (this->settings.general.backgrounds.contains (screen)) {
+		    sLog.exception ("--screen-span: screen '", screen, "' is already configured individually");
+		}
 
-	        // reject screens claimed by other span groups
-	        for (const auto& registeredScreen : this->settings.general.backgrounds | std::views::keys) {
-	            if (registeredScreen.find (screenGroupFilter) == std::string::npos) {
-	                continue;
-	            }
+		// reject screens claimed by other span groups
+		for (const auto& registeredScreen : this->settings.general.backgrounds | std::views::keys) {
+		    if (registeredScreen.find (screenGroupFilter) == std::string::npos) {
+			continue;
+		    }
 
-	            sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
-	        }
+		    sLog.exception ("--screen-span: screen '", screen, "' already belongs to another span group");
+		}
 	    }
 
 	    lastScreen = "span:";
 
 	    for (const auto& screen : screensInSpan | std::views::keys) {
-	        lastScreen += screen + ":";
+		lastScreen += screen + ":";
 	    }
 
 	    this->settings.general.backgrounds[lastScreen] = "";
-            this->settings.general.scalings[lastScreen] = this->settings.general.scalings[DEFAULT_SCREEN_NAME];
-            this->settings.general.clamps[lastScreen] = this->settings.general.clamps[DEFAULT_SCREEN_NAME];
+	    this->settings.general.scalings[lastScreen] = this->settings.general.scalings[DEFAULT_SCREEN_NAME];
+	    this->settings.general.clamps[lastScreen] = this->settings.general.clamps[DEFAULT_SCREEN_NAME];
 	})
 	.append ();
     backgroundGroup.add_argument ("-b", "--bg")

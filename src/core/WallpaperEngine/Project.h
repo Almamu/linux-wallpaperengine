@@ -15,13 +15,13 @@ class Context;
 class Project {
 public:
     struct MediaInfo {
-        std::optional<std::string> title;
-        std::optional<std::string> artist;
-        std::optional<std::string> album;
-        std::optional<std::string> url;
-        std::optional<wp_media_playback_state> state;
-        std::optional<double> duration;
-        std::optional<double> position;
+	std::optional<std::string> title;
+	std::optional<std::string> artist;
+	std::optional<std::string> album;
+	std::optional<std::string> url;
+	std::optional<wp_media_playback_state> state;
+	std::optional<double> duration;
+	std::optional<double> position;
     };
 
     ~Project ();

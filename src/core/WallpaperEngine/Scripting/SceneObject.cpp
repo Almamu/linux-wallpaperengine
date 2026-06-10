@@ -3,8 +3,8 @@
 #include "Adapters/ScriptableObjectAdapter.h"
 #include "ScriptEngine.h"
 #include "ScriptableObject.h"
-#include "WallpaperEngine/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+#include "WallpaperEngine/Utils/ScopeGuard.h"
 
 using namespace WallpaperEngine::Scripting;
 

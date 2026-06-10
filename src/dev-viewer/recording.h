@@ -1,15 +1,15 @@
 #pragma once
 
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <iostream>
-#include <thread>
-#include <vector>
 #include <mutex>
 #include <queue>
-#include <condition_variable>
+#include <thread>
+#include <vector>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -18,33 +18,28 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-
 extern const int FPS;
 extern const int FRAME_COUNT;
 
-class RecordingSession
-{
+class RecordingSession {
 public:
-    RecordingSession() = default;
-    ~RecordingSession();
+    RecordingSession () = default;
+    ~RecordingSession ();
 
-    bool start(
-        const char* filename,
-        int sourceWidth,
-        int sourceHeight);
+    bool start (const char* filename, int sourceWidth, int sourceHeight);
 
-    void submitFrame(const uint8_t* rgb);
+    void submitFrame (const uint8_t* rgb);
 
-    void stop();
+    void stop ();
 
-    bool isRunning();
+    bool isRunning ();
 
 private:
     struct Frame {
-        std::vector<uint8_t> rgb;
+	std::vector<uint8_t> rgb;
     };
 
-    void workerLoop();
+    void workerLoop ();
 
     bool m_running = false;
 
