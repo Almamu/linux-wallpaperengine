@@ -70,7 +70,7 @@ jobs:
         run: ${{ github.workspace }}/build/output/linux-wallpaperengine-tests
 
   build-lib:
-    needs: formatting
+    needs: tests
     env:
       BUILD_TYPE: Release
 
@@ -101,13 +101,13 @@ jobs:
         run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --target linux-wallpaperengine-core linux-wallpaperengine-webhelper
 
   build-frontend-x11-wayland:
-    needs: formatting
+    needs: tests
     env:
       BUILD_TYPE: Release
 
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-24.04]
 
     runs-on: ${{ matrix.os }}
 
