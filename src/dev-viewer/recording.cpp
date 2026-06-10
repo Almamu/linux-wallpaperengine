@@ -73,12 +73,10 @@ void RecordingSession::workerLoop () {
 	    continue;
 	}
 
-	AVPacket pkt;
-
-	av_init_packet (&pkt);
+	AVPacket* pkt = av_packet_alloc ();
 
 	while (true) {
-	    ret = avcodec_receive_packet (m_codecContext, &pkt);
+	    ret = avcodec_receive_packet (m_codecContext, pkt);
 
 	    if (ret == AVERROR (EAGAIN)) {
 		break;
@@ -92,13 +90,13 @@ void RecordingSession::workerLoop () {
 		break;
 	    }
 
-	    av_packet_rescale_ts (&pkt, m_codecContext->time_base, m_stream->time_base);
+	    av_packet_rescale_ts (pkt, m_codecContext->time_base, m_stream->time_base);
 
-	    pkt.stream_index = m_stream->index;
+	    pkt->stream_index = m_stream->index;
 
-	    av_interleaved_write_frame (m_formatContext, &pkt);
+	    av_interleaved_write_frame (m_formatContext, pkt);
 
-	    av_packet_unref (&pkt);
+	    av_packet_unref (pkt);
 	}
     }
 }
@@ -222,18 +220,16 @@ void RecordingSession::stop () {
 
     avcodec_send_frame (m_codecContext, nullptr);
 
-    AVPacket pkt;
+    AVPacket* pkt = av_packet_alloc ();
 
-    av_init_packet (&pkt);
+    while (avcodec_receive_packet (m_codecContext, pkt) == 0) {
+	av_packet_rescale_ts (pkt, m_codecContext->time_base, m_stream->time_base);
 
-    while (avcodec_receive_packet (m_codecContext, &pkt) == 0) {
-	av_packet_rescale_ts (&pkt, m_codecContext->time_base, m_stream->time_base);
+	pkt->stream_index = m_stream->index;
 
-	pkt.stream_index = m_stream->index;
+	av_interleaved_write_frame (m_formatContext, pkt);
 
-	av_interleaved_write_frame (m_formatContext, &pkt);
-
-	av_packet_unref (&pkt);
+	av_packet_unref (pkt);
     }
 
     av_write_trailer (m_formatContext);
