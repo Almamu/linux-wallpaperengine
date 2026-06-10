@@ -5,6 +5,7 @@
 #include "MediaCover.h"
 
 #include "WallpaperEngine/Assets/AssetLoadException.h"
+#include "WallpaperEngine/Context.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Media/MediaSource.h"
 
@@ -18,11 +19,11 @@ ReadStreamSharedPtr MediaCoverAdapter::open (const std::filesystem::path& path) 
 	);
     }
 
-    if (!source.getMediaInfo ().url.has_value ()) {
+    if (!project.getMediaInfo ().url.has_value ()) {
 	throw std::filesystem::filesystem_error ("Media source does not have a valid URL", path, std::error_code ());
     }
 
-    std::string album = *source.getMediaInfo ().url;
+    std::string album = *project.getMediaInfo ().url;
 
     if (album.starts_with ("file://")) {
 	album = album.substr (7);
@@ -60,5 +61,5 @@ AdapterSharedPtr MediaCoverFactory::create (const std::filesystem::path& path) c
 	sLog.exception ("MediaCoveradapter only supports $mediaThumbnail");
     }
 
-    return std::make_unique<MediaCoverAdapter> (source);
+    return std::make_unique<MediaCoverAdapter> (project);
 }

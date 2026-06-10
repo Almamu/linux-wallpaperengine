@@ -16,6 +16,7 @@ set(TARGET_SOURCE_FILES
     WallpaperEngine/FileSystem/Adapters/Directory.cpp
     WallpaperEngine/FileSystem/Adapters/Package.cpp
     WallpaperEngine/FileSystem/Adapters/Virtual.cpp
+    WallpaperEngine/FileSystem/Adapters/MediaCover.cpp
 
     WallpaperEngine/Audio/Drivers/AudioDriver.cpp
     WallpaperEngine/Audio/Drivers/SDLAudioDriver.cpp

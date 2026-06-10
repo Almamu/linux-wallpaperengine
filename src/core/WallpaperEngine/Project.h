@@ -13,32 +13,17 @@
 namespace WallpaperEngine {
 class Context;
 class Project {
-protected:
+public:
     struct MediaInfo {
-	std::optional<std::string> title;
-	std::optional<std::string> artist;
-	std::optional<std::string> album;
-	std::optional<std::string> url;
-	std::optional<wp_media_playback_state> state;
-	std::optional<double> duration;
-	std::optional<double> position;
+        std::optional<std::string> title;
+        std::optional<std::string> artist;
+        std::optional<std::string> album;
+        std::optional<std::string> url;
+        std::optional<wp_media_playback_state> state;
+        std::optional<double> duration;
+        std::optional<double> position;
     };
 
-    ProjectSharedPtr ref;
-    std::unique_ptr<CWallpaper> wallpaper;
-    std::unique_ptr<RenderContext> renderContext;
-    wp_mouse_input* mouse_input;
-    Context& context;
-    Properties::const_iterator property_it;
-    wp_project_property* current_property;
-    GLuint framebuffer;
-    int hintedWidth;
-    int hintedHeight;
-    MediaInfo mediaInfo;
-
-    Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project);
-
-public:
     ~Project ();
 
     int getWidth () const;
@@ -67,8 +52,25 @@ public:
     void playbackStateChange (wp_media_playback_state state);
     void playbackPositionAndDurationChange (double position, double duration);
 
+    const MediaInfo& getMediaInfo () const;
+
     static Project* loadId (Context* context, wp_mouse_input* mouse_input, const unsigned long int id);
     static Project* loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id);
     static Project* loadFolder (Context* context, wp_mouse_input* mouse_input, const char* folder);
+
+protected:
+    ProjectSharedPtr ref;
+    std::unique_ptr<CWallpaper> wallpaper;
+    std::unique_ptr<RenderContext> renderContext;
+    wp_mouse_input* mouse_input;
+    Context& context;
+    Properties::const_iterator property_it;
+    wp_project_property* current_property;
+    GLuint framebuffer;
+    int hintedWidth;
+    int hintedHeight;
+    MediaInfo mediaInfo;
+
+    Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project);
 };
 };

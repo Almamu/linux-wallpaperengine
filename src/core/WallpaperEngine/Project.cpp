@@ -3,6 +3,7 @@
 #include "Data/Dumpers/StringPrinter.h"
 #include "Data/Model/Property.h"
 #include "Data/Parsers/ProjectParser.h"
+#include "FileSystem/Adapters/MediaCover.h"
 #include "Render/Wallpapers/CScene.h"
 #include "Render/Wallpapers/CWeb.h"
 #include "Scripting/ScriptEngine.h"
@@ -31,23 +32,25 @@ void* wp_context_call_gl_proc_address (const char* name) {
  * Builds an asset locator and sets up all the paths and virtual files that are needed for proper playback
  * TODO: MOVE THIS SOMEWHERE ELSE?
  *
- * @param config
  * @param project
+ * @param path
  *
  * @return
  */
-AssetLocatorUniquePtr wp_setup_asset_locator (const Configuration& config, const std::filesystem::path& project) {
+AssetLocatorUniquePtr wp_setup_asset_locator (const WallpaperEngine::Project& project, const Configuration& config, const std::filesystem::path& path) {
     auto container = std::make_unique<Container> ();
 
-    container->mount (project, "/");
+    container->registerAdapterFactory (std::make_unique <MediaCoverFactory> (project));
+    container->mount ("$mediaThumbnail", "$mediaThumbnail");
+    container->mount (path, "/");
 
     // exceptions from these mounts are expected and not a real problem, so ignore them for now
     try {
-	container->mount (project / "scene.pkg", "/");
+	container->mount (path / "scene.pkg", "/");
     } catch (std::runtime_error&) { }
 
     try {
-	container->mount (project / "gifscene.pkg", "/");
+	container->mount (path / "gifscene.pkg", "/");
     } catch (std::runtime_error&) { }
 
     try {
@@ -137,7 +140,7 @@ WallpaperEngine::Project::Project (
 	sLog.exception ("Cannot find project file");
     }
 
-    auto locator = wp_setup_asset_locator (context->config, project);
+    auto locator = wp_setup_asset_locator (*this, context->config, project);
     auto json = JSON::parse (locator->readString ("project.json"));
     this->ref = WallpaperEngine::Data::Parsers::ProjectParser::parse (json, std::move (locator));
     context->projects.push_back (this->ref);
@@ -482,6 +485,10 @@ void WallpaperEngine::Project::playbackStateChange (wp_media_playback_state stat
     this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackStateChange (
         this->mediaInfo.state
     );
+}
+
+const WallpaperEngine::Project::MediaInfo& WallpaperEngine::Project::getMediaInfo () const {
+    return this->mediaInfo;
 }
 
 WallpaperEngine::Project*
