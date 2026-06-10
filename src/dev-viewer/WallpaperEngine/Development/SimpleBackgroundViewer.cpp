@@ -177,6 +177,11 @@ int main (const int argc, char* argv[]) {
     constexpr GLfloat position[] = { -1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 0.0f, -1.0f, -1.0f, 0.0f,
 				     -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, 0.0f };
 
+    // initialize glad
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc> (glfwGetProcAddress))) {
+        sLog.exception ("Cannot initialize GLAD");
+    }
+
     glGenVertexArrays (1, &vaoBuffer);
     glBindVertexArray (vaoBuffer);
 
