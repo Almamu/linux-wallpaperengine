@@ -208,3 +208,5 @@ void Output::makeCurrent () const {
 	sLog.error ("eglMakeCurrent failed for output ", this->name);
     }
 }
+
+wl_surface* Output::getSurface () const { return this->m_wl_surface; }

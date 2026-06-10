@@ -26,12 +26,17 @@ public:
     glm::vec2 size;
     wl_callback* frameCallback;
     bool callbackInitialized;
+    bool mouseInside;
+    double mouseX;
+    double mouseY;
+    int mouseButtons;
 
     void render () override;
 
     void setupLayerShell ();
     void notifyEnvironment () const;
     void makeCurrent () const;
+    wl_surface* getSurface () const;
 
 private:
     wl_output* m_wl_output;
