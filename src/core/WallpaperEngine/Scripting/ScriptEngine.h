@@ -19,6 +19,7 @@
 #include "../Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Media/MediaSource.h"
+#include "linux-wallpaperengine/context.h"
 
 namespace WallpaperEngine::Media {
 class MediaSource;
@@ -56,7 +57,7 @@ public:
     };
 
     ~ScriptEngine ();
-    ScriptEngine (Render::Wallpapers::CScene& scene, Media::MediaSource& mediaSource);
+    ScriptEngine (Render::Wallpapers::CScene& scene);
     ScriptEngine (const ScriptEngine&) = delete;
     ScriptEngine& operator= (const ScriptEngine&) = delete;
 
@@ -138,15 +139,23 @@ public:
     const Render::Wallpapers::CScene& getScene () const { return m_scene; }
     const std::map<std::string, std::unique_ptr<Modules::ScriptModule>>& getModules () const { return m_modules; }
 
+    void notifyTrackMetadataChange (
+	const std::optional<std::string>& title, const std::optional<std::string>& artist,
+	const std::optional<std::string>& album
+    );
+    void notifyAlbumArtUrlChange (const std::optional<std::string>& url);
+    void notifyPlaybackStateChange (std::optional<wp_media_playback_state> state);
+    void notifyPlaybackPositionAndDurationChange (std::optional<double> position, std::optional<double> duration);
+
 private:
     JSValue call (JSValue module, int argc, JSValueConst argv[], const char* name);
 
     void installBuiltins ();
 
-    void notifyMediaUpdate (const Media::MediaSource::MediaInfo& media);
-
     // Installs globalThis.__layers and related helpers. Called lazily.
     void ensureLayerRegistry ();
+
+    void queueEvents ();
 
     JSRuntime* m_runtime = nullptr;
     JSContext* m_context = nullptr;
@@ -167,9 +176,8 @@ private:
     bool m_layerRegistryReady = false;
     std::map<ScriptLayerHandle, bool> m_layerInitialized;
     bool m_builtinsInstalled = false;
-    Media::MediaSource& m_mediaSource;
-    std::function<void ()> m_unregisterMediaUpdateCallback;
-    std::function<void ()> m_unregisterAlbumArtUpdateCallback;
+
+    std::map<std::string, JSValue> m_queuedEvents;
 
     JSObjectAdapters m_adapters;
 };

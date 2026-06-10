@@ -17,8 +17,8 @@ typedef void wp_background_list;
  * Background list entry
  */
 struct wp_background_list_entry {
-	const char* path;
-	const char* preview_path;
+    const char* path;
+    const char* preview_path;
 };
 
 /**

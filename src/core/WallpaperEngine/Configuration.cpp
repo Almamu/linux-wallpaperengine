@@ -253,8 +253,8 @@ void PlaylistListEntry::reset () {
     this->entry.daytimeend = nullptr;
     this->entry.delay = 0;
     this->entry.transitiontime = 0;
-    this->entry.mode = wp_playlist_mode_Unknown;
-    this->entry.order = wp_playlist_order_Unknown;
-    this->entry.transition = wp_playlist_transition_Unknown;
+    this->entry.mode = WP_PLAYLIST_MODE_UNKNOWN;
+    this->entry.order = WP_PLAYLIST_ORDER_UNKNOWN;
+    this->entry.transition = WP_PLAYLIST_TRANSITION_UNKNOWN;
     this->it = this->config->playlists.begin ();
 }

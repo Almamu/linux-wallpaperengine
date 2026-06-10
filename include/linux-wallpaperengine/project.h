@@ -14,138 +14,154 @@ extern "C" {
 typedef void wp_project;
 
 enum wp_mouse_input_button {
-	WP_MOUSE_INPUT_BUTTON_LEFT = 1,
-	wp_mouse_input_button_left = 1,
-	WP_MOUSE_INPUT_BUTTON_RIGHT = 2,
-	wp_mouse_input_button_right = 2,
-	WP_MOUSE_INPUT_BUTTON_MIDDLE = 4,
-	wp_mouse_input_button_middle = 4
+    WP_MOUSE_INPUT_BUTTON_LEFT = 1,
+    WP_MOUSE_INPUT_BUTTON_RIGHT = 2,
+    WP_MOUSE_INPUT_BUTTON_MIDDLE = 4,
 };
 
 /**
  * Property type
  */
 enum wp_property_type {
-	wp_property_type_unknown = 0,
-	wp_property_type_text = 1,
-	wp_property_type_slider = 2,
-	wp_property_type_color = 3,
-	wp_property_type_boolean = 4,
-	wp_property_type_file = 4,
-	wp_property_type_scene_texture = 6,
-	wp_property_type_combo = 7,
+    WP_PROPERTY_TYPE_UNKNOWN = 0,
+    WP_PROPERTY_TYPE_TEXT = 1,
+    WP_PROPERTY_TYPE_SLIDER = 2,
+    WP_PROPERTY_TYPE_COLOR = 3,
+    WP_PROPERTY_TYPE_BOOLEAN = 4,
+    WP_PROPERTY_TYPE_FILE = 4,
+    WP_PROPERTY_TYPE_SCENE_TEXTURE = 6,
+    WP_PROPERTY_TYPE_COMBO = 7,
 };
 
 /**
  * Provides callbacks to get mouse position
  */
 struct wp_mouse_input {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
-	/**
-	 * Callback that returns the current mouse's x position on the given background
-	 */
-	double (*get_x) (void* user_parameter);
-	/**
-	 * Callback that returns the current mouse's y position on the given background
-	 */
-	double (*get_y) (void* user_parameter);
-	/**
-	 * Callback that returns the current mouse's button state
-	 */
-	int (*is_pressed) (void* user_parameter, int button);
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
+    /**
+     * Callback that returns the current mouse's x position on the given background
+     */
+    double (*get_x) (void* user_parameter);
+    /**
+     * Callback that returns the current mouse's y position on the given background
+     */
+    double (*get_y) (void* user_parameter);
+    /**
+     * Callback that returns the current mouse's button state
+     */
+    int (*is_pressed) (void* user_parameter, int button);
 };
 
+/**
+ * Provides callbacks to describe the project's contents for debugging purposes
+ */
 struct wp_describe_callback {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
 
-	/**
-	 * Called by the describe function with data to write to the output buffer.
-	 */
-	void (*write) (void* user_parameter, const char* buffer, unsigned long size);
+    /**
+     * Called by the describe function with data to write to the output buffer.
+     */
+    void (*write) (void* user_parameter, const char* buffer, unsigned long size);
 };
 
 /**
  * Project's property
  */
 struct wp_project_property {
-	wp_property_type type;
-	const char* name;
-	const char* text;
+    wp_property_type type;
+    const char* name;
+    const char* text;
 };
 
 struct wp_project_property_slider {
-	wp_project_property base;
-	float min;
-	float max;
-	float step;
-	float value;
+    wp_project_property base;
+    float min;
+    float max;
+    float step;
+    float value;
 };
 
 struct wp_project_property_text {
-	wp_project_property base;
-	const char* value;
+    wp_project_property base;
+    const char* value;
 };
 
 struct wp_project_property_file {
-	wp_project_property base;
-	const char* path;
+    wp_project_property base;
+    const char* path;
 };
 
 struct wp_project_property_scene_texture {
-	wp_project_property base;
-	const char* value;
+    wp_project_property base;
+    const char* value;
 };
 
 struct wp_project_property_combo_value {
-	const char* key;
-	const char* value;
+    const char* key;
+    const char* value;
 };
 
 struct wp_project_property_combo {
-	wp_project_property base;
-	int value_count;
-	wp_project_property_combo_value* values;
+    wp_project_property base;
+    int value_count;
+    wp_project_property_combo_value* values;
 };
 
 struct wp_project_property_color {
-	wp_project_property base;
-	float r;
-	float g;
-	float b;
-	float a;
+    wp_project_property base;
+    float r;
+    float g;
+    float b;
+    float a;
 };
 
 struct wp_project_property_boolean {
-	wp_project_property base;
-	bool value;
+    wp_project_property base;
+    bool value;
 };
+
+#define WP_TYPE_LOWER_BOOLEAN boolean
+#define WP_TYPE_LOWER_COLOR color
+#define WP_TYPE_LOWER_SLIDER slider
+#define WP_TYPE_LOWER_TEXT text
+#define WP_TYPE_LOWER_FILE file
+#define WP_TYPE_LOWER_SCENE_TEXTURE scene_texture
+#define WP_TYPE_LOWER_COMBO combo
+
+#define WP_TYPE_EXPAND(x) x
+#define WP_TYPE_CONCAT(a, b) a##b
+#define WP_TYPE_CONCAT_EXPAND(a, b) WP_TYPE_CONCAT (a, b)
+
+#define WP_PROPERTY_TYPE_NAME(type)                                                                                    \
+    WP_TYPE_CONCAT_EXPAND (wp_project_property_, WP_TYPE_EXPAND (WP_TYPE_CONCAT_EXPAND (WP_TYPE_LOWER_, type)))
 
 /** Convenient macro to check for a property type */
 #define WP_PROPERTY_IS(property, type)                                                                                 \
-	(property != NULL && ((wp_project_property*)property)->ty##pe == wp_property_type_##type)
+    (property != NULL && ((wp_project_property*)property)->ty##pe == WP_PROPERTY_TYPE_##type)
 /** Convenient macro to cast a property to the given type safely */
-#define WP_PROPERTY_AS(property, type) (WP_PROPERTY_IS (property, type) ? (wp_project_property_##type*)property : NULL)
+#define WP_PROPERTY_AS(property, type)                                                                                 \
+    (WP_PROPERTY_IS (property, type) ? (WP_PROPERTY_TYPE_NAME (type)*)property : NULL)
 
-#define WP_PROPERTY_IS_COLOR(property) WP_PROPERTY_IS (property, color)
-#define WP_PROPERTY_AS_COLOR(property) WP_PROPERTY_AS (property, color)
-#define WP_PROPERTY_IS_BOOLEAN(property) WP_PROPERTY_IS (property, boolean)
-#define WP_PROPERTY_AS_BOOLEAN(property) WP_PROPERTY_AS (property, boolean)
-#define WP_PROPERTY_IS_SLIDER(property) WP_PROPERTY_IS (property, slider)
-#define WP_PROPERTY_AS_SLIDER(property) WP_PROPERTY_AS (property, slider)
-#define WP_PROPERTY_IS_TEXT(property) WP_PROPERTY_IS (property, text)
-#define WP_PROPERTY_AS_TEXT(property) WP_PROPERTY_AS (property, text)
-#define WP_PROPERTY_IS_FILE(property) WP_PROPERTY_IS (property, file)
-#define WP_PROPERTY_AS_FILE(property) WP_PROPERTY_AS (property, file)
-#define WP_PROPERTY_IS_SCENE_TEXTURE(property) WP_PROPERTY_IS (property, scene_texture)
-#define WP_PROPERTY_AS_SCENE_TEXTURE(property) WP_PROPERTY_AS (property, scene_texture)
-#define WP_PROPERTY_IS_COMBO(property) WP_PROPERTY_IS (property, combo)
-#define WP_PROPERTY_AS_COMBO(property) WP_PROPERTY_AS (property, combo)
+#define WP_PROPERTY_IS_COLOR(property) WP_PROPERTY_IS (property, COLOR)
+#define WP_PROPERTY_AS_COLOR(property) WP_PROPERTY_AS (property, COLOR)
+#define WP_PROPERTY_IS_BOOLEAN(property) WP_PROPERTY_IS (property, BOOLEAN)
+#define WP_PROPERTY_AS_BOOLEAN(property) WP_PROPERTY_AS (property, BOOLEAN)
+#define WP_PROPERTY_IS_SLIDER(property) WP_PROPERTY_IS (property, SLIDER)
+#define WP_PROPERTY_AS_SLIDER(property) WP_PROPERTY_AS (property, SLIDER)
+#define WP_PROPERTY_IS_TEXT(property) WP_PROPERTY_IS (property, TEXT)
+#define WP_PROPERTY_AS_TEXT(property) WP_PROPERTY_AS (property, TEXT)
+#define WP_PROPERTY_IS_FILE(property) WP_PROPERTY_IS (property, FILE)
+#define WP_PROPERTY_AS_FILE(property) WP_PROPERTY_AS (property, FILE)
+#define WP_PROPERTY_IS_SCENE_TEXTURE(property) WP_PROPERTY_IS (property, SCENE_TEXTURE)
+#define WP_PROPERTY_AS_SCENE_TEXTURE(property) WP_PROPERTY_AS (property, SCENE_TEXTURE)
+#define WP_PROPERTY_IS_COMBO(property) WP_PROPERTY_IS (property, COMBO)
+#define WP_PROPERTY_AS_COMBO(property) WP_PROPERTY_AS (property, COMBO)
 
 /**
  * Loads the given background ID from the backgrounds folder
@@ -336,7 +352,7 @@ wp_project_property_set_slider (wp_project* project, wp_project_property_slider*
  * @param a
  */
 WPENGINE_API bool wp_project_property_set_color (
-	wp_project* project, wp_project_property_color* property, float r, float g, float b, float a
+    wp_project* project, wp_project_property_color* property, float r, float g, float b, float a
 );
 
 /**
@@ -353,7 +369,7 @@ wp_project_property_set_file (wp_project* project, wp_project_property_file* pro
  * @param path The value to set for the property
  */
 WPENGINE_API bool wp_project_property_set_scene_texture (
-	wp_project* project, wp_project_property_scene_texture* property, const char* path
+    wp_project* project, wp_project_property_scene_texture* property, const char* path
 );
 
 /**
@@ -416,6 +432,41 @@ WPENGINE_API void wp_project_set_mouse_input (wp_project* project, wp_mouse_inpu
  * @param callback
  */
 WPENGINE_API void wp_project_describe (wp_project* project, wp_describe_callback* callback);
+
+/**
+ * Notifies the project about a new track being played in the system
+ *
+ * @param title
+ * @param artist
+ * @param album
+ */
+WPENGINE_API void
+wp_project_notify_track_metadata_change (wp_project* project, const char* title, const char* artist, const char* album);
+
+/**
+ * Notifies the project about a new album art url being available
+ *
+ * @param project
+ * @param url
+ */
+WPENGINE_API void wp_project_notify_album_art_url_change (wp_project* project, const char* url);
+
+/**
+ * Notifies the project about playback state change
+ *
+ * @param project
+ * @param state
+ */
+WPENGINE_API void wp_project_notify_playback_state_change (wp_project* project, wp_media_playback_state state);
+
+/**
+ * Notifies the project about changes in the playback position
+ *
+ * @param project
+ * @param position
+ */
+WPENGINE_API void
+wp_project_notify_playback_position_and_duration_change (wp_project* project, double position, double duration);
 
 #ifdef __cplusplus
 }

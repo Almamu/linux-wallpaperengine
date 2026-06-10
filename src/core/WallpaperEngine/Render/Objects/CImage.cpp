@@ -610,7 +610,7 @@ void CImage::setup () {
 	}
     }
 
-    const auto& debug = this->getScene ().getContext ().getApp ().getContext ().settings.render.debug;
+    const auto& debug = this->getScene ().getContext ().getContext ().config;
 
     // copy pass to the composite layer
     for (const auto& cur : this->getImage ().model->material->passes) {
@@ -844,7 +844,7 @@ bool CImage::shouldRenderFinalPass (bool isLastPass) const {
 	return false;
     }
 
-    const auto& debug = this->getScene ().getContext ().getApp ().getContext ().settings.render.debug;
+    const auto& debug = this->getScene ().getContext ().getContext ().config;
     return !(debug.noSolidFinal && this->getImage ().model->solidlayer);
 }
 

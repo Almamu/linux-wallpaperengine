@@ -14,6 +14,16 @@ namespace WallpaperEngine {
 class Context;
 class Project {
 protected:
+    struct MediaInfo {
+	std::optional<std::string> title;
+	std::optional<std::string> artist;
+	std::optional<std::string> album;
+	std::optional<std::string> url;
+	std::optional<wp_media_playback_state> state;
+	std::optional<double> duration;
+	std::optional<double> position;
+    };
+
     ProjectSharedPtr ref;
     std::unique_ptr<CWallpaper> wallpaper;
     std::unique_ptr<RenderContext> renderContext;
@@ -24,6 +34,7 @@ protected:
     GLuint framebuffer;
     int hintedWidth;
     int hintedHeight;
+    MediaInfo mediaInfo;
 
     Project (Context* context, wp_mouse_input* mouse_input, const std::filesystem::path& project);
 
@@ -50,6 +61,11 @@ public:
     void propertySet (const std::string& key, bool value);
 
     void describe (wp_describe_callback* callback);
+
+    void trackMetadataChange (const char* title, const char* artist, const char* album);
+    void albumArtUrlChange (const char* url);
+    void playbackStateChange (wp_media_playback_state state);
+    void playbackPositionAndDurationChange (double position, double duration);
 
     static Project* loadId (Context* context, wp_mouse_input* mouse_input, const int id);
     static Project* loadId (Context* context, wp_mouse_input* mouse_input, const std::string& id);

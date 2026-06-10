@@ -19,26 +19,26 @@ typedef void wp_configuration;
  * (only called when enabled)
  */
 struct wp_mute_check {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
 
-	bool (*is_muted) (void* user_parameter);
+    bool (*is_muted) (void* user_parameter);
 };
 
 /**
  * Pointers to different functions to check if rendering should be paused
  */
 struct wp_rendering_pause_check {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
-	/**
-	 * Callback that should return if something is fullscreen or not, used for pausing
-	 */
-	bool (*is_paused) (void* user_parameter);
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
+    /**
+     * Callback that should return if something is fullscreen or not, used for pausing
+     */
+    bool (*is_paused) (void* user_parameter);
 };
 
 /**
@@ -163,6 +163,48 @@ wp_config_set_rendering_pause_check (wp_configuration* config, wp_rendering_paus
  * @param value Property's value
  */
 WPENGINE_API void wp_config_set_property (wp_configuration* config, const char* key, const char* value);
+
+/**
+ * Enables/disables debugging in backgrounds, enforces only the base material to be rendered
+ *
+ * @param config The configuration instance to modify
+ * @param enable
+ */
+WPENGINE_API void wp_config_set_debug_base_object_only (wp_configuration* config, bool enable);
+
+/**
+ * Enables/disables rendering solid layers
+ *
+ * @param config The configuration instance to modify
+ * @param enable
+ */
+WPENGINE_API void wp_config_set_no_solid_final (wp_configuration* config, bool enable);
+
+/**
+ * Sets the effects to skip
+ *
+ * @param config The configuration instance to modify
+ * @param ids The ids of effects to skip
+ * @param count The amount of ids provided
+ */
+WPENGINE_API void wp_config_set_skip_effects (wp_configuration* config, int* ids, unsigned int count);
+
+/**
+ * Sets the objects to skip
+ *
+ * @param config The configuration instance to modify
+ * @param ids The ids of effects to skip
+ * @param count The amount of ids provided
+ */
+WPENGINE_API void wp_config_set_skip_objects (wp_configuration* config, int* ids, unsigned int count);
+
+/**
+ * Enables extra output for object pass logging
+ *
+ * @param config The configuration instance to modify
+ * @param enable
+ */
+WPENGINE_API void wp_config_set_pass_logging (wp_configuration* config, bool enable);
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-#include "../../../WallpaperEngine/Application/WallpaperApplication.h"
+#include "WallpaperApplication.h"
 
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
 
@@ -163,7 +163,7 @@ WallpaperApplication::buildPlaylistOrder (const ApplicationContext::PlaylistDefi
     std::vector<std::size_t> order (definition.items.size ());
     std::iota (order.begin (), order.end (), 0);
 
-    if (definition.settings.order == wp_playlist_order_Random) {
+    if (definition.settings.order == WP_PLAYLIST_ORDER_RANDOM) {
 	std::ranges::shuffle (order, this->m_playlistRng);
     }
 
@@ -202,7 +202,7 @@ void WallpaperApplication::advancePlaylist (
 
     playlist.orderIndex = (playlist.orderIndex + 1) % playlist.order.size ();
 
-    if (playlist.orderIndex == 0 && playlist.definition.settings.order == wp_playlist_order_Random) {
+    if (playlist.orderIndex == 0 && playlist.definition.settings.order == WP_PLAYLIST_ORDER_RANDOM) {
 	std::ranges::shuffle (playlist.order, this->m_playlistRng);
     }
 
@@ -291,7 +291,7 @@ void WallpaperApplication::updatePlaylists () {
     for (auto& [screen, playlist] : this->m_activePlaylists) {
 	playlist.lastUpdate = now;
 
-	if (playlist.definition.settings.mode != wp_playlist_mode_Timer) {
+	if (playlist.definition.settings.mode != WP_PLAYLIST_MODE_TIMER) {
 	    continue;
 	}
 

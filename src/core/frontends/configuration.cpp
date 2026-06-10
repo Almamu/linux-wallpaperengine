@@ -112,3 +112,43 @@ WPENGINE_API void wp_config_set_property (wp_configuration* config, const char* 
     static_cast<WallpaperEngine::Configuration*> (config)->properties[key] = value;
     WPENGINE_CONFIG_API_END ();
 }
+
+WPENGINE_API void wp_config_set_debug_base_object_only (wp_configuration* config, bool enable) {
+    WPENGINE_CONFIG_API_BEGIN
+    static_cast<WallpaperEngine::Configuration*> (config)->baseOnly = enable;
+    WPENGINE_CONFIG_API_END ();
+}
+
+WPENGINE_API void wp_config_set_no_solid_final (wp_configuration* config, bool enable) {
+    WPENGINE_CONFIG_API_BEGIN
+    static_cast<WallpaperEngine::Configuration*> (config)->noSolidFinal = enable;
+    WPENGINE_CONFIG_API_END ();
+}
+
+WPENGINE_API void wp_config_set_skip_effects (wp_configuration* config, int* ids, unsigned int count) {
+    WPENGINE_CONFIG_API_BEGIN
+    auto base = static_cast<WallpaperEngine::Configuration*> (config);
+
+    base->skipEffects.clear ();
+    base->skipEffects.resize (count);
+    base->skipEffects.insert (base->skipEffects.end (), ids, ids + count);
+
+    WPENGINE_CONFIG_API_END ();
+}
+
+WPENGINE_API void wp_config_set_skip_objects (wp_configuration* config, int* ids, unsigned int count) {
+    WPENGINE_CONFIG_API_BEGIN
+    auto base = static_cast<WallpaperEngine::Configuration*> (config);
+
+    base->skipObjects.clear ();
+    base->skipObjects.resize (count);
+    base->skipObjects.insert (base->skipObjects.end (), ids, ids + count);
+
+    WPENGINE_CONFIG_API_END ();
+}
+
+WPENGINE_API void wp_config_set_pass_logging (wp_configuration* config, bool enable) {
+    WPENGINE_CONFIG_API_BEGIN
+    static_cast<WallpaperEngine::Configuration*> (config)->passLog = enable;
+    WPENGINE_CONFIG_API_END ();
+}

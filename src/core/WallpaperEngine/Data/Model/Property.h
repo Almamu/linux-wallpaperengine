@@ -37,7 +37,7 @@ public:
     [[nodiscard]] virtual std::string dump () const = 0;
 };
 
-class PropertySlider final : public Property, SliderData {
+class PropertySlider final : public Property, public SliderData {
 public:
     PropertySlider (PropertyData data, SliderData sliderData, const float value) :
 	Property (std::move (data)), SliderData (sliderData) {
@@ -105,7 +105,7 @@ public:
     }
 };
 
-class PropertyCombo final : public Property, ComboData {
+class PropertyCombo final : public Property, public ComboData {
 public:
     PropertyCombo (PropertyData data, ComboData comboData, const std::string& value) :
 	Property (std::move (data)), ComboData (std::move (comboData)) {

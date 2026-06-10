@@ -25,7 +25,7 @@ CScene::CScene (const Wallpaper& wallpaper, RenderContext& context, AudioContext
     auto scene = wallpaper.as<Scene> ();
 
     // setup scripting engine
-    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this, context.getMediaSource ());
+    this->m_scriptEngine = std::make_unique<Scripting::ScriptEngine> (*this);
     // setup the scene camera
     this->m_camera = std::make_unique<Camera> (*this, scene->camera);
 
@@ -34,7 +34,7 @@ CScene::CScene (const Wallpaper& wallpaper, RenderContext& context, AudioContext
 
     // detect size if the orthogonal project is auto
     if (scene->camera.projection.isAuto) {
-	glm::vec2 maxExtent = { 0.0f, 0.0f };
+	glm::vec4 boundingBox = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	for (const auto& object : scene->objects) {
 	    if (!object->is<Image> ()) {
@@ -47,20 +47,22 @@ CScene::CScene (const Wallpaper& wallpaper, RenderContext& context, AudioContext
 	    }
 
 	    const glm::vec3 origin = image->origin->value->getVec3 ();
-	    const glm::vec2 halfSize = image->size / 2.0f;
+	    const glm::vec2 halfSize = (image->size * image->scale->value->getVec2 ()) / 2.0f;
 
-	    maxExtent.x = glm::max (maxExtent.x, glm::abs (origin.x) + halfSize.x);
-	    maxExtent.y = glm::max (maxExtent.y, glm::abs (origin.y) + halfSize.y);
+	    // get the actual top-left corner
+	    const glm::vec2 topLeftCorner = { glm::min (origin.x - halfSize.x, origin.x + halfSize.x),
+					      glm::min (origin.y - halfSize.y, origin.y + halfSize.y) };
+	    const glm::vec2 bottomRightCorner = { glm::max (origin.x - halfSize.x, origin.x + halfSize.x),
+						  glm::max (origin.y - halfSize.y, origin.y + halfSize.y) };
+
+	    boundingBox.x = glm::min (topLeftCorner.x, boundingBox.x);
+	    boundingBox.y = glm::min (topLeftCorner.y, boundingBox.y);
+	    boundingBox.z = glm::max (bottomRightCorner.x, boundingBox.z);
+	    boundingBox.w = glm::max (bottomRightCorner.y, boundingBox.w);
 	}
 
-	if (maxExtent.x > 0.0f && maxExtent.y > 0.0f) {
-	    width = maxExtent.x * 2.0f;
-	    height = maxExtent.y * 2.0f;
-	} else {
-	    width = this->getContext ().getOutput ().getFullWidth ();
-	    height = this->getContext ().getOutput ().getFullHeight ();
-	    sLog.debug ("Auto projection: falling back to screen resolution ", width, "x", height);
-	}
+	width = boundingBox.z - boundingBox.x;
+	height = boundingBox.w - boundingBox.y;
     }
 
     this->m_parallaxDisplacement = { 0, 0 };
@@ -343,7 +345,7 @@ void CScene::renderFrame () {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (const auto& cur : this->m_objectsByRenderOrder) {
-	const auto& debug = this->getContext ().getApp ().getContext ().settings.render.debug;
+	const auto& debug = this->getContext ().getContext ().config;
 	if (debug.objectFilter.has_value () && cur->getId () != debug.objectFilter.value ()) {
 	    continue;
 	}

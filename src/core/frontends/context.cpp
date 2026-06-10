@@ -50,3 +50,15 @@ WPENGINE_API void wp_context_set_audio_input_mix (wp_context* context, wp_audio_
     static_cast<WallpaperEngine::Context*> (context)->audio_input_mix = mix ?: &default_audio_input_mix;
     WPENGINE_CONTEXT_API_END ();
 }
+
+WPENGINE_API void wp_project_notify_track_metadata_change (
+    wp_context* context, const char* title, const char* artist, const char* album
+) { }
+
+WPENGINE_API void wp_project_notify_album_art_url_change (wp_context* context, const char* url) { }
+
+WPENGINE_API void wp_project_notify_playback_state_change (wp_context* context, wp_media_playback_state state) { }
+
+WPENGINE_API void wp_project_notify_playback_position_change (wp_context* context, double position) { }
+
+WPENGINE_API void wp_project_notify_playback_duration_change (wp_context* context, double duration) { }

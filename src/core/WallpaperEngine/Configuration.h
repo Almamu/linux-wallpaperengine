@@ -51,6 +51,13 @@ public:
     bool disableParallax;
     int web_fps;
 
+    bool baseOnly;
+    bool noSolidFinal;
+    bool passLog;
+    std::optional<int> objectFilter;
+    std::vector<int> skipObjects;
+    std::vector<int> skipEffects;
+
     std::filesystem::path assets_dir;
     std::filesystem::path backgrounds_dir;
 

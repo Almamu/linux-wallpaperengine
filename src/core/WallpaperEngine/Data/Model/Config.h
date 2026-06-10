@@ -63,15 +63,15 @@ enum PlaylistTransition {
 };
 
 static_assert (
-    static_cast<int> (wp_playlist_mode_Max) == static_cast<int> (PlaylistMode_Max),
+    static_cast<int> (WP_PLAYLIST_MODE_MAX) == static_cast<int> (PlaylistMode_Max),
     "Playlist mode enums are desynchronized"
 );
 static_assert (
-    static_cast<int> (wp_playlist_order_Max) == static_cast<int> (PlaylistOrder_Max),
+    static_cast<int> (WP_PLAYLIST_ORDER_MAX) == static_cast<int> (PlaylistOrder_Max),
     "Playlist order enums are desynchronized"
 );
 static_assert (
-    static_cast<int> (wp_playlist_transition_Max) == static_cast<int> (PlaylistTransition_Max),
+    static_cast<int> (WP_PLAYLIST_TRANSITION_MAX) == static_cast<int> (PlaylistTransition_Max),
     "Playlist transition enums are desynchronized"
 );
 

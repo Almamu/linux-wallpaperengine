@@ -457,7 +457,7 @@ void CPass::render () {
     // set the VAO for now
     glBindVertexArray (this->m_vao);
 
-    const auto& debug = this->getContext ().getApp ().getContext ().settings.render.debug;
+    const auto& debug = this->getContext ().getContext ().config;
     if (debug.passLog) {
 	sLog.out (
 	    "Render pass object=", this->m_renderable.getId (), " shader=", this->m_pass.shader,

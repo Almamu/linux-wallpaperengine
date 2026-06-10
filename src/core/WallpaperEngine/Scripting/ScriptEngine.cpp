@@ -175,19 +175,8 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
     }
 }
 
-ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) :
-    m_scene (scene), m_mediaSource (mediaSource) {
-    this->m_unregisterMediaUpdateCallback
-	= mediaSource.addMetadataListener ([this] (const Media::MediaSource::MediaInfo& info) {
-	      this->notifyMediaUpdate (info);
-	  });
-
-    this->m_unregisterAlbumArtUpdateCallback
-	= mediaSource.addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& info) {
-	      // TODO: SEPARATE THESE INTO THEIR OWN UPDATES SO JS ONLY RECEIVES THE MEANINGFUL UPDATES
-	      this->notifyMediaUpdate (info);
-	  });
-
+ScriptEngine::ScriptEngine (Wallpapers::CScene& scene) :
+    m_scene (scene) {
     this->m_runtime = JS_NewRuntime ();
 
     if (!this->m_runtime) {
@@ -248,10 +237,12 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& media
 }
 
 ScriptEngine::~ScriptEngine () {
-    this->m_unregisterMediaUpdateCallback ();
-
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
+    }
+
+    for (const auto& events : this->m_queuedEvents | std::views::values) {
+        JS_FreeValue (this->m_context, events);
     }
 
     JS_FreeValue (this->m_context, this->m_globalThis);
@@ -617,6 +608,20 @@ void ScriptEngine::tick () {
     this->m_engineObject->tick ();
 
     // run any pending notifications
+    if (!this->m_queuedEvents.empty ()) {
+	for (auto& event : this->m_queuedEvents) {
+	    JSValue args[] = { event.second };
+
+	    for (auto& module : this->m_scriptModules | std::views::values) {
+		JSValue result = this->call (module.module, 1, args, event.first.c_str ());
+		JS_FreeValue (this->m_context, result);
+	    }
+
+	    JS_FreeValue (this->m_context, event.second);
+	}
+
+	this->m_queuedEvents.clear ();
+    }
 
     // run all update methods
     for (auto& module : this->m_scriptModules | std::views::values) {
@@ -637,7 +642,26 @@ void ScriptEngine::tick () {
     }
 }
 
-void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media) {
+void ScriptEngine::notifyTrackMetadataChange (
+    const std::optional<std::string>& title, const std::optional<std::string>& artist,
+    const std::optional<std::string>& album
+) {
+    JSContext* ctx = this->m_context;
+
+    JSValue propertiesEvent = JS_NewObject (ctx);
+
+    // set properties
+    JS_SetPropertyStr (ctx, propertiesEvent, "title", JS_NewString (ctx, title.has_value () ? title->c_str () : ""));
+    JS_SetPropertyStr (ctx, propertiesEvent, "artist", JS_NewString (ctx, artist.has_value () ? artist->c_str () : ""));
+    JS_SetPropertyStr (
+	ctx, propertiesEvent, "albumTitle", JS_NewString (ctx, album.has_value () ? artist->c_str () : "")
+    );
+
+    this->m_queuedEvents.insert_or_assign ("mediaPropertiesChanged", propertiesEvent);
+}
+
+void ScriptEngine::notifyAlbumArtUrlChange (const std::optional<std::string>& url) {
+
     JSContext* ctx = this->m_context;
 
     DynamicValue primaryColorValue (glm::vec3 (0.12f, 0.12f, 0.12f));
@@ -651,51 +675,36 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
     JSValue tertiaryColor = this->m_adapters.vec3->instantiate (tertiaryColorValue, true);
     JSValue highContrastColor = this->m_adapters.vec3->instantiate (highContrastColorValue, true);
 
-    JSValue propertiesEvent = JS_NewObject (ctx);
-
-    // set properties
-    JS_SetPropertyStr (ctx, propertiesEvent, "title", JS_NewString (ctx, media.title.c_str ()));
-    JS_SetPropertyStr (ctx, propertiesEvent, "artist", JS_NewString (ctx, media.artist.c_str ()));
-    JS_SetPropertyStr (ctx, propertiesEvent, "albumTitle", JS_NewString (ctx, media.album.c_str ()));
-
-    JSValue playbackEvent = JS_NewObject (ctx);
-
-    JS_SetPropertyStr (ctx, playbackEvent, "state", JS_NewInt32 (ctx, media.playbackState));
-
-    JSValue mediaTimelineEvent = JS_NewObject (ctx);
-
-    JS_SetPropertyStr (ctx, mediaTimelineEvent, "position", JS_NewFloat64 (ctx, media.position));
-    JS_SetPropertyStr (ctx, mediaTimelineEvent, "duration", JS_NewFloat64 (ctx, media.duration));
-
     JSValue mediaThumbnailEvent = JS_NewObject (ctx);
 
-    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "hasThumbnail", JS_NewBool (ctx, media.url.has_value ()));
+    JS_SetPropertyStr (ctx, mediaThumbnailEvent, "hasThumbnail", JS_NewBool (ctx, url.has_value ()));
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "primaryColor", primaryColor);
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "secondaryColor", secondaryColor);
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "tertiaryColor", tertiaryColor);
     JS_SetPropertyStr (ctx, mediaThumbnailEvent, "highContrastColor", highContrastColor);
 
-    JSValue propertiesArgs[] = { propertiesEvent };
-    JSValue playbackArgs[] = { playbackEvent };
-    JSValue mediaTimelineArgs[] = { mediaTimelineEvent };
-    JSValue mediaThumbnailArgs[] = { mediaThumbnailEvent };
+    this->m_queuedEvents.insert_or_assign ("mediaThumbnailChanged", mediaThumbnailEvent);
+}
 
-    for (auto& module : this->m_scriptModules | std::views::values) {
-	// call all methods
-	JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
-	JSValue result2 = this->call (module.module, 1, playbackArgs, "mediaPlaybackChanged");
-	JSValue result3 = this->call (module.module, 1, mediaTimelineArgs, "mediaTimelineChanged");
-	JSValue result4 = this->call (module.module, 1, mediaThumbnailArgs, "mediaThumbnailChanged");
+void ScriptEngine::notifyPlaybackStateChange (const std::optional<wp_media_playback_state> state) {
+    JSContext* ctx = this->m_context;
+    JSValue playbackEvent = JS_NewObject (ctx);
 
-	JS_FreeValue (ctx, result1);
-	JS_FreeValue (ctx, result2);
-	JS_FreeValue (ctx, result3);
-	JS_FreeValue (ctx, result4);
-    }
+    JS_SetPropertyStr (
+	ctx, playbackEvent, "state", JS_NewInt32 (ctx, state.has_value () ? *state : WP_MEDIA_PLAYBACK_STATE_STOPPED)
+    );
 
-    // free all created objects as we don't keep a ref to them anymore
-    JS_FreeValue (ctx, propertiesEvent);
-    JS_FreeValue (ctx, playbackEvent);
-    JS_FreeValue (ctx, mediaTimelineEvent);
-    JS_FreeValue (ctx, mediaThumbnailEvent);
+    this->m_queuedEvents.insert_or_assign ("mediaPlaybackChanged", playbackEvent);
+}
+
+void ScriptEngine::notifyPlaybackPositionAndDurationChange (
+    const std::optional<double> position, const std::optional<double> duration
+) {
+    JSContext* ctx = this->m_context;
+    JSValue mediaTimelineEvent = JS_NewObject (ctx);
+
+    JS_SetPropertyStr (ctx, mediaTimelineEvent, "position", JS_NewFloat64 (ctx, position.has_value () ? *position : 0));
+    JS_SetPropertyStr (ctx, mediaTimelineEvent, "duration", JS_NewFloat64 (ctx, duration.has_value () ? *duration : 0));
+
+    this->m_queuedEvents.insert_or_assign ("mediaTimelineChanged", mediaTimelineEvent);
 }

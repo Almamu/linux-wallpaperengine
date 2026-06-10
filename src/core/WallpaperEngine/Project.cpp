@@ -3,7 +3,9 @@
 #include "Data/Dumpers/StringPrinter.h"
 #include "Data/Model/Property.h"
 #include "Data/Parsers/ProjectParser.h"
+#include "Render/Wallpapers/CScene.h"
 #include "Render/Wallpapers/CWeb.h"
+#include "Scripting/ScriptEngine.h"
 
 using namespace WallpaperEngine;
 
@@ -216,6 +218,8 @@ void WallpaperEngine::Project::render () {
 	if (this->wallpaper->is<Wallpapers::CWeb> ()) {
 	    this->wallpaper->as<Wallpapers::CWeb> ()->setSize (this->hintedWidth, this->hintedHeight);
 	}
+	// notify current media metadata status
+	this->renderContext->albumArtUrlChange (this->mediaInfo.url);
     }
 
     this->wallpaper->render ();
@@ -232,11 +236,11 @@ wp_project_property* WallpaperEngine::Project::propertyListNext () {
 
     if (const auto boolean = property->second->asOrNull<PropertyBoolean> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_boolean {
-	    .base = { .type = wp_property_type_boolean, .name = boolean->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_BOOLEAN, .name = boolean->name.c_str () },
 	    .value = boolean->getBool () });
     } else if (const auto color = property->second->asOrNull<PropertyColor> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_color {
-	    .base = { .type = wp_property_type_color, .name = color->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_COLOR, .name = color->name.c_str () },
 	    .r = color->getVec4 ().r,
 	    .g = color->getVec4 ().g,
 	    .b = color->getVec4 ().b,
@@ -244,18 +248,18 @@ wp_project_property* WallpaperEngine::Project::propertyListNext () {
 	});
     } else if (const auto text = property->second->asOrNull<PropertyText> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_text {
-	    .base = { .type = wp_property_type_text, .name = text->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_TEXT, .name = text->name.c_str () },
 	    .value = text->getString ().c_str () });
     } else if (const auto slider = property->second->asOrNull<PropertySlider> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_slider {
-	    .base = { .type = wp_property_type_slider, .name = slider->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_SLIDER, .name = slider->name.c_str () },
 	    .min = slider->min,
 	    .max = slider->max,
 	    .step = slider->step,
 	    .value = slider->getFloat () });
     } else if (const auto combo = property->second->asOrNull<PropertyCombo> ()) {
 	auto result = new wp_project_property_combo {
-	    .base = { .type = wp_property_type_combo, .name = combo->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_COMBO, .name = combo->name.c_str () },
 	    .value_count = combo->values.size (),
 	    .values = new wp_project_property_combo_value[combo->values.size ()],
 	};
@@ -270,11 +274,11 @@ wp_project_property* WallpaperEngine::Project::propertyListNext () {
 	this->current_property = reinterpret_cast<wp_project_property*> (result);
     } else if (const auto file = property->second->asOrNull<PropertyFile> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_file {
-	    .base = { .type = wp_property_type_file, .name = file->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_FILE, .name = file->name.c_str () },
 	    .path = file->getString ().c_str () });
     } else if (const auto sceneTexture = property->second->asOrNull<PropertySceneTexture> ()) {
 	this->current_property = reinterpret_cast<wp_project_property*> (new wp_project_property_scene_texture {
-	    .base = { .type = wp_property_type_scene_texture, .name = sceneTexture->name.c_str () },
+	    .base = { .type = WP_PROPERTY_TYPE_SCENE_TEXTURE, .name = sceneTexture->name.c_str () },
 	    .value = sceneTexture->getString ().c_str () });
     } else {
 	sLog.exception ("Unknown property type");
@@ -380,6 +384,104 @@ void WallpaperEngine::Project::describe (wp_describe_callback* callback) {
 	    callback->user_parameter, &result.c_str ()[offset], std::min (chunkSize, result.size () - offset)
 	);
     }
+}
+
+void WallpaperEngine::Project::trackMetadataChange (const char* title, const char* artist, const char* album) {
+    std::string titleStr = title ?: "";
+    std::string artistStr = artist ?: "";
+    std::string albumStr = album ?: "";
+
+    if (titleStr.empty()) {
+        this->mediaInfo.title = std::nullopt;
+    } else {
+        this->mediaInfo.title = titleStr;
+    }
+
+    if (artistStr.empty()) {
+        this->mediaInfo.artist = std::nullopt;
+    } else {
+        this->mediaInfo.artist = artistStr;
+    }
+
+    if (albumStr.empty()) {
+        this->mediaInfo.album = std::nullopt;
+    } else {
+        this->mediaInfo.album = albumStr;
+    }
+
+    // notify the scene if needed
+    if (this->wallpaper == nullptr) {
+        return;
+    }
+
+    if (!this->wallpaper->is<Wallpapers::CScene> ()) {
+        return;
+    }
+
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyTrackMetadataChange (
+        this->mediaInfo.title, this->mediaInfo.artist, this->mediaInfo.album
+    );
+}
+
+void WallpaperEngine::Project::albumArtUrlChange (const char* url) {
+    std::string value = url ?: "";
+
+    if (value.empty ()) {
+	this->mediaInfo.url = std::nullopt;
+    } else {
+	this->mediaInfo.url = url;
+    }
+
+    if (this->renderContext == nullptr) {
+        return;
+    }
+
+    if (this->wallpaper == nullptr) {
+        return;
+    }
+
+    if (!this->wallpaper->is<Wallpapers::CScene> ()) {
+        return;
+    }
+
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyAlbumArtUrlChange (
+        this->mediaInfo.url
+    );
+
+    this->renderContext->albumArtUrlChange (this->mediaInfo.url);
+}
+
+void WallpaperEngine::Project::playbackPositionAndDurationChange (double position, double duration) {
+    this->mediaInfo.position = position;
+    this->mediaInfo.duration = duration;
+
+    if (this->wallpaper == nullptr) {
+        return;
+    }
+
+    if (!this->wallpaper->is<Wallpapers::CScene> ()) {
+        return;
+    }
+
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackPositionAndDurationChange (
+        this->mediaInfo.position, this->mediaInfo.duration
+    );
+}
+
+void WallpaperEngine::Project::playbackStateChange (wp_media_playback_state state) {
+    this->mediaInfo.state = state;
+
+    if (this->wallpaper == nullptr) {
+        return;
+    }
+
+    if (!this->wallpaper->is<Wallpapers::CScene> ()) {
+        return;
+    }
+
+    this->wallpaper->as<Wallpapers::CScene> ()->getScriptEngine ().notifyPlaybackStateChange (
+        this->mediaInfo.state
+    );
 }
 
 WallpaperEngine::Project*

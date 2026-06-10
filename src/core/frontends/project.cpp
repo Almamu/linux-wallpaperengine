@@ -203,3 +203,29 @@ WPENGINE_API void wp_project_describe (wp_project* project, wp_describe_callback
     static_cast<WallpaperEngine::Project*> (project)->describe (callback);
     WPENGINE_PROJECT_API_END ();
 }
+
+WPENGINE_API void wp_project_notify_track_metadata_change (
+    wp_project* project, const char* title, const char* artist, const char* album
+) {
+    WPENGINE_PROJECT_API_BEGIN
+    static_cast<WallpaperEngine::Project*> (project)->trackMetadataChange (title, artist, album);
+    WPENGINE_PROJECT_API_END ();
+}
+WPENGINE_API void wp_project_notify_album_art_url_change (wp_project* project, const char* url) {
+    WPENGINE_PROJECT_API_BEGIN
+    static_cast<WallpaperEngine::Project*> (project)->albumArtUrlChange (url);
+    WPENGINE_PROJECT_API_END ();
+}
+
+WPENGINE_API void wp_project_notify_playback_state_change (wp_project* project, wp_media_playback_state state) {
+    WPENGINE_PROJECT_API_BEGIN
+    static_cast<WallpaperEngine::Project*> (project)->playbackStateChange (state);
+    WPENGINE_PROJECT_API_END ();
+}
+
+WPENGINE_API void
+wp_project_notify_playback_position_and_duration_change (wp_project* project, double position, double duration) {
+    WPENGINE_PROJECT_API_BEGIN
+    static_cast<WallpaperEngine::Project*> (project)->playbackPositionAndDurationChange (position, duration);
+    WPENGINE_PROJECT_API_END ();
+}

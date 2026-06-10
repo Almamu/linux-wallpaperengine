@@ -9,57 +9,57 @@ extern "C" {
 #endif
 
 enum wp_playlist_mode {
-	wp_playlist_mode_Unknown = -1,
-	wp_playlist_mode_Timer = 0,
-	wp_playlist_mode_Logon = 1,
-	wp_playlist_mode_Daytime = 2,
-	wp_playlist_mode_Weekday = 3,
-	wp_playlist_mode_Never = 4,
-	wp_playlist_mode_Max,
+    WP_PLAYLIST_MODE_UNKNOWN = -1,
+    WP_PLAYLIST_MODE_TIMER = 0,
+    WP_PLAYLIST_MODE_LOGON = 1,
+    WP_PLAYLIST_MODE_DAYTIME = 2,
+    WP_PLAYLIST_MODE_WEEKDAY = 3,
+    WP_PLAYLIST_MODE_NEVER = 4,
+    WP_PLAYLIST_MODE_MAX,
 };
 
 enum wp_playlist_order {
-	wp_playlist_order_Unknown = -1,
-	wp_playlist_order_Random = 0,
-	wp_playlist_order_Sorted = 1,
-	wp_playlist_order_Max,
+    WP_PLAYLIST_ORDER_UNKNOWN = -1,
+    WP_PLAYLIST_ORDER_RANDOM = 0,
+    WP_PLAYLIST_ORDER_SORTED = 1,
+    WP_PLAYLIST_ORDER_MAX,
 };
 
 enum wp_playlist_transition {
-	wp_playlist_transition_Unknown = -1,
-	wp_playlist_transition_None = 0, // none
-	wp_playlist_transition_Fade = 1, // 0
-	wp_playlist_transition_NoneReducedFlicker = 2, // -2
-	// random with no transitionpool is all,
-	// otherwise the values are the same as the ones used to parse these
-	wp_playlist_transition_Random = 3, // random
-	wp_playlist_transition_FadeToBlack = 4, // 18
-	wp_playlist_transition_Mosaic = 5, // 1
-	wp_playlist_transition_Diffuse = 6, // 2
-	wp_playlist_transition_HorizontalSlide = 7, // 3
-	wp_playlist_transition_VerticalSlide = 8, // 4
-	wp_playlist_transition_HorizontalFade = 9, // 5
-	wp_playlist_transition_VerticalFade = 10, // 6
-	wp_playlist_transition_Clouds = 11, // 7
-	wp_playlist_transition_BurnPaper = 12, // 8
-	wp_playlist_transition_Circular = 13, // 9
-	wp_playlist_transition_Zipper = 14, // 10
-	wp_playlist_transition_Door = 15, // 11
-	wp_playlist_transition_Lines = 16, // 12
-	wp_playlist_transition_RadialWipe = 17, // 22
-	wp_playlist_transition_Zoom = 18, // 13
-	wp_playlist_transition_Twister = 19, // 19
-	wp_playlist_transition_Drip = 20, // 14
-	wp_playlist_transition_Pixelate = 21, // 15
-	wp_playlist_transition_Bricks = 22, // 16
-	wp_playlist_transition_Paint = 23, // 17
-	wp_playlist_transition_BlackHole = 24, // 20
-	wp_playlist_transition_CRT = 25, // 21
-	wp_playlist_transition_GlassShatter = 26, // 23
-	wp_playlist_transition_Bullets = 27, // 24
-	wp_playlist_transition_Ice = 28, // 25
-	wp_playlist_transition_Boilover = 29, // 26
-	wp_playlist_transition_Max,
+    WP_PLAYLIST_TRANSITION_UNKNOWN = -1,
+    WP_PLAYLIST_TRANSITION_NONE = 0, // none
+    WP_PLAYLIST_TRANSITION_FADE = 1, // 0
+    WP_PLAYLIST_TRANSITION_NONE_REDUCED_FLICKER = 2, // -2
+    // random with no transitionpool is all,
+    // otherwise the values are the same as the ones used to parse these
+    WP_PLAYLIST_TRANSITION_RANDOM = 3, // random
+    WP_PLAYLIST_TRANSITION_FADE_TO_BACK = 4, // 18
+    WP_PLAYLIST_TRANSITION_MOSAIC = 5, // 1
+    WP_PLAYLIST_TRANSITION_DIFFUSE = 6, // 2
+    WP_PLAYLIST_TRANSITION_HORIZONTAL_SLIDE = 7, // 3
+    WP_PLAYLIST_TRANSITION_VERTICAL_SLIDE = 8, // 4
+    WP_PLAYLIST_TRANSITION_HORIZONTAL_FADE = 9, // 5
+    WP_PLAYLIST_TRANSITION_VERTICAL_FADE = 10, // 6
+    WP_PLAYLIST_TRANSITION_CLOUDS = 11, // 7
+    WP_PLAYLIST_TRANSITION_BURN_PAPER = 12, // 8
+    WP_PLAYLIST_TRANSITION_CIRCULAR = 13, // 9
+    WP_PLAYLIST_TRANSITION_ZIPPER = 14, // 10
+    WP_PLAYLIST_TRANSITION_DOOR = 15, // 11
+    WP_PLAYLIST_TRANSITION_LINES = 16, // 12
+    WP_PLAYLIST_TRANSITION_RADIAL_WIPE = 17, // 22
+    WP_PLAYLIST_TRANSITION_ZOOM = 18, // 13
+    WP_PLAYLIST_TRANSITION_TWISTER = 19, // 19
+    WP_PLAYLIST_TRANSITION_DRIP = 20, // 14
+    WP_PLAYLIST_TRANSITION_PIXELATE = 21, // 15
+    WP_PLAYLIST_TRANSITION_BRICKS = 22, // 16
+    WP_PLAYLIST_TRANSITION_PAINT = 23, // 17
+    WP_PLAYLIST_TRANSITION_BLACK_HOLE = 24, // 20
+    WP_PLAYLIST_TRANSITION_CRT = 25, // 21
+    WP_PLAYLIST_TRANSITION_GLASS_SHATTER = 26, // 23
+    WP_PLAYLIST_TRANSITION_BULLETS = 27, // 24
+    WP_PLAYLIST_TRANSITION_ICE = 28, // 25
+    WP_PLAYLIST_TRANSITION_BOILOVER = 29, // 26
+    WP_PLAYLIST_TRANSITION_MAX,
 };
 
 /**
@@ -71,42 +71,42 @@ typedef void wp_playlists;
  * Information of a specific playlist entry
  */
 struct wp_playlist_entry {
-	/**
-	 * Playlist name
-	 */
-	const char* name;
-	/**
-	 * The number of items available in this playlist
-	 */
-	int item_count;
-	/**
-	 * Backgrounds available in the playlist
-	 */
-	const char** items;
-	/**
-	 * End of the daytime for the background to change
-	 */
-	float* daytimeend;
-	/**
-	 * Delay between playlist changes in minutes
-	 */
-	int delay;
-	/**
-	 * Transition time (in seconds)
-	 */
-	int transitiontime;
-	/**
-	 * The mode of the playlist
-	 */
-	wp_playlist_mode mode;
-	/**
-	 * The order of the playlist items
-	 */
-	wp_playlist_order order;
-	/**
-	 * The transition to use between items
-	 */
-	wp_playlist_transition transition;
+    /**
+     * Playlist name
+     */
+    const char* name;
+    /**
+     * The number of items available in this playlist
+     */
+    int item_count;
+    /**
+     * Backgrounds available in the playlist
+     */
+    const char** items;
+    /**
+     * End of the daytime for the background to change
+     */
+    float* daytimeend;
+    /**
+     * Delay between playlist changes in minutes
+     */
+    int delay;
+    /**
+     * Transition time (in seconds)
+     */
+    int transitiontime;
+    /**
+     * The mode of the playlist
+     */
+    wp_playlist_mode mode;
+    /**
+     * The order of the playlist items
+     */
+    wp_playlist_order order;
+    /**
+     * The transition to use between items
+     */
+    wp_playlist_transition transition;
 };
 
 /**

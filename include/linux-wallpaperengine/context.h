@@ -15,60 +15,66 @@ extern "C" {
  */
 typedef void wp_context;
 
+enum wp_media_playback_state {
+    WP_MEDIA_PLAYBACK_STATE_STOPPED = 0,
+    WP_MEDIA_PLAYBACK_STATE_PLAYING = 1,
+    WP_MEDIA_PLAYBACK_STATE_PAUSED = 2,
+};
+
 /**
  * Provides callbacks to get opengl methods to call by the renderer
  */
 struct wp_gl_proc_address {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
 
-	/**
-	 * Requests the address of the specified opengl function
-	 */
-	void* (*get_proc_address) (void* user_parameter, const char* name);
+    /**
+     * Requests the address of the specified opengl function
+     */
+    void* (*get_proc_address) (void* user_parameter, const char* name);
 };
 
 /**
  * Provides callbacks to the timing system
  */
 struct wp_time_counter {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
 
-	/**
-	 * Requests the current time
-	 */
-	float (*get_time) (void* user_parameter);
+    /**
+     * Requests the current time
+     */
+    float (*get_time) (void* user_parameter);
 };
 
 /**
  * Provides callbacks to get new audio frames for audio-responsive backgrounds
  */
 struct wp_audio_input_mix {
-	/**
-	 * Pointer to user-defined data that will be passed to the callbacks
-	 */
-	void* user_parameter;
+    /**
+     * Pointer to user-defined data that will be passed to the callbacks
+     */
+    void* user_parameter;
 
-	/**
-	 * Indicates whether a new audio frame is ready to be processed
-	 *
-	 * @param user_parameter Pointer to user-defined data
-	 */
-	bool (*is_frame_ready) (void* user_parameter);
+    /**
+     * Indicates whether a new audio frame is ready to be processed
+     *
+     * @param user_parameter Pointer to user-defined data
+     */
+    bool (*is_frame_ready) (void* user_parameter);
 
-	/**
-	 * Retrieves the current audio frame. This buffer will be used right after this call,
-	 * and no reference will be kept to it.
-	 *
-	 * This will be called right after is_frame_ready returns true and must be WP_AUDIO_INPUT_FRAME_SIZE
-	 * in length
-	 */
-	unsigned char* (*get_frame) (void* user_parameter);
+    /**
+     * Retrieves the current audio frame. This buffer will be used right after this call,
+     * and no reference will be kept to it.
+     *
+     * This will be called right after is_frame_ready returns true and must be WP_AUDIO_INPUT_FRAME_SIZE
+     * in length
+     */
+    unsigned char* (*get_frame) (void* user_parameter);
 };
 
 /**

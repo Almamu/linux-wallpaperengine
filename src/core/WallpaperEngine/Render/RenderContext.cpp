@@ -10,8 +10,8 @@
 #include "WallpaperEngine/Data/Parsers/TextureParser.h"
 
 namespace WallpaperEngine::Render {
-RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator, Media::MediaSource& mediaSource) :
-    m_textureCache (*context.texture_cache), m_context (context), m_locator (locator), m_mediaSource (mediaSource) {
+RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator) :
+    m_textureCache (*context.texture_cache), m_context (context), m_locator (locator) {
     // these textures are special cases, so make sure they're created only upon request
     this->m_currentThumbnail = std::make_shared<AlbumTexture> (*this);
 
@@ -31,17 +31,6 @@ RenderContext::RenderContext (Context& context, Assets::AssetLocator& locator, M
     // add these to the cache and return the right one
     this->m_textureCache.store ("$mediaThumbnail", this->m_currentThumbnail);
     this->m_textureCache.store ("$mediaPreviousThumbnail", this->m_previousThumbnail);
-
-    this->m_mediaCallback
-	= this->getMediaSource ().addAlbumArtListener ([this] (const Media::MediaSource::MediaInfo& data) {
-	      if (this->m_currentThumbnail->isReady ()) {
-		  // copy over pixel data and setup the new texture with the new data
-		  this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
-	      }
-
-	      // load the next image
-	      this->m_currentThumbnail->load ();
-	  });
 }
 
 const Context& RenderContext::getContext () const { return this->m_context; }
@@ -69,6 +58,14 @@ std::shared_ptr<const TextureProvider> RenderContext::resolveTexture (const std:
 
 const Assets::AssetLocator& RenderContext::getAssetLocator () const { return this->m_locator; }
 
-Media::MediaSource& RenderContext::getMediaSource () const { return this->m_mediaSource; }
+void RenderContext::albumArtUrlChange (std::optional<std::string>& url) {
+    if (this->m_currentThumbnail->isReady ()) {
+	// copy over pixel data and setup the new texture with the new data
+	this->m_previousThumbnail->copyContents (*this->m_currentThumbnail);
+    }
+
+    // load the next image
+    this->m_currentThumbnail->load ();
+}
 
 } // namespace WallpaperEngine::Render
