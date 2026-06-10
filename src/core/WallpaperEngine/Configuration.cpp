@@ -44,7 +44,6 @@ Configuration::Configuration (wp_rendering_pause_check* pause_check, wp_mute_che
     sLog.addOutput (new std::ostream (std::cout.rdbuf ()));
     sLog.addError (new std::ostream (std::cerr.rdbuf ()));
     this->detectSteamDir ();
-    sWebManager.init ();
 }
 
 bool Configuration::detectSteamDir () {

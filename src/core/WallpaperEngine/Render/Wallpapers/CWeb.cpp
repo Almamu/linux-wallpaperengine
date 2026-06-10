@@ -15,6 +15,7 @@ CWeb::CWeb (
 ) : CWallpaper (wallpaper, context, audioContext, mouseInput), m_uuid (Utils::UUID::UUIDv4 ()) {
     this->setupFramebuffers ();
 
+    sWebManager.init ();
     sWebManager.registerAssetLocator (this->m_uuid, &this->getAssetLocator ());
 
     const std::string htmlURL = "wp://" + this->m_uuid + "/" + this->getWeb ().filename;

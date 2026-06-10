@@ -32,6 +32,10 @@ WebManager& WebManager::get () {
 // ---- lifecycle -------------------------------------------------------
 
 void WebManager::init () {
+    if (m_running) {
+        return;
+    }
+
     spawnWebhelper ();
     m_running = true;
     m_receiveThread = std::thread (&WebManager::receiveLoop, this);
