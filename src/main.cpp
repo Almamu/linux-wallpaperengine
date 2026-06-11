@@ -1,9 +1,9 @@
 #include <csignal>
 #include <iostream>
 
-#include "WallpaperEngine/Application/ApplicationContext.h"
-#include "WallpaperEngine/Application/WallpaperApplication.h"
-#include "WallpaperEngine/Logging/Log.h"
+#include "common/WallpaperEngine/Logging/Log.h"
+#include "frontend/WallpaperEngine/Application/ApplicationContext.h"
+#include "frontend/WallpaperEngine/Application/WallpaperApplication.h"
 
 WallpaperEngine::Application::WallpaperApplication* app;
 

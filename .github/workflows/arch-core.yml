@@ -1,0 +1,32 @@
+name: Arch Linux AUR Package Update (linux-wallpaperengine-core)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/archlinux/linux-wallpaperengine-core/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Publish linux-wallpaperengine-core-git to the AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+        with:
+          pkgname: linux-wallpaperengine-core-git
+          pkgbuild: ./packaging/archlinux/linux-wallpaperengine-core/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: ${{ github.event.head_commit.message }}
+          force_push: 'true'
+          test: true
+          test_flags: --clean --cleanbuild --nodeps --nobuild

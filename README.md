@@ -1,4 +1,14 @@
 <p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+        <img src="docs/images/logo-light.svg" alt="Linux Wallpaper Engine" width="80%">
+    </picture>
+</p>
+<p align="center">
+    <small>Tux image based on original Tux by Larry Erwing, The GIMP</small>
+</p>
+
+<p align="center">
 	<a href="https://github.com/Almamu/linux-wallpaperengine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Almamu/linux-wallpaperengine" /></a>
     <a href="https://github.com/Almamu/linux-wallpaperengine/actions?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/Almamu/linux-wallpaperengine/cmake.yml?branch=main" /></a>
     <img src="https://img.shields.io/coderabbit/prs/github/Almamu/linux-wallpaperengine?utm_source=oss&utm_medium=github&utm_campaign=Almamu%2Flinux-wallpaperengine&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews" />
@@ -16,14 +26,13 @@
 
 Bring **Wallpaper Engine**-style live wallpapers to Linux! This project allows you to run animated wallpapers from Steam’s Wallpaper Engine right on your desktop.
 
-> ⚠️ This is an educational project that evolved into a functional OpenGL-based wallpaper engine for Linux. Expect some limitations and quirks!
-
 ---
 
 ## 📦 System Requirements
 
 To compile and run this, you'll need:
 
+- WallpaperEngine installed in Steam (or WallpaperEngine assets somewhere in your system)
 - OpenGL 3.3 support
 - CMake
 - LZ4, Zlib
@@ -36,18 +45,16 @@ To compile and run this, you'll need:
 - PulseAudio
 - FFTW3
 
-Install the required dependencies on Ubuntu/Debian-based systems:
-
 ### Ubuntu 22.04
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev libfreetype-dev
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv1 libpulse-dev libpulse0 libfftw3-dev
 ```
 
 ### Ubuntu 24.04
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev libfreetype-dev
+sudo apt-get install build-essential cmake libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev libglew-dev freeglut3-dev libsdl2-dev liblz4-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libxxf86vm-dev libglm-dev libglfw3-dev libmpv-dev mpv libmpv2 libpulse-dev libpulse0 libfftw3-dev
 ```
 
 ### Alt linux
@@ -56,27 +63,19 @@ sudo epm update
 sudo epm install gcc-c++ make cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libGL-devel libGLEW-devel freeglut-devel libSDL2-devel liblz4-devel libavcodec-devel libavformat-devel libavutil-devel libswscale-devel libXxf86vm-devel libglm-devel libglfw3-devel libmpv-devel mpv libpulseaudio-devel libpulseaudio libfftw3-devel libpng-devel libffi-devel libswresample-devel libgmpxx-devel
 ```
 
-Install the required dependencies on RHEL/Fedora-based systems:
-
 ### Fedora 42
 ```bash
 sudo dnf update
 sudo dnf install gcc g++ cmake libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel glew-devel freeglut-devel SDL2-devel lz4-devel ffmpeg ffmpeg-free-devel libXxf86vm-devel glm-devel glfw-devel mpv mpv-devel pulseaudio-libs-devel fftw-devel gmp-devel
 ```
 
----
+### Arch Linux
 
-## 🐧 Arch Linux Users
-
-You can install this directly from the AUR using your favorite AUR helper:
+Arch Linux users can install linux-wallpaperengine-git from the AUR:
 
 ```bash
 yay -S linux-wallpaperengine-git
 ```
-
-> This installs the latest development version.
-
-**Note:** You’ll still need assets from the official Wallpaper Engine (via Steam). See below for details.
 
 ---
 
@@ -87,16 +86,16 @@ yay -S linux-wallpaperengine-git
 You **must own and install Wallpaper Engine** via Steam. This provides the required assets used by many backgrounds.
 
 Right now the application will automatically detect everything for you as long as the official Wallpaper Engine is installed
-in one of these locations:
+through Steam.
+
+The app will look for the Steam installation in the following locations:
 
 ```
-~/.steam/steam/steamapps/common
-~/.local/share/Steam/steamapps/common
-~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
-~/snap/steam/common/.local/share/Steam/steamapps/common
+~/.steam/steam/
+~/.local/share/Steam/
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/
+~/snap/steam/common/.local/share/Steam/
 ```
-
-> ✅ If Wallpaper Engine is installed in one of these paths, the assets will be detected automatically!
 
 ---
 
@@ -111,9 +110,9 @@ You can copy the `assets` folder manually:
 
 1. In Steam, right-click **Wallpaper Engine** → **Manage** → **Browse local files**
 2. Copy the `assets` folder
-3. Paste it into the same folder where the `linux-wallpaperengine` binary is located (build/output if you followed the build instructions)
+3. Paste it into a new folder somewhere in your system
+4. Run the app with the `--assets-dir` option pointing to the new folder:
 
-Another option is to specify the path manually with the `--assets-dir` option, like this:
 ```bash
 linux-wallpaperengine --assets-dir /path/to/assets
 ```
@@ -134,12 +133,11 @@ Build it:
 
 ```bash
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE='Release' ..
-make
+cmake -DCMAKE_BUILD_TYPE='Release' -DCMAKE_INSTALL_PREFIX="/usr" -DWPBUILD_FRONTEND=ON ..
+make install
 ```
 
-Once the build process is finished, this should create a new `output` folder containing the app and all the required
-support files to run.
+This will install the `linux-wallpaperengine` binary in `/usr/bin` and the `linux-wallpaperengine-core` library in `/usr/lib` for other frontends and applications to use.
 
 ---
 
@@ -148,7 +146,7 @@ support files to run.
 Basic syntax:
 
 ```bash
-linux-wallpaperengine [options] <background_id or path>
+linux-wallpaperengine [options] <default background_id or path>
 ```
 
 You can use either:
@@ -193,14 +191,26 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 | `--fullscreen-pause-only-active` | Wayland only: pause only when a fullscreen window is active |
 | `--fullscreen-pause-ignore-appid <val>` | Wayland only: ignore fullscreen windows whose app_id contains `<val>` (repeatable) |
-
+| `--steam-dir <path>` | Set custom path for Steam installation |
+| `--help` | Show help |
+| `--version` | Show version |
 ---
 
 ### 💡 Examples
 
-#### Run a background by ID
+#### Run a background on a window
 ```bash
 linux-wallpaperengine 1845706469
+```
+
+#### Run a background on HDMI-1 screen
+```bash
+linux-wallpaperengine --screen-root HDMI-1 --bg 1845706469
+```
+
+#### Run a background on a specific screen and a different one on the rest
+```bash
+linux-wallpaperengine --screen-root eDP-1 --bg 1845706469 2667198602
 ```
 
 #### Run a background from a folder
@@ -236,7 +246,7 @@ linux-wallpaperengine --fps 30 1845706469
 linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
 
-This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
+This can be useful as output for pywal or other color systems that use images as a basis to generate a set of colors
 to apply to your system.
 
 #### View and change properties
@@ -301,12 +311,9 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 
 ---
 
-## 🧪 Wayland & X11 Support
+## 🧪 Wayland & X11 support
 
-- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`. Uses `xdg-output-unstable-v1` for accurate monitor positioning (required for `--screen-span`).
-- **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
-
-> ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
+For GNOME, KDE, Sway, Hyprland, Cinnamon, i3, etc... check the compatibility docs [here](docs/support/README.md).
 
 ---
 
@@ -317,23 +324,11 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 
 Want to see more examples of backgrounds that work? Head over to the [project's website](https://wpengine.alma.mu/#showcase)
 
-## 🪲 Common issues
-### Black screen when setting as screen's background
-This can be caused by a few different things depending on your environment and setup.
+---
 
-### X11
-Common symptom of a compositor drawing to the background which prevents Wallpaper Engine from being properly visible.
-The only solution currently is disabling the compositor so Wallpaper Engine can properly draw on the screen
+## 🛠️ Development
 
-### NVIDIA
-Some users have had issues with GLFW initialization and other OpenGL errors. These are generally something that's
-worth reporting in the issues. Sometimes adding this variable when running Wallpaper Engine helps and/or solves
-the issue:
-```bash
-__GL_THREADED_OPTIMIZATIONS=0 linux-wallpaperengine
-```
-
-We'll be looking at improving this in the future, but for now it can be a useful workaround.
+If you're interested in contributing or building the project for development purposes, please refer to our [Development Guide](docs/DEVELOPMENT.md).
 
 ---
 
@@ -341,3 +336,4 @@ We'll be looking at improving this in the future, but for now it can be a useful
 
 - [RePKG](https://github.com/notscuffed/repkg) – for texture flag insights
 - [RenderDoc](https://github.com/baldurk/renderdoc) – the best OpenGL debugger out there!
+- All the contributors that have created PR!
