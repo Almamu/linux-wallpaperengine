@@ -263,6 +263,10 @@ static void handle_global (void* data, wl_registry* registry, uint32_t name, con
 	zwlr_foreign_toplevel_manager_v1_add_listener (
 	    impl->wayland_context.topLevelManager, &foreign_toplevel_manager_listener, impl
 	);
+    } else if (strcmp (interface, zxdg_output_manager_v1_interface.name) == 0) {
+        impl->wayland_context.xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
+            wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
+        );
     }
 }
 

@@ -31,6 +31,10 @@ public:
     double mouseY;
     int mouseButtons;
 
+    glm::vec2 globalPosition;
+    glm::vec2 logicalSize;
+    bool hasXdgLogicalPosition;
+
     void render () override;
 
     void setupLayerShell ();

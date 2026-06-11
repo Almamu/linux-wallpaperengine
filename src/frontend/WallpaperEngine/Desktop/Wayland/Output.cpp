@@ -29,6 +29,11 @@ static void geometry (
     void* data, wl_output* wl_output, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height,
     int32_t subpixel, const char* make, const char* model, int32_t transform
 ) {
+    const auto output = static_cast<Output*> (data);
+
+    if (!output->hasXdgLogicalPosition) {
+        output->globalPosition = { x, y };
+    }
     // ignored
 }
 
@@ -70,6 +75,31 @@ static void handle_frame_callback_done (void* data, wl_callback* cb, uint32_t ti
     output->render ();
 }
 
+static void xdg_output_logical_position (void* data, struct zxdg_output_v1* xdg_output, int32_t x, int32_t y) {
+    const auto output = static_cast<Output*> (data);
+
+    output->globalPosition = { x, y };
+    output->hasXdgLogicalPosition = true;
+}
+
+static void xdg_output_logical_size (void* data, struct zxdg_output_v1* xdg_output, int32_t width, int32_t height) {
+    const auto output = static_cast<Output*> (data);
+
+    output->logicalSize = { width, height };
+}
+
+static void xdg_output_done (void* data, struct zxdg_output_v1* xdg_output) {
+
+}
+
+static void xdg_output_name (void* data, struct zxdg_output_v1* xdg_output, const char* name) {
+
+}
+
+static void xdg_output_description (void* data, struct zxdg_output_v1* xdg_output, const char* description) {
+
+}
+
 constexpr wl_callback_listener frame_listener = {
     .done = handle_frame_callback_done,
 };
@@ -83,12 +113,24 @@ constexpr wl_output_listener output_listener = {
     .description = description,
 };
 
+constexpr zxdg_output_v1_listener xdg_output_listener = {
+    .logical_position = xdg_output_logical_position,
+    .logical_size = xdg_output_logical_size,
+    .done = xdg_output_done,
+    .name = xdg_output_name,
+    .description = xdg_output_description,
+};
+
 constexpr zwlr_layer_surface_v1_listener layer_surface_listener
     = { .configure = handle_configure, .closed = handle_closed };
 
 Output::Output (wl_registry* registry, uint32_t name, Environment& env) :
     Desktop::Output (nullptr, { 0, 0, 1, 1 }), name (""), scale (1), initialized (false), m_environment (env),
     callbackInitialized (false) {
+    if (env.wayland_context.xdgOutputManager) {
+        // setup xdgOutputManager
+    }
+
     this->m_wl_output = static_cast<wl_output*> (wl_registry_bind (registry, name, &wl_output_interface, 4));
     wl_output_add_listener (this->m_wl_output, &output_listener, this);
 }

@@ -126,7 +126,7 @@ private:
     /** Maps screens to backgrounds */
     std::map<std::string, wp_project*> m_backgrounds {};
     std::map<std::string, ActivePlaylist> m_activePlaylists {};
-    std::map<std::string, Desktop::Output*> m_activeOutputs {};
+    std::map<std::string, std::vector<Desktop::Output*>> m_activeOutputs {};
 
     std::unique_ptr<Audio::Pulseaudio> m_playbackRecorder;
 
