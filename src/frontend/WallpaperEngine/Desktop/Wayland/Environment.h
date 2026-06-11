@@ -43,7 +43,7 @@ public:
 	wl_shm* shm;
 	zwlr_layer_shell_v1* layerShell;
 	zwlr_foreign_toplevel_manager_v1* topLevelManager;
-        zxdg_output_manager_v1* xdgOutputManager;
+	zxdg_output_manager_v1* xdgOutputManager;
 	wl_seat* seat;
 	struct fullscreen_state {
 	    bool pending;

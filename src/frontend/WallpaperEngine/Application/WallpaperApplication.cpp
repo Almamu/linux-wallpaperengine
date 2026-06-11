@@ -255,14 +255,14 @@ void WallpaperApplication::advancePlaylist (
 	    ? clampIt->second
 	    : this->m_context.settings.general.clamps[DEFAULT_SCREEN_NAME];
 
-        // TODO: SUPPORT GROUPS
+	// TODO: SUPPORT GROUPS
 	const auto activeScreenIt = this->m_activeOutputs.find (screen);
 
 	if (activeScreenIt != this->m_activeOutputs.end ()) {
-	    for (auto &output : activeScreenIt->second) {
-	        output->setWallpaper (project);
-	        output->setScaling (scaling);
-	        output->setClamping (clamp);
+	    for (auto& output : activeScreenIt->second) {
+		output->setWallpaper (project);
+		output->setScaling (scaling);
+		output->setClamping (clamp);
 	    }
 	}
 	// TODO: STORE SCALE, CLAMP, ETC TO BE USED
@@ -383,9 +383,10 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
     std::vector<ViewportCapture> captures;
     int currentXOffset = 0;
 
-    // TODO: AS GROUPS SEPARATE BACKGROUNDS IN PIECES IT MIGHT BE A BETTER IDEA TO JUST DUMP THE LAST FRAME OF THE BACKGROUND INSTEAD?
+    // TODO: AS GROUPS SEPARATE BACKGROUNDS IN PIECES IT MIGHT BE A BETTER IDEA TO JUST DUMP THE LAST FRAME OF THE
+    // BACKGROUND INSTEAD?
     for (const auto& [screen, outputs] : this->m_activeOutputs) {
-        for (const auto& output : outputs) {
+	for (const auto& output : outputs) {
 	    const auto viewport = output->getViewport ();
 	    const int vpWidth = viewport.z - viewport.x;
 	    const int vpHeight = viewport.w - viewport.y;
@@ -405,24 +406,24 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
 	    glPixelStorei (GL_PACK_ALIGNMENT, 1);
 
 	    if (GLAD_GL_VERSION_4_5) {
-	        glReadnPixels (0, 0, vpWidth, vpHeight, GL_RGB, GL_UNSIGNED_BYTE, bufferSize, buffer);
+		glReadnPixels (0, 0, vpWidth, vpHeight, GL_RGB, GL_UNSIGNED_BYTE, bufferSize, buffer);
 	    } else {
-	        glReadPixels (0, 0, vpWidth, vpHeight, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+		glReadPixels (0, 0, vpWidth, vpHeight, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 	    }
 
 	    // restore default framebuffer
 	    glBindFramebuffer (GL_FRAMEBUFFER, 0);
 
 	    if (const GLenum error = glGetError (); error != GL_NO_ERROR) {
-	        sLog.error ("Cannot obtain pixel data for screen ", screen, ". OpenGL error: ", error);
-	        delete[] buffer;
-	        continue;
+		sLog.error ("Cannot obtain pixel data for screen ", screen, ". OpenGL error: ", error);
+		delete[] buffer;
+		continue;
 	    }
 
 	    captures.push_back ({ .buffer = buffer, .width = vpWidth, .height = vpHeight });
 
 	    currentXOffset += vpWidth;
-        }
+	}
     }
 
     const auto width = std::accumulate (captures.begin (), captures.end (), 0, [] (int acc, const auto& capture) {
@@ -617,20 +618,20 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
     std::string groupFilter = ":" + screen + ":";
 
     for (const auto& name : this->m_context.settings.general.backgrounds | std::views::keys) {
-        if (group.find (groupFilter) == std::string::npos) {
-            continue;
-        }
+	if (group.find (groupFilter) == std::string::npos) {
+	    continue;
+	}
 
-        group = name;
-        break;
+	group = name;
+	break;
     }
 
     if (playlists.contains (screen)) {
 	defaultPlaylist = playlists.at (screen);
 	defaultBackgroundFromPlaylist = true;
     } else if (!group.empty () && playlists.contains (screen)) {
-        defaultPlaylist = playlists.at (group);
-        defaultBackgroundFromPlaylist = true;
+	defaultPlaylist = playlists.at (group);
+	defaultBackgroundFromPlaylist = true;
     }
 
     std::string path;
@@ -638,14 +639,13 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
     if (this->m_context.settings.general.backgrounds.contains (screen)) {
 	path = this->m_context.settings.general.backgrounds[screen];
     } else if (!group.empty () && this->m_context.settings.general.backgrounds.contains (group)) {
-        path = this->m_context.settings.general.backgrounds[group];
+	path = this->m_context.settings.general.backgrounds[group];
     }
 
     auto currentDefaultBackground = path.empty () ? defaultBackground : path;
     auto currentDefaultPlaylist = defaultBackgroundFromPlaylist ? defaultPlaylist : std::nullopt;
-    const auto it = !group.empty ()
-        ? this->m_context.settings.general.playlists.find (group)
-        : this->m_context.settings.general.playlists.find (screen);
+    const auto it = !group.empty () ? this->m_context.settings.general.playlists.find (group)
+				    : this->m_context.settings.general.playlists.find (screen);
 
     if (it != this->m_context.settings.general.playlists.end ()) {
 	const auto playlistsIt = playlists.find (it->second);
@@ -660,21 +660,19 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
     if (group.empty () && currentDefaultPlaylist.has_value ()) {
 	this->registerPlaylist (screen, *currentDefaultPlaylist, *currentDefaultBackground);
     } else if (!group.empty () && currentDefaultPlaylist.has_value ()) {
-        if (!this->m_activePlaylists.contains (group)) {
-            this->registerPlaylist (group, *currentDefaultPlaylist, *currentDefaultBackground);
-        }
+	if (!this->m_activePlaylists.contains (group)) {
+	    this->registerPlaylist (group, *currentDefaultPlaylist, *currentDefaultBackground);
+	}
     }
 
     if (currentDefaultBackground.has_value () == false) {
 	return;
     }
 
-    const auto scalingIt = !group.empty()
-        ? this->m_context.settings.general.scalings.find (group)
-        : this->m_context.settings.general.scalings.find (screen);
-    const auto clampIt = !group.empty ()
-        ? this->m_context.settings.general.clamps.find (group)
-        : this->m_context.settings.general.clamps.find (screen);
+    const auto scalingIt = !group.empty () ? this->m_context.settings.general.scalings.find (group)
+					   : this->m_context.settings.general.scalings.find (screen);
+    const auto clampIt = !group.empty () ? this->m_context.settings.general.clamps.find (group)
+					 : this->m_context.settings.general.clamps.find (screen);
     const auto scaling = scalingIt != this->m_context.settings.general.scalings.end ()
 	? scalingIt->second
 	: this->m_context.settings.general.scalings[DEFAULT_SCREEN_NAME];
@@ -684,15 +682,15 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
 
     // only load the background if it's not loaded yet
     if (group.empty ()) {
-        this->m_backgrounds[screen] = this->loadBackground (*currentDefaultBackground);
+	this->m_backgrounds[screen] = this->loadBackground (*currentDefaultBackground);
     } else if (!group.empty () && !this->m_backgrounds.contains (group)) {
-        this->m_backgrounds[group] = this->loadBackground (*currentDefaultBackground);
+	this->m_backgrounds[group] = this->loadBackground (*currentDefaultBackground);
     }
 
     if (!this->m_activeOutputs.contains (screen)) {
-        this->m_activeOutputs[screen] = std::vector<Desktop::Output*> { output };
+	this->m_activeOutputs[screen] = std::vector<Desktop::Output*> { output };
     } else {
-        this->m_activeOutputs[screen].push_back (output);
+	this->m_activeOutputs[screen].push_back (output);
     }
 
     output->setWallpaper (this->m_backgrounds[screen]);
