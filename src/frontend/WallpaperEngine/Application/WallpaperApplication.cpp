@@ -608,6 +608,7 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
 
     if (playlists.contains (screen)) {
 	defaultPlaylist = playlists.at (screen);
+	defaultBackgroundFromPlaylist = true;
     }
 
     std::string path;

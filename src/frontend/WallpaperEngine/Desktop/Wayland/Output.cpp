@@ -132,10 +132,28 @@ void Output::render () {
 }
 
 void Output::setupLayerShell () {
+    zwlr_layer_shell_v1_layer wlrLayer;
+
+    switch (this->m_environment.getContext ().settings.render.wayland.layer) {
+	case Application::ApplicationContext::WAYLAND_LAYER_BACKGROUND:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+	    break;
+	case Application::ApplicationContext::WAYLAND_LAYER_TOP:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+	    break;
+	case Application::ApplicationContext::WAYLAND_LAYER_OVERLAY:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+	    break;
+	case Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
+	default:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+	    break;
+    }
+
     this->m_wl_surface = wl_compositor_create_surface (this->m_environment.wayland_context.compositor);
     this->m_layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	this->m_environment.wayland_context.layerShell, this->m_wl_surface, this->m_wl_output,
-	ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "linux-wallpaperengine"
+	this->m_environment.wayland_context.layerShell, this->m_wl_surface, this->m_wl_output, wlrLayer,
+	"linux-wallpaperengine"
     );
 
     if (this->m_layerSurface == nullptr) {
