@@ -7,8 +7,8 @@
 #include <ranges>
 #include <unistd.h>
 
-#include <sys/poll.h>
 #include <linux/input-event-codes.h>
+#include <sys/poll.h>
 
 #define class _class
 #define namespace _namespace
@@ -22,17 +22,11 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Desktop::Wayland;
 
-static double get_x (void* user_parameter) {
-    return 0.0f;
-}
+static double get_x (void* user_parameter) { return 0.0f; }
 
-static double get_y (void* user_parameter) {
-    return 0.0f;
-}
+static double get_y (void* user_parameter) { return 0.0f; }
 
-static int is_pressed (void* user_parameter, int button) {
-    return 0;
-}
+static int is_pressed (void* user_parameter, int button) { return 0; }
 
 static void handle_pointer_enter (
     void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y
@@ -41,18 +35,18 @@ static void handle_pointer_enter (
 
     // mark all outputs as not containing the mouse
     for (auto& output : impl->getOutputs () | std::views::values) {
-        output->mouseInside = false;
+	output->mouseInside = false;
     }
 
     // find the surface the pointer enters
     for (const auto& output : impl->getOutputs () | std::views::values) {
-        if (output->getSurface () != surface) {
-            continue;
-        }
+	if (output->getSurface () != surface) {
+	    continue;
+	}
 
-        output->mouseInside = true;
-        output->mouseX = wl_fixed_to_double(surface_x);
-        output->mouseY = wl_fixed_to_double(surface_y);
+	output->mouseInside = true;
+	output->mouseX = wl_fixed_to_double (surface_x);
+	output->mouseY = wl_fixed_to_double (surface_y);
     }
 }
 
@@ -61,7 +55,7 @@ static void handle_pointer_leave (void* data, wl_pointer* pointer, uint32_t seri
 
     // mark all outputs as not containing the mouse
     for (auto& output : impl->getOutputs () | std::views::values) {
-        output->mouseInside = false;
+	output->mouseInside = false;
     }
 }
 
@@ -70,12 +64,12 @@ handle_pointer_motion (void* data, wl_pointer* pointer, uint32_t time, wl_fixed_
     const auto impl = static_cast<Environment*> (data);
 
     for (auto& output : impl->getOutputs ()) {
-        if (!output.second->mouseInside) {
-            continue;
-        }
+	if (!output.second->mouseInside) {
+	    continue;
+	}
 
-        output.second->mouseX = wl_fixed_to_double(surface_x);
-        output.second->mouseY = wl_fixed_to_double(surface_y);
+	output.second->mouseX = wl_fixed_to_double (surface_x);
+	output.second->mouseY = wl_fixed_to_double (surface_y);
     }
 }
 
@@ -85,29 +79,30 @@ static void handle_pointer_button (
     const auto impl = static_cast<Environment*> (data);
 
     for (auto& output : impl->getOutputs () | std::views::values) {
-        if (!output->mouseInside) {
-            continue;
-        }
+	if (!output->mouseInside) {
+	    continue;
+	}
 
-        if (button == BTN_LEFT) {
-            if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
-                output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_LEFT;;
-            } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
-                output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_LEFT;
-            }
-        } else if (button == BTN_RIGHT) {
-            if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
-                output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_RIGHT;
-            } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
-                output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_RIGHT;
-            }
-        } else if (button == BTN_MIDDLE) {
-            if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
-                output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_MIDDLE;
-            } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
-                output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_MIDDLE;
-            }
-        }
+	if (button == BTN_LEFT) {
+	    if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+		output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_LEFT;
+		;
+	    } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
+		output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_LEFT;
+	    }
+	} else if (button == BTN_RIGHT) {
+	    if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+		output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_RIGHT;
+	    } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
+		output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_RIGHT;
+	    }
+	} else if (button == BTN_MIDDLE) {
+	    if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+		output->mouseButtons |= WP_MOUSE_INPUT_BUTTON_MIDDLE;
+	    } else if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
+		output->mouseButtons &= ~WP_MOUSE_INPUT_BUTTON_MIDDLE;
+	    }
+	}
     }
 }
 
@@ -125,7 +120,7 @@ static void handle_capabilities (void* data, wl_seat* seat, uint32_t capabilitie
     const auto impl = static_cast<Environment*> (data);
 
     if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
-        impl->wayland_context.pointer = wl_seat_get_pointer (seat);
+	impl->wayland_context.pointer = wl_seat_get_pointer (seat);
 	wl_pointer_add_listener (impl->wayland_context.pointer, &pointer_listener, data);
     }
 }
@@ -260,7 +255,7 @@ static void handle_global (void* data, wl_registry* registry, uint32_t name, con
 	    = static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
     } else if (strcmp (interface, wl_seat_interface.name) == 0) {
 	impl->wayland_context.seat = static_cast<wl_seat*> (wl_registry_bind (registry, name, &wl_seat_interface, 1));
-        wl_seat_add_listener (impl->wayland_context.seat, &seat_listener, impl);
+	wl_seat_add_listener (impl->wayland_context.seat, &seat_listener, impl);
     } else if (strcmp (interface, zwlr_foreign_toplevel_manager_v1_interface.name) == 0) {
 	impl->wayland_context.topLevelManager = static_cast<zwlr_foreign_toplevel_manager_v1*> (
 	    wl_registry_bind (registry, name, &zwlr_foreign_toplevel_manager_v1_interface, 3)
@@ -500,9 +495,7 @@ void Environment::deregisterOutput (Output* output) {
     this->m_outputs.erase (output->name);
 }
 
-const std::map<std::string, Output*>& Environment::getOutputs () {
-    return this->m_outputs;
-}
+const std::map<std::string, Output*>& Environment::getOutputs () { return this->m_outputs; }
 
 void Environment::render () {
     // render happens on every surface, not really here, but a roundtrip could mean

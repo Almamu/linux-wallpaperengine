@@ -20,10 +20,6 @@
 #include <glm/vec3.hpp>
 #include <ranges>
 
-#if DEMOMODE
-#include "recording.h"
-#endif /* DEMOMODE */
-
 #include <algorithm>
 #include <numeric>
 #include <unistd.h>
@@ -501,19 +497,6 @@ void WallpaperApplication::setupOpenGLDebugging () {
 void WallpaperApplication::setup () {
     this->setupAudio ();
     setupOpenGLDebugging ();
-
-#if DEMOMODE
-    // ensure only one background is running so everything can be properly caught
-    if (this->m_renderContext->getWallpapers ().size () > 1) {
-	sLog.exception ("Demo mode only supports one background");
-    }
-
-    int width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
-    int height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
-    std::vector<uint8_t> pixels (width * height * 3);
-    bool initialized = false;
-    int frame = 0;
-#endif /* DEMOMODE */
 }
 
 void WallpaperApplication::render () {
@@ -566,45 +549,9 @@ void WallpaperApplication::render () {
 
     this->takeScreenshot (this->m_context.settings.screenshot.path);
     this->m_screenShotTaken = true;
-
-#if DEMOMODE
-    // TODO: UPDATE THE VIDEO RECORDING CODE
-    // wait for a full render cycle before actually starting
-    // this gives some extra time for video and web decoders to set themselves up
-    // because of size changes
-    if (m_videoDriver->getFrameCounter () > (uint32_t)this->m_context.settings.render.maximumFPS) {
-	if (!initialized) {
-	    width = this->m_renderContext->getWallpapers ().begin ()->second->getWidth ();
-	    height = this->m_renderContext->getWallpapers ().begin ()->second->getHeight ();
-	    pixels.reserve (width * height * 3);
-	    init_encoder ("output.webm", width, height);
-	    initialized = true;
-	}
-
-	glBindFramebuffer (
-	    GL_FRAMEBUFFER, this->m_renderContext->getWallpapers ().begin ()->second->getWallpaperFramebuffer ()
-	);
-
-	glPixelStorei (GL_PACK_ALIGNMENT, 1);
-	glReadPixels (0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data ());
-	write_video_frame (pixels.data ());
-	frame++;
-
-	// stop after the given framecount
-	if (frame >= FRAME_COUNT) {
-	    this->m_context.state.general.keepRunning = false;
-	}
-    }
-#endif /* DEMOMODE */
 }
 
-void WallpaperApplication::cleanup () {
-    sLog.out ("Stopping");
-
-#if DEMOMODE
-    close_encoder ();
-#endif /* DEMOMODE */
-}
+void WallpaperApplication::cleanup () { sLog.out ("Stopping"); }
 
 void WallpaperApplication::show () {
     this->setup ();
@@ -634,9 +581,7 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
     std::optional<std::string> defaultBackground = std::nullopt;
     bool defaultBackgroundFromPlaylist = false;
 
-    if (playlists.contains (screen)) {
-	defaultPlaylist = playlists.at (screen);
-    }
+    // TODO: ADD SUPPORT FOR SPAN GROUPS!
 
     // fallback to DEFAULT_SCREEN_NAME as default background
     if (this->m_context.settings.general.backgrounds.contains (DEFAULT_SCREEN_NAME)) {
@@ -659,6 +604,10 @@ void WallpaperApplication::onScreenAvailable (const std::string& screen, Desktop
 	defaultBackground = it->second.items.front ();
 	defaultPlaylist = it->second;
 	defaultBackgroundFromPlaylist = true;
+    }
+
+    if (playlists.contains (screen)) {
+	defaultPlaylist = playlists.at (screen);
     }
 
     std::string path;
