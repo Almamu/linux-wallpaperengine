@@ -498,6 +498,11 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.flag ()
 	.action ([this] (const std::string& value) -> void { this->settings.render.pauseOnFullscreen = false; });
 
+    performanceGroup.add_argument ("--no-pause-on-battery")
+	.help ("Prevents the background pausing while the system is running on battery power (on by default to save power on laptops)")
+	.flag ()
+	.action ([this] (const std::string& value) -> void { this->settings.render.pauseOnBattery = false; });
+
     performanceGroup.add_argument ("--fullscreen-pause-only-active")
 	.help ("Wayland only: pause only when a fullscreen window is active (activated)")
 	.flag ()
