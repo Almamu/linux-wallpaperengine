@@ -21,5 +21,6 @@ private:
     std::chrono::steady_clock::time_point m_lastCheckTime;
     bool m_lastBatteryStatus = false;
     bool m_lastLoggedStatus = false;
+    bool m_missingPowerSourceLogged = false;
 };
 } // namespace WallpaperEngine::Render::Drivers::Detectors

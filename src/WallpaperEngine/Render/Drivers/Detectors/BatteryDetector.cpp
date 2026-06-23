@@ -1,8 +1,10 @@
 #include "BatteryDetector.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <filesystem>
 #include <fstream>
 #include <string>
+#include <system_error>
 
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Render::Drivers::Detectors;
@@ -21,20 +23,44 @@ bool BatteryDetector::isOnBattery () {
 
     this->m_lastCheckTime = now;
 
-    // different platforms/kernels expose the AC adapter under different names
-    std::ifstream file ("/sys/class/power_supply/AC/online");
-    if (!file.is_open ()) {
-	file.open ("/sys/class/power_supply/ACAD/online");
-    }
-    if (!file.is_open ()) {
-	file.open ("/sys/class/power_supply/ADP1/online");
+    // the AC adapter name varies between vendors/kernels/drivers, so instead of
+    // hardcoding names we enumerate every power supply and look at the ones reporting
+    // type "Mains" (the standard recommended pattern on Linux)
+    bool foundPowerSource = false;
+    bool onBattery = true;
+
+    std::error_code ec;
+    const std::filesystem::directory_iterator end {};
+    for (std::filesystem::directory_iterator it ("/sys/class/power_supply", ec); !ec && it != end; it.increment (ec)) {
+	std::ifstream typeFile (it->path () / "type");
+	if (!typeFile.is_open ()) {
+	    continue;
+	}
+
+	std::string type;
+	std::getline (typeFile, type);
+	if (type != "Mains") {
+	    continue;
+	}
+
+	std::ifstream onlineFile (it->path () / "online");
+	if (!onlineFile.is_open ()) {
+	    continue;
+	}
+
+	std::string online;
+	std::getline (onlineFile, online);
+
+	foundPowerSource = true;
+	// "1" means this AC adapter is plugged in, so we are not on battery
+	if (online == "1") {
+	    onBattery = false;
+	    break;
+	}
     }
 
-    if (file.is_open ()) {
-	std::string status;
-	std::getline (file, status);
-	// "0" means the AC adapter is offline, so we are running on battery
-	this->m_lastBatteryStatus = (status == "0");
+    if (foundPowerSource) {
+	this->m_lastBatteryStatus = onBattery;
 
 	if (this->m_lastBatteryStatus != this->m_lastLoggedStatus) {
 	    sLog.out ("[BATTERY] Power source changed to: ", this->m_lastBatteryStatus ? "Battery" : "AC");
@@ -44,8 +70,14 @@ bool BatteryDetector::isOnBattery () {
 	return this->m_lastBatteryStatus;
     }
 
-    // if no AC adapter file exists we cannot tell, so assume we are on AC and keep rendering
-    sLog.error ("[BATTERY] Power source file not found, assuming AC power");
+    // no AC adapter was found (e.g. a desktop without a "Mains" supply); we cannot tell,
+    // so assume we are on AC and keep rendering. log this only once to avoid spamming the
+    // output on every cache refresh
+    if (!this->m_missingPowerSourceLogged) {
+	sLog.out ("[BATTERY] No AC power source found in /sys/class/power_supply, assuming AC power");
+	this->m_missingPowerSourceLogged = true;
+    }
+
     this->m_lastBatteryStatus = false;
     return this->m_lastBatteryStatus;
 }
