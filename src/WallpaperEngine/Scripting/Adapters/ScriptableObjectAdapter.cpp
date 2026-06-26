@@ -18,6 +18,8 @@ struct OpaqueScriptableObjectAdapter {
     WallpaperEngine::Scripting::ScriptableObject& object;
 };
 
+void scriptableobject_finalizer (JSRuntime* rt, JSValueConst val);
+
 JSValue scriptableobject_property_get (JSContext* ctx, JSValueConst obj_val, JSAtom atom, JSValueConst receiver) {
     JSClassID classId = 0;
 
@@ -70,6 +72,7 @@ ScriptableObjectAdapter::ScriptableObjectAdapter (ScriptEngine& engine, std::str
     this->registerType (
 	{
 	    .class_name = m_name.c_str (),
+	    .finalizer = scriptableobject_finalizer,
 	    .exotic = &m_exoticMethods,
 	}
     );
@@ -83,6 +86,18 @@ JSValue ScriptableObjectAdapter::instantiate (ScriptableObject& object) {
     );
 
     return result;
+}
+
+void scriptableobject_finalizer (JSRuntime* rt, JSValueConst val) {
+    JSClassID classId = 0;
+
+    const auto* container = static_cast<OpaqueScriptableObjectAdapter*> (JS_GetAnyOpaque (val, &classId));
+
+    if (container == nullptr || container->magic != SCRIPTABLE_OPAQUE_MAGIC) {
+	return;
+    }
+
+    delete container;
 }
 
 JSValue ScriptableObjectAdapter::instantiate (DynamicValue& value) {
