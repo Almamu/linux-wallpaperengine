@@ -2,6 +2,7 @@
 
 #include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
+#include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Data::Parsers;
 
@@ -28,28 +29,36 @@ DynamicValueUniquePtr DynamicValueParser::parse (const json& data, const Propert
 	    value->update (Builders::ColorBuilder::parse (valueIt), DynamicValue::UpdateSource::Initialization);
 	} else {
 	    std::string str = valueIt;
-	    int size = Builders::VectorBuilder::preparseSize (str);
 
-	    if (size == 1) {
-		// scalar? text value?
-		std::size_t parsed = 0;
-		try {
-		    float f = std::stof (str, &parsed);
+	    // Skip non-vector strings so the value stays untouched (e.g. "top"
+	    // in some ULTRAKILL scenes); preparseSize returns 1 on space-less
+	    // input and the size==1 branch otherwise converts to a string.
+	    if (str.find (' ') == std::string::npos) {
+		sLog.error ("User setting value '", str, "' has no spaces, not a vector; skipping");
+	    } else {
+		int size = Builders::VectorBuilder::preparseSize (str);
 
-		    if (parsed == str.size ()) {
-			value->update (f, DynamicValue::UpdateSource::Initialization);
-		    } else {
+		if (size == 1) {
+		    // scalar? text value?
+		    std::size_t parsed = 0;
+		    try {
+			float f = std::stof (str, &parsed);
+
+			if (parsed == str.size ()) {
+			    value->update (f, DynamicValue::UpdateSource::Initialization);
+			} else {
+			    value->update (str, DynamicValue::UpdateSource::Initialization);
+			}
+		    } catch (const std::exception&) {
 			value->update (str, DynamicValue::UpdateSource::Initialization);
 		    }
-		} catch (const std::exception&) {
-		    value->update (str, DynamicValue::UpdateSource::Initialization);
+		} else if (size == 2) {
+		    value->update (static_cast<glm::vec2> (valueIt), DynamicValue::UpdateSource::Initialization);
+		} else if (size == 3) {
+		    value->update (static_cast<glm::vec3> (valueIt), DynamicValue::UpdateSource::Initialization);
+		} else {
+		    value->update (static_cast<glm::vec4> (valueIt), DynamicValue::UpdateSource::Initialization);
 		}
-	    } else if (size == 2) {
-		value->update (static_cast<glm::vec2> (valueIt), DynamicValue::UpdateSource::Initialization);
-	    } else if (size == 3) {
-		value->update (static_cast<glm::vec3> (valueIt), DynamicValue::UpdateSource::Initialization);
-	    } else {
-		value->update (static_cast<glm::vec4> (valueIt), DynamicValue::UpdateSource::Initialization);
 	    }
 	}
     } else if (valueIt.is_number_integer ()) {
