@@ -206,7 +206,7 @@ unsigned int CText::computeEffectivePixelSize () const {
     // pointsize, would rasterize glyphs to ~2px on screen (invisible). Rasterize
     // at higher resolution so that after the model scale is applied in render()
     // the on-screen size matches the intended pointsize.
-    const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
+    const glm::vec3 initialScale = this->resolveTransform (m_text).scale;
     const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
     const float compensate = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
     return std::max<unsigned int> (1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
@@ -337,18 +337,20 @@ void CText::buildShader () {
 }
 
 void CText::uploadQuadVertices () {
-    // Quad centered at the origin, sized in pixels. Scene-space placement is
-    // done via the model matrix using the object's origin/scale. VBO contents
-    // are re-uploaded whenever the glyph bitmap is rebuilt so the quad always
-    // matches the current texture dimensions.
+    // Quad horizontally centered on the origin with its TOP edge at the origin —
+    // WE text boxes anchor at the top and grow downward (clock widgets stack lines
+    // by offsetting origins one text-height apart). Scene-space placement is done
+    // via the model matrix using the object's origin/scale. VBO contents are
+    // re-uploaded whenever the glyph bitmap is rebuilt so the quad always matches
+    // the current texture dimensions.
     const float hx = m_quadSize.x * 0.5f;
-    const float hy = m_quadSize.y * 0.5f;
-    // With vflip=true (Wayland/GLFW), GL y- = screen top. So the quad bottom (y=-hy,
+    const float sy = m_quadSize.y;
+    // With vflip=true (Wayland/GLFW), GL y- = screen top. So the quad bottom (y=0,
     // lower GL y) appears at screen top. UV.v=0 here = FT glyph top → shows at screen top ✓
     const float verts[] = {
 	// pos        // uv
-	-hx, -hy, 0.0f, 0.0f, hx, -hy, 1.0f, 0.0f, hx,  hy, 1.0f, 1.0f,
-	-hx, -hy, 0.0f, 0.0f, hx, hy,  1.0f, 1.0f, -hx, hy, 0.0f, 1.0f,
+	-hx, 0.0f, 0.0f, 0.0f, hx, 0.0f, 1.0f, 0.0f, hx,  sy, 1.0f, 1.0f,
+	-hx, 0.0f, 0.0f, 0.0f, hx, sy,  1.0f, 1.0f, -hx, sy, 0.0f, 1.0f,
     };
 
     const bool firstUpload = (m_vao == 0);
@@ -404,25 +406,26 @@ void CText::render () {
 
     const glm::vec4 color = m_text.color->value->getVec4 ();
     const float alpha = m_text.alpha->value->getFloat ();
-    const glm::vec3 scale = m_text.scale->value->getVec3 ();
-    const glm::vec3 origin = m_text.origin->value->getVec3 ();
+
+    // Text objects can be parented to other objects (e.g. clock widgets composed of
+    // several text layers); resolve origin/scale/angle through the parent chain.
+    const auto transform = this->resolveTransform (m_text);
 
     // WE uses a Y-down coordinate system (origin at top-left, y increases downward).
     // The final FBO is presented to screen with vflip=true on Wayland/GLFW, which maps
-    // GL y- to screen top and GL y+ to screen bottom. This effectively inverts Y again,
-    // so we need: gl_y = origin.y - scene_h/2  (not the CImage-style scene_h/2 - origin.y).
-    // CImage pre-compensates for X11 (no vflip) and gets corrected by the Wayland vflip.
-    // CText renders with direct vflip-aware coordinates.
+    // GL y- to screen top and GL y+ to screen bottom. This matches CImage's mapping:
+    // gl_y = scene_h/2 - origin.y, corrected back by the vflip on presentation.
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
     const glm::vec3 gl_origin = {
-	origin.x - scene_w * 0.5f,
-	origin.y - scene_h * 0.5f,
-	origin.z,
+	transform.origin.x - scene_w * 0.5f,
+	scene_h * 0.5f - transform.origin.y,
+	transform.origin.z,
     };
 
     glm::mat4 model = glm::translate (glm::mat4 (1.0f), gl_origin);
-    model = glm::scale (model, scale);
+    model = glm::rotate (model, transform.angle, glm::vec3 (0.0f, 0.0f, 1.0f));
+    model = glm::scale (model, transform.scale);
 
     const glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
 

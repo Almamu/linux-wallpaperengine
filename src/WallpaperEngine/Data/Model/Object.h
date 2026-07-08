@@ -610,8 +610,8 @@ struct TextData {
     std::string alignment;
     /** Vertical alignment: "top", "center", "bottom" */
     std::string verticalalign;
-    /** Padding inside the bounding box */
-    int padding;
+    /** Padding inside the bounding box (x = horizontal, y = vertical) */
+    glm::vec2 padding;
     // TODO: PARSE LIMITS TOO!
 };
 

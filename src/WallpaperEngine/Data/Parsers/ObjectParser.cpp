@@ -17,6 +17,38 @@
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
+namespace {
+glm::vec2 parsePadding (const JSON& it) {
+    using WallpaperEngine::Data::Builders::VectorBuilder;
+    const auto opt = it.optional ("padding");
+
+    if (!opt.has_value ()) {
+        return glm::vec2 (0.0f);
+    }
+
+    const auto& val = *opt;
+
+    if (val.is_number ()) {
+        const auto v = val.get<float> ();
+        return glm::vec2 (v, v);
+    }
+
+    if (val.is_string ()) {
+        const auto str = val.get<std::string> ();
+        const auto size = VectorBuilder::preparseSize (str);
+
+        if (size == 1) {
+            const auto v = std::strtof (str.c_str (), nullptr);
+            return glm::vec2 (v, v);
+        }
+
+        return VectorBuilder::parse<glm::vec2> (str);
+    }
+
+    return glm::vec2 (0.0f);
+}
+} // namespace
+
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
@@ -136,7 +168,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	    .visible = it.user ("visible", project.properties, true),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
-	    .padding = it.optional ("padding", 0),
+	    .padding = parsePadding (it),
 	}
     );
 }
