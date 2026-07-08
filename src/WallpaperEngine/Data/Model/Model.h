@@ -3,6 +3,8 @@
 #include <optional>
 #include <string>
 
+#include <glm/vec2.hpp>
+
 #include "Types.h"
 
 namespace WallpaperEngine::Data::Model {
@@ -28,5 +30,7 @@ struct ModelStruct {
     std::optional<int> height;
     /** Model file for puppet */
     std::optional<std::string> puppet;
+    /** Offset applied to puppet mesh to align it within the image */
+    glm::vec2 cropoffset = glm::vec2 (0.0f);
 };
 } // namespace WallpaperEngine::Data::Model

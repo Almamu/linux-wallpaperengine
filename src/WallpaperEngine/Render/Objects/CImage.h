@@ -61,23 +61,33 @@ protected:
 
     void updateScreenSpacePosition ();
 
-    struct ResolvedTransform {
-	glm::vec3 origin;
-	glm::vec3 scale;
-	float angle;
+private:
+    struct PuppetBone {
+	int parent = -1;
+	glm::mat4 inverseBindWorld = glm::mat4 (1.0f);
     };
 
-    [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
+    struct PuppetAnimationFrame {
+	glm::vec3 position = {};
+	glm::vec3 rotation = {};
+	glm::vec3 scale = glm::vec3 (1.0f);
+    };
 
-    /**
-     * Computes the object's own transform (origin/scale/angle) without walking the
-     * parent chain. Used as the per-node step of resolveTransform.
-     */
-    [[nodiscard]] static ResolvedTransform localTransform (const WallpaperEngine::Data::Model::Object& object);
+    struct PuppetAnimation {
+	uint32_t id = 0;
+	std::string name = {};
+	bool loop = true;
+	float fps = 30.0f;
+	/** keyframes indexed [bone][frame] */
+	std::vector<std::vector<PuppetAnimationFrame>> tracks = {};
+    };
 
-private:
     bool loadPuppetMesh (const glm::vec2& size);
-    void updatePuppetPositionBuffer (const glm::vec2& size);
+    bool loadPuppetAnimationData (const std::vector<char>& data, size_t mdlsOffset);
+    void updatePuppetAnimation ();
+    void evaluatePuppetSkin (const PuppetAnimation& animation, float framePosition, std::vector<glm::mat4>& skin) const;
+    [[nodiscard]] glm::vec2 computePuppetCanvasSize (const glm::vec2& size) const;
+    void updatePuppetPositionBuffer (const glm::vec2& size, const std::vector<GLfloat>& rawPositions);
     void setupPuppetGeometryCallback (Effects::CPass* pass) const;
     ResolvedTransform updateGeometryBuffers ();
     [[nodiscard]] glm::vec2 resolveGeometrySize (float sceneWidth, float sceneHeight, glm::vec3& origin) const;
@@ -103,6 +113,12 @@ private:
     GLsizei m_puppetIndexCount = 0;
     bool m_hasPuppetMesh = false;
     std::vector<GLfloat> m_puppetRawPositions = {};
+    std::vector<glm::uvec4> m_puppetVertexBones = {};
+    std::vector<glm::vec4> m_puppetVertexWeights = {};
+    std::vector<GLfloat> m_puppetSkinnedPositions = {};
+    std::vector<PuppetBone> m_puppetBones = {};
+    std::vector<PuppetAnimation> m_puppetAnimations = {};
+    glm::vec2 m_puppetSize = {};
 
     glm::mat4 m_modelViewProjectionScreen = {};
     glm::mat4 m_modelViewProjectionPass = {};

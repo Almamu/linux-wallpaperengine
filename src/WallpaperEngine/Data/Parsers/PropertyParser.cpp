@@ -147,6 +147,6 @@ PropertySharedPtr PropertyParser::parseTextInput (const JSON& it, const std::str
 	    .name = name,
 	    .text = it.optional<std::string> ("text", ""),
 	},
-	it.require ("value", "Property must have a value").dump ()
+	it.optional<std::string> ("value", "")
     );
 }

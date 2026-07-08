@@ -30,5 +30,6 @@ ModelUniquePtr ModelParser::parse (const JSON& file, const Project& project, con
 	.width = file.optional<int> ("width"),
 	.height = file.optional<int> ("height"),
 	.puppet = file.optional<std::string> ("puppet"),
+	.cropoffset = file.optional ("cropoffset", glm::vec2 (0.0f)),
     });
 }
