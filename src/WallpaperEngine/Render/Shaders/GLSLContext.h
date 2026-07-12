@@ -21,6 +21,8 @@ public:
 
     [[nodiscard]] static GLSLContext& get ();
 
+    static bool fixVectorTypeMismatch (std::string& source, const std::string& errorLog);
+
 private:
     static std::unique_ptr<GLSLContext> sInstance;
 };
