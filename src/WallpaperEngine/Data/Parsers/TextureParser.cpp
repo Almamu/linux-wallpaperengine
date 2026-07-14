@@ -70,6 +70,26 @@ MipmapSharedPtr TextureParser::parseMipmap (const BinaryReader& file, const Text
 	result->uncompressedSize = result->compressedSize;
     }
 
+    // sizes come straight from an untrusted .tex file: reject negatives (which would turn into a
+    // huge size_t in new[]) and anything larger than the data actually left in the stream
+    if (result->compressedSize < 0 || result->uncompressedSize < 0) {
+	sLog.exception ("Texture mipmap has a negative size");
+    }
+
+    // upper bound on a single decompressed mipmap; a genuine texture never approaches this, but it
+    // stops a tiny compressed payload from forcing a multi-gigabyte allocation before decompression
+    constexpr int MAX_MIPMAP_BYTES = 1 << 30; // 1 GiB
+    if (result->uncompressedSize > MAX_MIPMAP_BYTES) {
+	sLog.exception ("Texture mipmap uncompressed size ", result->uncompressedSize, " exceeds sane limit");
+    }
+
+    // the bytes we are about to read from the file (compressed payload, or the raw payload otherwise)
+    // must actually exist in what remains of the stream
+    const std::streamsize toRead = (result->compression == 1) ? result->compressedSize : result->uncompressedSize;
+    if (toRead > file.remaining ()) {
+	sLog.exception ("Texture mipmap claims ", toRead, " bytes but only ", file.remaining (), " remain");
+    }
+
     result->uncompressedData = std::unique_ptr<char[]> (new char[result->uncompressedSize]);
 
     if (result->compression == 1) {
@@ -268,8 +288,13 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
 
     // ensure gif width and height is right for TEXS0001, TEXS0002
     if (header.animatedVersion == AnimatedVersion_TEXS0001 || header.animatedVersion == AnimatedVersion_TEXS0002) {
-	header.gifWidth = (*header.frames.begin ())->width1;
-	header.gifHeight = (*header.frames.begin ())->height1;
+	// a frame count of zero would otherwise dereference begin() on an empty vector
+	if (header.frames.empty ()) {
+	    sLog.exception ("Animated texture declares no frames");
+	}
+
+	header.gifWidth = header.frames.front ()->width1;
+	header.gifHeight = header.frames.front ()->height1;
     }
 
     // Calculate spritesheet grid dimensions from animation frames

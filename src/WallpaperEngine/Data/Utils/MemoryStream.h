@@ -12,14 +12,33 @@ struct MemoryStream : std::istream, private std::streambuf {
 
     std::streambuf::pos_type
     seekoff (std::streambuf::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which) override {
+	char* const begin = this->eback ();
+	char* const end = this->egptr ();
+	char* target = nullptr;
+
 	if (dir == std::ios_base::cur) {
-	    gbump (off);
+	    target = this->gptr () + off;
 	} else if (dir == std::ios_base::end) {
-	    setg (eback (), egptr () + off, egptr ());
+	    target = end + off;
 	} else if (dir == std::ios_base::beg) {
-	    setg (eback (), eback () + off, egptr ());
+	    target = begin + off;
+	} else {
+	    return std::streambuf::pos_type (std::streambuf::off_type (-1));
 	}
-	return gptr () - eback ();
+
+	// reject seeks that would move the get pointer outside [begin, end]; a malformed offset from
+	// an untrusted package must fail the seek, not leave gptr dangling for the next read
+	if (target < begin || target > end) {
+	    return std::streambuf::pos_type (std::streambuf::off_type (-1));
+	}
+
+	this->setg (begin, target, end);
+	return target - begin;
+    }
+
+    std::streambuf::pos_type
+    seekpos (std::streambuf::pos_type pos, std::ios_base::openmode which) override {
+	return this->seekoff (pos, std::ios_base::beg, which);
     }
 
     std::unique_ptr<char[]> m_buffer;
