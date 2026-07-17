@@ -11,6 +11,9 @@
 
 #include <GLFW/glfw3native.h>
 
+#ifdef ENABLE_X11
+#include <X11/Xlib.h>
+#endif
 #include <unistd.h>
 
 using namespace WallpaperEngine::Render::Drivers;
@@ -27,7 +30,9 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (const char* windowTitle, ApplicationContext&
     }
 
     // set some window hints (opengl version to be used)
-    glfwWindowHint (GLFW_SAMPLES, 4);
+    // The desktop path uses its own single-sample render target. Keeping the
+    // hidden GLX drawable tiny and non-multisampled avoids wasting GPU memory.
+    glfwWindowHint (GLFW_SAMPLES, context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND ? 0 : 4);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -47,12 +52,26 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (const char* windowTitle, ApplicationContext&
     glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif /* DEBUG */
 
-    // create window, size doesn't matter as long as we don't show it
-    this->m_window = glfwCreateWindow (640, 480, windowTitle, nullptr, nullptr);
+    const glm::ivec2 initialSize = context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND
+	? glm::ivec2 { 64, 64 }
+	: glm::ivec2 { 640, 480 };
+
+    this->m_window = glfwCreateWindow (initialSize.x, initialSize.y, windowTitle, nullptr, nullptr);
 
     if (this->m_window == nullptr) {
 	sLog.exception ("Cannot create window");
     }
+
+#ifdef ENABLE_X11
+    if (context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND) {
+	if (Display* display = glfwGetX11Display (); display != nullptr) {
+	    XSetWindowAttributes attributes {};
+	    attributes.override_redirect = True;
+	    XChangeWindowAttributes (display, glfwGetX11Window (this->m_window), CWOverrideRedirect, &attributes);
+	    XFlush (display);
+	}
+    }
+#endif
 
     // make context current, required for glew initialization
     glfwMakeContextCurrent (this->m_window);
@@ -78,7 +97,18 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (const char* windowTitle, ApplicationContext&
 #endif
 }
 
-GLFWOpenGLDriver::~GLFWOpenGLDriver () { glfwTerminate (); }
+GLFWOpenGLDriver::~GLFWOpenGLDriver () {
+    glfwMakeContextCurrent (this->m_window);
+    this->getApp ().setDestinationFramebuffer (0);
+
+    if (this->m_x11ColorBuffer != 0)
+	glDeleteRenderbuffers (1, &this->m_x11ColorBuffer);
+    if (this->m_x11Framebuffer != 0)
+	glDeleteFramebuffers (1, &this->m_x11Framebuffer);
+
+    delete this->m_output;
+    glfwTerminate ();
+}
 
 Output::Output& GLFWOpenGLDriver::getOutput () { return *this->m_output; }
 
@@ -91,6 +121,44 @@ void GLFWOpenGLDriver::resizeWindow (glm::ivec2 size) { glfwSetWindowSize (this-
 void GLFWOpenGLDriver::resizeWindow (glm::ivec4 sizeandpos) {
     glfwSetWindowPos (this->m_window, sizeandpos.x, sizeandpos.y);
     glfwSetWindowSize (this->m_window, sizeandpos.z, sizeandpos.w);
+}
+
+void GLFWOpenGLDriver::ensureX11RenderTargetSize (glm::ivec2 size) {
+    if (size.x <= 0 || size.y <= 0)
+	sLog.exception ("Invalid X11 render target size: ", size.x, "x", size.y);
+
+    if (this->m_x11Framebuffer != 0 && this->m_x11RenderTargetSize == size)
+	return;
+
+    GLint previousFramebuffer = 0;
+    GLint previousRenderbuffer = 0;
+    glGetIntegerv (GL_FRAMEBUFFER_BINDING, &previousFramebuffer);
+    glGetIntegerv (GL_RENDERBUFFER_BINDING, &previousRenderbuffer);
+
+    if (this->m_x11ColorBuffer != 0)
+	glDeleteRenderbuffers (1, &this->m_x11ColorBuffer);
+    if (this->m_x11Framebuffer != 0)
+	glDeleteFramebuffers (1, &this->m_x11Framebuffer);
+
+    glGenFramebuffers (1, &this->m_x11Framebuffer);
+    glBindFramebuffer (GL_FRAMEBUFFER, this->m_x11Framebuffer);
+    glGenRenderbuffers (1, &this->m_x11ColorBuffer);
+    glBindRenderbuffer (GL_RENDERBUFFER, this->m_x11ColorBuffer);
+    glRenderbufferStorage (GL_RENDERBUFFER, GL_RGBA8, size.x, size.y);
+    glFramebufferRenderbuffer (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, this->m_x11ColorBuffer);
+    glDrawBuffer (GL_COLOR_ATTACHMENT0);
+    glReadBuffer (GL_COLOR_ATTACHMENT0);
+
+    if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	sLog.exception ("Cannot create the X11 composition framebuffer at ", size.x, "x", size.y);
+
+    this->m_x11RenderTargetSize = size;
+    this->getApp ().setDestinationFramebuffer (this->m_x11Framebuffer);
+
+    glBindRenderbuffer (GL_RENDERBUFFER, static_cast<GLuint> (previousRenderbuffer));
+    glBindFramebuffer (GL_FRAMEBUFFER, static_cast<GLuint> (previousFramebuffer));
+
+    sLog.out ("X11 composition framebuffer: ", size.x, "x", size.y);
 }
 
 void GLFWOpenGLDriver::showWindow () { glfwShowWindow (this->m_window); }
@@ -109,8 +177,20 @@ uint32_t GLFWOpenGLDriver::getFrameCounter () const { return this->m_frameCounte
 
 void GLFWOpenGLDriver::dispatchEventQueue () {
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+    const bool useX11Readback = this->m_output->haveImageBuffer ();
     // get the start time of the frame
     startTime = this->getRenderTime ();
+
+    if (useX11Readback) {
+	if (this->m_x11Framebuffer == 0) {
+	    this->ensureX11RenderTargetSize ({ this->m_output->getFullWidth (), this->m_output->getFullHeight () });
+	}
+	glBindFramebuffer (GL_FRAMEBUFFER, this->m_x11Framebuffer);
+	glDrawBuffer (GL_COLOR_ATTACHMENT0);
+    } else {
+	glBindFramebuffer (GL_FRAMEBUFFER, 0);
+    }
+
     // clear the screen
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -119,25 +199,47 @@ void GLFWOpenGLDriver::dispatchEventQueue () {
     }
 
     // read the full texture into the image
-    if (this->m_output->haveImageBuffer ()) {
-	// 4.5 supports glReadnPixels, anything older doesn't...
-	if (GLEW_VERSION_4_5) {
-	    glReadnPixels (
-		0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
-		this->m_output->getImageBufferSize (), this->m_output->getImageBuffer ()
-	    );
-	} else {
-	    // fallback to old version
-	    glReadPixels (
-		0, 0, this->m_output->getFullWidth (), this->m_output->getFullHeight (), GL_BGRA, GL_UNSIGNED_BYTE,
-		this->m_output->getImageBuffer ()
-	    );
+    if (useX11Readback) {
+	const int fullWidth = this->m_output->getFullWidth ();
+	const int fullHeight = this->m_output->getFullHeight ();
+
+	glBindFramebuffer (GL_READ_FRAMEBUFFER, this->m_x11Framebuffer);
+	glReadBuffer (GL_COLOR_ATTACHMENT0);
+
+	GLint previousPackRowLength = 0;
+	glGetIntegerv (GL_PACK_ROW_LENGTH, &previousPackRowLength);
+	glPixelStorei (GL_PACK_ROW_LENGTH, fullWidth);
+
+	char* imageBuffer = static_cast<char*> (this->m_output->getImageBuffer ());
+	const size_t imageBufferSize = this->m_output->getImageBufferSize ();
+	for (const auto& [screen, viewport] : this->m_output->getViewports ()) {
+	    const int x = viewport->viewport.x;
+	    const int y = viewport->viewport.y;
+	    const int width = viewport->viewport.z;
+	    const int height = viewport->viewport.w;
+	    const size_t offset = (static_cast<size_t> (y) * fullWidth + x) * 4;
+	    if (offset >= imageBufferSize)
+		sLog.exception ("X11 viewport lies outside the composition image buffer");
+
+	    if (GLEW_VERSION_4_5) {
+		glReadnPixels (
+		    x, y, width, height, GL_BGRA, GL_UNSIGNED_BYTE, imageBufferSize - offset, imageBuffer + offset
+		);
+	    } else {
+		glReadPixels (x, y, width, height, GL_BGRA, GL_UNSIGNED_BYTE, imageBuffer + offset);
+	    }
 	}
+
+	glPixelStorei (GL_PACK_ROW_LENGTH, previousPackRowLength);
+	glBindFramebuffer (GL_FRAMEBUFFER, 0);
 
 	GLenum error = glGetError ();
 
 	if (error != GL_NO_ERROR) {
-	    sLog.exception ("OpenGL error when reading texture ", error);
+	    sLog.exception (
+		"OpenGL error when reading the X11 composition framebuffer ", error, " (", fullWidth, "x",
+		fullHeight, ")"
+	    );
 	}
     }
 
@@ -145,8 +247,10 @@ void GLFWOpenGLDriver::dispatchEventQueue () {
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
     // update the output with the given image
     this->m_output->updateRender ();
-    // do buffer swapping first
-    glfwSwapBuffers (this->m_window);
+    // X11 backgrounds are presented with XPutImage; their tiny hidden GLX
+    // drawable never needs to be swapped.
+    if (!useX11Readback)
+	glfwSwapBuffers (this->m_window);
     // poll for events
     glfwPollEvents ();
     // increase frame counter

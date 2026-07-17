@@ -232,6 +232,12 @@ if(X11_SUPPORT_FOUND)
     set(X11_LIBRARIES
         ${X11_LIBRARIES}
         ${X11_Xrandr_LIB})
+
+    if(X11_Xfixes_FOUND)
+        set(X11_LIBRARIES
+            ${X11_LIBRARIES}
+            ${X11_Xfixes_LIB})
+    endif()
     set(X11_SOURCES
         src/WallpaperEngine/Render/Drivers/Output/X11Output.cpp
         src/WallpaperEngine/Render/Drivers/Output/X11Output.h
@@ -637,6 +643,10 @@ endif()
 
 if(X11_SUPPORT_FOUND)
     target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_X11)
+
+    if(X11_Xfixes_FOUND)
+        target_compile_definitions(linux-wallpaperengine-lib PUBLIC HAVE_XFIXES=1)
+    endif()
 
     # make sure some of the X11 functions we'll use are available
     check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
