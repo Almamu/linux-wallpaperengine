@@ -22,6 +22,13 @@ void BrowserApp::OnBeforeCommandLineProcessing (const CefString& process_type, C
 	"--disable-features",
 	"IsolateOrigins,HardwareMediaKeyHandling,WebContentsOcclusion,RendererCodeIntegrityEnabled,site-per-process"
     );
+    // Pair with settings.no_sandbox in WebBrowserContext — required when
+    // chrome-sandbox is not setuid root (typical non-packaged local build).
+    command_line->AppendSwitch ("--no-sandbox");
+    command_line->AppendSwitch ("--disable-gpu-sandbox");
+    // Avoid a separate GPU process (often fails on Wayland/Hyprland with CEF
+    // windowless rendering — error_code=1002 "GPU process isn't usable").
+    command_line->AppendSwitch ("--in-process-gpu");
     command_line->AppendSwitch ("--disable-gpu-shader-disk-cache");
     command_line->AppendSwitch ("--disable-site-isolation-trials");
     command_line->AppendSwitch ("--disable-web-security");
@@ -47,8 +54,18 @@ if (process_type.empty()) {
 }
 
 void BrowserApp::OnBeforeChildProcessLaunch (CefRefPtr<CefCommandLine> command_line) {
-    // add back any parameters we had before so the new process can load up everything needed
-    for (int i = 1; i < this->getApplication ().getContext ().getArgc (); i++) {
-	command_line->AppendArgument (this->getApplication ().getContext ().getArgv ()[i]);
+    // Do NOT re-append the full wallpaper-engine argv. That used to force every
+    // CEF child to re-enter ApplicationContext/WallpaperApplication (and often
+    // crash). Instead pass only the custom scheme IDs so EarlyCefSubprocessApp
+    // in main.cpp can register matching wp{id} schemes.
+    std::string schemeIds;
+    for (const auto& workshopId : this->getHandlerFactories () | std::views::keys) {
+	if (!schemeIds.empty ()) {
+	    schemeIds.push_back (',');
+	}
+	schemeIds += workshopId;
+    }
+    if (!schemeIds.empty ()) {
+	command_line->AppendSwitchWithValue ("wp-schemes", schemeIds);
     }
 }
