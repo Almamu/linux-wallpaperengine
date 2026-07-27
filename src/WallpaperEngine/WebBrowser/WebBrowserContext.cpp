@@ -83,9 +83,11 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
     //  CefString(&settings.browser_subprocess_path) = "path/to/client"
     cef_string_utf8_to_utf16 (cache_path.c_str (), cache_path.length (), &settings.root_cache_path);
     settings.windowless_rendering_enabled = true;
-#if defined(CEF_NO_SANDBOX)
+    // Local builds rarely have chrome-sandbox setuid-root. Without no_sandbox,
+    // CEF dies immediately with "close symbol missing" + SIGTRAP, so every web
+    // wallpaper (including SpaceX Starlink) fails before first paint.
+    // Prefer settings.no_sandbox over relying on CEF_NO_SANDBOX / setuid setup.
     settings.no_sandbox = true;
-#endif
 
     // spawns two new processess
 
