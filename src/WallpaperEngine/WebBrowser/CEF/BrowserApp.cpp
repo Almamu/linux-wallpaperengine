@@ -22,10 +22,11 @@ void BrowserApp::OnBeforeCommandLineProcessing (const CefString& process_type, C
 	"--disable-features",
 	"IsolateOrigins,HardwareMediaKeyHandling,WebContentsOcclusion,RendererCodeIntegrityEnabled,site-per-process"
     );
-    // Pair with settings.no_sandbox in WebBrowserContext — required when
-    // chrome-sandbox is not setuid root (typical non-packaged local build).
+    // Pair with settings.no_sandbox in WebBrowserContext (CMake CEF_NO_SANDBOX).
+#if defined(CEF_NO_SANDBOX)
     command_line->AppendSwitch ("--no-sandbox");
     command_line->AppendSwitch ("--disable-gpu-sandbox");
+#endif
     // Avoid a separate GPU process (often fails on Wayland/Hyprland with CEF
     // windowless rendering — error_code=1002 "GPU process isn't usable").
     command_line->AppendSwitch ("--in-process-gpu");
