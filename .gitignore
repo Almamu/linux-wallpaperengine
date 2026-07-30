@@ -11,3 +11,4 @@ packaging/archlinux/*
 *-protocol.c
 *-protocol.h
 AGENTS.md
+age.key

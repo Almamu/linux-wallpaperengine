@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: \.sops\.[a-z]{2,4}$
+    age: age1k9eyeguudqql3a3v8dk6hpmuf40ej39tg9duy4rt5xd92s2vfpxstx8xvv
