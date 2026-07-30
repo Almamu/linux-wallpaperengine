@@ -71,11 +71,15 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 	unsigned int num_children;
 
 	if (!XQueryTree (this->m_display, ourWindow, &root, &parentWindow, &schildren, &num_children)) {
+	    XFree (children);
 	    return false;
 	}
 
+	// Free ourWindow's child list — we only queried it to learn parentWindow.
+	// This previously freed `children` (the outer list) by mistake, leaking
+	// schildren every frame and prematurely freeing the list still used below.
 	if (schildren) {
-	    XFree (children);
+	    XFree (schildren);
 	}
     }
 
