@@ -71,11 +71,28 @@ void AlbumTexture::copyContents (const TextureProvider& other) const noexcept {
     // RGBA8 texture: 4 bytes per pixel
     size_t bufferSize = other.getTextureWidth (0) * other.getTextureHeight (0) * 4;
 
-    uint8_t* buffer = new uint8_t[bufferSize];
+    uint8_t* buffer = new uint8_t[bufferSize] ();
 
-    // Read the source texture
-    glBindTexture (GL_TEXTURE_2D, other.getTextureID (0));
-    glGetnTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufferSize, buffer);
+    // Read the source texture back through a temporary FBO. glReadPixels is GL 1.0
+    // and works in this engine's 3.3 core context; glGetnTexImage is GL 4.5, so GLEW
+    // leaves its pointer NULL under a 3.3 context and calling it segfaults (jump to
+    // 0x0) — hit the moment MPRIS album art arrives (e.g. a browser video starts).
+    GLint previousFBO = 0;
+    glGetIntegerv (GL_FRAMEBUFFER_BINDING, &previousFBO);
+
+    GLuint readFBO = 0;
+    glGenFramebuffers (1, &readFBO);
+    glBindFramebuffer (GL_FRAMEBUFFER, readFBO);
+    glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, other.getTextureID (0), 0);
+
+    if (glCheckFramebufferStatus (GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        glReadPixels (
+            0, 0, other.getTextureWidth (0), other.getTextureHeight (0), GL_RGBA, GL_UNSIGNED_BYTE, buffer
+        );
+    }
+
+    glBindFramebuffer (GL_FRAMEBUFFER, previousFBO);
+    glDeleteFramebuffers (1, &readFBO);
 
     // Upload into another texture
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
