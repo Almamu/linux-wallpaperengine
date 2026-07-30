@@ -116,6 +116,13 @@ jobs:
         # Build your program with the given configuration
         run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} --verbose
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-wallpaperengine-${{matrix.build_type}}
+          path: ${{github.workspace}}/build/output
+          if-no-files-found: error
+
       - name: Perform CodeQL Analysis
         if: ${{ matrix.build_type == 'Debug' }}
         uses: github/codeql-action/analyze@v3
