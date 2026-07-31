@@ -165,59 +165,51 @@ void WaylandOutputViewport::setupLS () {
 
     zwlr_layer_shell_v1_layer wlrLayer;
     switch (m_driver->getApp ().getContext ().settings.render.wayland.layer) {
-	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BACKGROUND:
-	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
-	    break;
-	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_TOP:
-	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
-	    break;
-	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_OVERLAY:
-	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
-	    break;
-	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
-	default:
-	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
-	    break;
+        case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BACKGROUND:
+            wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+            break;
+        case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_TOP:
+            wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+            break;
+        case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_OVERLAY:
+            wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+            break;
+        case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
+        default:
+            wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+            break;
     }
 
     layerSurface = zwlr_layer_shell_v1_get_layer_surface (
-	m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer, "linux-wallpaperengine"
+        m_driver->getWaylandContext ()->layerShell, surface, output, wlrLayer, "linux-wallpaperengine"
     );
 
     if (!layerSurface) {
-	sLog.exception ("Failed to get a layer surface");
+        sLog.exception ("Failed to get a layer surface");
     }
 
+    // Remove opaque region to avoid covering popup menus (e.g. in labwc)
+    // The wallpaper should be transparent for compositor rendering above it.
+    // Only set empty input region to let mouse events pass through.
     wl_region* region = wl_compositor_create_region (m_driver->getWaylandContext ()->compositor);
-    if (m_driver->getApp ().getContext ().settings.mouse.enabled) {
-	wl_region_add (region, 0, 0, INT32_MAX, INT32_MAX);
-    }
-
-    // Mark the surface as fully opaque so the compositor can skip rendering
-    // anything below it and avoid alpha-blending. Wallpapers are by definition
-    // the bottommost visible content, so this is always a win.
-    wl_region* opaqueRegion = wl_compositor_create_region (m_driver->getWaylandContext ()->compositor);
-    wl_region_add (opaqueRegion, 0, 0, INT32_MAX, INT32_MAX);
-    wl_surface_set_opaque_region (surface, opaqueRegion);
-    wl_region_destroy (opaqueRegion);
+    wl_surface_set_input_region (surface, region);
+    wl_region_destroy (region);
 
     zwlr_layer_surface_v1_set_size (layerSurface, 0, 0);
     zwlr_layer_surface_v1_set_anchor (
-	layerSurface,
-	ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-	    | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+        layerSurface,
+        ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+            | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
     );
     zwlr_layer_surface_v1_set_keyboard_interactivity (layerSurface, false);
     zwlr_layer_surface_v1_add_listener (layerSurface, &layerSurfaceListener, this);
     zwlr_layer_surface_v1_set_exclusive_zone (layerSurface, -1);
-    wl_surface_set_input_region (surface, region);
-    wl_region_destroy (region);
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
 
     eglWindow = wl_egl_window_create (surface, size.x * scale, size.y * scale);
     eglSurface = m_driver->getEGLContext ()->eglCreatePlatformWindowSurfaceEXT (
-	m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr
+        m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr
     );
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
@@ -225,24 +217,24 @@ void WaylandOutputViewport::setupLS () {
 
     static const auto XCURSORSIZE = getenv ("XCURSOR_SIZE") ? std::stoi (getenv ("XCURSOR_SIZE")) : 24;
     const auto PRCURSORTHEME
-	= wl_cursor_theme_load (getenv ("XCURSOR_THEME"), XCURSORSIZE * scale, m_driver->getWaylandContext ()->shm);
+        = wl_cursor_theme_load (getenv ("XCURSOR_THEME"), XCURSORSIZE * scale, m_driver->getWaylandContext ()->shm);
 
     if (!PRCURSORTHEME) {
-	sLog.exception ("Failed to get a cursor theme");
+        sLog.exception ("Failed to get a cursor theme");
     }
 
     pointer = wl_cursor_theme_get_cursor (PRCURSORTHEME, "left_ptr");
     cursorSurface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
 
     if (!cursorSurface) {
-	sLog.exception ("Failed to get a cursor surface");
+        sLog.exception ("Failed to get a cursor surface");
     }
 
     if (eglMakeCurrent (
-	    m_driver->getEGLContext ()->display, eglSurface, eglSurface, m_driver->getEGLContext ()->context
-	)
-	== EGL_FALSE) {
-	sLog.exception ("Failed to make egl current");
+            m_driver->getEGLContext ()->display, eglSurface, eglSurface, m_driver->getEGLContext ()->context
+        )
+        == EGL_FALSE) {
+        sLog.exception ("Failed to make egl current");
     }
 
     this->m_driver->getOutput ().reset ();
@@ -252,11 +244,11 @@ WaylandOpenGLDriver* WaylandOutputViewport::getDriver () const { return this->m_
 
 void WaylandOutputViewport::makeCurrent () {
     const EGLBoolean result = eglMakeCurrent (
-	m_driver->getEGLContext ()->display, eglSurface, eglSurface, m_driver->getEGLContext ()->context
+        m_driver->getEGLContext ()->display, eglSurface, eglSurface, m_driver->getEGLContext ()->context
     );
 
     if (result == EGL_FALSE) {
-	sLog.error ("Couldn't make egl current");
+        sLog.error ("Couldn't make egl current");
     }
 }
 
@@ -274,7 +266,7 @@ void WaylandOutputViewport::swapOutput () {
 
 void WaylandOutputViewport::resize () {
     if (!this->eglWindow) {
-	return;
+        return;
     }
 
     wl_egl_window_resize (this->eglWindow, this->size.x * this->scale, this->size.y * this->scale, 0, 0);
