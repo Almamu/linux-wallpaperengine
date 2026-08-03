@@ -1,0 +1,23 @@
+#pragma once
+
+#include "../JSON.h"
+#include "../Model/Material.h"
+#include "../Model/Types.h"
+
+namespace WallpaperEngine::Data::Parsers {
+using JSON = WallpaperEngine::Data::JSON::JSON;
+using namespace WallpaperEngine::Data::Model;
+
+class MaterialParser {
+public:
+    static MaterialUniquePtr load (const Project& project, const std::string& filename);
+    static MaterialUniquePtr parse (const JSON& it, const std::string& filename, const Project& project);
+    static std::vector<MaterialPassUniquePtr> parsePasses (const JSON& it, const Project& project);
+    static MaterialPassUniquePtr parsePass (const JSON& it, const Project& project);
+    static std::map<std::string, int> parseCombos (const JSON& it);
+    static BlendingMode parseBlendMode (const std::string& mode);
+    static CullingMode parseCullMode (const std::string& mode);
+    static DepthtestMode parseDepthtestMode (const std::string& mode);
+    static DepthwriteMode parseDepthwriteMode (const std::string& mode);
+};
+} // namespace WallpaperEngine::Data::Parsers
