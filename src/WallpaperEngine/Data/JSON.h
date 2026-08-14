@@ -45,7 +45,16 @@ public:
     }
     template <int length, typename type, glm::qualifier qualifier>
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
-	return VectorBuilder::parse<length, type, qualifier> (this->base ().get<std::string> ());
+	const auto& base = this->base ();
+
+	// Wallpaper Engine writes vectors as "x y z" strings, but it is not consistent about it:
+	// the same field can come through as a bare scalar (padding: 32 vs padding: "32.0 32.0"),
+	// which means the same value on every component. Accept both instead of throwing.
+	if (base.is_number ()) {
+	    return glm::vec<length, type, qualifier> (base.get<type> ());
+	}
+
+	return VectorBuilder::parse<length, type, qualifier> (base.get<std::string> ());
     }
     [[nodiscard]] Model::Color get () const { return ColorBuilder::parse (this->base ().get<std::string> ()); }
     [[nodiscard]] base_type require (const std::string& key, const std::string& message) const {
