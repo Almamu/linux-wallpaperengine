@@ -45,7 +45,7 @@ public:
     }
     template <int length, typename type, glm::qualifier qualifier>
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
-	const auto base = this->base ();
+	const auto& base = this->base ();
 
 	// Wallpaper Engine writes vectors as "x y z" strings, but it is not consistent about it:
 	// the same field can come through as a bare scalar (padding: 32 vs padding: "32.0 32.0"),
