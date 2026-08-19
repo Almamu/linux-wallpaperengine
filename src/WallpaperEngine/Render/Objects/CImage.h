@@ -61,19 +61,6 @@ protected:
 
     void updateScreenSpacePosition ();
 
-    struct ResolvedTransform {
-	glm::vec3 origin;
-	glm::vec3 scale;
-	float angle;
-    };
-
-    [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
-
-    /**
-     * Computes the object's own transform (origin/scale/angle) without walking the
-     * parent chain. Used as the per-node step of resolveTransform.
-     */
-    [[nodiscard]] static ResolvedTransform localTransform (const WallpaperEngine::Data::Model::Object& object);
 
 private:
     bool loadPuppetMesh (const glm::vec2& size);

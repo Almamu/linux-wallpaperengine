@@ -202,14 +202,12 @@ bool CText::loadSystemFont () {
 }
 
 unsigned int CText::computeEffectivePixelSize () const {
-    // WE text objects often come with scale ~0.09 that, combined with a modest
-    // pointsize, would rasterize glyphs to ~2px on screen (invisible). Rasterize
-    // at higher resolution so that after the model scale is applied in render()
-    // the on-screen size matches the intended pointsize.
-    const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
-    const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
-    const float compensate = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
-    return std::max<unsigned int> (1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
+    const float pointSize = std::max (1.0f, m_text.pointSize->value->getFloat ());
+    const float scene_h = getScene ().getCamera ().getHeight ();
+    // WE 2D scenes use 720p as base reference, with 1pt = 96/72 (1.3333) DirectWrite DIPs.
+    const float resolutionScale = scene_h > 0.0f ? (scene_h / 720.0f) : 1.0f;
+    const float effectiveSize = pointSize * (96.0f / 72.0f) * resolutionScale;
+    return std::max<unsigned int> (1u, static_cast<unsigned int> (std::round (effectiveSize)));
 }
 
 void CText::initScriptLayer () {
@@ -404,25 +402,22 @@ void CText::render () {
 
     const glm::vec4 color = m_text.color->value->getVec4 ();
     const float alpha = m_text.alpha->value->getFloat ();
-    const glm::vec3 scale = m_text.scale->value->getVec3 ();
-    const glm::vec3 origin = m_text.origin->value->getVec3 ();
+    const auto transform = this->resolveTransform (m_text);
 
     // WE uses a Y-down coordinate system (origin at top-left, y increases downward).
-    // The final FBO is presented to screen with vflip=true on Wayland/GLFW, which maps
-    // GL y- to screen top and GL y+ to screen bottom. This effectively inverts Y again,
-    // so we need: gl_y = origin.y - scene_h/2  (not the CImage-style scene_h/2 - origin.y).
-    // CImage pre-compensates for X11 (no vflip) and gets corrected by the Wayland vflip.
-    // CText renders with direct vflip-aware coordinates.
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
     const glm::vec3 gl_origin = {
-	origin.x - scene_w * 0.5f,
-	origin.y - scene_h * 0.5f,
-	origin.z,
+	transform.origin.x - scene_w * 0.5f,
+	scene_h * 0.5f - transform.origin.y,
+	transform.origin.z,
     };
 
     glm::mat4 model = glm::translate (glm::mat4 (1.0f), gl_origin);
-    model = glm::scale (model, scale);
+    if (transform.angle != 0.0f) {
+	model = glm::rotate (model, -transform.angle, glm::vec3 (0.0f, 0.0f, 1.0f));
+    }
+    model = glm::scale (model, transform.scale);
 
     const glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
 
