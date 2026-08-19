@@ -77,7 +77,14 @@ CObject::ResolvedTransform CObject::resolveTransform (const Object& object) cons
 	if (parentObject == nullptr) {
 	    break;
 	}
-	current = &parentObject->getObject ();
+	const Object* parent = &parentObject->getObject ();
+	for (int i = 0; i < count; ++i) {
+	    if (chain[i] == parent) {
+		sLog.error ("Parent transform cycle at object id=", parent->id);
+		return localTransform (object);
+	    }
+	}
+	current = parent;
 	chain[count++] = current;
     }
 
