@@ -61,6 +61,7 @@ private:
     ObjectUniquePtr m_bloomObjectData;
     CObject* m_bloomObject = nullptr;
     std::map<int, CObject*> m_objects = {};
+    std::vector<int> m_inProgressObjectIds = {};
     std::vector<CObject*> m_objectsByRenderOrder = {};
     std::vector<DynamicValue*> m_scriptedValues = {};
     glm::vec2 m_mousePosition = {};

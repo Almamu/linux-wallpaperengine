@@ -1,7 +1,5 @@
 #include "WallpaperEngine/Render/CObject.h"
-#include "WallpaperEngine/Data/Model/DynamicValue.h"
-#include "WallpaperEngine/Data/Model/Object.h"
-#include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Testing/Harnesses/RenderHarness.h"
 
 // CEF headers (included indirectly via CObject.h -> CScene.h -> CWallpaper.h) define
 // a CHECK(condition) logging macro that conflicts with Catch2's CHECK(...) test assertion macro.
@@ -13,7 +11,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <cmath>
+// #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <map>
@@ -22,10 +20,27 @@
 using namespace WallpaperEngine;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Render;
+using namespace WallpaperEngine::Render::Wallpapers;
 using Catch::Approx;
 
 namespace {
 UserSettingUniquePtr makeVec3Setting (const glm::vec3& val) {
+    return std::make_unique<UserSetting> (UserSetting {
+	.value = std::make_unique<DynamicValue> (val),
+	.property = nullptr,
+	.condition = std::nullopt,
+    });
+}
+
+UserSettingUniquePtr makeFloatSetting (float val) {
+    return std::make_unique<UserSetting> (UserSetting {
+	.value = std::make_unique<DynamicValue> (val),
+	.property = nullptr,
+	.condition = std::nullopt,
+    });
+}
+
+UserSettingUniquePtr makeBoolSetting (bool val) {
     return std::make_unique<UserSetting> (UserSetting {
 	.value = std::make_unique<DynamicValue> (val),
 	.property = nullptr,
@@ -123,8 +138,8 @@ TEST_CASE ("Transform Resolution: Nested non-uniform scale plus rotation full ma
     };
 
     // Independently constructed expected affine matrix from raw fixture inputs
-    const glm::mat4 expectedParent = glm::translate (glm::mat4 (1.0f), parentOrigin)
-	* glm::scale (glm::mat4 (1.0f), parentScale);
+    const glm::mat4 expectedParent
+	= glm::translate (glm::mat4 (1.0f), parentOrigin) * glm::scale (glm::mat4 (1.0f), parentScale);
     const glm::mat4 expectedChild = glm::translate (glm::mat4 (1.0f), childOrigin)
 	* glm::rotate (glm::mat4 (1.0f), childAngles.z, glm::vec3 (0.0f, 0.0f, 1.0f))
 	* glm::scale (glm::mat4 (1.0f), childScale);
@@ -159,8 +174,8 @@ TEST_CASE ("Transform Resolution: Real Image model path hierarchy matrix resolut
 	return it != objects.end () ? it->second : nullptr;
     };
 
-    const glm::mat4 expectedParent = glm::translate (glm::mat4 (1.0f), parentOrigin)
-	* glm::scale (glm::mat4 (1.0f), parentScale);
+    const glm::mat4 expectedParent
+	= glm::translate (glm::mat4 (1.0f), parentOrigin) * glm::scale (glm::mat4 (1.0f), parentScale);
     const glm::mat4 expectedChild = glm::translate (glm::mat4 (1.0f), childOrigin)
 	* glm::rotate (glm::mat4 (1.0f), childAngles.z, glm::vec3 (0.0f, 0.0f, 1.0f))
 	* glm::scale (glm::mat4 (1.0f), childScale);
@@ -193,8 +208,8 @@ TEST_CASE ("Transform Resolution: Real Text model path hierarchy matrix resoluti
 	return it != objects.end () ? it->second : nullptr;
     };
 
-    const glm::mat4 expectedParent = glm::translate (glm::mat4 (1.0f), parentOrigin)
-	* glm::scale (glm::mat4 (1.0f), parentScale);
+    const glm::mat4 expectedParent
+	= glm::translate (glm::mat4 (1.0f), parentOrigin) * glm::scale (glm::mat4 (1.0f), parentScale);
     const glm::mat4 expectedChild = glm::translate (glm::mat4 (1.0f), childOrigin)
 	* glm::rotate (glm::mat4 (1.0f), childAngles.z, glm::vec3 (0.0f, 0.0f, 1.0f))
 	* glm::scale (glm::mat4 (1.0f), childScale);
@@ -224,4 +239,58 @@ TEST_CASE ("Transform Resolution: Safe fallback on cyclic parent dependencies") 
     const glm::mat4 resolved = CObject::resolveModelMatrix (objA, lookup);
     CHECK (resolved[3][0] == Approx (10.0f));
     CHECK (resolved[3][1] == Approx (20.0f));
+}
+
+TEST_CASE ("Scene Construction: Cyclic parent dependency in CScene object creation terminates safely") {
+    auto harness = std::unique_ptr<WallpaperEngine::Testing::Harnesses::RenderHarness> (
+	WallpaperEngine::Testing::Harnesses::RenderHarness::build ("")
+    );
+
+    Project project;
+    project.assetLocator = std::make_unique<AssetLocator> (
+	std::make_unique<WallpaperEngine::FileSystem::Container> ()
+    );
+    WallpaperData wpData { .filename = "scene.json", .project = project };
+    SceneData sceneData {};
+    sceneData.camera.configuration.center = { 0.0f, 0.0f, 0.0f };
+    sceneData.camera.configuration.eye = { 0.0f, 0.0f, 1.0f };
+    sceneData.camera.configuration.up = { 0.0f, 1.0f, 0.0f };
+    sceneData.camera.projection.width = 1920;
+    sceneData.camera.projection.height = 1080;
+    sceneData.camera.projection.isAuto = false;
+    sceneData.camera.projection.fov = makeFloatSetting (45.0f);
+    sceneData.camera.projection.nearz = makeFloatSetting (0.1f);
+    sceneData.camera.projection.farz = makeFloatSetting (1000.0f);
+    sceneData.camera.bloom.enabled = makeBoolSetting (false);
+    sceneData.camera.bloom.strength = makeFloatSetting (1.0f);
+    sceneData.camera.bloom.threshold = makeFloatSetting (1.0f);
+    sceneData.camera.shake.enabled = makeBoolSetting (false);
+    sceneData.colors.clear = makeVec3Setting ({ 0.0f, 0.0f, 0.0f });
+    sceneData.colors.ambient = makeVec3Setting ({ 1.0f, 1.0f, 1.0f });
+    sceneData.colors.skylight = makeVec3Setting ({ 1.0f, 1.0f, 1.0f });
+
+    // Cyclic parent references: Object 1 (parent 2) and Object 2 (parent 1)
+    sceneData.objects.push_back (
+	std::make_unique<Object> (
+	    makeObjectData (1, { 10.0f, 20.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 2)
+	)
+    );
+    sceneData.objects.push_back (
+	std::make_unique<Object> (
+	    makeObjectData (2, { 30.0f, 40.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 1)
+	)
+    );
+
+    const Scene sceneModel (std::move (wpData), std::move (sceneData));
+
+    // Invokes the real public CScene constructor and executes the real createObject production path
+    CScene cscene (
+    sceneModel, harness->getRenderContext (), harness->getAudioContext (),
+    WallpaperEngine::Render::WallpaperState::TextureUVsScaling::DefaultUVs, 0
+    );
+
+    // Assert that real scene construction returned normally and both objects were safely instantiated
+    CHECK (cscene.getObject (1) != nullptr);
+    CHECK (cscene.getObject (2) != nullptr);
+    CHECK (cscene.getObjectsByRenderOrder ().size () == 2);
 }

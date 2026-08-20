@@ -189,6 +189,10 @@ void WallpaperApplication::loadBackgrounds () {
 	    path = this->m_context.settings.general.defaultPlaylist->items.front ();
 	}
 
+	if (path.empty ()) {
+	    return;
+	}
+
 	this->m_backgrounds["default"] = this->loadBackground (path);
 	return;
     }

@@ -11,6 +11,7 @@
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
 
+#include <algorithm>
 #include <ranges>
 
 extern float g_Time;
@@ -21,6 +22,18 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Render::Wallpapers;
+
+namespace {
+struct InProgressScopeGuard {
+    std::vector<int>& ids;
+    explicit InProgressScopeGuard (std::vector<int>& list, int id) : ids (list) {
+	ids.push_back (id);
+    }
+    ~InProgressScopeGuard () {
+	ids.pop_back ();
+    }
+};
+} // namespace
 
 CScene::CScene (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
@@ -185,6 +198,17 @@ Render::CObject* CScene::createObject (const Object& object) {
     if (const auto current = this->m_objects.find (object.id); current != this->m_objects.end ()) {
 	return current->second;
     }
+
+    if (std::find (this->m_inProgressObjectIds.begin (), this->m_inProgressObjectIds.end (), object.id)
+	!= this->m_inProgressObjectIds.end ()) {
+	sLog.error (
+	    "Cyclic dependency or parent reference detected at object id=", object.id,
+	    "; breaking construction recursion."
+	);
+	return nullptr;
+    }
+
+    InProgressScopeGuard guard (this->m_inProgressObjectIds, object.id);
 
     // check dependencies too!
     for (const auto& cur : object.dependencies) {
