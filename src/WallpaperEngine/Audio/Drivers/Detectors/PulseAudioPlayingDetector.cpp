@@ -30,7 +30,9 @@ void defaultSinkInfoCallback (pa_context* context, const pa_server_info* info, v
 
     pa_operation* op = pa_context_get_sink_input_info_list (context, sinkInputInfoCallback, userdata);
 
-    pa_operation_unref (op);
+    if (op != nullptr) {
+	pa_operation_unref (op);
+    }
 }
 
 PulseAudioPlayingDetector::PulseAudioPlayingDetector (
@@ -73,6 +75,10 @@ void PulseAudioPlayingDetector::update () {
 
     // start discovery of sinks
     pa_operation* op = pa_context_get_server_info (this->m_context, defaultSinkInfoCallback, this);
+
+    if (op == nullptr) {
+	return;
+    }
 
     // wait until all the operations are done
     while (pa_operation_get_state (op) == PA_OPERATION_RUNNING) {
