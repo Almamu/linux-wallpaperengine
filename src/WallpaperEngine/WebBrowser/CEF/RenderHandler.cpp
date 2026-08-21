@@ -24,4 +24,4 @@ int RenderHandler::getWidth () const { return this->m_webdata->getWidth (); }
 
 int RenderHandler::getHeight () const { return this->m_webdata->getHeight (); }
 
-GLuint RenderHandler::texture () const { return this->m_webdata->getWallpaperFramebuffer (); }
+GLuint RenderHandler::texture () const { return this->m_webdata->getWallpaperTexture (); }
