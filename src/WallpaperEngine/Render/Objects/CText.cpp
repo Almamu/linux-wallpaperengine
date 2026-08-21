@@ -402,22 +402,17 @@ void CText::render () {
 
     const glm::vec4 color = m_text.color->value->getVec4 ();
     const float alpha = m_text.alpha->value->getFloat ();
-    const auto transform = this->resolveTransform (m_text);
+    const glm::mat4 world = this->resolveModelMatrix (m_text);
 
     // WE uses a Y-down coordinate system (origin at top-left, y increases downward).
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
-    const glm::vec3 gl_origin = {
-	transform.origin.x - scene_w * 0.5f,
-	scene_h * 0.5f - transform.origin.y,
-	transform.origin.z,
-    };
-
-    glm::mat4 model = glm::translate (glm::mat4 (1.0f), gl_origin);
-    if (transform.angle != 0.0f) {
-	model = glm::rotate (model, -transform.angle, glm::vec3 (0.0f, 0.0f, 1.0f));
-    }
-    model = glm::scale (model, transform.scale);
+    const glm::mat4 C = glm::scale (
+	glm::translate (glm::mat4 (1.0f), glm::vec3 (-scene_w * 0.5f, scene_h * 0.5f, 0.0f)),
+	glm::vec3 (1.0f, -1.0f, 1.0f)
+    );
+    const glm::mat4 F = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
+    const glm::mat4 model = C * world * F;
 
     const glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
 

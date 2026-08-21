@@ -123,10 +123,14 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     auto scene_width = static_cast<float> (scene.getWidth ());
     auto scene_height = static_cast<float> (scene.getHeight ());
 
-    const auto transform = this->resolveTransform (this->getImage ());
-    glm::vec3 origin = transform.origin;
+    const auto modelMat = this->resolveModelMatrix (this->getImage ());
+    glm::vec3 origin = glm::vec3 (modelMat[3]);
     glm::vec2 size = this->getSize ();
-    glm::vec3 scale = transform.scale;
+    glm::vec3 scale = {
+	glm::length (glm::vec3 (modelMat[0])),
+	glm::length (glm::vec3 (modelMat[1])),
+	glm::length (glm::vec3 (modelMat[2])),
+    };
 
     this->detectTexture ();
 
@@ -1009,12 +1013,16 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
 }
 
-CImage::ResolvedTransform CImage::updateGeometryBuffers () {
+glm::mat4 CImage::updateGeometryBuffers () {
     auto sceneWidth = static_cast<float> (this->getScene ().getWidth ());
     auto sceneHeight = static_cast<float> (this->getScene ().getHeight ());
-    const auto transform = this->resolveTransform (this->getImage ());
-    glm::vec3 origin = transform.origin;
-    const glm::vec3 scale = transform.scale;
+    const auto world = this->resolveModelMatrix (this->getImage ());
+    glm::vec3 origin = glm::vec3 (world[3]);
+    const glm::vec3 scale = {
+	glm::length (glm::vec3 (world[0])),
+	glm::length (glm::vec3 (world[1])),
+	glm::length (glm::vec3 (world[2])),
+    };
     const glm::vec2 size = this->resolveGeometrySize (sceneWidth, sceneHeight, origin);
     const glm::vec2 previousSize = this->m_size;
     this->m_size = size;
@@ -1024,20 +1032,28 @@ CImage::ResolvedTransform CImage::updateGeometryBuffers () {
 
     this->updateScenePosition (origin, size, scale, sceneWidth, sceneHeight);
     this->uploadGeometryBuffers (size);
-    return transform;
+    return world;
 }
 
 void CImage::updateScreenSpacePosition () {
-    const ResolvedTransform transform = this->updateGeometryBuffers ();
+    const glm::mat4 world = this->updateGeometryBuffers ();
 
-    // Build rotation from angles (already in radians from scene.json — see CParticle.cpp:2119)
-    // Negate X and Z rotations to account for Y-flipped coordinate system (CParticle.cpp:2120)
-    const float angle = transform.angle;
+    const glm::vec3 scale = {
+	glm::length (glm::vec3 (world[0])),
+	glm::length (glm::vec3 (world[1])),
+	glm::length (glm::vec3 (world[2])),
+    };
     glm::mat4 rotModel = glm::mat4 (1.0f);
-    if (angle != 0.0f) {
-	rotModel = glm::translate (rotModel, this->m_sceneCenter);
-	rotModel = glm::rotate (rotModel, -angle, glm::vec3 (0.0f, 0.0f, 1.0f));
-	rotModel = glm::translate (rotModel, -this->m_sceneCenter);
+    if (scale.x > 1e-6f && scale.y > 1e-6f) {
+	const float m00 = world[0][0] / scale.x;
+	const float m01 = world[0][1] / scale.x;
+	const float m10 = world[1][0] / scale.y;
+	const float m11 = world[1][1] / scale.y;
+	glm::mat4 affine2D = glm::mat4 (1.0f);
+	affine2D[0] = glm::vec4 (m00, -m01, 0.0f, 0.0f);
+	affine2D[1] = glm::vec4 (-m10, m11, 0.0f, 0.0f);
+	rotModel = glm::translate (glm::mat4 (1.0f), this->m_sceneCenter) * affine2D
+	    * glm::translate (glm::mat4 (1.0f), -this->m_sceneCenter);
     }
 
     glm::mat4 mvp

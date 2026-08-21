@@ -66,7 +66,7 @@ private:
     bool loadPuppetMesh (const glm::vec2& size);
     void updatePuppetPositionBuffer (const glm::vec2& size);
     void setupPuppetGeometryCallback (Effects::CPass* pass) const;
-    ResolvedTransform updateGeometryBuffers ();
+    glm::mat4 updateGeometryBuffers ();
     [[nodiscard]] glm::vec2 resolveGeometrySize (float sceneWidth, float sceneHeight, glm::vec3& origin) const;
     void updateScenePosition (
 	const glm::vec3& origin, const glm::vec2& size, const glm::vec3& scale, float sceneWidth, float sceneHeight
