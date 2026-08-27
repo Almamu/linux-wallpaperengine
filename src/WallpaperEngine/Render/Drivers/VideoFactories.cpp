@@ -28,7 +28,26 @@ void VideoFactories::registerDriver (
 	map.emplace (xdgSessionType, factory);
 	this->m_driverFactories.emplace (forMode, map);
     } else {
-	cur->second.emplace (xdgSessionType, factory);
+	// insert_or_assign, not emplace: emplace keeps the existing entry, so a
+	// second registration for the same mode and session type was silently
+	// discarded and the first factory stayed live even after its owner died.
+	cur->second.insert_or_assign (xdgSessionType, factory);
+    }
+}
+
+void VideoFactories::unregisterDriver (
+    ApplicationContext::WINDOW_MODE forMode, const std::string& xdgSessionType
+) {
+    const auto cur = this->m_driverFactories.find (forMode);
+
+    if (cur == this->m_driverFactories.end ()) {
+	return;
+    }
+
+    cur->second.erase (xdgSessionType);
+
+    if (cur->second.empty ()) {
+	this->m_driverFactories.erase (cur);
     }
 }
 

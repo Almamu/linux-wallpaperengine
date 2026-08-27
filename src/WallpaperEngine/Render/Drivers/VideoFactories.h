@@ -32,6 +32,18 @@ public:
     );
 
     /**
+     * Removes a previously registered driver factory.
+     *
+     * Factories may capture state owned by the caller. This instance is a static
+     * that is not destroyed until exit, so a caller that dies first must withdraw
+     * its factory or leave a dangling capture behind.
+     *
+     * @param forMode
+     * @param xdgSessionType
+     */
+    void unregisterDriver (ApplicationContext::WINDOW_MODE forMode, const std::string& xdgSessionType);
+
+    /**
      * Adds a new handler for the given XDG_SESSION_TYPE
      *
      * @param xdgSessionType
