@@ -182,6 +182,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--screen-root <screen>` | Set as background for specific screen |
 | `--screen-span <screen-1>,<screen-2>,...` | Stretch a single wallpaper across multiple screens |
 | `--bg <id/path>` | Assign a background to a specific screen (use after `--screen-root`/`--screen-span`) |
+| `--layer <layer>` | Wayland layer-shell layer: `background` (default), `bottom`, `top`, or `overlay` |
 | `--scaling <mode>` | Wallpaper scaling: `stretch`, `fit`, `fill`, or `default` |
 | `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
 | `--assets-dir <path>` | Set custom path for assets |
@@ -303,7 +304,7 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 
 ## 🧪 Wayland & X11 Support
 
-- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`. Uses `xdg-output-unstable-v1` for accurate monitor positioning (required for `--screen-span`).
+- **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`. Desktop backgrounds use the `background` layer by default so desktop icons remain accessible; use `--layer bottom` for compositor compatibility if needed. Uses `xdg-output-unstable-v1` for accurate monitor positioning (required for `--screen-span`).
 - **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
 > ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.

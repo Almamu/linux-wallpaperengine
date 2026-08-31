@@ -217,7 +217,7 @@ public:
                 .scalingMode = WallpaperEngine::Render::WallpaperState::TextureUVsScaling::DefaultUVs,
             },
             .wayland = {
-                .layer = WAYLAND_LAYER_BOTTOM,
+                .layer = WAYLAND_LAYER_BACKGROUND,
             },
         },
         .audio = {

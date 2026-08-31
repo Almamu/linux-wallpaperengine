@@ -175,8 +175,10 @@ void WaylandOutputViewport::setupLS () {
 	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
 	    break;
 	case WallpaperEngine::Application::ApplicationContext::WAYLAND_LAYER_BOTTOM:
-	default:
 	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+	    break;
+	default:
+	    wlrLayer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
 	    break;
     }
 
