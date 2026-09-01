@@ -1,6 +1,9 @@
 #include "SDLAudioDriver.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <algorithm>
+#include <cmath>
+
 #define SDL_AUDIO_BUFFER_SIZE 4096
 #define MAX_AUDIO_FRAME_SIZE 192000
 
@@ -20,14 +23,19 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
     SDL_LockMutex (driver->getStreamMutex ());
 
     for (const auto& buffer : driver->getStreams () | std::views::values) {
-	uint8_t* streamDataPointer = streamData;
-	int streamLength = length;
+		uint8_t* streamDataPointer = streamData;
+		int streamLength = length;
+		const auto playbackGeneration = buffer->stream->getPlaybackGeneration ();
+		if (buffer->playbackGeneration != playbackGeneration) {
+		    buffer->audio_buf_size = 0;
+		    buffer->audio_buf_index = 0;
+		    buffer->playbackGeneration = playbackGeneration;
+		}
 
-	// sound is not initialized or stopped and is not in loop mode
-	// ignore mixing it in
-	if (!buffer->stream->isInitialized ()) {
-	    continue;
-	}
+		// Paused/stopped layers remain registered, but they must not advance or mix.
+		if (!buffer->stream->isInitialized () || !buffer->stream->isPlaying ()) {
+		    continue;
+		}
 
 	// check if queue is empty and signal the read thread
 	if (buffer->stream->isQueueEmpty ()) {
@@ -44,6 +52,12 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 		    // fallback for errors, silence
 		    buffer->audio_buf_size = 1024;
 		    memset (buffer->audio_buf, 0, buffer->audio_buf_size);
+		} else if (audio_size == 0) {
+		    // Playback may have been paused/stopped after entering this callback.
+		    // Do not spin on an empty buffer while holding the stream-list mutex.
+		    buffer->audio_buf_size = 0;
+		    buffer->audio_buf_index = 0;
+		    break;
 		} else {
 		    buffer->audio_buf_size = audio_size;
 		}
@@ -57,11 +71,17 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 		len1 = streamLength;
 	    }
 
-	    // mix the audio
-	    SDL_MixAudioFormat (
-		streamDataPointer, &buffer->audio_buf[buffer->audio_buf_index], driver->getSpec ().format, len1,
-		driver->getApplicationContext ().state.audio.volume
-	    );
+		    // Layer volume is a multiplier on the existing global volume control.
+		    const int volume = std::clamp (
+			static_cast<int> (std::lround (
+			    driver->getApplicationContext ().state.audio.volume * buffer->stream->getVolume ()
+			)),
+			0, SDL_MIX_MAXVOLUME
+		    );
+		    SDL_MixAudioFormat (
+			streamDataPointer, &buffer->audio_buf[buffer->audio_buf_index], driver->getSpec ().format, len1,
+			volume
+		    );
 
 	    streamLength -= len1;
 	    streamDataPointer += len1;
@@ -107,15 +127,22 @@ SDLAudioDriver::SDLAudioDriver (
 }
 
 SDLAudioDriver::~SDLAudioDriver () {
-    if (!this->m_initialized) {
-	return;
-    }
+	if (this->m_initialized && this->m_deviceID != 0) {
+		SDL_CloseAudioDevice (this->m_deviceID);
+	    }
 
-    if (this->m_deviceID != 0) {
-	SDL_CloseAudioDevice (this->m_deviceID);
-    }
+	SDL_LockMutex (this->m_streamListMutex);
+	for (auto* buffer : this->m_streams | std::views::values) {
+		delete buffer;
+	}
+	this->m_streams.clear ();
+	SDL_UnlockMutex (this->m_streamListMutex);
+	SDL_DestroyMutex (this->m_streamListMutex);
+	this->m_streamListMutex = nullptr;
 
-    SDL_QuitSubSystem (SDL_INIT_AUDIO);
+	if (this->m_initialized) {
+		SDL_QuitSubSystem (SDL_INIT_AUDIO);
+	}
 }
 
 int SDLAudioDriver::addStream (AudioStream* stream) {
@@ -130,7 +157,15 @@ int SDLAudioDriver::addStream (AudioStream* stream) {
 
     return newStreamId;
 }
-void SDLAudioDriver::removeStream (int streamId) { this->m_streams.erase (streamId); }
+void SDLAudioDriver::removeStream (int streamId) {
+    SDL_LockMutex (this->m_streamListMutex);
+	const auto stream = this->m_streams.find (streamId);
+	if (stream != this->m_streams.end ()) {
+		delete stream->second;
+		this->m_streams.erase (stream);
+	}
+	SDL_UnlockMutex (this->m_streamListMutex);
+}
 
 const std::map<int, SDLAudioBuffer*>& SDLAudioDriver::getStreams () { return this->m_streams; }
 

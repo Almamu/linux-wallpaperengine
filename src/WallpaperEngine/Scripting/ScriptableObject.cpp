@@ -30,6 +30,21 @@ const std::map<std::string, ScriptableObject::PropertyEntry>& ScriptableObject::
     return this->m_properties;
 }
 
+std::vector<ScriptableObject*> ScriptableObject::getChildren () const {
+    std::vector<ScriptableObject*> children;
+
+    for (auto* object : this->getScene ().getObjectsByRenderOrder ()) {
+		const auto& parent = object->getObject ().parent;
+		if (!parent.has_value () || parent.value () != this->getId () || !object->is<ScriptableObject> ()) {
+		    continue;
+		}
+
+		children.push_back (object->as<ScriptableObject> ());
+    }
+
+    return children;
+}
+
 void ScriptableObject::registerProperty (const std::string& name, DynamicValue& value) {
     auto inserted = this->m_properties.emplace (
 	name, PropertyEntry { .key = name + "_" + std::to_string (this->getId ()), .value = value }

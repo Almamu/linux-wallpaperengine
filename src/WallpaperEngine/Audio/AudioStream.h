@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
 #include <string>
 
 extern "C" {
@@ -15,6 +17,7 @@ extern "C" {
 #include <SDL_thread.h>
 
 #include "WallpaperEngine/Audio/AudioContext.h"
+#include "WallpaperEngine/Audio/AudioPlaybackState.h"
 
 // TODO: FIND A BETTER PLACE TO DO THIS? OLD_API MIGHT EXIST BUT THIS DEFINE MIGHT NOT BE DEFINED...
 #ifndef FF_API_FIFO_OLD_API
@@ -52,7 +55,7 @@ public:
      *
      * @return
      */
-    void dequeuePacket ();
+    bool dequeuePacket ();
 
     /**
      * @return The audio context in use for this audio stream
@@ -83,6 +86,21 @@ public:
      * @return If the stream is to be repeated at the end or not
      */
     [[nodiscard]] bool isRepeat () const;
+    /** Resume playback from the current position, or from the beginning after stopPlayback(). */
+    void play ();
+    /** Pause playback while preserving the current decoder and SDL buffer position. */
+    void pause ();
+    /** Stop playback and request a rewind to the beginning without destroying the decoder. */
+    void stopPlayback ();
+    /** @return Whether this stream should currently be mixed into the audio output. */
+    [[nodiscard]] bool isPlaying () const;
+    /** Layer-local gain in the [0, 1] range. */
+    void setVolume (float volume);
+    [[nodiscard]] float getVolume () const;
+    /** Used by the SDL driver to discard buffered audio after a stop/rewind. */
+    [[nodiscard]] std::uint64_t getPlaybackGeneration () const;
+    /** Services a pending stop/rewind request on the FFmpeg reader thread. */
+    bool resetPlaybackIfRequested ();
     /**
      * Stops decoding and playback of the stream
      */
@@ -146,12 +164,22 @@ private:
      */
     int resampleAudio (uint8_t* out_buf, const int out_size);
     /**
+     * Decodes the currently queued packet while playback remains active.
+     *
+     * @return Resampled bytes, a negative value on decode error, or 0 when the packet is exhausted/paused.
+     */
+    int decodeQueuedPacket (uint8_t* audioBuffer, int bufferSize);
+    /** @return Whether decoding should continue for the current playback state. */
+    [[nodiscard]] bool shouldDecode () const;
+    /**
      * Queues a packet into the play queue
      *
      * @param pkt
      * @return
      */
     bool doQueue (AVPacket* pkt);
+    /** Frees all queued packets. The caller must hold m_queue->mutex. */
+    void clearQueueLocked ();
     /**
      * Initializes queues and ffmpeg resampling
      */
@@ -162,9 +190,10 @@ private:
     /** The audio context this stream will be played under */
     AudioContext& m_audioContext;
     /** If this stream was properly initialized or not */
-    bool m_initialized = false;
+    std::atomic<bool> m_initialized = false;
     /** Repeat enabled? */
-    bool m_repeat = false;
+    std::atomic<bool> m_repeat = false;
+    AudioPlaybackState m_playback;
     /** The codec context that contains the original audio format information */
     AVCodecContext* m_context = nullptr;
     /** The format context that controls how data is read off the file */
@@ -182,6 +211,10 @@ private:
     AVPacket* m_decodePacket = nullptr;
     /** The AV frame used while decoding this stream */
     AVFrame* m_decodeFrame = nullptr;
+    /** Remaining bytes in m_decodePacket for this stream (must not be shared between streams). */
+    int m_audioPacketSize = 0;
+    /** Serializes decoder state with stop/rewind resets. */
+    SDL_mutex* m_decodeMutex = nullptr;
 
     /**
      * Packet queue information

@@ -252,7 +252,8 @@ ScriptEngine::~ScriptEngine () {
     this->m_unregisterMediaUpdateCallback ();
 
     for (const auto& module : this->m_scriptModules | std::views::values) {
-	JS_FreeValue (this->m_context, module.module);
+		JS_FreeValue (this->m_context, module.module);
+		JS_FreeValue (this->m_context, module.thisLayer);
     }
 
     JS_FreeValue (this->m_context, this->m_globalThis);
@@ -564,6 +565,13 @@ JSValue ScriptEngine::call (JSValue module, int argc, JSValue argv[], const char
     return JS_Call (this->m_context, function, module, argc, argv);
 }
 
+void ScriptEngine::bindModule (LoadedModule& module) {
+    this->m_runningModule = &module;
+    JS_SetPropertyStr (
+		this->m_context, this->m_globalThis, "thisLayer", JS_DupValue (this->m_context, module.thisLayer)
+    );
+}
+
 void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentValue, ScriptableObject& object) {
     const auto source = currentValue.getScriptSource ();
 
@@ -577,40 +585,47 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 	return;
     }
 
-    // load the script and store it
-    JSValue module = JS_Eval (this->m_context, source->c_str (), source->size (), key.c_str (), JS_EVAL_TYPE_MODULE);
-
-    auto inserted = this->m_scriptModules.emplace (
-	key,
-	LoadedModule {
+	// Bind thisLayer before module evaluation. Script properties are constructed at
+	// module scope and need to resolve against the DynamicValue currently loading.
+	JSValue thisLayer = this->m_adapters.object->instantiate (object);
+	JS_SetPropertyStr (
+		this->m_context, this->m_globalThis, "thisLayer", JS_DupValue (this->m_context, thisLayer)
+	);
+	LoadedModule loadingModule {
 	    .value = currentValue,
-	    .module = module,
+	    .object = object,
+	    .module = JS_UNDEFINED,
+	    .thisLayer = thisLayer,
+	};
+	this->m_runningModule = &loadingModule;
+
+	// Load the script now, but defer init/update until the first scene tick. By
+	// then the complete layer graph is available to thisLayer.getChildren().
+	JSValue module = JS_Eval (this->m_context, source->c_str (), source->size (), key.c_str (), JS_EVAL_TYPE_MODULE);
+	this->m_runningModule = nullptr;
+
+	if (JS_IsException (module)) {
+	    logJSException (this->m_context, key.c_str ());
+	    JS_FreeValue (this->m_context, module);
+	    JS_FreeValue (this->m_context, thisLayer);
+	    return;
 	}
-    );
 
-    if (!inserted.second) {
-	return;
-    }
+	auto inserted = this->m_scriptModules.emplace (
+		key,
+		LoadedModule {
+		    .value = currentValue,
+		    .object = object,
+		    .module = module,
+		    .thisLayer = thisLayer,
+		}
+	    );
 
-    JS_SetPropertyStr (this->m_context, this->m_globalThis, "thisLayer", this->m_adapters.object->instantiate (object));
-
-    // script properties do not need update as they're connected directly to the source data
-    this->m_runningModule = &inserted.first->second;
-
-    // check if there's an update method and run it
-    JSValue args[] = { this->dynamicToJs (currentValue) };
-    JSValue result = this->call (module, 1, args, "update");
-
-    ScopeGuard guard2 ([this, args, result] () {
-	JS_FreeValue (this->m_context, result);
-	JS_FreeValue (this->m_context, args[0]);
-    });
-
-    if (JS_IsException (result)) {
-	return;
-    }
-
-    jsToDynamicValue (this->m_context, result, currentValue);
+	    if (!inserted.second) {
+		JS_FreeValue (this->m_context, module);
+		JS_FreeValue (this->m_context, thisLayer);
+		return;
+	    }
 }
 
 void ScriptEngine::tick () {
@@ -621,12 +636,22 @@ void ScriptEngine::tick () {
 
     // run all update methods
     for (auto& module : this->m_scriptModules | std::views::values) {
-	this->m_runningModule = &module;
+		this->bindModule (module);
 
-	JSValue args[] = { this->dynamicToJs (module.value) };
-	JSValue result = this->call (module.module, 1, args, "update");
-	ScopeGuard guard ([result, args, this] () {
-	    JS_FreeValue (this->m_context, result);
+		JSValue args[] = { this->dynamicToJs (module.value) };
+
+		if (!module.initialized) {
+		    module.initialized = true;
+		    JSValue initResult = this->call (module.module, 1, args, "init");
+		    if (JS_IsException (initResult)) {
+			logJSException (this->m_context, "init");
+		    }
+		    JS_FreeValue (this->m_context, initResult);
+		}
+
+		JSValue result = this->call (module.module, 1, args, "update");
+		ScopeGuard guard ([result, args, this] () {
+		    JS_FreeValue (this->m_context, result);
 	    JS_FreeValue (this->m_context, args[0]);
 	});
 
@@ -634,8 +659,10 @@ void ScriptEngine::tick () {
 	    continue;
 	}
 
-	jsToDynamicValue (this->m_context, result, module.value);
-    }
+		jsToDynamicValue (this->m_context, result, module.value);
+	    }
+
+	    this->m_runningModule = nullptr;
 }
 
 void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media) {
@@ -682,17 +709,25 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
     JSValue mediaThumbnailArgs[] = { mediaThumbnailEvent };
 
     for (auto& module : this->m_scriptModules | std::views::values) {
-	// call all methods
-	JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
+		if (!module.initialized) {
+		    continue;
+		}
+
+		this->bindModule (module);
+
+		// call all methods
+		JSValue result1 = this->call (module.module, 1, propertiesArgs, "mediaPropertiesChanged");
 	JSValue result2 = this->call (module.module, 1, playbackArgs, "mediaPlaybackChanged");
 	JSValue result3 = this->call (module.module, 1, mediaTimelineArgs, "mediaTimelineChanged");
 	JSValue result4 = this->call (module.module, 1, mediaThumbnailArgs, "mediaThumbnailChanged");
 
 	JS_FreeValue (ctx, result1);
 	JS_FreeValue (ctx, result2);
-	JS_FreeValue (ctx, result3);
-	JS_FreeValue (ctx, result4);
+		JS_FreeValue (ctx, result3);
+		JS_FreeValue (ctx, result4);
     }
+
+    this->m_runningModule = nullptr;
 
     // free all created objects as we don't keep a ref to them anymore
     JS_FreeValue (ctx, propertiesEvent);

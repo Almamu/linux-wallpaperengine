@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <vector>
 
@@ -19,6 +20,7 @@ struct SDLAudioBuffer {
     uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2] = { 0 };
     unsigned int audio_buf_size = 0;
     unsigned int audio_buf_index = 0;
+    std::uint64_t playbackGeneration = 0;
 };
 
 /**

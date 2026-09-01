@@ -2,6 +2,8 @@
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Render/CObject.h"
 
+#include <vector>
+
 namespace WallpaperEngine::Render::Wallpapers {
 class CScene;
 }
@@ -20,6 +22,8 @@ public:
     DynamicValue& getProperty (const std::string& name);
 
     const std::map<std::string, PropertyEntry>& getProperties () const;
+
+    [[nodiscard]] std::vector<ScriptableObject*> getChildren () const;
 
 protected:
     void registerProperty (const std::string& name, DynamicValue& value);

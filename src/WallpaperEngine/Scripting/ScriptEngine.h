@@ -33,6 +33,7 @@ class CScene;
 
 namespace WallpaperEngine::Scripting {
 class ScriptPropertiesObject;
+class ScriptableObject;
 namespace Adapters {
     class ScriptableObjectAdapter;
 }
@@ -45,8 +46,11 @@ static constexpr ScriptLayerHandle kInvalidLayerHandle = 0;
 class ScriptEngine {
 public:
     struct LoadedModule {
-	DynamicValue& value;
-	JSValue module;
+		DynamicValue& value;
+		ScriptableObject& object;
+		JSValue module;
+		JSValue thisLayer;
+		bool initialized = false;
     };
     struct JSObjectAdapters {
 	std::unique_ptr<Adapters::VectorAdapter<4>> vec4;
@@ -140,6 +144,7 @@ public:
 
 private:
     JSValue call (JSValue module, int argc, JSValueConst argv[], const char* name);
+    void bindModule (LoadedModule& module);
 
     void installBuiltins ();
 
