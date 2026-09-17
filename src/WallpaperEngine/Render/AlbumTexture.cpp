@@ -75,7 +75,12 @@ void AlbumTexture::copyContents (const TextureProvider& other) const noexcept {
 
     // Read the source texture
     glBindTexture (GL_TEXTURE_2D, other.getTextureID (0));
-    glGetnTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufferSize, buffer);
+
+    if (GLEW_VERSION_4_5) {
+        glGetnTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufferSize, buffer);
+    } else {
+        glGetTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    }
 
     // Upload into another texture
     glBindTexture (GL_TEXTURE_2D, this->m_textureID);
