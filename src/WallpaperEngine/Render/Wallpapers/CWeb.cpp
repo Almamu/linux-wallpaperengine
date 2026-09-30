@@ -27,7 +27,8 @@ CWeb::CWeb (
 
     CefBrowserSettings browserSettings;
     // documentaion says that 60 fps is maximum value
-    browserSettings.windowless_frame_rate = std::max (60, context.getApp ().getContext ().settings.render.maximumFPS);
+    // follow --fps, with 60 as CEF's ceiling (std::max forced every web wallpaper to >= 60 fps)
+    browserSettings.windowless_frame_rate = std::min (60, context.getApp ().getContext ().settings.render.maximumFPS);
 
     this->m_client = new WebBrowser::CEF::BrowserClient (m_renderHandler);
     // use the custom scheme for the wallpaper's files
@@ -118,6 +119,6 @@ void CWeb::updateMouse (const glm::ivec4& viewport) {
 CWeb::~CWeb () {
     CefDoMessageLoopWork ();
     this->m_browser->GetHost ()->CloseBrowser (true);
-
-    delete this->m_renderHandler;
+    // m_renderHandler is ref-counted and still owned by the BrowserClient's CefRefPtr;
+    // deleting it here made CefShutdown () release freed memory ("pure virtual method called").
 }

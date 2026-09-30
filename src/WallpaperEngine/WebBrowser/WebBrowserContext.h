@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
 #include "include/cef_app.h"
@@ -22,5 +24,7 @@ private:
     CefRefPtr<CefApp> m_browserApplication = nullptr;
     CefRefPtr<CefCommandLine> m_commandLine = nullptr;
     WallpaperEngine::Application::WallpaperApplication& m_wallpaperApplication;
+    /** Per-run Chromium profile folder, removed on shutdown */
+    std::filesystem::path m_cachePath;
 };
 } // namespace WallpaperEngine::WebBrowser

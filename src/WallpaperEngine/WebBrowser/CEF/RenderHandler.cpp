@@ -24,4 +24,6 @@ int RenderHandler::getWidth () const { return this->m_webdata->getWidth (); }
 
 int RenderHandler::getHeight () const { return this->m_webdata->getHeight (); }
 
-GLuint RenderHandler::texture () const { return this->m_webdata->getWallpaperFramebuffer (); }
+// Must be the color texture attached to the wallpaper FBO — not the FBO name
+// itself. Binding the FBO id as GL_TEXTURE_2D leaves the wallpaper black.
+GLuint RenderHandler::texture () const { return this->m_webdata->getWallpaperTexture (); }
