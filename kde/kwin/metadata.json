@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Id": "linux-wallpaperengine-desktop",
+    "Name": "Linux Wallpaper Engine Desktop Integration",
+    "Description": "Keeps live wallpapers below Plasma icons and preserves desktop input.",
+    "Version": "1.0",
+    "License": "GPL-3.0-or-later"
+  },
+  "KPackageStructure": "KWin/Script",
+  "X-Plasma-API": "javascript",
+  "X-Plasma-MainScript": "code/main.js"
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="MouseRelayEnabled" type="Bool"><default>false</default></entry>
+    <entry name="InputTargets" type="String"><default>[]</default></entry>
+    <entry name="Active" type="Bool"><default>false</default></entry>
+    <entry name="FallbackColor" type="Color"><default>#000000</default></entry>
+    <entry name="FallbackImage" type="String"><default></default></entry>
+    <entry name="PreviousWallpaper" type="String"><default>org.kde.image</default></entry>
+  </group>
+</kcfg>

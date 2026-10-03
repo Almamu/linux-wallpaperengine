@@ -18,6 +18,8 @@ extern "C" {
 
 #include <algorithm>
 #include <string.h>
+#include <cstdlib>
+#include <string_view>
 #include <unistd.h>
 
 using namespace WallpaperEngine::Render::Drivers;
@@ -268,10 +270,28 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
     VideoDriver (app, m_mouseInput), m_output (context, *this), m_requestedExit (false), m_frameCounter (0),
     m_context (context), m_mouseInput (*this) {
+    if (usesKdeDesktop ()) {
+        sLog.out ("KDE desktop mode: wallpaper stays below Plasma; pointer input belongs to the desktop.");
+        sLog.out ("Select the bundled KDE integration wallpaper (see output/kde/README.md) once per screen.");
+    }
     initWaylandRegistry ();
     initEGL ();
     setupOutputLayerSurfaces ();
     initGLEW ();
+}
+
+bool WaylandOpenGLDriver::usesKdeDesktop () const {
+    const char* optOut = std::getenv ("LWE_KDE_DESKTOP");
+    if (optOut && std::string_view (optOut) == "0") {
+        return false;
+    }
+    const char* desktop = std::getenv ("XDG_CURRENT_DESKTOP");
+    if (!desktop) {
+        return false;
+    }
+    // XDG_CURRENT_DESKTOP is a colon-separated list, not necessarily just KDE.
+    const std::string desktops = ":" + std::string (desktop) + ":";
+    return desktops.find (":KDE:") != std::string::npos;
 }
 
 void WaylandOpenGLDriver::initWaylandRegistry () {

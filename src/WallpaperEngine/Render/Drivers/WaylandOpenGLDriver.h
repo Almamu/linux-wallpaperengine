@@ -73,6 +73,10 @@ public:
     void dispatchEventQueue () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
+    [[nodiscard]] bool usesKdeDesktop () const;
+
+    void prepareMouseFrame (Output::WaylandOutputViewport& viewport) { m_mouseInput.beginFrame (viewport); }
+
     void onLayerClose (Output::WaylandOutputViewport*);
     Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 

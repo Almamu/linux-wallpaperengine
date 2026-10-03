@@ -4,6 +4,8 @@
 
 #include "WallpaperEngine/Input/MouseInput.h"
 
+#include "KdeMouseBridge.h"
+#include <memory>
 #include <chrono>
 #include <glm/vec2.hpp>
 #include <optional>
@@ -27,6 +29,7 @@ public:
      * Takes current mouse position and updates it
      */
     void update () override;
+    void beginFrame (Render::Drivers::Output::WaylandOutputViewport& viewport);
 
     /**
      * The virtual pointer's position
@@ -52,6 +55,7 @@ private:
      */
     const WallpaperEngine::Render::Drivers::WaylandOpenGLDriver& m_waylandDriver;
 
+    std::unique_ptr<KdeMouseBridge> m_kdeBridge;
     glm::dvec2 m_pos = {};
     std::chrono::steady_clock::time_point m_lastHyprlandQuery = {};
 };

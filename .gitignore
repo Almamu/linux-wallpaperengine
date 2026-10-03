@@ -11,3 +11,5 @@ packaging/archlinux/*
 *-protocol.c
 *-protocol.h
 AGENTS.md
+
+__pycache__/

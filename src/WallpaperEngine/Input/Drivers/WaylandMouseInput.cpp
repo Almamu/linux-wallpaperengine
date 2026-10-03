@@ -22,6 +22,12 @@ void WaylandMouseInput::update () {
 	return;
     }
 
+    if (m_waylandDriver.usesKdeDesktop ()) {
+        if (!m_kdeBridge) m_kdeBridge = std::make_unique<KdeMouseBridge> ();
+        m_kdeBridge->poll ();
+        return;
+    }
+
     if (m_waylandDriver.viewportInFocus && m_waylandDriver.viewportInFocus->rendering) {
 	this->m_pos = m_waylandDriver.viewportInFocus->mousePos;
 	return;
@@ -57,6 +63,16 @@ void WaylandMouseInput::update () {
     this->m_pos = { 0, 0 };
 }
 
+void WaylandMouseInput::beginFrame (Render::Drivers::Output::WaylandOutputViewport& viewport) {
+    if (!m_kdeBridge) return;
+    auto state = m_kdeBridge->frame (viewport.globalPosition.x, viewport.globalPosition.y);
+    if (!m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) state.left = state.right = false;
+    viewport.mousePos = {state.x * viewport.size.x * viewport.scale,
+                        (1.0 - state.y) * viewport.size.y * viewport.scale};
+    viewport.leftClick = state.left ? MouseClickStatus::Clicked : MouseClickStatus::Released;
+    viewport.rightClick = state.right ? MouseClickStatus::Clicked : MouseClickStatus::Released;
+}
+
 glm::dvec2 WaylandMouseInput::position () const {
     if (!this->m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) {
 	return { 0, 0 };
@@ -68,7 +84,7 @@ glm::dvec2 WaylandMouseInput::position () const {
 	return { 0, 0 };
     }
 
-    if (viewport == m_waylandDriver.viewportInFocus) {
+    if (m_kdeBridge || viewport == m_waylandDriver.viewportInFocus) {
 	return viewport->mousePos;
     }
 
