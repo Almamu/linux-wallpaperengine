@@ -128,6 +128,11 @@ public:
     [[nodiscard]] virtual int getHeight () const = 0;
 
     /**
+     * @return The rate this wallpaper's content changes at, 0 if it can change on any frame
+     */
+    [[nodiscard]] virtual double getContentFrameRate () const;
+
+    /**
      * Creates a new instance of CWallpaper based on the information provided by the read backgrounds
      *
      * @param wallpaper

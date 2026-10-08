@@ -138,6 +138,12 @@ void GLPlayer::render () const {
 	    continue;
 	}
 
+	double frameRate;
+
+	if (mpv_get_property (this->m_handle, "container-fps", MPV_FORMAT_DOUBLE, &frameRate) >= 0 && frameRate > 0.0) {
+	    this->m_frameRate = frameRate;
+	}
+
 	int64_t width, height;
 
 	if (mpv_get_property (this->m_handle, "dwidth", MPV_FORMAT_INT64, &width) < 0) {
@@ -181,6 +187,7 @@ void GLPlayer::render () const {
 
 int GLPlayer::getWidth () const { return this->m_width; }
 int GLPlayer::getHeight () const { return this->m_height; }
+double GLPlayer::getFrameRate () const { return this->m_frameRate; }
 
 void GLPlayer::prepareGL () {
     if (!this->m_doWeOwnFramebuffer || this->m_fbo != GL_NONE) {
@@ -297,4 +304,6 @@ void GLPlayer::stop () {
 	mpv_terminate_destroy (this->m_handle);
 	this->m_handle = nullptr;
     }
+
+    this->m_frameRate = 0.0;
 }

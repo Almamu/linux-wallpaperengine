@@ -152,6 +152,10 @@ private:
 
     void initializePlaylists ();
     void updatePlaylists ();
+    /**
+     * Lowers the render rate to the videos' own frame rate when every wallpaper is a plain video
+     */
+    void updateContentFrameRate ();
     void advancePlaylist (
 	const std::string& screen, ActivePlaylist& playlist, const std::chrono::steady_clock::time_point& now
     );

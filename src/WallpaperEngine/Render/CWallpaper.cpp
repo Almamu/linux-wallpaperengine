@@ -309,6 +309,8 @@ void CWallpaper::render (
 
 void CWallpaper::setPause (bool newState) { }
 
+double CWallpaper::getContentFrameRate () const { return 0.0; }
+
 void CWallpaper::setupFramebuffers () {
     const uint32_t width = this->getWidth ();
     const uint32_t height = this->getHeight ();

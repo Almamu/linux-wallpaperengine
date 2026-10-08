@@ -50,6 +50,10 @@ public:
 
     int getWidth () const;
     int getHeight () const;
+    /**
+     * @return The video's frame rate as stored in the file, 0 until playback starts or if the file doesn't specify it
+     */
+    double getFrameRate () const;
 
 private:
     void prepareGL ();
@@ -65,6 +69,7 @@ protected:
     GLuint m_fbo = GL_NONE;
     mutable int64_t m_width;
     mutable int64_t m_height;
+    mutable double m_frameRate = 0.0;
     mpv_handle* m_handle = nullptr;
     mpv_render_context* m_renderContext = nullptr;
     double m_volume = 0.0f;

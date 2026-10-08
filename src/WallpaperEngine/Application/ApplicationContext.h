@@ -239,6 +239,11 @@ public:
 
     ApplicationState state;
 
+    /**
+     * @return The frame rate to render at: --fps, lowered to the content's own rate when that is known and lower
+     */
+    [[nodiscard]] float getTargetFrameRate () const;
+
     [[nodiscard]] int getArgc () const;
     [[nodiscard]] char** getArgv () const;
 

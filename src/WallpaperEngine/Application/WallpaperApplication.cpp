@@ -473,6 +473,27 @@ void WallpaperApplication::advancePlaylist (
     playlist.nextSwitch = now + std::chrono::minutes (delayMinutes);
 }
 
+void WallpaperApplication::updateContentFrameRate () {
+    // all outputs share one render loop, so it can only slow down when every wallpaper
+    // has a known rate, and then only to the fastest of them
+    float rate = 0.0f;
+
+    if (this->m_renderContext != nullptr) {
+	for (const auto& [screen, wallpaper] : this->m_renderContext->getWallpapers ()) {
+	    const double wallpaperRate = wallpaper ? wallpaper->getContentFrameRate () : 0.0;
+
+	    if (wallpaperRate <= 0.0) {
+		rate = 0.0f;
+		break;
+	    }
+
+	    rate = std::max (rate, static_cast<float> (wallpaperRate));
+	}
+    }
+
+    this->m_context.state.render.contentFrameRate = rate;
+}
+
 void WallpaperApplication::updatePlaylists () {
     if (this->m_activePlaylists.empty ()) {
 	return;
@@ -891,6 +912,8 @@ void WallpaperApplication::render () {
 	m_mediaSource->update ();
 	// update input information
 	m_videoDriver->getInputContext ().update ();
+	// don't render faster than the wallpapers change
+	this->updateContentFrameRate ();
 	// process driver events
 	m_videoDriver->dispatchEventQueue ();
 

@@ -702,6 +702,13 @@ void ApplicationContext::loadSettingsFromArgv () {
     }
 }
 
+float ApplicationContext::getTargetFrameRate () const {
+    const float maximum = static_cast<float> (this->settings.render.maximumFPS);
+    const float content = this->state.render.contentFrameRate;
+
+    return content > 0.0f ? std::min (maximum, content) : maximum;
+}
+
 int ApplicationContext::getArgc () const { return this->m_argc; }
 
 char** ApplicationContext::getArgv () const { return this->m_argv; }

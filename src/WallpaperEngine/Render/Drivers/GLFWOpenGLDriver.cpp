@@ -108,7 +108,9 @@ glm::ivec2 GLFWOpenGLDriver::getFramebufferSize () const {
 uint32_t GLFWOpenGLDriver::getFrameCounter () const { return this->m_frameCounter; }
 
 void GLFWOpenGLDriver::dispatchEventQueue () {
-    static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
+    static float startTime, endTime;
+    // the target rate can drop below --fps while only videos are shown, so re-read it every frame
+    const float minimumTime = 1.0f / this->m_context.getTargetFrameRate ();
     // get the start time of the frame
     startTime = this->getRenderTime ();
     // clear the screen
