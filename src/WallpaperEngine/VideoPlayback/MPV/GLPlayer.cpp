@@ -167,9 +167,13 @@ void GLPlayer::render () const {
 
     // no need to flip as it'll be handled by the wallpaper rendering code
     int flip_y = 0;
+    // the render loop already paces frames; letting mpv also sleep until the next video
+    // frame's display time stacks both waits and roughly halves the video's frame rate
+    int block_for_target_time = 0;
 
     mpv_render_param params[] = { { MPV_RENDER_PARAM_OPENGL_FBO, &fbo },
 				  { MPV_RENDER_PARAM_FLIP_Y, &flip_y },
+				  { MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &block_for_target_time },
 				  { MPV_RENDER_PARAM_INVALID, nullptr } };
 
     mpv_render_context_render (this->m_renderContext, params);
