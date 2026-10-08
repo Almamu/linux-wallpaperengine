@@ -458,6 +458,8 @@ void* WaylandOpenGLDriver::getProcAddress (const char* name) const {
     return reinterpret_cast<void*> (eglGetProcAddress (name));
 }
 
+wl_display* WaylandOpenGLDriver::getWaylandDisplay () const { return this->m_waylandContext.display; }
+
 WaylandOpenGLDriver::WaylandContext* WaylandOpenGLDriver::getWaylandContext () { return &this->m_waylandContext; }
 
 Output::WaylandOutputViewport* WaylandOpenGLDriver::surfaceToViewport (const wl_surface* surface) const {

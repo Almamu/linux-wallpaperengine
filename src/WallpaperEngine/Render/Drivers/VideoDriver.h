@@ -7,6 +7,8 @@
 #include <glm/vec4.hpp>
 #include <string>
 
+struct wl_display;
+
 namespace WallpaperEngine::Application {
 class WallpaperApplication;
 }
@@ -67,6 +69,10 @@ public:
      * @return GetProcAddress for this video driver
      */
     [[nodiscard]] virtual void* getProcAddress (const char* name) const = 0;
+    /**
+     * @return The Wayland display this driver renders to, nullptr if it doesn't render through Wayland
+     */
+    [[nodiscard]] virtual wl_display* getWaylandDisplay () const;
     /**
      * Process events on the driver and renders a frame
      */

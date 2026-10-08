@@ -5,6 +5,8 @@
 #include <mpv/render_gl.h>
 #include <mpv/stream_cb.h>
 
+#include <vector>
+
 using namespace WallpaperEngine::VideoPlayback::MPV;
 
 void* get_proc_address (void* ctx, const char* name) {
@@ -234,11 +236,20 @@ void GLPlayer::init () {
 
     // initialize gl context for mpv
     mpv_opengl_init_params gl_init_params { get_proc_address, this };
-    mpv_render_param params[] { { MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL) },
-				{ MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params },
-				{ MPV_RENDER_PARAM_INVALID, nullptr } };
+    std::vector<mpv_render_param> params {
+	{ MPV_RENDER_PARAM_API_TYPE, const_cast<char*> (MPV_RENDER_API_TYPE_OPENGL) },
+	{ MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params },
+    };
 
-    if (mpv_render_context_create (&this->m_renderContext, this->m_handle, params) < 0) {
+    // without the native display mpv has no hwdec interop and falls back to copying
+    // every decoded frame through system memory (vaapi-copy)
+    if (wl_display* display = this->getContext ().getDriver ().getWaylandDisplay (); display != nullptr) {
+	params.push_back ({ MPV_RENDER_PARAM_WL_DISPLAY, display });
+    }
+
+    params.push_back ({ MPV_RENDER_PARAM_INVALID, nullptr });
+
+    if (mpv_render_context_create (&this->m_renderContext, this->m_handle, params.data ()) < 0) {
 	sLog.exception ("Failed to initialize MPV's GL context");
     }
 
