@@ -25,6 +25,12 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto lightIt = it.find ("light");
     // use shape to refer to VolumeLight
     const auto shapeIt = it.find ("shape");
+    // Only an inline definition or a file path is a particle system; other objects (text
+    // objects, for example) can carry a placeholder like "particle": "None".
+    const bool hasParticle = particleIt != it.end ()
+	&& (particleIt->is_object ()
+	    || (particleIt->is_string () && !particleIt->get<std::string> ().empty ()
+		&& particleIt->get<std::string> () != "None"));
 
     // Parse base object data
     // Some particle objects have numeric 'name' fields, so handle type mismatches gracefully
@@ -69,7 +75,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	return parseImage (it, project, std::move (basedata), *imageIt);
     } else if (soundIt != it.end () && soundIt->is_array ()) {
 	return parseSound (it, std::move (basedata));
-    } else if (particleIt != it.end ()) {
+    } else if (hasParticle) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
 	return parseText (it, project, std::move (basedata));
