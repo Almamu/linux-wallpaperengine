@@ -112,9 +112,14 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
 
     // Every sink/source event lands here; keep a healthy stream that already
     // records the default sink's monitor instead of opening another one.
-    if (recorder->captureStream && recorder->monitorName == monitor_name) {
+    if (recorder->captureStream) {
 	const pa_stream_state_t state = pa_stream_get_state (recorder->captureStream);
-	if (state == PA_STREAM_READY || state == PA_STREAM_CREATING) {
+	// A ready stream can be moved to another source: check where it records now.
+	// One still connecting is checked against the source it was asked for.
+	const char* device = state == PA_STREAM_READY ? pa_stream_get_device_name (recorder->captureStream) : nullptr;
+	const bool current = state == PA_STREAM_READY ? (device != nullptr && monitor_name == device)
+						      : (state == PA_STREAM_CREATING && recorder->monitorName == monitor_name);
+	if (current) {
 	    return;
 	}
     }
