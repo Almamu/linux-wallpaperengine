@@ -50,8 +50,12 @@ CFBO::CFBO (
     glDrawBuffers (1, drawBuffers);
 
     // ensure first framebuffer is okay
-    if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-	sLog.exception ("Framebuffers are not properly set");
+    const GLenum framebufferStatus = glCheckFramebufferStatus (GL_FRAMEBUFFER);
+    if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
+	sLog.exception (
+	    "Framebuffer '", this->m_name, "' is incomplete (status ", framebufferStatus, ", texture ", textureWidth,
+	    "x", textureHeight, ", real ", realWidth, "x", realHeight, ")"
+	);
     }
 
     // Layer framebuffers must start transparent. The scene clear color is often opaque,

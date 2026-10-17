@@ -35,6 +35,7 @@ CTexture::CTexture (RenderContext& context, TextureUniquePtr header) :
 	    this->m_header->textureWidth, this->m_header->textureHeight
 	);
 	// setup texture video player
+	this->m_player->setAudioEnabled (false);
 	this->m_player->setMuted ();
 	this->m_player->setVolume (0.0f);
 	this->m_player->setUntimed ();

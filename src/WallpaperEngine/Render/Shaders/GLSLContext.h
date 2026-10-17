@@ -1,9 +1,12 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
+#include <mutex>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace WallpaperEngine::Render::Shaders {
@@ -23,5 +26,9 @@ public:
 
 private:
     static std::unique_ptr<GLSLContext> sInstance;
+
+    std::filesystem::path m_cacheDir;
+    std::unordered_map<std::string, std::pair<std::string, std::string>> m_memoryCache;
+    std::mutex m_cacheMutex;
 };
 } // namespace WallpaperEngine::Render::Shaders

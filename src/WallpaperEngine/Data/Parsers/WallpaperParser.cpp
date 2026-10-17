@@ -27,6 +27,7 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
     const auto general = scene.require ("general", "Scenes must have a general section");
     const auto projection
 	= general.require ("orthogonalprojection", "General section must have orthogonal projection info");
+    const bool isPerspectiveScene = projection.is_null ();
     const auto objects = scene.require ("objects", "Scenes must have an objects section");
     const auto& properties = project.properties;
 
@@ -69,12 +70,23 @@ SceneUniquePtr WallpaperParser::parseScene (const JSON& file, Project& project) 
                     .up = camera.require <glm::vec3> ("up", "Camera must have an up position"),
                 },
                 .projection = {
-                    .width  = projection.optional ("auto", false) ? 0 : projection.require <int> ("width",  "Projection must have a width"),
-                    .height = projection.optional ("auto", false) ? 0 : projection.require <int> ("height", "Projection must have a height"),
-                    .isAuto = projection.optional ("auto", false),
-                    .nearz = camera.user ("nearz", properties, 0.0f),
-                    .farz = camera.user ("farz", properties, 1000.0f),
-                    .fov = camera.user ("fov", properties, 50.0f)
+                    .width = isPerspectiveScene || projection.optional ("auto", false)
+                        ? 0 : projection.require <int> ("width", "Projection must have a width"),
+                    .height = isPerspectiveScene || projection.optional ("auto", false)
+                        ? 0 : projection.require <int> ("height", "Projection must have a height"),
+                    .isAuto = !isPerspectiveScene && projection.optional ("auto", false),
+                    .isPerspective = isPerspectiveScene,
+                    .nearz = general.find ("nearz") != general.end ()
+                        ? general.user ("nearz", properties, 0.0f)
+                        : camera.user ("nearz", properties, 0.0f),
+                    .farz = general.find ("farz") != general.end ()
+                        ? general.user ("farz", properties, 1000.0f)
+                        : camera.user ("farz", properties, 1000.0f),
+                    .fov = general.find ("fov") != general.end ()
+                        ? general.user ("fov", properties, 50.0f)
+                        : camera.user ("fov", properties, 50.0f),
+                    .overrideFov = general.user ("perspectiveoverridefov", properties, 0.0f),
+                    .zoom = general.user ("zoom", properties, 1.0f)
                 }
             },
             .objects = parseObjects (objects, project),

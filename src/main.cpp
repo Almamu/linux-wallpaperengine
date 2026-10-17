@@ -47,6 +47,11 @@ int main (int argc, char* argv[]) {
 
 	appContext.loadSettingsFromArgv ();
 
+	if (appContext.settings.general.catalogJson) {
+	    appContext.printCatalogJson ();
+	    return 0;
+	}
+
 	app = new WallpaperEngine::Application::WallpaperApplication (appContext);
 
 	// halt if the list-properties option was specified

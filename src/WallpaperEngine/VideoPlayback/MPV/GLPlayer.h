@@ -43,11 +43,14 @@ public:
     void setMuted ();
     void clearMuted ();
     void setVolume (double volume);
+    void setAudioEnabled (bool enabled);
+    void setStartPosition (double seconds);
     void setPaused ();
     void clearPaused ();
 
     void render () const;
 
+    [[nodiscard]] double getPlaybackPosition () const;
     int getWidth () const;
     int getHeight () const;
 
@@ -68,7 +71,9 @@ protected:
     mpv_handle* m_handle = nullptr;
     mpv_render_context* m_renderContext = nullptr;
     double m_volume = 0.0f;
+    mutable double m_startPosition = 0.0;
     bool m_muted = false;
+    bool m_audioEnabled = true;
     bool m_untimed = false;
     bool m_paused = false;
     std::optional<std::filesystem::path> m_file;

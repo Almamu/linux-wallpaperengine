@@ -2,8 +2,11 @@
 
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <algorithm>
+#include <cmath>
 #include <mpv/render_gl.h>
 #include <mpv/stream_cb.h>
+#include <utility>
 
 using namespace WallpaperEngine::VideoPlayback::MPV;
 
@@ -102,6 +105,20 @@ void GLPlayer::setVolume (double volume) {
     if (this->m_handle) {
 	mpv_set_property (this->m_handle, "volume", MPV_FORMAT_DOUBLE, &this->m_volume);
     }
+}
+
+void GLPlayer::setAudioEnabled (bool enabled) {
+    if (this->m_handle) {
+	sLog.exception ("Cannot change mpv audio selection after playback has started");
+    }
+    this->m_audioEnabled = enabled;
+}
+
+void GLPlayer::setStartPosition (const double seconds) {
+    if (this->m_handle) {
+	sLog.exception ("Cannot change the start position after playback has started");
+    }
+    this->m_startPosition = std::isfinite (seconds) ? std::max (0.0, seconds) : 0.0;
 }
 
 void GLPlayer::setPaused () {
@@ -222,6 +239,12 @@ void GLPlayer::init () {
     mpv_set_option_string (this->m_handle, "vo", "libmpv");
     mpv_set_option_string (this->m_handle, "profile", "fast");
     mpv_set_option_string (this->m_handle, "untimed", this->m_untimed ? "yes" : "no");
+    if (!this->m_audioEnabled) {
+	// Mute/volume=0 still opens an output device. Disable the audio track
+	// before mpv starts so a silent wallpaper never connects to a sound server.
+	mpv_set_option_string (this->m_handle, "aid", "no");
+	mpv_set_option_string (this->m_handle, "ao", "null");
+    }
 
     if (mpv_initialize (this->m_handle) < 0) {
 	sLog.exception ("Could not initialize mpv context");
@@ -264,8 +287,11 @@ void GLPlayer::play () {
     this->init ();
 
     if (this->m_file.has_value ()) {
-	// build the path to the video file
-	const char* command[] = { "loadfile", this->m_file.value ().c_str (), nullptr };
+	if (this->m_startPosition > 0.0) {
+	    const std::string startStr = std::to_string (this->m_startPosition);
+	    mpv_set_property_string (this->m_handle, "start", startStr.c_str ());
+	}
+	const char* command[] = { "loadfile", this->m_file.value ().c_str (), "replace", nullptr };
 
 	if (mpv_command (this->m_handle, command) < 0) {
 	    sLog.exception ("Cannot load video to play");
@@ -293,4 +319,18 @@ void GLPlayer::stop () {
 	mpv_terminate_destroy (this->m_handle);
 	this->m_handle = nullptr;
     }
+}
+
+double GLPlayer::getPlaybackPosition () const {
+    if (!this->m_handle) {
+	return this->m_startPosition;
+    }
+
+    double position = 0.0;
+    if (mpv_get_property (this->m_handle, "time-pos", MPV_FORMAT_DOUBLE, &position) < 0 || !std::isfinite (position)) {
+	return this->m_startPosition;
+    }
+
+    this->m_startPosition = std::max (0.0, position);
+    return this->m_startPosition;
 }

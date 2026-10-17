@@ -1,0 +1,18 @@
+[Unit]
+Description=Linux Wallpaper Engine desktop app background service
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=%h/.local/bin/linux-wallpaperengine-app --daemon
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=10
+KillMode=control-group
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

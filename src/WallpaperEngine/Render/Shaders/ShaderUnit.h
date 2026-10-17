@@ -91,7 +91,7 @@ private:
      */
     [[nodiscard]] std::string resolveRequireModule (const std::string& moduleName) const;
     /**
-     * Generates the LightingV1 module stub (PerformLighting_V1 function)
+     * Generates the LightingV1 module (PerformLighting_V1 function)
      *
      * @return GLSL code defining PerformLighting_V1
      */

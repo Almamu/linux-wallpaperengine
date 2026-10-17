@@ -18,7 +18,10 @@ WaylandMouseInput::WaylandMouseInput (const WallpaperEngine::Render::Drivers::Wa
 
 void WaylandMouseInput::update () {
     if (!this->m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) {
-	this->m_pos = { 0, 0 };
+	const auto* viewport = this->getActiveOutputViewport ();
+	this->m_pos = viewport == nullptr
+	    ? glm::dvec2 (0.0)
+	    : glm::dvec2 (viewport->size.x * viewport->scale * 0.5, viewport->size.y * viewport->scale * 0.5);
 	return;
     }
 
@@ -59,7 +62,14 @@ void WaylandMouseInput::update () {
 
 glm::dvec2 WaylandMouseInput::position () const {
     if (!this->m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) {
-	return { 0, 0 };
+	const auto* viewport = this->getActiveOutputViewport ();
+	if (viewport == nullptr) {
+	    return { 0, 0 };
+	}
+	return {
+	    static_cast<double> (viewport->size.x * viewport->scale) / 2.0,
+	    static_cast<double> (viewport->size.y * viewport->scale) / 2.0,
+	};
     }
 
     const auto* viewport = this->getActiveOutputViewport ();

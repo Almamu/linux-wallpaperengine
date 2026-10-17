@@ -7,20 +7,7 @@ using namespace WallpaperEngine::Scripting::Modules;
 #define min_f(a, b, c) (fminf (a, fminf (b, c)))
 #define max_f(a, b, c) (fmaxf (a, fmaxf (b, c)))
 
-static uint32_t MathModuleInstanceId = 0;
-std::map<uint32_t, MathModule&> mathModules;
-
-int wemath_init (JSContext* ctx, JSModuleDef* m) {
-
-    JS_AddModuleExport (ctx, m, "smoothStep");
-    JS_AddModuleExport (ctx, m, "mix");
-    JS_AddModuleExport (ctx, m, "deg2rad");
-    JS_AddModuleExport (ctx, m, "rad2deg");
-
-    return 0;
-}
-
-JSValue wemath_smoothstep (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+JSValue wemath_smoothstep (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     if (argc != 3) {
 	return JS_EXCEPTION;
     }
@@ -40,7 +27,7 @@ JSValue wemath_smoothstep (JSContext* ctx, JSValueConst this_val, int argc, JSVa
     return JS_NewFloat64 (ctx, glm::smoothstep (edge0, edge1, x));
 }
 
-JSValue wemath_mix (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+JSValue wemath_mix (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     if (argc != 3) {
 	return JS_EXCEPTION;
     }
@@ -60,35 +47,22 @@ JSValue wemath_mix (JSContext* ctx, JSValueConst this_val, int argc, JSValueCons
     return JS_NewFloat64 (ctx, glm::mix (a, b, value));
 }
 
-MathModule::MathModule (ScriptEngine& engine) : ScriptModule (engine, "WEMath", wemath_init) {
-    this->m_instanceId = ++MathModuleInstanceId;
+int wemath_init (JSContext* ctx, JSModuleDef* m) {
+	if (JS_SetModuleExport (ctx, m, "smoothStep", JS_NewCFunction (ctx, wemath_smoothstep, "smoothStep", 3)) < 0
+	|| JS_SetModuleExport (ctx, m, "mix", JS_NewCFunction (ctx, wemath_mix, "mix", 3)) < 0
+	|| JS_SetModuleExport (ctx, m, "deg2rad", JS_NewFloat64 (ctx, 0.01745329251994329576923690768489)) < 0
+	|| JS_SetModuleExport (ctx, m, "rad2deg", JS_NewFloat64 (ctx, 57.295779513082320876798154814105)) < 0) {
+	return -1;
+    }
 
-    JS_SetModuleExport (
-	this->getEngine ().getContext (), this->getDefinition (), "smoothStep",
-	JS_NewCFunctionMagic (
-	    this->getEngine ().getContext (), wemath_smoothstep, "smoothStep", 3, JS_CFUNC_generic_magic,
-	    this->m_instanceId
-	)
-    );
-
-    JS_SetModuleExport (
-	this->getEngine ().getContext (), this->getDefinition (), "mix",
-	JS_NewCFunctionMagic (
-	    this->getEngine ().getContext (), wemath_mix, "mix", 1, JS_CFUNC_generic_magic, this->m_instanceId
-	)
-    );
-
-    JS_SetModuleExport (
-	this->getEngine ().getContext (), this->getDefinition (), "deg2rad",
-	JS_NewFloat64 (this->getEngine ().getContext (), 0.01745329251994329576923690768489)
-    );
-
-    JS_SetModuleExport (
-	this->getEngine ().getContext (), this->getDefinition (), "rad2deg",
-	JS_NewFloat64 (this->getEngine ().getContext (), 57.295779513082320876798154814105)
-    );
-
-    mathModules.emplace (this->m_instanceId, *this);
+    return 0;
 }
 
-MathModule::~MathModule () { mathModules.erase (this->m_instanceId); }
+MathModule::MathModule (ScriptEngine& engine) : ScriptModule (engine, "WEMath", wemath_init) {
+	JS_AddModuleExport (this->getEngine ().getContext (), this->getDefinition (), "smoothStep");
+	JS_AddModuleExport (this->getEngine ().getContext (), this->getDefinition (), "mix");
+	JS_AddModuleExport (this->getEngine ().getContext (), this->getDefinition (), "deg2rad");
+	JS_AddModuleExport (this->getEngine ().getContext (), this->getDefinition (), "rad2deg");
+}
+
+MathModule::~MathModule () = default;

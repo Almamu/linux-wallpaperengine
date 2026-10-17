@@ -33,6 +33,6 @@ body:
   - type: input
     id: install_method
     attributes:
-      label: Installation Method (e.g., AUR, Flatpak, build from source)
+      label: Installation Method (e.g., ./install.sh, AUR, build from source)
     validations:
       required: true

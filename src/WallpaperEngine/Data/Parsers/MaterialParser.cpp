@@ -41,10 +41,9 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const Project& 
     const auto usertextures = it.optional ("usertextures");
     const auto combos = it.optional ("combos");
     const auto constants = it.optional ("constantshadervalues");
-
-    return std::make_unique<MaterialPass> (MaterialPass {
-	// TODO: REMOVE THIS UGLY STD::STRING CREATION
-	.blending = parseBlendMode (it.optional ("blending", std::string ("normal"))),
+    const auto blending = parseBlendMode (it.optional ("blending", std::string ("normal")));
+    auto pass = std::make_unique<MaterialPass> (MaterialPass {
+	.blending = blending,
 	.cullmode = parseCullMode (it.optional ("cullmode", std::string ("nocull"))),
 	.depthtest = parseDepthtestMode (it.optional ("depthtest", std::string ("disabled"))),
 	.depthwrite = parseDepthwriteMode (it.optional ("depthwrite", std::string ("disabled"))),
@@ -54,6 +53,12 @@ MaterialPassUniquePtr MaterialParser::parsePass (const JSON& it, const Project& 
 	.combos = combos.has_value () ? parseCombos (*combos) : ComboMap {},
 	.constants = constants.has_value () ? ShaderConstantParser::parse (*constants, project) : ShaderConstantMap {},
     });
+
+    if (blending == BlendingMode_AlphaToCoverage) {
+	pass->combos.insert_or_assign ("ALPHATOCOVERAGE", 1);
+    }
+
+    return pass;
 }
 
 std::map<std::string, int> MaterialParser::parseCombos (const JSON& it) {
@@ -81,6 +86,10 @@ BlendingMode MaterialParser::parseBlendMode (const std::string& mode) {
 
     if (mode == "translucent") {
 	return BlendingMode_Translucent;
+    }
+
+    if (mode == "alphatocoverage") {
+	return BlendingMode_AlphaToCoverage;
     }
 
     sLog.error ("Unknown blending mode: ", mode, " defaulting to normal");

@@ -14,6 +14,7 @@ enum BlendingMode {
     BlendingMode_Normal = 1,
     BlendingMode_Translucent = 2,
     BlendingMode_Additive = 3,
+    BlendingMode_AlphaToCoverage = 4,
 };
 
 enum CullingMode { CullingMode_Unknown = 0, CullingMode_Normal = 1, CullingMode_Disable = 2 };

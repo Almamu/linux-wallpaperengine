@@ -2,10 +2,12 @@
 
 #include <chrono>
 #include <random>
+#include <unordered_map>
 
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
 
+#include "WallpaperEngine/Render/SpanInfo.h"
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h"
 #include "WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h"
@@ -71,6 +73,7 @@ public:
      * Gets the output
      */
     [[nodiscard]] const WallpaperEngine::Render::Drivers::Output::Output& getOutput () const;
+    [[nodiscard]] double getVideoResumePosition (const Wallpaper& wallpaper) const;
     /**
      * Sets the destination framebuffer for rendering. If not called, the default framebuffer will be used.
      */
@@ -113,7 +116,7 @@ private:
      *
      * @param project
      */
-    void setupPropertiesForProject (const Project& project);
+    void setupPropertiesForProject (const Project& project, const std::string& outputKey);
     /**
      * Prepares CEF browser to be used
      */
@@ -156,6 +159,17 @@ private:
 	const std::string& screen, ActivePlaylist& playlist, const std::chrono::steady_clock::time_point& now
     );
     bool selectNextCandidate (ActivePlaylist& playlist, std::size_t& outOrderIndex);
+    bool prepareNextPlaylistCandidate (
+	const std::string& screen, ActivePlaylist& playlist, const std::chrono::steady_clock::time_point& now
+    );
+    void schedulePlaylistSwitch (
+	ActivePlaylist& playlist, const std::chrono::steady_clock::time_point& now
+    ) const;
+    ApplicationContext::SpanGroup* findSpanGroup (const std::string& screen);
+    WallpaperEngine::Render::SpanInfo calculateSpanInfo (
+	const ApplicationContext::SpanGroup& group
+    ) const;
+    bool loadPlaylistWallpaper (const std::string& screen, const std::filesystem::path& path);
     bool preflightWallpaper (const std::string& path);
     std::vector<std::size_t> buildPlaylistOrder (const ApplicationContext::PlaylistDefinition& definition);
     void ensureBrowserForProject (const Project& project);
@@ -166,6 +180,7 @@ private:
     /** Maps screens to backgrounds */
     std::map<std::string, ProjectUniquePtr> m_backgrounds {};
     std::map<std::string, ActivePlaylist> m_activePlaylists {};
+    std::unordered_map<const Wallpaper*, double> m_videoResumePositions {};
 
     std::unique_ptr<WallpaperEngine::Audio::Drivers::Detectors::AudioPlayingDetector> m_audioDetector = nullptr;
     std::unique_ptr<WallpaperEngine::Audio::AudioContext> m_audioContext = nullptr;

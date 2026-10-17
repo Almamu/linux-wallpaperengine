@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -10,6 +12,66 @@
 
 using namespace WallpaperEngine::Data::Assets;
 using namespace WallpaperEngine::Data::Parsers;
+
+namespace {
+AnimatedVersion parseAnimatedVersion (const char* magic) {
+    if (strncmp (magic, "TEXS0001", 9) == 0) {
+	return AnimatedVersion_TEXS0001;
+    }
+    if (strncmp (magic, "TEXS0002", 9) == 0) {
+	return AnimatedVersion_TEXS0002;
+    }
+    if (strncmp (magic, "TEXS0003", 9) == 0) {
+	return AnimatedVersion_TEXS0003;
+    }
+    sLog.exception ("found animation information of unknown type: ", std::string_view (magic, 9));
+}
+
+void applyLegacyAnimationSize (Texture& header) {
+    if (header.animatedVersion != AnimatedVersion_TEXS0001
+	&& header.animatedVersion != AnimatedVersion_TEXS0002) {
+	return;
+    }
+    if (header.frames.empty ()) {
+	return;
+    }
+    header.gifWidth = header.frames.front ()->width1;
+    header.gifHeight = header.frames.front ()->height1;
+}
+
+void inferSpritesheetMetadata (Texture& header) {
+    if (header.frames.empty () || header.width == 0 || header.height == 0) {
+	return;
+    }
+
+    const auto& firstFrame = *header.frames.front ();
+    const float frameWidth = firstFrame.width1;
+    const float frameHeight = firstFrame.height1;
+    if (frameWidth <= 0.0f || frameHeight <= 0.0f) {
+	return;
+    }
+
+    const uint32_t cols = static_cast<uint32_t> (
+	std::round (static_cast<double> (header.width) / frameWidth)
+    );
+    const uint32_t rows = static_cast<uint32_t> (
+	std::round (static_cast<double> (header.height) / frameHeight)
+    );
+    const uint32_t frameCount = static_cast<uint32_t> (header.frames.size ());
+    if (cols == 0 || rows == 0 || cols * rows < frameCount) {
+	return;
+    }
+
+    header.spritesheetCols = cols;
+    header.spritesheetRows = rows;
+    header.spritesheetFrames = frameCount;
+    float totalDuration = 0.0f;
+    for (const auto& frame : header.frames) {
+	totalDuration += frame->frametime;
+    }
+    header.spritesheetDuration = totalDuration;
+}
+}
 
 TextureUniquePtr TextureParser::parse (const BinaryReader& file) {
     auto result = std::make_unique<Texture> ();
@@ -154,27 +216,27 @@ TextureMap TextureParser::parseTextureMap (const JSON& it) {
 }
 
 TextureFormat TextureParser::parseTextureFormat (uint32_t value) {
-    switch (value) {
-	case TextureFormat_UNKNOWN:
-	case TextureFormat_ARGB8888:
-	case TextureFormat_RGB888:
-	case TextureFormat_RGB565:
-	case TextureFormat_DXT5:
-	case TextureFormat_DXT3:
-	case TextureFormat_DXT1:
-	case TextureFormat_RG88:
-	case TextureFormat_R8:
-	case TextureFormat_RG1616f:
-	case TextureFormat_R16f:
-	case TextureFormat_BC7:
-	case TextureFormat_RGBa1010102:
-	case TextureFormat_RGBA16161616f:
-	case TextureFormat_RGB161616f:
-	    return static_cast<TextureFormat> (value);
-
-	default:
-	    sLog.exception ("unknown texture format: ", value);
+    static constexpr std::array<uint32_t, 15> formats {
+	static_cast<uint32_t> (TextureFormat_UNKNOWN),
+	TextureFormat_ARGB8888,
+	TextureFormat_RGB888,
+	TextureFormat_RGB565,
+	TextureFormat_DXT5,
+	TextureFormat_DXT3,
+	TextureFormat_DXT1,
+	TextureFormat_RG88,
+	TextureFormat_R8,
+	TextureFormat_RG1616f,
+	TextureFormat_R16f,
+	TextureFormat_BC7,
+	TextureFormat_RGBa1010102,
+	TextureFormat_RGBA16161616f,
+	TextureFormat_RGB161616f,
+    };
+    if (std::find (formats.begin (), formats.end (), value) != formats.end ()) {
+	return static_cast<TextureFormat> (value);
     }
+    sLog.exception ("unknown texture format: ", value);
 }
 
 void TextureParser::parseTextureHeader (Texture& header, const BinaryReader& file) {
@@ -237,22 +299,10 @@ void TextureParser::parseContainer (Texture& header, const BinaryReader& file) {
 
 void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) {
     char magic[9] = { 0 };
-
-    // image is animated, keep parsing the rest of the image info
     file.next (magic, 9);
-
-    if (strncmp (magic, "TEXS0001", 9) == 0) {
-	header.animatedVersion = AnimatedVersion_TEXS0001;
-    } else if (strncmp (magic, "TEXS0002", 9) == 0) {
-	header.animatedVersion = AnimatedVersion_TEXS0002;
-    } else if (strncmp (magic, "TEXS0003", 9) == 0) {
-	header.animatedVersion = AnimatedVersion_TEXS0003;
-    } else {
-	sLog.exception ("found animation information of unknown type: ", std::string_view (magic, 9));
-    }
+    header.animatedVersion = parseAnimatedVersion (magic);
 
     uint32_t frameCount = file.nextUInt32 ();
-
     if (header.animatedVersion == AnimatedVersion_TEXS0003) {
 	header.gifWidth = file.nextUInt32 ();
 	header.gifHeight = file.nextUInt32 ();
@@ -266,95 +316,24 @@ void TextureParser::parseAnimations (Texture& header, const BinaryReader& file) 
 	}
     }
 
-    // ensure gif width and height is right for TEXS0001, TEXS0002
-    if (header.animatedVersion == AnimatedVersion_TEXS0001 || header.animatedVersion == AnimatedVersion_TEXS0002) {
-	header.gifWidth = (*header.frames.begin ())->width1;
-	header.gifHeight = (*header.frames.begin ())->height1;
-    }
-
-    // Calculate spritesheet grid dimensions from animation frames
-    // Spritesheets are grid-based textures where each frame is at a specific position
-    if (!header.frames.empty () && header.width > 0 && header.height > 0) {
-	auto& firstFrame = *header.frames.front ();
-	float frameWidth = firstFrame.width1;
-	float frameHeight = firstFrame.height1;
-
-	if (frameWidth > 0.0f && frameHeight > 0.0f) {
-	    const uint32_t cols = static_cast<uint32_t> (std::round (static_cast<double> (header.width) / frameWidth));
-	    const uint32_t rows
-		= static_cast<uint32_t> (std::round (static_cast<double> (header.height) / frameHeight));
-	    const uint32_t frameCount = static_cast<uint32_t> (header.frames.size ());
-
-	    // Only populate spritesheet metadata if the inferred grid can actually hold all frames
-	    // This prevents GIFs (where frameWidth == textureWidth) from being treated as 1×1 spritesheets
-	    if (cols > 0 && rows > 0 && cols * rows >= frameCount) {
-		header.spritesheetCols = cols;
-		header.spritesheetRows = rows;
-		header.spritesheetFrames = frameCount;
-
-		float totalDuration = 0.0f;
-		for (const auto& frame : header.frames) {
-		    totalDuration += frame->frametime;
-		}
-		header.spritesheetDuration = totalDuration;
-	    }
-	}
-    }
+    applyLegacyAnimationSize (header);
+    inferSpritesheetMetadata (header);
 }
 
 uint32_t TextureParser::parseTextureFlags (uint32_t value) {
-    if (value < TextureFlags_All) {
-	return value;
-    }
-
-    sLog.exception ("unknown texture flags: ", value);
+    // Texture flags are a bitmask, and newer Workshop assets can set bits
+    // unknown to this renderer. Keep the raw value so supported bits retain
+    // their behavior and unknown metadata does not make the whole texture fail.
+    return value;
 }
 
 FIF TextureParser::parseFIF (uint32_t value) {
-    switch (value) {
-	case FIF_UNKNOWN:
-	case FIF_BMP:
-	case FIF_ICO:
-	case FIF_JPEG:
-	case FIF_JNG:
-	case FIF_KOALA:
-	case FIF_LBM:
-	case FIF_MNG:
-	case FIF_PBM:
-	case FIF_PBMRAW:
-	case FIF_PCD:
-	case FIF_PCX:
-	case FIF_PGM:
-	case FIF_PGMRAW:
-	case FIF_PNG:
-	case FIF_PPM:
-	case FIF_PPMRAW:
-	case FIF_RAS:
-	case FIF_TARGA:
-	case FIF_TIFF:
-	case FIF_WBMP:
-	case FIF_PSD:
-	case FIF_CUT:
-	case FIF_XBM:
-	case FIF_XPM:
-	case FIF_DDS:
-	case FIF_GIF:
-	case FIF_HDR:
-	case FIF_FAXG3:
-	case FIF_SGI:
-	case FIF_EXR:
-	case FIF_J2K:
-	case FIF_JP2:
-	case FIF_PFM:
-	case FIF_PICT:
-	case FIF_RAW:
-	case FIF_WEBP:
-	case FIF_JXR:
-	    return static_cast<FIF> (value);
-
-	default:
-	    sLog.exception ("unknown free image format: ", value);
+    const bool knownFormat = value <= static_cast<uint32_t> (FIF_JXR)
+	|| value == static_cast<uint32_t> (FIF_UNKNOWN);
+    if (knownFormat) {
+	return static_cast<FIF> (value);
     }
+    sLog.exception ("unknown free image format: ", value);
 }
 
 TextureUniquePtr TextureParser::parse (

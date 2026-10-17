@@ -9,7 +9,8 @@ GLFWMouseInput::GLFWMouseInput (const Render::Drivers::GLFWOpenGLDriver& driver)
 
 void GLFWMouseInput::update () {
     if (!this->m_driver.getApp ().getContext ().settings.mouse.enabled) {
-	this->m_reportedPosition = { 0, 0 };
+	const auto size = this->m_driver.getFramebufferSize ();
+	this->m_reportedPosition = { size.x * 0.5, size.y * 0.5 };
 	return;
     }
 

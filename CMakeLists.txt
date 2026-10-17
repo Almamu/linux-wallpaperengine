@@ -434,6 +434,10 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/Objects/CRenderable.h
     src/WallpaperEngine/Render/Objects/CImage.h
     src/WallpaperEngine/Render/Objects/CImage.cpp
+    src/WallpaperEngine/Render/Objects/PuppetModel.h
+    src/WallpaperEngine/Render/Objects/PuppetModel.cpp
+    src/WallpaperEngine/Render/Objects/CModel.h
+    src/WallpaperEngine/Render/Objects/CModel.cpp
     src/WallpaperEngine/Render/Objects/CSound.h
     src/WallpaperEngine/Render/Objects/CSound.cpp
     src/WallpaperEngine/Render/Objects/CParticle.h

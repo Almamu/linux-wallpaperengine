@@ -58,7 +58,10 @@ JSValue scriptpropertiescreator_add (JSContext* ctx, JSValueConst this_val, int 
     // no need to do anything, any add call should just return itself
     // we'll set them either way as what comes in the DynamicValue
     // TODO: PROPERLY IMPLEMENT THIS CHAIN AT SOME POINT
-    return this_val;
+    // QuickJS native callbacks must return an owned JSValue. `this_val` is
+    // borrowed, so returning it directly invalidates chained calls after the
+    // first addSlider/addCheckbox/etc.
+    return JS_DupValue (ctx, this_val);
 }
 
 JSValue scriptpropertiescreator_finish (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -66,19 +69,14 @@ JSValue scriptpropertiescreator_finish (JSContext* ctx, JSValueConst this_val, i
     const auto container = static_cast<OpaqueScriptProperties*> (JS_GetAnyOpaque (this_val, &classId));
 
     // get all the properties and set the right values
-    const auto* module = container->object.getEngine ().getRunningModule ();
-
-    if (module == nullptr) {
+    DynamicValue* value = container->object.getEngine ().getRunningValue ();
+    if (value == nullptr) {
 	return JS_UNDEFINED;
     }
 
     // create a new object based off the properties in the dynamic value and call it a day
     JSValue result = JS_NewObjectClass (ctx, container->object.getPropertiesClassId ());
-    JS_SetOpaque (
-	result,
-	new OpaqueScriptPropertiesInstance { .object = container->object,
-					     .value = container->object.getEngine ().getRunningModule ()->value }
-    );
+    JS_SetOpaque (result, new OpaqueScriptPropertiesInstance { .object = container->object, .value = *value });
 
     return result;
 }
@@ -169,8 +167,8 @@ ScriptPropertiesObject::ScriptPropertiesObject (ScriptEngine& engine, Render::Wa
     JS_DefinePropertyValueStr (
 	this->m_engine.getContext (), this->m_engine.getGlobalThis (), "createScriptProperties",
 	JS_NewCFunctionMagic (
-	    this->m_engine.getContext (), scriptpropertiescreator_create, "createScriptProperties", 0, JS_CFUNC_generic,
-	    m_instanceId
+	    this->m_engine.getContext (), scriptpropertiescreator_create, "createScriptProperties", 0,
+	    JS_CFUNC_generic_magic, m_instanceId
 	),
 	JS_PROP_ENUMERABLE
     );

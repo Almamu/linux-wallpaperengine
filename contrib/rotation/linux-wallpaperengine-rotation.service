@@ -1,0 +1,18 @@
+[Unit]
+Description=Linux Wallpaper Engine — rotate Workshop wallpapers every 10 minutes
+PartOf=graphical-session.target
+After=plasma-plasmashell.service graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.local/bin/wallpaper-engine-rotate.py
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=10
+KillMode=control-group
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

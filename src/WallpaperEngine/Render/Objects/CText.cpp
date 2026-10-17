@@ -79,6 +79,7 @@ CText::CText (Wallpapers::CScene& scene, const Text& text) :
     this->registerProperty ("alpha", *text.alpha->value);
     this->registerProperty ("origin", *text.origin->value);
     this->registerProperty ("scale", *text.scale->value);
+    this->registerProperty ("angles", *text.groupAngles->value);
     this->registerProperty ("visible", *text.visible->value);
     this->registerProperty ("pointSize", *text.pointSize->value);
     this->registerProperty ("text", *text.text->value);

@@ -8,7 +8,9 @@
 
 #include "WallpaperEngine/Render/CFBO.h"
 #include "WallpaperEngine/Render/Helpers/ContextAware.h"
+#include "WallpaperEngine/Render/SpanInfo.h"
 #include "WallpaperEngine/Render/RenderContext.h"
+#include "WallpaperEngine/Render/PostProcessSettings.h"
 
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 #include "WallpaperEngine/Media/MediaSource.h"
@@ -38,11 +40,7 @@ class CWallpaper : public Helpers::ContextAware, public FBOProvider, public Type
     friend class WallpaperEngine::Application::WallpaperApplication;
 
 public:
-    /** Information for span-mode rendering: one wallpaper across multiple viewports */
-    struct SpanInfo {
-	/** Bounding box of the entire span group (x, y, width, height) in global desktop coordinates */
-	glm::ivec4 totalBounds;
-    };
+    using SpanInfo = WallpaperEngine::Render::SpanInfo;
 
     virtual ~CWallpaper () override;
 
@@ -140,13 +138,14 @@ public:
     static std::unique_ptr<CWallpaper> fromWallpaper (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
 	WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
-	const uint32_t& clampMode
+	const uint32_t& clampMode, const glm::vec2& uvOffset, const PostProcessSettings& postProcess
     );
 
 protected:
     CWallpaper (
 	const Wallpaper& wallpaperData, RenderContext& context, AudioContext& audioContext,
-	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode, const glm::vec2& uvOffset,
+	const PostProcessSettings& postProcess
     );
 
     /**
@@ -177,6 +176,10 @@ private:
     GLint g_Texture0 = GL_NONE;
     GLint a_Position = GL_NONE;
     GLint a_TexCoord = GL_NONE;
+    GLint u_FitBlurEnabled = GL_NONE;
+    GLint u_FitUVBounds = GL_NONE;
+    GLint u_FillUVBounds = GL_NONE;
+    GLint u_FitBlurStep = GL_NONE;
     /** The framebuffer to draw the background to */
     GLuint m_destFramebuffer = GL_NONE;
     /** Setups OpenGL's shaders for this wallpaper backbuffer */
@@ -187,6 +190,9 @@ private:
     AudioContext& m_audioContext;
     /** Current Wallpaper state */
     WallpaperState m_state;
+    /** Fill mapping used behind fit-scaled output. */
+    WallpaperState m_fillState;
+    PostProcessSettings m_postProcess;
     /** Span info for multi-monitor spanning (optional) */
     std::optional<SpanInfo> m_spanInfo = std::nullopt;
     /** Frame counter to avoid redundant renderFrame calls when shared across viewports */

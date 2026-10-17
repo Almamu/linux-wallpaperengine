@@ -104,15 +104,16 @@ void CParticle::setup () {
 	return;
     }
 
-    // Convert origin from screen space to centered space
-    // Projection uses ortho(-width/2, width/2, -height/2, height/2)
-    // but particle origins are in screen space where (0,0) is top-left
     m_lastScreenWidth = getScene ().getCamera ().getWidth ();
     m_lastScreenHeight = getScene ().getCamera ().getHeight ();
 
     glm::vec3 origin = m_particle.origin->value->getVec3 ();
-    origin.x -= m_lastScreenWidth / 2.0f;
-    origin.y = m_lastScreenHeight / 2.0f - origin.y;
+    // Orthographic scenes encode particle origins in top-left screen coordinates.
+    // Perspective scenes use the same world coordinates as their camera and models.
+    if (getScene ().getCamera ().isOrthogonal ()) {
+	origin.x -= m_lastScreenWidth / 2.0f;
+	origin.y = m_lastScreenHeight / 2.0f - origin.y;
+    }
     m_transformedOrigin = origin;
 
     // Load particle material constants
@@ -216,8 +217,10 @@ void CParticle::update (float dt) {
     if (screenWidth != m_lastScreenWidth || screenHeight != m_lastScreenHeight) {
 	// Resolution changed - recalculate transformed origin
 	glm::vec3 origin = m_particle.origin->value->getVec3 ();
-	origin.x -= screenWidth / 2.0f;
-	origin.y = screenHeight / 2.0f - origin.y;
+	if (getScene ().getCamera ().isOrthogonal ()) {
+	    origin.x -= screenWidth / 2.0f;
+	    origin.y = screenHeight / 2.0f - origin.y;
+	}
 	m_transformedOrigin = origin;
 
 	// Update world-space control points that aren't mouse-linked
@@ -1855,6 +1858,7 @@ void CParticle::updateMatrices () {
 
 void CParticle::applyParallaxToModelMatrix () {
     if (!getScene ().getScene ().camera.parallax.enabled
+	|| !getScene ().getContext ().getApp ().getContext ().settings.mouse.enabled
 	|| getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
 	return;
     }

@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 #include "TextureProvider.h"
@@ -21,7 +22,7 @@ public:
 	StretchUVs,
     };
 
-    WallpaperState (const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode);
+    WallpaperState (const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode, const glm::vec2& uvOffset = { 0.0f, 0.0f });
 
     /**
      * Checks if any of the given values has changed
@@ -135,5 +136,6 @@ private:
     // Texture scaling mode
     TextureUVsScaling m_textureUVsMode = TextureUVsScaling::DefaultUVs;
     uint32_t m_clampingMode = TextureFlags_NoFlags;
+    glm::vec2 m_uvOffset = { 0.0f, 0.0f };
 };
 } // namespace WallpaperEngine::Render

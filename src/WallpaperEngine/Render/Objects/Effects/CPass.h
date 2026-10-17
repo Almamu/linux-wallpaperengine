@@ -45,6 +45,8 @@ public:
     void setBlendingMode (BlendingMode blendingmode);
     [[nodiscard]] BlendingMode getBlendingMode () const;
     [[nodiscard]] std::shared_ptr<const CFBO> resolveFBO (const std::string& name) const;
+    [[nodiscard]] std::shared_ptr<const TextureProvider> getTexture (int index) const;
+    void setTextureOverride (int index, std::shared_ptr<const TextureProvider> texture);
 
     [[nodiscard]] std::shared_ptr<const FBOProvider> getFBOProvider () const;
     [[nodiscard]] const CRenderable& getRenderable () const;
@@ -62,6 +64,7 @@ public:
     void addUniform (const std::string& name, const float* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec3* value);
     void addUniform (const std::string& name, const glm::vec4* value);
+    void addUniform (const std::string& name, const glm::mat3* value);
     void addUniform (const std::string& name, const glm::mat4* value);
 
 private:
@@ -142,7 +145,6 @@ private:
     void addUniform (const std::string& name, const int* value, int count = 1);
     void addUniform (const std::string& name, const double* value, int count = 1);
     void addUniform (const std::string& name, const glm::vec2* value);
-    void addUniform (const std::string& name, const glm::mat3* value);
     void addUniform (const std::string& name, const int** value);
     void addUniform (const std::string& name, const double** value);
     void addUniform (const std::string& name, const float** value);
@@ -156,8 +158,12 @@ private:
     template <typename T> void addUniform (const std::string& name, UniformType type, T** value);
 
     void setupRenderFramebuffer () const;
+    void prepareFeedbackSnapshot ();
     void setupRenderTexture ();
     [[nodiscard]] std::shared_ptr<const TextureProvider> resolveTexture0 ();
+    [[nodiscard]] std::shared_ptr<const TextureProvider> avoidRenderTargetFeedback (
+	std::shared_ptr<const TextureProvider> texture, int index
+    ) const;
     [[nodiscard]] TextureAnimationState
     resolveTextureAnimationState (const std::shared_ptr<const TextureProvider>& texture) const;
     void bindTextureUnit (int index, const std::shared_ptr<const TextureProvider>& texture, uint32_t frame) const;
@@ -194,10 +200,13 @@ private:
      * Contains the final map of textures to be used
      */
     std::map<int, std::shared_ptr<TextureChainEntry>> m_textures = {};
+    std::map<int, std::shared_ptr<const TextureProvider>> m_textureOverrides = {};
 
     Render::Shaders::Shader* m_shader = nullptr;
 
     std::shared_ptr<const CFBO> m_drawTo = nullptr;
+    std::shared_ptr<const CFBO> m_resolvedDrawTo = nullptr;
+    std::shared_ptr<CFBO> m_feedbackSnapshot = nullptr;
     std::shared_ptr<const TextureProvider> m_input = nullptr;
     std::shared_ptr<const TextureProvider> m_previousInput = nullptr;
     glm::vec4 m_texture0Resolution = {};

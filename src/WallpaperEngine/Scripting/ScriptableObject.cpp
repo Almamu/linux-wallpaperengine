@@ -1,6 +1,7 @@
 #include "ScriptableObject.h"
 
 #include "ScriptEngine.h"
+#include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 
 #include <ranges>
@@ -9,11 +10,10 @@ using namespace WallpaperEngine::Render;
 using namespace WallpaperEngine::Scripting;
 
 ScriptableObject::ScriptableObject (Wallpapers::CScene& scene, const Object& object) : CObject (scene, object) {
-    // register common dynamic values
+    // Origin is shared by every typed scene object. Scale, angles and visibility
+    // are registered by the concrete type because their renderable values live
+    // on the typed object, not on ObjectData's generic group fields.
     this->registerProperty ("origin", *object.origin->value);
-    this->registerProperty ("scale", *object.groupScale->value);
-    this->registerProperty ("angles", *object.groupAngles->value);
-    this->registerProperty ("visible", *object.groupVisible->value);
 }
 
 DynamicValue& ScriptableObject::getProperty (const std::string& name) {
@@ -24,6 +24,11 @@ DynamicValue& ScriptableObject::getProperty (const std::string& name) {
     }
 
     return it->second.value;
+}
+
+std::optional<ScriptableObject::AnimationLayerProperties>
+ScriptableObject::findAnimationLayer (const std::string&) const {
+    return std::nullopt;
 }
 
 const std::map<std::string, ScriptableObject::PropertyEntry>& ScriptableObject::getProperties () const {
@@ -40,4 +45,19 @@ void ScriptableObject::registerProperty (const std::string& name, DynamicValue& 
     }
 
     this->getScene ().getScriptEngine ().queueScript (inserted.first->second.key, inserted.first->second.value, *this);
+}
+
+void ScriptableObject::registerMaterialProperties (
+    const std::string& prefix, const Data::Model::Material& material
+) {
+    for (size_t passIndex = 0; passIndex < material.passes.size (); passIndex++) {
+	const auto& pass = *material.passes[passIndex];
+	for (const auto& [name, setting] : pass.constants) {
+	    if (setting != nullptr && setting->value != nullptr) {
+		this->registerProperty (
+		    prefix + "_pass" + std::to_string (passIndex) + "_" + name, *setting->value
+		);
+	    }
+	}
+    }
 }

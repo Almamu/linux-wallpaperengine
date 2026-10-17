@@ -5,8 +5,9 @@
 
 using namespace WallpaperEngine::Render;
 
-WallpaperState::WallpaperState (const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode) :
-    m_textureUVsMode (textureUVsMode), m_clampingMode (clampMode) { }
+WallpaperState::WallpaperState (
+    const TextureUVsScaling& textureUVsMode, const uint32_t& clampMode, const glm::vec2& uvOffset
+) : m_textureUVsMode (textureUVsMode), m_clampingMode (clampMode), m_uvOffset (uvOffset) { }
 
 bool WallpaperState::hasChanged (
     const glm::ivec4& viewport, const bool& vflip, const int& projectionWidth, const int& projectionHeight
@@ -34,7 +35,10 @@ void WallpaperState::resetUVs () {
 void WallpaperState::updateUs (const int& projectionWidth, const int& projectionHeight) {
     const float viewportWidth = this->getViewportWidth ();
     const float viewportHeight = this->getViewportHeight ();
-    const int newWidth = viewportHeight / projectionHeight * projectionWidth;
+    // Keep the aspect-ratio calculation in floating point. Integer division
+    // here collapses common ratios (for example, 1080 / 1920) to zero and
+    // produces invalid UVs for portrait/landscape mismatches.
+    const float newWidth = viewportHeight * static_cast<float> (projectionWidth) / projectionHeight;
     const float newCenter = newWidth / 2.0f;
     const float viewportCenter = viewportWidth / 2.0;
 
@@ -49,7 +53,7 @@ void WallpaperState::updateUs (const int& projectionWidth, const int& projection
 void WallpaperState::updateVs (const int& projectionWidth, const int& projectionHeight) {
     const float viewportWidth = this->getViewportWidth ();
     const float viewportHeight = this->getViewportHeight ();
-    const int newHeight = viewportWidth / projectionWidth * projectionHeight;
+    const float newHeight = viewportWidth * static_cast<float> (projectionHeight) / projectionWidth;
     const float newCenter = newHeight / 2.0f;
     const float viewportCenter = viewportHeight / 2.0;
 
@@ -182,5 +186,15 @@ void WallpaperState::updateState (
                 This message is for developers, if you are just user it's a bug."
 	    );
 	    break;
+    }
+
+    this->m_UVs.ustart += this->m_uvOffset.x;
+    this->m_UVs.uend += this->m_uvOffset.x;
+    if (this->m_vflip) {
+	this->m_UVs.vstart -= this->m_uvOffset.y;
+	this->m_UVs.vend -= this->m_uvOffset.y;
+    } else {
+	this->m_UVs.vstart += this->m_uvOffset.y;
+	this->m_UVs.vend += this->m_uvOffset.y;
     }
 }

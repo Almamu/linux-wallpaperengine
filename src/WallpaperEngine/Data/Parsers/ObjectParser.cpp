@@ -11,17 +11,48 @@
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <algorithm>
+#include <cstring>
 #include <glm/gtc/constants.hpp>
 #include <sstream>
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
+namespace {
+std::unique_ptr<PropertyAnimation> parsePropertyAnimation (const JSON& property) {
+    const auto animationIt = property.find ("animation");
+    if (animationIt == property.end () || !animationIt->is_object ()) {
+	return nullptr;
+    }
+
+    auto animation = std::make_unique<PropertyAnimation> ();
+    for (int channel = 0; channel < 3; channel++) {
+	const auto channelIt = animationIt->find ("c" + std::to_string (channel));
+	if (channelIt == animationIt->end () || !channelIt->is_array ()) {
+	    continue;
+	}
+	for (const auto& key : *channelIt) {
+	    AnimationKey parsed {};
+	    parsed.frame = key.value ("frame", 0.0f);
+	    parsed.value = key.value ("value", 0.0f);
+	    parsed.frontX = key.contains ("front") && key["front"].is_object () ? key["front"].value ("x", 1.0f) : 1.0f;
+	    parsed.backX = key.contains ("back") && key["back"].is_object () ? key["back"].value ("x", -1.0f) : -1.0f;
+	    animation->channels[channel].keys.push_back (parsed);
+	    animation->maxFrame = std::max (animation->maxFrame, parsed.frame);
+	}
+    }
+    return animation;
+}
+} // namespace
+
 ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
     const auto imageIt = it.find ("image");
     const auto soundIt = it.find ("sound");
     const auto particleIt = it.find ("particle");
     const auto textIt = it.find ("text");
+    const auto modelIt = it.find ("model");
+    const auto cameraIt = it.find ("camera");
     const auto lightIt = it.find ("light");
     // use shape to refer to VolumeLight
     const auto shapeIt = it.find ("shape");
@@ -35,6 +66,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	    .name = it.require<std::string> ("name", "Object must have a name"),
 	    .dependencies = parseDependencies (it),
 	    .parent = it.optional<int> ("parent"),
+	    .attachment = it.optional<std::string> ("attachment"),
 	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
 	    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
 	    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
@@ -58,6 +90,7 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	    .name = name,
 	    .dependencies = parseDependencies (it),
 	    .parent = it.optional<int> ("parent"),
+	    .attachment = it.optional<std::string> ("attachment"),
 	    .origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
 	    .groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
 	    .groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
@@ -73,8 +106,52 @@ ObjectUniquePtr ObjectParser::parse (const JSON& it, const Project& project) {
 	return parseParticle (it, project, std::move (basedata));
     } else if (textIt != it.end ()) {
 	return parseText (it, project, std::move (basedata));
+    } else if (modelIt != it.end () && modelIt->is_string ()) {
+	try {
+	    return parseModelObject (it, project, std::move (basedata), modelIt->get<std::string> ());
+	} catch (const std::exception& e) {
+	    sLog.error ("Cannot parse model object: ", e.what ());
+	    const auto idIt = it.find ("id");
+	    basedata = ObjectData {
+		.id = (idIt != it.end () && idIt->is_number ()) ? idIt->get<int> () : -1,
+		.name = "model-parse-failed",
+		.dependencies = parseDependencies (it),
+		.parent = it.optional<int> ("parent"),
+		.attachment = it.optional<std::string> ("attachment"),
+		.origin = it.user ("origin", project.properties, glm::vec3 (0.0f)),
+		.groupScale = it.user ("scale", project.properties, glm::vec3 (1.0f)),
+		.groupAngles = it.user ("angles", project.properties, glm::vec3 (0.0f)),
+		.groupVisible = it.user ("visible", project.properties, true),
+	    };
+	}
+
+    } else if (cameraIt != it.end () && cameraIt->is_string ()) {
+	const auto& properties = project.properties;
+	return std::make_unique<CameraObject> (
+	    std::move (basedata),
+	    CameraObjectData {
+		.camera = cameraIt->get<std::string> (),
+		.path = it.optional ("path", std::string {}),
+		.queueMode = it.optional ("queuemode", std::string ("random")),
+		.fov = it.user ("fov", properties, 50.0f),
+		.zoom = it.user ("zoom", properties, 1.0f),
+	    }
+	);
     } else if (lightIt != it.end ()) {
-	sLog.error ("Light objects are not supported yet");
+	if (!lightIt->is_string ()) {
+	    sLog.error ("Ignoring light with invalid type on object ", basedata.id);
+	    return std::make_unique<Object> (std::move (basedata));
+	}
+	return std::make_unique<Light> (
+	    std::move (basedata),
+	    LightData {
+		.type = lightIt->get<std::string> (),
+		.color = it.user ("color", project.properties, glm::vec3 (1.0f)),
+		.intensity = it.user ("intensity", project.properties, 1.0f),
+		.radius = it.user ("radius", project.properties, 1.0f),
+		.exponent = it.user ("exponent", project.properties, 2.0f),
+	    }
+	);
     } else if (shapeIt != it.end ()) {
 	sLog.error ("VolumeLight objects are not supported yet");
     } else {
@@ -99,7 +176,14 @@ std::vector<int> ObjectParser::parseDependencies (const JSON& it) {
     std::vector<int> result = {};
 
     for (const auto& cur : *dependenciesIt) {
-	result.push_back (cur);
+	if (cur.is_number ()) {
+	    result.push_back (cur.get<int> ());
+	} else if (cur.is_object ()) {
+	    const auto id = cur.find ("id");
+	    if (id != cur.end () && id->is_number ()) {
+		result.push_back (id->get<int> ());
+	    }
+	}
     }
 
     return result;
@@ -123,6 +207,12 @@ SoundUniquePtr ObjectParser::parseSound (const JSON& it, ObjectData base) {
 }
 
 TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, ObjectData base) {
+    const auto padding = it.optional ("padding");
+    // Workshop text layers may encode padding as a vector string (for example,
+    // "32.00000 32.00000"). Text padding is not rendered yet, so keep the
+    // existing numeric value when present and ignore other representations.
+    const int paddingValue = padding && padding->is_number () ? padding->get<int> () : 0;
+
     return std::make_unique<Text> (
 	std::move (base),
 	TextData {
@@ -136,7 +226,141 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	    .visible = it.user ("visible", project.properties, true),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
-	    .padding = it.optional ("padding", 0),
+	    .padding = paddingValue,
+	}
+    );
+}
+
+ModelObjectUniquePtr
+ObjectParser::parseModelObject (const JSON& it, const Project& project, ObjectData base, const std::string& modelFile) {
+    const auto data = project.assetLocator->readString (modelFile);
+    if (data.size () < 32 || data.compare (0, 4, "MDLV") != 0) {
+	sLog.exception ("Not an MDLV model file: ", modelFile);
+    }
+
+    const size_t magicEnd = data.find ('\0');
+    if (magicEnd == std::string::npos || magicEnd + 3 * sizeof (uint32_t) > data.size ()) {
+	sLog.exception ("Truncated MDLV header in model ", modelFile);
+    }
+
+    uint32_t mdlvVersion = 0;
+    if (magicEnd >= 8) {
+	for (size_t digit = 4; digit < 8; digit++) {
+	    const char ch = data[digit];
+	    if (ch < '0' || ch > '9') {
+		mdlvVersion = 0;
+		break;
+	    }
+	    mdlvVersion = mdlvVersion * 10 + static_cast<uint32_t> (ch - '0');
+	}
+    }
+
+    size_t offset = magicEnd + 1 + 2 * sizeof (uint32_t);
+    uint32_t submeshCount = 0;
+    std::memcpy (&submeshCount, data.data () + offset, sizeof (submeshCount));
+    offset += sizeof (submeshCount);
+
+    if (submeshCount == 0 || submeshCount > 16) {
+	sLog.exception ("Unexpected submesh count ", submeshCount, " in model ", modelFile);
+    }
+
+    std::vector<std::string> materialPaths;
+    materialPaths.reserve (submeshCount);
+
+    for (uint32_t i = 0; i < submeshCount; i++) {
+	if (offset >= data.size ()) {
+	    sLog.exception ("Truncated submesh record in model ", modelFile);
+	}
+	const size_t nameEnd = data.find ('\0', offset);
+	if (nameEnd == std::string::npos) {
+	    sLog.exception ("Unterminated material name in model ", modelFile);
+	}
+	materialPaths.push_back (data.substr (offset, nameEnd - offset));
+	offset = nameEnd + 1;
+
+	// [u32 flags/zero][bounds 6f][u32 vertex-layout tag]
+	constexpr size_t fixedHeader = sizeof (uint32_t) + 6 * sizeof (float) + sizeof (uint32_t);
+	if (offset + fixedHeader + sizeof (uint32_t) > data.size ()) {
+	    sLog.exception ("Truncated submesh header in model ", modelFile);
+	}
+	offset += fixedHeader;
+
+	uint32_t vertexBytes = 0;
+	std::memcpy (&vertexBytes, data.data () + offset, sizeof (vertexBytes));
+	offset += sizeof (vertexBytes);
+	if (vertexBytes == 0 || offset + vertexBytes + sizeof (uint32_t) > data.size ()) {
+	    sLog.exception ("Truncated submesh vertices in model ", modelFile);
+	}
+	offset += vertexBytes;
+
+	uint32_t indexBytes = 0;
+	std::memcpy (&indexBytes, data.data () + offset, sizeof (indexBytes));
+	offset += sizeof (indexBytes);
+	if (indexBytes == 0 || offset + indexBytes > data.size ()) {
+	    sLog.exception ("Truncated submesh indices in model ", modelFile);
+	}
+	offset += indexBytes;
+
+	// MDLV0023 adds a six-byte zero trailer after every submesh index block.
+	// Without consuming it, the next material name starts inside this trailer
+	// and the whole model is rejected as a truncated submesh.
+	if (mdlvVersion >= 23) {
+	    constexpr size_t trailerSize = 6;
+	    if (offset + trailerSize > data.size ()) {
+		sLog.exception ("Truncated MDLV0023 submesh trailer in model ", modelFile);
+	    }
+	    offset += trailerSize;
+	}
+    }
+
+    const auto& properties = project.properties;
+    const auto& animationLayers = it.optional ("animationlayers");
+    std::unique_ptr<PropertyAnimation> anglesAnimation;
+
+    if (const auto anglesIt = it.find ("angles"); anglesIt != it.end () && anglesIt->is_object ()) {
+	if (const auto animIt = anglesIt->find ("animation"); animIt != anglesIt->end () && animIt->is_object ()) {
+	    anglesAnimation = std::make_unique<PropertyAnimation> ();
+	    for (int channel = 0; channel < 3; channel++) {
+		const std::string name = "c" + std::to_string (channel);
+		const auto chanIt = animIt->find (name);
+		if (chanIt == animIt->end () || !chanIt->is_array ()) {
+		    continue;
+		}
+		for (const auto& key : *chanIt) {
+		    AnimationKey k {};
+		    k.frame = key.value ("frame", 0.0f);
+		    k.value = key.value ("value", 0.0f);
+		    k.frontX
+			= key.contains ("front") && key["front"].is_object () ? key["front"].value ("x", 1.0f) : 1.0f;
+		    k.backX
+			= key.contains ("back") && key["back"].is_object () ? key["back"].value ("x", -1.0f) : -1.0f;
+		    anglesAnimation->channels[channel].keys.push_back (k);
+		    anglesAnimation->maxFrame = std::max (anglesAnimation->maxFrame, k.frame);
+		}
+	    }
+	}
+    }
+
+    std::vector<MaterialUniquePtr> extraMaterials;
+    for (size_t i = 1; i < materialPaths.size (); i++) {
+	extraMaterials.push_back (MaterialParser::load (project, materialPaths[i]));
+    }
+
+    return std::make_unique<ModelObject> (
+	std::move (base),
+	ModelObjectData {
+	    .scale = it.user ("scale", properties, glm::vec3 (1.0f)),
+	    .angles = it.user ("angles", properties, glm::vec3 (0.0f)),
+	    .visible = it.user ("visible", properties, true),
+	    .alpha = it.user ("alpha", properties, 1.0f),
+	    .color = it.color ("color", properties, Builders::ColorBuilder::White),
+	    .modelFile = modelFile,
+	    .material = MaterialParser::load (project, materialPaths.front ()),
+	    .extraMaterials = std::move (extraMaterials),
+	    .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers, project)
+							    : std::vector<ImageAnimationLayerUniquePtr> {},
+	    .perspective = it.optional ("perspective", false),
+	    .anglesAnimation = std::move (anglesAnimation),
 	}
     );
 }
@@ -154,12 +378,18 @@ ObjectParser::parseImage (const JSON& it, const Project& project, ObjectData bas
 	    .angles = it.user ("angles", properties, glm::vec3 (0.0f)),
 	    .visible = it.user ("visible", properties, true),
 	    .alpha = it.user ("alpha", properties, 1.0f),
+	    .alphaAnimation =
+		[&it] {
+		    const auto alphaIt = it.find ("alpha");
+		    return alphaIt != it.end () && alphaIt->is_object () ? parsePropertyAnimation (*alphaIt) : nullptr;
+		}(),
 	    .color = it.color ("color", properties, Builders::ColorBuilder::White),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .size = it.user ("size", properties, glm::vec2 (0.0f))->value->getVec2 (),
 	    .parallaxDepth = it.user ("parallaxDepth", properties, glm::vec2 (0.0f)),
 	    .colorBlendMode = it.user ("colorBlendMode", properties, 0),
 	    .brightness = it.user ("brightness", properties, 1.0f),
+	    .copyBackground = it.optional ("copybackground", false),
 	    .model = ModelParser::load (project, image),
 	    .effects = effects.has_value () ? parseEffects (*effects, project) : std::vector<ImageEffectUniquePtr> {},
 	    .animationLayers = animationLayers.has_value () ? parseAnimationLayers (*animationLayers, project)
@@ -280,6 +510,7 @@ ImageAnimationLayerUniquePtr ObjectParser::parseAnimationLayer (const JSON& it, 
 
     return std::make_unique<ImageAnimationLayer> (ImageAnimationLayer {
 	.id = it.require<int> ("id", "Animation layer must have an id"),
+	.additive = it.optional ("additive", false),
 	.rate = it.user ("rate", properties, 1.0f),
 	.visible = it.user ("visible", properties, false),
 	.blend = it.user ("blend", properties, 1.0f),

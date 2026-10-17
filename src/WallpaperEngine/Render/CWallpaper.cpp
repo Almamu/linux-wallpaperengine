@@ -11,10 +11,13 @@ using namespace WallpaperEngine::Render;
 
 CWallpaper::CWallpaper (
     const Wallpaper& wallpaperData, RenderContext& context, AudioContext& audioContext,
-    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+    const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode, const glm::vec2& uvOffset,
+    const PostProcessSettings& postProcess
 ) :
     ContextAware (context), FBOProvider (nullptr), m_wallpaperData (wallpaperData), m_audioContext (audioContext),
-    m_state (scalingMode, clampMode) {
+    m_state (scalingMode, clampMode, uvOffset),
+    m_fillState (WallpaperState::TextureUVsScaling::ZoomFillUVs, clampMode, uvOffset),
+    m_postProcess (postProcess) {
     // generate the VAO to stop opengl from complaining
     glGenVertexArrays (1, &this->m_vaoBuffer);
     glBindVertexArray (this->m_vaoBuffer);
@@ -110,10 +113,49 @@ void CWallpaper::setupShaders () {
     sourcePointer = "#version 330\n"
 		    "precision highp float;\n"
 		    "uniform sampler2D g_Texture0;\n"
+		    "uniform float u_Saturation;\n"
+		    "uniform float u_Contrast;\n"
+		    "uniform vec3 u_BorderColour;\n"
+		    "uniform int u_FitBlurEnabled;\n"
+		    "uniform vec4 u_FitUVBounds;\n"
+		    "uniform vec4 u_FillUVBounds;\n"
+		    "uniform vec2 u_FitBlurStep;\n"
 		    "in vec2 v_TexCoord;\n"
 		    "out vec4 out_FragColor;\n"
+		    "vec3 adjustColour (vec3 pixel) {\n"
+		    "float lum = dot (pixel, vec3 (0.2126, 0.7152, 0.0722));\n"
+		    "vec3 colour = mix (vec3 (lum), pixel, u_Saturation);\n"
+		    "return (colour - 0.5) * u_Contrast + 0.5;\n"
+		    "}\n"
+		    // A small weighted 3x3 blur keeps the fitted wallpaper fill on the GPU.
+		    "vec3 blurredFill (vec2 uv) {\n"
+		    "vec2 d = u_FitBlurStep;\n"
+		    "vec3 colour = texture (g_Texture0, uv).rgb * 4.0;\n"
+		    "colour += (texture (g_Texture0, uv + vec2 (d.x, 0.0)).rgb +\n"
+		    "texture (g_Texture0, uv - vec2 (d.x, 0.0)).rgb +\n"
+		    "texture (g_Texture0, uv + vec2 (0.0, d.y)).rgb +\n"
+		    "texture (g_Texture0, uv - vec2 (0.0, d.y)).rgb) * 2.0;\n"
+		    "colour += texture (g_Texture0, uv + d).rgb +\n"
+		    "texture (g_Texture0, uv - d).rgb +\n"
+		    "texture (g_Texture0, uv + vec2 (d.x, -d.y)).rgb +\n"
+		    "texture (g_Texture0, uv + vec2 (-d.x, d.y)).rgb;\n"
+		    "return colour / 16.0;\n"
+		    "}\n"
 		    "void main () {\n"
-		    "out_FragColor = texture (g_Texture0, v_TexCoord);\n"
+		    "if (u_FitBlurEnabled != 0) {\n"
+		    "vec2 fitStart = u_FitUVBounds.xy;\n"
+		    "vec2 fitEnd = u_FitUVBounds.zw;\n"
+		    // Fit UVs span the output; coordinates outside the texture are the empty bars.
+		    "if (any (lessThan (v_TexCoord, vec2 (0.0))) || any (greaterThan (v_TexCoord, vec2 (1.0)))) {\n"
+		    "vec2 screenUV = (v_TexCoord - fitStart) / (fitEnd - fitStart);\n"
+		    "vec2 fillUV = mix (u_FillUVBounds.xy, u_FillUVBounds.zw, screenUV);\n"
+		    "out_FragColor = vec4 (adjustColour (blurredFill (fillUV)), 1.0);\n"
+		    "return;\n"
+		    "}\n"
+		    "}\n"
+		    "vec4 tex = texture (g_Texture0, v_TexCoord);\n"
+		    "if (tex.a < 0.01) { out_FragColor = vec4 (u_BorderColour, 1.0); return; }\n"
+		    "out_FragColor = vec4 (adjustColour (tex.rgb), tex.a);\n"
 		    "}";
 
     glShaderSource (fragmentShaderID, 1, &sourcePointer, nullptr);
@@ -178,6 +220,17 @@ void CWallpaper::setupShaders () {
     this->g_Texture0 = glGetUniformLocation (this->m_shader, "g_Texture0");
     this->a_Position = glGetAttribLocation (this->m_shader, "a_Position");
     this->a_TexCoord = glGetAttribLocation (this->m_shader, "a_TexCoord");
+    this->u_FitBlurEnabled = glGetUniformLocation (this->m_shader, "u_FitBlurEnabled");
+    this->u_FitUVBounds = glGetUniformLocation (this->m_shader, "u_FitUVBounds");
+    this->u_FillUVBounds = glGetUniformLocation (this->m_shader, "u_FillUVBounds");
+    this->u_FitBlurStep = glGetUniformLocation (this->m_shader, "u_FitBlurStep");
+    glUseProgram (this->m_shader);
+    glUniform1f (glGetUniformLocation (this->m_shader, "u_Saturation"), this->m_postProcess.saturation);
+    glUniform1f (glGetUniformLocation (this->m_shader, "u_Contrast"), this->m_postProcess.contrast);
+    glUniform3f (
+	glGetUniformLocation (this->m_shader, "u_BorderColour"), this->m_postProcess.borderColour.r,
+	this->m_postProcess.borderColour.g, this->m_postProcess.borderColour.b
+    );
 }
 
 void CWallpaper::setDestinationFramebuffer (GLuint framebuffer) { this->m_destFramebuffer = framebuffer; }
@@ -218,7 +271,10 @@ void CWallpaper::render (
     glPushDebugGroup (GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Rendering scene to output");
 #endif /* !NDEBUG */
 
-    float ustart, uend, vstart, vend;
+	float ustart, uend, vstart, vend;
+    float fillUstart = 0.0f, fillUend = 1.0f, fillVstart = 0.0f, fillVend = 1.0f;
+    const bool blurredFit =
+	this->m_state.getTextureUVsScaling () == WallpaperState::TextureUVsScaling::ZoomFitUVs;
 
     if (this->m_spanInfo.has_value ()) {
 	// Span mode: treat bounding box as virtual viewport, scale wallpaper using
@@ -232,6 +288,16 @@ void CWallpaper::render (
 	// Compute base UVs for the wallpaper scaled to the bounding box
 	this->updateUVs (span.totalBounds, vflip);
 	auto [baseUstart, baseUend, baseVstart, baseVend] = this->m_state.getTextureUVs ();
+	float baseFillUstart = 0.0f, baseFillUend = 1.0f;
+	float baseFillVstart = 0.0f, baseFillVend = 1.0f;
+	if (blurredFit) {
+	    this->m_fillState.updateState (span.totalBounds, vflip, this->getWidth (), this->getHeight ());
+	    auto fillUVs = this->m_fillState.getTextureUVs ();
+	    baseFillUstart = fillUVs.ustart;
+	    baseFillUend = fillUVs.uend;
+	    baseFillVstart = fillUVs.vstart;
+	    baseFillVend = fillUVs.vend;
+	}
 
 	// This viewport's relative position within the bounding box [0..1]
 	// Use logicalSize (same coordinate space as globalPosition and totalBounds)
@@ -248,6 +314,10 @@ void CWallpaper::render (
 	uend = baseUstart + relRight * baseURange;
 	vstart = baseVstart + relTop * baseVRange;
 	vend = baseVstart + relBottom * baseVRange;
+	fillUstart = baseFillUstart + relLeft * (baseFillUend - baseFillUstart);
+	fillUend = baseFillUstart + relRight * (baseFillUend - baseFillUstart);
+	fillVstart = baseFillVstart + relTop * (baseFillVend - baseFillVstart);
+	fillVend = baseFillVstart + relBottom * (baseFillVend - baseFillVstart);
 
 	// Log span debug info only on first few frames
 	if (this->m_lastRenderedFrame < 5) {
@@ -267,6 +337,14 @@ void CWallpaper::render (
 	uend = uvs.uend;
 	vstart = uvs.vstart;
 	vend = uvs.vend;
+	if (blurredFit) {
+	    this->m_fillState.updateState (viewport, vflip, this->getWidth (), this->getHeight ());
+	    auto fillUVs = this->m_fillState.getTextureUVs ();
+	    fillUstart = fillUVs.ustart;
+	    fillUend = fillUVs.uend;
+	    fillVstart = fillUVs.vstart;
+	    fillVend = fillUVs.vend;
+	}
     }
 
     const GLfloat texCoords[] = {
@@ -298,6 +376,20 @@ void CWallpaper::render (
     glVertexAttribPointer (this->a_Position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glUniform1i (this->g_Texture0, 0);
+    glUniform1i (this->u_FitBlurEnabled, blurredFit ? 1 : 0);
+    if (blurredFit) {
+	glUniform4f (this->u_FitUVBounds, ustart, vstart, uend, vend);
+	glUniform4f (this->u_FillUVBounds, fillUstart, fillVstart, fillUend, fillVend);
+	// Keep the blur radius constant in output pixels at every monitor resolution.
+	const float blurRadius = 18.0f;
+	const float viewportWidth = static_cast<float> (viewport.z > 0 ? viewport.z : 1);
+	const float viewportHeight = static_cast<float> (viewport.w > 0 ? viewport.w : 1);
+	glUniform2f (
+	    this->u_FitBlurStep,
+	    (fillUend - fillUstart) * blurRadius / viewportWidth,
+	    (fillVend - fillVstart) * blurRadius / viewportHeight
+	);
+    }
     // write the framebuffer as is to the screen
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glDrawArrays (GL_TRIANGLES, 0, 6);
@@ -341,23 +433,23 @@ std::shared_ptr<const CFBO> CWallpaper::getFBO () const { return this->m_sceneFB
 std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
     const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
     WebBrowser::WebBrowserContext* browserContext, const WallpaperState::TextureUVsScaling& scalingMode,
-    const uint32_t& clampMode
+    const uint32_t& clampMode, const glm::vec2& uvOffset, const PostProcessSettings& postProcess
 ) {
     if (wallpaper.is<Scene> ()) {
 	return std::make_unique<WallpaperEngine::Render::Wallpapers::CScene> (
-	    wallpaper, context, audioContext, scalingMode, clampMode
+	    wallpaper, context, audioContext, scalingMode, clampMode, uvOffset, postProcess
 	);
     }
 
     if (wallpaper.is<Video> ()) {
 	return std::make_unique<WallpaperEngine::Render::Wallpapers::CVideo> (
-	    wallpaper, context, audioContext, scalingMode, clampMode
+	    wallpaper, context, audioContext, scalingMode, clampMode, uvOffset, postProcess
 	);
     }
 
     if (wallpaper.is<Web> ()) {
 	return std::make_unique<WallpaperEngine::Render::Wallpapers::CWeb> (
-	    wallpaper, context, audioContext, *browserContext, scalingMode, clampMode
+	    wallpaper, context, audioContext, *browserContext, scalingMode, clampMode, uvOffset, postProcess
 	);
     }
 

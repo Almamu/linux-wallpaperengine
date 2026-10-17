@@ -2,11 +2,16 @@
 
 #include "Builders/ColorBuilder.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
+#include <limits>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "WallpaperEngine/Data/Builders/UserSettingBuilder.h"
@@ -45,6 +50,12 @@ public:
     }
     template <int length, typename type, glm::qualifier qualifier>
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
+	// Wallpaper Engine assets may encode a vector-valued field as a bare scalar.
+	// In that case the scalar fills every component.
+	if (this->base ().is_number ()) {
+	    return glm::vec<length, type, qualifier> (static_cast<type> (this->base ().template get<double> ()));
+	}
+
 	return VectorBuilder::parse<length, type, qualifier> (this->base ().get<std::string> ());
     }
     [[nodiscard]] Model::Color get () const { return ColorBuilder::parse (this->base ().get<std::string> ()); }
@@ -58,12 +69,44 @@ public:
 
 	return *it;
     }
+    template <typename T> [[nodiscard]] static std::optional<T> coerceNumericString (const base_type& value) {
+	if constexpr (std::is_arithmetic_v<T>) {
+	    if (value.is_string ()) {
+		const auto& s = value.template get_ref<const std::string&> ();
+		if constexpr (std::is_same_v<T, bool>) {
+		    if (s == "true") {
+			return true;
+		    }
+		    if (s == "false") {
+			return false;
+		    }
+		}
+		char* end = nullptr;
+		const double parsed = std::strtod (s.c_str (), &end);
+		if (end != s.c_str () && *end == '\0' && std::isfinite (parsed)) {
+		    if constexpr (std::is_integral_v<T>) {
+			constexpr double lo = static_cast<double> (std::numeric_limits<T>::lowest ());
+			constexpr double hi = static_cast<double> (std::numeric_limits<T>::max ());
+			return static_cast<T> (std::clamp (parsed, lo, hi));
+		    } else {
+			return static_cast<T> (parsed);
+		    }
+		}
+	    }
+	}
+	return std::nullopt;
+    }
+
     template <typename T> [[nodiscard]] T require (const std::string& key, const std::string& message) const {
 	auto base = this->base ();
 	const auto it = base.find (key);
 
 	if (it == base.end ()) {
 	    sLog.exception (message, ". Contents: ", base.dump ());
+	}
+
+	if (const auto coerced = coerceNumericString<T> (*it); coerced.has_value ()) {
+	    return *coerced;
 	}
 
 	return (*it);
@@ -79,7 +122,7 @@ public:
 
 	return result;
     }
-    template <typename T> [[nodiscard]] std::optional<T> optional (const std::string& key) const noexcept {
+    template <typename T> [[nodiscard]] std::optional<T> optional (const std::string& key) const {
 	auto base = this->base ();
 	const auto it = base.find (key);
 
@@ -87,9 +130,17 @@ public:
 	    return std::nullopt;
 	}
 
-	return *it;
+	try {
+	    if (const auto coerced = coerceNumericString<T> (*it); coerced.has_value ()) {
+		return *coerced;
+	    }
+	    return static_cast<T> (*it);
+	} catch (const std::exception& e) {
+	    sLog.error ("Ignoring optional value '", key, "' of mismatched type: ", e.what ());
+	    return std::nullopt;
+	}
     }
-    template <typename T> [[nodiscard]] T optional (const std::string& key, T defaultValue) const noexcept {
+    template <typename T> [[nodiscard]] T optional (const std::string& key, T defaultValue) const {
 	auto base = this->base ();
 	const auto it = base.find (key);
 
@@ -97,7 +148,17 @@ public:
 	    return defaultValue;
 	}
 
-	return (*it);
+	try {
+	    if constexpr (std::is_arithmetic_v<T>) {
+		if (it->is_string ()) {
+		    return coerceNumericString<T> (*it).value_or (defaultValue);
+		}
+	    }
+	    return (*it);
+	} catch (const std::exception& e) {
+	    sLog.error ("Ignoring optional value '", key, "' of mismatched type: ", e.what ());
+	    return defaultValue;
+	}
     }
     [[nodiscard]] UserSettingUniquePtr user (const std::string& key, const Properties& properties) const;
     template <typename T>

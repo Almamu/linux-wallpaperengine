@@ -11,12 +11,14 @@ class CVideo final : public CWallpaper {
 public:
     CVideo (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode, const glm::vec2& uvOffset,
+	const PostProcessSettings& postProcess
     );
 
     ~CVideo () override;
 
     const Data::Model::Video& getVideo () const;
+    [[nodiscard]] double getPlaybackPosition () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;

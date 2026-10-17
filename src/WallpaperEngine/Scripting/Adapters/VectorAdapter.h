@@ -11,11 +11,13 @@ public:
 
     int length () { return components; }
     JSValue instantiate (Data::Model::DynamicValue& value) override;
+    JSValue instantiateAngles (Data::Model::DynamicValue& value);
+    JSValue instantiateAngles (Data::Model::DynamicValue& value, bool temporal);
     JSValue instantiate (ScriptableObject& object) override;
     /**
      * @return A new, anonymous JSValue representing the vector
      */
-    JSValue instantiate (Data::Model::DynamicValue& source, bool temporal);
+    JSValue instantiate (Data::Model::DynamicValue& source, bool temporal, bool anglesInDegrees = false);
     JSValue instantiate ();
 
     void free (uint32_t vectorId);

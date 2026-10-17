@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 #include "WallpaperEngine/Render/Camera.h"
 
 #include "WallpaperEngine/Render/CWallpaper.h"
@@ -17,7 +19,8 @@ class CScene final : public CWallpaper {
 public:
     CScene (
 	const Wallpaper& wallpaper, RenderContext& context, AudioContext& audioContext,
-	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode
+	const WallpaperState::TextureUVsScaling& scalingMode, const uint32_t& clampMode, const glm::vec2& uvOffset,
+	const PostProcessSettings& postProcess
     );
 
     ~CScene () override;
@@ -26,6 +29,11 @@ public:
     [[nodiscard]] Camera& getCamera () const;
 
     [[nodiscard]] const Scene& getScene () const;
+
+    [[nodiscard]] std::shared_ptr<const CFBO> getActiveRenderTarget () const;
+    [[nodiscard]] std::shared_ptr<const CFBO> resolveRenderTarget (const std::shared_ptr<const CFBO>& requested) const;
+    [[nodiscard]] bool isRenderingToComposition () const;
+    [[nodiscard]] bool hasAuthoredChildren (int parentId) const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;
@@ -55,12 +63,17 @@ private:
     Render::CObject* createObject (const Object& object);
     Render::CObject* dispatchObjectType (const Object& object);
     void addObjectToRenderOrder (const Object& object);
+    void updateActiveCamera ();
 
+    float m_startTime = 0.0f;
+    bool m_hasStarted = false;
     std::unique_ptr<Scripting::ScriptEngine> m_scriptEngine;
     std::unique_ptr<Camera> m_camera;
     ObjectUniquePtr m_bloomObjectData;
     CObject* m_bloomObject = nullptr;
     std::map<int, CObject*> m_objects = {};
+    std::unordered_set<int> m_objectsBeingResolved = {};
+    std::shared_ptr<const CFBO> m_compositionRenderTarget = nullptr;
     std::vector<CObject*> m_objectsByRenderOrder = {};
     std::vector<DynamicValue*> m_scriptedValues = {};
     glm::vec2 m_mousePosition = {};

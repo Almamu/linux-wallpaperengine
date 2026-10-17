@@ -18,6 +18,7 @@ public:
 	glm::vec2 textureSize
     );
     std::shared_ptr<CFBO> alias (const std::string& newName, const std::string& original);
+    std::shared_ptr<CFBO> alias (const std::string& newName, const std::shared_ptr<CFBO>& original);
     [[nodiscard]] std::shared_ptr<CFBO> find (const std::string& name) const;
 
 private:

@@ -18,7 +18,7 @@ void CRenderable::detectTexture () {
 	std::string textureName = textures->begin ()->second;
 
 	if (textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0) {
-	    this->m_texture = this->getScene ().findFBO (textureName);
+	    this->m_texture = this->find (textureName);
 	} else {
 	    this->m_texture = this->getContext ().resolveTexture (textureName);
 	}

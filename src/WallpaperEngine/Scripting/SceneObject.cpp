@@ -13,6 +13,69 @@ SceneObject* get_opaque (JSValueConst this_val) {
     return static_cast<SceneObject*> (JS_GetAnyOpaque (this_val, &classId));
 }
 
+namespace {
+JSValue makeVec3 (JSContext* ctx, const glm::vec3& value) {
+    JSValue global = JS_GetGlobalObject (ctx);
+    JSValue ctor = JS_GetPropertyStr (ctx, global, "Vec3");
+    JSValue args[3] = {
+	JS_NewFloat64 (ctx, value.x), JS_NewFloat64 (ctx, value.y), JS_NewFloat64 (ctx, value.z)
+    };
+    JSValue out = JS_CallConstructor (ctx, ctor, 3, args);
+    for (auto& arg : args) {
+	JS_FreeValue (ctx, arg);
+    }
+    JS_FreeValue (ctx, ctor);
+    JS_FreeValue (ctx, global);
+    return out;
+}
+
+glm::vec3 readVec3 (JSContext* ctx, JSValueConst object, const char* name, const glm::vec3& fallback) {
+    JSValue value = JS_GetPropertyStr (ctx, object, name);
+    glm::vec3 out = fallback;
+
+    if (JS_IsObject (value)) {
+	double component = 0.0;
+	for (const auto& [axis, target] : {
+		 std::pair<const char*, float*> { "x", &out.x },
+		 std::pair<const char*, float*> { "y", &out.y },
+		 std::pair<const char*, float*> { "z", &out.z },
+	     }) {
+	    JSValue field = JS_GetPropertyStr (ctx, value, axis);
+	    if (JS_IsNumber (field) && JS_ToFloat64 (ctx, &component, field) == 0) {
+		*target = static_cast<float> (component);
+	    }
+	    JS_FreeValue (ctx, field);
+	}
+    }
+
+    JS_FreeValue (ctx, value);
+    return out;
+}
+}
+
+JSValue scene_get_camera_transforms (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    auto* container = get_opaque (this_val);
+    const auto& camera = container->getScene ().getCamera ();
+
+    JSValue out = JS_NewObject (ctx);
+    JS_SetPropertyStr (ctx, out, "eye", makeVec3 (ctx, camera.getEye ()));
+    JS_SetPropertyStr (ctx, out, "center", makeVec3 (ctx, camera.getCenter ()));
+    return out;
+}
+
+JSValue scene_set_camera_transforms (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    if (argc < 1 || !JS_IsObject (argv[0])) {
+	return JS_UNDEFINED;
+    }
+
+    auto* container = get_opaque (this_val);
+    auto& camera = container->getScene ().getCamera ();
+    const glm::vec3 eye = readVec3 (ctx, argv[0], "eye", camera.getEye ());
+    const glm::vec3 center = readVec3 (ctx, argv[0], "center", camera.getCenter ());
+    camera.setScriptedView (eye, center);
+    return JS_UNDEFINED;
+}
+
 JSValue get_bloom (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     auto* container = get_opaque (this_val);
 
@@ -303,6 +366,16 @@ SceneObject::SceneObject (ScriptEngine& engine, Render::Wallpapers::CScene& scen
     JS_DefinePropertyValueStr (
 	this->m_engine.getContext (), this->m_instance, "getLayer",
 	JS_NewCFunction (this->m_engine.getContext (), get_layer, "getLayer", 1), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_engine.getContext (), this->m_instance, "getCameraTransforms",
+	JS_NewCFunction (this->m_engine.getContext (), scene_get_camera_transforms, "getCameraTransforms", 0),
+	JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyValueStr (
+	this->m_engine.getContext (), this->m_instance, "setCameraTransforms",
+	JS_NewCFunction (this->m_engine.getContext (), scene_set_camera_transforms, "setCameraTransforms", 1),
+	JS_PROP_ENUMERABLE
     );
     // TODO: ADD REST OF THE METHODS
 }

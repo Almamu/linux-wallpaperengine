@@ -4,8 +4,11 @@
 #include "WallpaperEngine/Render/Drivers/VideoFactories.h"
 #include "wlr-foreign-toplevel-management-unstable-v1-protocol.h"
 #include <cstring>
+#include <dbus/dbus.h>
+#include <fstream>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
 namespace WallpaperEngine::Render::Drivers::Detectors {
 
@@ -46,6 +49,8 @@ namespace {
     struct FullscreenState {
 	bool pending = false;
 	bool current = false;
+	bool pendingMaximized = false;
+	bool currentMaximized = false;
 	bool pendingActivated = false;
 	bool currentActivated = false;
 	std::string appId {};
@@ -73,9 +78,13 @@ namespace {
 	const auto begin = static_cast<uint32_t*> (state->data);
 
 	toplevel->pending = false;
+	toplevel->pendingMaximized = false;
 	toplevel->pendingActivated = false;
 
 	for (auto it = begin; it < begin + state->size / sizeof (uint32_t); ++it) {
+	    if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_MAXIMIZED) {
+		toplevel->pendingMaximized = true;
+	    }
 	    if (*it == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN) {
 		toplevel->pending = true;
 	    }
@@ -111,21 +120,26 @@ namespace {
 	return true;
     }
 
-    bool isFullscreenRelevant (const FullscreenState& toplevel) {
+    bool isStateRelevant (
+	const FullscreenState& toplevel, const bool isFullscreen, const bool isMaximized, const bool isActivated
+    ) {
 	const auto& ctx = toplevel.data->detector->getApplicationContext ();
-	return isRelevant (ctx, toplevel.pending, toplevel.pendingActivated, toplevel.appId);
+	return isRelevant (ctx, isFullscreen || isMaximized, isActivated, toplevel.appId);
     }
 
-    bool isCurrentlyRelevant (const FullscreenState& toplevel) {
-	const auto& ctx = toplevel.data->detector->getApplicationContext ();
-	return isRelevant (ctx, toplevel.current, toplevel.currentActivated, toplevel.appId);
+    bool isPendingRelevant (const FullscreenState& toplevel) {
+	return isStateRelevant (toplevel, toplevel.pending, toplevel.pendingMaximized, toplevel.pendingActivated);
+    }
+
+    bool isCurrentRelevant (const FullscreenState& toplevel) {
+	return isStateRelevant (toplevel, toplevel.current, toplevel.currentMaximized, toplevel.currentActivated);
     }
 
     void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
 	const auto toplevel = static_cast<FullscreenState*> (data);
 
-	const bool pendingRelevant = isFullscreenRelevant (*toplevel);
-	const bool currentRelevant = isCurrentlyRelevant (*toplevel);
+	const bool pendingRelevant = isPendingRelevant (*toplevel);
+	const bool currentRelevant = isCurrentRelevant (*toplevel);
 
 	if (currentRelevant != pendingRelevant) {
 	    if (pendingRelevant) {
@@ -140,6 +154,7 @@ namespace {
 	}
 
 	toplevel->current = toplevel->pending;
+	toplevel->currentMaximized = toplevel->pendingMaximized;
 	toplevel->currentActivated = toplevel->pendingActivated;
     }
 
@@ -147,7 +162,7 @@ namespace {
 	const auto toplevel = static_cast<FullscreenState*> (data);
 
 	// If it was counted as relevant fullscreen, remove it.
-	const bool currentRelevant = isCurrentlyRelevant (*toplevel);
+	const bool currentRelevant = isCurrentRelevant (*toplevel);
 
 	if (currentRelevant) {
 	    if (*toplevel->data->fullscreenCount == 0) {
@@ -180,6 +195,8 @@ namespace {
 	const auto toplevel = new FullscreenState {
 	    .pending = false,
 	    .current = false,
+	    .pendingMaximized = false,
+	    .currentMaximized = false,
 	    .pendingActivated = false,
 	    .currentActivated = false,
 	    .appId = {},
@@ -222,6 +239,256 @@ constexpr struct wl_registry_listener registryListener = {
     .global_remove = handleGlobalRemoved,
 };
 
+void WaylandFullScreenDetector::initKWinDetector () {
+    DBusError err;
+    dbus_error_init (&err);
+
+    this->m_dbusConnection = dbus_bus_get (DBUS_BUS_SESSION, &err);
+    if (!this->m_dbusConnection) {
+	dbus_error_free (&err);
+	return;
+    }
+
+    // Check if KWin is running on the session bus
+    DBusMessage* hasOwnerMsg = dbus_message_new_method_call (
+	"org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "NameHasOwner"
+    );
+    if (!hasOwnerMsg) {
+	dbus_connection_unref (this->m_dbusConnection);
+	this->m_dbusConnection = nullptr;
+	return;
+    }
+
+    const char* kwinService = "org.kde.KWin";
+    dbus_message_append_args (hasOwnerMsg, DBUS_TYPE_STRING, &kwinService, DBUS_TYPE_INVALID);
+    DBusMessage* hasOwnerReply
+	= dbus_connection_send_with_reply_and_block (this->m_dbusConnection, hasOwnerMsg, 1000, &err);
+    dbus_message_unref (hasOwnerMsg);
+
+    dbus_bool_t hasOwner = FALSE;
+    if (hasOwnerReply) {
+	dbus_message_get_args (hasOwnerReply, &err, DBUS_TYPE_BOOLEAN, &hasOwner, DBUS_TYPE_INVALID);
+	dbus_message_unref (hasOwnerReply);
+    }
+    dbus_error_free (&err);
+
+    if (!hasOwner) {
+	dbus_connection_unref (this->m_dbusConnection);
+	this->m_dbusConnection = nullptr;
+	return;
+    }
+
+    // Acquire unique DBus service name
+    this->m_dbusServiceName = "io.github.linux_wallpaperengine.detector_" + std::to_string (getpid ());
+    dbus_error_init (&err);
+    const int reqResult = dbus_bus_request_name (
+	this->m_dbusConnection, this->m_dbusServiceName.c_str (),
+	DBUS_NAME_FLAG_REPLACE_EXISTING | DBUS_NAME_FLAG_DO_NOT_QUEUE, &err
+    );
+    if (dbus_error_is_set (&err) || reqResult != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+	dbus_error_free (&err);
+	dbus_connection_unref (this->m_dbusConnection);
+	this->m_dbusConnection = nullptr;
+	return;
+    }
+
+    // Register DBus handler
+    auto dbusFilter = [] (DBusConnection* conn, DBusMessage* msg, void* user_data) -> DBusHandlerResult {
+	auto* self = static_cast<WaylandFullScreenDetector*> (user_data);
+	if (dbus_message_is_method_call (
+		msg, "io.github.linux_wallpaperengine.FullscreenDetector", "SetFullscreenState"
+	    )) {
+	    dbus_bool_t state = FALSE;
+	    DBusError filterErr;
+	    dbus_error_init (&filterErr);
+	    if (dbus_message_get_args (msg, &filterErr, DBUS_TYPE_BOOLEAN, &state, DBUS_TYPE_INVALID)) {
+		self->m_fullscreenCount = (state == TRUE) ? 1 : 0;
+	    }
+	    dbus_error_free (&filterErr);
+	    DBusMessage* reply = dbus_message_new_method_return (msg);
+	    if (reply) {
+		dbus_connection_send (conn, reply, nullptr);
+		dbus_message_unref (reply);
+	    }
+	    return DBUS_HANDLER_RESULT_HANDLED;
+	}
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    };
+
+    dbus_connection_add_filter (this->m_dbusConnection, dbusFilter, this, nullptr);
+
+    // Write KWin script to temp file
+    const std::string scriptPath = "/tmp/lwe_kwin_" + std::to_string (getpid ()) + ".js";
+    this->m_kwinScriptName = "linux-wallpaperengine-" + std::to_string (getpid ());
+
+    std::string jsCode = R"JS(
+(function() {
+    var service = ")JS" + this->m_dbusServiceName + R"JS(";
+    var path = "/FullscreenDetector";
+    var iface = "io.github.linux_wallpaperengine.FullscreenDetector";
+    var lastState = null;
+
+    function checkState() {
+        var windows = workspace.windowList();
+        var hasCovering = false;
+        for (var i = 0; i < windows.length; i++) {
+            var w = windows[i];
+            if (!w) continue;
+            if (w.normalWindow === false) continue;
+            if (w.minimized || w.hidden) continue;
+            if (!w.onAllDesktops && w.desktops && w.desktops.length > 0) {
+                var onDesktop = false;
+                for (var d = 0; d < w.desktops.length; d++) {
+                    if (w.desktops[d] === workspace.currentDesktop) {
+                        onDesktop = true;
+                        break;
+                    }
+                }
+                if (!onDesktop) continue;
+            }
+            var isFull = !!w.fullScreen;
+            var isMax = (w.maximizeMode === 3);
+            if (isFull || isMax) {
+                hasCovering = true;
+                break;
+            }
+        }
+        if (hasCovering !== lastState) {
+            lastState = hasCovering;
+            callDBus(service, path, iface, "SetFullscreenState", hasCovering);
+        }
+    }
+
+    function hookWindow(w) {
+        if (!w) return;
+        if (w.fullScreenChanged) w.fullScreenChanged.connect(checkState);
+        if (w.maximizedChanged) w.maximizedChanged.connect(checkState);
+        if (w.minimizedChanged) w.minimizedChanged.connect(checkState);
+        if (w.hiddenChanged) w.hiddenChanged.connect(checkState);
+    }
+
+    var all = workspace.windowList();
+    for (var i = 0; i < all.length; i++) {
+        hookWindow(all[i]);
+    }
+
+    workspace.windowAdded.connect(function(w) {
+        hookWindow(w);
+        checkState();
+    });
+
+    workspace.windowRemoved.connect(checkState);
+    workspace.windowActivated.connect(checkState);
+    if (workspace.currentDesktopChanged) {
+        workspace.currentDesktopChanged.connect(checkState);
+    }
+
+    checkState();
+})();
+)JS";
+
+    {
+	std::ofstream f (scriptPath);
+	if (!f.is_open ()) {
+	    sLog.out ("KWin detector: failed to write temporary script");
+	    return;
+	}
+	f << jsCode;
+    }
+
+    // Load into KWin
+    dbus_error_init (&err);
+    DBusMessage* loadMsg = dbus_message_new_method_call (
+	"org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", "loadScript"
+    );
+    const char* cPath = scriptPath.c_str ();
+    const char* cName = this->m_kwinScriptName.c_str ();
+    dbus_message_append_args (loadMsg, DBUS_TYPE_STRING, &cPath, DBUS_TYPE_STRING, &cName, DBUS_TYPE_INVALID);
+    DBusMessage* loadReply
+	= dbus_connection_send_with_reply_and_block (this->m_dbusConnection, loadMsg, 2000, &err);
+    dbus_message_unref (loadMsg);
+
+    int32_t scriptId = -1;
+    if (loadReply && dbus_message_get_args (loadReply, &err, DBUS_TYPE_INT32, &scriptId, DBUS_TYPE_INVALID)) {
+	this->m_kwinScriptId = scriptId;
+	dbus_message_unref (loadReply);
+    } else {
+	dbus_error_free (&err);
+	unlink (scriptPath.c_str ());
+	return;
+    }
+
+    // Run script in KWin
+    dbus_error_init (&err);
+    const std::string scriptObjPath = "/Scripting/Script" + std::to_string (this->m_kwinScriptId);
+    DBusMessage* runMsg = dbus_message_new_method_call (
+	"org.kde.KWin", scriptObjPath.c_str (), "org.kde.kwin.Script", "run"
+    );
+    DBusMessage* runReply = dbus_connection_send_with_reply_and_block (this->m_dbusConnection, runMsg, 2000, &err);
+    dbus_message_unref (runMsg);
+    if (runReply) {
+	dbus_message_unref (runReply);
+	this->m_kwinActive = true;
+	sLog.out ("KWin Wayland fullscreen/maximized detector successfully loaded");
+    }
+    dbus_error_free (&err);
+    unlink (scriptPath.c_str ());
+
+    // Drain initial DBus state
+    dbus_connection_read_write (this->m_dbusConnection, 50);
+    while (dbus_connection_dispatch (this->m_dbusConnection) == DBUS_DISPATCH_DATA_REMAINS)
+	;
+}
+
+void WaylandFullScreenDetector::cleanupKWinDetector () {
+    if (!this->m_kwinActive || !this->m_dbusConnection) {
+	return;
+    }
+
+    DBusError err;
+    dbus_error_init (&err);
+
+    // Stop script
+    if (this->m_kwinScriptId >= 0) {
+	const std::string scriptObjPath = "/Scripting/Script" + std::to_string (this->m_kwinScriptId);
+	DBusMessage* stopMsg = dbus_message_new_method_call (
+	    "org.kde.KWin", scriptObjPath.c_str (), "org.kde.kwin.Script", "stop"
+	);
+	if (stopMsg) {
+	    DBusMessage* stopReply
+		= dbus_connection_send_with_reply_and_block (this->m_dbusConnection, stopMsg, 1000, &err);
+	    dbus_message_unref (stopMsg);
+	    if (stopReply) {
+		dbus_message_unref (stopReply);
+	    }
+	}
+	dbus_error_free (&err);
+    }
+
+    // Unload script
+    if (!this->m_kwinScriptName.empty ()) {
+	dbus_error_init (&err);
+	DBusMessage* unloadMsg = dbus_message_new_method_call (
+	    "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", "unloadScript"
+	);
+	if (unloadMsg) {
+	    const char* cName = this->m_kwinScriptName.c_str ();
+	    dbus_message_append_args (unloadMsg, DBUS_TYPE_STRING, &cName, DBUS_TYPE_INVALID);
+	    DBusMessage* unloadReply
+		= dbus_connection_send_with_reply_and_block (this->m_dbusConnection, unloadMsg, 1000, &err);
+	    dbus_message_unref (unloadMsg);
+	    if (unloadReply) {
+		dbus_message_unref (unloadReply);
+	    }
+	}
+	dbus_error_free (&err);
+    }
+
+    dbus_connection_unref (this->m_dbusConnection);
+    this->m_dbusConnection = nullptr;
+    this->m_kwinActive = false;
+}
+
 WaylandFullScreenDetector::WaylandFullScreenDetector (Application::ApplicationContext& appContext) :
     FullScreenDetector (appContext), m_callbackData { .detector = this, .fullscreenCount = &m_fullscreenCount } {
     m_display = wl_display_connect (nullptr);
@@ -233,19 +500,30 @@ WaylandFullScreenDetector::WaylandFullScreenDetector (Application::ApplicationCo
     wl_registry_add_listener (registry, &registryListener, this);
     wl_display_roundtrip (m_display); // load list of toplevels
     if (!m_toplevelManager) {
-	sLog.out ("Fullscreen detection not supported by your Wayland compositor");
+	this->initKWinDetector ();
+	if (!this->m_kwinActive) {
+	    sLog.out ("Fullscreen detection not supported by your Wayland compositor");
+	}
     } else {
 	wl_display_roundtrip (m_display); // load toplevel details
     }
 }
 
 WaylandFullScreenDetector::~WaylandFullScreenDetector () {
+    this->cleanupKWinDetector ();
     if (m_display) {
 	wl_display_disconnect (m_display);
     }
 }
 
 bool WaylandFullScreenDetector::anythingFullscreen () const {
+    if (this->m_kwinActive && this->m_dbusConnection) {
+	dbus_connection_read_write (this->m_dbusConnection, 0);
+	while (dbus_connection_dispatch (this->m_dbusConnection) == DBUS_DISPATCH_DATA_REMAINS)
+	    ;
+	return this->m_fullscreenCount > 0;
+    }
+
     if (!m_toplevelManager) {
 	return false;
     }

@@ -99,9 +99,13 @@ struct SceneData {
 	    int width;
 	    int height;
 	    bool isAuto;
+	    /** null general.orthogonalprojection means a perspective-camera scene */
+	    bool isPerspective;
 	    UserSettingUniquePtr nearz;
 	    UserSettingUniquePtr farz;
 	    UserSettingUniquePtr fov;
+	    UserSettingUniquePtr overrideFov;
+	    UserSettingUniquePtr zoom;
 	} projection;
     } camera;
 

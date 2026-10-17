@@ -25,7 +25,12 @@ std::shared_ptr<CFBO> FBOProvider::create (
 }
 
 std::shared_ptr<CFBO> FBOProvider::alias (const std::string& newName, const std::string& original) {
-    return this->m_fbos[newName] = this->m_fbos[original];
+    auto target = this->find (original);
+    return this->m_fbos[newName] = target;
+}
+
+std::shared_ptr<CFBO> FBOProvider::alias (const std::string& newName, const std::shared_ptr<CFBO>& original) {
+    return this->m_fbos[newName] = original;
 }
 
 std::shared_ptr<CFBO> FBOProvider::find (const std::string& name) const {

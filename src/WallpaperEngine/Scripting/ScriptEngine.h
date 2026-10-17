@@ -47,6 +47,9 @@ public:
     struct LoadedModule {
 	DynamicValue& value;
 	JSValue module;
+	JSValue thisLayer = JS_UNDEFINED;
+	bool initialized = false;
+	bool updateErrorReported = false;
     };
     struct JSObjectAdapters {
 	std::unique_ptr<Adapters::VectorAdapter<4>> vec4;
@@ -64,7 +67,12 @@ public:
     JSContext* getContext () const { return m_context; }
     JSValue getGlobalThis () const { return m_globalThis; }
     LoadedModule* getRunningModule () const { return m_runningModule; }
+    DynamicValue* getRunningValue () const {
+	return m_loadingValue != nullptr ? m_loadingValue
+					 : (m_runningModule != nullptr ? &m_runningModule->value : nullptr);
+    }
     JSValue dynamicToJs (DynamicValue& value) const;
+    JSValue anglesToJs (DynamicValue& value) const;
 
     /**
      * Evaluate a WallpaperEngine script's update() function.
@@ -162,6 +170,7 @@ private:
     std::map<std::string, LoadedModule> m_scriptModules = {};
 
     LoadedModule* m_runningModule = nullptr;
+    DynamicValue* m_loadingValue = nullptr;
 
     ScriptLayerHandle m_nextLayerId = 1;
     bool m_layerRegistryReady = false;

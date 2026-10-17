@@ -1,0 +1,26 @@
+[Desktop Entry]
+Type=Application
+Name=Linux Wallpaper Engine
+GenericName=Live wallpaper manager
+GenericName[pt_BR]=Gerenciador de wallpapers animados
+GenericName[en]=Live wallpaper manager
+GenericName[de]=Verwaltung animierter Wallpaper
+GenericName[ru]=Менеджер живых обоев
+GenericName[ja]=動く壁紙マネージャー
+GenericName[zh_CN]=动态壁纸管理器
+GenericName[es]=Gestor de fondos de pantalla animados
+GenericName[hi]=लाइव वॉलपेपर प्रबंधक
+Comment=Choose installed wallpapers and manage playlists
+Comment[pt_BR]=Escolha wallpapers instalados e gerencie playlists
+Comment[en]=Choose installed wallpapers and manage playlists
+Comment[de]=Installierte Wallpaper auswählen und Wiedergabelisten verwalten
+Comment[ru]=Выбирайте установленные обои и управляйте плейлистами
+Comment[ja]=インストール済みの壁紙を選び、プレイリストを管理します
+Comment[zh_CN]=选择已安装的壁纸并管理播放列表
+Comment[es]=Elige fondos de pantalla instalados y gestiona listas de reproducción
+Comment[hi]=इंस्टॉल किए गए वॉलपेपर चुनें और प्लेलिस्ट प्रबंधित करें
+Exec=@APP_EXEC@
+Icon=linux-wallpaperengine-app
+Categories=Settings;
+Terminal=false
+StartupNotify=true

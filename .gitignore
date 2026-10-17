@@ -2,6 +2,8 @@ cmake-build-*
 .idea
 .cache/
 build/
+__pycache__/
+*.py[cod]
 .vscode/
 .zed/
 third_party/

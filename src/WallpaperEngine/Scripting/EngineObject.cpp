@@ -1,6 +1,9 @@
 #include "EngineObject.h"
 #include "ScriptEngine.h"
+#include "WallpaperEngine/Data/Model/Project.h"
+#include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WallpaperEngine/Render/Wallpapers/CScene.h"
 
 #include <ranges>
 
@@ -29,6 +32,38 @@ JSValue engine_get_runtime (JSContext* ctx, JSValueConst this_val, int argc, JSV
 
 JSValue engine_get_daytime (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     return JS_NewFloat64 (ctx, g_Daytime);
+}
+
+JSValue engine_get_user_properties (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    JSClassID classId = 0;
+    auto* engine = static_cast<EngineObject*> (JS_GetAnyOpaque (this_val, &classId));
+    if (engine == nullptr) {
+	return JS_EXCEPTION;
+    }
+
+    JSValue properties = JS_NewObject (ctx);
+    const auto& projectProperties = engine->getScene ().getScene ().project.properties;
+    for (const auto& [name, property] : projectProperties) {
+	if (property != nullptr) {
+	    JS_SetPropertyStr (ctx, properties, name.c_str (), engine->getEngine ().dynamicToJs (*property));
+	}
+    }
+    return properties;
+}
+
+JSValue engine_get_screen_resolution (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    JSClassID classId = 0;
+    auto* engine = static_cast<EngineObject*> (JS_GetAnyOpaque (this_val, &classId));
+
+    if (engine == nullptr) {
+	return JS_EXCEPTION;
+    }
+
+    const auto& output = engine->getScene ().getContext ().getOutput ();
+    JSValue resolution = engine->getEngine ().getAdapters ().vec2->instantiate ();
+    JS_SetPropertyStr (ctx, resolution, "x", JS_NewInt32 (ctx, output.getFullWidth ()));
+    JS_SetPropertyStr (ctx, resolution, "y", JS_NewInt32 (ctx, output.getFullHeight ()));
+    return resolution;
 }
 
 JSValue engine_stop_interval (
@@ -159,6 +194,16 @@ EngineObject::EngineObject (ScriptEngine& engine, Render::Wallpapers::CScene& sc
     JS_DefinePropertyGetSet (
 	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "timeOfDay"),
 	JS_NewCFunction (this->m_engine.getContext (), engine_get_daytime, "get", 0),
+	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyGetSet (
+	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "screenResolution"),
+	JS_NewCFunction (this->m_engine.getContext (), engine_get_screen_resolution, "get", 0),
+	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
+    );
+    JS_DefinePropertyGetSet (
+	this->m_engine.getContext (), this->m_instance, JS_NewAtom (this->m_engine.getContext (), "userProperties"),
+	JS_NewCFunction (this->m_engine.getContext (), engine_get_user_properties, "get", 0),
 	JS_NewCFunction (this->m_engine.getContext (), engine_set_value, "set", 1), JS_PROP_ENUMERABLE
     );
     JS_DefinePropertyValueStr (

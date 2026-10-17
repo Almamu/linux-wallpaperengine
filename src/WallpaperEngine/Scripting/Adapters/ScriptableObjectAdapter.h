@@ -9,9 +9,11 @@ public:
 
     JSValue instantiate (ScriptableObject& object) override;
     JSValue instantiate (Data::Model::DynamicValue& value) override;
+    JSValue instantiateAnimationLayer (Data::Model::DynamicValue& rate, Data::Model::DynamicValue& visible);
 
 private:
     JSClassExoticMethods m_exoticMethods;
+    JSClassID m_animationLayerClassId;
     std::string m_name;
 };
 }

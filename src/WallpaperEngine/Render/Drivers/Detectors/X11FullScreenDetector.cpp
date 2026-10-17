@@ -2,6 +2,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 #include "WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h"
@@ -52,12 +53,43 @@ X11FullScreenDetector::X11FullScreenDetector (Application::ApplicationContext& a
 X11FullScreenDetector::~X11FullScreenDetector () { this->stop (); }
 
 bool X11FullScreenDetector::anythingFullscreen () const {
-    // stop rendering if anything is fullscreen
+    // Stop rendering when another visible window is maximized or covers an output.
     bool isFullscreen = false;
     XWindowAttributes attribs;
     Window _;
     Window* children;
     unsigned int nchildren;
+    const Atom stateAtom = XInternAtom (this->m_display, "_NET_WM_STATE", True);
+    const Atom maximizedVertAtom = XInternAtom (this->m_display, "_NET_WM_STATE_MAXIMIZED_VERT", True);
+    const Atom maximizedHorzAtom = XInternAtom (this->m_display, "_NET_WM_STATE_MAXIMIZED_HORZ", True);
+
+    const auto isMaximized = [&] (const Window window) {
+	if (stateAtom == None || maximizedVertAtom == None || maximizedHorzAtom == None) {
+	    return false;
+	}
+	Atom actualType = None;
+	int actualFormat = 0;
+	unsigned long itemCount = 0;
+	unsigned long bytesAfter = 0;
+	unsigned char* property = nullptr;
+	const auto result = XGetWindowProperty (
+	    this->m_display, window, stateAtom, 0, 1024, False, XA_ATOM, &actualType, &actualFormat,
+	    &itemCount, &bytesAfter, &property
+	);
+	bool maximizedVert = false;
+	bool maximizedHorz = false;
+	if (result == Success && actualType == XA_ATOM && actualFormat == 32 && property) {
+	    const auto states = reinterpret_cast<const Atom*> (property);
+	    for (unsigned long stateIndex = 0; stateIndex < itemCount; ++stateIndex) {
+		maximizedVert = maximizedVert || states[stateIndex] == maximizedVertAtom;
+		maximizedHorz = maximizedHorz || states[stateIndex] == maximizedHorzAtom;
+	    }
+	}
+	if (property) {
+	    XFree (property);
+	}
+	return maximizedVert && maximizedHorz;
+    };
 
     if (!XQueryTree (this->m_display, this->m_root, &_, &_, &children, &nchildren)) {
 	return false;
@@ -71,11 +103,12 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 	unsigned int num_children;
 
 	if (!XQueryTree (this->m_display, ourWindow, &root, &parentWindow, &schildren, &num_children)) {
+	    XFree (children);
 	    return false;
 	}
 
 	if (schildren) {
-	    XFree (children);
+	    XFree (schildren);
 	}
     }
 
@@ -91,6 +124,29 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 
 	if (attribs.map_state != IsViewable) {
 	    continue;
+	}
+
+	if (isMaximized (children[i])) {
+	    isFullscreen = true;
+	    break;
+	}
+	// Reparenting window managers keep _NET_WM_STATE on the client child.
+	Window childRoot, childParent;
+	Window* clientWindows = nullptr;
+	unsigned int clientWindowCount = 0;
+	if (XQueryTree (this->m_display, children[i], &childRoot, &childParent, &clientWindows, &clientWindowCount)) {
+	    for (unsigned int clientIndex = 0; clientIndex < clientWindowCount; ++clientIndex) {
+		if (isMaximized (clientWindows[clientIndex])) {
+		    isFullscreen = true;
+		    break;
+		}
+	    }
+	    if (clientWindows) {
+		XFree (clientWindows);
+	    }
+	}
+	if (isFullscreen) {
+	    break;
 	}
 
 	// compare width and height with the different screens we have

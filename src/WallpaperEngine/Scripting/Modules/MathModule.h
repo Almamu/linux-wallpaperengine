@@ -11,6 +11,5 @@ public:
     ~MathModule () override;
 
 protected:
-    uint32_t m_instanceId;
 };
 }
