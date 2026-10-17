@@ -31,7 +31,7 @@
 #include <stb_image_write.h>
 #include <thread>
 
-#define FULLSCREEN_CHECK_WAIT_TIME 250000 // 250ms (in microseconds for usleep)
+#define FULLSCREEN_CHECK_WAIT_TIME 50000 // 50ms (in microseconds for usleep)
 
 float g_Time;
 float g_TimeLast;
@@ -972,15 +972,10 @@ void WallpaperApplication::render () {
 	if (!this->m_context.state.general.keepRunning) {
 	    return;
 	}
-	// The covered desktop does not need the wallpaper's scene textures or framebuffers.
-	// Recreate them only after the covering window is gone. The process and audio
-	// event loop stay alive; this deliberately avoids suspending the process.
-	this->prepareOutputs ();
 
-	if (!this->makeAnyViewportCurrent ()) {
-	    return;
+	if (this->m_renderContext) {
+	    this->m_renderContext->setPause (false);
 	}
-	this->m_videoResumePositions.clear ();
 
 	// account for paused duration in playlist timers
 	const auto pausedNow = std::chrono::steady_clock::now ();
@@ -1050,15 +1045,9 @@ void WallpaperApplication::render () {
 	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
 	    this->m_isPaused = true;
 	    this->m_pauseStart = std::chrono::steady_clock::now ();
-	    this->m_videoResumePositions.clear ();
-	    for (const auto& wallpaper : this->m_renderContext->getWallpapers () | std::views::values) {
-		if (const auto* video = dynamic_cast<const Render::Wallpapers::CVideo*> (wallpaper.get ())) {
-		    this->m_videoResumePositions[&video->getWallpaperData ()] = video->getPlaybackPosition ();
-		}
+	    if (this->m_renderContext) {
+		this->m_renderContext->setPause (true);
 	    }
-
-	    m_renderContext->setPause (true);
-	    m_renderContext.reset ();
 	    glFinish ();
 	    return;
 	}
