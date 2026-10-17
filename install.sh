@@ -337,8 +337,37 @@ find_renderer() {
     fi
 }
 
+detect_build_jobs() {
+    if [[ -n "${CMAKE_BUILD_PARALLEL_LEVEL:-}" && "${CMAKE_BUILD_PARALLEL_LEVEL}" =~ ^[1-9][0-9]*$ ]]; then
+        printf '%s' "${CMAKE_BUILD_PARALLEL_LEVEL}"
+        return
+    fi
+    local cpus=2
+    if command -v nproc >/dev/null 2>&1; then
+        cpus="$(nproc 2>/dev/null || printf '2')"
+    elif command -v getconf >/dev/null 2>&1; then
+        cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')"
+    fi
+    if ! [[ "${cpus}" =~ ^[1-9][0-9]*$ ]]; then
+        cpus=2
+    fi
+    local mem_kb=0
+    if [[ -r /proc/meminfo ]]; then
+        mem_kb="$(awk '/^MemAvailable:/ { print $2; exit }' /proc/meminfo 2>/dev/null || printf '0')"
+    fi
+    if [[ "${mem_kb}" =~ ^[1-9][0-9]*$ ]]; then
+        # Heavy C++20/SPIRV-Cross/glslang translation units can peak above
+        # 1.5 GiB per compiler process; cap concurrency to fit available RAM.
+        local mem_jobs=$(( mem_kb / 1572864 ))
+        (( mem_jobs < 1 )) && mem_jobs=1
+        (( cpus > mem_jobs )) && cpus="${mem_jobs}"
+    fi
+    printf '%s' "${cpus}"
+}
+
 RENDERER_PATH="$(find_renderer || true)"
 RENDERER_BUILT=0
+BUILD_JOBS="$(detect_build_jobs)"
 
 if [[ -n "${RENDERER_PATH}" ]]; then
     printf 'Renderer: already available at %s; skipping the build.\n' "${RENDERER_PATH}"
@@ -350,11 +379,11 @@ elif [[ "${DRY_RUN}" -eq 1 ]]; then
     if [[ -f "${BUILD_DIR}/CMakeCache.txt" && ( -f "${BUILD_DIR}/Makefile" || -f "${BUILD_DIR}/build.ninja" ) ]]; then
         printf '  # build directory %s is already configured\n' "${BUILD_DIR}"
         printf '  # purge any 0-byte object files left by an interrupted build\n'
-        printf '  cmake --build %s --parallel\n' "${BUILD_DIR}"
+        printf '  cmake --build %s --parallel %s\n' "${BUILD_DIR}" "${BUILD_JOBS}"
     else
         printf '  # downloads the Chromium Embedded Framework distribution (network needed)\n'
         printf '  cmake -S %s -B %s -DCMAKE_BUILD_TYPE=Release\n' "${ROOT}" "${BUILD_DIR}"
-        printf '  cmake --build %s --parallel\n' "${BUILD_DIR}"
+        printf '  cmake --build %s --parallel %s\n' "${BUILD_DIR}" "${BUILD_JOBS}"
     fi
     printf '  cmake --install %s --prefix %s\n' "${BUILD_DIR}" "${RENDERER_PREFIX}"
     printf '  ln -s %s %s\n' "${RENDERER_BIN}" "${RENDERER_LINK}"
@@ -375,7 +404,7 @@ else
     # treats as up to date, which breaks the final link with dozens of
     # undefined references. Purge them so this build recompiles them.
     find "${BUILD_DIR}" -type f \( -name '*.o' -o -name '*.o.d' \) -size 0 -delete 2>/dev/null || true
-    cmake --build "${BUILD_DIR}" --parallel
+    cmake --build "${BUILD_DIR}" --parallel "${BUILD_JOBS}"
     cmake --install "${BUILD_DIR}" --prefix "${RENDERER_PREFIX}"
     install -d "${HOME}/.local/bin"
     ln -sfn "${RENDERER_BIN}" "${RENDERER_LINK}"

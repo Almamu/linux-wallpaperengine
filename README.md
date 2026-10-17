@@ -129,7 +129,7 @@ under your home directory:
 git clone --recurse-submodules https://github.com/xoykor/linux-wallpaperengine.git
 cd linux-wallpaperengine
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
+cmake --build build --parallel "$(nproc)"
 cmake --install build --prefix "$HOME/.local/opt/linux-wallpaperengine"
 mkdir -p "$HOME/.local/bin"
 ln -s "$HOME/.local/opt/linux-wallpaperengine/linux-wallpaperengine" \
