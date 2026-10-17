@@ -287,10 +287,11 @@ void GLPlayer::play () {
     this->init ();
 
     if (this->m_file.has_value ()) {
-	// build the path to the video file
-	const std::string startOption = "start=" + std::to_string (this->m_startPosition);
-	const char* command[]
-	    = { "loadfile", this->m_file.value ().c_str (), "replace", startOption.c_str (), nullptr };
+	if (this->m_startPosition > 0.0) {
+	    const std::string startStr = std::to_string (this->m_startPosition);
+	    mpv_set_property_string (this->m_handle, "start", startStr.c_str ());
+	}
+	const char* command[] = { "loadfile", this->m_file.value ().c_str (), "replace", nullptr };
 
 	if (mpv_command (this->m_handle, command) < 0) {
 	    sLog.exception ("Cannot load video to play");

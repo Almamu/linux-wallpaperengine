@@ -4,10 +4,14 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <cstdlib>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <regex>
 #include <set>
+#include <string_view>
+#include <unistd.h>
 
 #include "SPIRV/GlslangToSpv.h"
 #include "glslang/Include/ResourceLimits.h"
@@ -78,7 +82,12 @@ std::string neutralizeUnmatchedEndifs (const std::string& source, std::vector<st
 		    if (hash + 1 < result.size ()) {
 			result[hash + 1] = '/';
 		    }
-		    lines.push_back (static_cast<std::size_t> (std::count (uncommented.begin (), uncommented.begin () + lineStart, '\n')) + 1);
+		    lines.push_back (
+			static_cast<std::size_t> (
+			    std::count (uncommented.begin (), uncommented.begin () + lineStart, '\n')
+			)
+			+ 1
+		    );
 		}
 	    }
 	}
@@ -138,10 +147,8 @@ std::string normalizeXyOnlyVaryingMismatches (
     const std::regex vertexVec4Declaration (R"(\bvarying\s+vec4\s+([A-Za-z_]\w*)\s*;)");
     std::vector<std::pair<std::size_t, std::size_t>> declarations;
 
-    for (
-	std::sregex_iterator it (vertexCode.begin (), vertexCode.end (), vertexVec4Declaration), end; it != end;
-	++it
-    ) {
+    for (std::sregex_iterator it (vertexCode.begin (), vertexCode.end (), vertexVec4Declaration), end; it != end;
+	 ++it) {
 	const std::string name = (*it)[1].str ();
 	const std::regex fragmentVec2Declaration ("\\bvarying\\s+vec2\\s+" + name + "\\s*;");
 	if (!std::regex_search (fragmentCode, fragmentVec2Declaration)) {
@@ -305,10 +312,10 @@ std::vector<MutableVarying> findMutableFragmentVaryings (
 	    continue;
 	}
 
-	mutableVaryings.push_back ({
-	    static_cast<std::size_t> (it->position ()), static_cast<std::size_t> (it->length ()), type, name,
-	    preprocessorConditionAt (fragment, static_cast<std::size_t> (it->position ()))
-	});
+	mutableVaryings.push_back (
+	    { static_cast<std::size_t> (it->position ()), static_cast<std::size_t> (it->length ()), type, name,
+	      preprocessorConditionAt (fragment, static_cast<std::size_t> (it->position ())) }
+	);
 	if (mutableNames.insert (name).second) {
 	    adjusted.push_back (name);
 	}
@@ -358,15 +365,11 @@ std::string mutableVaryingInitialization (const std::vector<MutableVarying>& mut
     return initialization;
 }
 
-void injectMutableVaryingInitializers (
-    std::string& fragment, const std::vector<MutableVarying>& mutableVaryings
-) {
+void injectMutableVaryingInitializers (std::string& fragment, const std::vector<MutableVarying>& mutableVaryings) {
     const std::string fragmentCode = stripCommentsPreservingOffsets (fragment);
     const std::regex mainFunction (R"(\bvoid\s+main\s*\(\s*\)\s*\{)");
     std::vector<std::size_t> mainBodies;
-    for (
-	std::sregex_iterator it (fragmentCode.begin (), fragmentCode.end (), mainFunction), end; it != end; ++it
-    ) {
+    for (std::sregex_iterator it (fragmentCode.begin (), fragmentCode.end (), mainFunction), end; it != end; ++it) {
 	mainBodies.push_back (static_cast<std::size_t> (it->position () + it->length () - 1));
     }
     std::sort (mainBodies.rbegin (), mainBodies.rend ());
@@ -377,9 +380,8 @@ void injectMutableVaryingInitializers (
     }
 }
 
-std::string normalizeWritableFragmentVaryings (
-    std::string& vertex, std::string fragment, std::vector<std::string>& adjusted
-) {
+std::string
+normalizeWritableFragmentVaryings (std::string& vertex, std::string fragment, std::vector<std::string>& adjusted) {
     const auto mutableVaryings = findMutableFragmentVaryings (vertex, fragment, adjusted);
     if (mutableVaryings.empty ()) {
 	return fragment;
@@ -395,9 +397,7 @@ std::string normalizeWritableFragmentVaryings (
  * pass a vec2 temporary derived from their UVs. In that call context the first
  * component is the scalar coverage value the helper can consume.
  */
-std::vector<std::pair<std::size_t, std::size_t>> callArguments (
-    const std::string& code, std::size_t open
-);
+std::vector<std::pair<std::size_t, std::size_t>> callArguments (const std::string& code, std::size_t open);
 
 std::string scalarizeVectorNames (
     std::string expression, const std::set<std::string>& vectorNames, std::vector<std::string>& adjusted
@@ -560,7 +560,9 @@ void collectVec4Operands (
 
 std::string normalizeVec4OperandsInVec2Contexts (const std::string& source, std::vector<std::string>& adjusted) {
     const std::string code = stripCommentsPreservingOffsets (source);
-    const std::regex typedName (R"(\b(float|int|uint|bool|vec[234]|[biu]vec[234]|mat[234](?:x[234])?)\s+([A-Za-z_]\w*))");
+    const std::regex typedName (
+	R"(\b(float|int|uint|bool|vec[234]|[biu]vec[234]|mat[234](?:x[234])?)\s+([A-Za-z_]\w*))"
+    );
     std::set<std::string> vec4Names;
     std::set<std::string> conflictingNames;
     for (std::sregex_iterator it (code.begin (), code.end (), typedName), end; it != end; ++it) {
@@ -594,9 +596,13 @@ std::string normalizeVec4OperandsInVec2Contexts (const std::string& source, std:
     std::sort (replacements.begin (), replacements.end (), [] (const auto& lhs, const auto& rhs) {
 	return lhs.start > rhs.start;
     });
-    replacements.erase (std::unique (replacements.begin (), replacements.end (), [] (const auto& lhs, const auto& rhs) {
-	return lhs.start == rhs.start;
-    }), replacements.end ());
+    replacements.erase (
+	std::unique (
+	    replacements.begin (), replacements.end (),
+	    [] (const auto& lhs, const auto& rhs) { return lhs.start == rhs.start; }
+	),
+	replacements.end ()
+    );
 
     std::string result = source;
     for (const auto& replacement : replacements) {
@@ -634,7 +640,9 @@ std::string normalizeFloatConditions (const std::string& source, std::vector<std
 	const std::regex ternary ("\\b" + name + R"(\s*\?)");
 	for (std::sregex_iterator it (code.begin (), code.end (), ternary), end; it != end; ++it) {
 	    const std::size_t start = static_cast<std::size_t> (it->position ());
-	    if (start > 0 && (code[start - 1] == '.' || std::isalnum (static_cast<unsigned char> (code[start - 1])) || code[start - 1] == '_')) {
+	    if (start > 0
+		&& (code[start - 1] == '.' || std::isalnum (static_cast<unsigned char> (code[start - 1]))
+		    || code[start - 1] == '_')) {
 		continue;
 	    }
 	    replacements.push_back ({ start, name.size (), "(" + name + " != 0.0)" });
@@ -650,9 +658,13 @@ std::string normalizeFloatConditions (const std::string& source, std::vector<std
     std::sort (replacements.begin (), replacements.end (), [] (const auto& lhs, const auto& rhs) {
 	return lhs.start > rhs.start;
     });
-    replacements.erase (std::unique (replacements.begin (), replacements.end (), [] (const auto& lhs, const auto& rhs) {
-	return lhs.start == rhs.start;
-    }), replacements.end ());
+    replacements.erase (
+	std::unique (
+	    replacements.begin (), replacements.end (),
+	    [] (const auto& lhs, const auto& rhs) { return lhs.start == rhs.start; }
+	),
+	replacements.end ()
+    );
     std::string result = source;
     for (const auto& replacement : replacements) {
 	result.replace (replacement.start, replacement.length, replacement.value);
@@ -827,11 +839,10 @@ std::string normalizeUniformDependentConstants (const std::string& source, std::
 	    ++i;
 	    continue;
 	}
-	if (
-	    ch != 'c' || i + 5 > uncommented.size () || uncommented.compare (i, 5, "const") != 0 ||
-	    (i > 0 && (std::isalnum (static_cast<unsigned char> (uncommented[i - 1])) || uncommented[i - 1] == '_')) ||
-	    (i + 5 < uncommented.size () && (std::isalnum (static_cast<unsigned char> (uncommented[i + 5])) || uncommented[i + 5] == '_'))
-	) {
+	if (ch != 'c' || i + 5 > uncommented.size () || uncommented.compare (i, 5, "const") != 0
+	    || (i > 0 && (std::isalnum (static_cast<unsigned char> (uncommented[i - 1])) || uncommented[i - 1] == '_'))
+	    || (i + 5 < uncommented.size ()
+		&& (std::isalnum (static_cast<unsigned char> (uncommented[i + 5])) || uncommented[i + 5] == '_'))) {
 	    ++i;
 	    continue;
 	}
@@ -897,6 +908,63 @@ std::string normalizeUniformDependentConstants (const std::string& source, std::
 	result.replace (it->start, it->length, it->value);
     }
     return result;
+}
+
+std::string computeShaderCacheKey (const std::string& vertex, const std::string& fragment) {
+    constexpr uint64_t FNV_OFFSET_1 = 0xcbf29ce484222325ULL;
+    constexpr uint64_t FNV_PRIME_1 = 0x100000001b3ULL;
+    constexpr uint64_t FNV_OFFSET_2 = 0x84222325cbf29ce4ULL;
+    constexpr uint64_t FNV_PRIME_2 = 0x100000001b3ULL;
+
+    uint64_t h1 = FNV_OFFSET_1;
+    uint64_t h2 = FNV_OFFSET_2;
+
+    auto feed = [&] (const std::string_view sv) {
+	for (const unsigned char c : sv) {
+	    h1 = (h1 ^ c) * FNV_PRIME_1;
+	    h2 = (h2 ^ c) * FNV_PRIME_2;
+	}
+    };
+
+    feed ("v1\0");
+    feed (vertex);
+    feed ("\0\0");
+    feed (fragment);
+
+    char buf[33];
+    std::snprintf (
+	buf, sizeof (buf), "%016llx%016llx", static_cast<unsigned long long> (h1), static_cast<unsigned long long> (h2)
+    );
+    return std::string (buf, 32);
+}
+
+bool readCacheFile (const std::filesystem::path& path, std::string& out) {
+    std::ifstream stream (path, std::ios::in | std::ios::binary);
+    if (!stream.is_open ()) {
+	return false;
+    }
+    std::ostringstream ss;
+    ss << stream.rdbuf ();
+    out = ss.str ();
+    return !out.empty ();
+}
+
+void writeCacheFileAtomic (const std::filesystem::path& path, const std::string& content) {
+    std::filesystem::path tmpPath = path;
+    tmpPath += ".tmp." + std::to_string (getpid ());
+
+    std::ofstream stream (tmpPath, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!stream.is_open ()) {
+	return;
+    }
+    stream.write (content.data (), static_cast<std::streamsize> (content.size ()));
+    stream.close ();
+
+    std::error_code ec;
+    std::filesystem::rename (tmpPath, path, ec);
+    if (ec) {
+	std::filesystem::remove (tmpPath, ec);
+    }
 }
 } // namespace
 
@@ -1008,6 +1076,24 @@ GLSLContext::GLSLContext () {
     assert (this->sInstance == nullptr);
 
     glslang::InitializeProcess ();
+
+    const char* xdgCache = std::getenv ("XDG_CACHE_HOME");
+    if (xdgCache != nullptr && *xdgCache != '\0') {
+	this->m_cacheDir = std::filesystem::path (xdgCache) / "linux-wallpaperengine" / "shaders";
+    } else {
+	const char* home = std::getenv ("HOME");
+	if (home != nullptr && *home != '\0') {
+	    this->m_cacheDir = std::filesystem::path (home) / ".cache" / "linux-wallpaperengine" / "shaders";
+	} else {
+	    this->m_cacheDir = std::filesystem::temp_directory_path () / "linux-wallpaperengine-shaders";
+	}
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories (this->m_cacheDir, ec);
+    if (ec) {
+	sLog.error ("Failed to create shader cache directory: ", this->m_cacheDir.string (), " (", ec.message (), ")");
+    }
 }
 
 GLSLContext::~GLSLContext () { glslang::FinalizeProcess (); }
@@ -1021,6 +1107,29 @@ GLSLContext& GLSLContext::get () {
 }
 
 std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vertex, const std::string& fragment) {
+    const std::string cacheKey = computeShaderCacheKey (vertex, fragment);
+
+    {
+	std::lock_guard<std::mutex> lock (this->m_cacheMutex);
+	const auto it = this->m_memoryCache.find (cacheKey);
+	if (it != this->m_memoryCache.end ()) {
+	    return it->second;
+	}
+    }
+
+    if (!this->m_cacheDir.empty ()) {
+	const std::filesystem::path vertPath = this->m_cacheDir / (cacheKey + ".vert");
+	const std::filesystem::path fragPath = this->m_cacheDir / (cacheKey + ".frag");
+
+	std::string cachedVert;
+	std::string cachedFrag;
+	if (readCacheFile (vertPath, cachedVert) && readCacheFile (fragPath, cachedFrag)) {
+	    auto cachedPair = std::make_pair (std::move (cachedVert), std::move (cachedFrag));
+	    std::lock_guard<std::mutex> lock (this->m_cacheMutex);
+	    this->m_memoryCache.emplace (cacheKey, cachedPair);
+	    return cachedPair;
+	}
+    }
     std::vector<std::string> adjustedVaryings;
     std::string compatibleVaryings = normalizeXyOnlyVaryingMismatches (vertex, fragment, adjustedVaryings);
     std::vector<std::string> writableVaryings;
@@ -1035,9 +1144,9 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
     std::string validVertex = normalizeVec4OperandsInVec2Contexts (
 	ensurePiFallback (neutralizeUnmatchedEndifs (compatibleVertex, removedVertexEndifs)), adjustedVec2Operands
     );
-	std::string validFragment = normalizeVec4OperandsInVec2Contexts (
+    std::string validFragment = normalizeVec4OperandsInVec2Contexts (
 	ensurePiFallback (neutralizeUnmatchedEndifs (compatibleFragment, removedFragmentEndifs)), adjustedVec2Operands
-	);
+    );
     std::vector<std::string> adjustedFloatConditions;
     validFragment = normalizeFloatConditions (validFragment, adjustedFloatConditions);
     validVertex = normalizePiMacroRedefinitions (validVertex);
@@ -1061,7 +1170,9 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
 	sLog.out ("Treating uniform-dependent GLSL const initializer as dynamic in ", shaderName, ": ", name);
     }
     std::sort (adjustedVec2Operands.begin (), adjustedVec2Operands.end ());
-    adjustedVec2Operands.erase (std::unique (adjustedVec2Operands.begin (), adjustedVec2Operands.end ()), adjustedVec2Operands.end ());
+    adjustedVec2Operands.erase (
+	std::unique (adjustedVec2Operands.begin (), adjustedVec2Operands.end ()), adjustedVec2Operands.end ()
+    );
     for (const auto& name : adjustedVec2Operands) {
 	sLog.out ("Using XY components of vec4 GLSL operand in a vec2 context in ", shaderName, ": ", name);
     }
@@ -1112,11 +1223,10 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
     if (!fragmentShader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
 	const std::string initialError = fragmentShader.getInfoLog ();
 	std::vector<std::string> adjustedBlendOpacities;
-	const std::string scalarizedFragment = normalizeApplyBlendingVectorOpacity (validFragment, adjustedBlendOpacities);
-	if (
-	    scalarizedFragment == validFragment || initialError.find ("ApplyBlending") == std::string::npos ||
-	    initialError.find ("no matching overloaded function") == std::string::npos
-	) {
+	const std::string scalarizedFragment
+	    = normalizeApplyBlendingVectorOpacity (validFragment, adjustedBlendOpacities);
+	if (scalarizedFragment == validFragment || initialError.find ("ApplyBlending") == std::string::npos
+	    || initialError.find ("no matching overloaded function") == std::string::npos) {
 	    sLog.error ("GLSL fragment unit parsing Failed in ", shaderName, ": ", initialError);
 	    return { "", "" };
 	}
@@ -1161,8 +1271,24 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
     options.es = false;
     fragmentCompiler.set_common_options (options);
 
-    return { vertexCompiler.compile () + "#if 0\n" + validVertex + "\n#endif",
-	     fragmentCompiler.compile () + "#if 0\n" + validFragment + "\n#endif" };
+    auto result = std::make_pair (
+	vertexCompiler.compile () + "#if 0\n" + validVertex + "\n#endif",
+	fragmentCompiler.compile () + "#if 0\n" + validFragment + "\n#endif"
+    );
+
+    if (!result.first.empty () && !result.second.empty ()) {
+	if (!this->m_cacheDir.empty ()) {
+	    const std::filesystem::path vertPath = this->m_cacheDir / (cacheKey + ".vert");
+	    const std::filesystem::path fragPath = this->m_cacheDir / (cacheKey + ".frag");
+	    writeCacheFileAtomic (vertPath, result.first);
+	    writeCacheFileAtomic (fragPath, result.second);
+	}
+
+	std::lock_guard<std::mutex> lock (this->m_cacheMutex);
+	this->m_memoryCache.emplace (cacheKey, result);
+    }
+
+    return result;
 }
 
 std::unique_ptr<GLSLContext> GLSLContext::sInstance = nullptr;
