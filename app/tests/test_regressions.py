@@ -10,7 +10,7 @@ from unittest import mock
 APP_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(APP_DIR))
 
-from wallpaper_engine_app import daemon, model
+from wallpaper_engine_app import daemon, i18n, model
 
 
 class SteamLibraryTests(unittest.TestCase):
@@ -35,6 +35,42 @@ class SteamLibraryTests(unittest.TestCase):
                     Path("/srv/Steam/steamapps"),
                 ],
             )
+
+    def test_scan_catalog_resolves_assets_from_primary_steam_library(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            primary = root / "primary/steamapps"
+            secondary = root / "secondary/steamapps"
+            assets_dir = primary / "common/wallpaper_engine/assets"
+            assets_dir.mkdir(parents=True)
+            item_dir = secondary / "workshop/content" / model.WORKSHOP_APP_ID / "12345"
+            item_dir.mkdir(parents=True)
+            (item_dir / "project.json").write_text(
+                '{"title": "Cross Library Scene", "type": "scene"}',
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(
+                model, "steamapps_roots", return_value=[primary, secondary]
+            ):
+                catalog = model.scan_catalog()
+
+            self.assertIn("12345", catalog)
+            self.assertEqual(catalog["12345"]["assets"], str(assets_dir))
+
+    def test_xrandr_outputs_prefers_active_geometry_outputs(self) -> None:
+        sample_output = (
+            "Screen 0: minimum 320 x 200, current 2560 x 1440, maximum 16384 x 16384\n"
+            "eDP-1 connected (normal left inverted right x axis y axis)\n"
+            "DP-1 connected primary 2560x1440+0+0 (normal left inverted right x axis y axis) 597mm x 336mm\n"
+            "HDMI-1 disconnected (normal left inverted right x axis y axis)\n"
+        )
+        completed = mock.Mock(stdout=sample_output)
+        with (
+            mock.patch.object(model.shutil, "which", return_value="/usr/bin/xrandr"),
+            mock.patch.object(model.subprocess, "run", return_value=completed),
+        ):
+            self.assertEqual(model._xrandr_outputs(), ["DP-1"])
 
 
 class UiPreferenceTests(unittest.TestCase):
@@ -195,6 +231,88 @@ class DaemonRegressionTests(unittest.TestCase):
 
         self.assertEqual(screens["DP-1"], "2")
         self.assertEqual(screens["HDMI-A-1"], "2")
+
+    def test_explicit_select_and_assign_clear_crash_cooldown(self) -> None:
+        service = daemon.WallpaperDaemon()
+        service.config = model.validate_config({})
+        service.catalog = {
+            "1": {"assets": "/missing", "path": "/wallpapers/1", "title": "One"},
+            "2": {"assets": "/missing", "path": "/wallpapers/2", "title": "Two"},
+        }
+        service.outputs = ["DP-1"]
+        service.failed["1"] = time.time()
+        service.failed["2"] = time.time()
+        service.crash_streak = 3
+
+        with (
+            mock.patch.object(service, "_refresh"),
+            mock.patch.object(model, "save_config", side_effect=lambda value: value),
+        ):
+            service._command_select({"command": "select", "id": "1"})
+            self.assertNotIn("1", service.failed)
+            self.assertEqual(service.crash_streak, 0)
+            self.assertEqual(service._pending_wallpaper(), "1")
+
+            service._command_assign({"command": "assign", "screen": "DP-1", "id": "2"})
+            self.assertNotIn("2", service.failed)
+
+    def test_settings_and_assign_preserve_pending_wallpaper_while_terminating(self) -> None:
+        class RunningChild:
+            def poll(self) -> int | None:
+                return None
+
+        service = daemon.WallpaperDaemon()
+        service.config = model.validate_config({})
+        service.catalog = {
+            "1": {"title": "Old"},
+            "2": {"title": "New"},
+        }
+        service.outputs = ["DP-1"]
+        service.current_id = "1"
+        service.pending_id = "2"
+        service.child = RunningChild()
+        service.terminating = True
+
+        with (
+            mock.patch.object(service, "_refresh"),
+            mock.patch.object(model, "save_config", side_effect=lambda value: value),
+        ):
+            service._command_set({"command": "set", "settings": {"fps": 60}})
+            self.assertEqual(service.pending_id, "2")
+
+            service._command_assign({"command": "assign", "screen": "DP-1", "id": "1"})
+            self.assertEqual(service.pending_id, "2")
+
+    def test_stop_then_start_during_termination_schedules_pending_wallpaper(self) -> None:
+        class RunningChild:
+            def poll(self) -> int | None:
+                return None
+
+        service = daemon.WallpaperDaemon()
+        service.config = model.validate_config({"rotation_enabled": False, "selected_id": "1"})
+        service.catalog = {"1": {"title": "One"}}
+        service.outputs = ["DP-1"]
+        service.current_id = "1"
+        service.child = RunningChild()
+
+        service._command_stop({"command": "stop"})
+        self.assertFalse(service.active)
+        self.assertTrue(service.terminating)
+        self.assertIsNone(service.pending_id)
+
+        service._command_start({"command": "start"})
+        self.assertTrue(service.active)
+        self.assertEqual(service.pending_id, "1")
+
+
+class TranslationCompletenessTests(unittest.TestCase):
+    def test_supported_languages_cover_all_translation_rows(self) -> None:
+        seen_keys: set[str] = set()
+        for row in i18n._ROWS:
+            self.assertEqual(len(row), len(i18n._CODES))
+            self.assertTrue(all(isinstance(entry, str) and entry for entry in row))
+            self.assertNotIn(row[0], seen_keys)
+            seen_keys.add(row[0])
 
 
 if __name__ == "__main__":

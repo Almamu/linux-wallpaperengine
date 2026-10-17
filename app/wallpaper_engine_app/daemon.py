@@ -161,8 +161,16 @@ class WallpaperDaemon:
         else:
             configured = self.config["renderer_path"]
             path = shutil.which("linux-wallpaperengine") if configured == "auto" else configured
-            if not path and configured == "auto" and Path("/usr/bin/linux-wallpaperengine").is_file():
-                path = "/usr/bin/linux-wallpaperengine"
+            if not path and configured == "auto":
+                for candidate in (
+                    Path.home() / ".local/bin/linux-wallpaperengine",
+                    Path.home() / ".local/opt/linux-wallpaperengine/linux-wallpaperengine",
+                    Path("/usr/local/bin/linux-wallpaperengine"),
+                    Path("/usr/bin/linux-wallpaperengine"),
+                ):
+                    if candidate.is_file() and os.access(candidate, os.X_OK):
+                        path = str(candidate)
+                        break
         if not path or not Path(path).is_file() or not os.access(path, os.X_OK):
             raise RuntimeError(tr("Renderizador linux-wallpaperengine não encontrado ou sem permissão de execução."))
         return path
@@ -228,6 +236,9 @@ class WallpaperDaemon:
         self._append_asset_directory(command, screens)
         self._append_screen_options(command, screens)
         return command, environment, screens
+
+    def _active_or_pending_id(self) -> str | None:
+        return self.pending_id if self.pending_id is not None else self.current_id
 
     def _request_switch(self, wallpaper_id: str | None) -> None:
         self.pending_id = wallpaper_id
@@ -384,7 +395,13 @@ class WallpaperDaemon:
     def _tick(self) -> None:
         if self.skip_requested:
             self.skip_requested = False
-            self._request_switch(self._next_id())
+            if self.active:
+                selected = self._next_id()
+                if selected is not None:
+                    if not self.config["rotation_enabled"]:
+                        self.config = model.save_config(dict(self.config, selected_id=selected))
+                    self.retry_at = 0.0
+                    self._request_switch(selected)
         self._reap_child()
         self._refresh()
         if not self.active:
@@ -461,8 +478,11 @@ class WallpaperDaemon:
         self._request_switch(selected)
 
     def _command_select(self, message: dict[str, Any]) -> None:
-        self._refresh(force=True)
-        selected = self._validate_known_id(message["id"])
+        raw_id = model.normalize_id(message["id"])
+        self._refresh(force=not self.catalog or not self.outputs or raw_id not in self.catalog)
+        selected = self._validate_known_id(raw_id)
+        self.failed.pop(selected, None)
+        self.crash_streak = 0
         self.config = model.save_config(dict(
             self.config, selected_id=selected, rotation_enabled=False,
             active_playlist=None, screen_assignments={},
@@ -478,17 +498,19 @@ class WallpaperDaemon:
         settings = dict(raw_settings)
         # Turning rotation off keeps the wallpaper currently on screen
         # across daemon and desktop session restarts.
+        active_id = self._active_or_pending_id()
         if (
             settings.get("rotation_enabled") is False
             and self.config["rotation_enabled"]
             and "selected_id" not in settings
-            and self.current_id in self.catalog
+            and active_id in self.catalog
         ):
-            settings["selected_id"] = self.current_id
+            settings["selected_id"] = active_id
         return model.validate_config(dict(self.config, **settings))
 
     def _requires_eligible_wallpaper(self, changed: set[str]) -> bool:
-        if not self.config["rotation_enabled"] or self.current_id in self._eligible():
+        target_id = self._active_or_pending_id()
+        if not self.config["rotation_enabled"] or target_id in self._eligible():
             return False
         if "rotation_enabled" in changed or "active_playlist" in changed:
             return True
@@ -513,24 +535,46 @@ class WallpaperDaemon:
             "fps", "scaling", "mute", "renderer_path", "screen_assignments",
             "wallpaper_properties",
         }
-        selected_changed = "selected_id" in changed and self.config["selected_id"] != self.current_id
+        target_id = self._active_or_pending_id()
+        selected_changed = "selected_id" in changed and self.config["selected_id"] != target_id
         if changed & restart_keys or selected_changed:
-            selected = self.config["selected_id"] if selected_changed else self.current_id
+            selected = self.config["selected_id"] if selected_changed else target_id
             self.retry_at = 0.0
             self._request_switch(selected)
         elif self._requires_eligible_wallpaper(changed):
             self.retry_at = 0.0
             self._request_switch(self._next_id())
+        elif self.child is None:
+            self.retry_at = 0.0
         self._update_rotation_deadline(changed)
 
     def _command_set(self, message: dict[str, Any]) -> None:
         updated = self._prepare_settings_update(message["settings"])
-        self._refresh(force=True)
+        referenced_ids = (
+            set(updated["favorites"])
+            | set(updated["screen_assignments"].values())
+            | set(updated["wallpaper_properties"])
+        )
+        if updated["selected_id"] is not None:
+            referenced_ids.add(updated["selected_id"])
+        needs_force = (
+            not self.catalog
+            or not self.outputs
+            or bool(referenced_ids - set(self.catalog))
+        )
+        self._refresh(force=needs_force)
         self._validate_known_config(updated)
         previous = self.config
         self.config = model.save_config(updated)
         changed = {key for key in updated if updated[key] != previous[key]}
 
+        if "selected_id" in changed and self.config["selected_id"] is not None:
+            self.failed.pop(self.config["selected_id"], None)
+            self.crash_streak = 0
+        if "screen_assignments" in changed:
+            for wallpaper_id in self.config["screen_assignments"].values():
+                self.failed.pop(wallpaper_id, None)
+            self.crash_streak = 0
         if "language" in changed:
             set_language(self.config["language"])
             self.error = None
@@ -542,25 +586,37 @@ class WallpaperDaemon:
             self._apply_active_setting_changes(changed)
 
     def _command_assign(self, message: dict[str, Any]) -> None:
-        self._refresh(force=True)
         screen = model.validate_screen(message["screen"])
+        selected = message["id"]
+        normalized_id = model.normalize_id(selected) if selected is not None else None
+        needs_force = (
+            not self.catalog
+            or not self.outputs
+            or screen not in self.outputs
+            or (normalized_id is not None and normalized_id not in self.catalog)
+        )
+        self._refresh(force=needs_force)
         if screen not in self.outputs:
             raise ValueError(tr("Monitor {screen} não está ativo.", screen=screen))
-        selected = message["id"]
         assignments = dict(self.config["screen_assignments"])
-        if selected is None:
+        if normalized_id is None:
             assignments.pop(screen, None)
         else:
-            assignments[screen] = self._validate_known_id(selected)
+            valid_id = self._validate_known_id(normalized_id)
+            assignments[screen] = valid_id
+            self.failed.pop(valid_id, None)
+            self.crash_streak = 0
         self.config = model.save_config(dict(self.config, screen_assignments=assignments))
         if self.active:
             self.retry_at = 0.0
-            self._request_switch(self.current_id)
+            self._request_switch(self._active_or_pending_id())
 
     def _command_start(self, _message: dict[str, Any]) -> None:
         self.active = True
+        self.failed.clear()
+        self.crash_streak = 0
         self.retry_at = 0.0
-        if self.child is None:
+        if (self.child is None or self.terminating) and self.pending_id is None:
             self.pending_id = (
                 self._first_id() if self.config["rotation_enabled"]
                 else self.config["selected_id"] or self.current_id
@@ -579,9 +635,12 @@ class WallpaperDaemon:
         self.alive = False
 
     def _command_reload(self, _message: dict[str, Any]) -> None:
+        self.failed.clear()
+        self.crash_streak = 0
         self._refresh(force=True)
         if self.active:
-            selected = self.current_id if self.current_id in self.catalog else None
+            target = self._active_or_pending_id()
+            selected = target if target in self.catalog else None
             self.retry_at = 0.0
             self._request_switch(selected)
 
@@ -627,30 +686,35 @@ class WallpaperDaemon:
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
-            listener.bind(str(path))
-        except OSError as exc:
-            if exc.errno != errno.EADDRINUSE:
-                listener.close()
-                raise
-            existing = path.lstat()
-            if not stat.S_ISSOCK(existing.st_mode) or existing.st_uid != os.getuid():
-                listener.close()
-                raise RuntimeError(tr("Socket ocupado por outro arquivo: {path}", path=path)) from exc
             try:
-                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
-                    probe.settimeout(0.2)
-                    probe.connect(str(path))
-            except OSError:
-                path.unlink()
                 listener.bind(str(path))
-            else:
-                listener.close()
-                raise RuntimeError(tr("O serviço de wallpapers já está em execução.")) from exc
-        os.chmod(path, 0o600)
-        self.socket_inode = path.stat().st_ino
-        listener.listen(8)
-        listener.settimeout(0.25)
-        return listener
+            except OSError as exc:
+                if exc.errno != errno.EADDRINUSE:
+                    raise
+                try:
+                    existing = path.lstat()
+                except FileNotFoundError:
+                    listener.bind(str(path))
+                else:
+                    if not stat.S_ISSOCK(existing.st_mode) or existing.st_uid != os.getuid():
+                        raise RuntimeError(tr("Socket ocupado por outro arquivo: {path}", path=path)) from exc
+                    try:
+                        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
+                            probe.settimeout(0.2)
+                            probe.connect(str(path))
+                    except OSError:
+                        path.unlink(missing_ok=True)
+                        listener.bind(str(path))
+                    else:
+                        raise RuntimeError(tr("O serviço de wallpapers já está em execução.")) from exc
+            os.chmod(path, 0o600)
+            self.socket_inode = path.stat().st_ino
+            listener.listen(8)
+            listener.settimeout(0.25)
+            return listener
+        except Exception:
+            listener.close()
+            raise
 
     def _close_socket(self) -> None:
         if self.sock is not None:

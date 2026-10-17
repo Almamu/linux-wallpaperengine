@@ -6,6 +6,8 @@ on:
       - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'app/**'
+      - 'contrib/**'
+      - install.sh
       - 'CMakeModules/**'
       - CMakeLists.txt
       - 'protocols/**'
@@ -15,6 +17,8 @@ on:
       - '.github/workflows/cmake.yml'
       - 'src/**'
       - 'app/**'
+      - 'contrib/**'
+      - install.sh
       - 'CMakeModules/**'
       - CMakeLists.txt
       - 'protocols/**'
@@ -28,9 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check Python syntax
-        run: python3 -m compileall -q app/wallpaper_engine_app app/tests
+        run: python3 -m compileall -q app/wallpaper_engine_app app/tests contrib/rotation/wallpaper-engine-rotate.py
       - name: Check installer syntax
-        run: bash -n app/install.sh
+        run: bash -n install.sh app/install.sh contrib/rotation/install.sh
       - name: Run desktop app regression tests
         run: python3 -m unittest discover -s app/tests -v
 

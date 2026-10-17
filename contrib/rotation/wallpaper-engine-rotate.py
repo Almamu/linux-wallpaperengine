@@ -113,10 +113,21 @@ def renderer_path():
 
 
 def installations():
-    for steamapps in steamapps_roots():
+    roots = steamapps_roots()
+    fallback_assets = next(
+        (
+            root / "common/wallpaper_engine/assets"
+            for root in roots
+            if (root / "common/wallpaper_engine/assets").is_dir()
+        ),
+        None,
+    )
+    for steamapps in roots:
         workshop = steamapps / "workshop/content" / WORKSHOP_APP_ID
         if workshop.is_dir():
-            yield workshop, steamapps / "common/wallpaper_engine/assets"
+            local_assets = steamapps / "common/wallpaper_engine/assets"
+            assets = local_assets if local_assets.is_dir() else (fallback_assets or local_assets)
+            yield workshop, assets
 
 
 def catalog():
@@ -140,13 +151,15 @@ def catalog():
     return result
 
 
-def outputs():
+def _kscreen_outputs():
+    if not shutil.which("kscreen-doctor"):
+        return []
     try:
         result = subprocess.run(
             ["kscreen-doctor", "-j"],
             capture_output=True,
             text=True,
-            timeout=15,
+            timeout=5,
             check=True,
         )
         data = json.loads(result.stdout)
@@ -154,12 +167,49 @@ def outputs():
         return []
     if not isinstance(data, dict):
         return []
-    return [
+    return list(dict.fromkeys([
         output["name"]
         for output in data.get("outputs", [])
         if isinstance(output, dict) and output.get("enabled") and output.get("connected")
         and isinstance(output.get("name"), str)
-    ]
+    ]))
+
+
+def _xrandr_outputs():
+    if not shutil.which("xrandr"):
+        return []
+    try:
+        result = subprocess.run(
+            ["xrandr", "--query"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    connected = []
+    active = []
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[1] == "connected":
+            connected.append(parts[0])
+            if re.search(r"\b\d+x\d+\+-?\d+\+-?\d+\b", line):
+                active.append(parts[0])
+    return list(dict.fromkeys(active or connected))
+
+
+def outputs():
+    names = _kscreen_outputs()
+    if names:
+        return names
+    session_type = os.environ.get("XDG_SESSION_TYPE")
+    if session_type == "wayland" or (
+        session_type != "x11"
+        and (not os.environ.get("DISPLAY") or bool(os.environ.get("WAYLAND_DISPLAY")))
+    ):
+        return []
+    return _xrandr_outputs()
 
 
 def terminate():
@@ -173,7 +223,10 @@ def terminate():
     try:
         child.wait(timeout=5)
     except subprocess.TimeoutExpired:
-        os.killpg(child.pid, signal.SIGKILL)
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         child.wait()
     child = None
 

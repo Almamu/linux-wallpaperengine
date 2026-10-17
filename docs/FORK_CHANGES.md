@@ -49,13 +49,13 @@ caches decoded results, and starts GIF animation on card hover. The catalog
 model records both the preview poster and any animation source so a wallpaper
 without a GIF does not block the card list.
 
-Library cards use a compact fixed width with a uniform 16:9 preview region.
-Images keep their original proportions inside that region, so non-widescreen
-previews are letterboxed instead of cropped. GIFs use their first frame at rest
-and decode/play their animation asynchronously while the pointer hovers over a
-card. The gallery spacing is intentionally tight so maximized windows show more
-wallpapers per row. Visual behavior still depends on GTK's FlowBox allocation
-and should be checked on the target desktop.
+Library cards use a compact fixed 240 px width with a 240×240 square preview
+region. Images keep their original proportions inside that region, so
+non-square previews are letterboxed instead of cropped. GIFs use their first
+frame at rest and decode/play their animation asynchronously while the pointer
+hovers over a card. The gallery uses GTK 4's recycling `Gtk.GridView` with a
+`Gtk.FilterListModel` and `Gtk.MultiSelection` so large Workshop libraries only
+bind visible card widgets.
 
 Gallery scrolling uses GTK's native scroll path instead of a second wheel
 animation that competes with the scroller's adjustment. A hovered GIF keeps

@@ -231,7 +231,9 @@ esac
 pkg_installed() {
     case "${PM}" in
         pacman) pacman -Qq "$1" >/dev/null 2>&1 ;;
-        apt)    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed' ;;
+        apt)
+            dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed' \
+                || dpkg-query -W -f='${Status}' "${1}t64" 2>/dev/null | grep -q 'install ok installed' ;;
         dnf)    rpm -q "$1" >/dev/null 2>&1 ;;
         # zypper search exits 0 even with no results, so match an installed
         # row in its output instead of relying on the exit code.

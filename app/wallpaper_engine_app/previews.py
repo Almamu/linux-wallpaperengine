@@ -124,6 +124,7 @@ def _install(stack: Gtk.Stack, pixbuf: GdkPixbuf.Pixbuf | None) -> None:
 def _deliver(job: _JobKey, pixbuf: GdkPixbuf.Pixbuf | None) -> bool:
     key, signature = job
     with _pending_lock:
+        _inflight_jobs.discard(job)
         waiting = _pending.pop(job, [])
     for stack in waiting:
         stack._preview_job = None
@@ -139,6 +140,7 @@ def _deliver(job: _JobKey, pixbuf: GdkPixbuf.Pixbuf | None) -> bool:
 def _worker() -> None:
     while True:
         _priority, _order, job = _tasks.get()
+        scheduled = False
         try:
             # Grid views release previews as cells are recycled. Avoid decoding
             # jobs that have not started yet and no longer have a live widget.
@@ -152,9 +154,11 @@ def _worker() -> None:
             key, _signature_value = job
             pixbuf = _decode(*key)
             GLib.idle_add(_deliver, job, pixbuf)
+            scheduled = True
         finally:
-            with _pending_lock:
-                _inflight_jobs.discard(job)
+            if not scheduled:
+                with _pending_lock:
+                    _inflight_jobs.discard(job)
             _tasks.task_done()
 
 
@@ -352,6 +356,9 @@ def preview(
             if isinstance(ticker, int) and ticker:
                 GLib.source_remove(ticker)
                 state["ticker"] = 0
+            picture = state.get("animated_picture")
+            if isinstance(picture, Gtk.Picture):
+                picture.set_paintable(None)
             if stack.get_child_by_name("preview") is not None:
                 stack.set_visible_child_name("preview")
             else:
@@ -422,8 +429,13 @@ def release(stack: Gtk.Stack) -> None:
         ticker = state.get("ticker")
         if isinstance(ticker, int) and ticker:
             GLib.source_remove(ticker)
+        picture = state.get("animated_picture")
+        if isinstance(picture, Gtk.Picture):
+            picture.set_paintable(None)
         state["ticker"] = 0
         state["hover_timer"] = 0
+        state["animated_picture"] = None
+        state["last_frame"] = None
         state["iterator"] = None
         state["animation"] = None
 

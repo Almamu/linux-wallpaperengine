@@ -542,11 +542,21 @@ def _tags_for(raw: Any) -> list[str]:
 def scan_catalog() -> dict[str, dict[str, Any]]:
     """Find installed scene/video Workshop projects without modifying Steam data."""
     result: dict[str, dict[str, Any]] = {}
-    for steamapps in steamapps_roots():
+    roots = steamapps_roots()
+    fallback_assets = next(
+        (
+            root / "common/wallpaper_engine/assets"
+            for root in roots
+            if (root / "common/wallpaper_engine/assets").is_dir()
+        ),
+        None,
+    )
+    for steamapps in roots:
         workshop = steamapps / "workshop/content" / WORKSHOP_APP_ID
         if not workshop.is_dir():
             continue
-        assets = steamapps / "common/wallpaper_engine/assets"
+        local_assets = steamapps / "common/wallpaper_engine/assets"
+        assets = local_assets if local_assets.is_dir() else (fallback_assets or local_assets)
         try:
             projects = sorted(workshop.glob("*/project.json"))
         except OSError:
@@ -632,6 +642,11 @@ def _native_wayland_session() -> bool:
     )
 
 
+def _kde_session() -> bool:
+    desktop = f"{os.environ.get('XDG_CURRENT_DESKTOP', '')}:{os.environ.get('XDG_SESSION_DESKTOP', '')}".lower()
+    return "kde" in desktop or "plasma" in desktop
+
+
 def _xrandr_outputs() -> list[str]:
     if not shutil.which("xrandr"):
         return []
@@ -642,19 +657,25 @@ def _xrandr_outputs() -> list[str]:
         )
     except (OSError, subprocess.SubprocessError):
         return []
-    names = []
+    connected = []
+    active = []
     for line in result.stdout.splitlines():
         parts = line.split()
         if len(parts) >= 2 and parts[1] == "connected":
-            names.append(parts[0])
-    return list(dict.fromkeys(names))
+            connected.append(parts[0])
+            if re.search(r"\b\d+x\d+\+-?\d+\+-?\d+\b", line):
+                active.append(parts[0])
+    return list(dict.fromkeys(active or connected))
 
 
 def detect_outputs() -> list[str]:
     """Discover active outputs using an available desktop/session backend."""
-    names = _kscreen_outputs()
+    if _kde_session() or _native_wayland_session():
+        names = _kscreen_outputs()
+        if names or _native_wayland_session():
+            return names
+        return _xrandr_outputs()
+    names = _xrandr_outputs()
     if names:
         return names
-    if _native_wayland_session():
-        return []
-    return _xrandr_outputs()
+    return _kscreen_outputs()

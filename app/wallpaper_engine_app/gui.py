@@ -74,10 +74,27 @@ def _icon_button(label: str, icon: str, *, tooltip: str | None = None) -> Gtk.Bu
     return button
 
 
+def _release_previews_in(widget: Gtk.Widget) -> None:
+    if isinstance(widget, Gtk.Stack) and (
+        getattr(widget, "_preview_job", None) is not None
+        or getattr(widget, "_preview_animation_state", None) is not None
+        or getattr(widget, "_preview_controller", None) is not None
+        or widget.has_css_class("wallpaper-preview")
+    ):
+        _release_preview(widget)
+        return
+    child = widget.get_first_child()
+    while child is not None:
+        following = child.get_next_sibling()
+        _release_previews_in(child)
+        child = following
+
+
 def _clear(container: Gtk.Box | Gtk.FlowBox | Gtk.ListBox) -> None:
     child = container.get_first_child()
     while child is not None:
         following = child.get_next_sibling()
+        _release_previews_in(child)
         container.remove(child)
         child = following
 
@@ -116,6 +133,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self._gallery_search: dict[str, str] = {}
         self._gallery_visible_ids: list[str] = []
         self._gallery_visible_set: set[str] = set()
+        self._last_filtered_ids: list[str] | None = None
         self._selected_ids: set[str] = set()
         self._selection_anchor_id: str | None = None
         self._gallery_click_modifiers: Gdk.ModifierType | None = None
@@ -670,6 +688,10 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             self.selection_bar.remove_css_class("selection-bar-compact")
 
     def _update_responsive(self) -> bool:
+        if self._allow_close:
+            return False
+        if not self.get_visible():
+            return True
         _width, _height, mode, pane_width, height_band = self._responsive_geometry()
         size_changed = (
             self._last_pane_width is None
@@ -701,6 +723,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self._gallery_search = {}
         self._gallery_visible_ids = []
         self._gallery_visible_set = set()
+        self._last_filtered_ids = None
         page = _box(vertical=True, spacing=16)
         page.add_css_class("library-page")
         self.library_page = page
@@ -885,18 +908,23 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         return item.get_string() if isinstance(item, Gtk.StringObject) else None
 
     def _card_activated(self, _gallery: Gtk.GridView, position: int) -> None:
-        # A pointer double-click reaches GridView activation too; the first click
-        # has already queued playback. Keep this signal for keyboard activation.
-        if self._gallery_click_modifiers is not None:
+        if self._gallery_click_on_button:
             return
-        seat = self.get_display().get_default_seat()
-        keyboard = seat.get_keyboard() if seat else None
-        modifiers = keyboard.get_modifier_state() if keyboard else Gdk.ModifierType(0)
+        modifiers = self._gallery_click_modifiers
+        if modifiers is None:
+            seat = self.get_display().get_default_seat()
+            keyboard = seat.get_keyboard() if seat else None
+            modifiers = keyboard.get_modifier_state() if keyboard else Gdk.ModifierType(0)
         if modifiers & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK):
             return
         wallpaper_id = self._gallery_item_id_at(position)
         if wallpaper_id is not None:
             self._play_gallery_card(wallpaper_id)
+
+    def _inspect_gallery_card(self, wallpaper_id: str) -> bool:
+        if wallpaper_id in self.catalog and self.selected_id != wallpaper_id:
+            self._show_details(wallpaper_id)
+        return False
 
     def _play_gallery_card(self, wallpaper_id: str) -> bool:
         if wallpaper_id in self.catalog:
@@ -936,7 +964,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             else:
                 self._selection_anchor_id = wallpaper_id
                 if not modifiers & Gdk.ModifierType.CONTROL_MASK and count == 1:
-                    GLib.idle_add(self._play_gallery_card, wallpaper_id)
+                    GLib.idle_add(self._inspect_gallery_card, wallpaper_id)
         GLib.idle_add(self._clear_gallery_click_modifiers)
 
     def _clear_gallery_click_modifiers(self) -> bool:
@@ -1134,7 +1162,13 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             for index in range(selection.get_size())
             if selection.get_nth(index) < len(self._gallery_visible_ids)
         }
-        hidden_selected = self._selected_ids - self._gallery_visible_set
+        keep_hidden = self._gallery_click_modifiers is None or bool(
+            self._gallery_click_modifiers
+            & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK)
+        )
+        hidden_selected = (
+            self._selected_ids - self._gallery_visible_set if keep_hidden else set()
+        )
         self._selected_ids = hidden_selected | visible_selected
         for item_id, child in self._cards.items():
             if item_id in self._selected_ids:
@@ -1334,12 +1368,16 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         activation.set_sensitive(active or any(item_id in self.catalog for item_id in identifiers))
         if not active:
             activation.add_css_class("suggested-action")
-        activation.connect(
-            "clicked", lambda *_: self._set_settings(
+
+        def toggle_playlist(*_args: object) -> None:
+            self._set_settings(
                 active_playlist=None if active else name,
                 rotation_enabled=True,
             )
-        )
+            if not active and self.service_available and not self.status.get("running"):
+                self._command("start")
+
+        activation.connect("clicked", toggle_playlist)
         self.playlist_detail.append(activation)
         self.playlist_detail.append(_label(
             tr("A ordem abaixo vale quando a opção aleatória está desligada. Itens salvos que não estão instalados serão ignorados até reaparecerem na biblioteca."),
@@ -1899,6 +1937,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
                 )
             finally:
                 self._selection_rebuilding = False
+            self._last_filtered_ids = None
             self._filter_cards()
             selected = self.selected_id if self.selected_id in self.catalog else None
             self._show_details(selected)
@@ -1933,21 +1972,24 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             if matches:
                 visible_ids.append(wallpaper_id)
 
-        self._gallery_visible_ids = visible_ids
-        self._gallery_visible_set = set(visible_ids)
+        selection_changed = selected_ids != self._selected_ids
         self._selected_ids = set(selected_ids)
-        was_rebuilding = self._selection_rebuilding
-        self._selection_rebuilding = True
-        try:
-            self._gallery_selection.unselect_all()
-            self._gallery_filter.changed(Gtk.FilterChange.DIFFERENT)
-            for position, wallpaper_id in enumerate(visible_ids):
-                if wallpaper_id in selected_ids:
-                    self._gallery_selection.select_item(position, False)
-        finally:
-            self._selection_rebuilding = was_rebuilding
-        if not was_rebuilding:
-            self._selection_changed(self._gallery_selection)
+        if visible_ids != self._last_filtered_ids or selection_changed:
+            self._last_filtered_ids = list(visible_ids)
+            self._gallery_visible_ids = visible_ids
+            self._gallery_visible_set = set(visible_ids)
+            was_rebuilding = self._selection_rebuilding
+            self._selection_rebuilding = True
+            try:
+                self._gallery_selection.unselect_all()
+                self._gallery_filter.changed(Gtk.FilterChange.DIFFERENT)
+                for position, wallpaper_id in enumerate(visible_ids):
+                    if wallpaper_id in selected_ids:
+                        self._gallery_selection.select_item(position, False)
+            finally:
+                self._selection_rebuilding = was_rebuilding
+            if not was_rebuilding:
+                self._selection_changed(self._gallery_selection)
 
         self.library_count.set_text(
             tr("{visible} de {total}", visible=len(visible_ids), total=len(self.catalog))
@@ -2229,6 +2271,12 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self._last_height_band = None
         self._last_pane_width = None
         self._ui_language = self.config.get("language", "auto")
+        root = self.get_child()
+        if root is not None:
+            _release_previews_in(root)
+        self._cards.clear()
+        self._card_badges.clear()
+        self._last_filtered_ids = None
         self._build()
         self.selected_id = selected
         self.playlist_name = playlist
@@ -2254,6 +2302,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             self._gallery_model.splice(0, self._gallery_model.get_n_items(), identifiers)
         finally:
             self._selection_rebuilding = False
+        self._last_filtered_ids = None
         self._filter_cards()
         self.tabs.set_visible_child_name(page)
         if self.status:
@@ -2261,6 +2310,12 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         else:
             self._refresh_status()
         self._refresh_autostart()
+        if self._tray_bridge is not None and self._tray_bridge.running:
+            try:
+                self._stop_tray_bridge()
+                self._start_tray_bridge()
+            except (OSError, RuntimeError):
+                pass
         GLib.idle_add(self._update_responsive_once)
 
     def _apply_config(self) -> None:
@@ -2321,7 +2376,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self._background(lambda: ipc.request(command, **kwargs), done)
 
     def _refresh_status(self) -> None:
-        if self._pending_status:
+        if self._pending_status or self._command_busy or self._command_queue:
             return
         self._pending_status = True
         request_generation = self._mutation_generation
@@ -2476,11 +2531,14 @@ class WallpaperWindow(Gtk.ApplicationWindow):
 
         def done(_value: object, error: Exception | None) -> None:
             if error:
+                verb_label = tr(
+                    {"start": "iniciar", "enable": "ativar", "disable": "desativar"}.get(verb, verb)
+                )
                 self._notice(tr("Não foi possível {verb} o serviço: {error}",
-                                verb=verb, error=error), error=True)
+                                verb=verb_label, error=error), error=True)
             else:
                 self._refresh_status()
-                self._refresh_autostart()
+            self._refresh_autostart()
 
         self._background(run, done)
 
@@ -2497,11 +2555,18 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         ]
         return next((path for path in candidates if path and os.path.isfile(path)), None)
 
+    def _restore_from_tray(self) -> None:
+        self.present()
+        self._update_countdown()
+        self._refresh_status()
+        self._check_library_changes()
+        self._update_responsive()
+
     def _start_tray_bridge(self) -> None:
         if self._tray_bridge is not None and self._tray_bridge.running:
             return
         self._stop_tray_bridge()
-        bridge = TrayBridge(self.present, self._quit_from_tray)
+        bridge = TrayBridge(self._restore_from_tray, self._quit_from_tray)
         bridge.start(
             open_label=tr("Restaurar a janela"),
             quit_label=tr("Sair do aplicativo"),
@@ -2552,7 +2617,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         bridge: TrayBridge | None = None
         try:
             if enabled:
-                bridge = TrayBridge(self.present, self._quit_from_tray)
+                bridge = TrayBridge(self._restore_from_tray, self._quit_from_tray)
                 bridge.start(
                     open_label=tr("Restaurar a janela"),
                     quit_label=tr("Sair do aplicativo"),
@@ -2609,8 +2674,10 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             self._systemctl("enable" if widget.get_active() else "disable")
 
     def _check_library_changes(self) -> bool:
-        if not self.get_visible():
+        if self._allow_close:
             return False
+        if not self.get_visible():
+            return True
         if self._catalog_scan_pending:
             return True
         self._catalog_scan_pending = True
@@ -2631,8 +2698,10 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             self._command("reload")
 
     def _tick(self) -> bool:
-        if not self.get_visible():
+        if self._allow_close:
             return False
+        if not self.get_visible():
+            return True
         if self.config.get("language") == "auto" and current_language() != system_language():
             set_language("auto")
             self._rebuild_localized_ui()

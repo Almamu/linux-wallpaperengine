@@ -23,6 +23,7 @@ from typing import Callable
 
 from gi.repository import GLib
 
+from . import model
 from .i18n import tr
 
 
@@ -49,18 +50,38 @@ class TrayBridge:
     ) -> None:
         if self.running:
             return
-        runtime = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp"))
-        self._socket_path = runtime / (
-            f"lwe-tray-{os.getuid()}-{os.getpid()}-{secrets.token_hex(4)}.sock"
+        self.stop()
+        self._ready.clear()
+        self._closed.clear()
+        self._error = None
+        runtime_env = os.environ.get("XDG_RUNTIME_DIR")
+        socket_dir = (
+            Path(runtime_env) / "linux-wallpaperengine"
+            if runtime_env
+            else model.STATE_DIR / "tray"
+        )
+        socket_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        try:
+            os.chmod(socket_dir, 0o700)
+        except OSError:
+            pass
+        self._socket_path = socket_dir / (
+            f"lwe-tray-{os.getpid()}-{secrets.token_hex(4)}.sock"
         )
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        previous_umask = os.umask(0o077)
         try:
             server.bind(str(self._socket_path))
-        finally:
-            os.umask(previous_umask)
-        server.listen(4)
-        server.settimeout(0.25)
+            os.chmod(self._socket_path, 0o600)
+            server.listen(4)
+            server.settimeout(0.25)
+        except OSError:
+            server.close()
+            try:
+                self._socket_path.unlink()
+            except FileNotFoundError:
+                pass
+            self._socket_path = None
+            raise
         self._server = server
 
         self._thread = Thread(target=self._listen, name="wallpaper-tray-bridge", daemon=True)
@@ -121,6 +142,9 @@ class TrayBridge:
         server, self._server = self._server, None
         if server is not None:
             server.close()
+        thread, self._thread = self._thread, None
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=1.0)
         process, self._process = self._process, None
         if process is not None and process.poll() is None:
             process.terminate()
@@ -184,6 +208,7 @@ def _helper_main(arguments: list[str]) -> int:
         from gi.repository import Gtk
 
         AppIndicator = _require_indicator()
+        icon_theme_dir: Path | None = None
         if options.icon_file:
             icon = Path(options.icon_file)
             if icon.is_file():
@@ -199,13 +224,7 @@ def _helper_main(arguments: list[str]) -> int:
             AppIndicator.IndicatorCategory.APPLICATION_STATUS,
         )
         indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
-        if options.icon_file:
-            icon = Path(options.icon_file)
-            icon_theme_dir = (
-                icon.parents[3]
-                if icon.parent.name == "apps" and len(icon.parents) > 3
-                else icon.parent
-            )
+        if icon_theme_dir is not None:
             indicator.set_icon_theme_path(str(icon_theme_dir))
 
         menu = Gtk.Menu()
