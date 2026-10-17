@@ -117,23 +117,26 @@ namespace {
 	return true;
     }
 
-    bool isFullscreenRelevant (const FullscreenState& toplevel) {
+    bool isStateRelevant (
+	const FullscreenState& toplevel, const bool isFullscreen, const bool isMaximized, const bool isActivated
+    ) {
 	const auto& ctx = toplevel.data->detector->getApplicationContext ();
-	return isRelevant (ctx, toplevel.pending, toplevel.pendingActivated, toplevel.appId);
+	return isRelevant (ctx, isFullscreen || isMaximized, isActivated, toplevel.appId);
     }
 
-    bool isCurrentlyRelevant (const FullscreenState& toplevel) {
-	const auto& ctx = toplevel.data->detector->getApplicationContext ();
-	return isRelevant (ctx, toplevel.current, toplevel.currentActivated, toplevel.appId);
+    bool isPendingRelevant (const FullscreenState& toplevel) {
+	return isStateRelevant (toplevel, toplevel.pending, toplevel.pendingMaximized, toplevel.pendingActivated);
+    }
+
+    bool isCurrentRelevant (const FullscreenState& toplevel) {
+	return isStateRelevant (toplevel, toplevel.current, toplevel.currentMaximized, toplevel.currentActivated);
     }
 
     void toplevelHandleDone (void* data, struct zwlr_foreign_toplevel_handle_v1* handle) {
 	const auto toplevel = static_cast<FullscreenState*> (data);
 
-	const bool pendingRelevant = isFullscreenRelevant (*toplevel)
-	    || isRelevant (toplevel->data->detector->getApplicationContext (), toplevel->pendingMaximized,
-		   toplevel->pendingActivated, toplevel->appId);
-	const bool currentRelevant = isCurrentlyRelevant (*toplevel);
+	const bool pendingRelevant = isPendingRelevant (*toplevel);
+	const bool currentRelevant = isCurrentRelevant (*toplevel);
 
 	if (currentRelevant != pendingRelevant) {
 	    if (pendingRelevant) {
@@ -156,9 +159,7 @@ namespace {
 	const auto toplevel = static_cast<FullscreenState*> (data);
 
 	// If it was counted as relevant fullscreen, remove it.
-	const bool currentRelevant = isCurrentlyRelevant (*toplevel)
-	    || isRelevant (toplevel->data->detector->getApplicationContext (), toplevel->currentMaximized,
-		   toplevel->currentActivated, toplevel->appId);
+	const bool currentRelevant = isCurrentRelevant (*toplevel);
 
 	if (currentRelevant) {
 	    if (*toplevel->data->fullscreenCount == 0) {

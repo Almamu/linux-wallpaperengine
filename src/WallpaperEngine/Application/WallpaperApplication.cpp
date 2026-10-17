@@ -31,7 +31,7 @@
 #include <stb_image_write.h>
 #include <thread>
 
-#define FULLSCREEN_CHECK_WAIT_TIME 250
+#define FULLSCREEN_CHECK_WAIT_TIME 250000 // 250ms (in microseconds for usleep)
 
 float g_Time;
 float g_TimeLast;
