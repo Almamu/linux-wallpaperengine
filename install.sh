@@ -345,9 +345,9 @@ if [[ -n "${RENDERER_PATH}" ]]; then
 elif [[ "${DRY_RUN}" -eq 1 ]]; then
     printf 'Renderer: not found in PATH or %s. Planned steps (nothing will run):\n' "${HOME}/.local/bin"
     if [[ -d "${ROOT}/.git" ]]; then
-        printf '  git -C %s submodule update --init --recursive\n' "${ROOT}"
+        printf '  git -C %s submodule update --init --recursive --force\n' "${ROOT}"
     fi
-    if [[ -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
+    if [[ -f "${BUILD_DIR}/CMakeCache.txt" && ( -f "${BUILD_DIR}/Makefile" || -f "${BUILD_DIR}/build.ninja" ) ]]; then
         printf '  # build directory %s is already configured\n' "${BUILD_DIR}"
         printf '  # purge any 0-byte object files left by an interrupted build\n'
         printf '  cmake --build %s --parallel\n' "${BUILD_DIR}"
@@ -363,9 +363,9 @@ else
     printf 'Renderer: not found; building it from this checkout.\n'
     if [[ -d "${ROOT}/.git" ]]; then
         printf 'Updating git submodules...\n'
-        git -C "${ROOT}" submodule update --init --recursive
+        git -C "${ROOT}" submodule update --init --recursive --force
     fi
-    if [[ -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
+    if [[ -f "${BUILD_DIR}/CMakeCache.txt" && ( -f "${BUILD_DIR}/Makefile" || -f "${BUILD_DIR}/build.ninja" ) ]]; then
         printf 'Build directory %s is already configured; reusing it.\n' "${BUILD_DIR}"
     else
         printf 'Note: the CMake configure step downloads the matching Chromium Embedded Framework distribution; network access is required.\n'
