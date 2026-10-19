@@ -22,8 +22,19 @@ using namespace WallpaperEngine::VideoPlayback::MPV;
 // per-frame fence bookkeeping. Every use of the returned GLsync inside libmpv
 // is guarded by an if (fence) check, so this is equivalent to the behaviour
 // libmpv 0.42.0 ships.
+/**
+ * glFenceSync replacement used under libmpv < 0.42.0: never creates a sync
+ * object, so per-frame fence bookkeeping becomes a no-op. Returns a null
+ * GLsync, which every fence use in libmpv already handles as "no fence".
+ */
 static GLsync GLAPIENTRY fenceSyncStub (GLenum, GLbitfield) { return nullptr; }
 
+/**
+ * mpv_get_proc_address callback for the render context.
+ *
+ * Returns the fenceSyncStub for the exact name "glFenceSync" and delegates
+ * all other procedures to the active render context's driver.
+ */
 void* get_proc_address (void* ctx, const char* name) {
     if (strcmp (name, "glFenceSync") == 0) {
 	return (void*) fenceSyncStub;
