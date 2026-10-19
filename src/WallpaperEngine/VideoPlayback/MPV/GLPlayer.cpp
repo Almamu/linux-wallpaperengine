@@ -5,9 +5,30 @@
 #include <mpv/render_gl.h>
 #include <mpv/stream_cb.h>
 
+#include <cstring>
+
 using namespace WallpaperEngine::VideoPlayback::MPV;
 
+// The video player renders every frame into an external FBO and presents the
+// result on its own, so libmpv never sees a GL swapchain. Before libmpv 0.42.0
+// (mpv PR #17303, "only use fences when swap_buffers is present"),
+// ra_gl_ctx_submit_frame creates a GL fence sync object for every rendered
+// frame; without a swapchain those fences are never deleted and each one
+// retains ~5 KiB of driver-side state, leaking per rendered frame (with video
+// wallpapers: several GiB per day). See mpv issues #17217 and #8516, and
+// linux-wallpaperengine issue #416.
+//
+// Returning a FenceSync stub that never creates a sync object disables the
+// per-frame fence bookkeeping. Every use of the returned GLsync inside libmpv
+// is guarded by an if (fence) check, so this is equivalent to the behaviour
+// libmpv 0.42.0 ships.
+static GLsync GLAPIENTRY fenceSyncStub (GLenum, GLbitfield) { return nullptr; }
+
 void* get_proc_address (void* ctx, const char* name) {
+    if (strcmp (name, "glFenceSync") == 0) {
+	return (void*) fenceSyncStub;
+    }
+
     return static_cast<GLPlayer*> (ctx)->getContext ().getDriver ().getProcAddress (name);
 }
 
