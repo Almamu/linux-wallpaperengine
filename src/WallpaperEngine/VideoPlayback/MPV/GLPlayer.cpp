@@ -37,7 +37,7 @@ static GLsync GLAPIENTRY fenceSyncStub (GLenum, GLbitfield) { return nullptr; }
  */
 void* get_proc_address (void* ctx, const char* name) {
     if (strcmp (name, "glFenceSync") == 0) {
-	return (void*) fenceSyncStub;
+	return (void*)fenceSyncStub;
     }
 
     return static_cast<GLPlayer*> (ctx)->getContext ().getDriver ().getProcAddress (name);
