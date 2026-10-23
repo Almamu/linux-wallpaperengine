@@ -3,9 +3,11 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include <exception>
 #include <regex>
+#include <sstream>
 #include <stack>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "GLSLContext.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
@@ -414,6 +416,168 @@ std::string ShaderUnit::applyLinkedVaryingCompatibility (std::string source) con
     return source;
 }
 
+std::string ShaderUnit::applyLinkedVaryingDeclarations (std::string source) const {
+    if (this->m_type != GLSLContext::UnitType_Fragment || this->m_link == nullptr) {
+	return source;
+    }
+
+    // Wallpaper Engine makes every vertex varying visible to the fragment stage, so a workshop
+    // fragment shader can read one it never declares. Workshop 3636723645's fog effect reads
+    // v_Normal under "LIGHTING": 1 while only fog.vert declares it; glslang then rejects the
+    // pass and the whole image layer is dropped, leaving the scene blank.
+    const std::regex vertexVarying (R"(\bvarying\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;)");
+    const std::string& linked = this->m_link->m_preprocessed;
+    std::string declarations;
+
+    for (auto it = std::sregex_iterator (linked.begin (), linked.end (), vertexVarying); it != std::sregex_iterator ();
+	 ++it) {
+	const std::string type = (*it)[1].str ();
+	const std::string name = (*it)[2].str ();
+	const std::regex declared (R"(\bvarying\s+[A-Za-z_][A-Za-z0-9_]*\s+)" + name + R"(\s*;)");
+	const std::regex used ("\\b" + name + "\\b");
+
+	if (std::regex_search (source, declared) || !std::regex_search (source, used)
+	    || declarations.find (" " + name + ";") != std::string::npos) {
+	    continue;
+	}
+
+	declarations += "varying " + type + " " + name + ";\n";
+    }
+
+    if (declarations.empty ()) {
+	return source;
+    }
+
+    sLog.out ("Declared vertex varyings missing from fragment shader ", this->m_file, ":\n", declarations);
+
+    // #extension directives must precede any declaration, so insert after the last one
+    size_t insertAt = 0;
+    const size_t extension = source.rfind ("#extension");
+    if (extension != std::string::npos) {
+	const size_t lineEnd = source.find ('\n', extension);
+	insertAt = lineEnd == std::string::npos ? source.size () : lineEnd + 1;
+    }
+
+    source.insert (insertAt, declarations);
+    return source;
+}
+
+std::string ShaderUnit::applyPackedArrayIndexCompatibility (std::string source) const {
+    // Workshop 3784295445's audio ring (video.frag) reads "float g_AudioSpectrum64Left[64]" as
+    // g_AudioSpectrum64Left[barID / 4][barID % 4] with a float barID. HLSL accepts that; GLSL
+    // rejects indexing a float, so the layer failed to compile and the ring never drew.
+    const std::regex floatArray (R"(\buniform\s+float\s+([A-Za-z_][A-Za-z0-9_]*)\s*\[\s*\d+\s*\]\s*;)");
+    std::vector<std::string> names;
+    for (auto it = std::sregex_iterator (source.begin (), source.end (), floatArray); it != std::sregex_iterator ();
+	 ++it) {
+	names.push_back ((*it)[1].str ());
+    }
+
+    const std::string original = source;
+    for (const auto& name : names) {
+	// NAME[x / 4][x % 4] addresses element x exactly
+	const std::regex packedSame ("\\b" + name + R"(\s*\[\s*([^\[\]]+?)\s*/\s*4\s*\]\s*\[\s*\1\s*%\s*4\s*\])");
+	source = std::regex_replace (source, packedSame, name + "[int($1)]");
+	// any other NAME[a][b] means float4 element a, component b
+	const std::regex packed ("\\b" + name + R"(\s*\[([^\[\]]+)\]\s*\[([^\[\]]+)\])");
+	source = std::regex_replace (source, packed, name + "[int($1) * 4 + int($2)]");
+    }
+
+    if (source != original) {
+	sLog.out ("Applied packed float array index compatibility in ", this->m_file);
+    }
+
+    return source;
+}
+
+std::string ShaderUnit::applyWritableVaryingCompatibility (std::string source) const {
+    // Workshop 3784295445's Simple_Audio_Bars.frag flips v_TexCoord in place
+    // (v_TexCoord = v_TexCoord.yx). GLSL rejects writes to shader inputs.
+    if (this->m_type != GLSLContext::UnitType_Fragment) {
+	return source;
+    }
+
+    const std::regex varyingDecl (R"(\bvarying\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;)");
+    std::vector<std::pair<std::string, std::string>> varyings;
+    for (auto it = std::sregex_iterator (source.begin (), source.end (), varyingDecl); it != std::sregex_iterator ();
+	 ++it) {
+	varyings.emplace_back ((*it)[1].str (), (*it)[2].str ());
+    }
+
+    std::string initializers;
+    for (const auto& [type, name] : varyings) {
+	// "name =", "name.xy +=", ... but not "name =="
+	const std::regex written ("\\b" + name + R"((\s*\.\s*[xyzwrgba]+)?\s*[-+*/]?=[^=])");
+	if (!std::regex_search (source, written)) {
+	    continue;
+	}
+
+	const std::string copy = "lwe_writable_" + name;
+	source = std::regex_replace (source, std::regex ("\\b" + name + "\\b"), copy);
+	// restore the input declaration and declare the writable copy next to it
+	source = std::regex_replace (
+	    source, std::regex (R"(\bvarying\s+)" + type + R"(\s+)" + copy + R"(\s*;)"),
+	    "varying " + type + " " + name + ";\n" + type + " " + copy + ";"
+	);
+	initializers += "\t" + copy + " = " + name + ";\n";
+    }
+
+    if (initializers.empty ()) {
+	return source;
+    }
+
+    std::smatch mainMatch;
+    if (!std::regex_search (source, mainMatch, std::regex (R"(\bvoid\s+main\s*\(\s*(void)?\s*\)\s*\{)"))) {
+	sLog.error ("Could not find main() to initialize writable varyings in ", this->m_file);
+	return source;
+    }
+
+    source.insert (mainMatch.position () + mainMatch.length (), "\n" + initializers);
+    sLog.out ("Applied writable varying compatibility in ", this->m_file);
+    return source;
+}
+
+std::string ShaderUnit::balancePreprocessorConditionals (std::string source) const {
+    // Workshop 3784295445's Simple_Audio_Bars.vert has one #endif more than it has #if lines.
+    std::istringstream lines (source);
+    std::string line;
+    std::string balanced;
+    int depth = 0;
+    int dropped = 0;
+
+    balanced.reserve (source.size ());
+    while (std::getline (lines, line)) {
+	const size_t first = line.find_first_not_of (" \t");
+	const std::string directive = first == std::string::npos ? "" : line.substr (first);
+
+	if (directive.starts_with ("#if")) {
+	    depth++;
+	} else if (directive.starts_with ("#endif")) {
+	    if (depth == 0) {
+		// fixed text instead of echoing the line: workshop files often end lines in \r,
+		// which glslang treats as a newline, leaving anything after it as code
+		balanced += "// unmatched #endif removed by linux-wallpaperengine\n";
+		dropped++;
+		continue;
+	    }
+	    depth--;
+	}
+
+	balanced += line + '\n';
+    }
+
+    if (dropped == 0 && depth == 0) {
+	return source;
+    }
+
+    for (; depth > 0; depth--) {
+	balanced += "#endif // closed by linux-wallpaperengine\n";
+    }
+
+    sLog.out ("Balanced preprocessor conditionals in ", this->m_file, " (", dropped, " unmatched #endif removed)");
+    return balanced;
+}
+
 std::string ShaderUnit::applyFragmentTexCoordCompatibility (std::string source) const {
     if (this->m_type != GLSLContext::UnitType_Fragment) {
 	return source;
@@ -714,8 +878,11 @@ const std::string& ShaderUnit::compile () {
     }
 
     // this should be the rest of the shader
-    this->m_final
-	+= this->applyFragmentTexCoordCompatibility (this->applyLinkedVaryingCompatibility (this->m_preprocessed));
+    this->m_final += this->balancePreprocessorConditionals (
+	this->applyWritableVaryingCompatibility (this->applyPackedArrayIndexCompatibility (this->applyFragmentTexCoordCompatibility (
+	    this->applyLinkedVaryingDeclarations (this->applyLinkedVaryingCompatibility (this->m_preprocessed))
+	)))
+    );
 
     // the pass itself handles shader compilation, the unit doesn't have enough information for this step
     return this->m_final;

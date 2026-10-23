@@ -610,7 +610,7 @@ struct TextData {
     std::string alignment;
     /** Vertical alignment: "top", "center", "bottom" */
     std::string verticalalign;
-    /** Padding inside the bounding box */
+    /** Padding inside the bounding box (horizontal component when the scene stores an "x y" vector) */
     int padding;
     // TODO: PARSE LIMITS TOO!
 };

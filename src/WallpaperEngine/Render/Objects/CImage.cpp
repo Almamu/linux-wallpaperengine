@@ -575,8 +575,18 @@ void CImage::setupPuppetGeometryCallback (Effects::CPass* pass) const {
 		    previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]
 		);
 	    }
+	    // The puppet mesh is flat, and updatePuppetPositionBuffer flips Y to go from
+	    // MDL space (Y up) to copy space, which reverses the triangle winding. With the
+	    // material's "cullmode": "normal" every triangle then counts as back facing and
+	    // the whole layer vanishes (e.g. workshop 3521337568). Culling a 2D mesh never
+	    // removes anything that should be hidden, so disable it for this draw only.
+	    const GLboolean cullWasEnabled = glIsEnabled (GL_CULL_FACE);
+	    glDisable (GL_CULL_FACE);
 	    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, this->m_puppetIndices);
 	    glDrawElements (GL_TRIANGLES, this->m_puppetIndexCount, GL_UNSIGNED_SHORT, nullptr);
+	    if (cullWasEnabled) {
+		glEnable (GL_CULL_FACE);
+	    }
 	},
 	[pass] () {
 	    const GLint position = glGetAttribLocation (pass->getProgramID (), "a_Position");

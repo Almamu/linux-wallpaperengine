@@ -136,7 +136,26 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
 	    .visible = it.user ("visible", project.properties, true),
 	    .alignment = it.optional ("horizontalalign", it.optional ("alignment", std::string ("center"))),
 	    .verticalalign = it.optional ("verticalalign", std::string ("center")),
-	    .padding = it.optional ("padding", 0),
+	    // Older scenes store padding as a number, newer ones as a "x y" vector string
+	    // (e.g. "32.00000 32.00000" in workshop 3784295445). Reading it as an int threw an
+	    // uncaught json type_error that aborted the whole process, so accept both forms and
+	    // keep the horizontal component.
+	    .padding = [&it] () -> int {
+		const auto value = it.find ("padding");
+		if (value == it.end ()) {
+		    return 0;
+		}
+		if (value->is_number ()) {
+		    return value->get<int> ();
+		}
+		if (value->is_string ()) {
+		    std::istringstream components (value->get<std::string> ());
+		    float horizontal = 0.0f;
+		    components >> horizontal;
+		    return static_cast<int> (horizontal);
+		}
+		return 0;
+	    }(),
 	}
     );
 }
