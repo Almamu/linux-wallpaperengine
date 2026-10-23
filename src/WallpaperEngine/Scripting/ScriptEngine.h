@@ -167,7 +167,6 @@ private:
     bool m_layerRegistryReady = false;
     std::map<ScriptLayerHandle, bool> m_layerInitialized;
     bool m_builtinsInstalled = false;
-    Media::MediaSource& m_mediaSource;
     std::function<void ()> m_unregisterMediaUpdateCallback;
     std::function<void ()> m_unregisterAlbumArtUpdateCallback;
 
