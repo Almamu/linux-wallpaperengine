@@ -1,5 +1,8 @@
 #include "CText.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include <filesystem>
 #include <vector>
 
@@ -10,6 +13,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
+#include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -81,8 +85,9 @@ CText::CText (Wallpapers::CScene& scene, const Text& text) :
     this->registerProperty ("scale", *text.scale->value);
     this->registerProperty ("visible", *text.visible->value);
     this->registerProperty ("pointSize", *text.pointSize->value);
-    this->registerProperty ("text", *text.text->value);
-    this->registerProperty ("pointSize", *text.pointSize->value);
+    // the text script runs through ScriptEngine::createLayerScript (see setup), not as a property script
+    this->registerProperty ("text", *text.text->value, false);
+    this->registerConstant ("size", DynamicValue (text.size));
 }
 
 CText::~CText () {
@@ -201,15 +206,21 @@ bool CText::loadSystemFont () {
     return true;
 }
 
+float CText::scenePixelSize () const {
+    // derived from the text boxes WE saves: "12:34" at 32pt with padding 32 is 387x219, which only
+    // matches glyphs rasterized at 32 * 300 / 72 = 133px
+    constexpr float kPointsToPixels = 300.0f / 72.0f;
+    return m_text.pointSize->value->getFloat () * kPointsToPixels;
+}
+
 unsigned int CText::computeEffectivePixelSize () const {
-    // WE text objects often come with scale ~0.09 that, combined with a modest
-    // pointsize, would rasterize glyphs to ~2px on screen (invisible). Rasterize
-    // at higher resolution so that after the model scale is applied in render()
-    // the on-screen size matches the intended pointsize.
-    const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
-    const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
-    const float compensate = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
-    return std::max<unsigned int> (1u, static_cast<unsigned int> (m_text.pointSize->value->getFloat () * compensate));
+    // rasterize at the size the glyphs end up in scene space; render() scales the quad back by
+    // scenePixelSize () / pixelSize so the on-screen size doesn't depend on this choice
+    constexpr float kMaxPixelSize = 1024.0f;
+    const glm::vec3 scale = CImage::resolveTransform (getScene (), m_text).scale;
+    const float avgScale = (std::abs (scale.x) + std::abs (scale.y)) * 0.5f;
+    const float pixels = std::clamp (scenePixelSize () * avgScale, 1.0f, kMaxPixelSize);
+    return static_cast<unsigned int> (std::lround (pixels));
 }
 
 void CText::initScriptLayer () {
@@ -404,25 +415,26 @@ void CText::render () {
 
     const glm::vec4 color = m_text.color->value->getVec4 ();
     const float alpha = m_text.alpha->value->getFloat ();
-    const glm::vec3 scale = m_text.scale->value->getVec3 ();
-    const glm::vec3 origin = m_text.origin->value->getVec3 ();
+    // origin and scale include every parent (text is often a child of a clock or media group)
+    const auto transform = CImage::resolveTransform (getScene (), m_text);
+    const glm::vec3 scale = transform.scale;
+    const glm::vec3 origin = transform.origin;
 
-    // WE uses a Y-down coordinate system (origin at top-left, y increases downward).
-    // The final FBO is presented to screen with vflip=true on Wayland/GLFW, which maps
-    // GL y- to screen top and GL y+ to screen bottom. This effectively inverts Y again,
-    // so we need: gl_y = origin.y - scene_h/2  (not the CImage-style scene_h/2 - origin.y).
-    // CImage pre-compensates for X11 (no vflip) and gets corrected by the Wayland vflip.
-    // CText renders with direct vflip-aware coordinates.
+    // WE scene space is Y-up (origin at bottom-left), same as images. This quad's GL space has
+    // -y at the screen top (see uploadQuadVertices), so mirror y around the centre like CImage does.
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
     const glm::vec3 gl_origin = {
 	origin.x - scene_w * 0.5f,
-	origin.y - scene_h * 0.5f,
+	scene_h * 0.5f - origin.y,
 	origin.z,
     };
 
+    // the texture holds glyphs at m_lastPixelSize, scale the quad so the font is scenePixelSize () * scale
+    const float rasterToScene = scenePixelSize () / static_cast<float> (std::max (m_lastPixelSize, 1u));
+
     glm::mat4 model = glm::translate (glm::mat4 (1.0f), gl_origin);
-    model = glm::scale (model, scale);
+    model = glm::scale (model, scale * glm::vec3 (rasterToScene, rasterToScene, 1.0f));
 
     const glm::mat4 mvp = getScene ().getCamera ().getProjection () * getScene ().getCamera ().getLookAt () * model;
 

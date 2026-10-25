@@ -106,7 +106,24 @@ JSValue ScriptEngine::dynamicToJs (DynamicValue& value) const {
     }
 }
 
-static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source) {
+JSValue ScriptEngine::dynamicToJsCopy (DynamicValue& value) const {
+    switch (value.getType ()) {
+	case DynamicValue::Vec2:
+	    return this->m_adapters.vec2->instantiate (value, true);
+	case DynamicValue::Vec3:
+	    return this->m_adapters.vec3->instantiate (value, true);
+	case DynamicValue::Vec4:
+	    return this->m_adapters.vec4->instantiate (value, true);
+	default:
+	    return this->dynamicToJs (value);
+    }
+}
+
+/**
+ * Applies a script's return value to the property it drives.
+ * undefined (a script that mutated in place or returned nothing) leaves the value untouched.
+ */
+void ScriptEngine::jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source) {
     if (JS_IsException (val)) {
 	return;
     }
@@ -114,7 +131,11 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
     // scalar types returned directly
     int tag = JS_VALUE_GET_TAG (val);
 
-    if (tag == JS_TAG_UNDEFINED || tag == JS_TAG_UNINITIALIZED || tag == JS_TAG_NULL) {
+    if (tag == JS_TAG_UNDEFINED || tag == JS_TAG_UNINITIALIZED) {
+	return;
+    }
+
+    if (tag == JS_TAG_NULL) {
 	source.update (DynamicValue::UpdateSource::Script);
 	return;
     }
@@ -126,6 +147,7 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 
     if (tag == JS_TAG_BOOL) {
 	source.update (static_cast<bool> (JS_VALUE_GET_BOOL (val)), DynamicValue::UpdateSource::Script);
+	return;
     }
 
     if (JS_TAG_IS_FLOAT64 (tag)) {
@@ -153,11 +175,12 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 	    JS_FreeValue (ctx, w);
 	});
 
-	if (!JS_IsNumber (x) || JS_IsNumber (y)) {
-	    sLog.exception ("Vector's x and y components must be numbers");
+	// not a vector-like object, nothing sensible to store
+	if (!JS_IsNumber (x) || !JS_IsNumber (y)) {
+	    return;
 	}
 
-	double xVal = 0.0f, yVal = 0.0f, zVal = 0.0f, wVal = 0.0f;
+	double xVal = 0.0, yVal = 0.0, zVal = 0.0, wVal = 0.0;
 
 	JS_ToFloat64 (ctx, &xVal, x);
 	JS_ToFloat64 (ctx, &yVal, y);
@@ -167,10 +190,14 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 	    return;
 	}
 
+	JS_ToFloat64 (ctx, &zVal, z);
+
 	if (!JS_IsNumber (w)) {
 	    source.update (glm::vec3 (xVal, yVal, zVal), DynamicValue::UpdateSource::Script);
 	    return;
 	}
+
+	JS_ToFloat64 (ctx, &wVal, w);
 
 	source.update (glm::vec4 (xVal, yVal, zVal, wVal), DynamicValue::UpdateSource::Script);
     }
@@ -253,6 +280,7 @@ ScriptEngine::~ScriptEngine () {
 
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
+	JS_FreeValue (this->m_context, module.thisLayer);
     }
 
     JS_FreeValue (this->m_context, this->m_globalThis);
@@ -553,6 +581,11 @@ void ScriptEngine::destroyLayer (ScriptLayerHandle handle) {
 }
 
 JSValue ScriptEngine::call (JSValue module, int argc, JSValue argv[], const char* name) {
+    // modules that failed to load have no namespace object
+    if (!JS_IsObject (module)) {
+	return JS_UNDEFINED;
+    }
+
     // check if there's an update method and run it
     JSValue function = JS_GetPropertyStr (this->m_context, module, name);
     ScopeGuard guard ([&] () { JS_FreeValue (this->m_context, function); });
@@ -564,6 +597,42 @@ JSValue ScriptEngine::call (JSValue module, int argc, JSValue argv[], const char
     return JS_Call (this->m_context, function, module, argc, argv);
 }
 
+void ScriptEngine::logModuleException (const std::string& key, LoadedModule& module, const char* stage) {
+    JSValue exc = JS_GetException (this->m_context);
+    ScopeGuard guard ([&] { JS_FreeValue (this->m_context, exc); });
+
+    if (module.errorLogged) {
+	return;
+    }
+
+    module.errorLogged = true;
+    const char* str = JS_ToCString (this->m_context, exc);
+    sLog.error ("ScriptEngine [", key, " ", stage, "]: ", str ? str : "<unknown error>");
+    JS_FreeCString (this->m_context, str);
+}
+
+void ScriptEngine::runModuleFunction (const std::string& key, LoadedModule& module, const char* name) {
+    this->m_runningModule = &module;
+    // every property script reads `thisLayer` from the global scope, point it at this module's layer
+    JS_SetPropertyStr (
+	this->m_context, this->m_globalThis, "thisLayer", JS_DupValue (this->m_context, module.thisLayer)
+    );
+
+    JSValue args[] = { this->dynamicToJsCopy (module.value) };
+    JSValue result = this->call (module.module, 1, args, name);
+    ScopeGuard guard ([this, args, result] () {
+	JS_FreeValue (this->m_context, result);
+	JS_FreeValue (this->m_context, args[0]);
+    });
+
+    if (JS_IsException (result)) {
+	this->logModuleException (key, module, name);
+	return;
+    }
+
+    jsToDynamicValue (this->m_context, result, module.value);
+}
+
 void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentValue, ScriptableObject& object) {
     const auto source = currentValue.getScriptSource ();
 
@@ -571,46 +640,61 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 	return;
     }
 
-    auto it = this->m_scriptModules.find (key);
-
-    if (it != this->m_scriptModules.end ()) {
+    if (this->m_scriptModules.contains (key)) {
 	return;
     }
-
-    // load the script and store it
-    JSValue module = JS_Eval (this->m_context, source->c_str (), source->size (), key.c_str (), JS_EVAL_TYPE_MODULE);
 
     auto inserted = this->m_scriptModules.emplace (
 	key,
 	LoadedModule {
 	    .value = currentValue,
-	    .module = module,
+	    .module = JS_UNDEFINED,
+	    .thisLayer = this->m_adapters.object->instantiate (object),
 	}
     );
+    auto& loaded = inserted.first->second;
 
-    if (!inserted.second) {
+    // the module's top level usually calls createScriptProperties().finish(),
+    // which binds to the running module, so set it (and thisLayer) up front
+    this->m_runningModule = &loaded;
+    JS_SetPropertyStr (
+	this->m_context, this->m_globalThis, "thisLayer", JS_DupValue (this->m_context, loaded.thisLayer)
+    );
+
+    // JS_Eval on a module returns the evaluation promise, not the exports, so
+    // compile first to keep the module definition and read its namespace after
+    JSValue compiled = JS_Eval (
+	this->m_context, source->c_str (), source->size (), key.c_str (),
+	JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY
+    );
+
+    if (JS_IsException (compiled)) {
+	this->logModuleException (key, loaded, "compile");
 	return;
     }
 
-    JS_SetPropertyStr (this->m_context, this->m_globalThis, "thisLayer", this->m_adapters.object->instantiate (object));
+    auto* definition = static_cast<JSModuleDef*> (JS_VALUE_GET_PTR (compiled));
+    JSValue evaluation = JS_EvalFunction (this->m_context, compiled);
 
-    // script properties do not need update as they're connected directly to the source data
-    this->m_runningModule = &inserted.first->second;
-
-    // check if there's an update method and run it
-    JSValue args[] = { this->dynamicToJs (currentValue) };
-    JSValue result = this->call (module, 1, args, "update");
-
-    ScopeGuard guard2 ([this, args, result] () {
-	JS_FreeValue (this->m_context, result);
-	JS_FreeValue (this->m_context, args[0]);
-    });
-
-    if (JS_IsException (result)) {
+    if (JS_IsException (evaluation)) {
+	this->logModuleException (key, loaded, "load");
 	return;
     }
 
-    jsToDynamicValue (this->m_context, result, currentValue);
+    const bool rejected = JS_PromiseState (this->m_context, evaluation) == JS_PROMISE_REJECTED;
+
+    if (rejected) {
+	JS_Throw (this->m_context, JS_PromiseResult (this->m_context, evaluation));
+	this->logModuleException (key, loaded, "load");
+    }
+
+    JS_FreeValue (this->m_context, evaluation);
+
+    if (rejected) {
+	return;
+    }
+
+    loaded.module = JS_GetModuleNamespace (this->m_context, definition);
 }
 
 void ScriptEngine::tick () {
@@ -619,22 +703,18 @@ void ScriptEngine::tick () {
 
     // run any pending notifications
 
-    // run all update methods
-    for (auto& module : this->m_scriptModules | std::views::values) {
-	this->m_runningModule = &module;
-
-	JSValue args[] = { this->dynamicToJs (module.value) };
-	JSValue result = this->call (module.module, 1, args, "update");
-	ScopeGuard guard ([result, args, this] () {
-	    JS_FreeValue (this->m_context, result);
-	    JS_FreeValue (this->m_context, args[0]);
-	});
-
-	if (JS_IsException (result)) {
+    // run init once, then update every frame
+    for (auto& [key, module] : this->m_scriptModules) {
+	if (!JS_IsObject (module.module)) {
 	    continue;
 	}
 
-	jsToDynamicValue (this->m_context, result, module.value);
+	if (!module.initialized) {
+	    module.initialized = true;
+	    this->runModuleFunction (key, module, "init");
+	}
+
+	this->runModuleFunction (key, module, "update");
     }
 }
 

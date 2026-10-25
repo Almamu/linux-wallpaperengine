@@ -44,9 +44,19 @@ static constexpr ScriptLayerHandle kInvalidLayerHandle = 0;
 
 class ScriptEngine {
 public:
+    /**
+     * A property script (e.g. a scripted "origin") loaded as an ES module.
+     *
+     * `module` is the module namespace (holds the exports such as init/update),
+     * or JS_UNDEFINED when loading failed. `thisLayer` is the ILayer object the
+     * script sees as the global `thisLayer` while any of its functions run.
+     */
     struct LoadedModule {
 	DynamicValue& value;
 	JSValue module;
+	JSValue thisLayer;
+	bool initialized = false;
+	bool errorLogged = false;
     };
     struct JSObjectAdapters {
 	std::unique_ptr<Adapters::VectorAdapter<4>> vec4;
@@ -65,19 +75,34 @@ public:
     JSValue getGlobalThis () const { return m_globalThis; }
     LoadedModule* getRunningModule () const { return m_runningModule; }
     JSValue dynamicToJs (DynamicValue& value) const;
+    /**
+     * Like dynamicToJs, but vectors are detached copies instead of live
+     * bindings, so scripts can modify them without touching engine state
+     * (Wallpaper Engine hands scripts copies, e.g. `thisLayer.size`).
+     */
+    JSValue dynamicToJsCopy (DynamicValue& value) const;
+    /**
+     * Stores a script value (number, bool, string or {x, y[, z[, w]]} object) into `target`.
+     * undefined leaves `target` untouched, null clears it.
+     */
+    static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& target);
 
     /**
-     * Evaluate a WallpaperEngine script's update() function.
+     * Load a property script (ES module) for the given object property.
      *
-     * @param key The full JS script text (ES6 module with export function update(value))
-     * @param currentValue The current value to pass to update()
-     * @return The modified value from update(), or a copy of currentValue on error
+     * The module's top level runs immediately. Its `init(value)` export runs
+     * on the first tick() and `update(value)` on every tick(); a return value
+     * from either replaces the property value.
+     *
+     * @param key Unique module key (property name + object id)
+     * @param currentValue The property value the script drives
+     * @param object The object exposed to the script as `thisLayer`
      */
     void queueScript (const std::string& key, DynamicValue& currentValue, ScriptableObject& object);
 
     /**
      * Runs a frame tick in the javascript engine. Dispatches any pending events,
-     * timeouts, intervals AND calls any update() functions.
+     * timeouts, intervals AND calls any init()/update() functions.
      */
     void tick ();
 
@@ -140,6 +165,10 @@ public:
 
 private:
     JSValue call (JSValue module, int argc, JSValueConst argv[], const char* name);
+    /** Calls `name` on a property script with a copy of its value and applies the result */
+    void runModuleFunction (const std::string& key, LoadedModule& module, const char* name);
+    /** Logs the pending JS exception once per module so per-frame errors don't spam */
+    void logModuleException (const std::string& key, LoadedModule& module, const char* stage);
 
     void installBuiltins ();
 

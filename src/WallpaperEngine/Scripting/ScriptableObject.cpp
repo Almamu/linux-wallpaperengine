@@ -30,14 +30,24 @@ const std::map<std::string, ScriptableObject::PropertyEntry>& ScriptableObject::
     return this->m_properties;
 }
 
-void ScriptableObject::registerProperty (const std::string& name, DynamicValue& value) {
+void ScriptableObject::registerProperty (const std::string& name, DynamicValue& value, bool runScript) {
     auto inserted = this->m_properties.emplace (
 	name, PropertyEntry { .key = name + "_" + std::to_string (this->getId ()), .value = value }
     );
 
-    if (!inserted.second) {
+    if (!inserted.second || !runScript) {
 	return;
     }
 
     this->getScene ().getScriptEngine ().queueScript (inserted.first->second.key, inserted.first->second.value, *this);
+}
+
+void ScriptableObject::registerConstant (const std::string& name, const DynamicValue& value) {
+    if (this->m_properties.contains (name)) {
+	return;
+    }
+
+    auto& stored = this->m_constants[name];
+    stored = std::make_unique<DynamicValue> (value);
+    this->registerProperty (name, *stored, false);
 }

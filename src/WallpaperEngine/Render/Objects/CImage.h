@@ -56,16 +56,24 @@ public:
      */
     void pinpongFramebuffer (std::shared_ptr<const CFBO>* drawTo, std::shared_ptr<const TextureProvider>* asInput);
 
-protected:
-    void setupPasses ();
-
-    void updateScreenSpacePosition ();
-
+    /** An object's transform in scene space after folding in every parent */
     struct ResolvedTransform {
 	glm::vec3 origin;
 	glm::vec3 scale;
 	float angle;
     };
+
+    /**
+     * Resolves `object`'s scene-space transform by walking its parent chain. Parent scale and
+     * rotation apply to the child's offset; works for any object type (images, text, groups).
+     */
+    [[nodiscard]] static ResolvedTransform
+    resolveTransform (const Wallpapers::CScene& scene, const WallpaperEngine::Data::Model::Object& object);
+
+protected:
+    void setupPasses ();
+
+    void updateScreenSpacePosition ();
 
     [[nodiscard]] ResolvedTransform resolveTransform (const WallpaperEngine::Data::Model::Object& object) const;
 

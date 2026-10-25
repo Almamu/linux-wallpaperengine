@@ -129,6 +129,10 @@ CImage::ResolvedTransform CImage::localTransform (const Object& object) {
 }
 
 CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const {
+    return resolveTransform (this->getScene (), object);
+}
+
+CImage::ResolvedTransform CImage::resolveTransform (const Wallpapers::CScene& scene, const Object& object) {
     constexpr int kMaxParentDepth = 32;
 
     // Walk up the parent chain leaf-first, bounded by kMaxParentDepth to guard
@@ -143,7 +147,7 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
 	    sLog.error ("Parent transform chain is too deep; possible cycle at object id=", current->id);
 	    break;
 	}
-	const auto* parentObject = this->getScene ().getObject (current->parent.value ());
+	const auto* parentObject = scene.getObject (current->parent.value ());
 	if (parentObject == nullptr) {
 	    break;
 	}
@@ -182,6 +186,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->registerProperty ("alpha", *image.alpha->value);
     this->registerProperty ("color", *image.color->value);
     this->registerProperty ("parallaxDepth", *image.parallaxDepth->value);
+    // read-only for scripts, e.g. bounce/clamp scripts use it to keep the layer on screen
+    this->registerConstant ("size", DynamicValue (image.size));
 
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());

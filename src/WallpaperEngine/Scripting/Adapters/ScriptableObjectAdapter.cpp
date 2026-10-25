@@ -39,7 +39,8 @@ JSValue scriptableobject_property_get (JSContext* ctx, JSValueConst obj_val, JSA
 	// find the property inside, otherwise return undefined
 	auto& property = container->object.getProperty (name);
 
-	return container->adapter.getEngine ().dynamicToJs (property);
+	// scripts get copies (like Wallpaper Engine), so `let s = thisLayer.size; s.x *= 2;` doesn't resize the layer
+	return container->adapter.getEngine ().dynamicToJsCopy (property);
     } catch (const std::exception& e) {
 	return JS_UNDEFINED;
     }
@@ -62,14 +63,40 @@ int scriptableobject_property_set (
 	return -1;
     }
 
-    return 0;
+    ScopeGuard guard ([=] { JS_FreeCString (ctx, name); });
+
+    // `thisLayer.alpha = 0.5` etc. writes straight into the property; unknown names are ignored
+    // (returning false would throw a TypeError, scripts run in strict mode)
+    try {
+	auto& property = container->object.getProperty (name);
+	WallpaperEngine::Scripting::ScriptEngine::jsToDynamicValue (ctx, val, property);
+    } catch (const std::exception& e) {
+	// property not exposed by this layer
+    }
+
+    return 1;
+}
+
+void scriptableobject_finalizer (JSRuntime* rt, JSValueConst val) {
+    JSClassID classId = 0;
+    auto* container = static_cast<OpaqueScriptableObjectAdapter*> (JS_GetAnyOpaque (val, &classId));
+
+    if (container != nullptr && container->magic == SCRIPTABLE_OPAQUE_MAGIC) {
+	delete container;
+    }
 }
 
 ScriptableObjectAdapter::ScriptableObjectAdapter (ScriptEngine& engine, std::string name) :
-    ObjectAdapter (engine), m_exoticMethods (), m_name (std::move (name)) {
+    ObjectAdapter (engine),
+    m_exoticMethods ({
+	.get_property = scriptableobject_property_get,
+	.set_property = scriptableobject_property_set,
+    }),
+    m_name (std::move (name)) {
     this->registerType (
 	{
 	    .class_name = m_name.c_str (),
+	    .finalizer = scriptableobject_finalizer,
 	    .exotic = &m_exoticMethods,
 	}
     );
