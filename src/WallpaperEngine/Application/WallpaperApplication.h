@@ -184,7 +184,7 @@ private:
     bool m_isPaused = false;
     bool m_screenShotTaken = false;
     uint32_t m_nextFrameScreenshot = 0;
-    uint32_t m_screenshotDeadlineFrame = 0;
+    std::chrono::steady_clock::time_point m_screenshotDeadline {};
     uint32_t m_screenshotReadyFrame = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};
     GLuint m_destinationFramebuffer = 0;

@@ -32,6 +32,9 @@
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
+/** How long to wait for video wallpapers to produce their first frame before capturing anyway */
+constexpr auto SCREENSHOT_READY_TIMEOUT = std::chrono::seconds (3);
+
 float g_Time;
 float g_TimeLast;
 float g_Daytime;
@@ -235,9 +238,9 @@ ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
 
 	this->m_nextFrameScreenshot = baseFrame + this->m_context.settings.screenshot.delay;
 	// the delay is only the lower bound: video wallpapers need their first decoded frame too.
-	// Do not wait forever for it (paused rendering, broken stream, ...), fall back to a deadline.
-	this->m_screenshotDeadlineFrame
-	    = this->m_nextFrameScreenshot + std::max<uint32_t> (this->m_context.settings.render.maximumFPS * 3, 30);
+	// The readiness wait is bounded by a wall-clock deadline (started once the delay elapses),
+	// so paused rendering or a broken stream can never block the capture forever.
+	this->m_screenshotDeadline = {};
 	this->m_screenshotReadyFrame = 0;
 	this->m_screenShotTaken = false;
     }
@@ -966,7 +969,12 @@ void WallpaperApplication::render () {
 	return;
     }
 
-    if (currentFrame < this->m_screenshotDeadlineFrame) {
+    // the minimum frame delay elapsed, start the wall-clock fallback once
+    if (this->m_screenshotDeadline == std::chrono::steady_clock::time_point {}) {
+	this->m_screenshotDeadline = std::chrono::steady_clock::now () + SCREENSHOT_READY_TIMEOUT;
+    }
+
+    if (std::chrono::steady_clock::now () < this->m_screenshotDeadline) {
 	// give video wallpapers time to decode and upload their first frame
 	if (!this->backgroundsReadyForScreenshot ()) {
 	    return;
