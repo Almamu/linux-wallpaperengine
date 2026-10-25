@@ -57,6 +57,9 @@ private:
     bool initFreeType ();
     bool loadEmbeddedFont ();
     bool loadSystemFont ();
+    /** Font size in scene pixels, Wallpaper Engine rasterizes `pointsize` at 300 DPI */
+    float scenePixelSize () const;
+    /** Pixel size to rasterize glyphs at so they stay sharp at the resolved (parent-inclusive) scale */
     unsigned int computeEffectivePixelSize () const;
     void initScriptLayer ();
 

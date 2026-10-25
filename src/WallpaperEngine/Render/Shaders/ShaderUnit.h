@@ -101,9 +101,31 @@ private:
      */
     [[nodiscard]] std::string applyLinkedVaryingCompatibility (std::string source) const;
     /**
+     * Declares, in a fragment shader, varyings it reads but only the linked vertex shader declares.
+     * Wallpaper Engine shares vertex varyings with the fragment stage implicitly, so workshop
+     * shaders may rely on that (e.g. a fog effect using v_Normal under its LIGHTING combo).
+     */
+    [[nodiscard]] std::string applyLinkedVaryingDeclarations (std::string source) const;
+    /**
      * Adjusts fragment shaders that use wide texture coordinates as vec2 values in Wallpaper Engine effects.
      */
     [[nodiscard]] std::string applyFragmentTexCoordCompatibility (std::string source) const;
+    /**
+     * Rewrites HLSL style packed indexing of float array uniforms (NAME[i / 4][i % 4], as if the
+     * array were float4[N / 4]) into a single GLSL index. Wallpaper Engine compiles shaders to
+     * HLSL where workshop authors can get away with it.
+     */
+    [[nodiscard]] std::string applyPackedArrayIndexCompatibility (std::string source) const;
+    /**
+     * Gives fragment shaders a writable copy of every varying they assign to. HLSL lets shaders
+     * modify their inputs; GLSL does not, so uses are redirected to a global copied in main().
+     */
+    [[nodiscard]] std::string applyWritableVaryingCompatibility (std::string source) const;
+    /**
+     * Drops #endif lines with no open conditional and closes conditionals left open at the end.
+     * Wallpaper Engine's preprocessor tolerates both; glslang aborts the whole shader.
+     */
+    [[nodiscard]] std::string balancePreprocessorConditionals (std::string source) const;
 
     /**
      * Parses a COMBO value to add the proper define to the code

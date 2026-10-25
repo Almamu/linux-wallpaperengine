@@ -4,6 +4,8 @@
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 
+#include <algorithm>
+#include <ranges>
 #include <variant>
 
 using namespace WallpaperEngine::Data::Utils;
@@ -368,16 +370,16 @@ template JSValue vector_length<2> (JSContext* ctx, JSValueConst this_val, int ar
 template JSValue vector_length<3> (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv);
 template JSValue vector_length<4> (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv);
 
+/**
+ * `new VecN ()`, `new VecN (scalar)`, `new VecN (x, y[, z[, w]])` or `new VecN (otherVector)`.
+ * Missing components default to zero, like Wallpaper Engine.
+ */
 template <int components>
 JSValue vector_constructor (JSContext* ctx, JSValueConst new_target, int argc, JSValueConst* argv, int magic) {
-    if (argc == 0) {
-	return JS_EXCEPTION;
-    }
-
     auto it = vectorAdapterInstances<components>.find (magic);
 
     if (it == vectorAdapterInstances<components>.end ()) {
-	return JS_EXCEPTION;
+	return JS_ThrowInternalError (ctx, "Vec%d adapter not found", components);
     }
 
     JSValue result = it->second.instantiate ();
@@ -386,7 +388,42 @@ JSValue vector_constructor (JSContext* ctx, JSValueConst new_target, int argc, J
 
     VEC_MAGIC_CHECK_EXCEPTION (container, components);
 
-    container->value.update (vector_get<components> (ctx, argv[0]), DynamicValue::UpdateSource::Initialization);
+    if (argc == 0) {
+	return result;
+    }
+
+    try {
+	if (argc == 1) {
+	    container->value.update (
+		vector_get<components> (ctx, argv[0]), DynamicValue::UpdateSource::Initialization
+	    );
+	    return result;
+	}
+
+	double values[4] = { 0.0, 0.0, 0.0, 0.0 };
+
+	for (int i = 0; i < std::min (argc, components); i++) {
+	    if (JS_ToFloat64 (ctx, &values[i], argv[i]) < 0) {
+		JS_FreeValue (ctx, result);
+		return JS_EXCEPTION;
+	    }
+	}
+
+	if constexpr (components == 2) {
+	    container->value.update (glm::vec2 (values[0], values[1]), DynamicValue::UpdateSource::Initialization);
+	} else if constexpr (components == 3) {
+	    container->value.update (
+		glm::vec3 (values[0], values[1], values[2]), DynamicValue::UpdateSource::Initialization
+	    );
+	} else {
+	    container->value.update (
+		glm::vec4 (values[0], values[1], values[2], values[3]), DynamicValue::UpdateSource::Initialization
+	    );
+	}
+    } catch (const std::exception& e) {
+	JS_FreeValue (ctx, result);
+	return JS_ThrowTypeError (ctx, "Vec%d: %s", components, e.what ());
+    }
 
     return result;
 }
@@ -403,8 +440,15 @@ template <int components> void vector_finalizer (JSRuntime* rt, JSValueConst val
 	return;
     }
 
-    // free container and the associated DynamicValue if temporal
-    if (container->id != InvalidVectorInstanceId) {
+    // free container and the associated DynamicValue if temporal. On shutdown the adapters are
+    // destroyed (taking their values with them) before the runtime's final GC reaches vectors
+    // scripts still hold, so only call back into an adapter that still exists
+    const bool adapterAlive = std::ranges::any_of (
+	vectorAdapterInstances<components> | std::views::values,
+	[container] (const auto& adapter) { return &adapter == &container->adapter; }
+    );
+
+    if (container->id != InvalidVectorInstanceId && adapterAlive) {
 	container->adapter.free (container->id);
     }
 
@@ -924,7 +968,11 @@ VectorAdapter<components>::VectorAdapter (ScriptEngine& engine) :
     );
 
     JS_SetClassProto (this->m_engine.getContext (), this->m_classId, m_prototype);
-    JS_FreeValue (this->m_engine.getContext (), ctor);
+    // expose the constructor as a global (`new Vec3 (...)`), the global object takes the reference
+    JS_DefinePropertyValueStr (
+	this->m_engine.getContext (), this->m_engine.getGlobalThis (), this->m_name.c_str (), ctor,
+	JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE
+    );
 }
 
 template <int components> VectorAdapter<components>::~VectorAdapter () {

@@ -129,6 +129,10 @@ CImage::ResolvedTransform CImage::localTransform (const Object& object) {
 }
 
 CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const {
+    return resolveTransform (this->getScene (), object);
+}
+
+CImage::ResolvedTransform CImage::resolveTransform (const Wallpapers::CScene& scene, const Object& object) {
     constexpr int kMaxParentDepth = 32;
 
     // Walk up the parent chain leaf-first, bounded by kMaxParentDepth to guard
@@ -143,7 +147,7 @@ CImage::ResolvedTransform CImage::resolveTransform (const Object& object) const 
 	    sLog.error ("Parent transform chain is too deep; possible cycle at object id=", current->id);
 	    break;
 	}
-	const auto* parentObject = this->getScene ().getObject (current->parent.value ());
+	const auto* parentObject = scene.getObject (current->parent.value ());
 	if (parentObject == nullptr) {
 	    break;
 	}
@@ -182,6 +186,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->registerProperty ("alpha", *image.alpha->value);
     this->registerProperty ("color", *image.color->value);
     this->registerProperty ("parallaxDepth", *image.parallaxDepth->value);
+    // read-only for scripts, e.g. bounce/clamp scripts use it to keep the layer on screen
+    this->registerConstant ("size", DynamicValue (image.size));
 
     // get scene width and height to calculate positions
     auto scene_width = static_cast<float> (scene.getWidth ());
@@ -575,8 +581,18 @@ void CImage::setupPuppetGeometryCallback (Effects::CPass* pass) const {
 		    previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]
 		);
 	    }
+	    // The puppet mesh is flat, and updatePuppetPositionBuffer flips Y to go from
+	    // MDL space (Y up) to copy space, which reverses the triangle winding. With the
+	    // material's "cullmode": "normal" every triangle then counts as back facing and
+	    // the whole layer vanishes (e.g. workshop 3521337568). Culling a 2D mesh never
+	    // removes anything that should be hidden, so disable it for this draw only.
+	    const GLboolean cullWasEnabled = glIsEnabled (GL_CULL_FACE);
+	    glDisable (GL_CULL_FACE);
 	    glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, this->m_puppetIndices);
 	    glDrawElements (GL_TRIANGLES, this->m_puppetIndexCount, GL_UNSIGNED_SHORT, nullptr);
+	    if (cullWasEnabled) {
+		glEnable (GL_CULL_FACE);
+	    }
 	},
 	[pass] () {
 	    const GLint position = glGetAttribLocation (pass->getProgramID (), "a_Position");
