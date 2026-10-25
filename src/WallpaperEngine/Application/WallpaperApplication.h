@@ -140,6 +140,10 @@ private:
      * @param filename
      */
     void takeScreenshot (const std::filesystem::path& filename) const;
+    /**
+     * @return Whether every background has content ready to be captured
+     */
+    [[nodiscard]] bool backgroundsReadyForScreenshot () const;
 
     struct ActivePlaylist {
 	ApplicationContext::PlaylistDefinition definition;
@@ -180,6 +184,8 @@ private:
     bool m_isPaused = false;
     bool m_screenShotTaken = false;
     uint32_t m_nextFrameScreenshot = 0;
+    uint32_t m_screenshotDeadlineFrame = 0;
+    uint32_t m_screenshotReadyFrame = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};
     GLuint m_destinationFramebuffer = 0;
 };

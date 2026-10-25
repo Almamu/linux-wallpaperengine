@@ -56,6 +56,8 @@ CWallpaper::~CWallpaper () {
     glDeleteVertexArrays (1, &this->m_vaoBuffer);
 }
 
+bool CWallpaper::isReadyForScreenshot () const { return true; }
+
 const AssetLocator& CWallpaper::getAssetLocator () const { return *this->m_wallpaperData.project.assetLocator; }
 
 const Wallpaper& CWallpaper::getWallpaperData () const { return this->m_wallpaperData; }
