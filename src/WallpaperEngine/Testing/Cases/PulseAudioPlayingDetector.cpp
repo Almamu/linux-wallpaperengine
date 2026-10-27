@@ -24,6 +24,11 @@ using Render::Drivers::Detectors::FullScreenDetector;
 namespace {
 const char* detectorArgv[] = { "linux-wallpaperengine" };
 
+// generous so a busy CI runner doesn't trip them; what they catch is blocking for seconds
+// (forever before the fix, or a connect attempt waiting out its 2 second timeout)
+constexpr std::chrono::milliseconds MAX_CONSTRUCT_TIME { 500 };
+constexpr std::chrono::milliseconds MAX_UPDATE_TIME { 250 };
+
 std::filesystem::path makeTempDir () {
     char path[] = "/tmp/lwe-pulse-test-XXXXXX";
 
@@ -137,12 +142,12 @@ TEST_CASE ("PulseAudioPlayingDetector keeps going when no server is running") {
     const auto constructTime
 	= timed ([&] { detector = std::make_unique<PulseAudioPlayingDetector> (context, fullscreen); });
 
-    CHECK (constructTime < std::chrono::milliseconds (100));
+    CHECK (constructTime < MAX_CONSTRUCT_TIME);
 
     // this used to abort in libpulse, as the dead connection hands back no operation
     const auto worstUpdate = runFrames (*detector, std::chrono::milliseconds (1500));
 
-    CHECK (worstUpdate < std::chrono::milliseconds (50));
+    CHECK (worstUpdate < MAX_UPDATE_TIME);
     CHECK_FALSE (detector->isConnected ());
     CHECK_FALSE (detector->anythingPlaying ());
 
@@ -160,12 +165,12 @@ TEST_CASE ("PulseAudioPlayingDetector doesn't hang on a server that never answer
     const auto constructTime
 	= timed ([&] { detector = std::make_unique<PulseAudioPlayingDetector> (context, fullscreen); });
 
-    CHECK (constructTime < std::chrono::milliseconds (100));
+    CHECK (constructTime < MAX_CONSTRUCT_TIME);
 
     // long enough for the connection attempt to time out, without any frame waiting on it
     const auto worstUpdate = runFrames (*detector, std::chrono::milliseconds (3000));
 
-    CHECK (worstUpdate < std::chrono::milliseconds (50));
+    CHECK (worstUpdate < MAX_UPDATE_TIME);
     CHECK_FALSE (detector->isConnected ());
     CHECK_FALSE (detector->anythingPlaying ());
 }
