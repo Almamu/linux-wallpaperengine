@@ -992,7 +992,9 @@ void WallpaperApplication::show () {
 }
 
 bool WallpaperApplication::pausesPerMonitor () const {
+    // window modes have a single "default" viewport, which isn't an output
     return this->m_context.settings.render.pauseOnFullscreenPerMonitor
+	&& this->m_context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND
 	&& this->m_fullScreenDetector->canTellOutputsApart ();
 }
 

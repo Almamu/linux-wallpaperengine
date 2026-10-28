@@ -167,7 +167,8 @@ private:
      */
     bool updatePausedOutputs ();
     /**
-     * @return If --fullscreen-pause-per-monitor is on and the fullscreen detector can tell outputs apart
+     * @return If --fullscreen-pause-per-monitor is on, the wallpaper is the desktop background and the fullscreen
+     * detector can tell outputs apart
      */
     [[nodiscard]] bool pausesPerMonitor () const;
 
