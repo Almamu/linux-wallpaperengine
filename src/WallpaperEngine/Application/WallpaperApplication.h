@@ -8,6 +8,7 @@
 
 #include "WallpaperEngine/Render/CWallpaper.h"
 #include "WallpaperEngine/Render/Drivers/Detectors/FullScreenDetector.h"
+#include "WallpaperEngine/Render/Drivers/Detectors/BatteryDetector.h"
 #include "WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/Output/GLFWWindowOutput.h"
 #include "WallpaperEngine/Render/RenderContext.h"
@@ -174,6 +175,7 @@ private:
     std::unique_ptr<WallpaperEngine::Render::RenderContext> m_renderContext = nullptr;
     std::unique_ptr<WallpaperEngine::Render::Drivers::VideoDriver> m_videoDriver = nullptr;
     std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> m_fullScreenDetector = nullptr;
+    std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::BatteryDetector> m_batteryDetector = nullptr;
     std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
     std::unique_ptr<WallpaperEngine::Media::MediaSource> m_mediaSource = nullptr;
     std::mt19937 m_playlistRng { std::random_device {}() };
