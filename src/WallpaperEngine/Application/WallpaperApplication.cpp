@@ -1002,8 +1002,11 @@ bool WallpaperApplication::updatePausedOutputs () {
     const auto& viewports = this->m_renderContext->getOutput ().getViewports ();
     // forget outputs that were disconnected while paused
     const auto disconnected = [&viewports] (const std::string& name) { return !viewports.contains (name); };
-    bool changed = std::erase_if (this->m_pausedOutputs, disconnected) > 0;
+    std::erase_if (this->m_pausedOutputs, disconnected);
     std::erase_if (this->m_skippedOutputs, disconnected);
+    // a monitor coming or going changes which ones a spanned wallpaper is on
+    bool changed = viewports.size () != this->m_lastViewportCount;
+    this->m_lastViewportCount = viewports.size ();
 
     std::vector<Render::Drivers::Output::OutputViewport*> resumed;
 

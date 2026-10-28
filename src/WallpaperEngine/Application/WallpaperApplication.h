@@ -193,6 +193,8 @@ private:
     std::set<std::string> m_pausedOutputs {};
     /** Paused outputs that skipped a frame, so they need a render to start drawing again */
     std::set<std::string> m_skippedOutputs {};
+    /** Outputs seen by the last updatePausedOutputs, to notice monitors being connected or disconnected */
+    std::size_t m_lastViewportCount = 0;
     bool m_screenShotTaken = false;
     uint32_t m_nextFrameScreenshot = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};
