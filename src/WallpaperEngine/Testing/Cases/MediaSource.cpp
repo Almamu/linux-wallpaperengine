@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <poll.h>
 
 namespace {
 class CountingSource : public WallpaperEngine::Media::MediaSource {
@@ -62,6 +63,34 @@ public:
         REQUIRE_FALSE (dbus_connection_has_messages_to_send (m_connection));
     }
 
+    void prepareReplyTest () {
+        // A private-bus round trip drains startup traffic before polling for the test reply.
+        char* id = dbus_bus_get_id (m_connection, nullptr);
+        REQUIRE (id);
+        dbus_free (id);
+        while (dbus_connection_get_dispatch_status (m_connection) == DBUS_DISPATCH_DATA_REMAINS) {
+            dbus_connection_dispatch (m_connection);
+        }
+        m_nextUpdate = std::chrono::steady_clock::now () + std::chrono::hours (1);
+    }
+
+    void waitForReply () {
+        int socket = -1;
+        REQUIRE (dbus_connection_get_unix_fd (m_connection, &socket));
+        pollfd descriptor { socket, POLLIN, 0 };
+        REQUIRE (poll (&descriptor, 1, 2000) == 1);
+        REQUIRE ((descriptor.revents & POLLIN) != 0);
+    }
+
+    void receiveReply () {
+        dbus_connection_read_write (m_connection, 0);
+        for (int i = 0; i < 16
+             && dbus_connection_get_dispatch_status (m_connection) == DBUS_DISPATCH_DATA_REMAINS; ++i) {
+            dbus_connection_dispatch (m_connection);
+        }
+        REQUIRE (dbus_pending_call_get_completed (m_pending));
+    }
+
     void finish (Request request, const std::string& player, DBusMessage* reply) {
         cancelPending ();
         completeRequest (request, player, reply);
@@ -91,6 +120,45 @@ Message propertyMessage (const char* signature, const char* sender) {
     REQUIRE (dbus_message_iter_close_container (&body, &value));
     return message;
 }
+
+using Connection = std::unique_ptr<DBusConnection, void (*) (DBusConnection*)>;
+
+Connection readyPositionReply (DBusTestSource& source) {
+    Connection player (dbus_bus_get_private (DBUS_BUS_SESSION, nullptr), [] (DBusConnection* connection) {
+        dbus_connection_close (connection);
+        dbus_connection_unref (connection);
+    });
+    REQUIRE (player);
+    dbus_connection_set_exit_on_disconnect (player.get (), false);
+    source.prepareReplyTest ();
+    const char* owner = dbus_bus_get_unique_name (player.get ());
+    source.selectPlayer (owner);
+    source.m_metadataNeeded = false;
+    source.pollPlayer ();
+    REQUIRE (source.m_pending);
+
+    Message request (nullptr, dbus_message_unref);
+    const auto until = std::chrono::steady_clock::now () + std::chrono::seconds (2);
+    while (std::chrono::steady_clock::now () < until) {
+        dbus_connection_read_write (player.get (), 50);
+        request.reset (dbus_connection_pop_message (player.get ()));
+        if (request && dbus_message_is_method_call (request.get (), "org.freedesktop.DBus.Properties", "Get")) {
+            break;
+        }
+        request.reset ();
+    }
+    REQUIRE (request);
+    auto reply = propertyMessage ("x", owner);
+    REQUIRE (dbus_message_set_reply_serial (reply.get (), dbus_message_get_serial (request.get ())));
+    REQUIRE (dbus_message_set_destination (reply.get (), dbus_message_get_sender (request.get ())));
+    REQUIRE (dbus_connection_send (player.get (), reply.get (), nullptr));
+    // Test-only barrier: the bus routes the reply before answering this round trip.
+    char* id = dbus_bus_get_id (player.get (), nullptr);
+    REQUIRE (id);
+    dbus_free (id);
+    source.waitForReply ();
+    return player;
+}
 }
 
 // Explicit opt-in prevents the fixture from connecting to a desktop session bus.
@@ -107,7 +175,7 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
     const std::string serviceA = "org.mpris.MediaPlayer2.testA";
     const std::string serviceB = "org.mpris.MediaPlayer2.testB";
 
-    SECTION ("A request expires without pumping transport or waiting for its reply") {
+    SECTION ("An incomplete request expires without waiting for its reply") {
         REQUIRE (source.startRequest (Request::Players, {}));
         REQUIRE (source.m_pending);
         CHECK_FALSE (source.startRequest (Request::Players, {}));
@@ -115,6 +183,28 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
         source.pollPending ();
         CHECK (source.m_pending == nullptr);
         CHECK (source.m_request == Request::None);
+    }
+
+    SECTION ("A completed Position reply survives an expired application deadline") {
+        auto player = readyPositionReply (source);
+        source.receiveReply ();
+        source.m_deadline = std::chrono::steady_clock::now () - std::chrono::seconds (1);
+        source.pollPending ();
+        CHECK (source.getMediaInfo ().position == 42000000);
+        CHECK (source.m_currentPlayer.has_value ());
+        CHECK (source.m_failedPlayers.empty ());
+        CHECK (source.m_pending == nullptr);
+    }
+
+    SECTION ("A buffered Position reply is read before a delayed frame applies its deadline") {
+        auto player = readyPositionReply (source);
+        REQUIRE_FALSE (dbus_pending_call_get_completed (source.m_pending));
+        source.m_deadline = std::chrono::steady_clock::now () - std::chrono::seconds (1);
+        source.update ();
+        CHECK (source.getMediaInfo ().position == 42000000);
+        CHECK (source.m_currentPlayer.has_value ());
+        CHECK (source.m_failedPlayers.empty ());
+        CHECK (source.m_pending == nullptr);
     }
 
     SECTION ("Metadata is retried after failure even when Position succeeds") {

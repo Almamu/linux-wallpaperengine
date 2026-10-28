@@ -252,8 +252,7 @@ void DBusMediaSource::update () {
         }
     }
 
-    // Check our end-to-end deadline even when libdbus cannot send the request.
-    pollPending ();
+    // A frame pause can outlast the deadline while a reply is waiting in the socket.
     dbus_connection_read_write (m_connection, 0);
     for (int dispatched = 0; dispatched < 16
          && dbus_connection_get_dispatch_status (m_connection) == DBUS_DISPATCH_DATA_REMAINS; ++dispatched) {
@@ -296,6 +295,7 @@ bool DBusMediaSource::startRequest (Request request, const std::string& player, 
     m_request = request;
     m_requestPlayer = player;
     m_deadline = started + requestTimeout;
+    dbus_connection_read_write (m_connection, 0);
     return true;
 }
 
@@ -313,14 +313,14 @@ void DBusMediaSource::pollPending () {
     if (!m_pending) {
         return;
     }
-    const bool expired = Clock::now () >= m_deadline;
-    if (!expired && !dbus_pending_call_get_completed (m_pending)) {
+    const bool completed = dbus_pending_call_get_completed (m_pending);
+    if (!completed && Clock::now () < m_deadline) {
         return;
     }
 
     const auto request = m_request;
     const auto player = m_requestPlayer;
-    DBusMessage* reply = expired ? nullptr : dbus_pending_call_steal_reply (m_pending);
+    DBusMessage* reply = completed ? dbus_pending_call_steal_reply (m_pending) : nullptr;
     cancelPending ();
     Data::Utils::ScopeGuard replyGuard ([reply] {
         if (reply) {
