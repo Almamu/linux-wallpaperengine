@@ -192,6 +192,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--disable-parallax` | Disable parallax effect on backgrounds that support it |
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 | `--fullscreen-pause-only-active` | Wayland only: pause only when a fullscreen window is active |
+| `--fullscreen-pause-per-monitor` | Wayland only: pause only the screens that have a fullscreen window, instead of all of them |
 | `--fullscreen-pause-ignore-appid <val>` | Wayland only: ignore fullscreen windows whose app_id contains `<val>` (repeatable) |
 
 ---

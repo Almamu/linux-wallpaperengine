@@ -12,4 +12,8 @@ Application::ApplicationContext& FullScreenDetector::getApplicationContext () co
 
 bool FullScreenDetector::anythingFullscreen () const { return false; }
 
+bool FullScreenDetector::canTellOutputsApart () const { return false; }
+
+bool FullScreenDetector::isFullscreenOn (const std::string& output) const { return this->anythingFullscreen (); }
+
 void FullScreenDetector::reset () { }

@@ -505,6 +505,13 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    this->settings.render.pauseOnFullscreenOnlyWhenActive = true;
 	});
 
+    performanceGroup.add_argument ("--fullscreen-pause-per-monitor")
+	.help ("Wayland only: pause only the screens that have a fullscreen window, instead of all of them")
+	.flag ()
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.render.pauseOnFullscreenPerMonitor = true;
+	});
+
     performanceGroup.add_argument ("--fullscreen-pause-ignore-appid")
 	.help ("Wayland only: ignore fullscreen windows whose app_id contains this value (repeatable)")
 	.action ([this] (const std::string& value) -> void {

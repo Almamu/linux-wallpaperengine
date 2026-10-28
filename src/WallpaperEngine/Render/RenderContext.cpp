@@ -50,6 +50,19 @@ void RenderContext::setPause (const bool newState) const {
     }
 }
 
+void RenderContext::setPause (const std::set<std::string>& pausedDisplays) const {
+    std::map<CWallpaper*, bool> paused;
+
+    for (const auto& [display, wallpaper] : this->m_wallpapers) {
+	const auto [it, _] = paused.try_emplace (wallpaper.get (), true);
+	it->second = it->second && pausedDisplays.contains (display);
+    }
+
+    for (const auto& [wallpaper, state] : paused) {
+	wallpaper->setPause (state);
+    }
+}
+
 Input::InputContext& RenderContext::getInputContext () const { return this->m_driver.getInputContext (); }
 
 const WallpaperApplication& RenderContext::getApp () const { return this->m_app; }
