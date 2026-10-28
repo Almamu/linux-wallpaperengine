@@ -129,7 +129,13 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 }
 
 static void handleGlobalRemoved (void* data, struct wl_registry* registry, uint32_t id) {
-    // todo: outputs
+    const auto driver = static_cast<WaylandOpenGLDriver*> (data);
+    // the compositor usually closes the layer surface first, in which case the screen is already gone
+    const auto screen = std::ranges::find_if (driver->m_screens, [id] (const auto& o) { return o->waylandName == id; });
+
+    if (screen != driver->m_screens.end ()) {
+	driver->onOutputRemoved (*screen);
+    }
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -234,6 +240,21 @@ void WaylandOpenGLDriver::finishEGL () const {
 void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport) {
     sLog.error ("Compositor closed our LS, freeing data...");
 
+    this->destroyViewport (viewport);
+}
+
+void WaylandOpenGLDriver::onOutputRemoved (Output::WaylandOutputViewport* viewport) {
+    sLog.out ("Output ", viewport->name, " was removed, freeing data...");
+
+    this->destroyViewport (viewport);
+}
+
+void WaylandOpenGLDriver::destroyViewport (Output::WaylandOutputViewport* viewport) {
+    // a pending frame callback would call into the freed viewport
+    if (viewport->frameCallback) {
+	wl_callback_destroy (viewport->frameCallback);
+    }
+
     if (viewport->eglSurface) {
 	eglDestroySurface (m_eglContext.display, viewport->eglSurface);
     }
@@ -253,6 +274,15 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 
     if (viewport->surface) {
 	wl_surface_destroy (viewport->surface);
+    }
+
+    // stop listening to the output, its events would reach the freed viewport too
+    if (viewport->output) {
+	wl_output_release (viewport->output);
+    }
+
+    if (this->viewportInFocus == viewport) {
+	this->viewportInFocus = nullptr;
     }
 
     // remove the output from the list

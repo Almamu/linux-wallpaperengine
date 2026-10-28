@@ -73,7 +73,14 @@ public:
     void dispatchEventQueue () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
+    /**
+     * Frees a viewport whose layer surface the compositor closed
+     */
     void onLayerClose (Output::WaylandOutputViewport*);
+    /**
+     * Frees a viewport whose output was removed (e.g. the monitor was unplugged)
+     */
+    void onOutputRemoved (Output::WaylandOutputViewport*);
     Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 
     Output::WaylandOutputViewport* viewportInFocus = nullptr;
@@ -98,6 +105,10 @@ private:
     void initEGL ();
     void initGLEW ();
     void finishEGL () const;
+    /**
+     * Releases everything the viewport holds and takes it out of the screen list
+     */
+    void destroyViewport (Output::WaylandOutputViewport* viewport);
 
     uint32_t m_frameCounter = 0;
     ApplicationContext& m_context;
