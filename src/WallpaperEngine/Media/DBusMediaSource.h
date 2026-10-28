@@ -2,6 +2,7 @@
 
 #include "MediaSource.h"
 #include <dbus/dbus.h>
+#include <vector>
 
 namespace WallpaperEngine::Media {
 class DBusMediaSource : public MediaSource {
@@ -12,21 +13,38 @@ public:
     void parseMetadata (DBusMessageIter& variant);
     void parsePlaybackStatus (DBusMessageIter& variant, const char* sender);
     void parsePosition (DBusMessageIter& variant);
-
     void update () override;
 
 protected:
+    enum class Request { None, Players, Status, Metadata, Position };
+    using Clock = std::chrono::steady_clock;
+
     void performUpdate () override;
-    void initialStatusFetch ();
-    void detectPlayer ();
+    /** Queue one request without flushing; its deadline starts before enqueueing. */
+    bool startRequest (Request request, const std::string& player, const char* property = nullptr);
+    /** Complete or cancel work from update(); never wait for a reply. */
+    void pollPending ();
+    void cancelPending ();
+    void completeRequest (Request request, const std::string& player, DBusMessage* reply);
+    void nextCandidate ();
+    void pollPlayer ();
+    void selectPlayer (const std::string& player, const std::string& service = {});
+    void failPlayer ();
+    bool isExcluded (const std::string& player) const;
 
-    DBusMessage* dbusMessage (
-	const char* bus_name, const char* path, const char* interface, const char* method, const char* iface = nullptr,
-	const char* prop = nullptr
-    );
+    static DBusHandlerResult messageFilter (DBusConnection*, DBusMessage*, void*);
 
-    std::optional<std::string> m_currentPlayer = std::nullopt;
+    std::optional<std::string> m_currentPlayer;
+    std::string m_currentService;
+    bool m_metadataNeeded = true;
+    std::map<std::string, Clock::time_point> m_failedPlayers;
+    std::vector<std::string> m_candidates;
+    std::size_t m_candidateIndex = 0;
 
-    DBusConnection* m_connection;
+    DBusConnection* m_connection = nullptr;
+    DBusPendingCall* m_pending = nullptr;
+    Request m_request = Request::None;
+    std::string m_requestPlayer;
+    Clock::time_point m_deadline;
 };
 }
