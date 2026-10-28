@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.linux-wallpaperengine" path="/org/gnome/shell/extensions/linux-wallpaperengine/">
+    <key name="engine-path" type="s">
+      <default>'linux-wallpaperengine'</default>
+      <summary>Executable name or absolute path to linux-wallpaperengine</summary>
+    </key>
+    <key name="wallpaper" type="s">
+      <default>''</default>
+      <summary>Absolute wallpaper project directory or Steam workshop ID</summary>
+    </key>
+    <key name="assets-dir" type="s">
+      <default>''</default>
+      <summary>Absolute assets directory, or empty for engine auto-detection</summary>
+    </key>
+    <key name="lock-wallpapers" type="as">
+      <default>[]</default>
+      <summary>Lock screen wallpaper per monitor; empty entries use the desktop wallpaper</summary>
+    </key>
+    <key name="lock-mirrors" type="ab">
+      <default>[]</default>
+      <summary>Mirror the lock screen wallpaper horizontally on each selected monitor</summary>
+    </key>
+    <key name="keep-lock-screen-on" type="b">
+      <default>false</default>
+      <summary>Keep the display awake while showing the lock screen wallpaper</summary>
+    </key>
+    <key name="fps" type="u">
+      <default>30</default>
+      <range min="1" max="240"/>
+      <summary>Rendering frame rate limit</summary>
+    </key>
+    <key name="paused" type="b">
+      <default>false</default>
+      <summary>Pause wallpaper playback</summary>
+    </key>
+  </schema>
+</schemalist>
