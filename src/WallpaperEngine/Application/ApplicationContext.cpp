@@ -548,7 +548,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	});
 
     screenshotGroup.add_argument ("--screenshot-delay")
-	.help ("Frames to wait before taking the screenshot")
+	.help ("Minimum frames to wait before taking the screenshot (video wallpapers also wait for their first frame)")
 	.default_value<uint32_t> (5)
 	.store_into (this->settings.screenshot.delay);
 
@@ -663,8 +663,6 @@ void ApplicationContext::loadSettingsFromArgv () {
 	}
 
 	this->settings.audio.volume = std::max (0, std::min (this->settings.audio.volume, 128));
-	this->settings.screenshot.delay
-	    = std::max<uint32_t> (0, std::min<uint32_t> (this->settings.screenshot.delay, 5));
 
 	// use std::cout on this in case logging is disabled, this way it's easy to look at what is running
 	std::stringbuf buffer;

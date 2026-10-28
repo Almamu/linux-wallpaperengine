@@ -172,8 +172,17 @@ void GLPlayer::render () const {
 				  { MPV_RENDER_PARAM_FLIP_Y, &flip_y },
 				  { MPV_RENDER_PARAM_INVALID, nullptr } };
 
+    // remember whether mpv had a decoded frame ready for this render pass; --screenshot uses
+    // this to avoid capturing a video wallpaper before its first frame made it into the FBO
+    if (!this->m_hasFrame) {
+	const uint64_t updateFlags = mpv_render_context_update (this->m_renderContext);
+	this->m_hasFrame = (updateFlags & MPV_RENDER_UPDATE_FRAME) != 0;
+    }
+
     mpv_render_context_render (this->m_renderContext, params);
 }
+
+bool GLPlayer::hasFrame () const { return this->m_hasFrame; }
 
 int GLPlayer::getWidth () const { return this->m_width; }
 int GLPlayer::getHeight () const { return this->m_height; }

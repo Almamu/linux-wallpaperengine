@@ -51,6 +51,8 @@ void CVideo::renderFrame (const glm::ivec4& viewport) {
     this->m_player->render ();
 }
 
+bool CVideo::isReadyForScreenshot () const { return this->m_player->hasFrame (); }
+
 const Data::Model::Video& CVideo::getVideo () const { return *this->getWallpaperData ().as<Data::Model::Video> (); }
 
 void CVideo::setPause (bool newState) {

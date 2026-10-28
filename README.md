@@ -186,6 +186,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--clamping <mode>` | Set texture clamping: `clamp`, `border`, `repeat` |
 | `--assets-dir <path>` | Set custom path for assets |
 | `--screenshot <file>` | Save screenshot (PNG, JPEG, BMP) |
+| `--screenshot-delay <frames>` | Minimum frames to wait before capturing; video wallpapers also wait for their first decoded frame |
 | `--list-properties` | Show customizable properties of a wallpaper |
 | `--set-property name=value` | Override a specific property |
 | `--disable-mouse` | Disable mouse interaction |
@@ -235,6 +236,10 @@ linux-wallpaperengine --fps 30 1845706469
 ```bash
 linux-wallpaperengine --screenshot ~/wallpaper.png 1845706469
 ```
+
+`--screenshot-delay` sets the minimum number of rendered frames to wait before capturing. Video
+wallpapers additionally wait until the video backend produced its first frame, so screenshots of
+video backgrounds are not captured before anything was decoded.
 
 This can be useful as output for pywal or other color systems that use images as basis to generate a set of colors
 to apply to your system.
