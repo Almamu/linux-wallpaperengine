@@ -44,7 +44,7 @@ namespace Render {
 	void setPause (bool newState) const;
 	/**
 	 * Pauses the wallpapers whose displays are all in pausedDisplays and resumes the rest.
-	 * A wallpaper spanned over several displays keeps running while any of them is visible.
+	 * A wallpaper spanned over several displays keeps running while any connected one is visible.
 	 */
 	void setPause (const std::set<std::string>& pausedDisplays) const;
 	[[nodiscard]] Input::InputContext& getInputContext () const;
