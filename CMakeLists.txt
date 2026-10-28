@@ -44,6 +44,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(KISSFFT_TEST OFF)
 set(KISSFFT_TOOLS OFF)
 
+# Disable Chromium's setuid sandbox helpers. Default ON: local/AUR builds rarely
+# ship a working setuid chrome-sandbox, and CefInitialize fails without this.
+# Packagers with a proper sandbox helper can configure -DCEF_NO_SANDBOX=OFF.
+option(CEF_NO_SANDBOX "Disable CEF/Chromium process sandbox (needed without setuid chrome-sandbox)" ON)
+
 # Download CEF of specified version for current platform
 # Specify the CEF distribution version.
 set(CEF_VERSION "135.0.17+gcbc1c5b+chromium-135.0.7049.52")
@@ -629,6 +634,13 @@ endif()
 target_compile_definitions(linux-wallpaperengine-lib PUBLIC ERRORONLY=${ERRORONLY})
 target_compile_definitions(linux-wallpaperengine-lib PUBLIC DEMOMODE=${DEMOMODE})
 
+if(CEF_NO_SANDBOX)
+    target_compile_definitions(linux-wallpaperengine-lib PUBLIC CEF_NO_SANDBOX)
+    message(STATUS "CEF_NO_SANDBOX=ON (settings.no_sandbox and --no-sandbox/--disable-gpu-sandbox)")
+else()
+    message(STATUS "CEF_NO_SANDBOX=OFF (Chromium sandbox enabled; requires setuid chrome-sandbox)")
+endif()
+
 if (BUILD_TESTING)
     # tests should give as much output as possible
     target_compile_definitions(tests PRIVATE ERRORONLY=0)
@@ -687,6 +699,16 @@ REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-lib)
 add_executable(linux-wallpaperengine
     src/main.cpp)
 
+# libcef must load *before* libc so Chromium's close() interposer can resolve
+# via dlsym(RTLD_NEXT, "close"). Without this, every web wallpaper dies with
+# "close symbol missing" + SIGTRAP (upstream issue #628).
+# Force an early DT_NEEDED entry; --as-needed would otherwise drop it because
+# main.cpp does not reference CEF symbols directly.
+target_link_options(linux-wallpaperengine PRIVATE
+    "LINKER:--push-state,--no-as-needed"
+    "${TARGET_OUTPUT_DIRECTORY}/libcef.so"
+    "LINKER:--pop-state"
+)
 target_link_libraries (linux-wallpaperengine PUBLIC linux-wallpaperengine-lib)
 
 # Install the main executable and shared library via install(TARGETS)
