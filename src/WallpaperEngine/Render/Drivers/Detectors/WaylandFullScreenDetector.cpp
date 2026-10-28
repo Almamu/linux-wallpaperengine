@@ -264,7 +264,13 @@ void handleGlobalRemoved (void* data, struct wl_registry* registry, uint32_t id)
 	    toplevel->outputs.erase (it->first);
 	}
 
-	wl_output_destroy (it->first);
+	// release (version 3+) also frees the compositor's side, destroy only drops the proxy
+	if (wl_output_get_version (it->first) >= WL_OUTPUT_RELEASE_SINCE_VERSION) {
+	    wl_output_release (it->first);
+	} else {
+	    wl_output_destroy (it->first);
+	}
+
 	detector->m_outputs.erase (it);
 	return;
     }

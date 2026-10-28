@@ -17,6 +17,7 @@ extern "C" {
 #undef static
 
 #include <algorithm>
+#include <poll.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -456,6 +457,26 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     if ((endTime - startTime) < minimumTime) {
 	usleep ((minimumTime - (endTime - startTime)) * CLOCKS_PER_SEC);
     }
+}
+
+void WaylandOpenGLDriver::dispatchPendingEvents () {
+    // drain what was already read before reading more, as libwayland requires for prepare_read
+    while (wl_display_prepare_read (m_waylandContext.display) != 0) {
+	wl_display_dispatch_pending (m_waylandContext.display);
+    }
+
+    wl_display_flush (m_waylandContext.display);
+
+    // only read if the compositor already sent something, so this never waits for a frame
+    pollfd fd { .fd = wl_display_get_fd (m_waylandContext.display), .events = POLLIN, .revents = 0 };
+
+    if (poll (&fd, 1, 0) > 0) {
+	wl_display_read_events (m_waylandContext.display);
+    } else {
+	wl_display_cancel_read (m_waylandContext.display);
+    }
+
+    wl_display_dispatch_pending (m_waylandContext.display);
 }
 
 Output::Output& WaylandOpenGLDriver::getOutput () { return this->m_output; }

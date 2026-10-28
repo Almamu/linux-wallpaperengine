@@ -872,7 +872,16 @@ void WallpaperApplication::render () {
 	usleep (FULLSCREEN_CHECK_WAIT_TIME);
 	// also refreshes the state isFullscreenOn reads
 	const bool anythingFullscreen = this->m_fullScreenDetector->anythingFullscreen ();
-	const bool stayPaused = this->pausesPerMonitor () ? this->updatePausedOutputs () : anythingFullscreen;
+	const bool perMonitor = this->pausesPerMonitor ();
+
+	// the driver's events aren't dispatched while paused, so an output that was removed in the meantime
+	// would still be a viewport, and could get resumed and drawn to. Frame callbacks dispatched here don't
+	// draw anything, since every output is paused
+	if (perMonitor) {
+	    m_videoDriver->dispatchPendingEvents ();
+	}
+
+	const bool stayPaused = perMonitor ? this->updatePausedOutputs () : anythingFullscreen;
 
 	if (stayPaused && this->m_context.state.general.keepRunning) {
 	    return;

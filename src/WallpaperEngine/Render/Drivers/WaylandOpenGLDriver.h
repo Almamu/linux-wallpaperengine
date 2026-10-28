@@ -71,6 +71,7 @@ public:
     glm::ivec2 getFramebufferSize () const override;
     uint32_t getFrameCounter () const override;
     void dispatchEventQueue () override;
+    void dispatchPendingEvents () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
     /**

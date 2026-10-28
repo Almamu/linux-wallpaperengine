@@ -72,6 +72,10 @@ public:
      */
     virtual void dispatchEventQueue () = 0;
     /**
+     * Processes the events the driver already received without waiting for new ones or rendering
+     */
+    virtual void dispatchPendingEvents ();
+    /**
      * @return The app that owns this driver
      */
     [[nodiscard]] WallpaperApplication& getApp () const;
