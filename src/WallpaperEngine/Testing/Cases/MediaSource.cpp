@@ -47,6 +47,7 @@ public:
     using DBusMediaSource::m_currentPlayer;
     using DBusMediaSource::m_deadline;
     using DBusMediaSource::m_failedPlayers;
+    using DBusMediaSource::m_playerOwners;
     using DBusMediaSource::m_metadataNeeded;
     using DBusMediaSource::m_pending;
     using DBusMediaSource::m_request;
@@ -56,6 +57,7 @@ public:
     using DBusMediaSource::pollPending;
     using DBusMediaSource::pollPlayer;
     using DBusMediaSource::selectPlayer;
+    using DBusMediaSource::serviceForOwner;
     using DBusMediaSource::startRequest;
 
     void pumpOutgoing () {
@@ -123,6 +125,24 @@ Message propertyMessage (const char* signature, const char* sender) {
 
 using Connection = std::unique_ptr<DBusConnection, void (*) (DBusConnection*)>;
 
+Connection newPeer () {
+    Connection peer (dbus_bus_get_private (DBUS_BUS_SESSION, nullptr), [] (DBusConnection* connection) {
+        dbus_connection_close (connection);
+        dbus_connection_unref (connection);
+    });
+    REQUIRE (peer);
+    dbus_connection_set_exit_on_disconnect (peer.get (), false);
+    return peer;
+}
+
+void waitForDelivery (DBusTestSource& source, DBusConnection* peer) {
+    // Test-only barrier: the bus routes previous messages before answering this round trip.
+    char* id = dbus_bus_get_id (peer, nullptr);
+    REQUIRE (id);
+    dbus_free (id);
+    source.waitForReply ();
+}
+
 Message playbackSignal (const char* status) {
     Message message (dbus_message_new_signal ("/org/mpris/MediaPlayer2",
         "org.freedesktop.DBus.Properties", "PropertiesChanged"), dbus_message_unref);
@@ -147,26 +167,30 @@ Message playbackSignal (const char* status) {
 
 Connection readyPropertyReply (DBusTestSource& source, DBusTestSource::Request requestKind,
                                const char* status = nullptr, bool signalFirst = false) {
-    Connection player (dbus_bus_get_private (DBUS_BUS_SESSION, nullptr), [] (DBusConnection* connection) {
-        dbus_connection_close (connection);
-        dbus_connection_unref (connection);
-    });
-    REQUIRE (player);
-    dbus_connection_set_exit_on_disconnect (player.get (), false);
+    auto player = newPeer ();
     source.prepareReplyTest ();
     const char* owner = dbus_bus_get_unique_name (player.get ());
+    static unsigned int sequence = 0;
+    const auto service = "org.mpris.MediaPlayer2.regression" + std::to_string (++sequence);
+    REQUIRE (dbus_bus_request_name (player.get (), service.c_str (), DBUS_NAME_FLAG_DO_NOT_QUEUE, nullptr)
+        == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER);
     if (requestKind == DBusTestSource::Request::Position) {
-        source.selectPlayer (owner);
+        source.selectPlayer (owner, service);
         source.m_metadataNeeded = false;
         source.pollPlayer ();
+    } else if (requestKind == DBusTestSource::Request::Players) {
+        source.prepareReplyTest ();
+        source.m_playerOwners.clear (); // Require startup GetNameOwner discovery, not the earlier signal.
+        REQUIRE (source.startRequest (requestKind, {}));
     } else {
-        REQUIRE (source.startRequest (requestKind, owner, "PlaybackStatus"));
+        REQUIRE (source.startRequest (requestKind, service, "PlaybackStatus"));
     }
     REQUIRE (source.m_pending);
 
     Message request (nullptr, dbus_message_unref);
     const auto until = std::chrono::steady_clock::now () + std::chrono::seconds (2);
     while (std::chrono::steady_clock::now () < until) {
+        source.update ();
         dbus_connection_read_write (player.get (), 50);
         request.reset (dbus_connection_pop_message (player.get ()));
         if (request && dbus_message_is_method_call (request.get (), "org.freedesktop.DBus.Properties", "Get")) {
@@ -187,11 +211,7 @@ Connection readyPropertyReply (DBusTestSource& source, DBusTestSource::Request r
         auto signal = playbackSignal (status);
         REQUIRE (dbus_connection_send (player.get (), signal.get (), nullptr));
     }
-    // Test-only barrier: the bus routes the reply/signals before answering this round trip.
-    char* id = dbus_bus_get_id (player.get (), nullptr);
-    REQUIRE (id);
-    dbus_free (id);
-    source.waitForReply ();
+    waitForDelivery (source, player.get ());
     return player;
 }
 }
@@ -218,6 +238,67 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
         source.pollPending ();
         CHECK (source.m_pending == nullptr);
         CHECK (source.m_request == Request::None);
+    }
+
+    SECTION ("An unrelated peer cannot select itself or invent a bus ownership announcement") {
+        auto peer = newPeer ();
+        source.prepareReplyTest ();
+        Message forged (dbus_message_new_signal (DBUS_PATH_DBUS, DBUS_INTERFACE_DBUS, "NameOwnerChanged"),
+                        dbus_message_unref);
+        REQUIRE (forged);
+        const char* service = "org.mpris.MediaPlayer2.forged";
+        const char* previous = "";
+        const char* owner = dbus_bus_get_unique_name (peer.get ());
+        REQUIRE (dbus_message_append_args (forged.get (), DBUS_TYPE_STRING, &service,
+            DBUS_TYPE_STRING, &previous, DBUS_TYPE_STRING, &owner, DBUS_TYPE_INVALID));
+        REQUIRE (dbus_connection_send (peer.get (), forged.get (), nullptr));
+        auto signal = playbackSignal ("Playing");
+        REQUIRE (dbus_connection_send (peer.get (), signal.get (), nullptr));
+        waitForDelivery (source, peer.get ());
+        source.update ();
+        CHECK_FALSE (source.m_currentPlayer.has_value ());
+        CHECK (source.m_playerOwners.empty ());
+        CHECK (source.m_pending == nullptr);
+        CHECK (source.getMediaInfo ().playbackState == WallpaperEngine::Media::MediaSource::Stopped);
+    }
+
+    SECTION ("Startup discovery resolves the owner before accepting its status reply") {
+        auto player = readyPropertyReply (source, Request::Players);
+        const char* owner = dbus_bus_get_unique_name (player.get ());
+        REQUIRE_FALSE (source.serviceForOwner (owner).empty ());
+        REQUIRE_FALSE (source.m_currentPlayer.has_value ());
+        source.update ();
+        CHECK (source.m_currentPlayer == owner);
+        CHECK (source.getMediaInfo ().playbackState == WallpaperEngine::Media::MediaSource::Playing);
+    }
+
+    SECTION ("Losing an MPRIS name revokes the old peer and accepts its replacement") {
+        auto player = readyPropertyReply (source, Request::Status);
+        source.update ();
+        const char* oldOwner = dbus_bus_get_unique_name (player.get ());
+        REQUIRE (source.m_currentPlayer == oldOwner);
+        const auto service = source.serviceForOwner (oldOwner);
+        REQUIRE_FALSE (service.empty ());
+        REQUIRE (dbus_bus_release_name (player.get (), service.c_str (), nullptr)
+            == DBUS_RELEASE_NAME_REPLY_RELEASED);
+        auto signal = playbackSignal ("Playing");
+        REQUIRE (dbus_connection_send (player.get (), signal.get (), nullptr));
+        waitForDelivery (source, player.get ());
+        source.update ();
+        CHECK_FALSE (source.m_currentPlayer.has_value ());
+        CHECK (source.serviceForOwner (oldOwner).empty ());
+        CHECK (source.m_pending == nullptr);
+        CHECK (source.getMediaInfo ().playbackState == WallpaperEngine::Media::MediaSource::Stopped);
+
+        auto replacement = newPeer ();
+        REQUIRE (dbus_bus_request_name (replacement.get (), service.c_str (), DBUS_NAME_FLAG_DO_NOT_QUEUE, nullptr)
+            == DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER);
+        auto replacementSignal = playbackSignal ("Playing");
+        REQUIRE (dbus_connection_send (replacement.get (), replacementSignal.get (), nullptr));
+        waitForDelivery (source, replacement.get ());
+        source.update ();
+        CHECK (source.m_currentPlayer == dbus_bus_get_unique_name (replacement.get ()));
+        CHECK (source.getMediaInfo ().playbackState == WallpaperEngine::Media::MediaSource::Playing);
     }
 
     SECTION ("A completed Position reply survives an expired application deadline") {
@@ -281,6 +362,7 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
     }
 
     SECTION ("A failed Position excludes A and discovery reaches healthy B") {
+        source.m_playerOwners = { { serviceA, playerA }, { serviceB, playerB } };
         source.selectPlayer (playerA, serviceA);
         source.finish (Request::Position, playerA, nullptr);
         CHECK_FALSE (source.m_currentPlayer.has_value ());

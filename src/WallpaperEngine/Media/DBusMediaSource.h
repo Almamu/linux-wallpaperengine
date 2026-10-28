@@ -16,7 +16,7 @@ public:
     void update () override;
 
 protected:
-    enum class Request { None, Players, Status, Metadata, Position };
+    enum class Request { None, Players, Owner, Status, Metadata, Position };
     using Clock = std::chrono::steady_clock;
 
     void performUpdate () override;
@@ -26,11 +26,15 @@ protected:
     void pollPending ();
     void cancelPending ();
     void completeRequest (Request request, const std::string& player, DBusMessage* reply);
+    void nextOwner ();
     void nextCandidate ();
     void pollPlayer ();
     void selectPlayer (const std::string& player, const std::string& service = {});
     void failPlayer ();
     bool isExcluded (const std::string& player) const;
+    std::string serviceForOwner (const std::string& owner) const;
+    void updateOwner (const std::string& service, const std::string& owner);
+    void resetUnownedPlayer ();
 
     static DBusHandlerResult messageFilter (DBusConnection*, DBusMessage*, void*);
 
@@ -38,6 +42,7 @@ protected:
     std::string m_currentService;
     bool m_metadataNeeded = true;
     std::map<std::string, Clock::time_point> m_failedPlayers;
+    std::map<std::string, std::string> m_playerOwners;
     std::vector<std::string> m_candidates;
     std::size_t m_candidateIndex = 0;
 
