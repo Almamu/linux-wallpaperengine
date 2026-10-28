@@ -178,6 +178,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--noautomute` | Don't mute when other apps play audio |
 | `--no-audio-processing` | Disable audio reactive features |
 | `--fps <val>` | Limit frame rate |
+| `--hwdec <mode>` | Set libmpv hardware decoding: `auto`, `nvdec-copy`, or `no` (default: `auto`) |
 | `--window <XxYxWxH>` | Run in windowed mode with custom size/position |
 | `--screen-root <screen>` | Set as background for specific screen |
 | `--screen-span <screen-1>,<screen-2>,...` | Stretch a single wallpaper across multiple screens |
