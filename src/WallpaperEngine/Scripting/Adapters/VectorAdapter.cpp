@@ -223,19 +223,15 @@ int vector_property_set (
     void* into = nullptr;
 
     if (strcmp (name, "x") == 0) {
-	if constexpr (
-	    std::is_same_v<decltype (vec), glm::vec2> || std::is_same_v<decltype (vec), glm::vec3>
-	    || std::is_same_v<decltype (vec), glm::vec4>
-	) {
+	if constexpr (std::is_same_v<decltype (vec), glm::vec2> || std::is_same_v<decltype (vec), glm::vec3>
+		      || std::is_same_v<decltype (vec), glm::vec4>) {
 	    into = &vec.x;
 	} else if constexpr (std::is_same_v<decltype (vec), Color>) {
 	    into = &vec.r;
 	}
     } else if (strcmp (name, "y") == 0) {
-	if constexpr (
-	    std::is_same_v<decltype (vec), glm::vec2> || std::is_same_v<decltype (vec), glm::vec3>
-	    || std::is_same_v<decltype (vec), glm::vec4>
-	) {
+	if constexpr (std::is_same_v<decltype (vec), glm::vec2> || std::is_same_v<decltype (vec), glm::vec3>
+		      || std::is_same_v<decltype (vec), glm::vec4>) {
 	    into = &vec.y;
 	} else if constexpr (std::is_same_v<decltype (vec), Color>) {
 	    into = &vec.g;
