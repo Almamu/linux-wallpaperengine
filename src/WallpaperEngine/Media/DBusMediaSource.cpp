@@ -257,6 +257,10 @@ void DBusMediaSource::update () {
     for (int dispatched = 0; dispatched < 16
          && dbus_connection_get_dispatch_status (m_connection) == DBUS_DISPATCH_DATA_REMAINS; ++dispatched) {
         dbus_connection_dispatch (m_connection);
+        // Apply replies before later signals, but let queued replies precede timeout handling.
+        if (m_pending && dbus_pending_call_get_completed (m_pending)) {
+            pollPending ();
+        }
     }
     pollPending ();
     MediaSource::update ();

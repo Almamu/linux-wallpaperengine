@@ -123,7 +123,30 @@ Message propertyMessage (const char* signature, const char* sender) {
 
 using Connection = std::unique_ptr<DBusConnection, void (*) (DBusConnection*)>;
 
-Connection readyPositionReply (DBusTestSource& source) {
+Message playbackSignal (const char* status) {
+    Message message (dbus_message_new_signal ("/org/mpris/MediaPlayer2",
+        "org.freedesktop.DBus.Properties", "PropertiesChanged"), dbus_message_unref);
+    REQUIRE (message);
+    DBusMessageIter body, changed, entry, value, invalidated;
+    dbus_message_iter_init_append (message.get (), &body);
+    const char* interface = "org.mpris.MediaPlayer2.Player";
+    const char* key = "PlaybackStatus";
+    REQUIRE (dbus_message_iter_append_basic (&body, DBUS_TYPE_STRING, &interface));
+    REQUIRE (dbus_message_iter_open_container (&body, DBUS_TYPE_ARRAY, "{sv}", &changed));
+    REQUIRE (dbus_message_iter_open_container (&changed, DBUS_TYPE_DICT_ENTRY, nullptr, &entry));
+    REQUIRE (dbus_message_iter_append_basic (&entry, DBUS_TYPE_STRING, &key));
+    REQUIRE (dbus_message_iter_open_container (&entry, DBUS_TYPE_VARIANT, "s", &value));
+    REQUIRE (dbus_message_iter_append_basic (&value, DBUS_TYPE_STRING, &status));
+    REQUIRE (dbus_message_iter_close_container (&entry, &value));
+    REQUIRE (dbus_message_iter_close_container (&changed, &entry));
+    REQUIRE (dbus_message_iter_close_container (&body, &changed));
+    REQUIRE (dbus_message_iter_open_container (&body, DBUS_TYPE_ARRAY, "s", &invalidated));
+    REQUIRE (dbus_message_iter_close_container (&body, &invalidated));
+    return message;
+}
+
+Connection readyPropertyReply (DBusTestSource& source, DBusTestSource::Request requestKind,
+                               const char* status = nullptr, bool signalFirst = false) {
     Connection player (dbus_bus_get_private (DBUS_BUS_SESSION, nullptr), [] (DBusConnection* connection) {
         dbus_connection_close (connection);
         dbus_connection_unref (connection);
@@ -132,9 +155,13 @@ Connection readyPositionReply (DBusTestSource& source) {
     dbus_connection_set_exit_on_disconnect (player.get (), false);
     source.prepareReplyTest ();
     const char* owner = dbus_bus_get_unique_name (player.get ());
-    source.selectPlayer (owner);
-    source.m_metadataNeeded = false;
-    source.pollPlayer ();
+    if (requestKind == DBusTestSource::Request::Position) {
+        source.selectPlayer (owner);
+        source.m_metadataNeeded = false;
+        source.pollPlayer ();
+    } else {
+        REQUIRE (source.startRequest (requestKind, owner, "PlaybackStatus"));
+    }
     REQUIRE (source.m_pending);
 
     Message request (nullptr, dbus_message_unref);
@@ -148,11 +175,19 @@ Connection readyPositionReply (DBusTestSource& source) {
         request.reset ();
     }
     REQUIRE (request);
-    auto reply = propertyMessage ("x", owner);
+    auto reply = propertyMessage (requestKind == DBusTestSource::Request::Position ? "x" : "s", owner);
     REQUIRE (dbus_message_set_reply_serial (reply.get (), dbus_message_get_serial (request.get ())));
     REQUIRE (dbus_message_set_destination (reply.get (), dbus_message_get_sender (request.get ())));
+    if (status && signalFirst) {
+        auto signal = playbackSignal (status);
+        REQUIRE (dbus_connection_send (player.get (), signal.get (), nullptr));
+    }
     REQUIRE (dbus_connection_send (player.get (), reply.get (), nullptr));
-    // Test-only barrier: the bus routes the reply before answering this round trip.
+    if (status && !signalFirst) {
+        auto signal = playbackSignal (status);
+        REQUIRE (dbus_connection_send (player.get (), signal.get (), nullptr));
+    }
+    // Test-only barrier: the bus routes the reply/signals before answering this round trip.
     char* id = dbus_bus_get_id (player.get (), nullptr);
     REQUIRE (id);
     dbus_free (id);
@@ -186,7 +221,7 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
     }
 
     SECTION ("A completed Position reply survives an expired application deadline") {
-        auto player = readyPositionReply (source);
+        auto player = readyPropertyReply (source, Request::Position);
         source.receiveReply ();
         source.m_deadline = std::chrono::steady_clock::now () - std::chrono::seconds (1);
         source.pollPending ();
@@ -197,7 +232,7 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
     }
 
     SECTION ("A buffered Position reply is read before a delayed frame applies its deadline") {
-        auto player = readyPositionReply (source);
+        auto player = readyPropertyReply (source, Request::Position);
         REQUIRE_FALSE (dbus_pending_call_get_completed (source.m_pending));
         source.m_deadline = std::chrono::steady_clock::now () - std::chrono::seconds (1);
         source.update ();
@@ -221,6 +256,28 @@ TEST_CASE ("D-Bus media requests recover without waiting for replies", "[.][dbus
         source.finish (Request::Metadata, playerA, metadata.get ());
         CHECK_FALSE (source.m_metadataNeeded);
         CHECK (source.m_currentPlayer == playerA);
+    }
+
+    SECTION ("A discovery reply is applied before a following Paused or Stopped signal") {
+        for (const char* status : { "Paused", "Stopped" }) {
+            DBusTestSource ordered;
+            auto player = readyPropertyReply (ordered, Request::Status, status);
+            ordered.update ();
+            CHECK (ordered.m_currentPlayer == dbus_bus_get_unique_name (player.get ()));
+            CHECK (ordered.getMediaInfo ().playbackState == (std::strcmp (status, "Paused") == 0
+                ? WallpaperEngine::Media::MediaSource::Paused : WallpaperEngine::Media::MediaSource::Stopped));
+            CHECK (ordered.m_failedPlayers.empty ());
+        }
+    }
+
+    SECTION ("An earlier signal does not expire a Position reply still queued behind it") {
+        auto player = readyPropertyReply (source, Request::Position, "Paused", true);
+        source.m_deadline = std::chrono::steady_clock::now () - std::chrono::seconds (1);
+        source.update ();
+        CHECK (source.getMediaInfo ().position == 42000000);
+        CHECK (source.getMediaInfo ().playbackState == WallpaperEngine::Media::MediaSource::Paused);
+        CHECK (source.m_currentPlayer.has_value ());
+        CHECK (source.m_failedPlayers.empty ());
     }
 
     SECTION ("A failed Position excludes A and discovery reaches healthy B") {
