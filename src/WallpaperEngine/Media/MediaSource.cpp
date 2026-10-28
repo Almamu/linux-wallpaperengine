@@ -28,10 +28,12 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
+    const auto now = std::chrono::steady_clock::now ();
+    if (now < m_nextUpdate) {
 	return;
     }
 
+    m_nextUpdate = now + m_updateInterval;
     this->performUpdate ();
 }
 

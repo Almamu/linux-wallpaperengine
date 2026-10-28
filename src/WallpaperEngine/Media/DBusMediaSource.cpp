@@ -58,6 +58,7 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
     DBusError err;
 
     dbus_error_init (&err);
+    Data::Utils::ScopeGuard errorGuard ([&err] { dbus_error_free (&err); });
 
     this->m_connection = dbus_bus_get (DBUS_BUS_SESSION, &err);
 
@@ -233,15 +234,24 @@ DBusMessage* DBusMediaSource::dbusMessage (
 ) {
     DBusError err;
     dbus_error_init (&err);
+    Data::Utils::ScopeGuard errorGuard ([&err] { dbus_error_free (&err); });
 
     DBusMessage* msg = dbus_message_new_method_call (bus_name, path, interface, method);
+    if (msg == nullptr) {
+	sLog.error ("Cannot allocate DBus media request");
+	return nullptr;
+    }
     Data::Utils::ScopeGuard guard ([msg] { dbus_message_unref (msg); });
 
     if (iface != nullptr && prop != nullptr) {
-	dbus_message_append_args (msg, DBUS_TYPE_STRING, &iface, DBUS_TYPE_STRING, &prop, DBUS_TYPE_INVALID);
+	if (!dbus_message_append_args (msg, DBUS_TYPE_STRING, &iface, DBUS_TYPE_STRING, &prop, DBUS_TYPE_INVALID)) {
+	    sLog.error ("Cannot allocate DBus media request arguments");
+	    return nullptr;
+	}
     }
 
-    DBusMessage* reply = dbus_connection_send_with_reply_and_block (m_connection, msg, -1, &err);
+    // Bound stalled-player waits instead of using the default multi-second timeout.
+    DBusMessage* reply = dbus_connection_send_with_reply_and_block (m_connection, msg, 250, &err);
 
     if (reply == nullptr) {
 	sLog.error ("DBus error: ", err.message, " (", err.name, ")");
@@ -296,7 +306,7 @@ void DBusMediaSource::detectPlayer () {
 	);
 
 	if (reply == nullptr) {
-	    return;
+	    continue;
 	}
 
 	Data::Utils::ScopeGuard guard2 ([reply] { dbus_message_unref (reply); });
@@ -339,9 +349,12 @@ void DBusMediaSource::initialStatusFetch () {
 }
 
 void DBusMediaSource::performUpdate () {
-    // nothing to do if no player is detected
     if (!this->m_currentPlayer.has_value ()) {
-	return;
+	this->detectPlayer ();
+	this->initialStatusFetch ();
+	if (!this->m_currentPlayer.has_value ()) {
+	    return;
+	}
     }
 
     DBusMessage* reply = this->dbusMessage (
@@ -350,6 +363,7 @@ void DBusMediaSource::performUpdate () {
     );
 
     if (reply == nullptr) {
+	this->m_currentPlayer.reset ();
 	return;
     }
 

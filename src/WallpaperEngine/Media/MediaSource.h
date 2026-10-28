@@ -3,6 +3,8 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
+#include <optional>
 #include <string>
 
 namespace WallpaperEngine::Media {
