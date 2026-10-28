@@ -245,6 +245,12 @@ void WaylandOutputViewport::setupLS () {
 	sLog.exception ("Failed to make egl current");
     }
 
+    // Frame pacing is done with our own wl_surface_frame callback (see swapOutput).
+    // With the default swap interval of 1, eglSwapBuffers additionally throttles on
+    // the EGL surface's internal frame callback, so every frame waits for two
+    // vblanks and a 60Hz output only ever gets 30fps.
+    eglSwapInterval (m_driver->getEGLContext ()->display, 0);
+
     this->m_driver->getOutput ().reset ();
 }
 

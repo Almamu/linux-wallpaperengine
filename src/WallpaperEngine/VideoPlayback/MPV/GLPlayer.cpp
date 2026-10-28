@@ -167,9 +167,15 @@ void GLPlayer::render () const {
 
     // no need to flip as it'll be handled by the wallpaper rendering code
     int flip_y = 0;
+    // The host loop is paced by the compositor's frame callbacks (vsync). Do not
+    // let libmpv block until the frame's target time: with several outputs each
+    // owning a player on one thread, that serialises every screen onto the
+    // video's frame grid and judders 24fps content on 60Hz outputs.
+    int block_for_target_time = 0;
 
     mpv_render_param params[] = { { MPV_RENDER_PARAM_OPENGL_FBO, &fbo },
 				  { MPV_RENDER_PARAM_FLIP_Y, &flip_y },
+				  { MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &block_for_target_time },
 				  { MPV_RENDER_PARAM_INVALID, nullptr } };
 
     mpv_render_context_render (this->m_renderContext, params);
