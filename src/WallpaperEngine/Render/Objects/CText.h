@@ -58,11 +58,14 @@ private:
     bool loadEmbeddedFont ();
     bool loadSystemFont ();
     unsigned int computeEffectivePixelSize () const;
+    float pixelsPerPoint () const;
     void initScriptLayer ();
 
     const Text& m_text;
     std::string m_lastRenderedText;
     unsigned int m_lastPixelSize = 0;
+    /** Scene pixels per point, derived once from the authored size box (see #583) */
+    mutable float m_pixelsPerPoint = 0.0f;
     Scripting::ScriptLayerHandle m_layerHandle = Scripting::kInvalidLayerHandle;
 
     FT_Library m_ftLibrary = nullptr;
