@@ -117,8 +117,9 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
 	// A ready stream can be moved to another source: check where it records now.
 	// One still connecting is checked against the source it was asked for.
 	const char* device = state == PA_STREAM_READY ? pa_stream_get_device_name (recorder->captureStream) : nullptr;
-	const bool current = state == PA_STREAM_READY ? (device != nullptr && monitor_name == device)
-						      : (state == PA_STREAM_CREATING && recorder->monitorName == monitor_name);
+	const bool current = state == PA_STREAM_READY
+	    ? (device != nullptr && monitor_name == device)
+	    : (state == PA_STREAM_CREATING && recorder->monitorName == monitor_name);
 	if (current) {
 	    return;
 	}
