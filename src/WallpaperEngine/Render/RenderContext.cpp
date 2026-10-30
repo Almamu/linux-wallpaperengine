@@ -50,6 +50,28 @@ void RenderContext::setPause (const bool newState) const {
     }
 }
 
+void RenderContext::setPause (const std::set<std::string>& pausedDisplays) const {
+    const auto& viewports = this->getOutput ().getViewports ();
+    // per wallpaper: if any of its displays is connected, and if every connected one is paused
+    std::map<CWallpaper*, std::pair<bool, bool>> state;
+
+    for (const auto& [display, wallpaper] : this->m_wallpapers) {
+	auto& [connected, paused] = state.try_emplace (wallpaper.get (), false, true).first->second;
+
+	// a disconnected display can't be covered, so it doesn't keep a spanned wallpaper running
+	if (!viewports.contains (display)) {
+	    continue;
+	}
+
+	connected = true;
+	paused = paused && pausedDisplays.contains (display);
+    }
+
+    for (const auto& [wallpaper, value] : state) {
+	wallpaper->setPause (value.first && value.second);
+    }
+}
+
 Input::InputContext& RenderContext::getInputContext () const { return this->m_driver.getInputContext (); }
 
 const WallpaperApplication& RenderContext::getApp () const { return this->m_app; }

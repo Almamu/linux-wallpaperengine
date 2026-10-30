@@ -160,6 +160,17 @@ private:
     std::vector<std::size_t> buildPlaylistOrder (const ApplicationContext::PlaylistDefinition& definition);
     void ensureBrowserForProject (const Project& project);
     bool makeAnyViewportCurrent () const;
+    /**
+     * Pauses the outputs that have a fullscreen window on them and resumes the rest
+     *
+     * @return If every output is paused
+     */
+    bool updatePausedOutputs ();
+    /**
+     * @return If --fullscreen-pause-per-monitor is on, the wallpaper is the desktop background and the fullscreen
+     * detector can tell outputs apart
+     */
+    [[nodiscard]] bool pausesPerMonitor () const;
 
     /** The application context that contains the current app settings */
     ApplicationContext& m_context;
@@ -178,6 +189,12 @@ private:
     std::unique_ptr<WallpaperEngine::Media::MediaSource> m_mediaSource = nullptr;
     std::mt19937 m_playlistRng { std::random_device {}() };
     bool m_isPaused = false;
+    /** Outputs paused by --fullscreen-pause-per-monitor */
+    std::set<std::string> m_pausedOutputs {};
+    /** Paused outputs that skipped a frame, so they need a render to start drawing again */
+    std::set<std::string> m_skippedOutputs {};
+    /** Outputs seen by the last updatePausedOutputs, to notice monitors being connected or disconnected */
+    std::size_t m_lastViewportCount = 0;
     bool m_screenShotTaken = false;
     uint32_t m_nextFrameScreenshot = 0;
     std::chrono::steady_clock::time_point m_pauseStart {};

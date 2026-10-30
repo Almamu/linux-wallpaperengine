@@ -481,6 +481,13 @@ void WallpaperApplication::updatePlaylists () {
     const auto now = std::chrono::steady_clock::now ();
 
     for (auto& [screen, playlist] : this->m_activePlaylists) {
+	const bool paused = this->m_pausedOutputs.contains (screen);
+
+	// screens paused by --fullscreen-pause-per-monitor hold their timer, like the global pause does
+	if (paused && !playlist.definition.settings.updateOnPause) {
+	    playlist.nextSwitch += now - playlist.lastUpdate;
+	}
+
 	playlist.lastUpdate = now;
 
 	if (playlist.definition.settings.mode != "timer") {
@@ -496,6 +503,11 @@ void WallpaperApplication::updatePlaylists () {
 	}
 
 	this->advancePlaylist (screen, playlist, now);
+
+	// the new wallpaper starts unpaused
+	if (paused) {
+	    this->m_renderContext->setPause (this->m_pausedOutputs);
+	}
     }
 }
 
@@ -858,10 +870,25 @@ void WallpaperApplication::render () {
 
     if (this->m_isPaused) {
 	usleep (FULLSCREEN_CHECK_WAIT_TIME);
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	// also refreshes the state isFullscreenOn reads
+	const bool anythingFullscreen = this->m_fullScreenDetector->anythingFullscreen ();
+	const bool perMonitor = this->pausesPerMonitor ();
+
+	// the driver's events aren't dispatched while paused, so an output that was removed in the meantime
+	// would still be a viewport, and could get resumed and drawn to. Frame callbacks dispatched here don't
+	// draw anything, since every output is paused
+	if (perMonitor) {
+	    m_videoDriver->dispatchPendingEvents ();
+	}
+
+	const bool stayPaused = perMonitor ? this->updatePausedOutputs () : anythingFullscreen;
+
+	if (stayPaused && this->m_context.state.general.keepRunning) {
 	    return;
 	}
-	m_renderContext->setPause (false);
+	// resume everything, except outputs that still have a fullscreen window (only with
+	// --fullscreen-pause-per-monitor)
+	m_renderContext->setPause (this->m_pausedOutputs);
 
 	// account for paused duration in playlist timers
 	const auto pausedNow = std::chrono::steady_clock::now ();
@@ -928,7 +955,11 @@ void WallpaperApplication::render () {
 	}
 #endif /* DEMOMODE */
 	// check for fullscreen windows and wait until there's none fullscreen
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	// also refreshes the state isFullscreenOn reads
+	const bool anythingFullscreen = this->m_fullScreenDetector->anythingFullscreen ();
+	const bool pauseEverything = this->pausesPerMonitor () ? this->updatePausedOutputs () : anythingFullscreen;
+
+	if (pauseEverything && this->m_context.state.general.keepRunning) {
 	    this->m_isPaused = true;
 	    this->m_pauseStart = std::chrono::steady_clock::now ();
 
@@ -969,7 +1000,60 @@ void WallpaperApplication::show () {
     cleanup ();
 }
 
+bool WallpaperApplication::pausesPerMonitor () const {
+    // window modes have a single "default" viewport, which isn't an output
+    return this->m_context.settings.render.pauseOnFullscreenPerMonitor
+	&& this->m_context.settings.render.mode == ApplicationContext::DESKTOP_BACKGROUND
+	&& this->m_fullScreenDetector->canTellOutputsApart ();
+}
+
+bool WallpaperApplication::updatePausedOutputs () {
+    const auto& viewports = this->m_renderContext->getOutput ().getViewports ();
+    // forget outputs that were disconnected while paused
+    const auto disconnected = [&viewports] (const std::string& name) { return !viewports.contains (name); };
+    std::erase_if (this->m_pausedOutputs, disconnected);
+    std::erase_if (this->m_skippedOutputs, disconnected);
+    // a monitor coming or going changes which ones a spanned wallpaper is on
+    bool changed = viewports.size () != this->m_lastViewportCount;
+    this->m_lastViewportCount = viewports.size ();
+
+    std::vector<Render::Drivers::Output::OutputViewport*> resumed;
+
+    for (const auto& [name, viewport] : viewports) {
+	const bool fullscreen = this->m_fullScreenDetector->isFullscreenOn (name);
+	const bool paused = this->m_pausedOutputs.contains (name);
+
+	if (fullscreen && !paused) {
+	    changed = true;
+	    this->m_pausedOutputs.insert (name);
+	} else if (!fullscreen && paused) {
+	    changed = true;
+	    this->m_pausedOutputs.erase (name);
+
+	    // outputs that stopped drawing won't get another frame callback until something is drawn
+	    if (this->m_skippedOutputs.erase (name) > 0) {
+		resumed.push_back (viewport);
+	    }
+	}
+    }
+
+    if (changed) {
+	this->m_renderContext->setPause (this->m_pausedOutputs);
+    }
+
+    for (const auto viewport : resumed) {
+	this->update (viewport);
+    }
+
+    return !viewports.empty () && this->m_pausedOutputs.size () == viewports.size ();
+}
+
 void WallpaperApplication::update (Render::Drivers::Output::OutputViewport* viewport) {
+    if (this->m_pausedOutputs.contains (viewport->name)) {
+	this->m_skippedOutputs.insert (viewport->name);
+	return;
+    }
+
     // render the scene
     m_renderContext->render (viewport);
 }

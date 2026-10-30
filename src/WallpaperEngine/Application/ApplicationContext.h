@@ -123,6 +123,10 @@ public:
 	     */
 	    bool pauseOnFullscreenOnlyWhenActive;
 	    /**
+	     * Wayland-only: pause only the outputs that have a fullscreen window on them, instead of every output.
+	     */
+	    bool pauseOnFullscreenPerMonitor;
+	    /**
 	     * Wayland-only: list of app_id substrings to ignore for fullscreen pause.
 	     * Example: "firefox" will match "org.mozilla.firefox".
 	     */
@@ -205,6 +209,7 @@ public:
             .hwdec = "auto",
             .pauseOnFullscreen = true,
             .pauseOnFullscreenOnlyWhenActive = false,
+            .pauseOnFullscreenPerMonitor = false,
             .fullscreenPauseIgnoreAppIds = {},
             .debug = {
                 .baseOnly = false,
