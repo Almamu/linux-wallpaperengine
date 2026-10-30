@@ -295,7 +295,8 @@ void CText::rebuildTextureFrom (const std::string& text) {
     // Glyph metrics don't scale exactly with the pixel size, so shrink again if
     // the first guess still doesn't fit. Clipping is only a last resort.
     unsigned int reducedSize = m_lastPixelSize;
-    for (int attempt = 0; attempt < 4 && std::max (width, height) > maxTextureSize && reducedSize > 1; attempt++) {
+    for (int attempt = 0; shrunk && attempt < 4 && std::max (width, height) > maxTextureSize && reducedSize > 1;
+	 attempt++) {
 	const float factor = static_cast<float> (maxTextureSize) / static_cast<float> (std::max (width, height));
 	reducedSize = std::max (1u, static_cast<unsigned int> (static_cast<float> (reducedSize) * factor));
 
