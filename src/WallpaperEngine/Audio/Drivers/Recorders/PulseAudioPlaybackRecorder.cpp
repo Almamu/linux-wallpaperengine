@@ -107,17 +107,36 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
     spec.rate = 44100;
     spec.channels = 1;
 
+    std::string monitor_name (info->default_sink_name);
+    monitor_name += ".monitor";
+
+    // Every sink/source event lands here; keep a healthy stream that already
+    // records the default sink's monitor instead of opening another one.
     if (recorder->captureStream) {
-	pa_stream_unref (recorder->captureStream);
+	const pa_stream_state_t state = pa_stream_get_state (recorder->captureStream);
+	// A ready stream can be moved to another source: check where it records now.
+	// One still connecting is checked against the source it was asked for.
+	const char* device = state == PA_STREAM_READY ? pa_stream_get_device_name (recorder->captureStream) : nullptr;
+	const bool current = state == PA_STREAM_READY
+	    ? (device != nullptr && monitor_name == device)
+	    : (state == PA_STREAM_CREATING && recorder->monitorName == monitor_name);
+	if (current) {
+	    return;
+	}
     }
+
+    // unref alone leaves a connected stream recording on the server: disconnect first.
+    if (recorder->captureStream) {
+	pa_stream_disconnect (recorder->captureStream);
+	pa_stream_unref (recorder->captureStream);
+	recorder->captureStream = nullptr;
+    }
+    recorder->monitorName = monitor_name;
 
     recorder->captureStream = pa_stream_new (ctx, "output monitor", &spec, nullptr);
 
     pa_stream_set_state_callback (recorder->captureStream, &pa_stream_notify_cb, userdata);
     pa_stream_set_read_callback (recorder->captureStream, &pa_stream_read_cb, userdata);
-
-    std::string monitor_name (info->default_sink_name);
-    monitor_name += ".monitor";
 
     // setup latency
     pa_buffer_attr attr {};
@@ -199,6 +218,7 @@ PulseAudioPlaybackRecorder::PulseAudioPlaybackRecorder () :
 
 PulseAudioPlaybackRecorder::~PulseAudioPlaybackRecorder () {
     if (m_captureData.captureStream) {
+	pa_stream_disconnect (m_captureData.captureStream);
 	pa_stream_unref (m_captureData.captureStream);
     }
 
