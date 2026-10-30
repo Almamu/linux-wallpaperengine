@@ -343,8 +343,9 @@ void CText::uploadQuadVertices () {
     // matches the current texture dimensions.
     const float hx = m_quadSize.x * 0.5f;
     const float hy = m_quadSize.y * 0.5f;
-    // With vflip=true (Wayland/GLFW), GL y- = screen top. So the quad bottom (y=-hy,
-    // lower GL y) appears at screen top. UV.v=0 here = FT glyph top → shows at screen top ✓
+    // v=0 is the first bitmap row, which FreeType fills with the top of the glyphs.
+    // It sits on the quad's low-y edge, which ends up at the top of the screen like
+    // CImage's texcoords do, so the text comes out upright.
     const float verts[] = {
 	// pos        // uv
 	-hx, -hy, 0.0f, 0.0f, hx, -hy, 1.0f, 0.0f, hx,  hy, 1.0f, 1.0f,
@@ -410,7 +411,7 @@ void CText::render () {
     // Text origins use the same scene coordinates as images and particles: y is
     // measured up from the bottom of the scene. Place the quad the way CImage
     // does (scene_h/2 - origin.y); using origin.y - scene_h/2 mirrored text
-    // vertically on both Wayland and X11.
+    // vertically in GLFW windows on both Wayland and XWayland.
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
     const glm::vec3 gl_origin = {
