@@ -86,11 +86,15 @@ TEST_CASE ("Text padding: null defaults to 0", "[text][padding]") {
 // out the [text] and [padding] tags, because Catch2 runs hidden tests that match a tag
 // filter, so `tests "[padding]"` would otherwise hit them. Today each one
 // ends the process with std::terminate: JsonExtensions::optional (key, default) is
-// noexcept, so the exception thrown by VectorBuilder::parse or get<std::string> never
-// reaches the try/catch in ObjectParser::parse, and CHECK_NOTHROW can't observe it.
+// noexcept, so the exception thrown by VectorBuilder::parse or get<std::string> can't
+// leave it, and CHECK_NOTHROW can't observe it. Removing noexcept alone would not be
+// enough: the try/catch in ObjectParser::parse only covers the base object data, and
+// parseText runs after it, so nothing would catch the exception further up either.
 //
 // The expectations below describe the proposed behaviour (fall back to the default
-// padding) and are tracked in #712. Run them one at a time, since each aborts today:
+// padding) and are tracked in #712. Two cases are still open there: "32" could mean
+// (32, 32) like the scalar 32 does, and a user-bound object could use its value.
+// Run them one at a time, since each aborts today:
 //   tests "Text padding hardening: boolean"
 
 TEST_CASE ("Text padding hardening: single-component string", "[.][hardening]") {
