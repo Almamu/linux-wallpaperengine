@@ -33,6 +33,8 @@ public:
     void dispatchEventQueue () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
+    void ensureX11RenderTargetSize (glm::ivec2 size);
+
     GLFWwindow* getWindow () const;
 
 private:
@@ -40,6 +42,9 @@ private:
     Input::Drivers::GLFWMouseInput m_mouseInput;
     Output::Output* m_output = nullptr;
     GLFWwindow* m_window = nullptr;
+    GLuint m_x11Framebuffer = 0;
+    GLuint m_x11ColorBuffer = 0;
+    glm::ivec2 m_x11RenderTargetSize = { 0, 0 };
     uint32_t m_frameCounter = 0;
 };
 } // namespace WallpaperEngine::Render::Drivers
