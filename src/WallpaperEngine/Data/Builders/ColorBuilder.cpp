@@ -1,7 +1,6 @@
 #include "ColorBuilder.h"
 #include "VectorBuilder.h"
 
-#include <algorithm>
 #include <format>
 #include <glm/vec3.hpp>
 
@@ -12,13 +11,8 @@ const WallpaperEngine::Data::Model::Color WallpaperEngine::Data::Builders::Color
 
 WallpaperEngine::Data::Model::Color
 WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, float alpha) {
-    auto copy = value;
-
-    // replace the actual separators with spaces to normalize them
-    if (copy.find (',') != std::string::npos) {
-	// replace comma separator with spaces so it's
-	std::ranges::replace (copy, ',', ' ');
-    }
+    // VectorBuilder accepts both space and comma separators, so no normalization is needed
+    const auto& copy = value;
 
     // hex colors should be converted to int colors
     if (copy.find ('#') == 0) {

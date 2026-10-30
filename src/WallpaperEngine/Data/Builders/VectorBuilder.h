@@ -4,6 +4,7 @@
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
 #include <string>
+#include <vector>
 
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -23,27 +24,49 @@ class VectorBuilder {
     template <typename type> static type convert (const char* str);
 
     /**
-     * Finds the separator that ends the value starting at str: a space or a comma.
-     * Spaces after a comma belong to it, so "1, 2" splits like "1,2" and "1 2".
+     * Splits str into its values and stores where each one starts.
+     * Values are separated by spaces, or by one comma with optional spaces around it,
+     * so "1 2", "1,2", "1, 2" and "1 , 2" all hold two values.
      *
      * @param str
-     * @return The last character of the separator, or nullptr if there is none
+     * @param values Receives a pointer to the start of each value
+     * @return false if a value is empty, as in "1,,2", "1,2," or ",1"
      */
-    static const char* nextSeparator (const char* str) {
-	const char* separator = strpbrk (str, " ,");
+    static bool split (const std::string& str, std::vector<const char*>& values) {
+	const char* p = str.c_str ();
+	p += strspn (p, " ");
 
-	if (separator != nullptr && *separator == ',') {
-	    while (separator[1] == ' ') {
-		separator++;
+	while (true) {
+	    const size_t valueLength = strcspn (p, " ,");
+
+	    if (valueLength == 0 && *p == ',') {
+		return false;
+	    }
+
+	    values.push_back (p);
+	    p += valueLength;
+	    p += strspn (p, " ");
+
+	    if (*p == ',') {
+		p++;
+		p += strspn (p, " ");
+
+		if (*p == '\0' || *p == ',') {
+		    return false;
+		}
+	    }
+
+	    if (*p == '\0') {
+		return true;
 	    }
 	}
-
-	return separator;
     }
 
 public:
     /**
-     * Takes the string and returns the vector size (2, 3 or 4)
+     * Takes the string and returns the vector size (2, 3 or 4), using the same
+     * separators as parse. Returns 1 for anything that is not 2 to 4 numbers,
+     * so callers can treat it as a scalar or a text value.
      *
      * TODO: THIS SHOULD BE MOVED, RENAMED OR PLACED SOMEWHERE WHERE IT MAKES MORE SENSE
      *
@@ -51,24 +74,22 @@ public:
      * @return
      */
     static int preparseSize (const std::string& str) {
-	const char* p = str.c_str ();
-	const char* first = strchr (p, ' ');
-	const char* second = first ? strchr (first + 1, ' ') : nullptr;
-	const char* third = second ? strchr (second + 1, ' ') : nullptr;
+	std::vector<const char*> values;
 
-	if (first == nullptr) {
+	if (!split (str, values) || values.size () < 2 || values.size () > 4) {
 	    return 1;
 	}
 
-	if (second == nullptr) {
-	    return 2;
+	for (const char* value : values) {
+	    char* end = nullptr;
+	    std::strtof (value, &end);
+
+	    if (end == value || (*end != '\0' && *end != ' ' && *end != ',')) {
+		return 1;
+	    }
 	}
 
-	if (third == nullptr) {
-	    return 3;
-	}
-
-	return 4;
+	return static_cast<int> (values.size ());
     }
 
     /**
@@ -89,49 +110,31 @@ public:
 	// ensure a valid type is used, only 1 to 4 vectors are supported
 	static_assert (length >= 1 && length <= 4, "Invalid vector length");
 
-	const char* p = str.c_str ();
+	std::vector<const char*> values;
 
-	// get up to 3 separators
-	const char* first = nextSeparator (p);
-	const char* second = first ? nextSeparator (first + 1) : nullptr;
-	const char* third = second ? nextSeparator (second + 1) : nullptr;
+	if (!split (str, values)) {
+	    sLog.exception ("Invalid vector format: " + str + " (empty value)");
+	}
 
 	// validate lengths against what was found in the strings
-	if constexpr (length == 1) {
-	    if (first != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 2) {
-	    if (first == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
+	if (values.size () < static_cast<size_t> (length)) {
+	    sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
+	}
 
-	    if (second != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 3) {
-	    if (first == nullptr || second == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
-	    if (third != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 4) {
-	    if (first == nullptr || second == nullptr || third == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
+	if (values.size () > static_cast<size_t> (length)) {
+	    sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
 	}
 
 	// lengths validated, values can be used directly without issues
 	if constexpr (length == 1) {
-	    return { convert<type> (p) };
+	    return { convert<type> (values[0]) };
 	} else if constexpr (length == 2) {
-	    return { convert<type> (p), convert<type> (first + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]) };
 	} else if constexpr (length == 3) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]), convert<type> (values[2]) };
 	} else if constexpr (length == 4) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1),
-		     convert<type> (third + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]), convert<type> (values[2]),
+		     convert<type> (values[3]) };
 	}
     }
     template <typename T, typename std::enable_if_t<is_glm_vec<T>::value, int> = 0>
