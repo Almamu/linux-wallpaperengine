@@ -42,6 +42,12 @@ TEST_CASE ("Vectors parse with repeated spaces or a space before a comma", "[vec
     CHECK (VectorBuilder::parse<glm::vec3> (" 1 2 3 ") == glm::vec3 (1, 2, 3));
 }
 
+TEST_CASE ("Vectors parse with tabs and line endings as whitespace", "[vector]") {
+    CHECK (VectorBuilder::parse<glm::vec2> ("1\t2") == glm::vec2 (1, 2));
+    CHECK (VectorBuilder::parse<glm::vec3> ("1 0 0\r\n") == glm::vec3 (1, 0, 0));
+    CHECK (VectorBuilder::preparseSize ("0.5 0.5 0.5\r") == 3);
+}
+
 TEST_CASE ("Vectors with the wrong number of values still throw", "[vector]") {
     CHECK_THROWS (VectorBuilder::parse<glm::vec3> ("0.10,0.11"));
     CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1,2,3"));
@@ -56,6 +62,8 @@ TEST_CASE ("Vectors with an empty value throw", "[vector]") {
     CHECK_THROWS (VectorBuilder::parse<glm::vec3> ("1,2,"));
     CHECK_THROWS (VectorBuilder::parse<glm::vec3> (",1,2"));
     CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1, ,2"));
+    CHECK_THROWS (VectorBuilder::parse<glm::vec1> (""));
+    CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("  "));
 }
 
 // preparseSize picks the vector size that DynamicValueParser and ColorBuilder then

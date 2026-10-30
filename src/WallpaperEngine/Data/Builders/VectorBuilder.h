@@ -23,21 +23,29 @@ class VectorBuilder {
      */
     template <typename type> static type convert (const char* str);
 
+    static constexpr const char* kSpaces = " \t\r\n";
+    static constexpr const char* kSeparators = " \t\r\n,";
+
     /**
      * Splits str into its values and stores where each one starts.
-     * Values are separated by spaces, or by one comma with optional spaces around it,
-     * so "1 2", "1,2", "1, 2" and "1 , 2" all hold two values.
+     * Values are separated by whitespace, or by one comma with optional whitespace around it,
+     * so "1 2", "1,2", "1, 2" and "1 , 2" all hold two values. Stops after 5 values, since
+     * no vector holds more than 4.
      *
      * @param str
      * @param values Receives a pointer to the start of each value
-     * @return false if a value is empty, as in "1,,2", "1,2," or ",1"
+     * @return false if the string or a value is empty, as in "", "1,,2", "1,2," or ",1"
      */
     static bool split (const std::string& str, std::vector<const char*>& values) {
 	const char* p = str.c_str ();
-	p += strspn (p, " ");
+	p += strspn (p, kSpaces);
 
-	while (true) {
-	    const size_t valueLength = strcspn (p, " ,");
+	if (*p == '\0') {
+	    return false;
+	}
+
+	while (values.size () <= 4) {
+	    const size_t valueLength = strcspn (p, kSeparators);
 
 	    if (valueLength == 0 && *p == ',') {
 		return false;
@@ -45,11 +53,11 @@ class VectorBuilder {
 
 	    values.push_back (p);
 	    p += valueLength;
-	    p += strspn (p, " ");
+	    p += strspn (p, kSpaces);
 
 	    if (*p == ',') {
 		p++;
-		p += strspn (p, " ");
+		p += strspn (p, kSpaces);
 
 		if (*p == '\0' || *p == ',') {
 		    return false;
@@ -60,6 +68,8 @@ class VectorBuilder {
 		return true;
 	    }
 	}
+
+	return true;
     }
 
 public:
@@ -84,7 +94,8 @@ public:
 	    char* end = nullptr;
 	    std::strtof (value, &end);
 
-	    if (end == value || (*end != '\0' && *end != ' ' && *end != ',')) {
+	    // the number must end at a separator or the end of the string (strchr matches '\0' too)
+	    if (end == value || strchr (kSeparators, *end) == nullptr) {
 		return 1;
 	    }
 	}
@@ -127,7 +138,7 @@ public:
 
 	// lengths validated, values can be used directly without issues
 	if constexpr (length == 1) {
-	    return { convert<type> (values[0]) };
+	    return glm::vec<length, type, qualifier> (convert<type> (values[0]));
 	} else if constexpr (length == 2) {
 	    return { convert<type> (values[0]), convert<type> (values[1]) };
 	} else if constexpr (length == 3) {
