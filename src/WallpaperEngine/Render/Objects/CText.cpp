@@ -407,17 +407,15 @@ void CText::render () {
     const glm::vec3 scale = m_text.scale->value->getVec3 ();
     const glm::vec3 origin = m_text.origin->value->getVec3 ();
 
-    // WE uses a Y-down coordinate system (origin at top-left, y increases downward).
-    // The final FBO is presented to screen with vflip=true on Wayland/GLFW, which maps
-    // GL y- to screen top and GL y+ to screen bottom. This effectively inverts Y again,
-    // so we need: gl_y = origin.y - scene_h/2  (not the CImage-style scene_h/2 - origin.y).
-    // CImage pre-compensates for X11 (no vflip) and gets corrected by the Wayland vflip.
-    // CText renders with direct vflip-aware coordinates.
+    // Text origins use the same scene coordinates as images and particles: y is
+    // measured up from the bottom of the scene. Place the quad the way CImage
+    // does (scene_h/2 - origin.y); using origin.y - scene_h/2 mirrored text
+    // vertically on both Wayland and X11.
     const float scene_w = getScene ().getCamera ().getWidth ();
     const float scene_h = getScene ().getCamera ().getHeight ();
     const glm::vec3 gl_origin = {
 	origin.x - scene_w * 0.5f,
-	origin.y - scene_h * 0.5f,
+	scene_h * 0.5f - origin.y,
 	origin.z,
     };
 
