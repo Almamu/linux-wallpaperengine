@@ -22,6 +22,25 @@ class VectorBuilder {
      */
     template <typename type> static type convert (const char* str);
 
+    /**
+     * Finds the separator that ends the value starting at str: a space or a comma.
+     * Spaces after a comma belong to it, so "1, 2" splits like "1,2" and "1 2".
+     *
+     * @param str
+     * @return The last character of the separator, or nullptr if there is none
+     */
+    static const char* nextSeparator (const char* str) {
+	const char* separator = strpbrk (str, " ,");
+
+	if (separator != nullptr && *separator == ',') {
+	    while (separator[1] == ' ') {
+		separator++;
+	    }
+	}
+
+	return separator;
+    }
+
 public:
     /**
      * Takes the string and returns the vector size (2, 3 or 4)
@@ -54,8 +73,8 @@ public:
 
     /**
      * Takes a string value and parses it into a glm::vec.
-     * This particular parsing uses spaces as separators and basic std::strto* functions
-     * for the actual parsing of the values.
+     * Values are separated by spaces or commas (some workshop effects store colors as
+     * "0.10,0.11,0.12"), and parsed with the basic std::strto* functions.
      *
      * @tparam length Vector length
      * @tparam type Vector storage type
@@ -72,10 +91,10 @@ public:
 
 	const char* p = str.c_str ();
 
-	// get up to 4 spaces
-	const char* first = strchr (p, ' ');
-	const char* second = first ? strchr (first + 1, ' ') : nullptr;
-	const char* third = second ? strchr (second + 1, ' ') : nullptr;
+	// get up to 3 separators
+	const char* first = nextSeparator (p);
+	const char* second = first ? nextSeparator (first + 1) : nullptr;
+	const char* third = second ? nextSeparator (second + 1) : nullptr;
 
 	// validate lengths against what was found in the strings
 	if constexpr (length == 1) {

@@ -565,7 +565,8 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Harnesses/RenderHarness.h
         src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp
         src/WallpaperEngine/Testing/Cases/PropertyParser.cpp
-        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp)
+        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp
+        src/WallpaperEngine/Testing/Cases/VectorBuilder.cpp)
 endif()
 
 add_library(
