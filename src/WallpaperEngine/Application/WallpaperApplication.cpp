@@ -180,8 +180,13 @@ AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string
 }
 
 void WallpaperApplication::loadBackgrounds () {
+    // EMBEDDED_HOST belongs with the windowed modes: it renders a single viewport
+    // named "default" and has no --screen-root to key backgrounds off, so the
+    // per-screen path below would leave m_backgrounds empty, create no wallpapers,
+    // and render nothing at all.
     if (this->m_context.settings.render.mode == ApplicationContext::NORMAL_WINDOW
-	|| this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW) {
+	|| this->m_context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW
+	|| this->m_context.settings.render.mode == ApplicationContext::EMBEDDED_HOST) {
 	auto path = this->m_context.settings.general.defaultBackground;
 
 	if (this->m_context.settings.general.defaultPlaylist.has_value ()
@@ -856,8 +861,15 @@ void WallpaperApplication::render () {
     static time_t seconds;
     static struct tm* timeinfo;
 
+    // An embedding host owns the frame clock and calls us from its own render
+    // thread. Blocking or self-pausing there stalls the host's rendering, so
+    // both are left to the host in this mode.
+    const bool embedded = this->m_context.settings.render.mode == ApplicationContext::EMBEDDED_HOST;
+
     if (this->m_isPaused) {
-	usleep (FULLSCREEN_CHECK_WAIT_TIME);
+	if (!embedded) {
+	    usleep (FULLSCREEN_CHECK_WAIT_TIME);
+	}
 	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
 	    return;
 	}
@@ -928,7 +940,8 @@ void WallpaperApplication::render () {
 	}
 #endif /* DEMOMODE */
 	// check for fullscreen windows and wait until there's none fullscreen
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if (!embedded && this->m_fullScreenDetector->anythingFullscreen ()
+	    && this->m_context.state.general.keepRunning) {
 	    this->m_isPaused = true;
 	    this->m_pauseStart = std::chrono::steady_clock::now ();
 
@@ -991,6 +1004,15 @@ const WallpaperEngine::Render::Drivers::Output::Output& WallpaperApplication::ge
 
 void WallpaperApplication::setDestinationFramebuffer (GLuint framebuffer) {
     this->m_destinationFramebuffer = framebuffer;
+
+    // Reachable before setup() has built the render context - an embedding host
+    // learns its framebuffer as soon as the video driver is constructed, which
+    // happens inside setupOutput(). Record the value and let the wallpapers pick
+    // it up when the caller sets it again after setup() returns.
+    if (this->m_renderContext == nullptr) {
+	return;
+    }
+
     // Update all wallpapers with the new destination framebuffer
     for (const auto& [screen, wallpaper] : this->m_renderContext->getWallpapers ()) {
 	wallpaper->setDestinationFramebuffer (framebuffer);

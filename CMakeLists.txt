@@ -353,6 +353,8 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Input/MouseInput.h
     src/WallpaperEngine/Input/Drivers/GLFWMouseInput.cpp
     src/WallpaperEngine/Input/Drivers/GLFWMouseInput.h
+    src/WallpaperEngine/Input/Drivers/EmbeddedMouseInput.cpp
+    src/WallpaperEngine/Input/Drivers/EmbeddedMouseInput.h
 
     src/WallpaperEngine/Media/MediaSource.h
     src/WallpaperEngine/Media/MediaSource.cpp
@@ -397,6 +399,13 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/Drivers/Output/OutputViewport.cpp
     src/WallpaperEngine/Render/Drivers/Output/OutputViewport.h
     src/WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/EmbeddedHost.h
+    src/WallpaperEngine/Render/Drivers/EmbeddedOpenGLDriver.cpp
+    src/WallpaperEngine/Render/Drivers/EmbeddedOpenGLDriver.h
+    src/WallpaperEngine/Render/Drivers/Output/EmbeddedOutput.cpp
+    src/WallpaperEngine/Render/Drivers/Output/EmbeddedOutput.h
+    src/WallpaperEngine/Render/Drivers/Output/EmbeddedOutputViewport.cpp
+    src/WallpaperEngine/Render/Drivers/Output/EmbeddedOutputViewport.h
     src/WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.cpp
     src/WallpaperEngine/Render/Drivers/VideoDriver.h
     src/WallpaperEngine/Render/Drivers/VideoDriver.cpp

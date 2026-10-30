@@ -463,6 +463,14 @@ void ApplicationContext::loadSettingsFromArgv () {
 	})
 	.append ();
 
+    backgroundGroup.add_argument ("--embedded")
+	.help (
+	    "Render into a framebuffer owned by an embedding host instead of creating a window. "
+	    "Only useful when the renderer is driven as a library, e.g. from the Plasma wallpaper plugin."
+	)
+	.flag ()
+	.action ([this] (const std::string& value) -> void { this->settings.render.mode = EMBEDDED_HOST; });
+
     backgroundGroup.add_argument ("--layer")
 	.help (
 	    "Wayland-only: which wlr-layer-shell layer to anchor the wallpaper to "
