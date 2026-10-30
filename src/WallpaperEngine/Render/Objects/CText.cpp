@@ -292,12 +292,21 @@ void CText::rebuildTextureFrom (const std::string& text) {
     glGetIntegerv (GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     const bool shrunk = maxTextureSize > 0 && std::max (width, height) > maxTextureSize;
 
-    if (shrunk) {
+    // Glyph metrics don't scale exactly with the pixel size, so shrink again if
+    // the first guess still doesn't fit. Clipping is only a last resort.
+    unsigned int reducedSize = m_lastPixelSize;
+    for (int attempt = 0; attempt < 4 && std::max (width, height) > maxTextureSize && reducedSize > 1; attempt++) {
 	const float factor = static_cast<float> (maxTextureSize) / static_cast<float> (std::max (width, height));
-	const auto reducedSize = std::max (1u, static_cast<unsigned int> (static_cast<float> (m_lastPixelSize) * factor));
-	FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (reducedSize));
+	reducedSize = std::max (1u, static_cast<unsigned int> (static_cast<float> (reducedSize) * factor));
+
+	if (FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (reducedSize)) != 0) {
+	    break;
+	}
+
 	measure (width, height, maxAscent);
-	// glyph metrics don't scale exactly, so clip anything still over the limit
+    }
+
+    if (shrunk) {
 	width = std::min (width, static_cast<int> (maxTextureSize));
 	height = std::min (height, static_cast<int> (maxTextureSize));
     }
