@@ -4,6 +4,8 @@
 
 #include "WallpaperEngine/Data/Builders/ColorBuilder.h"
 #include "WallpaperEngine/Data/Builders/VectorBuilder.h"
+#include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Data/Parsers/UserSettingParser.h"
 
 using WallpaperEngine::Data::Builders::ColorBuilder;
 using WallpaperEngine::Data::Builders::VectorBuilder;
@@ -94,4 +96,25 @@ TEST_CASE ("Colors parse with a comma and a space between values", "[vector][col
     CHECK (intColor == glm::vec4 (1.0f, 0.0f, 0.2f, 1.0f));
 
     CHECK_THROWS (ColorBuilder::parse ("0.1,,0.3"));
+}
+
+// A text object's string must stay a string even when it looks like a vector
+// ("1,000" used to become vec2 (1, 0) and the text rendered empty).
+TEST_CASE ("Text settings keep vector-like strings", "[vector]") {
+    using WallpaperEngine::Data::JSON::JSON;
+    using WallpaperEngine::Data::Model::DynamicValue;
+    using WallpaperEngine::Data::Parsers::UserSettingParser;
+    using WallpaperEngine::Data::Parsers::ValueKind;
+
+    const WallpaperEngine::Data::Model::Properties properties;
+
+    for (const char* str : { "1,000", "1 2", "0.1,0.2,0.3" }) {
+	const auto text = UserSettingParser::parse (JSON (str), properties, ValueKind::Text);
+	CHECK (text->value->getType () == DynamicValue::String);
+	CHECK (text->value->getString () == str);
+    }
+
+    // other settings still guess vectors from the string
+    const auto vec = UserSettingParser::parse (JSON ("1,2"), properties);
+    CHECK (vec->value->getType () == DynamicValue::Vec2);
 }
