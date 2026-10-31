@@ -1,7 +1,6 @@
 #include "ColorBuilder.h"
 #include "VectorBuilder.h"
 
-#include <algorithm>
 #include <format>
 #include <glm/vec3.hpp>
 
@@ -12,17 +11,9 @@ const WallpaperEngine::Data::Model::Color WallpaperEngine::Data::Builders::Color
 
 WallpaperEngine::Data::Model::Color
 WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, float alpha) {
-    auto copy = value;
-
-    // replace the actual separators with spaces to normalize them
-    if (copy.find (',') != std::string::npos) {
-	// replace comma separator with spaces so it's
-	std::ranges::replace (copy, ',', ' ');
-    }
-
     // hex colors should be converted to int colors
-    if (copy.find ('#') == 0) {
-	auto number = copy.substr (1);
+    if (value.find ('#') == 0) {
+	auto number = value.substr (1);
 
 	// expand short css notation into the right one
 	// support for css notation
@@ -49,21 +40,21 @@ WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, 
 	);
     }
 
-    int vectorSize = VectorBuilder::preparseSize (copy);
+    int vectorSize = VectorBuilder::preparseSize (value);
 
     if (vectorSize != 3 && vectorSize != 4) {
 	throw std::invalid_argument ("Invalid color value");
     }
 
-    if (copy.find ('.') == std::string::npos) {
-	const auto final = vectorSize == 3 ? glm::ivec4 (VectorBuilder::parse<glm::ivec3> (copy), alpha * 255)
-					   : VectorBuilder::parse<glm::ivec4> (copy);
+    if (value.find ('.') == std::string::npos) {
+	const auto final = vectorSize == 3 ? glm::ivec4 (VectorBuilder::parse<glm::ivec3> (value), alpha * 255)
+					   : VectorBuilder::parse<glm::ivec4> (value);
 
 	return { final.r / 255.0f, final.g / 255.0f, final.b / 255.0f, final.a / 255.0f };
     }
 
     return Model::Color (
-	vectorSize == 3 ? glm::vec4 (VectorBuilder::parse<glm::vec3> (copy), alpha)
-			: VectorBuilder::parse<glm::vec4> (copy)
+	vectorSize == 3 ? glm::vec4 (VectorBuilder::parse<glm::vec3> (value), alpha)
+			: VectorBuilder::parse<glm::vec4> (value)
     );
 }

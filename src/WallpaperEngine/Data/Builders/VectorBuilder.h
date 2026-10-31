@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <cstring>
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
 #include <string>
+#include <vector>
 
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -22,9 +24,61 @@ class VectorBuilder {
      */
     template <typename type> static type convert (const char* str);
 
+    static constexpr const char* kSpaces = " \t\r\n";
+    static constexpr const char* kSeparators = " \t\r\n,";
+
+    /**
+     * Splits str into its values and stores where each one starts.
+     * Values are separated by whitespace, or by one comma with optional whitespace around it,
+     * so "1 2", "1,2", "1, 2" and "1 , 2" all hold two values. Stops after 5 values, since
+     * no vector holds more than 4.
+     *
+     * @param str
+     * @param values Receives a pointer to the start of each value
+     * @return false if the string or a value is empty, as in "", "1,,2", "1,2," or ",1"
+     */
+    static bool split (const std::string& str, std::vector<const char*>& values) {
+	const char* p = str.c_str ();
+	p += strspn (p, kSpaces);
+
+	if (*p == '\0') {
+	    return false;
+	}
+
+	while (values.size () <= 4) {
+	    const size_t valueLength = strcspn (p, kSeparators);
+
+	    if (valueLength == 0 && *p == ',') {
+		return false;
+	    }
+
+	    values.push_back (p);
+	    p += valueLength;
+	    p += strspn (p, kSpaces);
+
+	    if (*p == ',') {
+		p++;
+		p += strspn (p, kSpaces);
+
+		if (*p == '\0' || *p == ',') {
+		    return false;
+		}
+	    }
+
+	    if (*p == '\0') {
+		return true;
+	    }
+	}
+
+	return true;
+    }
+
 public:
     /**
-     * Takes the string and returns the vector size (2, 3 or 4)
+     * Takes the string and returns the vector size (2, 3 or 4), using the same
+     * separators as parse. Five or more numbers count as 4, since a vec4 ignores the
+     * extras. Returns 1 for anything that is not 2 or more numbers, so callers can
+     * treat it as a scalar or a text value.
      *
      * TODO: THIS SHOULD BE MOVED, RENAMED OR PLACED SOMEWHERE WHERE IT MAKES MORE SENSE
      *
@@ -32,30 +86,30 @@ public:
      * @return
      */
     static int preparseSize (const std::string& str) {
-	const char* p = str.c_str ();
-	const char* first = strchr (p, ' ');
-	const char* second = first ? strchr (first + 1, ' ') : nullptr;
-	const char* third = second ? strchr (second + 1, ' ') : nullptr;
+	std::vector<const char*> values;
 
-	if (first == nullptr) {
+	if (!split (str, values) || values.size () < 2) {
 	    return 1;
 	}
 
-	if (second == nullptr) {
-	    return 2;
+	for (const char* value : values) {
+	    char* end = nullptr;
+	    std::strtof (value, &end);
+
+	    // the number must end at a separator or the end of the string (strchr matches '\0' too)
+	    if (end == value || strchr (kSeparators, *end) == nullptr) {
+		return 1;
+	    }
 	}
 
-	if (third == nullptr) {
-	    return 3;
-	}
-
-	return 4;
+	// a vec4 ignores values past the fourth, as it always has (see parse)
+	return std::min (static_cast<int> (values.size ()), 4);
     }
 
     /**
      * Takes a string value and parses it into a glm::vec.
-     * This particular parsing uses spaces as separators and basic std::strto* functions
-     * for the actual parsing of the values.
+     * Values are separated by spaces or commas (some workshop effects store colors as
+     * "0.10,0.11,0.12"), and parsed with the basic std::strto* functions.
      *
      * @tparam length Vector length
      * @tparam type Vector storage type
@@ -70,49 +124,32 @@ public:
 	// ensure a valid type is used, only 1 to 4 vectors are supported
 	static_assert (length >= 1 && length <= 4, "Invalid vector length");
 
-	const char* p = str.c_str ();
+	std::vector<const char*> values;
 
-	// get up to 4 spaces
-	const char* first = strchr (p, ' ');
-	const char* second = first ? strchr (first + 1, ' ') : nullptr;
-	const char* third = second ? strchr (second + 1, ' ') : nullptr;
+	if (!split (str, values)) {
+	    sLog.exception ("Invalid vector format: " + str + " (empty value)");
+	}
 
 	// validate lengths against what was found in the strings
-	if constexpr (length == 1) {
-	    if (first != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 2) {
-	    if (first == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
+	if (values.size () < static_cast<size_t> (length)) {
+	    sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
+	}
 
-	    if (second != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 3) {
-	    if (first == nullptr || second == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
-	    if (third != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 4) {
-	    if (first == nullptr || second == nullptr || third == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
+	// vec4 has always ignored values past the fourth, so only shorter vectors reject extras
+	if (length < 4 && values.size () > static_cast<size_t> (length)) {
+	    sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
 	}
 
 	// lengths validated, values can be used directly without issues
 	if constexpr (length == 1) {
-	    return { convert<type> (p) };
+	    return glm::vec<length, type, qualifier> (convert<type> (values[0]));
 	} else if constexpr (length == 2) {
-	    return { convert<type> (p), convert<type> (first + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]) };
 	} else if constexpr (length == 3) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]), convert<type> (values[2]) };
 	} else if constexpr (length == 4) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1),
-		     convert<type> (third + 1) };
+	    return { convert<type> (values[0]), convert<type> (values[1]), convert<type> (values[2]),
+		     convert<type> (values[3]) };
 	}
     }
     template <typename T, typename std::enable_if_t<is_glm_vec<T>::value, int> = 0>
