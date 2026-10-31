@@ -104,10 +104,14 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    sLog.error (
-		"Ignoring invalid value for \"", key, "\" (",
-		it->dump (-1, ' ', false, base_type::error_handler_t::replace), "): ", e.what ()
-	    );
+	    // keep a large malformed value from flooding the log
+	    constexpr size_t kMaxLoggedValue = 200;
+	    std::string shown = it->dump (-1, ' ', false, base_type::error_handler_t::replace);
+	    if (shown.size () > kMaxLoggedValue) {
+		shown.resize (kMaxLoggedValue);
+		shown += "...";
+	    }
+	    sLog.error ("Ignoring invalid value for \"", key, "\" (", shown, "): ", e.what ());
 	    return std::nullopt;
 	}
     }

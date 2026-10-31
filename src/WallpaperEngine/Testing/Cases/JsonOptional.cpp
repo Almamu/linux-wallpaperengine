@@ -52,3 +52,8 @@ TEST_CASE ("JSON optional logs values that aren't valid UTF-8 without throwing")
     // the log line dumps the value; a strict dump would throw on these bytes
     CHECK (paddingOf (std::string ("8 \xff 9 10")) == glm::vec2 (0.0f));
 }
+
+TEST_CASE ("JSON optional falls back on a large invalid value") {
+    // the log line only shows the start of it
+    CHECK (paddingOf (std::string (100000, '7')) == glm::vec2 (0.0f));
+}
