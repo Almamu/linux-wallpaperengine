@@ -4,6 +4,7 @@
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Data/Parsers/DynamicValueParser.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 namespace WallpaperEngine::Data::Parsers {
@@ -12,6 +13,6 @@ using namespace WallpaperEngine::Data::Model;
 
 class UserSettingParser {
 public:
-    static UserSettingUniquePtr parse (const json& data, const Properties& properties, bool expectColor = false);
+    static UserSettingUniquePtr parse (const json& data, const Properties& properties, ValueKind kind = ValueKind::Any);
 };
 } // namespace WallpaperEngine::Data::Parsers

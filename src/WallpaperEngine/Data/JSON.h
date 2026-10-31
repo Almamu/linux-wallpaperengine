@@ -123,6 +123,8 @@ public:
 	// this resolving the include loop
 	return this->user (key, properties);
     }
+    /** Like user(), but a string value always stays a string (text objects) */
+    [[nodiscard]] UserSettingUniquePtr text (const std::string& key, const Properties& properties) const;
     [[nodiscard]] UserSettingUniquePtr color (const std::string& key, const Properties& properties) const;
     [[nodiscard]] UserSettingUniquePtr
     color (const std::string& key, const Properties& properties, Color defaultValue) const {

@@ -132,7 +132,7 @@ TextUniquePtr ObjectParser::parseText (const JSON& it, const Project& project, O
     return std::make_unique<Text> (
 	std::move (base),
 	TextData {
-	    .text = it.user ("text", project.properties),
+	    .text = it.text ("text", project.properties),
 	    .font = it.optional ("font", std::string ()),
 	    .pointSize = it.user ("pointsize", project.properties, 32.0f),
 	    .size = it.optional ("size", glm::vec2 (0.0f)),
