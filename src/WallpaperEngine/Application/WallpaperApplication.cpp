@@ -508,7 +508,13 @@ void WallpaperApplication::setupPropertiesForProject (const Project& project) {
 	if (override != this->m_context.settings.general.properties.end ()) {
 	    sLog.out ("Applying override value for ", key);
 
-	    cur->update (override->second, DynamicValue::UpdateSource::User);
+	    // a value that doesn't fit the property's type (e.g. "red" for a color)
+	    // would otherwise end the whole program; keep the default instead
+	    try {
+		cur->update (override->second, DynamicValue::UpdateSource::User);
+	    } catch (const std::exception& e) {
+		sLog.error ("Ignoring invalid value \"", override->second, "\" for property ", key, ": ", e.what ());
+	    }
 	}
 
 	if (this->m_context.settings.general.onlyListProperties) {
