@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,17 @@ private:
     // Reuses existing GL handles if already allocated, so this is safe to call
     // every time the rendered text changes.
     void rebuildTextureFrom (const std::string& text);
+
+    // rebuildTextureFrom() helpers
+    struct TextExtent {
+	int width;
+	int height;
+	int ascent;
+    };
+    TextExtent measureText (const std::string& text) const;
+    bool shrinkToTextureLimit (const std::string& text, TextExtent& extent);
+    std::vector<uint8_t> rasterize (const std::string& text, const TextExtent& extent) const;
+    void uploadTexture (int width, int height, const std::vector<uint8_t>& pixels);
     void buildShader ();
     void uploadQuadVertices ();
 
