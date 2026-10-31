@@ -215,6 +215,17 @@ namespace {
 constexpr float kScenePixelsPerPoint = 4.0f;
 // Upper bound for the glyph pixel size, far above anything real scenes use
 constexpr float kMaxPixelSize = 16384.0f;
+// Upper bound for one text bitmap's pixel count (16 MiB at one byte per pixel).
+// The GL size limit is per side, so on its own it still allows bitmaps of
+// several hundred MiB.
+constexpr double kMaxTextPixels = 16.0 * 1024.0 * 1024.0;
+
+// How much the text has to shrink to fit both limits (1 when it already fits)
+float fitFactor (int width, int height, GLint maxTextureSize) {
+    const double side = static_cast<double> (maxTextureSize) / static_cast<double> (std::max (width, height));
+    const double area = std::sqrt (kMaxTextPixels / (static_cast<double> (width) * static_cast<double> (height)));
+    return static_cast<float> (std::min ({ 1.0, side, area }));
+}
 } // namespace
 
 float CText::computeRequestedPixelSize () const {
@@ -285,25 +296,25 @@ CText::TextExtent CText::measureText (const std::string& text) const {
 
 bool CText::shrinkToTextureLimit (const std::string& text, TextExtent& extent, glm::vec2& kept) {
     // A long line at a large point size can exceed the GPU's texture size limit,
-    // and glTexImage2D would then fail and leave the text blank. Rasterize at a
-    // smaller pixel size instead; the quad stretches it back to full size.
+    // and glTexImage2D would then fail and leave the text blank, or need a huge
+    // bitmap. Rasterize at a smaller pixel size instead; the quad stretches it
+    // back to full size.
     // Returns true when the face was left at a reduced size. kept receives the
     // part of the text (0-1 per axis) that still fits after a last-resort clip.
     kept = { 1.0f, 1.0f };
     GLint maxTextureSize = 0;
     glGetIntegerv (GL_MAX_TEXTURE_SIZE, &maxTextureSize);
 
-    if (maxTextureSize <= 0 || std::max (extent.width, extent.height) <= maxTextureSize) {
+    if (maxTextureSize <= 0 || fitFactor (extent.width, extent.height, maxTextureSize) >= 1.0f) {
 	return false;
     }
 
     // Glyph metrics don't scale exactly with the pixel size, so shrink again if
     // the first guess still doesn't fit. Clipping is only a last resort.
     unsigned int reducedSize = m_lastPixelSize;
-    for (int attempt = 0; attempt < 4 && std::max (extent.width, extent.height) > maxTextureSize && reducedSize > 1;
-	 attempt++) {
-	const float factor
-	    = static_cast<float> (maxTextureSize) / static_cast<float> (std::max (extent.width, extent.height));
+    for (int attempt = 0;
+	 attempt < 4 && fitFactor (extent.width, extent.height, maxTextureSize) < 1.0f && reducedSize > 1; attempt++) {
+	const float factor = fitFactor (extent.width, extent.height, maxTextureSize);
 	reducedSize = std::max (1u, static_cast<unsigned int> (static_cast<float> (reducedSize) * factor));
 
 	if (FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (reducedSize)) != 0) {
