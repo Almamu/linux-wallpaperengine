@@ -1,10 +1,10 @@
 #pragma once
 
 #include "WallpaperEngine/Data/JSON.h"
-#include "WallpaperEngine/Data/Parsers/DynamicValueParser.h"
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Data/Parsers/DynamicValueParser.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 namespace WallpaperEngine::Data::Parsers {
