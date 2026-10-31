@@ -57,3 +57,8 @@ TEST_CASE ("JSON optional falls back on a large invalid value") {
     // the log line only shows the start of it
     CHECK (paddingOf (std::string (100000, '7')) == glm::vec2 (0.0f));
 }
+
+TEST_CASE ("JSON optional falls back on a large invalid array or object") {
+    CHECK (paddingOf (JSON (std::vector<int> (100000, 7))) == glm::vec2 (0.0f));
+    CHECK (paddingOf (JSON { { "user", std::string (100000, '7') } }) == glm::vec2 (0.0f));
+}

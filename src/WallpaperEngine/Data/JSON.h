@@ -93,7 +93,7 @@ public:
     // missing. These are noexcept, so letting the conversion error out would
     // terminate the process.
     template <typename T> [[nodiscard]] std::optional<T> optional (const std::string& key) const noexcept {
-	auto base = this->base ();
+	const auto& base = this->base ();
 	const auto it = base.find (key);
 
 	if (it == base.end () || it->is_null ()) {
@@ -104,14 +104,7 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    // keep a large malformed value from flooding the log
-	    constexpr size_t kMaxLoggedValue = 200;
-	    std::string shown = it->dump (-1, ' ', false, base_type::error_handler_t::replace);
-	    if (shown.size () > kMaxLoggedValue) {
-		shown.resize (kMaxLoggedValue);
-		shown += "...";
-	    }
-	    sLog.error ("Ignoring invalid value for \"", key, "\" (", shown, "): ", e.what ());
+	    sLog.error ("Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", e.what ());
 	    return std::nullopt;
 	}
     }
@@ -159,6 +152,23 @@ public:
     }
 
 private:
+    /**
+     * @return A short description of value for a log line: the start of a string,
+     * the size of an array or object, or the value itself
+     */
+    [[nodiscard]] static std::string describeForLog (const base_type& value) {
+	constexpr size_t kMaxLength = 200;
+
+	if (value.is_string ()) {
+	    const auto& text = value.template get_ref<const std::string&> ();
+	    return "\"" + text.substr (0, kMaxLength) + (text.size () > kMaxLength ? "...\"" : "\"");
+	}
+	if (value.is_structured ()) {
+	    return std::string (value.type_name ()) + " of " + std::to_string (value.size ()) + " entries";
+	}
+
+	return value.dump ();
+    }
     /**
      * @return The base json object to be used by the extension methods
      */
