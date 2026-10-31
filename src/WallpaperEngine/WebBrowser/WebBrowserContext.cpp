@@ -4,45 +4,46 @@
 #include "WallpaperEngine/WebBrowser/CEF/SubprocessApp.h"
 #include "include/cef_app.h"
 #include "include/cef_render_handler.h"
+#include <cstdlib>
 #include <filesystem>
-#include <random>
+#include <system_error>
+#include <unistd.h>
 
 using namespace WallpaperEngine::WebBrowser;
 
-// TODO: THIS IS USED TO GENERATE A RANDOM FOLDER FOR THE CHROME PROFILE, MAYBE A DIFFERENT APPROACH WOULD BE BETTER?
-namespace uuid {
-static std::random_device rd;
-static std::mt19937 gen (rd ());
-static std::uniform_int_distribution<> dis (0, 15);
-static std::uniform_int_distribution<> dis2 (8, 11);
+namespace {
+/**
+ * Per-run Chromium profile folder: $XDG_RUNTIME_DIR/linux-wallpaperengine/cef-<pid>
+ * (falls back to the system temp dir). It is removed again in ~WebBrowserContext; folders
+ * left behind by runs that crashed are cleaned up the next time a browser starts.
+ */
+std::filesystem::path profileRoot () {
+    const char* runtime = std::getenv ("XDG_RUNTIME_DIR");
+    std::filesystem::path base = (runtime != nullptr && *runtime != '\0' && std::filesystem::is_directory (runtime))
+				     ? std::filesystem::path (runtime)
+				     : std::filesystem::temp_directory_path ();
+    return base / "linux-wallpaperengine";
+}
 
-std::string generate_uuid_v4 () {
-    std::stringstream ss;
-    int i;
-    ss << std::hex;
-    for (i = 0; i < 8; i++) {
-	ss << dis (gen);
+void removeStaleProfiles (const std::filesystem::path& root) {
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator (root, ec)) {
+	const std::string name = entry.path ().filename ().string ();
+	if (!entry.is_directory () || name.rfind ("cef-", 0) != 0) {
+	    continue;
+	}
+	const std::string pid = name.substr (4);
+	if (pid.empty () || pid.find_first_not_of ("0123456789") != std::string::npos) {
+	    continue;
+	}
+	// still owned by a running engine
+	if (std::filesystem::exists ("/proc/" + pid)) {
+	    continue;
+	}
+	std::filesystem::remove_all (entry.path (), ec);
     }
-    ss << "-";
-    for (i = 0; i < 4; i++) {
-	ss << dis (gen);
-    }
-    ss << "-4";
-    for (i = 0; i < 3; i++) {
-	ss << dis (gen);
-    }
-    ss << "-";
-    ss << dis2 (gen);
-    for (i = 0; i < 3; i++) {
-	ss << dis (gen);
-    }
-    ss << "-";
-    for (i = 0; i < 12; i++) {
-	ss << dis (gen);
-    };
-    return ss.str ();
 }
-}
+} // namespace
 
 WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApplication& wallpaperApplication) :
     m_browserApplication (nullptr), m_wallpaperApplication (wallpaperApplication) {
@@ -75,7 +76,13 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
 
     // Configurate Chromium
     CefSettings settings;
-    std::string cache_path = (std::filesystem::temp_directory_path () / uuid::generate_uuid_v4 ()).string ();
+    const std::filesystem::path root = profileRoot ();
+    std::error_code ec;
+    std::filesystem::create_directories (root, ec);
+    std::filesystem::permissions (root, std::filesystem::perms::owner_all, std::filesystem::perm_options::replace, ec);
+    removeStaleProfiles (root);
+    this->m_cachePath = root / ("cef-" + std::to_string (getpid ()));
+    const std::string cache_path = this->m_cachePath.string ();
     // CefString(&settings.locales_dir_path) = "OffScreenCEF/godot/locales";
     // CefString(&settings.resources_dir_path) = "OffScreenCEF/godot/";
     // CefString(&settings.framework_dir_path) = "OffScreenCEF/godot/";
@@ -83,6 +90,10 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
     //  CefString(&settings.browser_subprocess_path) = "path/to/client"
     cef_string_utf8_to_utf16 (cache_path.c_str (), cache_path.length (), &settings.root_cache_path);
     settings.windowless_rendering_enabled = true;
+    // Gated by CMake option CEF_NO_SANDBOX (default ON). Local/AUR builds rarely
+    // have chrome-sandbox setuid-root; without no_sandbox, CefInitialize often
+    // dies before the first web wallpaper paint. Packagers with a working
+    // setuid helper can configure -DCEF_NO_SANDBOX=OFF.
 #if defined(CEF_NO_SANDBOX)
     settings.no_sandbox = true;
 #endif
@@ -97,4 +108,9 @@ WebBrowserContext::WebBrowserContext (WallpaperEngine::Application::WallpaperApp
 WebBrowserContext::~WebBrowserContext () {
     sLog.out ("Shutting down CEF");
     CefShutdown ();
+
+    if (!this->m_cachePath.empty ()) {
+	std::error_code ec;
+	std::filesystem::remove_all (this->m_cachePath, ec);
+    }
 }
