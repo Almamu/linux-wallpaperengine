@@ -60,6 +60,11 @@ public:
     virtual void setPause (bool newState);
 
     /**
+     * @return Whether the wallpaper has content that can be captured by --screenshot
+     */
+    [[nodiscard]] virtual bool isReadyForScreenshot () const;
+
+    /**
      * @return The container to resolve files for this wallpaper
      */
     [[nodiscard]] const AssetLocator& getAssetLocator () const;

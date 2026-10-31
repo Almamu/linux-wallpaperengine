@@ -48,6 +48,11 @@ public:
 
     void render () const;
 
+    /**
+     * @return Whether at least one video frame has been rendered by this player
+     */
+    [[nodiscard]] bool hasFrame () const;
+
     int getWidth () const;
     int getHeight () const;
 
@@ -74,6 +79,7 @@ protected:
     std::optional<std::filesystem::path> m_file;
     std::optional<MemoryStreamProtocolUniquePtr> m_stream;
     uint32_t m_usageCount = 0;
+    mutable bool m_hasFrame = false;
 };
 
 using GLPlayerUniquePtr = std::unique_ptr<GLPlayer>;

@@ -23,6 +23,8 @@ public:
 
     void setPause (bool newState) override;
 
+    [[nodiscard]] bool isReadyForScreenshot () const override;
+
 protected:
     void renderFrame (const glm::ivec4& viewport) override;
 

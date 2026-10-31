@@ -32,6 +32,9 @@
 
 #define FULLSCREEN_CHECK_WAIT_TIME 250
 
+/** How long to wait for video wallpapers to produce their first frame before capturing anyway */
+constexpr auto SCREENSHOT_READY_TIMEOUT = std::chrono::seconds (3);
+
 float g_Time;
 float g_TimeLast;
 float g_Daytime;
@@ -231,12 +234,14 @@ ProjectUniquePtr WallpaperApplication::loadBackground (const std::string& bg) {
     // this allows taking screenshots after a background changes
     // useful for playlists
     if (this->m_context.settings.screenshot.take) {
-	this->m_nextFrameScreenshot = this->m_context.settings.screenshot.delay;
+	const uint32_t baseFrame = this->m_videoDriver != nullptr ? this->m_videoDriver->getFrameCounter () : 0;
 
-	if (this->m_videoDriver != nullptr) {
-	    this->m_nextFrameScreenshot += this->m_videoDriver->getFrameCounter ();
-	}
-
+	this->m_nextFrameScreenshot = baseFrame + this->m_context.settings.screenshot.delay;
+	// the delay is only the lower bound: video wallpapers need their first decoded frame too.
+	// The readiness wait is bounded by a wall-clock deadline (started once the delay elapses),
+	// so paused rendering or a broken stream can never block the capture forever.
+	this->m_screenshotDeadline = {};
+	this->m_screenshotReadyFrame = 0;
 	this->m_screenShotTaken = false;
     }
 
@@ -537,6 +542,21 @@ void WallpaperApplication::setupBrowser () {
     }
 
     this->m_browserContext = std::make_unique<WebBrowser::WebBrowserContext> (*this);
+}
+
+bool WallpaperApplication::backgroundsReadyForScreenshot () const {
+    if (this->m_renderContext == nullptr) {
+	return true;
+    }
+
+    for (const auto& entry : this->m_renderContext->getWallpapers ()) {
+	// screens without a wallpaper cannot hold the capture back
+	if (entry.second != nullptr && !entry.second->isReadyForScreenshot ()) {
+	    return false;
+	}
+    }
+
+    return true;
 }
 
 void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename) const {
@@ -943,8 +963,32 @@ void WallpaperApplication::render () {
 	return;
     }
 
-    if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
+    const uint32_t currentFrame = this->m_videoDriver->getFrameCounter ();
+
+    if (currentFrame < this->m_nextFrameScreenshot) {
 	return;
+    }
+
+    // the minimum frame delay elapsed, start the wall-clock fallback once
+    if (this->m_screenshotDeadline == std::chrono::steady_clock::time_point {}) {
+	this->m_screenshotDeadline = std::chrono::steady_clock::now () + SCREENSHOT_READY_TIMEOUT;
+    }
+
+    if (std::chrono::steady_clock::now () < this->m_screenshotDeadline) {
+	// give video wallpapers time to decode and upload their first frame
+	if (!this->backgroundsReadyForScreenshot ()) {
+	    return;
+	}
+
+	if (this->m_screenshotReadyFrame == 0) {
+	    this->m_screenshotReadyFrame = currentFrame;
+	}
+
+	// rendering happens through the output driver's callbacks, so wait a couple of frames
+	// after the backend reports a frame to make sure it landed in the wallpaper FBO
+	if (currentFrame < this->m_screenshotReadyFrame + 2) {
+	    return;
+	}
     }
 
     this->takeScreenshot (this->m_context.settings.screenshot.path);
