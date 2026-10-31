@@ -47,3 +47,8 @@ TEST_CASE ("JSON optional without a default treats values it can't convert as mi
     CHECK_FALSE (object.optional<std::string> ("flag").has_value ());
     CHECK_FALSE (object.optional<glm::vec2> ("missing").has_value ());
 }
+
+TEST_CASE ("JSON optional logs values that aren't valid UTF-8 without throwing") {
+    // the log line dumps the value; a strict dump would throw on these bytes
+    CHECK (paddingOf (std::string ("8 \xff 9 10")) == glm::vec2 (0.0f));
+}

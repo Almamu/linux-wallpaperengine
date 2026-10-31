@@ -104,7 +104,10 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    sLog.error ("Ignoring invalid value for \"", key, "\" (", it->dump (), "): ", e.what ());
+	    sLog.error (
+		"Ignoring invalid value for \"", key, "\" (",
+		it->dump (-1, ' ', false, base_type::error_handler_t::replace), "): ", e.what ()
+	    );
 	    return std::nullopt;
 	}
     }
