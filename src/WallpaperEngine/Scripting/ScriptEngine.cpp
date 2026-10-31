@@ -177,7 +177,7 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 }
 
 ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& mediaSource) :
-    m_scene (scene), m_mediaSource (mediaSource) {
+    m_scene (scene) {
     this->m_unregisterMediaUpdateCallback
 	= mediaSource.addMetadataListener ([this] (const Media::MediaSource::MediaInfo& info) {
 	      this->notifyMediaUpdate (info);
