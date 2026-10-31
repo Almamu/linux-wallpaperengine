@@ -245,15 +245,21 @@ float CText::computeRequestedPixelSize () const {
 }
 
 unsigned int CText::computeEffectivePixelSize (float requested) const {
-    // WE text objects often come with a scale well below 1, which shrinks the
-    // quad in render(). Rasterize at a higher resolution so the glyphs stay
-    // sharp; rebuildTextureFrom() sizes the quad back to the requested size, so
-    // only the texture resolution changes, not the size on screen.
+    // Rasterize at the size the text ends up at after render() applies the
+    // object's scale, so the texture is neither minified (WE text objects
+    // often have a scale well below 1) nor blurred when stretched (scale above
+    // 1). rebuildTextureFrom() sizes the quad back to the requested size, so
+    // only the texture resolution depends on the scale, not the size on screen.
     const glm::vec3 scale = m_text.scale->value->getVec3 ();
-    const float avgScale = (scale.x + scale.y) * 0.5f;
-    const float sharpen = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
+    const float avgScale = (std::abs (scale.x) + std::abs (scale.y)) * 0.5f;
+    const float rasterSize = requested * avgScale;
 
-    return static_cast<unsigned int> (std::clamp (requested * sharpen, 1.0f, kMaxPixelSize));
+    // NaN (from a NaN scale) fails the comparison and gets the minimum
+    if (!(rasterSize >= 1.0f)) {
+	return 1;
+    }
+
+    return static_cast<unsigned int> (std::min (rasterSize, kMaxPixelSize));
 }
 
 void CText::initScriptLayer () {
@@ -403,9 +409,8 @@ void CText::rebuildTextureFrom (const std::string& text) {
     TextExtent extent = measureText (text);
 
     // The quad always gets the requested size, so the text covers the same area
-    // on screen whatever size it was rasterized at: larger to stay sharp at a
-    // small scale, or smaller when the glyph size was capped at kMaxPixelSize or
-    // the texture had to shrink below.
+    // on screen whatever size it was rasterized at: the object's scale, the
+    // kMaxPixelSize cap, or the texture limit below.
     const float quadScale = m_requestedPixelSize / static_cast<float> (m_lastPixelSize);
     glm::vec2 quadSize
 	= { static_cast<float> (extent.width) * quadScale, static_cast<float> (extent.height) * quadScale };
