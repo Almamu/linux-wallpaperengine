@@ -104,25 +104,12 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    sLog.error ("Ignoring invalid value for \"", key, "\": ", e.what ());
+	    sLog.error ("Ignoring invalid value for \"", key, "\" (", it->dump (), "): ", e.what ());
 	    return std::nullopt;
 	}
     }
     template <typename T> [[nodiscard]] T optional (const std::string& key, T defaultValue) const noexcept {
-	auto base = this->base ();
-	const auto it = base.find (key);
-
-	if (it == base.end () || it->is_null ()) {
-	    return defaultValue;
-	}
-
-	try {
-	    T value = *it;
-	    return value;
-	} catch (const std::exception& e) {
-	    sLog.error ("Ignoring invalid value for \"", key, "\", using the default: ", e.what ());
-	    return defaultValue;
-	}
+	return this->optional<T> (key).value_or (std::move (defaultValue));
     }
     [[nodiscard]] UserSettingUniquePtr user (const std::string& key, const Properties& properties) const;
     template <typename T>
