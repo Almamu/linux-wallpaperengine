@@ -59,7 +59,7 @@ private:
 	int ascent;
     };
     TextExtent measureText (const std::string& text) const;
-    bool shrinkToTextureLimit (const std::string& text, TextExtent& extent);
+    bool shrinkToTextureLimit (const std::string& text, TextExtent& extent, glm::vec2& kept);
     std::vector<uint8_t> rasterize (const std::string& text, const TextExtent& extent) const;
     void uploadTexture (int width, int height, const std::vector<uint8_t>& pixels);
     void buildShader ();
@@ -94,6 +94,8 @@ private:
 
     glm::ivec2 m_textureSize = { 0, 0 };
     glm::vec2 m_quadSize = { 0.0f, 0.0f };
+    // moves the quad off center when clipped text keeps only its start
+    glm::vec2 m_quadOffset = { 0.0f, 0.0f };
 
     bool m_valid = false;
 };

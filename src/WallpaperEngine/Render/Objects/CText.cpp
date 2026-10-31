@@ -283,11 +283,13 @@ CText::TextExtent CText::measureText (const std::string& text) const {
     };
 }
 
-bool CText::shrinkToTextureLimit (const std::string& text, TextExtent& extent) {
+bool CText::shrinkToTextureLimit (const std::string& text, TextExtent& extent, glm::vec2& kept) {
     // A long line at a large point size can exceed the GPU's texture size limit,
     // and glTexImage2D would then fail and leave the text blank. Rasterize at a
     // smaller pixel size instead; the quad stretches it back to full size.
-    // Returns true when the face was left at a reduced size.
+    // Returns true when the face was left at a reduced size. kept receives the
+    // part of the text (0-1 per axis) that still fits after a last-resort clip.
+    kept = { 1.0f, 1.0f };
     GLint maxTextureSize = 0;
     glGetIntegerv (GL_MAX_TEXTURE_SIZE, &maxTextureSize);
 
@@ -311,6 +313,10 @@ bool CText::shrinkToTextureLimit (const std::string& text, TextExtent& extent) {
 	extent = measureText (text);
     }
 
+    // Clipping keeps only part of the text, so the quad has to shrink by the
+    // same amount or the clipped bitmap would be stretched over the full size.
+    kept = { std::min (1.0f, static_cast<float> (maxTextureSize) / static_cast<float> (extent.width)),
+	     std::min (1.0f, static_cast<float> (maxTextureSize) / static_cast<float> (extent.height)) };
     extent.width = std::min (extent.width, static_cast<int> (maxTextureSize));
     extent.height = std::min (extent.height, static_cast<int> (maxTextureSize));
     return true;
@@ -388,10 +394,15 @@ void CText::rebuildTextureFrom (const std::string& text) {
     // capped at kMaxPixelSize, stretch the quad back to the requested size too.
     const float capStretch
 	= m_requestedPixelSize > kMaxPixelSize ? m_requestedPixelSize / static_cast<float> (m_lastPixelSize) : 1.0f;
-    const glm::vec2 quadSize
+    glm::vec2 quadSize
 	= { static_cast<float> (extent.width) * capStretch, static_cast<float> (extent.height) * capStretch };
 
-    const bool shrunk = shrinkToTextureLimit (text, extent);
+    glm::vec2 kept;
+    const bool shrunk = shrinkToTextureLimit (text, extent, kept);
+    // keep the text's start (left and top) where it was and drop the clipped
+    // end; quad y- is the top of the text (see uploadQuadVertices)
+    m_quadOffset = -(quadSize - quadSize * kept) * 0.5f;
+    quadSize *= kept;
     uploadTexture (extent.width, extent.height, rasterize (text, extent));
 
     if (shrunk) {
@@ -448,12 +459,14 @@ void CText::uploadQuadVertices () {
     // matches the current texture dimensions.
     const float hx = m_quadSize.x * 0.5f;
     const float hy = m_quadSize.y * 0.5f;
+    const float ox = m_quadOffset.x;
+    const float oy = m_quadOffset.y;
     // With vflip=true (Wayland/GLFW), GL y- = screen top. So the quad bottom (y=-hy,
     // lower GL y) appears at screen top. UV.v=0 here = FT glyph top → shows at screen top ✓
     const float verts[] = {
 	// pos        // uv
-	-hx, -hy, 0.0f, 0.0f, hx, -hy, 1.0f, 0.0f, hx,  hy, 1.0f, 1.0f,
-	-hx, -hy, 0.0f, 0.0f, hx, hy,  1.0f, 1.0f, -hx, hy, 0.0f, 1.0f,
+	ox - hx, oy - hy, 0.0f, 0.0f, ox + hx, oy - hy, 1.0f, 0.0f, ox + hx, oy + hy, 1.0f, 1.0f,
+	ox - hx, oy - hy, 0.0f, 0.0f, ox + hx, oy + hy, 1.0f, 1.0f, ox - hx, oy + hy, 0.0f, 1.0f,
     };
 
     const bool firstUpload = (m_vao == 0);
