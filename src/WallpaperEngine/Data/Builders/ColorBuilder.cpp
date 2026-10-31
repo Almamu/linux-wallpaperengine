@@ -46,7 +46,9 @@ WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, 
 	throw std::invalid_argument ("Invalid color value");
     }
 
-    if (value.find ('.') == std::string::npos) {
+    // 0-255 integers unless a value the color uses is written as a decimal; a vec4
+    // ignores values past the fourth, so a decimal point there doesn't count
+    if (!VectorBuilder::hasDecimalPoint (value, vectorSize)) {
 	const auto final = vectorSize == 3 ? glm::ivec4 (VectorBuilder::parse<glm::ivec3> (value), alpha * 255)
 					   : VectorBuilder::parse<glm::ivec4> (value);
 

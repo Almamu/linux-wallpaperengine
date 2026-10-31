@@ -107,6 +107,29 @@ public:
     }
 
     /**
+     * @param str
+     * @param count How many values to look at
+     * @return Whether any of the first count values of str is written with a decimal point
+     */
+    static bool hasDecimalPoint (const std::string& str, int count) {
+	std::vector<const char*> values;
+
+	if (!split (str, values)) {
+	    return str.find ('.') != std::string::npos;
+	}
+
+	for (int i = 0; i < count && i < static_cast<int> (values.size ()); i++) {
+	    const size_t length = strcspn (values[i], kSeparators);
+
+	    if (memchr (values[i], '.', length) != nullptr) {
+		return true;
+	    }
+	}
+
+	return false;
+    }
+
+    /**
      * Takes a string value and parses it into a glm::vec.
      * Values are separated by spaces or commas (some workshop effects store colors as
      * "0.10,0.11,0.12"), and parsed with the basic std::strto* functions.

@@ -104,6 +104,13 @@ TEST_CASE ("Colors parse with a comma and a space between values", "[vector][col
     CHECK_THROWS (ColorBuilder::parse ("0.1,,0.3"));
 }
 
+TEST_CASE ("Colors pick integers or decimals from the values they use", "[vector][color]") {
+    // the fifth value is ignored, so its decimal point doesn't make the color a 0-1 float
+    CHECK (rgba (ColorBuilder::parse ("255,0,0,255,0.5")) == glm::vec4 (1.0f, 0.0f, 0.0f, 1.0f));
+    CHECK (rgba (ColorBuilder::parse ("0.5 0 0 1 7")) == glm::vec4 (0.5f, 0.0f, 0.0f, 1.0f));
+    CHECK (rgba (ColorBuilder::parse ("255 0 51 255")) == glm::vec4 (1.0f, 0.0f, 0.2f, 1.0f));
+}
+
 // A text object's string must stay a string even when it looks like a vector
 // ("1,000" used to become vec2 (1, 0) and the text rendered empty).
 TEST_CASE ("Text settings keep vector-like strings", "[vector]") {
