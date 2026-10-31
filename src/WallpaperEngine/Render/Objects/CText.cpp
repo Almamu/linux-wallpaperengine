@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -352,21 +353,34 @@ bool CText::shrinkToTextureLimit (const std::string& text, TextExtent& extent, g
 }
 
 namespace {
-// Copies one glyph bitmap into the text bitmap, skipping pixels outside it
+// Copies one glyph bitmap into the text bitmap, skipping pixels outside it.
+// Handles 8-bit gray and 1-bit mono bitmaps (bitmap fonts and some fonts'
+// embedded strikes at small sizes); other formats such as color emoji are skipped.
 void blitGlyph (
     const FT_Bitmap& bmp, int64_t originX, int originY, int width, int height, std::vector<uint8_t>& pixels
 ) {
+    const bool mono = bmp.pixel_mode == FT_PIXEL_MODE_MONO;
+    if (!mono && bmp.pixel_mode != FT_PIXEL_MODE_GRAY) {
+	return;
+    }
+
+    // a negative pitch means the rows are stored bottom-up
+    const ptrdiff_t pitch = bmp.pitch;
+    const uint8_t* top = pitch < 0 ? bmp.buffer - pitch * (static_cast<ptrdiff_t> (bmp.rows) - 1) : bmp.buffer;
+
     for (unsigned int row = 0; row < bmp.rows; ++row) {
 	const int dstY = originY + static_cast<int> (row);
 	if (dstY < 0 || dstY >= height) {
 	    continue;
 	}
+	const uint8_t* line = top + pitch * static_cast<ptrdiff_t> (row);
 	for (unsigned int col = 0; col < bmp.width; ++col) {
 	    const int64_t dstX = originX + static_cast<int64_t> (col);
 	    if (dstX < 0 || dstX >= width) {
 		continue;
 	    }
-	    pixels[static_cast<size_t> (dstY) * width + static_cast<size_t> (dstX)] = bmp.buffer[row * bmp.pitch + col];
+	    const uint8_t value = mono ? ((line[col >> 3] >> (7 - (col & 7))) & 1 ? 255 : 0) : line[col];
+	    pixels[static_cast<size_t> (dstY) * width + static_cast<size_t> (dstX)] = value;
 	}
     }
 }
