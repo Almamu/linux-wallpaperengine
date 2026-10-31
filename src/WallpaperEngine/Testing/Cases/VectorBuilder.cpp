@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <glm/ext/vector_float1.hpp>
 #include <glm/glm.hpp>
 
 #include "WallpaperEngine/Data/Builders/ColorBuilder.h"
