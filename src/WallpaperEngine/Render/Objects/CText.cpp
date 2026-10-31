@@ -1,6 +1,7 @@
 #include "CText.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -229,6 +230,10 @@ float CText::computeRequestedPixelSize () const {
     // a negative or NaN point size (e.g. from a script) can't be converted to unsigned
     if (!(pixelSize >= 1.0f)) {
 	return 1.0f;
+    }
+    // +inf would make the cap stretch infinite; treat it as the cap
+    if (!std::isfinite (pixelSize)) {
+	return kMaxPixelSize;
     }
 
     return pixelSize;
