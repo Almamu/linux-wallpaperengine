@@ -229,20 +229,14 @@ float fitFactor (int width, int height, GLint maxTextureSize) {
 } // namespace
 
 float CText::computeRequestedPixelSize () const {
-    // WE text objects often come with scale ~0.09, which would shrink glyphs
-    // rasterized at the plain pixel size to a few pixels on screen. Rasterize
-    // at higher resolution so that after the model scale is applied in render()
-    // the on-screen size matches the intended pointsize.
-    const glm::vec3 initialScale = m_text.scale->value->getVec3 ();
-    const float avgScale = (initialScale.x + initialScale.y) * 0.5f;
-    const float compensate = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
-    const float pixelSize = m_text.pointSize->value->getFloat () * kScenePixelsPerPoint * compensate;
+    // The glyph size in scene units, before the object's scale is applied in render()
+    const float pixelSize = m_text.pointSize->value->getFloat () * kScenePixelsPerPoint;
 
     // a negative or NaN point size (e.g. from a script) can't be converted to unsigned
     if (!(pixelSize >= 1.0f)) {
 	return 1.0f;
     }
-    // +inf would make the cap stretch infinite; treat it as the cap
+    // +inf would make the quad stretch infinite; treat it as the cap
     if (!std::isfinite (pixelSize)) {
 	return kMaxPixelSize;
     }
@@ -250,8 +244,16 @@ float CText::computeRequestedPixelSize () const {
     return pixelSize;
 }
 
-unsigned int CText::computeEffectivePixelSize (float requested) {
-    return static_cast<unsigned int> (std::min (requested, kMaxPixelSize));
+unsigned int CText::computeEffectivePixelSize (float requested) const {
+    // WE text objects often come with a scale well below 1, which shrinks the
+    // quad in render(). Rasterize at a higher resolution so the glyphs stay
+    // sharp; rebuildTextureFrom() sizes the quad back to the requested size, so
+    // only the texture resolution changes, not the size on screen.
+    const glm::vec3 scale = m_text.scale->value->getVec3 ();
+    const float avgScale = (scale.x + scale.y) * 0.5f;
+    const float sharpen = (avgScale > 0.0f && avgScale < 1.0f) ? std::min (1.0f / avgScale, 32.0f) : 1.0f;
+
+    return static_cast<unsigned int> (std::clamp (requested * sharpen, 1.0f, kMaxPixelSize));
 }
 
 void CText::initScriptLayer () {
@@ -400,13 +402,13 @@ void CText::rebuildTextureFrom (const std::string& text) {
     // bitmap every time the rendered string changes without leaking.
     TextExtent extent = measureText (text);
 
-    // The quad always gets the full size, so the text covers the same area on
-    // screen even when its texture has to be smaller. When the glyph size was
-    // capped at kMaxPixelSize, stretch the quad back to the requested size too.
-    const float capStretch
-	= m_requestedPixelSize > kMaxPixelSize ? m_requestedPixelSize / static_cast<float> (m_lastPixelSize) : 1.0f;
+    // The quad always gets the requested size, so the text covers the same area
+    // on screen whatever size it was rasterized at: larger to stay sharp at a
+    // small scale, or smaller when the glyph size was capped at kMaxPixelSize or
+    // the texture had to shrink below.
+    const float quadScale = m_requestedPixelSize / static_cast<float> (m_lastPixelSize);
     glm::vec2 quadSize
-	= { static_cast<float> (extent.width) * capStretch, static_cast<float> (extent.height) * capStretch };
+	= { static_cast<float> (extent.width) * quadScale, static_cast<float> (extent.height) * quadScale };
 
     glm::vec2 kept;
     const bool shrunk = shrinkToTextureLimit (text, extent, kept);
@@ -522,18 +524,17 @@ void CText::render () {
 	renderedText = current.empty () ? std::string (" ") : current;
     }
 
-    // Past the cap the glyph size stays put, but the quad stretch still follows
-    // the requested size, so rebuild when either changes.
+    // The quad size follows the requested size even when the glyph size stays
+    // put (past the cap, or after rounding), so rebuild when either changes.
     const float requested = computeRequestedPixelSize ();
     const unsigned int pixelSize = computeEffectivePixelSize (requested);
-    const bool capChanged
-	= requested != m_requestedPixelSize && (requested > kMaxPixelSize || m_requestedPixelSize > kMaxPixelSize);
+    const bool requestedChanged = requested != m_requestedPixelSize;
     m_requestedPixelSize = requested;
     if (pixelSize != m_lastPixelSize) {
 	m_lastPixelSize = pixelSize;
 	FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
 	rebuildTextureFrom (renderedText);
-    } else if (capChanged || renderedText != m_lastRenderedText) {
+    } else if (requestedChanged || renderedText != m_lastRenderedText) {
 	rebuildTextureFrom (renderedText);
     }
 

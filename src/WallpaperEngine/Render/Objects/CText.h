@@ -70,7 +70,7 @@ private:
     bool loadEmbeddedFont ();
     bool loadSystemFont ();
     float computeRequestedPixelSize () const;
-    static unsigned int computeEffectivePixelSize (float requested);
+    unsigned int computeEffectivePixelSize (float requested) const;
     void initScriptLayer ();
 
     const Text& m_text;
