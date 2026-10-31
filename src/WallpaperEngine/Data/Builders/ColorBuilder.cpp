@@ -2,6 +2,7 @@
 #include "VectorBuilder.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <format>
 #include <glm/vec3.hpp>
 
@@ -36,12 +37,21 @@ WallpaperEngine::Data::Builders::ColorBuilder::parse (const std::string& value, 
 		"{}{}{}{}{}{}{}{}", number.at (0), number.at (0), number.at (1), number.at (1), number.at (2),
 		number.at (2), number.at (3), number.at (3)
 	    );
-	} else if (number.size () != 6 && number.size () != 8) {
+	} else if (number.size () == 6) {
+	    // RRGGBB has no alpha byte, add it like the short form does
+	    number += std::format ("{:02x}", static_cast<int> (alpha * 255));
+	} else if (number.size () != 8) {
 	    sLog.exception ("Invalid CSS color notation for ", value);
 	}
 
-	// parse hex color
-	const auto color = std::stoi (number, nullptr, 16);
+	// parse hex color; RRGGBBAA needs all 32 bits, which overflows a signed int
+	// for any red above 7f
+	std::size_t parsed = 0;
+	const auto color = static_cast<uint32_t> (std::stoul (number, &parsed, 16));
+
+	if (parsed != number.size ()) {
+	    sLog.exception ("Invalid CSS color notation for ", value);
+	}
 
 	return WallpaperEngine::Data::Model::Color (
 	    (color >> 24 & 0xFF) / 255.0f, (color >> 16 & 0xFF) / 255.0f, (color >> 8 & 0xFF) / 255.0f,
