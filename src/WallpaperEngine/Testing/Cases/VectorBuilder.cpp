@@ -112,7 +112,8 @@ TEST_CASE ("Colors pick integers or decimals from the values they use", "[vector
 }
 
 // A text object's string must stay a string even when it looks like a vector
-// ("1,000" used to become vec2 (1, 0) and the text rendered empty).
+// (with commas as separators, "1,000" would otherwise become vec2 (1, 0) and the
+// text would render empty).
 TEST_CASE ("Text settings keep vector-like strings", "[vector]") {
     using WallpaperEngine::Data::JSON::JSON;
     using WallpaperEngine::Data::Model::DynamicValue;
