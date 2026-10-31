@@ -55,8 +55,14 @@ TEST_CASE ("Vectors with the wrong number of values still throw", "[vector]") {
     CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1,2,3"));
     CHECK_THROWS (VectorBuilder::parse<glm::vec3> ("1,2,3,4"));
     CHECK_THROWS (VectorBuilder::parse<glm::vec4> ("1 2,3"));
-    CHECK_THROWS (VectorBuilder::parse<glm::vec4> ("1,2,3,4,5"));
-    CHECK_THROWS (VectorBuilder::parse<glm::vec4> ("1 2 3 4 5"));
+}
+
+// main accepted extra values for a vec4 and dropped them, so keep doing that
+TEST_CASE ("vec4 ignores values past the fourth", "[vector]") {
+    CHECK (VectorBuilder::parse<glm::vec4> ("1 2 3 4 5") == glm::vec4 (1.0f, 2.0f, 3.0f, 4.0f));
+    CHECK (VectorBuilder::parse<glm::vec4> ("1,2,3,4,5") == glm::vec4 (1.0f, 2.0f, 3.0f, 4.0f));
+    CHECK (VectorBuilder::preparseSize ("1 2 3 4 5") == 4);
+    CHECK (VectorBuilder::preparseSize ("1 2 3 4 hello") == 1);
 }
 
 TEST_CASE ("Vectors with an empty value throw", "[vector]") {
@@ -83,7 +89,6 @@ TEST_CASE ("preparseSize returns 1 for scalars, text and malformed vectors", "[v
     CHECK (VectorBuilder::preparseSize ("Rain,Snow") == 1);
     CHECK (VectorBuilder::preparseSize ("Rain and snow") == 1);
     CHECK (VectorBuilder::preparseSize ("1,,2") == 1);
-    CHECK (VectorBuilder::preparseSize ("1 2 3 4 5") == 1);
 }
 
 TEST_CASE ("Colors parse with a comma and a space between values", "[vector][color]") {

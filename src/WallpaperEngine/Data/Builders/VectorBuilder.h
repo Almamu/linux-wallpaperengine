@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstring>
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
@@ -75,8 +76,9 @@ class VectorBuilder {
 public:
     /**
      * Takes the string and returns the vector size (2, 3 or 4), using the same
-     * separators as parse. Returns 1 for anything that is not 2 to 4 numbers,
-     * so callers can treat it as a scalar or a text value.
+     * separators as parse. Five or more numbers count as 4, since a vec4 ignores the
+     * extras. Returns 1 for anything that is not 2 or more numbers, so callers can
+     * treat it as a scalar or a text value.
      *
      * TODO: THIS SHOULD BE MOVED, RENAMED OR PLACED SOMEWHERE WHERE IT MAKES MORE SENSE
      *
@@ -86,7 +88,7 @@ public:
     static int preparseSize (const std::string& str) {
 	std::vector<const char*> values;
 
-	if (!split (str, values) || values.size () < 2 || values.size () > 4) {
+	if (!split (str, values) || values.size () < 2) {
 	    return 1;
 	}
 
@@ -100,7 +102,8 @@ public:
 	    }
 	}
 
-	return static_cast<int> (values.size ());
+	// a vec4 ignores values past the fourth, as it always has (see parse)
+	return std::min (static_cast<int> (values.size ()), 4);
     }
 
     /**
@@ -132,7 +135,8 @@ public:
 	    sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
 	}
 
-	if (values.size () > static_cast<size_t> (length)) {
+	// vec4 has always ignored values past the fourth, so only shorter vectors reject extras
+	if (length < 4 && values.size () > static_cast<size_t> (length)) {
 	    sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
 	}
 
