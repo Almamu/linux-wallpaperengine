@@ -215,6 +215,8 @@ namespace {
 constexpr float kScenePixelsPerPoint = 4.0f;
 // Upper bound for the glyph pixel size, far above anything real scenes use
 constexpr float kMaxPixelSize = 16384.0f;
+// Lower bound for the glyph pixel size when rasterizing below the requested size
+constexpr float kMinRasterPixelSize = 32.0f;
 // Upper bound for one text bitmap's pixel count (16 MiB at one byte per pixel).
 // The GL size limit is per side, so on its own it still allows bitmaps of
 // several hundred MiB.
@@ -245,21 +247,25 @@ float CText::computeRequestedPixelSize () const {
 }
 
 unsigned int CText::computeEffectivePixelSize (float requested) const {
-    // Rasterize at the size the text ends up at after render() applies the
-    // object's scale, so the texture is neither minified (WE text objects
-    // often have a scale well below 1) nor blurred when stretched (scale above
-    // 1). rebuildTextureFrom() sizes the quad back to the requested size, so
-    // only the texture resolution depends on the scale, not the size on screen.
+    // WE text objects often have a scale well below 1, which render() applies
+    // to the quad. Rasterize closer to the size the text ends up at, so the
+    // texture isn't heavily minified; rebuildTextureFrom() sizes the quad back
+    // to the requested size, so only the texture resolution depends on the
+    // scale, not the size on screen.
+    // The scale is rounded up to a power of two: the texture is at most twice
+    // the on-screen size, and an animated scale only re-rasterizes when it
+    // crosses one. Scales of 1 and above rasterize at the requested size.
     const glm::vec3 scale = m_text.scale->value->getVec3 ();
     const float avgScale = (std::abs (scale.x) + std::abs (scale.y)) * 0.5f;
-    const float rasterSize = requested * avgScale;
-
-    // NaN (from a NaN scale) fails the comparison and gets the minimum
-    if (!(rasterSize >= 1.0f)) {
-	return 1;
+    float factor = 1.0f;
+    if (avgScale > 0.0f && avgScale < 1.0f) {
+	factor = std::exp2 (std::ceil (std::log2 (avgScale)));
     }
 
-    return static_cast<unsigned int> (std::min (rasterSize, kMaxPixelSize));
+    // Small rasters round glyph metrics to whole pixels, and the quad would
+    // magnify that error, so don't go below kMinRasterPixelSize.
+    const float rasterSize = std::max (requested * factor, std::min (requested, kMinRasterPixelSize));
+    return static_cast<unsigned int> (std::clamp (rasterSize, 1.0f, kMaxPixelSize));
 }
 
 void CText::initScriptLayer () {
