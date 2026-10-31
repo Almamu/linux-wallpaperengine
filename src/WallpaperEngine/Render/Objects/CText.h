@@ -57,12 +57,14 @@ private:
     bool initFreeType ();
     bool loadEmbeddedFont ();
     bool loadSystemFont ();
-    unsigned int computeEffectivePixelSize () const;
+    float computeRequestedPixelSize () const;
+    static unsigned int computeEffectivePixelSize (float requested);
     void initScriptLayer ();
 
     const Text& m_text;
     std::string m_lastRenderedText;
     unsigned int m_lastPixelSize = 0;
+    float m_requestedPixelSize = 0.0f;
     Scripting::ScriptLayerHandle m_layerHandle = Scripting::kInvalidLayerHandle;
 
     FT_Library m_ftLibrary = nullptr;

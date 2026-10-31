@@ -1,6 +1,9 @@
 #include "CText.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <vector>
 
 #include <ft2build.h>
@@ -127,7 +130,8 @@ void CText::setup () {
 	return;
     }
 
-    m_lastPixelSize = computeEffectivePixelSize ();
+    m_requestedPixelSize = computeRequestedPixelSize ();
+    m_lastPixelSize = computeEffectivePixelSize (m_requestedPixelSize);
     FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
 
     buildShader ();
@@ -212,7 +216,7 @@ constexpr float kScenePixelsPerPoint = 4.0f;
 constexpr float kMaxPixelSize = 16384.0f;
 } // namespace
 
-unsigned int CText::computeEffectivePixelSize () const {
+float CText::computeRequestedPixelSize () const {
     // WE text objects often come with scale ~0.09, which would shrink glyphs
     // rasterized at the plain pixel size to a few pixels on screen. Rasterize
     // at higher resolution so that after the model scale is applied in render()
@@ -224,10 +228,14 @@ unsigned int CText::computeEffectivePixelSize () const {
 
     // a negative or NaN point size (e.g. from a script) can't be converted to unsigned
     if (!(pixelSize >= 1.0f)) {
-	return 1u;
+	return 1.0f;
     }
 
-    return static_cast<unsigned int> (std::min (pixelSize, kMaxPixelSize));
+    return pixelSize;
+}
+
+unsigned int CText::computeEffectivePixelSize (float requested) {
+    return static_cast<unsigned int> (std::min (requested, kMaxPixelSize));
 }
 
 void CText::initScriptLayer () {
@@ -258,7 +266,8 @@ void CText::rebuildTextureFrom (const std::string& text) {
 
     // Measures the text at the face's current pixel size
     const auto measure = [&] (int& width, int& height, int& ascent) {
-	int penX = 0;
+	// 64-bit so a very long line at a huge size can't overflow
+	int64_t penX = 0;
 	int maxAscent = 0;
 	int maxDescent = 0;
 
@@ -271,7 +280,7 @@ void CText::rebuildTextureFrom (const std::string& text) {
 	    maxDescent = std::max (maxDescent, static_cast<int> (slot->bitmap.rows) - slot->bitmap_top);
 	}
 
-	width = std::max (1, penX);
+	width = static_cast<int> (std::clamp<int64_t> (penX, 1, std::numeric_limits<int>::max ()));
 	height = std::max (1, maxAscent + maxDescent);
 	ascent = maxAscent;
     };
@@ -282,8 +291,11 @@ void CText::rebuildTextureFrom (const std::string& text) {
     measure (width, height, maxAscent);
 
     // The quad always gets the full size, so the text covers the same area on
-    // screen even when its texture has to be smaller.
-    const glm::vec2 quadSize = { static_cast<float> (width), static_cast<float> (height) };
+    // screen even when its texture has to be smaller. When the glyph size was
+    // capped at kMaxPixelSize, stretch the quad back to the requested size too.
+    const float capStretch
+	= m_requestedPixelSize > kMaxPixelSize ? m_requestedPixelSize / static_cast<float> (m_lastPixelSize) : 1.0f;
+    const glm::vec2 quadSize = { static_cast<float> (width) * capStretch, static_cast<float> (height) * capStretch };
 
     // A long line at a large point size can exceed the GPU's texture size limit,
     // and glTexImage2D would then fail and leave the text blank. Rasterize at a
@@ -314,24 +326,25 @@ void CText::rebuildTextureFrom (const std::string& text) {
 
     std::vector<uint8_t> pixels (static_cast<size_t> (width) * height, 0);
 
-    int penX = 0;
+    int64_t penX = 0;
     for (unsigned char c : text) {
 	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
 	    continue;
 	}
 
 	const auto& bmp = slot->bitmap;
-	const int originX = penX + slot->bitmap_left;
+	const int64_t originX = penX + slot->bitmap_left;
 	const int originY = maxAscent - slot->bitmap_top;
 
 	for (unsigned int row = 0; row < bmp.rows; ++row) {
 	    for (unsigned int col = 0; col < bmp.width; ++col) {
-		const int dstX = originX + static_cast<int> (col);
+		const int64_t dstX = originX + static_cast<int64_t> (col);
 		const int dstY = originY + static_cast<int> (row);
 		if (dstX < 0 || dstX >= width || dstY < 0 || dstY >= height) {
 		    continue;
 		}
-		pixels[static_cast<size_t> (dstY) * width + dstX] = bmp.buffer[row * bmp.pitch + col];
+		pixels[static_cast<size_t> (dstY) * width + static_cast<size_t> (dstX)]
+		    = bmp.buffer[row * bmp.pitch + col];
 	    }
 	}
 
@@ -456,12 +469,18 @@ void CText::render () {
 	renderedText = current.empty () ? std::string (" ") : current;
     }
 
-    const unsigned int pixelSize = computeEffectivePixelSize ();
+    // Past the cap the glyph size stays put, but the quad stretch still follows
+    // the requested size, so rebuild when either changes.
+    const float requested = computeRequestedPixelSize ();
+    const unsigned int pixelSize = computeEffectivePixelSize (requested);
+    const bool capChanged
+	= requested != m_requestedPixelSize && (requested > kMaxPixelSize || m_requestedPixelSize > kMaxPixelSize);
+    m_requestedPixelSize = requested;
     if (pixelSize != m_lastPixelSize) {
 	m_lastPixelSize = pixelSize;
 	FT_Set_Pixel_Sizes (m_ftFace, 0, static_cast<FT_UInt> (m_lastPixelSize));
 	rebuildTextureFrom (renderedText);
-    } else if (renderedText != m_lastRenderedText) {
+    } else if (capChanged || renderedText != m_lastRenderedText) {
 	rebuildTextureFrom (renderedText);
     }
 
