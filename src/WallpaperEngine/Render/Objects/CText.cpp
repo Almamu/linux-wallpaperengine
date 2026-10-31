@@ -9,6 +9,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_OUTLINE_H
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -279,12 +280,29 @@ CText::TextExtent CText::measureText (const std::string& text) const {
     int maxDescent = 0;
 
     for (unsigned char c : text) {
-	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
+	// Load without rendering: drawing every glyph just to read its size is
+	// the slow part, and at large sizes the bitmaps get huge
+	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_DEFAULT) != 0) {
 	    continue;
 	}
 	penX += slot->advance.x >> 6;
-	maxAscent = std::max (maxAscent, slot->bitmap_top);
-	maxDescent = std::max (maxDescent, static_cast<int> (slot->bitmap.rows) - slot->bitmap_top);
+
+	int top = slot->bitmap_top;
+	int rows = static_cast<int> (slot->bitmap.rows);
+
+	if (slot->format == FT_GLYPH_FORMAT_OUTLINE) {
+	    // The rasterizer sizes the bitmap from the outline's control box
+	    // rounded out to whole pixels, so this gives the same top and rows
+	    FT_BBox box;
+	    FT_Outline_Get_CBox (&slot->outline, &box);
+	    const FT_Pos yMin = box.yMin & ~63;
+	    const FT_Pos yMax = (box.yMax + 63) & ~63;
+	    top = static_cast<int> (yMax >> 6);
+	    rows = static_cast<int> ((yMax - yMin) >> 6);
+	}
+
+	maxAscent = std::max (maxAscent, top);
+	maxDescent = std::max (maxDescent, rows - top);
     }
 
     return {
@@ -360,14 +378,18 @@ std::vector<uint8_t> CText::rasterize (const std::string& text, const TextExtent
 
     int64_t penX = 0;
     for (unsigned char c : text) {
-	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_RENDER) != 0) {
+	// load the same way measureText does, so a glyph that loads but can't be
+	// rendered still moves the pen and the two passes agree on the layout
+	if (FT_Load_Char (m_ftFace, static_cast<FT_ULong> (c), FT_LOAD_DEFAULT) != 0) {
 	    continue;
 	}
 
-	blitGlyph (
-	    slot->bitmap, penX + slot->bitmap_left, extent.ascent - slot->bitmap_top, extent.width, extent.height,
-	    pixels
-	);
+	if (FT_Render_Glyph (slot, FT_RENDER_MODE_NORMAL) == 0) {
+	    blitGlyph (
+		slot->bitmap, penX + slot->bitmap_left, extent.ascent - slot->bitmap_top, extent.width, extent.height,
+		pixels
+	    );
+	}
 	penX += slot->advance.x >> 6;
     }
 
