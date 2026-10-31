@@ -684,6 +684,7 @@ void WallpaperApplication::setupOutput () {
     );
     this->m_fullScreenDetector
 	= sVideoFactories.createFullscreenDetector (XDG_SESSION_TYPE, this->m_context, *this->m_videoDriver);
+    this->m_batteryDetector = std::make_unique<Render::Drivers::Detectors::BatteryDetector> (this->m_context);
 }
 
 void WallpaperApplication::setupAudio () {
@@ -858,7 +859,9 @@ void WallpaperApplication::render () {
 
     if (this->m_isPaused) {
 	usleep (FULLSCREEN_CHECK_WAIT_TIME);
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if ((this->m_fullScreenDetector->anythingFullscreen ()
+	     || (this->m_context.settings.render.pauseOnBattery && this->m_batteryDetector->isOnBattery ()))
+	    && this->m_context.state.general.keepRunning) {
 	    return;
 	}
 	m_renderContext->setPause (false);
@@ -928,7 +931,9 @@ void WallpaperApplication::render () {
 	}
 #endif /* DEMOMODE */
 	// check for fullscreen windows and wait until there's none fullscreen
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if ((this->m_fullScreenDetector->anythingFullscreen ()
+	     || (this->m_context.settings.render.pauseOnBattery && this->m_batteryDetector->isOnBattery ()))
+	    && this->m_context.state.general.keepRunning) {
 	    this->m_isPaused = true;
 	    this->m_pauseStart = std::chrono::steady_clock::now ();
 
