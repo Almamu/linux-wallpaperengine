@@ -258,6 +258,17 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
     // remove the output from the list
     std::erase (this->m_screens, viewport);
 
+    // outputs the user did not ask for stay in the list without a layer surface, so check for
+    // an actual drawing target: with none left there are no frame callbacks to wake us up and
+    // wl_display_dispatch would block forever
+    const bool anyLayerSurface = std::ranges::any_of (
+	this->m_screens, [] (const auto* screen) { return screen->layerSurface != nullptr; }
+    );
+
+    if (!anyLayerSurface) {
+	this->m_requestedExit = true;
+    }
+
     // reset the viewports
     this->getOutput ().reset ();
 
