@@ -4,6 +4,8 @@
 #include "WallpaperEngine/Application/ApplicationContext.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "include/cef_app.h"
+#include "include/cef_command_line.h"
 
 WallpaperEngine::Application::WallpaperApplication* app;
 
@@ -20,8 +22,61 @@ void initLogging () {
     sLog.addError (new std::ostream (std::cerr.rdbuf ()));
 }
 
+// Minimal CEF app used when this binary is re-exec'd as a Chromium child
+// (--type=utility/gpu/renderer/...). Going through full WallpaperApplication
+// first breaks those children (arg parse failures / crash loops) so network
+// and GPU services never stay up — web wallpapers stay black.
+//
+// Custom schemes must match the browser process (SubprocessApp). BrowserApp
+// passes them via --wp-schemes=id1,id2 on child launches.
+class EarlyCefSubprocessApp : public CefApp {
+public:
+    void OnRegisterCustomSchemes (CefRawPtr<CefSchemeRegistrar> registrar) override {
+	const CefRefPtr<CefCommandLine> commandLine = CefCommandLine::GetGlobalCommandLine ();
+	if (!commandLine || !commandLine->HasSwitch ("wp-schemes")) {
+	    return;
+	}
+	const std::string schemes = commandLine->GetSwitchValue ("wp-schemes").ToString ();
+	std::size_t start = 0;
+	while (start < schemes.size ()) {
+	    const std::size_t comma = schemes.find (',', start);
+	    const std::string id = schemes.substr (
+		start, comma == std::string::npos ? std::string::npos : comma - start
+	    );
+	    if (!id.empty ()) {
+		// Keep flags in sync with SubprocessApp::OnRegisterCustomSchemes.
+		registrar->AddCustomScheme (
+		    "wp" + id,
+		    CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE | CEF_SCHEME_OPTION_FETCH_ENABLED
+		);
+	    }
+	    if (comma == std::string::npos) {
+		break;
+	    }
+	    start = comma + 1;
+	}
+    }
+
+private:
+    IMPLEMENT_REFCOUNTING (EarlyCefSubprocessApp);
+};
+
 int main (int argc, char* argv[]) {
     try {
+	// Hand off to CEF immediately for Chromium child processes.
+	{
+	    const CefMainArgs main_args (argc, argv);
+	    CefRefPtr<CefCommandLine> commandLine = CefCommandLine::CreateCommandLine ();
+	    commandLine->InitFromArgv (argc, argv);
+	    if (commandLine->HasSwitch ("type")) {
+		CefRefPtr<CefApp> subprocessApp = new EarlyCefSubprocessApp ();
+		const int exit_code = CefExecuteProcess (main_args, subprocessApp, nullptr);
+		if (exit_code >= 0) {
+		    return exit_code;
+		}
+	    }
+	}
+
 	// if type parameter is specified, this is a subprocess, so no logging should be enabled from our side
 	bool enableLogging = true;
 	const std::string typeZygote = "--type=zygote";
