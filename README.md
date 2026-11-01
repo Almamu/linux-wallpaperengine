@@ -305,6 +305,7 @@ linux-wallpaperengine --set-property bloom=1 2370927443
 ## 🧪 Wayland & X11 Support
 
 - **Wayland**: Works with compositors that support `wlr-layer-shell-unstable`. Uses `xdg-output-unstable-v1` for accurate monitor positioning (required for `--screen-span`).
+- **GNOME 42 on Wayland**: A [companion Shell extension](packaging/gnome/README.md) places the engine on all desktop backgrounds and supports separate lock wallpapers per monitor without layer-shell.
 - **X11**: Requires XRandr. Use `--screen-root <screen_name>` (as shown in `xrandr`).
 
 > ⚠ For X11 users: Currently doesn't work if a compositor or desktop environment (e.g. GNOME, KDE, Nautilus) is drawing the background.
