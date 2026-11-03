@@ -339,8 +339,11 @@ void WaylandOpenGLDriver::setupPendingOutputs () {
 	try {
 	    viewport->setupLS ();
 	} catch (const std::exception&) {
-	    // already logged; keep the outputs that work running
+	    // already logged; keep the outputs that work running, and try this one again after its next
+	    // wl_output.done like a closed layer surface
 	    viewport->destroyLS ();
+	    viewport->pendingSetup = true;
+	    viewport->initialized = false;
 	    this->getOutput ().reset ();
 	    continue;
 	}
@@ -385,16 +388,20 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
     }
 
     // If xdg-output-manager is available, use it to get logical output positions
+    // outputs announced from here on (including during the roundtrip below) get their own xdg_output
+    // and are set up from the event loop
+    m_registryReady = true;
+
     if (m_waylandContext.xdgOutputManager) {
 	for (const auto& o : this->m_screens) {
-	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	    if (!o->xdgOutput) {
+		o->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	    }
 	}
 	wl_display_roundtrip (m_waylandContext.display);
     } else if (!m_context.settings.general.spanGroups.empty ()) {
 	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
     }
-
-    m_registryReady = true;
 }
 
 void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
@@ -408,7 +415,8 @@ void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
 	}
 
 	o->setupLS ();
-	any = true;
+	// setupLS stops early if the output was removed or closed during its roundtrips
+	any = any || o->layerSurface != nullptr;
     }
 
     this->freeRemovedOutputs ();

@@ -1,5 +1,6 @@
 #include "WaylandOutputViewport.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include <algorithm>
 
 #define class _class
 #define namespace _namespace
@@ -272,10 +273,18 @@ void WaylandOutputViewport::destroyLS () {
     }
 
     if (eglSurface) {
-	// release it first if it's current, so it is freed right away. Without a context too: keeping the
-	// context with no surface needs EGL_KHR_surfaceless_context, and every render calls makeCurrent anyway
+	// release it first if it's current, so it is freed right away: move the context to another output's
+	// surface, or drop it if there is none (keeping it with no surface needs EGL_KHR_surfaceless_context)
 	if (eglGetCurrentSurface (EGL_DRAW) == eglSurface) {
-	    eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	    const auto other = std::ranges::find_if (m_driver->m_screens, [this] (const auto* screen) {
+		return screen != this && screen->eglSurface;
+	    });
+
+	    if (other != m_driver->m_screens.end ()) {
+		(*other)->makeCurrent ();
+	    } else {
+		eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	    }
 	}
 
 	eglDestroySurface (egl->display, eglSurface);
