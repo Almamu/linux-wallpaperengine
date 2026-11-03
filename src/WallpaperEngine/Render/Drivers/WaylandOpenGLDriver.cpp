@@ -471,6 +471,9 @@ WaylandOpenGLDriver::~WaylandOpenGLDriver () {
 	delete screen;
     }
 
+    // drop the output's pointers to them too (m_screens is empty now)
+    this->getOutput ().reset ();
+
     // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
