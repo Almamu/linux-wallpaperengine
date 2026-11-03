@@ -56,8 +56,10 @@ namespace Output {
 	bool hasXdgLogicalPosition = false;
 	zxdg_output_v1* xdgOutput = nullptr;
 	wl_cursor_theme* cursorTheme = nullptr;
-	/** Announced after startup: set up its layer surface once its name is known (wl_output.done) */
+	/** Set up its layer surface once its name is known (wl_output.done): announced after startup, or closed */
 	bool pendingSetup = false;
+	/** The compositor removed this output; freed by the event loop once nothing can be using it */
+	bool removed = false;
 
 	void setupLS ();
 	/** Destroys the layer surface and everything drawn through it; the wl_output stays bound */

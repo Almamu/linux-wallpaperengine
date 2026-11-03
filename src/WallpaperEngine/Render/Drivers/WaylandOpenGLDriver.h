@@ -94,12 +94,14 @@ private:
     /** The Wayland context in use */
     WaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
-    /** Set once startup is done; outputs announced after that are set up from the event loop */
-    bool m_initialized = false;
+    /** Set once the initial outputs are enumerated; outputs announced after that are set up from the event loop */
+    bool m_registryReady = false;
 
     void initWaylandRegistry ();
     void setupOutputLayerSurfaces ();
     void setupPendingOutputs ();
+    void freeRemovedOutputs ();
+    void releaseViewport (Output::WaylandOutputViewport* viewport);
     void initEGL ();
     void initGLEW ();
     void finishEGL () const;

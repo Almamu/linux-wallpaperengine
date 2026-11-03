@@ -14,6 +14,7 @@ struct FakeScreen {
     uint32_t waylandName;
     bool initialized = false;
     bool pendingSetup = false;
+    bool removed = false;
 };
 
 ApplicationContext makeContext () { return ApplicationContext (1, const_cast<char**> (selectionArgv)); }
@@ -87,17 +88,45 @@ TEST_CASE ("Wayland outputs: several outputs coming back are all set up") {
     CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 70, 72 });
 }
 
-TEST_CASE ("Wayland outputs: an output removed while others are set up is skipped") {
-    // setupLS does roundtrips, so an output on the ready list can be gone by the time its turn comes
-    FakeScreen a { .waylandName = 80, .initialized = true, .pendingSetup = true };
-    FakeScreen b { .waylandName = 81, .initialized = true, .pendingSetup = true };
-    std::vector<FakeScreen*> screens = { &a, &b };
+TEST_CASE ("Wayland outputs: a removed output is never set up") {
+    // its removal can arrive between wl_output.done and the event loop getting to it
+    FakeScreen gone { .waylandName = 90, .initialized = true, .pendingSetup = true, .removed = true };
+    FakeScreen back { .waylandName = 91, .initialized = true, .pendingSetup = true };
+    std::vector<FakeScreen*> screens = { &gone, &back };
+
+    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 91 });
+}
+
+TEST_CASE ("Wayland outputs: removal only marks, freeing takes removed outputs out") {
+    // a removal that arrives during setupLS's roundtrips must not free the viewport being set up,
+    // so removal marks it and takeRemoved hands it over once the event loop is done with it
+    FakeScreen kept { .waylandName = 100 };
+    FakeScreen removedFirst { .waylandName = 101, .removed = true };
+    FakeScreen removedLast { .waylandName = 102, .removed = true };
+    std::vector<FakeScreen*> screens = { &removedFirst, &kept, &removedLast };
 
     const auto ready = outputsReadyForSetup (screens);
-    REQUIRE (ready == std::vector<uint32_t> { 80, 81 });
+    CHECK (ready.empty ());
 
-    std::erase (screens, &b);
+    // still in the list, and still found, until taken
+    CHECK (findByWaylandName (screens, 101) != screens.end ());
 
-    CHECK (findByWaylandName (screens, ready[0]) != screens.end ());
-    CHECK (findByWaylandName (screens, ready[1]) == screens.end ());
+    const auto taken = takeRemoved (screens);
+    CHECK (taken == std::vector<FakeScreen*> { &removedFirst, &removedLast });
+    CHECK (screens == std::vector<FakeScreen*> { &kept });
+
+    // nothing left to take
+    CHECK (takeRemoved (screens).empty ());
+    CHECK (screens.size () == 1);
+}
+
+TEST_CASE ("Wayland outputs: an output closed by the compositor waits for its next wl_output.done") {
+    // onLayerClose marks it pending and not initialized; it comes back once the output is reconfigured
+    FakeScreen closed { .waylandName = 110, .initialized = false, .pendingSetup = true };
+    std::vector<FakeScreen*> screens = { &closed };
+
+    CHECK (outputsReadyForSetup (screens).empty ());
+
+    closed.initialized = true;
+    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 110 });
 }

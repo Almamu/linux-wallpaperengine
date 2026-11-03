@@ -43,11 +43,33 @@ template <typename Screen> std::vector<uint32_t> outputsReadyForSetup (const std
     std::vector<uint32_t> ready;
 
     for (const Screen* screen : screens) {
-	if (screen->pendingSetup && screen->initialized) {
+	if (screen->pendingSetup && screen->initialized && !screen->removed) {
 	    ready.push_back (screen->waylandName);
 	}
     }
 
     return ready;
+}
+
+/**
+ * Takes the outputs the compositor removed out of the list. Removal only marks them, so a viewport that is
+ * being set up or rendered when its removal arrives (setupLS does roundtrips) stays valid until the event
+ * loop frees it.
+ *
+ * @return The removed outputs, for the caller to free
+ */
+template <typename Screen> std::vector<Screen*> takeRemoved (std::vector<Screen*>& screens) {
+    std::vector<Screen*> removed;
+
+    std::erase_if (screens, [&removed] (Screen* screen) {
+	if (!screen->removed) {
+	    return false;
+	}
+
+	removed.push_back (screen);
+	return true;
+    });
+
+    return removed;
 }
 } // namespace WallpaperEngine::Render::Drivers::Output::WaylandOutputSelection

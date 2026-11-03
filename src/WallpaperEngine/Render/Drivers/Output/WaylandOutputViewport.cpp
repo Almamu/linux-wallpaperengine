@@ -215,6 +215,11 @@ void WaylandOutputViewport::setupLS () {
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
 
+    // the roundtrip can deliver this output's removal or a closed layer surface, which tear it all down
+    if (!layerSurface) {
+	return;
+    }
+
     eglWindow = wl_egl_window_create (surface, size.x * scale, size.y * scale);
     eglSurface = m_driver->getEGLContext ()->eglCreatePlatformWindowSurfaceEXT (
 	m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr
@@ -222,6 +227,10 @@ void WaylandOutputViewport::setupLS () {
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
     wl_display_flush (m_driver->getWaylandContext ()->display);
+
+    if (!layerSurface) {
+	return;
+    }
 
     static const auto XCURSORSIZE = getenv ("XCURSOR_SIZE") ? std::stoi (getenv ("XCURSOR_SIZE")) : 24;
     cursorTheme
@@ -263,8 +272,12 @@ void WaylandOutputViewport::destroyLS () {
     }
 
     if (eglSurface) {
-	// the surface may be the current one; release it first so it is freed right away
-	eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl->context);
+	// release it first if it's current, so it is freed right away. Without a context too: keeping the
+	// context with no surface needs EGL_KHR_surfaceless_context, and every render calls makeCurrent anyway
+	if (eglGetCurrentSurface (EGL_DRAW) == eglSurface) {
+	    eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	}
+
 	eglDestroySurface (egl->display, eglSurface);
 	eglSurface = nullptr;
     }
