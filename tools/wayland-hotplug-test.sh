@@ -64,6 +64,7 @@ wait_for() { # seconds, description, command...
     until "$@"; do
         ((SECONDS < deadline)) || fail "timed out waiting for $what"
         kill -0 "$SWAY_PID" 2>/dev/null || fail "sway exited"
+        [[ -z $ENGINE_PID ]] || kill -0 "$ENGINE_PID" 2>/dev/null || fail "the engine exited while waiting for $what"
         sleep 0.2
     done
 }
@@ -88,13 +89,14 @@ mkdir "$WORK/assets"
 # Whether the center of an output shows the wallpaper (red).
 drawn() {
     grim -o "$1" -t ppm - 2>/dev/null | python3 -c '
-import sys
+import re, sys
 data = sys.stdin.buffer.read()
-parts = data.split(maxsplit=4)
-if len(parts) < 5 or parts[0] != b"P6":
+# binary PPM: "P6", width, height, maxval, then exactly one whitespace byte before the pixels
+header = re.match(rb"P6\s+(\d+)\s+(\d+)\s+(\d+)\s", data)
+if not header:
     sys.exit(1)
-width, height = int(parts[1]), int(parts[2])
-pixels = parts[4]
+width, height = int(header.group(1)), int(header.group(2))
+pixels = data[header.end():]
 i = ((height // 2) * width + width // 2) * 3
 r, g, b = pixels[i], pixels[i + 1], pixels[i + 2]
 sys.exit(0 if r > 180 and g < 80 and b < 80 else 1)'
@@ -145,10 +147,14 @@ wait_for "$TIMEOUT" "the wallpaper on HEADLESS-3 (after all outputs were gone)" 
 pass "wallpaper drawn again on an output that appeared after all were gone"
 
 kill -TERM "$ENGINE_PID"
-wait_for 10 "the engine to exit" bash -c "! kill -0 $ENGINE_PID 2>/dev/null"
+# give it 10 seconds, then kill it so a hang shows up as a failure instead of a stuck job
+(sleep 10 && kill -KILL "$ENGINE_PID" 2>/dev/null) &
+watchdog=$!
 status=0
 wait "$ENGINE_PID" || status=$?
+kill "$watchdog" 2>/dev/null || true
 ENGINE_PID=""
+((status != 137)) || fail "the engine did not exit within 10 seconds of SIGTERM"
 ((status == 0 || status == 143)) || fail "the engine exited with status $status on SIGTERM"
 pass "clean shutdown"
 
