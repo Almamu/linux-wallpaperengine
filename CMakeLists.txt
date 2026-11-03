@@ -201,6 +201,7 @@ if(WAYLAND_SUPPORT_FOUND)
         src/WallpaperEngine/Render/Drivers/Output/WaylandOutput.h
         src/WallpaperEngine/Render/Drivers/Output/WaylandOutputViewport.cpp
         src/WallpaperEngine/Render/Drivers/Output/WaylandOutputViewport.h
+        src/WallpaperEngine/Render/Drivers/Output/WaylandOutputSelection.h
         src/WallpaperEngine/Input/Drivers/WaylandMouseInput.cpp
         src/WallpaperEngine/Input/Drivers/WaylandMouseInput.h
         ${WAYLAND_OUTPUT_DIR}/xdg-shell-protocol.c
@@ -565,7 +566,8 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Harnesses/RenderHarness.h
         src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp
         src/WallpaperEngine/Testing/Cases/PropertyParser.cpp
-        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp)
+        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp
+        src/WallpaperEngine/Testing/Cases/WaylandOutputSelection.cpp)
 endif()
 
 add_library(

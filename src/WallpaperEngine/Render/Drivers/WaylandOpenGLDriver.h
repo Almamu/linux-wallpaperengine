@@ -74,6 +74,8 @@ public:
     [[nodiscard]] void* getProcAddress (const char* name) const override;
 
     void onLayerClose (Output::WaylandOutputViewport*);
+    void onOutputAdded (uint32_t waylandName);
+    void onOutputRemoved (uint32_t waylandName);
     Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 
     Output::WaylandOutputViewport* viewportInFocus = nullptr;
@@ -92,9 +94,12 @@ private:
     /** The Wayland context in use */
     WaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
+    /** Set once startup is done; outputs announced after that are set up from the event loop */
+    bool m_initialized = false;
 
     void initWaylandRegistry ();
     void setupOutputLayerSurfaces ();
+    void setupPendingOutputs ();
     void initEGL ();
     void initGLEW ();
     void finishEGL () const;

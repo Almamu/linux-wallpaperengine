@@ -224,14 +224,14 @@ void WaylandOutputViewport::setupLS () {
     wl_display_flush (m_driver->getWaylandContext ()->display);
 
     static const auto XCURSORSIZE = getenv ("XCURSOR_SIZE") ? std::stoi (getenv ("XCURSOR_SIZE")) : 24;
-    const auto PRCURSORTHEME
+    cursorTheme
 	= wl_cursor_theme_load (getenv ("XCURSOR_THEME"), XCURSORSIZE * scale, m_driver->getWaylandContext ()->shm);
 
-    if (!PRCURSORTHEME) {
+    if (!cursorTheme) {
 	sLog.exception ("Failed to get a cursor theme");
     }
 
-    pointer = wl_cursor_theme_get_cursor (PRCURSORTHEME, "left_ptr");
+    pointer = wl_cursor_theme_get_cursor (cursorTheme, "left_ptr");
     cursorSurface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
 
     if (!cursorSurface) {
@@ -252,6 +252,50 @@ void WaylandOutputViewport::setupLS () {
     eglSwapInterval (m_driver->getEGLContext ()->display, 0);
 
     this->m_driver->getOutput ().reset ();
+}
+
+void WaylandOutputViewport::destroyLS () {
+    const auto egl = m_driver->getEGLContext ();
+
+    if (frameCallback) {
+	wl_callback_destroy (frameCallback);
+	frameCallback = nullptr;
+    }
+
+    if (eglSurface) {
+	// the surface may be the current one; release it first so it is freed right away
+	eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl->context);
+	eglDestroySurface (egl->display, eglSurface);
+	eglSurface = nullptr;
+    }
+
+    if (eglWindow) {
+	wl_egl_window_destroy (eglWindow);
+	eglWindow = nullptr;
+    }
+
+    if (layerSurface) {
+	zwlr_layer_surface_v1_destroy (layerSurface);
+	layerSurface = nullptr;
+    }
+
+    if (surface) {
+	wl_surface_destroy (surface);
+	surface = nullptr;
+    }
+
+    if (cursorSurface) {
+	wl_surface_destroy (cursorSurface);
+	cursorSurface = nullptr;
+    }
+
+    if (cursorTheme) {
+	wl_cursor_theme_destroy (cursorTheme);
+	cursorTheme = nullptr;
+    }
+
+    pointer = nullptr;
+    callbackInitialized = false;
 }
 
 WaylandOpenGLDriver* WaylandOutputViewport::getDriver () const { return this->m_driver; }

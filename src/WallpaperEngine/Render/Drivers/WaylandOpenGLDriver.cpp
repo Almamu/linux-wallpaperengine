@@ -1,4 +1,5 @@
 #include "WaylandOpenGLDriver.h"
+#include "Output/WaylandOutputSelection.h"
 #include "VideoFactories.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -111,9 +112,7 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->shm
 	    = static_cast<wl_shm*> (wl_registry_bind (registry, name, &wl_shm_interface, 1));
     } else if (strcmp (interface, wl_output_interface.name) == 0) {
-	driver->m_screens.emplace_back (
-	    new WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport (driver, name, registry)
-	);
+	driver->onOutputAdded (name);
     } else if (strcmp (interface, zwlr_layer_shell_v1_interface.name) == 0) {
 	driver->getWaylandContext ()->layerShell
 	    = static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
@@ -129,7 +128,8 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 }
 
 static void handleGlobalRemoved (void* data, struct wl_registry* registry, uint32_t id) {
-    // todo: outputs
+    // only outputs come and go at runtime; onOutputRemoved ignores every other global
+    static_cast<WaylandOpenGLDriver*> (data)->onOutputRemoved (id);
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -234,35 +234,92 @@ void WaylandOpenGLDriver::finishEGL () const {
 void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport) {
     sLog.error ("Compositor closed our LS, freeing data...");
 
-    if (viewport->eglSurface) {
-	eglDestroySurface (m_eglContext.display, viewport->eglSurface);
+    // Usually the output is going away (monitor powered off or unplugged). Keep the viewport and its
+    // wl_output until the compositor removes the global, so the wl_output listener never points at
+    // freed memory; the output gets a new viewport and layer surface if it comes back.
+    viewport->destroyLS ();
+
+    if (this->viewportInFocus == viewport) {
+	this->viewportInFocus = nullptr;
     }
 
-    if (viewport->eglWindow) {
-	wl_egl_window_destroy (viewport->eglWindow);
+    this->getOutput ().reset ();
+}
+
+void WaylandOpenGLDriver::onOutputAdded (uint32_t waylandName) {
+    const auto viewport = new Output::WaylandOutputViewport (this, waylandName, m_waylandContext.registry);
+
+    this->m_screens.emplace_back (viewport);
+
+    // during startup initWaylandRegistry and setupOutputLayerSurfaces take care of the rest
+    if (!this->m_initialized) {
+	return;
     }
 
-    if (viewport->layerSurface) {
-	zwlr_layer_surface_v1_destroy (viewport->layerSurface);
+    if (m_waylandContext.xdgOutputManager) {
+	viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
     }
+
+    // its name arrives with wl_output.done; setupPendingOutputs creates the layer surface after that,
+    // outside of event dispatching, since setupLS needs roundtrips of its own
+    viewport->pendingSetup = true;
+}
+
+void WaylandOpenGLDriver::onOutputRemoved (uint32_t waylandName) {
+    const auto it = Output::WaylandOutputSelection::findByWaylandName (this->m_screens, waylandName);
+
+    if (it == this->m_screens.end ()) {
+	return;
+    }
+
+    const auto viewport = *it;
+
+    sLog.out ("Output ", viewport->name, " removed");
+
+    viewport->destroyLS ();
 
     if (viewport->xdgOutput) {
 	zxdg_output_v1_destroy (viewport->xdgOutput);
 	viewport->xdgOutput = nullptr;
     }
 
-    if (viewport->surface) {
-	wl_surface_destroy (viewport->surface);
+    wl_output_release (viewport->output);
+    viewport->output = nullptr;
+
+    if (this->viewportInFocus == viewport) {
+	this->viewportInFocus = nullptr;
     }
 
-    // remove the output from the list
-    std::erase (this->m_screens, viewport);
-
-    // reset the viewports
+    this->m_screens.erase (it);
     this->getOutput ().reset ();
 
-    // finally free memory used by the viewport
     delete viewport;
+}
+
+void WaylandOpenGLDriver::setupPendingOutputs () {
+    // setupLS does roundtrips, which can add or remove outputs: look each one up again
+    for (const auto waylandName : Output::WaylandOutputSelection::outputsReadyForSetup (this->m_screens)) {
+	const auto it = Output::WaylandOutputSelection::findByWaylandName (this->m_screens, waylandName);
+
+	if (it == this->m_screens.end ()) {
+	    continue;
+	}
+
+	const auto viewport = *it;
+
+	viewport->pendingSetup = false;
+
+	if (!Output::WaylandOutputSelection::isOutputRequested (viewport->name, m_context)) {
+	    continue;
+	}
+
+	sLog.out ("Output ", viewport->name, " appeared, setting up its layer surface");
+
+	viewport->setupLS ();
+
+	// draw the first frame; it requests the frame callback that keeps this output rendering
+	this->getApp ().update (viewport);
+    }
 }
 
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
@@ -272,6 +329,8 @@ WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, Wallpaper
     initEGL ();
     setupOutputLayerSurfaces ();
     initGLEW ();
+
+    m_initialized = true;
 }
 
 void WaylandOpenGLDriver::initWaylandRegistry () {
@@ -307,24 +366,7 @@ void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
     bool any = false;
 
     for (const auto& o : this->m_screens) {
-	bool shouldSetup = m_context.settings.general.screenBackgrounds.contains (o->name);
-
-	// also check if this screen is in any span group
-	if (!shouldSetup) {
-	    for (const auto& spanGroup : m_context.settings.general.spanGroups) {
-		for (const auto& screen : spanGroup.screens) {
-		    if (screen == o->name) {
-			shouldSetup = true;
-			break;
-		    }
-		}
-		if (shouldSetup) {
-		    break;
-		}
-	    }
-	}
-
-	if (!shouldSetup) {
+	if (!Output::WaylandOutputSelection::isOutputRequested (o->name, m_context)) {
 	    continue;
 	}
 
@@ -417,6 +459,9 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     if (wl_display_dispatch (m_waylandContext.display) == -1) {
 	m_requestedExit = true;
     }
+
+    // outputs that (re)appeared while running, e.g. a monitor powered back on
+    this->setupPendingOutputs ();
 
     m_frameCounter++;
 
