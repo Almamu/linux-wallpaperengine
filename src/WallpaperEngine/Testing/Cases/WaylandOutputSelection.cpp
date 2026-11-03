@@ -72,7 +72,7 @@ TEST_CASE ("Wayland outputs: a re-added output is set up only after wl_output.do
     CHECK (outputsReadyForSetup (screens).empty ());
 
     readded.initialized = true;
-    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 63 });
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &readded });
 
     // once handled it is not set up a second time
     readded.pendingSetup = false;
@@ -85,7 +85,7 @@ TEST_CASE ("Wayland outputs: several outputs coming back are all set up") {
     FakeScreen c { .waylandName = 72, .initialized = true, .pendingSetup = true };
     std::vector<FakeScreen*> screens = { &a, &b, &c };
 
-    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 70, 72 });
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &a, &c });
 }
 
 TEST_CASE ("Wayland outputs: a removed output is never set up") {
@@ -94,7 +94,7 @@ TEST_CASE ("Wayland outputs: a removed output is never set up") {
     FakeScreen back { .waylandName = 91, .initialized = true, .pendingSetup = true };
     std::vector<FakeScreen*> screens = { &gone, &back };
 
-    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 91 });
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &back });
 }
 
 TEST_CASE ("Wayland outputs: removal only marks, freeing takes removed outputs out") {
@@ -128,5 +128,24 @@ TEST_CASE ("Wayland outputs: an output closed by the compositor waits for its ne
     CHECK (outputsReadyForSetup (screens).empty ());
 
     closed.initialized = true;
-    CHECK (outputsReadyForSetup (screens) == std::vector<uint32_t> { 110 });
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &closed });
+}
+
+TEST_CASE ("Wayland outputs: a ready output removed by another one's setup stays valid until taken") {
+    // setupPendingOutputs walks a copy of the ready list; setting up the first can deliver the second's
+    // removal, which only marks it, so the loop can still read it and skip it
+    FakeScreen first { .waylandName = 120, .initialized = true, .pendingSetup = true };
+    FakeScreen second { .waylandName = 121, .initialized = true, .pendingSetup = true };
+    std::vector<FakeScreen*> screens = { &first, &second };
+
+    const auto ready = outputsReadyForSetup (screens);
+    REQUIRE (ready == std::vector<FakeScreen*> { &first, &second });
+
+    // removal arrives while "first" is being set up
+    second.removed = true;
+    CHECK (ready[1]->removed);
+    CHECK (screens.size () == 2);
+
+    CHECK (takeRemoved (screens) == std::vector<FakeScreen*> { &second });
+    CHECK (screens == std::vector<FakeScreen*> { &first });
 }

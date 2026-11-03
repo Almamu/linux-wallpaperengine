@@ -20,6 +20,7 @@ extern "C" {
 #include <algorithm>
 #include <string.h>
 #include <unistd.h>
+#include <utility>
 
 using namespace WallpaperEngine::Render::Drivers;
 
@@ -243,6 +244,10 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
     // Keep the viewport and its wl_output until then, so the wl_output listener never points at freed
     // memory. If the output stays instead, set it up again after its next wl_output.done (it is resent
     // when the output is reconfigured, e.g. re-enabled) rather than right away, which could loop.
+    this->retryAfterNextDone (viewport);
+}
+
+void WaylandOpenGLDriver::retryAfterNextDone (Output::WaylandOutputViewport* viewport) {
     viewport->destroyLS ();
     viewport->pendingSetup = true;
     viewport->initialized = false;
@@ -318,15 +323,12 @@ void WaylandOpenGLDriver::freeRemovedOutputs () {
 }
 
 void WaylandOpenGLDriver::setupPendingOutputs () {
-    // setupLS does roundtrips, which can add or remove outputs: look each one up again
-    for (const auto waylandName : Output::WaylandOutputSelection::outputsReadyForSetup (this->m_screens)) {
-	const auto it = Output::WaylandOutputSelection::findByWaylandName (this->m_screens, waylandName);
-
-	if (it == this->m_screens.end () || (*it)->removed) {
+    // setupLS does roundtrips, which can add outputs (handled next time) or remove them; removal only
+    // marks them and they are freed at the end, so these pointers stay valid for the whole loop
+    for (const auto viewport : Output::WaylandOutputSelection::outputsReadyForSetup (this->m_screens)) {
+	if (viewport->removed || viewport->layerSurface) {
 	    continue;
 	}
-
-	const auto viewport = *it;
 
 	viewport->pendingSetup = false;
 
@@ -341,10 +343,7 @@ void WaylandOpenGLDriver::setupPendingOutputs () {
 	} catch (const std::exception&) {
 	    // already logged; keep the outputs that work running, and try this one again after its next
 	    // wl_output.done like a closed layer surface
-	    viewport->destroyLS ();
-	    viewport->pendingSetup = true;
-	    viewport->initialized = false;
-	    this->getOutput ().reset ();
+	    this->retryAfterNextDone (viewport);
 	    continue;
 	}
 
@@ -354,7 +353,9 @@ void WaylandOpenGLDriver::setupPendingOutputs () {
 	}
 
 	// draw the first frame; it requests the frame callback that keeps this output rendering
+	viewport->rendering = true;
 	this->getApp ().update (viewport);
+	viewport->rendering = false;
     }
 
     this->freeRemovedOutputs ();
@@ -414,6 +415,8 @@ void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
 	    continue;
 	}
 
+	// announced during the xdg-output roundtrip: set up here, not again from the event loop
+	o->pendingSetup = false;
 	o->setupLS ();
 	// setupLS stops early if the output was removed or closed during its roundtrips
 	any = any || o->layerSurface != nullptr;
@@ -459,13 +462,14 @@ void WaylandOpenGLDriver::initGLEW () {
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {
-    // free the outputs while EGL is still up, destroyLS needs it
-    for (const auto& screen : this->m_screens) {
+    // free the outputs while EGL is still up, destroyLS needs it. Take them out of m_screens first:
+    // destroyLS looks through m_screens for another surface to make current
+    const auto screens = std::exchange (this->m_screens, {});
+
+    for (const auto& screen : screens) {
 	this->releaseViewport (screen);
 	delete screen;
     }
-
-    this->m_screens.clear ();
 
     // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

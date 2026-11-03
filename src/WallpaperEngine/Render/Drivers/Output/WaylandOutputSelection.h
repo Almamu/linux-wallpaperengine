@@ -36,15 +36,15 @@ template <typename Screen> auto findByWaylandName (std::vector<Screen*>& screens
 }
 
 /**
- * Outputs announced after startup whose wl_output.done has arrived, so their name is known and their layer
- * surface can be set up. Returned by wl_registry name, since setting one up can add or remove others.
+ * Outputs announced after startup (or whose layer surface was closed) whose wl_output.done has arrived, so
+ * their name is known and their layer surface can be set up. A copy, since setting one up can add others.
  */
-template <typename Screen> std::vector<uint32_t> outputsReadyForSetup (const std::vector<Screen*>& screens) {
-    std::vector<uint32_t> ready;
+template <typename Screen> std::vector<Screen*> outputsReadyForSetup (const std::vector<Screen*>& screens) {
+    std::vector<Screen*> ready;
 
-    for (const Screen* screen : screens) {
+    for (Screen* screen : screens) {
 	if (screen->pendingSetup && screen->initialized && !screen->removed) {
-	    ready.push_back (screen->waylandName);
+	    ready.push_back (screen);
 	}
     }
 
