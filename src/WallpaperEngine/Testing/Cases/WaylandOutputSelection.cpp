@@ -120,7 +120,7 @@ TEST_CASE ("Wayland outputs: removal only marks, freeing takes removed outputs o
     CHECK (screens.size () == 1);
 }
 
-TEST_CASE ("Wayland outputs: an output closed by the compositor waits for its next wl_output.done") {
+TEST_CASE ("Wayland outputs: a closed output is ready for setup once it is initialized again") {
     // onLayerClose marks it pending and not initialized; it comes back once the output is reconfigured
     FakeScreen closed { .waylandName = 110, .initialized = false, .pendingSetup = true };
     std::vector<FakeScreen*> screens = { &closed };

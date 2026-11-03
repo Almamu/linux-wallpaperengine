@@ -76,6 +76,7 @@ public:
     void onLayerClose (Output::WaylandOutputViewport*);
     void onOutputAdded (uint32_t waylandName);
     void onOutputRemoved (uint32_t waylandName);
+    void onXdgOutputManagerBound ();
     Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 
     Output::WaylandOutputViewport* viewportInFocus = nullptr;

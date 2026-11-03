@@ -317,6 +317,9 @@ void WaylandOutputViewport::destroyLS () {
     }
 
     pointer = nullptr;
+    // button releases don't reach a viewport without a surface; don't replay a held click when it returns
+    leftClick = WallpaperEngine::Input::MouseClickStatus::Released;
+    rightClick = WallpaperEngine::Input::MouseClickStatus::Released;
     callbackInitialized = false;
 }
 

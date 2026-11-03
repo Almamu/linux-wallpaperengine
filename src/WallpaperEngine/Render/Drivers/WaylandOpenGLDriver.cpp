@@ -130,6 +130,7 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
 	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
 	);
+	driver->onXdgOutputManagerBound ();
     }
 }
 
@@ -276,6 +277,19 @@ void WaylandOpenGLDriver::onOutputAdded (uint32_t waylandName) {
     // its name arrives with wl_output.done; setupPendingOutputs creates the layer surface after that,
     // outside of event dispatching, since setupLS needs roundtrips of its own
     viewport->pendingSetup = true;
+}
+
+void WaylandOpenGLDriver::onXdgOutputManagerBound () {
+    // during startup initWaylandRegistry attaches it to the outputs
+    if (!this->m_registryReady) {
+	return;
+    }
+
+    for (const auto& viewport : this->m_screens) {
+	if (!viewport->xdgOutput && !viewport->removed) {
+	    viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	}
+    }
 }
 
 void WaylandOpenGLDriver::onOutputRemoved (uint32_t waylandName) {
