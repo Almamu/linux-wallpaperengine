@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <optional>
 #include <random>
 
 #include "WallpaperEngine/Application/ApplicationContext.h"
@@ -68,6 +69,12 @@ public:
      */
     void update (Render::Drivers::Output::OutputViewport* viewport);
     /**
+     * Recomputes the area each span group covers from the outputs present now. Called when an output
+     * (re)appears, as a span group member missing at startup or moved since then would otherwise get the
+     * wrong part of the wallpaper.
+     */
+    void updateSpanBounds ();
+    /**
      * Gets the output
      */
     [[nodiscard]] const WallpaperEngine::Render::Drivers::Output::Output& getOutput () const;
@@ -130,6 +137,12 @@ private:
      * Prepares the render-context of all the backgrounds so they can be displayed on the screen
      */
     void prepareOutputs ();
+    /**
+     * @param logMissing Whether to log the group's screens that have no output
+     * @return The bounding box (x, y, width, height) of the span group's outputs that are present, if any
+     */
+    [[nodiscard]] std::optional<glm::ivec4>
+    spanBounds (const ApplicationContext::SpanGroup& spanGroup, bool logMissing) const;
     /**
      * Prepares output debugging for all opengl errors
      */

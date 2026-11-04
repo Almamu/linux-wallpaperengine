@@ -1,4 +1,5 @@
 #include "WaylandOpenGLDriver.h"
+#include "Output/WaylandOutputSelection.h"
 #include "VideoFactories.h"
 #include "WallpaperEngine/Application/WallpaperApplication.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -17,8 +18,10 @@ extern "C" {
 #undef static
 
 #include <algorithm>
+#include <poll.h>
 #include <string.h>
 #include <unistd.h>
+#include <utility>
 
 using namespace WallpaperEngine::Render::Drivers;
 
@@ -29,6 +32,11 @@ static void handlePointerEnter (
     const auto driver = static_cast<WaylandOpenGLDriver*> (data);
     const auto viewport = driver->surfaceToViewport (surface);
     driver->viewportInFocus = viewport;
+
+    if (!viewport || !viewport->cursorSurface || !viewport->pointer) {
+	return;
+    }
+
     wl_surface_set_buffer_scale (viewport->cursorSurface, viewport->scale);
     wl_surface_attach (viewport->cursorSurface, wl_cursor_image_get_buffer (viewport->pointer->images[0]), 0, 0);
     wl_pointer_set_cursor (
@@ -111,9 +119,7 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->shm
 	    = static_cast<wl_shm*> (wl_registry_bind (registry, name, &wl_shm_interface, 1));
     } else if (strcmp (interface, wl_output_interface.name) == 0) {
-	driver->m_screens.emplace_back (
-	    new WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport (driver, name, registry)
-	);
+	driver->onOutputAdded (name);
     } else if (strcmp (interface, zwlr_layer_shell_v1_interface.name) == 0) {
 	driver->getWaylandContext ()->layerShell
 	    = static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
@@ -125,11 +131,13 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
 	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
 	);
+	driver->onXdgOutputManagerBound ();
     }
 }
 
 static void handleGlobalRemoved (void* data, struct wl_registry* registry, uint32_t id) {
-    // todo: outputs
+    // only outputs come and go at runtime; onOutputRemoved ignores every other global
+    static_cast<WaylandOpenGLDriver*> (data)->onOutputRemoved (id);
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -234,35 +242,177 @@ void WaylandOpenGLDriver::finishEGL () const {
 void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport) {
     sLog.error ("Compositor closed our LS, freeing data...");
 
-    if (viewport->eglSurface) {
-	eglDestroySurface (m_eglContext.display, viewport->eglSurface);
+    // Usually the output is going away (monitor powered off or unplugged) and its removal follows.
+    // Keep the viewport and its wl_output until then, so the wl_output listener never points at freed
+    // memory. If the output stays instead, it is set up again (see scheduleSetupRetry).
+    this->retrySetup (viewport);
+}
+
+void WaylandOpenGLDriver::retrySetup (Output::WaylandOutputViewport* viewport) {
+    viewport->destroyLS ();
+    Output::WaylandOutputSelection::scheduleSetupRetry (*viewport);
+
+    if (this->viewportInFocus == viewport) {
+	this->viewportInFocus = nullptr;
     }
 
-    if (viewport->eglWindow) {
-	wl_egl_window_destroy (viewport->eglWindow);
+    this->getOutput ().reset ();
+}
+
+void WaylandOpenGLDriver::onOutputAdded (uint32_t waylandName) {
+    const auto viewport = new Output::WaylandOutputViewport (this, waylandName, m_waylandContext.registry);
+
+    this->m_screens.emplace_back (viewport);
+
+    // the initial outputs are set up by initWaylandRegistry and setupOutputLayerSurfaces
+    if (!this->m_registryReady) {
+	return;
     }
 
-    if (viewport->layerSurface) {
-	zwlr_layer_surface_v1_destroy (viewport->layerSurface);
+    if (m_waylandContext.xdgOutputManager) {
+	viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
     }
+
+    // its name arrives with wl_output.done; setupPendingOutputs creates the layer surface after that,
+    // outside of event dispatching, since setupLS needs roundtrips of its own
+    viewport->pendingSetup = true;
+}
+
+void WaylandOpenGLDriver::onXdgOutputManagerBound () {
+    // during startup initWaylandRegistry calls this once the initial outputs are known
+    if (!this->m_registryReady) {
+	return;
+    }
+
+    for (const auto& viewport : this->m_screens) {
+	if (!viewport->xdgOutput && !viewport->removed) {
+	    viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	}
+    }
+}
+
+void WaylandOpenGLDriver::onOutputRemoved (uint32_t waylandName) {
+    const auto it = Output::WaylandOutputSelection::findByWaylandName (this->m_screens, waylandName);
+
+    if (it == this->m_screens.end () || (*it)->removed) {
+	return;
+    }
+
+    const auto viewport = *it;
+
+    sLog.out ("Output ", viewport->name, " removed");
+
+    // only marked here: this can run inside setupLS's roundtrips for this very viewport.
+    // freeRemovedOutputs deletes it from the event loop.
+    this->releaseViewport (viewport);
+    viewport->removed = true;
+    viewport->pendingSetup = false;
+
+    this->getOutput ().reset ();
+}
+
+void WaylandOpenGLDriver::releaseViewport (Output::WaylandOutputViewport* viewport) {
+    viewport->destroyLS ();
 
     if (viewport->xdgOutput) {
 	zxdg_output_v1_destroy (viewport->xdgOutput);
 	viewport->xdgOutput = nullptr;
     }
 
-    if (viewport->surface) {
-	wl_surface_destroy (viewport->surface);
+    if (viewport->output) {
+	wl_output_release (viewport->output);
+	viewport->output = nullptr;
     }
 
-    // remove the output from the list
-    std::erase (this->m_screens, viewport);
+    if (this->viewportInFocus == viewport) {
+	this->viewportInFocus = nullptr;
+    }
+}
 
-    // reset the viewports
-    this->getOutput ().reset ();
+int WaylandOpenGLDriver::dispatchWaylandEvents () {
+    const auto display = m_waylandContext.display;
 
-    // finally free memory used by the viewport
-    delete viewport;
+    // Frame callbacks normally pace the loop, but they stop when nothing is drawn: every requested output off
+    // or unplugged, a setup retry pending, or a compositor that stops sending them (an output in DPMS off).
+    // wl_display_dispatch would then block until an event arrives, and as libwayland retries its poll on
+    // EINTR, a SIGTERM couldn't stop the process either. So wait a bounded time, like wl_display_dispatch
+    // otherwise does, so the main loop gets to check whether it should stop and pending setups get retried.
+    while (wl_display_prepare_read (display) != 0) {
+	if (wl_display_dispatch_pending (display) == -1) {
+	    return -1;
+	}
+    }
+
+    wl_display_flush (display);
+
+    pollfd fd = { .fd = wl_display_get_fd (display), .events = POLLIN, .revents = 0 };
+
+    const int ready = poll (&fd, 1, IDLE_DISPATCH_TIMEOUT_MS);
+
+    if (ready > 0 && (fd.revents & POLLIN)) {
+	if (wl_display_read_events (display) == -1) {
+	    return -1;
+	}
+    } else {
+	wl_display_cancel_read (display);
+
+	// the connection to the compositor is gone
+	if (ready > 0 && (fd.revents & (POLLHUP | POLLERR | POLLNVAL))) {
+	    return -1;
+	}
+
+	// otherwise it timed out, or a signal interrupted it
+    }
+
+    return wl_display_dispatch_pending (display);
+}
+
+void WaylandOpenGLDriver::freeRemovedOutputs () {
+    for (const auto viewport : Output::WaylandOutputSelection::takeRemoved (this->m_screens)) {
+	delete viewport;
+    }
+}
+
+void WaylandOpenGLDriver::setupPendingOutputs () {
+    // setupLS does roundtrips, which can add outputs (handled next time) or remove them; removal only
+    // marks them and they are freed at the end, so these pointers stay valid for the whole loop
+    for (const auto viewport : Output::WaylandOutputSelection::outputsReadyForSetup (this->m_screens)) {
+	if (viewport->removed || viewport->layerSurface) {
+	    continue;
+	}
+
+	viewport->pendingSetup = false;
+
+	if (!Output::WaylandOutputSelection::isOutputRequested (viewport->name, m_context)) {
+	    continue;
+	}
+
+	sLog.out ("Output ", viewport->name, " appeared, setting up its layer surface");
+
+	try {
+	    viewport->setupLS ();
+	} catch (const std::exception&) {
+	    // already logged; keep the outputs that work running, and try this one again like a closed
+	    // layer surface
+	    this->retrySetup (viewport);
+	    continue;
+	}
+
+	// removed or closed again during setupLS's roundtrips
+	if (viewport->removed || !viewport->eglSurface) {
+	    continue;
+	}
+
+	// a span group member that wasn't there at startup, or moved, changes the area the group covers
+	this->getApp ().updateSpanBounds ();
+
+	// draw the first frame; it requests the frame callback that keeps this output rendering
+	viewport->rendering = true;
+	this->getApp ().update (viewport);
+	viewport->rendering = false;
+    }
+
+    this->freeRemovedOutputs ();
 }
 
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
@@ -293,44 +443,39 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
     }
 
     // If xdg-output-manager is available, use it to get logical output positions
+    // outputs announced from here on (including during the roundtrip below) get their own xdg_output
+    // and are set up from the event loop
+    m_registryReady = true;
+
     if (m_waylandContext.xdgOutputManager) {
-	for (const auto& o : this->m_screens) {
-	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
-	}
-	wl_display_roundtrip (m_waylandContext.display);
+	this->onXdgOutputManagerBound ();
     } else if (!m_context.settings.general.spanGroups.empty ()) {
 	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
     }
+
+    // also delivers the name of outputs announced during the first roundtrip, which
+    // setupOutputLayerSurfaces needs to pick the requested ones
+    wl_display_roundtrip (m_waylandContext.display);
 }
 
 void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
     bool any = false;
+    // setupLS does roundtrips, which can add outputs to m_screens (those wait for setupPendingOutputs)
+    const auto screens = this->m_screens;
 
-    for (const auto& o : this->m_screens) {
-	bool shouldSetup = m_context.settings.general.screenBackgrounds.contains (o->name);
-
-	// also check if this screen is in any span group
-	if (!shouldSetup) {
-	    for (const auto& spanGroup : m_context.settings.general.spanGroups) {
-		for (const auto& screen : spanGroup.screens) {
-		    if (screen == o->name) {
-			shouldSetup = true;
-			break;
-		    }
-		}
-		if (shouldSetup) {
-		    break;
-		}
-	    }
-	}
-
-	if (!shouldSetup) {
+    for (const auto& o : screens) {
+	if (o->removed || !Output::WaylandOutputSelection::isOutputRequested (o->name, m_context)) {
 	    continue;
 	}
 
+	// announced during the xdg-output roundtrip: set up here, not again from the event loop
+	o->pendingSetup = false;
 	o->setupLS ();
-	any = true;
+	// setupLS stops early if the output was removed or closed during its roundtrips
+	any = any || o->layerSurface != nullptr;
     }
+
+    this->freeRemovedOutputs ();
 
     if (!any) {
 	sLog.error ("No outputs could be initialized, please check the parameters and try again");
@@ -370,13 +515,17 @@ void WaylandOpenGLDriver::initGLEW () {
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {
-    // destroy xdg outputs
-    for (const auto& screen : this->m_screens) {
-	if (screen->xdgOutput) {
-	    zxdg_output_v1_destroy (screen->xdgOutput);
-	    screen->xdgOutput = nullptr;
-	}
+    // free the outputs while EGL is still up, destroyLS needs it. Take them out of m_screens first:
+    // destroyLS looks through m_screens for another surface to make current
+    const auto screens = std::exchange (this->m_screens, {});
+
+    for (const auto& screen : screens) {
+	this->releaseViewport (screen);
+	delete screen;
     }
+
+    // drop the output's pointers to them too (m_screens is empty now)
+    this->getOutput ().reset ();
 
     // stop EGL
     eglMakeCurrent (EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -408,15 +557,18 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
 
-    // TODO: WRITE A NON-BLOCKING VERSION OF THIS ONCE PARTICLE SIMULATION STARTS WORKING
-    // TODO: OTHERWISE wl_display_dispatch WILL BLOCK IF NO SURFACES ARE BEING DRAWN
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
     startTime = this->getRenderTime ();
 
-    if (wl_display_dispatch (m_waylandContext.display) == -1) {
+    if (this->dispatchWaylandEvents () == -1) {
+	// the display is unusable after an error, so don't set up outputs on it
 	m_requestedExit = true;
+	return;
     }
+
+    // outputs that (re)appeared while running, e.g. a monitor powered back on
+    this->setupPendingOutputs ();
 
     m_frameCounter++;
 
@@ -461,6 +613,11 @@ void* WaylandOpenGLDriver::getProcAddress (const char* name) const {
 WaylandOpenGLDriver::WaylandContext* WaylandOpenGLDriver::getWaylandContext () { return &this->m_waylandContext; }
 
 Output::WaylandOutputViewport* WaylandOpenGLDriver::surfaceToViewport (const wl_surface* surface) const {
+    // events for a surface we already destroyed arrive with a null surface
+    if (!surface) {
+	return nullptr;
+    }
+
     for (const auto& o : m_screens) {
 	if (o->surface == surface) {
 	    return o;

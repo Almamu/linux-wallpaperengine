@@ -40,7 +40,8 @@ void WaylandMouseInput::update () {
     }
 
     for (const auto* viewport : this->m_waylandDriver.m_screens) {
-	if (!viewport || viewport->size.x <= 0 || viewport->size.y <= 0) {
+	// outputs without a layer surface (not requested, or closed by the compositor) aren't drawn on
+	if (!viewport || !viewport->layerSurface || viewport->size.x <= 0 || viewport->size.y <= 0) {
 	    continue;
 	}
 
