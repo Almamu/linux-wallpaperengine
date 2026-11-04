@@ -58,9 +58,10 @@ DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* 
 std::unique_ptr<MediaSource> DBusMediaSource::createOrFallback (std::chrono::milliseconds updateInterval) {
     try {
 	return std::make_unique<DBusMediaSource> (updateInterval);
-    } catch (const std::exception&) {
-	// the reason was already logged
-	sLog.error ("Continuing without media information (MPRIS)");
+    } catch (const std::exception& e) {
+	// a failed connection was already logged by the constructor, but player detection and the
+	// initial status fetch can throw too, so include the cause here
+	sLog.error ("Continuing without media information (MPRIS): ", e.what ());
 	return std::make_unique<NullMediaSource> (updateInterval);
     }
 }
