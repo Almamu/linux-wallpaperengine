@@ -18,6 +18,7 @@ extern "C" {
 #undef static
 
 #include <algorithm>
+#include <poll.h>
 #include <string.h>
 #include <unistd.h>
 #include <utility>
@@ -328,6 +329,43 @@ void WaylandOpenGLDriver::releaseViewport (Output::WaylandOutputViewport* viewpo
     }
 }
 
+int WaylandOpenGLDriver::dispatchWaylandEvents () {
+    const auto display = m_waylandContext.display;
+
+    // While something is drawn, its frame callbacks pace the loop and waiting for events is right. With no
+    // layer surface (every requested output off or unplugged, or a setup retry pending) nothing would wake
+    // us: wl_display_dispatch would block until an output comes back, and as libwayland retries its poll on
+    // EINTR, a SIGTERM couldn't stop the process either. Wait a bounded time then, so the main loop gets to
+    // check whether it should stop and pending setups get retried.
+    const bool drawing
+	= std::ranges::any_of (this->m_screens, [] (const auto* screen) { return screen->layerSurface != nullptr; });
+
+    if (drawing) {
+	return wl_display_dispatch (display);
+    }
+
+    while (wl_display_prepare_read (display) != 0) {
+	if (wl_display_dispatch_pending (display) == -1) {
+	    return -1;
+	}
+    }
+
+    wl_display_flush (display);
+
+    pollfd fd = { .fd = wl_display_get_fd (display), .events = POLLIN, .revents = 0 };
+
+    if (poll (&fd, 1, IDLE_DISPATCH_TIMEOUT_MS) > 0 && (fd.revents & POLLIN)) {
+	if (wl_display_read_events (display) == -1) {
+	    return -1;
+	}
+    } else {
+	// timed out, or interrupted by a signal
+	wl_display_cancel_read (display);
+    }
+
+    return wl_display_dispatch_pending (display);
+}
+
 void WaylandOpenGLDriver::freeRemovedOutputs () {
     for (const auto viewport : Output::WaylandOutputSelection::takeRemoved (this->m_screens)) {
 	delete viewport;
@@ -522,7 +560,7 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     // get the start time of the frame
     startTime = this->getRenderTime ();
 
-    if (wl_display_dispatch (m_waylandContext.display) == -1) {
+    if (this->dispatchWaylandEvents () == -1) {
 	m_requestedExit = true;
     }
 
