@@ -242,6 +242,11 @@ Render::CObject* CScene::dispatchObjectType (const Object& object) {
 	    return nullptr;
 	}
 
+	if (particleData.material == nullptr || particleData.material->material == nullptr) {
+	    sLog.error ("Ignoring particle system without a material: ", particleData.name);
+	    return nullptr;
+	}
+
 	renderObject = new Objects::CParticle (*this, particleData);
     } else {
 	sLog.error ("Unknown object type, creating placeholder, empty object: ", object.id);

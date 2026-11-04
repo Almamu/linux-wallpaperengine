@@ -493,6 +493,11 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.default_value (30)
 	.store_into (this->settings.render.maximumFPS);
 
+    performanceGroup.add_argument ("--hwdec")
+	.help ("Selects the libmpv hardware decoder (auto, nvdec-copy, or no). Default: auto")
+	.choices ("auto", "nvdec-copy", "no")
+	.store_into (this->settings.render.hwdec);
+
     performanceGroup.add_argument ("--no-fullscreen-pause")
 	.help ("Prevents the background pausing when an app is fullscreen")
 	.flag ()

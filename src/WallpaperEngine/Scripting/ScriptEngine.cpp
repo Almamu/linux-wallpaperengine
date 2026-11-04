@@ -153,7 +153,7 @@ static void jsToDynamicValue (JSContext* ctx, JSValue val, DynamicValue& source)
 	    JS_FreeValue (ctx, w);
 	});
 
-	if (!JS_IsNumber (x) || JS_IsNumber (y)) {
+	if (!JS_IsNumber (x) || !JS_IsNumber (y)) {
 	    sLog.exception ("Vector's x and y components must be numbers");
 	}
 
@@ -250,6 +250,7 @@ ScriptEngine::ScriptEngine (Wallpapers::CScene& scene, Media::MediaSource& media
 
 ScriptEngine::~ScriptEngine () {
     this->m_unregisterMediaUpdateCallback ();
+    this->m_unregisterAlbumArtUpdateCallback ();
 
     for (const auto& module : this->m_scriptModules | std::views::values) {
 	JS_FreeValue (this->m_context, module.module);
