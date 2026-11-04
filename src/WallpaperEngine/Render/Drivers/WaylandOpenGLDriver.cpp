@@ -279,7 +279,7 @@ void WaylandOpenGLDriver::onOutputAdded (uint32_t waylandName) {
 }
 
 void WaylandOpenGLDriver::onXdgOutputManagerBound () {
-    // during startup initWaylandRegistry attaches it to the outputs
+    // during startup initWaylandRegistry calls this once the initial outputs are known
     if (!this->m_registryReady) {
 	return;
     }
@@ -332,18 +332,11 @@ void WaylandOpenGLDriver::releaseViewport (Output::WaylandOutputViewport* viewpo
 int WaylandOpenGLDriver::dispatchWaylandEvents () {
     const auto display = m_waylandContext.display;
 
-    // While something is drawn, its frame callbacks pace the loop and waiting for events is right. With no
-    // layer surface (every requested output off or unplugged, or a setup retry pending) nothing would wake
-    // us: wl_display_dispatch would block until an output comes back, and as libwayland retries its poll on
-    // EINTR, a SIGTERM couldn't stop the process either. Wait a bounded time then, so the main loop gets to
-    // check whether it should stop and pending setups get retried.
-    const bool drawing
-	= std::ranges::any_of (this->m_screens, [] (const auto* screen) { return screen->layerSurface != nullptr; });
-
-    if (drawing) {
-	return wl_display_dispatch (display);
-    }
-
+    // Frame callbacks normally pace the loop, but they stop when nothing is drawn: every requested output off
+    // or unplugged, a setup retry pending, or a compositor that stops sending them (an output in DPMS off).
+    // wl_display_dispatch would then block until an event arrives, and as libwayland retries its poll on
+    // EINTR, a SIGTERM couldn't stop the process either. So wait a bounded time, like wl_display_dispatch
+    // otherwise does, so the main loop gets to check whether it should stop and pending setups get retried.
     while (wl_display_prepare_read (display) != 0) {
 	if (wl_display_dispatch_pending (display) == -1) {
 	    return -1;
@@ -410,6 +403,9 @@ void WaylandOpenGLDriver::setupPendingOutputs () {
 	    continue;
 	}
 
+	// a span group member that wasn't there at startup, or moved, changes the area the group covers
+	this->getApp ().updateSpanBounds ();
+
 	// draw the first frame; it requests the frame callback that keeps this output rendering
 	viewport->rendering = true;
 	this->getApp ().update (viewport);
@@ -452,15 +448,14 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
     m_registryReady = true;
 
     if (m_waylandContext.xdgOutputManager) {
-	for (const auto& o : this->m_screens) {
-	    if (!o->xdgOutput && !o->removed) {
-		o->setupXdgOutput (m_waylandContext.xdgOutputManager);
-	    }
-	}
-	wl_display_roundtrip (m_waylandContext.display);
+	this->onXdgOutputManagerBound ();
     } else if (!m_context.settings.general.spanGroups.empty ()) {
 	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
     }
+
+    // also delivers the name of outputs announced during the first roundtrip, which
+    // setupOutputLayerSurfaces needs to pick the requested ones
+    wl_display_roundtrip (m_waylandContext.display);
 }
 
 void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
