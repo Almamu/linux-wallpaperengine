@@ -1,13 +1,21 @@
 #pragma once
 
 #include "MediaSource.h"
+
 #include <dbus/dbus.h>
+#include <memory>
 
 namespace WallpaperEngine::Media {
 class DBusMediaSource : public MediaSource {
 public:
     explicit DBusMediaSource (std::chrono::milliseconds updateInterval);
     ~DBusMediaSource () override;
+
+    /**
+     * @return A DBusMediaSource, or a NullMediaSource if the session bus can't be reached, so the
+     * application keeps running without media information
+     */
+    static std::unique_ptr<MediaSource> createOrFallback (std::chrono::milliseconds updateInterval);
 
     void parseMetadata (DBusMessageIter& variant);
     void parsePlaybackStatus (DBusMessageIter& variant, const char* sender);

@@ -1,4 +1,5 @@
 #include "DBusMediaSource.h"
+#include "NullMediaSource.h"
 
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -54,6 +55,16 @@ DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* 
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
+std::unique_ptr<MediaSource> DBusMediaSource::createOrFallback (std::chrono::milliseconds updateInterval) {
+    try {
+	return std::make_unique<DBusMediaSource> (updateInterval);
+    } catch (const std::exception&) {
+	// the reason was already logged
+	sLog.error ("Continuing without media information (MPRIS)");
+	return std::make_unique<NullMediaSource> (updateInterval);
+    }
+}
+
 DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : MediaSource (updateInterval) {
     DBusError err;
 
@@ -62,7 +73,9 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
     this->m_connection = dbus_bus_get (DBUS_BUS_SESSION, &err);
 
     if (!this->m_connection) {
-	sLog.exception ("Could not connect to DBus: ", err.message);
+	const std::string message = err.message ? err.message : "unknown error";
+	dbus_error_free (&err);
+	sLog.exception ("Could not connect to DBus: ", message);
     }
 
     dbus_connection_add_filter (this->m_connection, dbus_message_filter, this, nullptr);
