@@ -105,6 +105,8 @@ DBusMediaSource::~DBusMediaSource () { this->disconnect (); }
 void DBusMediaSource::disconnect () {
     // the connection is shared and stays open, so stop the bus from routing these signals to it too
     dbus_bus_remove_match (this->m_connection, PROPERTIES_CHANGED_MATCH, nullptr);
+    // without an error to fill in, remove_match only queues the request; send it before letting go
+    dbus_connection_flush (this->m_connection);
     dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
     dbus_connection_unref (this->m_connection);
 }
