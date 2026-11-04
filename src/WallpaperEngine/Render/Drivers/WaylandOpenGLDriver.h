@@ -102,6 +102,9 @@ private:
     void setupOutputLayerSurfaces ();
     void setupPendingOutputs ();
     void freeRemovedOutputs ();
+    /** wl_display_dispatch, but bounded by IDLE_DISPATCH_TIMEOUT_MS while no output is drawn */
+    int dispatchWaylandEvents ();
+    static constexpr int IDLE_DISPATCH_TIMEOUT_MS = 250;
     void retrySetup (Output::WaylandOutputViewport* viewport);
     void releaseViewport (Output::WaylandOutputViewport* viewport);
     void initEGL ();
