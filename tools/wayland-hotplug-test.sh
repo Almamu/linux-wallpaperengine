@@ -34,14 +34,28 @@ trap cleanup EXIT
 
 fail() {
     echo "FAIL: $*" >&2
-    echo "--- engine log (last 30 lines) ---" >&2
-    grep -vE 'Resolving require module' "$WORK/engine.log" 2>/dev/null | tail -30 >&2 || true
+    # more of it under a wrapper, which adds e.g. a backtrace
+    local lines=30
+    [[ -n ${HOTPLUG_TEST_WRAPPER:-} ]] && lines=400
+    echo "--- engine log (last $lines lines) ---" >&2
+    grep -vE 'Resolving require module' "$WORK/engine.log" 2>/dev/null | tail -"$lines" >&2 || true
     echo "--- sway log (last 15 lines) ---" >&2
     tail -15 "$WORK/sway.log" >&2 || true
     exit 1
 }
 
 pass() { echo "ok: $*"; }
+
+# Reports how the engine ended (exit code or signal) and fails.
+engine_died() {
+    local status=0
+    wait "$ENGINE_PID" 2>/dev/null || status=$?
+    ENGINE_PID=""
+    if ((status > 128)); then
+        fail "the engine was killed by signal $((status - 128)) ($(kill -l $((status - 128)) 2>/dev/null)) $1"
+    fi
+    fail "the engine exited with status $status $1"
+}
 
 # A private session: sway's sockets live in their own runtime dir, nothing leaks to or from the desktop.
 export XDG_RUNTIME_DIR="$WORK/run"
@@ -64,7 +78,7 @@ wait_for() { # seconds, description, command...
     until "$@"; do
         ((SECONDS < deadline)) || fail "timed out waiting for $what"
         kill -0 "$SWAY_PID" 2>/dev/null || fail "sway exited"
-        [[ -z $ENGINE_PID ]] || kill -0 "$ENGINE_PID" 2>/dev/null || fail "the engine exited while waiting for $what"
+        [[ -z $ENGINE_PID ]] || kill -0 "$ENGINE_PID" 2>/dev/null || engine_died "while waiting for $what"
         sleep 0.2
     done
 }
@@ -111,11 +125,16 @@ MESA_EGL=$(compgen -G '/usr/share/glvnd/egl_vendor.d/*mesa*.json' | head -n1 || 
 start_output=$(outputs)
 [[ $start_output == HEADLESS-1 ]] || fail "expected a single HEADLESS-1 output, got: $start_output"
 
+# HOTPLUG_TEST_WRAPPER runs the engine under another program (split on spaces, no quoting), e.g. to get
+# a backtrace of a crash:
+#   HOTPLUG_TEST_WRAPPER="gdb -q -batch -ex run -ex bt --args"
+read -r -a WRAPPER <<<"${HOTPLUG_TEST_WRAPPER:-}"
+
 # HEADLESS-2 and -3 don't exist yet: headless outputs are numbered as they are created.
 (
     cd "$WORK"
     exec env SDL_AUDIO_DRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 ${MESA_EGL:+__EGL_VENDOR_LIBRARY_FILENAMES=$MESA_EGL} \
-        "$ENGINE" --silent --noautomute --no-audio-processing --fps 10 --hwdec no --assets-dir "$WORK/assets" \
+        "${WRAPPER[@]}" "$ENGINE" --silent --noautomute --no-audio-processing --fps 10 --hwdec no --assets-dir "$WORK/assets" \
         --screen-root HEADLESS-1 --bg "$PROJECT" \
         --screen-root HEADLESS-2 --bg "$PROJECT" \
         --screen-root HEADLESS-3 --bg "$PROJECT"
@@ -131,7 +150,7 @@ pass "wallpaper drawn on an output added after startup"
 
 swaymsg -q output HEADLESS-1 unplug
 wait_for 5 "the engine to log HEADLESS-1's removal" grep -q "Output HEADLESS-1 removed" "$WORK/engine.log"
-engine_alive || fail "the engine exited after HEADLESS-1 was unplugged"
+engine_alive || engine_died "after HEADLESS-1 was unplugged"
 drawn HEADLESS-2 || fail "HEADLESS-2 stopped showing the wallpaper after HEADLESS-1 was unplugged"
 pass "other outputs keep drawing when one is unplugged"
 
@@ -139,7 +158,7 @@ pass "other outputs keep drawing when one is unplugged"
 swaymsg -q output HEADLESS-2 unplug
 wait_for 5 "the engine to log HEADLESS-2's removal" grep -q "Output HEADLESS-2 removed" "$WORK/engine.log"
 sleep 1
-engine_alive || fail "the engine exited once no output was left"
+engine_alive || engine_died "once no output was left"
 pass "the engine keeps running with no outputs"
 
 swaymsg -q create_output
