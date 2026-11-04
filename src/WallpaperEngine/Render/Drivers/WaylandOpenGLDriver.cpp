@@ -569,7 +569,9 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     startTime = this->getRenderTime ();
 
     if (this->dispatchWaylandEvents () == -1) {
+	// the display is unusable after an error, so don't set up outputs on it
 	m_requestedExit = true;
+	return;
     }
 
     // outputs that (re)appeared while running, e.g. a monitor powered back on
