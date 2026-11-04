@@ -354,13 +354,21 @@ int WaylandOpenGLDriver::dispatchWaylandEvents () {
 
     pollfd fd = { .fd = wl_display_get_fd (display), .events = POLLIN, .revents = 0 };
 
-    if (poll (&fd, 1, IDLE_DISPATCH_TIMEOUT_MS) > 0 && (fd.revents & POLLIN)) {
+    const int ready = poll (&fd, 1, IDLE_DISPATCH_TIMEOUT_MS);
+
+    if (ready > 0 && (fd.revents & POLLIN)) {
 	if (wl_display_read_events (display) == -1) {
 	    return -1;
 	}
     } else {
-	// timed out, or interrupted by a signal
 	wl_display_cancel_read (display);
+
+	// the connection to the compositor is gone
+	if (ready > 0 && (fd.revents & (POLLHUP | POLLERR | POLLNVAL))) {
+	    return -1;
+	}
+
+	// otherwise it timed out, or a signal interrupted it
     }
 
     return wl_display_dispatch_pending (display);
@@ -445,7 +453,7 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
 
     if (m_waylandContext.xdgOutputManager) {
 	for (const auto& o : this->m_screens) {
-	    if (!o->xdgOutput) {
+	    if (!o->xdgOutput && !o->removed) {
 		o->setupXdgOutput (m_waylandContext.xdgOutputManager);
 	    }
 	}

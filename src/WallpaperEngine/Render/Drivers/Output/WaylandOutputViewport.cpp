@@ -228,6 +228,14 @@ void WaylandOutputViewport::setupLS () {
     eglSurface = m_driver->getEGLContext ()->eglCreatePlatformWindowSurfaceEXT (
 	m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr
     );
+
+    if (eglSurface == EGL_NO_SURFACE) {
+	// leave nothing half set up; at runtime setupPendingOutputs catches this and retries the output
+	const auto error = eglGetError ();
+	eglSurface = nullptr;
+	this->destroyLS ();
+	sLog.exception ("Failed to create an EGL surface for ", name, " (EGL error ", error, ")");
+    }
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
     wl_display_flush (m_driver->getWaylandContext ()->display);
