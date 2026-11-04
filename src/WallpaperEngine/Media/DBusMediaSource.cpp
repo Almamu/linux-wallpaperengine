@@ -88,8 +88,15 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
 
     dbus_connection_flush (this->m_connection);
 
-    this->detectPlayer ();
-    this->initialStatusFetch ();
+    try {
+	this->detectPlayer ();
+	this->initialStatusFetch ();
+    } catch (...) {
+	// the destructor won't run, and the filter would keep pointing at this object on the shared connection
+	dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
+	dbus_connection_unref (this->m_connection);
+	throw;
+    }
 }
 
 DBusMediaSource::~DBusMediaSource () {
