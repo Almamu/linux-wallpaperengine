@@ -776,8 +776,8 @@ void WallpaperApplication::updateSpanBounds () {
 	    continue;
 	}
 
-	// only the members present now count. This runs when an output (re)appears, so a member going away
-	// doesn't change what the others show
+	// only the members present now count. This runs when an output (re)appears, not when one goes away,
+	// so a member going away leaves the others as they are until another output is set up
 	if (const auto bounds = this->spanBounds (spanGroup, false); bounds.has_value ()) {
 	    it->second->setSpanInfo ({ .totalBounds = *bounds });
 	}

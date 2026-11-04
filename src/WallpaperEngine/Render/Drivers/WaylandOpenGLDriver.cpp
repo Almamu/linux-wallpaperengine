@@ -557,8 +557,6 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     // TODO: FRAMETIME CONTROL SHOULD GO BACK TO THE CWALLPAPAERAPPLICATION ONCE ACTUAL PARTICLES ARE IMPLEMENTED
     // TODO: AS THOSE, MORE THAN LIKELY, WILL REQUIRE OF A DIFFERENT PROCESSING RATE
 
-    // TODO: WRITE A NON-BLOCKING VERSION OF THIS ONCE PARTICLE SIMULATION STARTS WORKING
-    // TODO: OTHERWISE wl_display_dispatch WILL BLOCK IF NO SURFACES ARE BEING DRAWN
     static float startTime, endTime, minimumTime = 1.0f / this->m_context.settings.render.maximumFPS;
     // get the start time of the frame
     startTime = this->getRenderTime ();
