@@ -243,15 +243,13 @@ void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport)
 
     // Usually the output is going away (monitor powered off or unplugged) and its removal follows.
     // Keep the viewport and its wl_output until then, so the wl_output listener never points at freed
-    // memory. If the output stays instead, set it up again after its next wl_output.done (it is resent
-    // when the output is reconfigured, e.g. re-enabled) rather than right away, which could loop.
-    this->retryAfterNextDone (viewport);
+    // memory. If the output stays instead, it is set up again (see scheduleSetupRetry).
+    this->retrySetup (viewport);
 }
 
-void WaylandOpenGLDriver::retryAfterNextDone (Output::WaylandOutputViewport* viewport) {
+void WaylandOpenGLDriver::retrySetup (Output::WaylandOutputViewport* viewport) {
     viewport->destroyLS ();
-    viewport->pendingSetup = true;
-    viewport->initialized = false;
+    Output::WaylandOutputSelection::scheduleSetupRetry (*viewport);
 
     if (this->viewportInFocus == viewport) {
 	this->viewportInFocus = nullptr;
@@ -355,9 +353,9 @@ void WaylandOpenGLDriver::setupPendingOutputs () {
 	try {
 	    viewport->setupLS ();
 	} catch (const std::exception&) {
-	    // already logged; keep the outputs that work running, and try this one again after its next
-	    // wl_output.done like a closed layer surface
-	    this->retryAfterNextDone (viewport);
+	    // already logged; keep the outputs that work running, and try this one again like a closed
+	    // layer surface
+	    this->retrySetup (viewport);
 	    continue;
 	}
 

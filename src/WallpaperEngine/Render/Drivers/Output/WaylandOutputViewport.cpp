@@ -1,5 +1,6 @@
 #include "WaylandOutputViewport.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WaylandOutputSelection.h"
 #include <algorithm>
 
 #define class _class
@@ -61,7 +62,9 @@ static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, 
     }
 }
 
-static void done (void* data, wl_output* wl_output) { static_cast<WaylandOutputViewport*> (data)->initialized = true; }
+static void done (void* data, wl_output* wl_output) {
+    WaylandOutputSelection::outputDone (*static_cast<WaylandOutputViewport*> (data));
+}
 
 static void scale (void* data, wl_output* wl_output, int32_t scale) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);

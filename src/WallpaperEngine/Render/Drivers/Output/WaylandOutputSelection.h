@@ -51,6 +51,31 @@ template <typename Screen> std::vector<Screen*> outputsReadyForSetup (const std:
     return ready;
 }
 
+/** How many times an output that lost its layer surface is set up again right away */
+constexpr int IMMEDIATE_SETUP_RETRIES = 3;
+
+/**
+ * An output lost its layer surface while staying present (the compositor closed it, or setting it up failed).
+ * Set it up again on the next event loop pass, a few times; after that wait for its next wl_output.done, so a
+ * compositor that keeps closing the surface can't make us loop.
+ */
+template <typename Screen> void scheduleSetupRetry (Screen& screen) {
+    screen.pendingSetup = true;
+
+    if (++screen.setupRetries > IMMEDIATE_SETUP_RETRIES) {
+	screen.initialized = false;
+    }
+}
+
+/**
+ * wl_output.done: the output's properties are complete (its name is known), and it may have been reconfigured,
+ * so allow immediate retries again
+ */
+template <typename Screen> void outputDone (Screen& screen) {
+    screen.initialized = true;
+    screen.setupRetries = 0;
+}
+
 /**
  * Takes the outputs the compositor removed out of the list. Removal only marks them, so a viewport that is
  * being set up or rendered when its removal arrives (setupLS does roundtrips) stays valid until the event

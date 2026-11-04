@@ -102,7 +102,7 @@ private:
     void setupOutputLayerSurfaces ();
     void setupPendingOutputs ();
     void freeRemovedOutputs ();
-    void retryAfterNextDone (Output::WaylandOutputViewport* viewport);
+    void retrySetup (Output::WaylandOutputViewport* viewport);
     void releaseViewport (Output::WaylandOutputViewport* viewport);
     void initEGL ();
     void initGLEW ();

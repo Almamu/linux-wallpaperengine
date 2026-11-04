@@ -15,6 +15,7 @@ struct FakeScreen {
     bool initialized = false;
     bool pendingSetup = false;
     bool removed = false;
+    int setupRetries = 0;
 };
 
 ApplicationContext makeContext () { return ApplicationContext (1, const_cast<char**> (selectionArgv)); }
@@ -120,15 +121,37 @@ TEST_CASE ("Wayland outputs: removal only marks, freeing takes removed outputs o
     CHECK (screens.size () == 1);
 }
 
-TEST_CASE ("Wayland outputs: a closed output is ready for setup once it is initialized again") {
-    // onLayerClose marks it pending and not initialized; it comes back once the output is reconfigured
-    FakeScreen closed { .waylandName = 110, .initialized = false, .pendingSetup = true };
-    std::vector<FakeScreen*> screens = { &closed };
+TEST_CASE ("Wayland outputs: a closed layer surface is set up again right away, a few times") {
+    FakeScreen screen { .waylandName = 110, .initialized = true };
+    std::vector<FakeScreen*> screens = { &screen };
+
+    for (int attempt = 1; attempt <= IMMEDIATE_SETUP_RETRIES; attempt++) {
+	scheduleSetupRetry (screen);
+	CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &screen });
+	// setupPendingOutputs clears it before setting the output up
+	screen.pendingSetup = false;
+    }
+
+    // a compositor that keeps closing it: stop retrying until the output changes
+    scheduleSetupRetry (screen);
+    CHECK (screen.pendingSetup);
+    CHECK (outputsReadyForSetup (screens).empty ());
+
+    // wl_output.done (output reconfigured) allows it again, with a fresh budget
+    outputDone (screen);
+    CHECK (screen.setupRetries == 0);
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &screen });
+}
+
+TEST_CASE ("Wayland outputs: wl_output.done marks a new output ready") {
+    FakeScreen added { .waylandName = 111, .initialized = false, .pendingSetup = true };
+    std::vector<FakeScreen*> screens = { &added };
 
     CHECK (outputsReadyForSetup (screens).empty ());
 
-    closed.initialized = true;
-    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &closed });
+    outputDone (added);
+    CHECK (added.initialized);
+    CHECK (outputsReadyForSetup (screens) == std::vector<FakeScreen*> { &added });
 }
 
 TEST_CASE ("Wayland outputs: a ready output removed by another one's setup stays valid until taken") {
