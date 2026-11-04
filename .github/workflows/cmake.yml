@@ -77,11 +77,14 @@ jobs:
   wayland-hotplug:
     # End-to-end: run the engine on a headless sway, add and unplug outputs, check the wallpaper comes back (#438)
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
+          persist-credentials: false
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2

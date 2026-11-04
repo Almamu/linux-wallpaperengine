@@ -155,7 +155,8 @@ wait "$ENGINE_PID" || status=$?
 kill "$watchdog" 2>/dev/null || true
 ENGINE_PID=""
 ((status != 137)) || fail "the engine did not exit within 10 seconds of SIGTERM"
-((status == 0 || status == 143)) || fail "the engine exited with status $status on SIGTERM"
+# the engine handles SIGTERM itself; 143 would mean it died from the signal instead of shutting down
+((status == 0)) || fail "the engine exited with status $status on SIGTERM"
 pass "clean shutdown"
 
 echo "all hotplug checks passed"
