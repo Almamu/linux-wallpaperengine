@@ -3,7 +3,8 @@
 # adds and unplugs outputs, and checks with screenshots that the wallpaper is drawn on each requested
 # output that appears, including after every output is gone and a new one comes back.
 #
-# Needs: sway (headless backend), swaymsg, grim, ffmpeg, python3, and Mesa's EGL for software rendering.
+# Needs: sway (headless backend), swaymsg, grim, ffmpeg, dbus-daemon, python3, and Mesa's EGL for software
+# rendering.
 # Usage: tools/wayland-hotplug-test.sh [path/to/linux-wallpaperengine]
 
 set -euo pipefail
@@ -11,7 +12,7 @@ set -euo pipefail
 ENGINE=$(realpath "${1:-build/output/linux-wallpaperengine}")
 TIMEOUT=${HOTPLUG_TEST_TIMEOUT:-20}
 
-for tool in sway swaymsg grim ffmpeg python3; do
+for tool in sway swaymsg grim ffmpeg dbus-daemon python3; do
     command -v "$tool" >/dev/null || { echo "missing: $tool" >&2; exit 2; }
 done
 [[ -x $ENGINE ]] || { echo "not an executable: $ENGINE" >&2; exit 2; }
@@ -19,10 +20,12 @@ done
 WORK=$(mktemp -d)
 SWAY_PID=""
 ENGINE_PID=""
+DBUS_PID=""
 
 cleanup() {
     [[ -n $ENGINE_PID ]] && kill "$ENGINE_PID" 2>/dev/null || true
     [[ -n $SWAY_PID ]] && kill "$SWAY_PID" 2>/dev/null || true
+    [[ -n $DBUS_PID ]] && kill "$DBUS_PID" 2>/dev/null || true
     wait 2>/dev/null || true
     if [[ ${KEEP_WORK:-0} == 1 ]]; then
         echo "logs kept in $WORK"
@@ -62,13 +65,20 @@ export XDG_RUNTIME_DIR="$WORK/run"
 mkdir -m 700 "$XDG_RUNTIME_DIR"
 unset WAYLAND_DISPLAY DISPLAY SWAYSOCK HYPRLAND_INSTANCE_SIGNATURE I3SOCK
 
+# The engine needs a D-Bus session bus (its media integration exits without one, as on CI runners), and
+# this keeps it away from the desktop's media players.
+{ read -r DBUS_SESSION_BUS_ADDRESS && read -r DBUS_PID; } < <(dbus-daemon --session --fork --print-address=1 --print-pid=1)
+export DBUS_SESSION_BUS_ADDRESS
+
 cat >"$WORK/sway.conf" <<'EOF'
 xwayland disable
 output * resolution 320x240
 EOF
 
+# --unsupported-gpu: older sway refuses to start when the NVIDIA driver is loaded, even though a
+# headless output with the pixman renderer never touches the GPU.
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
-    sway -c "$WORK/sway.conf" >"$WORK/sway.log" 2>&1 &
+    sway --unsupported-gpu -c "$WORK/sway.conf" >"$WORK/sway.log" 2>&1 &
 SWAY_PID=$!
 
 wait_for() { # seconds, description, command...
@@ -133,7 +143,7 @@ read -r -a WRAPPER <<<"${HOTPLUG_TEST_WRAPPER:-}"
 # HEADLESS-2 and -3 don't exist yet: headless outputs are numbered as they are created.
 (
     cd "$WORK"
-    exec env SDL_AUDIO_DRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 ${MESA_EGL:+__EGL_VENDOR_LIBRARY_FILENAMES=$MESA_EGL} \
+    exec env XDG_SESSION_TYPE=wayland SDL_AUDIO_DRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 ${MESA_EGL:+__EGL_VENDOR_LIBRARY_FILENAMES=$MESA_EGL} \
         "${WRAPPER[@]}" "$ENGINE" --silent --noautomute --no-audio-processing --fps 10 --hwdec no --assets-dir "$WORK/assets" \
         --screen-root HEADLESS-1 --bg "$PROJECT" \
         --screen-root HEADLESS-2 --bg "$PROJECT" \
