@@ -991,6 +991,12 @@ const WallpaperEngine::Render::Drivers::Output::Output& WallpaperApplication::ge
 
 void WallpaperApplication::setDestinationFramebuffer (GLuint framebuffer) {
     this->m_destinationFramebuffer = framebuffer;
+
+    // Video drivers may create their render target before RenderContext is
+    // initialized. Wallpapers added later pick up the stored framebuffer ID.
+    if (this->m_renderContext == nullptr)
+	return;
+
     // Update all wallpapers with the new destination framebuffer
     for (const auto& [screen, wallpaper] : this->m_renderContext->getWallpapers ()) {
 	wallpaper->setDestinationFramebuffer (framebuffer);
