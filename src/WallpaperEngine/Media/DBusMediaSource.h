@@ -27,6 +27,8 @@ protected:
     void performUpdate () override;
     void initialStatusFetch ();
     void detectPlayer ();
+    /** Undoes the constructor's setup on the shared connection and drops our reference to it */
+    void disconnect ();
 
     DBusMessage* dbusMessage (
 	const char* bus_name, const char* path, const char* interface, const char* method, const char* iface = nullptr,
