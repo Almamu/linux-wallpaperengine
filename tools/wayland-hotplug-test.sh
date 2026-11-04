@@ -146,17 +146,26 @@ swaymsg -q create_output
 wait_for "$TIMEOUT" "the wallpaper on HEADLESS-3 (after all outputs were gone)" drawn HEADLESS-3
 pass "wallpaper drawn again on an output that appeared after all were gone"
 
+# Stopping must work with no output left too: nothing is drawn then, so nothing wakes the event loop.
+swaymsg -q output HEADLESS-3 unplug
+wait_for 5 "the engine to log HEADLESS-3's removal" grep -q "Output HEADLESS-3 removed" "$WORK/engine.log"
+# let it settle into waiting for events, which is where a stop request used to go unnoticed
+sleep 2
+
 kill -TERM "$ENGINE_PID"
-# give it 10 seconds, then kill it so a hang shows up as a failure instead of a stuck job
-(sleep 10 && kill -KILL "$ENGINE_PID" 2>/dev/null) &
-watchdog=$!
+for _ in $(seq 50); do
+    kill -0 "$ENGINE_PID" 2>/dev/null || break
+    sleep 0.2
+done
+if kill -0 "$ENGINE_PID" 2>/dev/null; then
+    kill -KILL "$ENGINE_PID"
+    fail "the engine did not exit within 10 seconds of SIGTERM (with no outputs left)"
+fi
 status=0
 wait "$ENGINE_PID" || status=$?
-kill "$watchdog" 2>/dev/null || true
 ENGINE_PID=""
-((status != 137)) || fail "the engine did not exit within 10 seconds of SIGTERM"
 # the engine handles SIGTERM itself; 143 would mean it died from the signal instead of shutting down
 ((status == 0)) || fail "the engine exited with status $status on SIGTERM"
-pass "clean shutdown"
+pass "clean shutdown with no outputs left"
 
 echo "all hotplug checks passed"
