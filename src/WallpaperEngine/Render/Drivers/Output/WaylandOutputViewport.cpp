@@ -2,6 +2,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include "WaylandOutputSelection.h"
 #include <algorithm>
+#include <string_view>
 
 #define class _class
 #define namespace _namespace
@@ -275,6 +276,13 @@ void WaylandOutputViewport::setupLS () {
     this->m_driver->getOutput ().reset ();
 }
 
+static bool hasSurfacelessContext (EGLDisplay display) {
+    const char* extensions = eglQueryString (display, EGL_EXTENSIONS);
+
+    return extensions != nullptr
+	&& std::string_view (extensions).find ("EGL_KHR_surfaceless_context") != std::string_view::npos;
+}
+
 void WaylandOutputViewport::destroyLS () {
     const auto egl = m_driver->getEGLContext ();
 
@@ -285,7 +293,9 @@ void WaylandOutputViewport::destroyLS () {
 
     if (eglSurface) {
 	// release it first if it's current, so it is freed right away: move the context to another output's
-	// surface, or drop it if there is none (keeping it with no surface needs EGL_KHR_surfaceless_context)
+	// surface, or keep it current with no surface if there is none. GL work still happens while no output
+	// is drawn (album art is uploaded on a track change) and needs a current context. Without
+	// EGL_KHR_surfaceless_context the context has to be dropped
 	if (eglGetCurrentSurface (EGL_DRAW) == eglSurface) {
 	    const auto other = std::ranges::find_if (m_driver->m_screens, [this] (const auto* screen) {
 		return screen != this && screen->eglSurface;
@@ -293,7 +303,10 @@ void WaylandOutputViewport::destroyLS () {
 
 	    if (other != m_driver->m_screens.end ()) {
 		(*other)->makeCurrent ();
-	    } else {
+	    } else if (
+		!hasSurfacelessContext (egl->display)
+		|| eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl->context) == EGL_FALSE
+	    ) {
 		eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	    }
 	}
