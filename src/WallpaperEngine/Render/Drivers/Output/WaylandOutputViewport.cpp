@@ -1,5 +1,8 @@
 #include "WaylandOutputViewport.h"
 #include "WallpaperEngine/Logging/Log.h"
+#include "WaylandOutputSelection.h"
+#include <algorithm>
+#include <string_view>
 
 #define class _class
 #define namespace _namespace
@@ -60,7 +63,9 @@ static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, 
     }
 }
 
-static void done (void* data, wl_output* wl_output) { static_cast<WaylandOutputViewport*> (data)->initialized = true; }
+static void done (void* data, wl_output* wl_output) {
+    WaylandOutputSelection::outputDone (*static_cast<WaylandOutputViewport*> (data));
+}
 
 static void scale (void* data, wl_output* wl_output, int32_t scale) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
@@ -215,23 +220,40 @@ void WaylandOutputViewport::setupLS () {
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
 
+    // the roundtrip can deliver this output's removal or a closed layer surface, which tear it all down
+    if (!layerSurface) {
+	return;
+    }
+
     eglWindow = wl_egl_window_create (surface, size.x * scale, size.y * scale);
     eglSurface = m_driver->getEGLContext ()->eglCreatePlatformWindowSurfaceEXT (
 	m_driver->getEGLContext ()->display, m_driver->getEGLContext ()->config, eglWindow, nullptr
     );
+
+    if (eglSurface == EGL_NO_SURFACE) {
+	// leave nothing half set up; at runtime setupPendingOutputs catches this and retries the output
+	const auto error = eglGetError ();
+	eglSurface = nullptr;
+	this->destroyLS ();
+	sLog.exception ("Failed to create an EGL surface for ", name, " (EGL error ", error, ")");
+    }
     wl_surface_commit (surface);
     wl_display_roundtrip (m_driver->getWaylandContext ()->display);
     wl_display_flush (m_driver->getWaylandContext ()->display);
 
+    if (!layerSurface) {
+	return;
+    }
+
     static const auto XCURSORSIZE = getenv ("XCURSOR_SIZE") ? std::stoi (getenv ("XCURSOR_SIZE")) : 24;
-    const auto PRCURSORTHEME
+    cursorTheme
 	= wl_cursor_theme_load (getenv ("XCURSOR_THEME"), XCURSORSIZE * scale, m_driver->getWaylandContext ()->shm);
 
-    if (!PRCURSORTHEME) {
+    if (!cursorTheme) {
 	sLog.exception ("Failed to get a cursor theme");
     }
 
-    pointer = wl_cursor_theme_get_cursor (PRCURSORTHEME, "left_ptr");
+    pointer = wl_cursor_theme_get_cursor (cursorTheme, "left_ptr");
     cursorSurface = wl_compositor_create_surface (m_driver->getWaylandContext ()->compositor);
 
     if (!cursorSurface) {
@@ -252,6 +274,77 @@ void WaylandOutputViewport::setupLS () {
     eglSwapInterval (m_driver->getEGLContext ()->display, 0);
 
     this->m_driver->getOutput ().reset ();
+}
+
+static bool hasSurfacelessContext (EGLDisplay display) {
+    const char* extensions = eglQueryString (display, EGL_EXTENSIONS);
+
+    return extensions != nullptr
+	&& std::string_view (extensions).find ("EGL_KHR_surfaceless_context") != std::string_view::npos;
+}
+
+void WaylandOutputViewport::destroyLS () {
+    const auto egl = m_driver->getEGLContext ();
+
+    if (frameCallback) {
+	wl_callback_destroy (frameCallback);
+	frameCallback = nullptr;
+    }
+
+    if (eglSurface) {
+	// release it first if it's current, so it is freed right away: move the context to another output's
+	// surface, or keep it current with no surface if there is none. GL work still happens while no output
+	// is drawn (album art is uploaded on a track change) and needs a current context. Without
+	// EGL_KHR_surfaceless_context the context has to be dropped
+	if (eglGetCurrentSurface (EGL_DRAW) == eglSurface) {
+	    const auto other = std::ranges::find_if (m_driver->m_screens, [this] (const auto* screen) {
+		return screen != this && screen->eglSurface;
+	    });
+
+	    if (other != m_driver->m_screens.end ()) {
+		(*other)->makeCurrent ();
+	    } else if (
+		!hasSurfacelessContext (egl->display)
+		|| eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl->context) == EGL_FALSE
+	    ) {
+		eglMakeCurrent (egl->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	    }
+	}
+
+	eglDestroySurface (egl->display, eglSurface);
+	eglSurface = nullptr;
+    }
+
+    if (eglWindow) {
+	wl_egl_window_destroy (eglWindow);
+	eglWindow = nullptr;
+    }
+
+    if (layerSurface) {
+	zwlr_layer_surface_v1_destroy (layerSurface);
+	layerSurface = nullptr;
+    }
+
+    if (surface) {
+	wl_surface_destroy (surface);
+	surface = nullptr;
+    }
+
+    if (cursorSurface) {
+	wl_surface_destroy (cursorSurface);
+	cursorSurface = nullptr;
+    }
+
+    if (cursorTheme) {
+	wl_cursor_theme_destroy (cursorTheme);
+	cursorTheme = nullptr;
+    }
+
+    pointer = nullptr;
+    // button releases don't reach a viewport without a surface; don't replay a held click when it returns
+    leftClick = WallpaperEngine::Input::MouseClickStatus::Released;
+    rightClick = WallpaperEngine::Input::MouseClickStatus::Released;
+    callbackInitialized = false;
 }
 
 WaylandOpenGLDriver* WaylandOutputViewport::getDriver () const { return this->m_driver; }

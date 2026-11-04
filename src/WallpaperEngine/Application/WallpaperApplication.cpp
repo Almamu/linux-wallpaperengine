@@ -719,6 +719,71 @@ void WallpaperApplication::setupAudio () {
     m_audioContext = std::make_unique<WallpaperEngine::Audio::AudioContext> (*m_audioDriver);
 }
 
+std::optional<glm::ivec4>
+WallpaperApplication::spanBounds (const ApplicationContext::SpanGroup& spanGroup, bool logMissing) const {
+    const auto& viewports = m_renderContext->getOutput ().getViewports ();
+    int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
+    bool anyFound = false;
+
+    for (const auto& screenName : spanGroup.screens) {
+	const auto vpIt = viewports.find (screenName);
+	if (vpIt == viewports.end ()) {
+	    if (logMissing) {
+		sLog.error ("Span group screen not found: ", screenName);
+	    }
+	    continue;
+	}
+	anyFound = true;
+	const auto& vp = vpIt->second;
+	const int x = vp->globalPosition.x;
+	const int y = vp->globalPosition.y;
+	const int w = vp->logicalSize.x;
+	const int h = vp->logicalSize.y;
+	sLog.debug (
+	    "SPAN DEBUG spanBounds: screen '", screenName, "' globalPos=(", x, ",", y, ") logicalSize=", w, "x", h
+	);
+	minX = std::min (minX, x);
+	minY = std::min (minY, y);
+	maxX = std::max (maxX, x + w);
+	maxY = std::max (maxY, y + h);
+    }
+
+    if (!anyFound) {
+	return std::nullopt;
+    }
+
+    sLog.debug ("SPAN DEBUG spanBounds: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")");
+
+    return glm::ivec4 { minX, minY, maxX - minX, maxY - minY };
+}
+
+void WallpaperApplication::updateSpanBounds () {
+    if (!m_renderContext) {
+	return;
+    }
+
+    const auto& wallpapers = m_renderContext->getWallpapers ();
+
+    for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
+	if (spanGroup.screens.empty ()) {
+	    continue;
+	}
+
+	// prepareOutputs registers the group's shared wallpaper for every screen in it
+	const auto it = wallpapers.find (spanGroup.screens.front ());
+
+	if (it == wallpapers.end () || it->second->getSpanInfo () == nullptr) {
+	    continue;
+	}
+
+	// only the members present now count. This runs when an output (re)appears, not when one goes away,
+	// so a member going away leaves the others as they are until another output is set up
+	if (const auto bounds = this->spanBounds (spanGroup, false); bounds.has_value ()) {
+	    it->second->setSpanInfo ({ .totalBounds = *bounds });
+	}
+    }
+}
+
 void WallpaperApplication::prepareOutputs () {
     // initialize render context
     m_renderContext
@@ -759,44 +824,15 @@ void WallpaperApplication::prepareOutputs () {
 	    continue;
 	}
 
-	// Compute the bounding box of all viewports in this span group
-	const auto& viewports = m_renderContext->getOutput ().getViewports ();
-	int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
-	bool anyFound = false;
+	const auto bounds = this->spanBounds (spanGroup, true);
 
-	for (const auto& screenName : spanGroup.screens) {
-	    const auto vpIt = viewports.find (screenName);
-	    if (vpIt == viewports.end ()) {
-		sLog.error ("Span group screen not found: ", screenName);
-		continue;
-	    }
-	    anyFound = true;
-	    const auto& vp = vpIt->second;
-	    const int x = vp->globalPosition.x;
-	    const int y = vp->globalPosition.y;
-	    const int w = vp->logicalSize.x;
-	    const int h = vp->logicalSize.y;
-	    sLog.debug (
-		"SPAN DEBUG prepareOutputs: screen '", screenName, "' globalPos=(", x, ",", y, ") logicalSize=", w, "x",
-		h
-	    );
-	    minX = std::min (minX, x);
-	    minY = std::min (minY, y);
-	    maxX = std::max (maxX, x + w);
-	    maxY = std::max (maxY, y + h);
-	}
-
-	if (!anyFound) {
+	if (!bounds.has_value ()) {
 	    sLog.error ("No viewports found for span group, skipping");
 	    continue;
 	}
 
-	sLog.debug (
-	    "SPAN DEBUG prepareOutputs: bounding box=(", minX, ",", minY, ",", maxX - minX, ",", maxY - minY, ")"
-	);
-
 	WallpaperEngine::Render::CWallpaper::SpanInfo spanInfo;
-	spanInfo.totalBounds = { minX, minY, maxX - minX, maxY - minY };
+	spanInfo.totalBounds = *bounds;
 
 	// Create one shared wallpaper with the span group's scaling mode
 	auto sharedWallpaper = WallpaperEngine::Render::CWallpaper::fromWallpaper (
