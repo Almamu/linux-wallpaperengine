@@ -358,6 +358,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Media/MediaSource.cpp
     src/WallpaperEngine/Media/DBusMediaSource.h
     src/WallpaperEngine/Media/DBusMediaSource.cpp
+    src/WallpaperEngine/Media/NullMediaSource.h
 
     src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h
     src/WallpaperEngine/Render/Shaders/Variables/ShaderVariable.cpp
@@ -565,7 +566,8 @@ if(BUILD_TESTING)
         src/WallpaperEngine/Testing/Harnesses/RenderHarness.h
         src/WallpaperEngine/Testing/Cases/MouseCoordinates.cpp
         src/WallpaperEngine/Testing/Cases/PropertyParser.cpp
-        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp)
+        src/WallpaperEngine/Testing/Cases/PulseAudioPlayingDetector.cpp
+        src/WallpaperEngine/Testing/Cases/MediaSourceFallback.cpp)
 endif()
 
 add_library(

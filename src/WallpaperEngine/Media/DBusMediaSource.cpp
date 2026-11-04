@@ -1,9 +1,15 @@
 #include "DBusMediaSource.h"
+#include "NullMediaSource.h"
 
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 
 using namespace WallpaperEngine::Media;
+
+namespace {
+constexpr auto PROPERTIES_CHANGED_MATCH
+    = "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'";
+}
 
 DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* message, void* user_data) {
     const auto mediaSource = static_cast<DBusMediaSource*> (user_data);
@@ -54,6 +60,17 @@ DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* 
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
+std::unique_ptr<MediaSource> DBusMediaSource::createOrFallback (std::chrono::milliseconds updateInterval) {
+    try {
+	return std::make_unique<DBusMediaSource> (updateInterval);
+    } catch (const std::exception& e) {
+	// a failed connection was already logged by the constructor, but player detection and the
+	// initial status fetch can throw too, so include the cause here
+	sLog.error ("Continuing without media information (MPRIS): ", e.what ());
+	return std::make_unique<NullMediaSource> (updateInterval);
+    }
+}
+
 DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : MediaSource (updateInterval) {
     DBusError err;
 
@@ -62,25 +79,35 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
     this->m_connection = dbus_bus_get (DBUS_BUS_SESSION, &err);
 
     if (!this->m_connection) {
-	sLog.exception ("Could not connect to DBus: ", err.message);
+	const std::string message = err.message ? err.message : "unknown error";
+	dbus_error_free (&err);
+	sLog.exception ("Could not connect to DBus: ", message);
     }
 
     dbus_connection_add_filter (this->m_connection, dbus_message_filter, this, nullptr);
 
-    dbus_bus_add_match (
-	this->m_connection, "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'",
-	nullptr
-    );
+    dbus_bus_add_match (this->m_connection, PROPERTIES_CHANGED_MATCH, nullptr);
 
     dbus_connection_flush (this->m_connection);
 
-    this->detectPlayer ();
-    this->initialStatusFetch ();
+    try {
+	this->detectPlayer ();
+	this->initialStatusFetch ();
+    } catch (...) {
+	// the destructor won't run, and the filter would keep pointing at this object on the shared connection
+	this->disconnect ();
+	throw;
+    }
 }
 
-DBusMediaSource::~DBusMediaSource () {
-    dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
+DBusMediaSource::~DBusMediaSource () { this->disconnect (); }
 
+void DBusMediaSource::disconnect () {
+    // the connection is shared and stays open, so stop the bus from routing these signals to it too
+    dbus_bus_remove_match (this->m_connection, PROPERTIES_CHANGED_MATCH, nullptr);
+    // without an error to fill in, remove_match only queues the request; send it before letting go
+    dbus_connection_flush (this->m_connection);
+    dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
     dbus_connection_unref (this->m_connection);
 }
 
