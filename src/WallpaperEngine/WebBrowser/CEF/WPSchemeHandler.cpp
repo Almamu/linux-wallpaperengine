@@ -139,7 +139,7 @@ void WPSchemeHandler::parseRange (const std::string& range) {
     this->m_rangeUnsatisfiable = false;
 
     // only a single "bytes=start-[end]" or "bytes=-suffix" range is honoured
-    if (this->m_length <= 0 || range.rfind ("bytes=", 0) != 0 || range.find (',') != std::string::npos) {
+    if (this->m_length < 0 || range.rfind ("bytes=", 0) != 0 || range.find (',') != std::string::npos) {
 	return;
     }
 
@@ -183,7 +183,13 @@ void WPSchemeHandler::parseRange (const std::string& range) {
 	}
     }
 
-    if (start < 0 || start >= this->m_length) {
+    if (start < 0) {
+	return;
+    }
+
+    // nothing of an empty file can be served, whatever the range
+    if (start >= this->m_length) {
+	this->m_rangeUnsatisfiable = true;
 	return;
     }
 
