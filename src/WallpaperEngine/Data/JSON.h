@@ -104,7 +104,9 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    sLog.error ("Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", shortenForLog (e.what ()));
+	    sLog.error (
+		"Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", shortenForLog (e.what ())
+	    );
 	    return std::nullopt;
 	}
     }
