@@ -88,25 +88,30 @@ public:
 
 	return result;
     }
+    // A value that is present but can't be converted to T (a malformed vector
+    // string, a boolean where a string is expected...) is logged and treated as
+    // missing. These are noexcept, so letting the conversion error out would
+    // terminate the process.
     template <typename T> [[nodiscard]] std::optional<T> optional (const std::string& key) const noexcept {
-	auto base = this->base ();
+	const auto& base = this->base ();
 	const auto it = base.find (key);
 
 	if (it == base.end () || it->is_null ()) {
 	    return std::nullopt;
 	}
 
-	return *it;
+	try {
+	    T value = *it;
+	    return value;
+	} catch (const std::exception& e) {
+	    sLog.error (
+		"Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", shortenForLog (e.what ())
+	    );
+	    return std::nullopt;
+	}
     }
     template <typename T> [[nodiscard]] T optional (const std::string& key, T defaultValue) const noexcept {
-	auto base = this->base ();
-	const auto it = base.find (key);
-
-	if (it == base.end () || it->is_null ()) {
-	    return defaultValue;
-	}
-
-	return (*it);
+	return this->optional<T> (key).value_or (std::move (defaultValue));
     }
     [[nodiscard]] UserSettingUniquePtr user (const std::string& key, const Properties& properties) const;
     template <typename T>
@@ -149,6 +154,28 @@ public:
     }
 
 private:
+    static constexpr size_t kLogMaxLength = 200;
+
+    /**
+     * @return text cut to kLogMaxLength characters, with "..." when it was longer
+     */
+    [[nodiscard]] static std::string shortenForLog (const std::string& text) {
+	return text.size () > kLogMaxLength ? text.substr (0, kLogMaxLength) + "..." : text;
+    }
+    /**
+     * @return A short description of value for a log line: the start of a string,
+     * the size of an array or object, or the value itself
+     */
+    [[nodiscard]] static std::string describeForLog (const base_type& value) {
+	if (value.is_string ()) {
+	    return "\"" + shortenForLog (value.template get_ref<const std::string&> ()) + "\"";
+	}
+	if (value.is_structured ()) {
+	    return std::string (value.type_name ()) + " of " + std::to_string (value.size ()) + " entries";
+	}
+
+	return value.dump ();
+    }
     /**
      * @return The base json object to be used by the extension methods
      */
