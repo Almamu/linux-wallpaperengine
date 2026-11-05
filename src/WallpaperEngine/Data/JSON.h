@@ -104,7 +104,7 @@ public:
 	    T value = *it;
 	    return value;
 	} catch (const std::exception& e) {
-	    sLog.error ("Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", e.what ());
+	    sLog.error ("Ignoring invalid value for \"", key, "\" (", describeForLog (*it), "): ", shortenForLog (e.what ()));
 	    return std::nullopt;
 	}
     }
@@ -152,16 +152,21 @@ public:
     }
 
 private:
+    static constexpr size_t kLogMaxLength = 200;
+
+    /**
+     * @return text cut to kLogMaxLength characters, with "..." when it was longer
+     */
+    [[nodiscard]] static std::string shortenForLog (const std::string& text) {
+	return text.size () > kLogMaxLength ? text.substr (0, kLogMaxLength) + "..." : text;
+    }
     /**
      * @return A short description of value for a log line: the start of a string,
      * the size of an array or object, or the value itself
      */
     [[nodiscard]] static std::string describeForLog (const base_type& value) {
-	constexpr size_t kMaxLength = 200;
-
 	if (value.is_string ()) {
-	    const auto& text = value.template get_ref<const std::string&> ();
-	    return "\"" + text.substr (0, kMaxLength) + (text.size () > kMaxLength ? "...\"" : "\"");
+	    return "\"" + shortenForLog (value.template get_ref<const std::string&> ()) + "\"";
 	}
 	if (value.is_structured ()) {
 	    return std::string (value.type_name ()) + " of " + std::to_string (value.size ()) + " entries";

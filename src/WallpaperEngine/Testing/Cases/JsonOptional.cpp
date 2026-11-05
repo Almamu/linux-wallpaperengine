@@ -17,6 +17,7 @@ glm::vec2 paddingOf (const JSON& value) {
 
 TEST_CASE ("JSON optional with a default parses valid values") {
     CHECK (paddingOf ("8 9") == glm::vec2 (8.0f, 9.0f));
+    CHECK (paddingOf (32) == glm::vec2 (32.0f));
 
     const JSON object = { { "name", "clock" }, { "id", 7 } };
     CHECK (object.optional ("name", std::string ("x")) == "clock");
@@ -54,7 +55,8 @@ TEST_CASE ("JSON optional logs values that aren't valid UTF-8 without throwing")
 }
 
 TEST_CASE ("JSON optional falls back on a large invalid value") {
-    // the log line only shows the start of it
+    // checks the fallback only; the logged text isn't asserted (VectorBuilder::parse
+    // itself still logs the full value when it throws)
     CHECK (paddingOf (std::string (100000, '7')) == glm::vec2 (0.0f));
 }
 
