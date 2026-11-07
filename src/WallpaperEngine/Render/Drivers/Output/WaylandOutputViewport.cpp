@@ -47,13 +47,18 @@ static void geometry (
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
+    // once the layer surface exists, its configure event is what decides the surface size.
+    // the mode is in physical pixels, which differs from the surface size with fractional
+    // scaling (e.g. 3440x1440 mode vs 3822x1600 surface at 0.9 scale). compositors re-send
+    // the mode on refresh rate changes or when re-announcing outputs (e.g. during login),
+    // and applying it here would shrink the surface until the next restart.
+    if (viewport->layerSurface) {
+	return;
+    }
+
     // update viewport size (physical pixels; logicalSize comes from xdg-output or layer shell configure)
     viewport->size = { width, height };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
-
-    if (viewport->layerSurface) {
-	viewport->resize ();
-    }
 
     if (viewport->initialized) {
 	viewport->getDriver ()->getOutput ().reset ();
