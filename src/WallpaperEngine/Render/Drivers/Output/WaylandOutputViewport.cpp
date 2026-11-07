@@ -47,13 +47,18 @@ static void geometry (
 static void mode (void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
+    // once the layer surface exists, its configure event is what decides the surface size.
+    // the mode is in physical pixels, which differs from the surface size with fractional
+    // scaling (e.g. 3440x1440 mode vs 3822x1600 surface at 0.9 scale). compositors re-send
+    // the mode on refresh rate changes or when re-announcing outputs (e.g. during login),
+    // and applying it here would shrink the surface until the next restart.
+    if (viewport->layerSurface) {
+	return;
+    }
+
     // update viewport size (physical pixels; logicalSize comes from xdg-output or layer shell configure)
     viewport->size = { width, height };
     viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
-
-    if (viewport->layerSurface) {
-	viewport->resize ();
-    }
 
     if (viewport->initialized) {
 	viewport->getDriver ()->getOutput ().reset ();
@@ -66,6 +71,8 @@ static void scale (void* data, wl_output* wl_output, int32_t scale) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
     viewport->scale = scale;
+    // keep the viewport in sync with the EGL window size (size * scale)
+    viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
 
     if (viewport->layerSurface) {
 	viewport->resize ();
@@ -272,10 +279,13 @@ void WaylandOutputViewport::swapOutput () {
     this->makeCurrent ();
     frameCallback = wl_surface_frame (surface);
     wl_callback_add_listener (frameCallback, &frameListener, this);
-    eglSwapBuffers (m_driver->getEGLContext ()->display, this->eglSurface);
+    // set the scale before swapping: eglSwapBuffers attaches and commits the new buffer, so
+    // anything set afterwards would only apply on the next commit. after a scale change that
+    // would commit a resized buffer with the old scale (cropped frame, or an invalid_size
+    // protocol error if the buffer size isn't divisible by the old scale)
     wl_surface_set_buffer_scale (surface, scale);
     wl_surface_damage_buffer (surface, 0, 0, INT32_MAX, INT32_MAX);
-    wl_surface_commit (surface);
+    eglSwapBuffers (m_driver->getEGLContext ()->display, this->eglSurface);
 }
 
 void WaylandOutputViewport::resize () {
