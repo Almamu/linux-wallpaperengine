@@ -279,10 +279,13 @@ void WaylandOutputViewport::swapOutput () {
     this->makeCurrent ();
     frameCallback = wl_surface_frame (surface);
     wl_callback_add_listener (frameCallback, &frameListener, this);
-    eglSwapBuffers (m_driver->getEGLContext ()->display, this->eglSurface);
+    // set the scale before swapping: eglSwapBuffers attaches and commits the new buffer, so
+    // anything set afterwards would only apply on the next commit. after a scale change that
+    // would commit a resized buffer with the old scale (cropped frame, or an invalid_size
+    // protocol error if the buffer size isn't divisible by the old scale)
     wl_surface_set_buffer_scale (surface, scale);
     wl_surface_damage_buffer (surface, 0, 0, INT32_MAX, INT32_MAX);
-    wl_surface_commit (surface);
+    eglSwapBuffers (m_driver->getEGLContext ()->display, this->eglSurface);
 }
 
 void WaylandOutputViewport::resize () {
