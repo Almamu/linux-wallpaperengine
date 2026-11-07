@@ -71,6 +71,8 @@ static void scale (void* data, wl_output* wl_output, int32_t scale) {
     const auto viewport = static_cast<WaylandOutputViewport*> (data);
 
     viewport->scale = scale;
+    // keep the viewport in sync with the EGL window size (size * scale)
+    viewport->viewport = { 0, 0, viewport->size.x * viewport->scale, viewport->size.y * viewport->scale };
 
     if (viewport->layerSurface) {
 	viewport->resize ();
