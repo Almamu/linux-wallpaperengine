@@ -28,10 +28,15 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
+    const auto now = std::chrono::steady_clock::now ();
+
+    if (now <= m_nextUpdate) {
 	return;
     }
 
+    // schedule the next poll before running this one, so an update that bails out early
+    // (no player, failed call) still waits a full interval instead of retrying every frame
+    m_nextUpdate = now + m_updateInterval;
     this->performUpdate ();
 }
 
