@@ -28,16 +28,15 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    const auto now = std::chrono::steady_clock::now ();
-
-    if (now <= m_nextUpdate) {
+    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
 	return;
     }
 
-    // schedule the next poll before running this one, so an update that bails out early
-    // (no player, failed call) still waits a full interval instead of retrying every frame
-    m_nextUpdate = now + m_updateInterval;
     this->performUpdate ();
+
+    // count the interval from when this poll finished: an update that bails out early (no player,
+    // failed call) and one that blocks for longer than the interval both wait a full interval
+    m_nextUpdate = std::chrono::steady_clock::now () + m_updateInterval;
 }
 
 std::function<void ()> MediaSource::addMetadataListener (std::function<void (const MediaInfo&)> listener) {
