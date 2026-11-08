@@ -69,8 +69,9 @@ TEST_CASE ("MediaSource waits a full interval after a poll that throws") {
 }
 
 TEST_CASE ("MediaSource counts the interval from the end of a slow poll") {
-    // a poll that blocks for longer than the interval must not make the next frame poll again
-    CountingMediaSource source (20ms, [] { std::this_thread::sleep_for (60ms); });
+    // a poll that blocks for longer than the interval must not make the next frame poll again;
+    // the interval is wide so the second update () lands inside it even on a busy CI runner
+    CountingMediaSource source (500ms, [] { std::this_thread::sleep_for (600ms); });
 
     source.update ();
     source.update ();
