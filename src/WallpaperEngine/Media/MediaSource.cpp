@@ -29,6 +29,10 @@ MediaSource::~MediaSource () {
     m_metadataListeners.clear ();
 }
 
+/**
+ * Called every frame. Runs performUpdate () at most once per m_updateInterval and does nothing
+ * on the frames in between. The next poll is scheduled when this one finishes, however it ends.
+ */
 void MediaSource::update () {
     if (std::chrono::steady_clock::now () <= m_nextUpdate) {
 	return;

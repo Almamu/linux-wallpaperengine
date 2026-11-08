@@ -6,6 +6,7 @@
 #include <functional>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 
 using namespace std::chrono_literals;
 using WallpaperEngine::Media::MediaSource;
@@ -22,6 +23,9 @@ public:
     int polls = 0;
 
 protected:
+    /**
+     * Counts the poll, then runs the test's onUpdate callback (if any), which may sleep or throw
+     */
     void performUpdate () override {
 	++polls;
 
