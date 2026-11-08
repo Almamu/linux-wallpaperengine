@@ -57,7 +57,13 @@ TEST_CASE ("MediaSource polls again once the interval has passed") {
 }
 
 TEST_CASE ("MediaSource waits a full interval after a poll that throws") {
-    CountingMediaSource source (10s, [] { throw std::runtime_error ("player went away"); });
+    bool thrown = false;
+    CountingMediaSource source (500ms, [&thrown] {
+	if (!thrown) {
+	    thrown = true;
+	    throw std::runtime_error ("player went away");
+	}
+    });
 
     REQUIRE_THROWS (source.update ());
 
@@ -66,6 +72,12 @@ TEST_CASE ("MediaSource waits a full interval after a poll that throws") {
     }
 
     REQUIRE (source.polls == 1);
+
+    // and polling resumes once the interval has passed
+    std::this_thread::sleep_for (600ms);
+    source.update ();
+
+    REQUIRE (source.polls == 2);
 }
 
 TEST_CASE ("MediaSource counts the interval from the end of a slow poll") {
@@ -77,4 +89,10 @@ TEST_CASE ("MediaSource counts the interval from the end of a slow poll") {
     source.update ();
 
     REQUIRE (source.polls == 1);
+
+    // and polling resumes once the interval has passed
+    std::this_thread::sleep_for (600ms);
+    source.update ();
+
+    REQUIRE (source.polls == 2);
 }
