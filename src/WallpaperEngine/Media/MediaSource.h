@@ -28,6 +28,10 @@ public:
     explicit MediaSource (std::chrono::milliseconds updateInterval);
     virtual ~MediaSource ();
 
+    /**
+     * Called every frame. Runs performUpdate () at most once per update interval and does nothing
+     * on the frames in between. The next poll is scheduled when this one finishes, however it ends.
+     */
     virtual void update ();
 
     /**
