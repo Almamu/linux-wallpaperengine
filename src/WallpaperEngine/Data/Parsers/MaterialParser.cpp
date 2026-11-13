@@ -10,7 +10,7 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 MaterialUniquePtr MaterialParser::load (const Project& project, const std::string& filename) {
-    const auto materialJson = JSON::parse (project.assetLocator->readString (filename));
+    const auto materialJson = WallpaperEngine::Data::JSON::parseLenient (project.assetLocator->readString (filename));
 
     return parse (materialJson, filename, project);
 }

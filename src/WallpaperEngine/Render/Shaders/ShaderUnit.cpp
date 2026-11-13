@@ -458,7 +458,7 @@ void ShaderUnit::parseComboConfiguration (const std::string& content, const int 
     // TODO: SUPPORT REQUIRES SO WE PROPERLY FOLLOW THE REQUIRED CHAIN
     JSON data;
     try {
-	data = JSON::parse (content);
+	data = WallpaperEngine::Data::JSON::parseLenient (content);
     } catch (const std::exception& e) {
 	sLog.error ("Cannot parse combo metadata in shader ", this->m_file, ": ", e.what ());
 	return;
@@ -499,7 +499,7 @@ void ShaderUnit::parseParameterConfiguration (
 ) {
     JSON data;
     try {
-	data = JSON::parse (content);
+	data = WallpaperEngine::Data::JSON::parseLenient (content);
     } catch (const std::exception& e) {
 	sLog.error ("Cannot parse parameter metadata for ", name, " in shader ", this->m_file, ": ", e.what ());
 	return;

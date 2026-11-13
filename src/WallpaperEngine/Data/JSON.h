@@ -3,6 +3,7 @@
 #include "Builders/ColorBuilder.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <glm/detail/qualifier.hpp>
@@ -26,6 +27,7 @@ using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Utils::SFINAE;
 
 class JsonExtensions;
+
 
 using JSON = nlohmann::basic_json<
     std::map, std::vector, std::string, bool, std::int64_t, std::uint64_t, double, std::allocator,
@@ -207,4 +209,51 @@ private:
     [[nodiscard]] const base_type& base () const { return *static_cast<const base_type*> (this); }
 };
 
+/**
+ * Removes trailing commas ("[1, 2,]" / "{"a": 1,}") that appear outside of string literals.
+ * Wallpaper Engine tolerates them in workshop assets, nlohmann does not.
+ */
+inline std::string stripTrailingCommas (const std::string& source) {
+    std::string result;
+    result.reserve (source.size ());
+    bool inString = false;
+    for (std::size_t i = 0; i < source.size (); ++i) {
+	const char c = source[i];
+	if (inString) {
+	    result += c;
+	    if (c == '\\' && i + 1 < source.size ()) {
+		result += source[++i];
+	    } else if (c == '"') {
+		inString = false;
+	    }
+	    continue;
+	}
+	if (c == '"') {
+	    inString = true;
+	} else if (c == ',') {
+	    std::size_t next = i + 1;
+	    while (next < source.size () && std::isspace (static_cast<unsigned char> (source[next]))) {
+		++next;
+	    }
+	    if (next < source.size () && (source[next] == ']' || source[next] == '}')) {
+		continue;
+	    }
+	}
+	result += c;
+    }
+    return result;
+}
+
+/** Parses JSON, retrying without trailing commas if the strict parse fails. */
+inline JSON parseLenient (const std::string& source) {
+    try {
+	return JSON::parse (source);
+    } catch (const JSON::parse_error&) {
+	const std::string cleaned = stripTrailingCommas (source);
+	if (cleaned == source) {
+	    throw;
+	}
+	return JSON::parse (cleaned);
+    }
+}
 } // namespace WallpaperEngine::Data::JSON

@@ -570,7 +570,7 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	if (!particleFile.empty ()) {
 	    try {
 		particleJson
-		    = WallpaperEngine::Data::JSON::JSON::parse (project.assetLocator->readString (particleFile));
+		    = WallpaperEngine::Data::JSON::parseLenient (project.assetLocator->readString (particleFile));
 	    } catch (std::runtime_error& e) {
 		sLog.error ("Cannot load particle file: ", particleFile, " - ", e.what ());
 	    }

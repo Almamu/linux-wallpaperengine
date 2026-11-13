@@ -11,7 +11,7 @@ using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
 
 ModelUniquePtr ModelParser::load (const Project& project, const std::string& filename) {
-    const auto model = JSON::parse (project.assetLocator->readString (filename));
+    const auto model = WallpaperEngine::Data::JSON::parseLenient (project.assetLocator->readString (filename));
 
     return parse (model, project, filename);
 }
