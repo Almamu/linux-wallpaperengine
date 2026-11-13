@@ -30,6 +30,13 @@ CARD_WIDTH = 240
 CARD_PREVIEW_HEIGHT = CARD_WIDTH
 CARD_HEIGHT = CARD_PREVIEW_HEIGHT + 56
 FILTERS = ("Todos", "Cenas", "Vídeos", "Favoritos")
+SORTS = (
+    "Nome (A–Z)",
+    "Tamanho (maior)",
+    "Tamanho (menor)",
+    "Inscrição (recente)",
+    "Inscrição (antiga)",
+)
 SCALINGS = ("fill", "fit", "stretch", "default")
 PAGES = {
     "library": ("Biblioteca", "Seus wallpapers instalados, prontos para usar."),
@@ -141,6 +148,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self._selection_rebuilding = False
         self._toast_timer = 0
         self.filter_index = 0
+        self.sort_index = int(self._ui_preferences.get("library_sort", 0))
         self._filter_buttons: list[Gtk.Button] = []
         self._nav_buttons: dict[str, Gtk.Button] = {}
         self._nav_labels: list[Gtk.Label] = []
@@ -769,6 +777,12 @@ class WallpaperWindow(Gtk.ApplicationWindow):
         self.filter = Gtk.DropDown.new_from_strings([tr(name) for name in FILTERS])
         self.filter.connect("notify::selected", lambda dropdown, *_: self._set_filter(dropdown.get_selected()))
         tools.append(self.filter)
+        self.sort_dropdown = Gtk.DropDown.new_from_strings([tr(name) for name in SORTS])
+        self.sort_dropdown.set_selected(self.sort_index)
+        self.sort_dropdown.connect(
+            "notify::selected", lambda dropdown, *_: self._set_sort(dropdown.get_selected())
+        )
+        tools.append(self.sort_dropdown)
         self.library_count = _label(tr("Carregando…"), css="subtle")
         tools.append(self.library_count)
         self._set_filter(0)
@@ -902,6 +916,73 @@ class WallpaperWindow(Gtk.ApplicationWindow):
                 button.remove_css_class("filter-chip-active")
         if self._gallery_filter is not None:
             self._filter_cards()
+
+    def _sorted_catalog_ids(self) -> list[str]:
+        mode = self.sort_index if 0 <= self.sort_index < len(SORTS) else 0
+        if mode == 1:
+            return sorted(
+                self.catalog,
+                key=lambda item: (
+                    -int(self.catalog[item].get("size_bytes", 0)),
+                    str(self.catalog[item].get("title", item)).casefold(),
+                    item,
+                ),
+            )
+        if mode == 2:
+            return sorted(
+                self.catalog,
+                key=lambda item: (
+                    int(self.catalog[item].get("size_bytes", 0)),
+                    str(self.catalog[item].get("title", item)).casefold(),
+                    item,
+                ),
+            )
+        if mode == 3:
+            return sorted(
+                self.catalog,
+                key=lambda item: (
+                    -float(self.catalog[item].get("subscribed_at", 0.0)),
+                    str(self.catalog[item].get("title", item)).casefold(),
+                    item,
+                ),
+            )
+        if mode == 4:
+            return sorted(
+                self.catalog,
+                key=lambda item: (
+                    float(self.catalog[item].get("subscribed_at", 0.0)),
+                    str(self.catalog[item].get("title", item)).casefold(),
+                    item,
+                ),
+            )
+        return sorted(
+            self.catalog,
+            key=lambda item: (str(self.catalog[item].get("title", item)).casefold(), item),
+        )
+
+    def _set_sort(self, index: int) -> None:
+        if not 0 <= index < len(SORTS):
+            index = 0
+        if index == self.sort_index and self._gallery_all_ids:
+            return
+        self.sort_index = index
+        if hasattr(self, "sort_dropdown") and self.sort_dropdown.get_selected() != index:
+            self.sort_dropdown.set_selected(index)
+        try:
+            self._ui_preferences = model.save_ui_preferences({"library_sort": index})
+        except OSError:
+            pass
+        if not self.catalog or self._gallery_filter is None:
+            return
+        identifiers = self._sorted_catalog_ids()
+        self._gallery_all_ids = identifiers
+        self._selection_rebuilding = True
+        try:
+            self._gallery_model.splice(0, self._gallery_model.get_n_items(), identifiers)
+        finally:
+            self._selection_rebuilding = False
+        self._last_filtered_ids = None
+        self._filter_cards()
 
     def _gallery_item_id_at(self, position: int) -> str | None:
         item = self._gallery_filtered_model.get_item(position)
@@ -1919,9 +2000,7 @@ class WallpaperWindow(Gtk.ApplicationWindow):
             self.sidebar_library_count.set_text(tr("{count} wallpapers instalados", count=len(self.catalog)))
             selected_ids = self._selected_ids & self.catalog.keys()
             self._selected_ids = set(selected_ids)
-            identifiers = sorted(
-                self.catalog, key=lambda item: str(self.catalog[item].get("title", item)).casefold()
-            )
+            identifiers = self._sorted_catalog_ids()
             self._gallery_all_ids = identifiers
             self._gallery_search = {
                 wallpaper_id: " ".join(

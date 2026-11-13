@@ -265,6 +265,7 @@ def load_ui_preferences(
     for key, default, low, high in (
         ("ui_hue", 24, 0, 360),
         ("ui_intensity", 88, 35, 100),
+        ("library_sort", 0, 0, 4),
     ):
         value = values.get(key, default)
         result[key] = value if type(value) is int and low <= value <= high else default
@@ -279,7 +280,7 @@ def save_ui_preferences(preferences: dict[str, Any]) -> dict[str, int | bool]:
     if not isinstance(preferences, dict):
         raise ValueError(tr("As preferências da interface devem ser um objeto."))
     result = load_ui_preferences(load_config())
-    for key, low, high in (("ui_hue", 0, 360), ("ui_intensity", 35, 100)):
+    for key, low, high in (("ui_hue", 0, 360), ("ui_intensity", 35, 100), ("library_sort", 0, 4)):
         value = preferences.get(key, result[key])
         if type(value) is not int or not low <= value <= high:
             raise ValueError(tr("Preferência de aparência inválida: {key}.", key=key))
@@ -539,6 +540,56 @@ def _tags_for(raw: Any) -> list[str]:
     return []
 
 
+def _workshop_item_sizes(steamapps: Path) -> dict[str, int]:
+    """Read installed Workshop item sizes (in bytes) from Steam's ACF manifest."""
+    acf_path = steamapps / "workshop" / f"appworkshop_{WORKSHOP_APP_ID}.acf"
+    try:
+        content = acf_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return {}
+    marker = content.find('"WorkshopItemsInstalled"')
+    if marker == -1:
+        return {}
+    section = content[marker:]
+    end = section.find('"WorkshopItemDetails"')
+    if end != -1:
+        section = section[:end]
+    sizes: dict[str, int] = {}
+    for match in re.finditer(
+        r'"(\d+)"\s*\{[^}]*?"size"\s+"(\d+)"',
+        section,
+        re.DOTALL,
+    ):
+        try:
+            sizes[match.group(1)] = int(match.group(2))
+        except ValueError:
+            continue
+    return sizes
+
+
+def _directory_size_bytes(directory: Path) -> int:
+    """Fallback directory size calculation when Steam ACF size is unavailable."""
+    total = 0
+    try:
+        for entry in directory.rglob("*"):
+            try:
+                if entry.is_file():
+                    total += entry.stat().st_size
+            except OSError:
+                continue
+    except OSError:
+        return total
+    return total
+
+
+def _subscribed_timestamp(directory: Path) -> float:
+    """Best-effort local subscription/download timestamp for a Workshop folder."""
+    try:
+        return float(directory.stat().st_mtime)
+    except OSError:
+        return 0.0
+
+
 def scan_catalog() -> dict[str, dict[str, Any]]:
     """Find installed scene/video Workshop projects without modifying Steam data."""
     result: dict[str, dict[str, Any]] = {}
@@ -557,6 +608,7 @@ def scan_catalog() -> dict[str, dict[str, Any]]:
             continue
         local_assets = steamapps / "common/wallpaper_engine/assets"
         assets = local_assets if local_assets.is_dir() else (fallback_assets or local_assets)
+        acf_sizes = _workshop_item_sizes(steamapps)
         try:
             projects = sorted(workshop.glob("*/project.json"))
         except OSError:
@@ -576,6 +628,9 @@ def scan_catalog() -> dict[str, dict[str, Any]]:
                 continue
             raw_title = data.get("title")
             title = raw_title.strip() if isinstance(raw_title, str) and raw_title.strip() else wallpaper_id
+            size_bytes = acf_sizes.get(wallpaper_id)
+            if size_bytes is None:
+                size_bytes = _directory_size_bytes(project.parent)
             result[wallpaper_id] = {
                 "title": title,
                 "type": kind,
@@ -585,6 +640,8 @@ def scan_catalog() -> dict[str, dict[str, Any]]:
                 "preview_animation": _animation_for(project.parent, data.get("preview")),
                 "tags": _tags_for(data.get("tags")),
                 "properties": _boolean_properties(data),
+                "size_bytes": size_bytes,
+                "subscribed_at": _subscribed_timestamp(project.parent),
             }
     return result
 

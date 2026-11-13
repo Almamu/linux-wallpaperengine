@@ -57,6 +57,29 @@ class SteamLibraryTests(unittest.TestCase):
 
             self.assertIn("12345", catalog)
             self.assertEqual(catalog["12345"]["assets"], str(assets_dir))
+            self.assertGreater(catalog["12345"]["size_bytes"], 0)
+            self.assertGreater(catalog["12345"]["subscribed_at"], 0)
+
+    def test_scan_catalog_reads_size_from_workshop_acf(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            steamapps = root / "steamapps"
+            (steamapps / "common/wallpaper_engine/assets").mkdir(parents=True)
+            item_dir = steamapps / "workshop/content" / model.WORKSHOP_APP_ID / "99999"
+            item_dir.mkdir(parents=True)
+            (item_dir / "project.json").write_text(
+                '{"title": "ACF Sized Scene", "type": "scene"}',
+                encoding="utf-8",
+            )
+            (steamapps / "workshop" / f"appworkshop_{model.WORKSHOP_APP_ID}.acf").write_text(
+                '"AppWorkshop"\n{\n\t"WorkshopItemsInstalled"\n\t{\n\t\t"99999"\n\t\t{\n\t\t\t"size"\t\t"424242"\n\t\t}\n\t}\n}\n',
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(model, "steamapps_roots", return_value=[steamapps]):
+                catalog = model.scan_catalog()
+
+            self.assertEqual(catalog["99999"]["size_bytes"], 424242)
 
     def test_xrandr_outputs_prefers_active_geometry_outputs(self) -> None:
         sample_output = (
@@ -91,9 +114,14 @@ class UiPreferenceTests(unittest.TestCase):
 
                 self.assertEqual(preferences["ui_hue"], 123)
                 self.assertEqual(preferences["ui_intensity"], 73)
+                self.assertEqual(preferences["library_sort"], 0)
                 self.assertTrue(preferences["minimize_to_tray"])
                 self.assertTrue(preferences["start_app_with_session"])
                 self.assertEqual(model.load_ui_preferences(), preferences)
+
+                updated = model.save_ui_preferences({"library_sort": 3})
+                self.assertEqual(updated["library_sort"], 3)
+                self.assertEqual(model.load_ui_preferences()["library_sort"], 3)
 
     def test_app_autostart_writes_a_quoted_entry_and_removes_it(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
