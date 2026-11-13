@@ -1,5 +1,7 @@
 #include "MediaSource.h"
 
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
+
 #include <ranges>
 
 using namespace WallpaperEngine::Media;
@@ -28,9 +30,21 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
+    // a listener fired from inside performUpdate () that calls update () again must not start a
+    // second poll before the outer one has finished and scheduled the next one
+    if (m_updating || std::chrono::steady_clock::now () <= m_nextUpdate) {
 	return;
     }
+
+    m_updating = true;
+
+    // count the interval from when this poll finished, however it finished: an update that bails
+    // out early (no player, failed call), throws, or blocks for longer than the interval all wait
+    // a full interval instead of polling again on the next frame
+    WallpaperEngine::Data::Utils::ScopeGuard scheduleNext ([this] {
+	m_nextUpdate = std::chrono::steady_clock::now () + m_updateInterval;
+	m_updating = false;
+    });
 
     this->performUpdate ();
 }
