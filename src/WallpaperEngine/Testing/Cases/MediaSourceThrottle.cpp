@@ -100,3 +100,20 @@ TEST_CASE ("MediaSource counts the interval from the end of a slow poll") {
 
     REQUIRE (source.polls == 2);
 }
+
+TEST_CASE ("MediaSource ignores update () calls made while a poll is running") {
+    // a listener fired from performUpdate () may call update () again; that must not poll twice
+    MediaSource* self = nullptr;
+    CountingMediaSource source (20ms, [&self] { self->update (); });
+    self = &source;
+
+    source.update ();
+
+    REQUIRE (source.polls == 1);
+
+    // the outer poll still schedules the next one
+    std::this_thread::sleep_for (60ms);
+    source.update ();
+
+    REQUIRE (source.polls == 2);
+}

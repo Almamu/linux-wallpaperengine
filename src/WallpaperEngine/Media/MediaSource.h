@@ -31,6 +31,7 @@ public:
     /**
      * Called every frame. Runs performUpdate () at most once per update interval and does nothing
      * on the frames in between. The next poll is scheduled when this one finishes, however it ends.
+     * Calls made while a poll is still running (e.g. from a listener it fires) are ignored.
      */
     virtual void update ();
 
@@ -62,5 +63,6 @@ protected:
     MediaInfo m_mediaInfo;
     std::chrono::milliseconds m_updateInterval;
     std::chrono::time_point<std::chrono::steady_clock> m_nextUpdate;
+    bool m_updating = false;
 };
 }
