@@ -19,30 +19,30 @@ CSound::~CSound () {
 	this->getScene ().getAudioContext ().removeStream (stream.first);
     }
 
-    // free all the sound buffers and streams
-    for (auto* stream : this->m_allStreams) {
-	delete stream;
-    }
-
-    this->m_allStreams.clear ();
     this->m_activeStream.clear ();
 }
 
 void CSound::load () {
-    for (const auto& cur : this->m_sound.sounds) {
-	auto stream
-	    = new Audio::AudioStream (this->getScene ().getAudioContext (), this->getAssetLocator ().read (cur));
-
-	// Individual tracks don't loop; the playlist loops as a whole if playbackmode is "loop"
-	stream->setRepeat (false);
-
-	this->m_allStreams.push_back (stream);
-    }
+    // Store track file names for on-demand stream creation
+    this->m_trackFiles = this->m_sound.sounds;
 
     // Start playing the first track
-    if (!this->m_allStreams.empty ()) {
+    if (!this->m_trackFiles.empty ()) {
 	this->playNextTrack ();
     }
+}
+
+Audio::AudioStream* CSound::createStreamForTrack (size_t trackIndex) {
+    if (trackIndex >= this->m_trackFiles.size ()) {
+	return nullptr;
+    }
+
+    auto stream = new Audio::AudioStream (
+	this->getScene ().getAudioContext (), this->getAssetLocator ().read (this->m_trackFiles[trackIndex]));
+
+    // Individual tracks don't loop; the playlist loops as a whole if playbackmode is "loop"
+    stream->setRepeat (false);
+    return stream;
 }
 
 void CSound::playNextTrack () {
@@ -53,7 +53,7 @@ void CSound::playNextTrack () {
     this->m_activeStream.clear ();
 
     // Check if we've reached the end of the playlist
-    if (this->m_currentTrackIndex >= this->m_allStreams.size ()) {
+    if (this->m_currentTrackIndex >= this->m_trackFiles.size ()) {
 	if (this->m_playlistLoop) {
 	    this->m_currentTrackIndex = 0;
 	} else {
@@ -62,8 +62,12 @@ void CSound::playNextTrack () {
 	}
     }
 
-    // Add the next track to the audio context
-    auto* stream = this->m_allStreams[this->m_currentTrackIndex];
+    // Create a NEW stream for this track (allows replaying on loop)
+    auto* stream = this->createStreamForTrack (this->m_currentTrackIndex);
+    if (!stream) {
+	return;
+    }
+
     int streamId = this->getScene ().getAudioContext ().addStream (stream);
     this->m_activeStream.insert_or_assign (streamId, stream);
     this->m_currentTrackIndex++;
