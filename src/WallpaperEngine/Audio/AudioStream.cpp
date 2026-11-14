@@ -40,9 +40,12 @@ int audio_read_thread (void* arg) {
 	    // ensure the thread is not killed if audio has to be looped
 	    if (stream->isRepeat ()) {
 		ret = 0;
+		continue;
 	    }
 
-	    continue;
+	    // not repeating - mark as finished and exit
+	    stream->markFinished ();
+	    break;
 	}
 
 	// TODO: PROPERLY IMPLEMENT THIS
@@ -395,6 +398,11 @@ void AudioStream::dequeuePacket () {
 	    break;
 	}
 
+	// Check if stream is finished and queue is empty - exit to avoid deadlock
+	if (this->m_finished.load () && this->m_queue->nb_packets == 0) {
+	    break;
+	}
+
 	// make the thread wait if nothing was available
 	SDL_CondWait (this->m_queue->cond, this->m_queue->mutex);
     }
@@ -431,8 +439,6 @@ AVRational AudioStream::getTimeBase () const {
 }
 
 int64_t AudioStream::getQueueDuration () const { return this->m_queue->duration; }
-
-bool AudioStream::isQueueEmpty () const { return this->m_queue->nb_packets == 0; }
 
 SDL_mutex* AudioStream::getMutex () const { return this->m_queue->mutex; }
 
@@ -615,6 +621,11 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 
 	this->dequeuePacket ();
 
+	// If dequeuePacket returned because stream is finished and queue is empty, signal EOF
+	if (this->m_finished.load () && this->isQueueEmpty ()) {
+	    return -1;
+	}
+
 	audio_pkt_size = this->m_decodePacket->size;
     }
 
@@ -622,3 +633,25 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 }
 
 AudioContext& AudioStream::getAudioContext () const { return this->m_audioContext; }
+
+void AudioStream::markFinished () {
+    // Set finished flag under queue mutex and broadcast condition to wake any waiters
+    SDL_LockMutex (this->m_queue->mutex);
+    this->m_finished.store (true);
+    SDL_CondBroadcast (this->m_queue->cond);
+    SDL_UnlockMutex (this->m_queue->mutex);
+}
+
+bool AudioStream::isQueueEmpty () const {
+    // Thread-safe check of queue emptiness
+    SDL_LockMutex (this->m_queue->mutex);
+    const bool empty = this->m_queue->nb_packets == 0;
+    SDL_UnlockMutex (this->m_queue->mutex);
+    return empty;
+}
+
+bool AudioStream::isFinished () const {
+    // Stream is finished if the read thread has marked it as finished AND the queue is empty
+    // (all remaining packets have been played)
+    return this->m_finished.load () && this->isQueueEmpty ();
+}
