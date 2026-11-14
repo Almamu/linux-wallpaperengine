@@ -616,6 +616,11 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 	    av_packet_unref (this->m_decodePacket);
 	}
 
+	// Check if stream is finished and queue is empty BEFORE blocking on dequeuePacket
+	if (this->m_finished.load () && this->isQueueEmpty ()) {
+	    return -1;  // Signal EOF to caller
+	}
+
 	this->dequeuePacket ();
 
 	audio_pkt_size = this->m_decodePacket->size;
