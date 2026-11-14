@@ -40,9 +40,12 @@ int audio_read_thread (void* arg) {
 	    // ensure the thread is not killed if audio has to be looped
 	    if (stream->isRepeat ()) {
 		ret = 0;
+		continue;
 	    }
 
-	    continue;
+	    // not repeating - mark as finished and exit
+	    stream->markFinished ();
+	    break;
 	}
 
 	// TODO: PROPERLY IMPLEMENT THIS
@@ -622,3 +625,13 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 }
 
 AudioContext& AudioStream::getAudioContext () const { return this->m_audioContext; }
+
+void AudioStream::markFinished () {
+    this->m_finished.store (true);
+}
+
+bool AudioStream::isFinished () const {
+    // Stream is finished if the read thread has marked it as finished AND the queue is empty
+    // (all remaining packets have been played)
+    return this->m_finished.load () && this->isQueueEmpty ();
+}

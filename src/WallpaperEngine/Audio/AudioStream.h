@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <string>
 
 extern "C" {
@@ -119,6 +120,15 @@ public:
      * @return The SDL_mutex used for thread synchronization
      */
     [[nodiscard]] SDL_mutex* getMutex () const;
+    /**
+     * @return True if the stream has finished playing (reached EOF and not repeating)
+     */
+    [[nodiscard]] bool isFinished () const;
+
+    /**
+     * Marks the stream as finished (called from the read thread)
+     */
+    void markFinished ();
 
     /**
      * Reads a frame from the audio stream, resamples it to the driver's settings
@@ -201,5 +211,7 @@ private:
     }* m_queue {};
 
     SDL_Thread* m_audioThread = nullptr;
+    /** True when the read thread has finished (EOF reached and not repeating) */
+    std::atomic<bool> m_finished { false };
 };
 } // namespace WallpaperEngine::Audio

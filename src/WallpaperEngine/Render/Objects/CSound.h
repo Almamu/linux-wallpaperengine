@@ -23,7 +23,12 @@ protected:
     void load ();
 
 private:
-    std::map<int, Audio::AudioStream*> m_audioStreams = {};
+    void playNextTrack ();
+
+    std::vector<Audio::AudioStream*> m_allStreams {};
+    std::map<int, Audio::AudioStream*> m_activeStream {};  // Only one stream active at a time
+    size_t m_currentTrackIndex = 0;
+    bool m_playlistLoop = false;
 
     const Sound& m_sound;
 };
