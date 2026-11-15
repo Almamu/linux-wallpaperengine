@@ -264,6 +264,9 @@ void ApplicationContext::loadSettingsFromArgv () {
     backgroundMode.add_argument ("-w", "--window")
 	.help ("Window geometry to use for the given screen")
 	.action ([this] (const std::string& value) -> void {
+	    if (this->settings.render.mode == EMBEDDED_HOST) {
+		sLog.exception ("Cannot combine --embedded with --window");
+	    }
 	    if (this->settings.render.mode == DESKTOP_BACKGROUND) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }
@@ -304,6 +307,9 @@ void ApplicationContext::loadSettingsFromArgv () {
 		    sLog.exception ("--screen-root: screen '", value, "' already belongs to a span group");
 		}
 	    }
+	    if (this->settings.render.mode == EMBEDDED_HOST) {
+		sLog.exception ("Cannot combine --embedded with --screen-root");
+	    }
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }
@@ -318,6 +324,9 @@ void ApplicationContext::loadSettingsFromArgv () {
     backgroundGroup.add_argument ("--screen-span")
 	.help ("Comma-separated list of screens to span a single wallpaper across")
 	.action ([this, &lastScreen] (const std::string& value) -> void {
+	    if (this->settings.render.mode == EMBEDDED_HOST) {
+		sLog.exception ("Cannot combine --embedded with --screen-span");
+	    }
 	    if (this->settings.render.mode == EXPLICIT_WINDOW) {
 		sLog.exception ("Cannot run in both background and window mode");
 	    }
@@ -462,6 +471,20 @@ void ApplicationContext::loadSettingsFromArgv () {
 	    }
 	})
 	.append ();
+
+    backgroundGroup.add_argument ("--embedded")
+	.help (
+	    "Render into a framebuffer owned by an embedding host instead of creating a window. "
+	    "Only useful when the renderer is driven as a library, e.g. from the Plasma wallpaper plugin."
+	)
+	.flag ()
+	.action ([this] (const std::string& value) -> void {
+	    if (this->settings.render.mode == EXPLICIT_WINDOW || this->settings.render.mode == DESKTOP_BACKGROUND) {
+		sLog.exception ("Cannot combine --embedded with --window, --screen-root or --screen-span");
+	    }
+
+	    this->settings.render.mode = EMBEDDED_HOST;
+	});
 
     backgroundGroup.add_argument ("--layer")
 	.help (

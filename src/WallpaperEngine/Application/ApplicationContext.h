@@ -38,6 +38,8 @@ public:
 	DESKTOP_BACKGROUND = 1,
 	/** Explicit window mode with specified geometry */
 	EXPLICIT_WINDOW = 2,
+	/** Rendering into a framebuffer owned by an embedding host */
+	EMBEDDED_HOST = 3,
     };
 
     /**
