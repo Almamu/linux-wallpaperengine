@@ -2,6 +2,8 @@
 #include "EmbeddedOutputViewport.h"
 #include "WallpaperEngine/Render/Drivers/EmbeddedHost.h"
 
+#include <ranges>
+
 using namespace WallpaperEngine::Render::Drivers::Output;
 
 EmbeddedOutput::EmbeddedOutput (ApplicationContext& context, VideoDriver& driver, const EmbeddedHost& host) :
@@ -13,6 +15,15 @@ EmbeddedOutput::EmbeddedOutput (ApplicationContext& context, VideoDriver& driver
 
     this->m_viewports ["default"]
 	= new EmbeddedOutputViewport { { 0, 0, this->m_fullWidth, this->m_fullHeight }, "default" };
+}
+
+EmbeddedOutput::~EmbeddedOutput () {
+    // We own the single viewport we created above.
+    for (const auto& viewport : this->m_viewports | std::views::values) {
+	delete viewport;
+    }
+
+    this->m_viewports.clear ();
 }
 
 void EmbeddedOutput::reset () { }

@@ -18,6 +18,7 @@ namespace WallpaperEngine::Render::Drivers::Output {
 class EmbeddedOutput final : public Output {
 public:
     EmbeddedOutput (ApplicationContext& context, VideoDriver& driver, const EmbeddedHost& host);
+    ~EmbeddedOutput () override;
 
     void reset () override;
     bool renderVFlip () const override;
