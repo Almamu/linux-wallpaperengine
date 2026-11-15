@@ -370,10 +370,12 @@ bool AudioStream::doQueue (AVPacket* pkt) {
     return true;
 }
 
-void AudioStream::dequeuePacket () {
+bool AudioStream::dequeuePacket () {
     MyAVPacketList entry {};
 
     SDL_LockMutex (this->m_queue->mutex);
+
+    bool packetTransferred = false;
 
     while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
 #if FF_API_FIFO_OLD_API
@@ -395,6 +397,7 @@ void AudioStream::dequeuePacket () {
 	    // move the reference and free the old one
 	    av_packet_move_ref (this->m_decodePacket, entry.packet);
 	    av_packet_free (&entry.packet);
+	    packetTransferred = true;
 	    break;
 	}
 
@@ -408,6 +411,7 @@ void AudioStream::dequeuePacket () {
     }
 
     SDL_UnlockMutex (this->m_queue->mutex);
+    return packetTransferred;
 }
 
 AVCodecContext* AudioStream::getContext () const { return this->m_context; }
@@ -619,10 +623,9 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 	    av_packet_unref (this->m_decodePacket);
 	}
 
-	this->dequeuePacket ();
-
-	// If dequeuePacket returned because stream is finished and queue is empty, signal EOF
-	if (this->m_finished.load () && this->isQueueEmpty ()) {
+	// Try to get next packet; if none transferred AND stream finished, signal EOF
+	const bool packetTransferred = this->dequeuePacket ();
+	if (!packetTransferred && this->m_finished.load () && this->isQueueEmpty ()) {
 	    return -1;
 	}
 

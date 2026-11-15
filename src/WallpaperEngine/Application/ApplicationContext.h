@@ -225,7 +225,7 @@ public:
         },
         .audio = {
             .enabled = true,
-            .volume = 15,
+            .volume = 64,
             .automute = true,
             .audioprocessing = true,
         },

@@ -51,9 +51,9 @@ public:
      *
      * WARNING: BLOCKS UNTIL SOME DATA IS READ FROM IT
      *
-     * @return
+     * @return true if a packet was transferred, false if stream finished and queue empty
      */
-    void dequeuePacket ();
+    bool dequeuePacket ();
 
     /**
      * @return The audio context in use for this audio stream
