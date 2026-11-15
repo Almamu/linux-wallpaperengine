@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <string>
 
 extern "C" {
@@ -84,6 +85,10 @@ public:
      * @return If the stream is to be repeated at the end or not
      */
     [[nodiscard]] bool isRepeat () const;
+    /**
+     * Set callback to be invoked when stream finishes (EOF reached)
+     */
+    void setOnFinishedCallback (std::function<void()> callback);
     /**
      * Stops decoding and playback of the stream
      */
@@ -215,5 +220,7 @@ private:
     std::atomic<bool> m_finished { false };
     /** Remaining size of the current packet being decoded */
     int m_audioPktSize = 0;
+    /** Callback invoked when stream finishes (EOF reached) */
+    std::function<void()> m_onFinishedCallback;
 };
 } // namespace WallpaperEngine::Audio

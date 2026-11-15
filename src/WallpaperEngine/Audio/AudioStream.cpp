@@ -432,6 +432,10 @@ void AudioStream::setRepeat (const bool newRepeat) { this->m_repeat = newRepeat;
 
 bool AudioStream::isRepeat () const { return this->m_repeat; }
 
+void AudioStream::setOnFinishedCallback (std::function<void()> callback) {
+    this->m_onFinishedCallback = std::move (callback);
+}
+
 ReadStreamSharedPtr& AudioStream::getBuffer () { return this->m_buffer; }
 
 SDL_cond* AudioStream::getWaitCondition () const { return this->m_queue->wait; }
@@ -653,6 +657,11 @@ void AudioStream::markFinished () {
     this->m_finished.store (true);
     SDL_CondBroadcast (this->m_queue->cond);
     SDL_UnlockMutex (this->m_queue->mutex);
+
+    // Invoke finished callback if set (called without holding mutex)
+    if (this->m_onFinishedCallback) {
+	this->m_onFinishedCallback ();
+    }
 }
 
 bool AudioStream::isQueueEmpty () const {

@@ -71,6 +71,11 @@ Audio::AudioStream* CSound::createStreamForTrack (size_t trackIndex) {
     // Individual tracks don't loop; the playlist loops as a whole if playbackmode is "loop"
     stream->setRepeat (false);
 
+    // Set callback to signal when this track finishes
+    stream->setOnFinishedCallback ([this] () {
+	this->m_trackFinished.store (true);
+    });
+
     // Track this stream for cleanup
     this->m_allStreams.push_back (stream);
 
@@ -127,7 +132,13 @@ void CSound::playNextTrack () {
 }
 
 void CSound::render () {
-    // Check if the current track has finished playing
+    // Check if the current track has finished playing (via callback or isFinished)
+    if (this->m_trackFinished.exchange (false)) {
+	this->playNextTrack ();
+	return;
+    }
+
+    // Fallback: check isFinished() for any streams that might not have triggered callback
     for (const auto& stream : this->m_activeStream) {
 	if (stream.second->isFinished ()) {
 	    this->playNextTrack ();
