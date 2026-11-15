@@ -29,6 +29,12 @@ void audio_callback (void* userdata, uint8_t* streamData, int length) {
 	    continue;
 	}
 
+	// Check if stream is finished (EOF reached and queue drained)
+	// Skip finished streams - CSound::render() will advance to next track
+	if (buffer->stream->isFinished ()) {
+	    continue;
+	}
+
 	// check if queue is empty and signal the read thread
 	if (buffer->stream->isQueueEmpty ()) {
 	    SDL_CondSignal (buffer->stream->getWaitCondition ());
