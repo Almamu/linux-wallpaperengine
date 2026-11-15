@@ -9,8 +9,14 @@ using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene, sound), m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-	this->m_playlistLoop = this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "loop";
-	this->m_shuffle = this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "shuffle";
+	// CLI settings override project settings
+	const auto& audioSettings = this->getContext ().getApp ().getContext ().settings.audio;
+	const std::string& playbackMode = audioSettings.playbackMode;
+
+	this->m_playlistLoop = (playbackMode == "loop") ||
+	    (this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "loop");
+	this->m_shuffle = (playbackMode == "shuffle") ||
+	    (this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "shuffle");
 	this->load ();
     }
 }

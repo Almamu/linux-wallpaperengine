@@ -162,6 +162,8 @@ public:
 	    bool automute;
 	    /** If audio processing can be enabled or not */
 	    bool audioprocessing;
+	    /** Audio playback mode: sequential, loop, shuffle */
+	    std::string playbackMode;
 	} audio;
 
 	/**
@@ -228,6 +230,7 @@ public:
             .volume = 64,
             .automute = true,
             .audioprocessing = true,
+            .playbackMode = "sequential",
         },
         .mouse = {
             .enabled = true,
