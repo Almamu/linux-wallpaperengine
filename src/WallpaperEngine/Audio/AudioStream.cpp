@@ -115,11 +115,11 @@ int64_t audio_seek_data_callback (void* streamarg, int64_t offset, int whence) {
     return 0;
 }
 
-AudioStream::AudioStream (AudioContext& context, const std::string& filename) : m_audioContext (context) {
+AudioStream::AudioStream (AudioContext& context, const std::string& filename) : m_audioContext (context), m_audioPktSize (0) {
     this->loadCustomContent (filename.c_str ());
 }
 
-AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer) : m_audioContext (context) {
+AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buffer) : m_audioContext (context), m_audioPktSize (0) {
     // setup a custom context first
     this->m_formatContext = avformat_alloc_context ();
 
@@ -144,7 +144,7 @@ AudioStream::AudioStream (AudioContext& context, const ReadStreamSharedPtr& buff
 }
 
 AudioStream::AudioStream (AudioContext& audioContext, AVCodecContext* context) :
-    m_audioContext (audioContext), m_context (context), m_queue (new PacketQueue) {
+    m_audioContext (audioContext), m_context (context), m_queue (new PacketQueue), m_audioPktSize (0) {
     this->initialize ();
 }
 
@@ -629,8 +629,14 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 
 	// Try to get next packet; if none transferred AND stream finished, signal EOF
 	const bool packetTransferred = this->dequeuePacket ();
-	if (!packetTransferred && this->m_finished.load () && this->isQueueEmpty ()) {
-	    return -1;
+	if (!packetTransferred) {
+	    if (this->m_finished.load () && this->isQueueEmpty ()) {
+		return -1;
+	    }
+	    // No packet transferred but stream not finished - shouldn't happen in normal operation
+	    // but guard against invalid m_decodePacket state
+	    this->m_audioPktSize = 0;
+	    continue;
 	}
 
 	this->m_audioPktSize = this->m_decodePacket->size;
