@@ -9,14 +9,19 @@ using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene, sound), m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-	// CLI settings override project settings
+	// Resolve effective playback mode: CLI > project JSON > default (sequential)
 	const auto& audioSettings = this->getContext ().getApp ().getContext ().settings.audio;
-	const std::string& playbackMode = audioSettings.playbackMode;
+	std::string effectiveMode = audioSettings.playbackMode;
+	if (effectiveMode.empty ()) {
+	    if (this->m_sound.playbackmode.has_value ()) {
+		effectiveMode = this->m_sound.playbackmode.value ();
+	    } else {
+		effectiveMode = "sequential";
+	    }
+	}
 
-	this->m_playlistLoop = (playbackMode == "loop") ||
-	    (this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "loop");
-	this->m_shuffle = (playbackMode == "shuffle") ||
-	    (this->m_sound.playbackmode.has_value () && this->m_sound.playbackmode == "shuffle");
+	this->m_playlistLoop = (effectiveMode == "loop");
+	this->m_shuffle = (effectiveMode == "shuffle");
 	this->load ();
     }
 }
@@ -28,10 +33,10 @@ CSound::~CSound () {
     }
     this->m_activeStream.clear ();
 
-    // Clean up all created streams
+    // Clean up any remaining streams (not yet played to completion)
     for (auto* stream : this->m_allStreams) {
 	// Stop the stream first
-	stream->stop();
+	stream->stop ();
 	// Wait for the audio thread to finish
 	delete stream;
     }
@@ -73,10 +78,18 @@ Audio::AudioStream* CSound::createStreamForTrack (size_t trackIndex) {
 }
 
 void CSound::cleanupFinishedStream () {
-    // Remove finished stream from active list and clean up
+    // Remove finished stream from active list and properly delete it
     for (const auto& stream : this->m_activeStream) {
 	this->getScene ().getAudioContext ().removeStream (stream.first);
-	// Note: stream.second is in m_allStreams and will be deleted in destructor
+
+	// Find and delete the stream from m_allStreams
+	auto it = std::find (this->m_allStreams.begin (), this->m_allStreams.end (), stream.second);
+	if (it != this->m_allStreams.end ()) {
+	    // Stop the stream first
+	    stream.second->stop ();
+	    delete stream.second;
+	    this->m_allStreams.erase (it);
+	}
     }
     this->m_activeStream.clear ();
 }

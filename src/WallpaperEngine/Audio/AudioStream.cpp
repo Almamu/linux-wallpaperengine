@@ -48,6 +48,12 @@ int audio_read_thread (void* arg) {
 	    break;
 	}
 
+	if (ret < 0) {
+	    // Read error - mark as finished and exit
+	    stream->markFinished ();
+	    break;
+	}
+
 	// TODO: PROPERLY IMPLEMENT THIS
 	if (packet->stream_index == stream->getAudioStream ()) {
 	    stream->queuePacket (packet);
@@ -577,11 +583,9 @@ int AudioStream::resampleAudio (uint8_t* out_buf, const int out_size) {
 }
 
 int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
-    static int audio_pkt_size = 0;
-
     // block until there's any data in the buffers
     while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
-	while (audio_pkt_size > 0 && this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
+	while (this->m_audioPktSize > 0 && this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
 	    int got_frame = 0;
 	    int ret = avcodec_receive_frame (this->getContext (), this->m_decodeFrame);
 
@@ -600,11 +604,11 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 
 	    if (this->m_decodePacket->size < 0) {
 		// if error, skip frame
-		audio_pkt_size = 0;
+		this->m_audioPktSize = 0;
 		break;
 	    }
 
-	    audio_pkt_size -= this->m_decodePacket->size;
+	    this->m_audioPktSize -= this->m_decodePacket->size;
 	    int data_size = 0;
 
 	    if (got_frame) {
@@ -629,7 +633,7 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 	    return -1;
 	}
 
-	audio_pkt_size = this->m_decodePacket->size;
+	this->m_audioPktSize = this->m_decodePacket->size;
     }
 
     return 0;

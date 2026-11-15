@@ -213,5 +213,7 @@ private:
     SDL_Thread* m_audioThread = nullptr;
     /** True when the read thread has finished (EOF reached and not repeating) */
     std::atomic<bool> m_finished { false };
+    /** Remaining size of the current packet being decoded */
+    int m_audioPktSize = 0;
 };
 } // namespace WallpaperEngine::Audio
