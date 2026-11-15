@@ -21,6 +21,14 @@ EmbeddedOpenGLDriver::EmbeddedOpenGLDriver (
 	    "Failed to initialize GLEW, but continuing with the host context: ",
 	    reinterpret_cast<const char*> (glewGetErrorString (result))
 	);
+
+	// ...but only if GLEW really did resolve the core entrypoints. If it could
+	// not (e.g. a loader mismatch with the host's context), rendering would
+	// crash on the first call, so refuse the host up front instead.
+	if (glCreateShader == nullptr || glGenFramebuffers == nullptr || glBindFramebuffer == nullptr
+	    || glGenVertexArrays == nullptr || glUseProgram == nullptr) {
+	    sLog.exception ("GLEW could not resolve the OpenGL entrypoints for the host context");
+	}
     }
 
     this->m_output = new Output::EmbeddedOutput (context, *this, host);
