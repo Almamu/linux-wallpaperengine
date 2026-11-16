@@ -1,3 +1,4 @@
+#include <cmath>
 #include "WallpaperEngine/Render/Objects/CImage.h"
 #include "WallpaperEngine/Render/Objects/CParticle.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
@@ -311,9 +312,11 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	&& !this->getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
 	const float influence = this->getScene ().camera.parallax.mouseInfluence->value->getFloat ();
 	const float amount = this->getScene ().camera.parallax.amount->value->getFloat ();
-	const float delay = glm::clamp (
-	    this->getScene ().camera.parallax.delay->value->getFloat () * (g_Time - g_TimeLast), 0.0f, 1.0f
-	);
+	// "cameraparallaxdelay" is a smoothing time in seconds (bigger = laggier), as in
+	// Wallpaper Engine; follow exponentially so the speed doesn't depend on the frame rate.
+	const float smoothing = this->getScene ().camera.parallax.delay->value->getFloat ();
+	const float dt = static_cast<float> (g_Time - g_TimeLast);
+	const float delay = smoothing <= 0.0f ? 1.0f : glm::clamp (1.0f - std::exp (-dt / smoothing), 0.0f, 1.0f);
 
 	const glm::vec2 centeredMouse = this->m_mousePosition - glm::vec2 (0.5f, 0.5f);
 	this->m_parallaxDisplacement

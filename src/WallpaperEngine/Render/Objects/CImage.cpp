@@ -1110,12 +1110,15 @@ void CImage::updateScreenSpacePosition () {
     // Apply parallax displacement if enabled
     if (this->getScene ().getScene ().camera.parallax.enabled
 	&& !this->getScene ().getContext ().getApp ().getContext ().settings.mouse.disableparallax) {
-	const double parallaxAmount = this->getScene ().getScene ().camera.parallax.amount->value->getFloat ();
 	const glm::vec2 depth = this->getImage ().parallaxDepth->value->getVec2 ();
 	const glm::vec2* displacement = this->getScene ().getParallaxDisplacement ();
-	const float referenceSize = static_cast<float> (this->getScene ().getWidth ());
-	float x = (depth.x + parallaxAmount) * displacement->x * referenceSize;
-	float y = (depth.y + parallaxAmount) * displacement->y * referenceSize;
+	// Scale each axis by its own scene dimension, including on wide scenes.
+	const float sceneWidth = static_cast<float> (this->getScene ().getWidth ());
+	const float sceneHeight = static_cast<float> (this->getScene ().getHeight ());
+	// CScene already applies the global amount to displacement. Depth is a multiplier:
+	// adding the amount here moves zero-depth layers and over-amplifies shallow backgrounds.
+	const float x = depth.x * displacement->x * sceneWidth;
+	const float y = depth.y * displacement->y * sceneHeight;
 	mvp = glm::translate (mvp, { x, y, 0.0f });
     }
 
