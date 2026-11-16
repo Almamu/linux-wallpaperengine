@@ -226,6 +226,9 @@ void GLPlayer::init () {
     mpv_set_option_string (this->m_handle, "config", "no");
     mpv_set_option_string (this->m_handle, "fbo-format", "rgba8");
     mpv_set_option_string (this->m_handle, "vo", "libmpv");
+    // wallpapers never use the clipboard; mpv 0.40's wayland clipboard backend busy-loops on a
+    // hung-up selection fd after an image is copied (mpv-player/mpv#16139, fixed in mpv 0.41)
+    mpv_set_option_string (this->m_handle, "clipboard-backends", "vo");
     mpv_set_option_string (this->m_handle, "profile", "fast");
     mpv_set_option_string (this->m_handle, "untimed", this->m_untimed ? "yes" : "no");
 
