@@ -194,6 +194,7 @@ If you're one of those developers, feel free to open an issue to get your projec
 | `--no-fullscreen-pause` | Prevent pausing while fullscreen apps are running |
 | `--fullscreen-pause-only-active` | Wayland only: pause only when a fullscreen window is active |
 | `--fullscreen-pause-ignore-appid <val>` | Wayland only: ignore fullscreen windows whose app_id contains `<val>` (repeatable) |
+| `--layer <mode>` | Set wlr-layer-shell layer: `background`, `bottom`, `top`, `overlay` |
 
 ---
 
@@ -220,6 +221,12 @@ linux-wallpaperengine \
 ```bash
 linux-wallpaperengine \
   --scaling fill --screen-span HDMI-A-1,DP-2,DP-3 --bg 1845706469
+```
+
+#### Run a background on a monitor and set the wayland layer to `background`
+```bash
+linux-wallpaperengine \
+  --layer background --screen-root eDP-1 --bg 2667198601
 ```
 
 #### Run in a window
