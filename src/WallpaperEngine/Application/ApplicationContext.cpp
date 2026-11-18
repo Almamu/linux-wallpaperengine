@@ -544,23 +544,25 @@ void ApplicationContext::loadSettingsFromArgv () {
 
     audioGroup.add_argument ("--playback-mode")
 	.help ("Audio playback mode: sequential, loop, shuffle")
-	.default_value (std::string (""))
 	.choices ("sequential", "loop", "shuffle")
 	.action ([this] (const std::string& value) -> void {
-	    if (!value.empty ()) {
-		this->settings.audio.playbackMode = value;
-	    }
+	    this->settings.audio.playbackMode = value;
+	    this->settings.audio.playbackModeExplicit = true;
 	});
 
     audioGroup.add_argument ("--shuffle")
-	.help ("Shuffle audio tracks (alias for --playback-mode=shuffle)")
+	.help ("Shuffle audio tracks (can be combined with --loop)")
 	.flag ()
-	.action ([this] (const std::string& value) -> void { this->settings.audio.playbackMode = "shuffle"; });
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.audio.shuffle = true;
+	});
 
     audioGroup.add_argument ("--loop")
-	.help ("Loop audio playlist (alias for --playback-mode=loop)")
+	.help ("Loop audio playlist (can be combined with --shuffle)")
 	.flag ()
-	.action ([this] (const std::string& value) -> void { this->settings.audio.playbackMode = "loop"; });
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.audio.loop = true;
+	});
 
     auto& screenshotGroup = program.add_group ("Screenshot options");
 

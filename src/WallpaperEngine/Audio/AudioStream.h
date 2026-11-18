@@ -131,6 +131,16 @@ public:
     [[nodiscard]] bool isFinished () const;
 
     /**
+     * @return The stream duration in stream time_base units
+     */
+    [[nodiscard]] int64_t getStreamDuration () const;
+
+    /**
+     * @return Total duration of packets that have been read
+     */
+    [[nodiscard]] int64_t getTotalDurationRead () const;
+
+    /**
      * Marks the stream as finished (called from the read thread)
      */
     void markFinished ();
@@ -222,5 +232,9 @@ private:
     int m_audioPktSize = 0;
     /** Callback invoked when stream finishes (EOF reached) */
     std::function<void()> m_onFinishedCallback;
+    /** Stream duration in stream time_base units (from format context) */
+    int64_t m_streamDuration = 0;
+    /** Total duration of packets that have been read (not just buffered) */
+    std::atomic<int64_t> m_totalDurationRead { 0 };
 };
 } // namespace WallpaperEngine::Audio

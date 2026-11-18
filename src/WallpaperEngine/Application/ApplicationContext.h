@@ -164,6 +164,12 @@ public:
 	    bool audioprocessing;
 	    /** Audio playback mode: sequential, loop, shuffle */
 	    std::string playbackMode;
+	    /** True if playbackMode was explicitly set via CLI */
+	    bool playbackModeExplicit = false;
+	    /** Shuffle tracks (independent of loop) */
+	    bool shuffle = false;
+	    /** Loop playlist (independent of shuffle) */
+	    bool loop = false;
 	} audio;
 
 	/**

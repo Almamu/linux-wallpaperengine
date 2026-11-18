@@ -60,6 +60,13 @@ int audio_read_thread (void* arg) {
 	} else {
 	    av_packet_unref (packet);
 	}
+
+	// Check if we've read enough data to cover the stream duration
+	// (for files that don't properly report EOF, like some MP3s)
+	if (stream->getStreamDuration () > 0 && stream->getTotalDurationRead () >= stream->getStreamDuration ()) {
+	    stream->markFinished ();
+	    break;
+	}
     }
 
     // stop the audio too just in case
@@ -216,6 +223,16 @@ void AudioStream::loadCustomContent (const char* filename) {
 	sLog.exception ("Cannot find an audio stream in file ", filename);
     }
 
+    // Get stream duration from format context
+    AVStream* stream = this->m_formatContext->streams[this->m_audioStream];
+    if (stream->duration != AV_NOPTS_VALUE) {
+	this->m_streamDuration = stream->duration;
+    } else if (this->m_formatContext->duration != AV_NOPTS_VALUE) {
+	// Convert from AV_TIME_BASE to stream time_base
+	this->m_streamDuration = av_rescale_q (this->m_formatContext->duration, AV_TIME_BASE_Q, stream->time_base);
+    }
+    sLog.out ("AudioStream: stream duration: ", this->m_streamDuration, " (time_base: ", stream->time_base.num, "/", stream->time_base.den, ")");
+
     // get the decoder for it and alloc the required context
     const AVCodec* aCodec
 	= avcodec_find_decoder (this->m_formatContext->streams[this->m_audioStream]->codecpar->codec_id);
@@ -370,6 +387,7 @@ bool AudioStream::doQueue (AVPacket* pkt) {
     this->m_queue->nb_packets++;
     this->m_queue->size += entry.packet->size + sizeof (entry);
     this->m_queue->duration += entry.packet->duration;
+    this->m_totalDurationRead += entry.packet->duration;
 
     SDL_CondSignal (this->m_queue->cond);
 
@@ -650,6 +668,10 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 }
 
 AudioContext& AudioStream::getAudioContext () const { return this->m_audioContext; }
+
+int64_t AudioStream::getStreamDuration () const { return this->m_streamDuration; }
+
+int64_t AudioStream::getTotalDurationRead () const { return this->m_totalDurationRead.load (); }
 
 void AudioStream::markFinished () {
     // Set finished flag under queue mutex and broadcast condition to wake any waiters

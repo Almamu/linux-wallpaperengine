@@ -9,19 +9,21 @@ using namespace WallpaperEngine::Render::Objects;
 
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene, sound), m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-	// Resolve effective playback mode: CLI > project JSON > default (sequential)
+	// Resolve effective playback settings: CLI flags > project JSON > defaults
 	const auto& audioSettings = this->getContext ().getApp ().getContext ().settings.audio;
-	std::string effectiveMode = audioSettings.playbackMode;
-	if (effectiveMode.empty ()) {
-	    if (this->m_sound.playbackmode.has_value ()) {
-		effectiveMode = this->m_sound.playbackmode.value ();
-	    } else {
-		effectiveMode = "sequential";
-	    }
+	
+	// Loop: CLI --loop flag > project JSON "loop" > default false
+	this->m_playlistLoop = audioSettings.loop;
+	if (!this->m_playlistLoop && this->m_sound.playbackmode.has_value ()) {
+	    this->m_playlistLoop = (this->m_sound.playbackmode.value () == "loop");
 	}
-
-	this->m_playlistLoop = (effectiveMode == "loop");
-	this->m_shuffle = (effectiveMode == "shuffle");
+	
+	// Shuffle: CLI --shuffle flag > project JSON "shuffle" > default false
+	this->m_shuffle = audioSettings.shuffle;
+	if (!this->m_shuffle && this->m_sound.playbackmode.has_value ()) {
+	    this->m_shuffle = (this->m_sound.playbackmode.value () == "shuffle");
+	}
+	
 	this->load ();
     }
 }
@@ -75,6 +77,11 @@ Audio::AudioStream* CSound::createStreamForTrack (size_t trackIndex) {
     stream->setOnFinishedCallback ([this] () {
 	this->m_trackFinished.store (true);
     });
+
+    // Check if stream already finished (short track finished before callback was set)
+    if (stream->isFinished ()) {
+	this->m_trackFinished.store (true);
+    }
 
     // Track this stream for cleanup
     this->m_allStreams.push_back (stream);
