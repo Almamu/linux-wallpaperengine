@@ -12,13 +12,17 @@ int audio_read_thread (void* arg) {
     SDL_mutex* waitMutex = SDL_CreateMutex ();
     auto* stream = static_cast<AudioStream*> (arg);
     AVPacket* packet = av_packet_alloc ();
-    int ret = 0;
 
     if (waitMutex == nullptr) {
 	sLog.exception ("Cannot create mutex for audio playback waiting");
     }
 
-    while (ret >= 0 && stream->getAudioContext ().getApplicationContext ().state.general.keepRunning
+    if (packet == nullptr) {
+	SDL_DestroyMutex (waitMutex);
+	sLog.exception ("Cannot allocate packet for audio playback");
+    }
+
+    while (stream->getAudioContext ().getApplicationContext ().state.general.keepRunning
 	   && stream->isInitialized ()) {
 	// give the cpu some time to play the queued frames if there's enough info there
 	if (stream->getQueueSize () >= MAX_QUEUE_SIZE
@@ -30,16 +34,15 @@ int audio_read_thread (void* arg) {
 	    continue;
 	}
 
-	ret = av_read_frame (stream->getFormatContext (), packet);
+	const int ret = av_read_frame (stream->getFormatContext (), packet);
 
 	if (ret == AVERROR_EOF) {
-	    // seek to the beginning of the file again
-	    avformat_seek_file (stream->getFormatContext (), stream->getAudioStream (), 0, 0, 0, ~AVSEEK_FLAG_FRAME);
-	    avcodec_flush_buffers (stream->getContext ());
-
 	    // ensure the thread is not killed if audio has to be looped
 	    if (stream->isRepeat ()) {
-		ret = 0;
+		avformat_seek_file (
+		    stream->getFormatContext (), stream->getAudioStream (), 0, 0, 0, ~AVSEEK_FLAG_FRAME
+		);
+		avcodec_flush_buffers (stream->getContext ());
 		continue;
 	    }
 
@@ -49,7 +52,8 @@ int audio_read_thread (void* arg) {
 	}
 
 	if (ret < 0) {
-	    // Read error - mark as finished and exit
+	    // read error - mark as finished and exit so the playlist can advance
+	    sLog.error ("Cannot read audio frame: ", ret);
 	    stream->markFinished ();
 	    break;
 	}
@@ -60,14 +64,9 @@ int audio_read_thread (void* arg) {
 	} else {
 	    av_packet_unref (packet);
 	}
-
-	// Check if we've read enough data to cover the stream duration
-	// (for files that don't properly report EOF, like some MP3s)
-	if (stream->getStreamDuration () > 0 && stream->getTotalDurationRead () >= stream->getStreamDuration ()) {
-	    stream->markFinished ();
-	    break;
-	}
     }
+
+    av_packet_free (&packet);
 
     // stop the audio too just in case
     SDL_DestroyMutex (waitMutex);
@@ -156,19 +155,13 @@ AudioStream::AudioStream (AudioContext& audioContext, AVCodecContext* context) :
 }
 
 AudioStream::~AudioStream () {
-    // stop the audio
+    // stop the audio and wake up any thread waiting on it
     this->stop ();
 
     if (this->m_audioThread != nullptr) {
 	// wait for the thread to finish
 	SDL_WaitThread (this->m_audioThread, nullptr);
-    }
-
-    this->m_audioThread = nullptr;
-
-    if (this->m_queue != nullptr) {
-	// wait for the audio buffers to be done
-	SDL_CondWait (this->m_queue->wait, this->m_queue->mutex);
+	this->m_audioThread = nullptr;
     }
 
     if (this->m_swrctx != nullptr && swr_is_initialized (this->m_swrctx) == true) {
@@ -222,16 +215,6 @@ void AudioStream::loadCustomContent (const char* filename) {
     if (this->m_audioStream == NO_AUDIO_STREAM) {
 	sLog.exception ("Cannot find an audio stream in file ", filename);
     }
-
-    // Get stream duration from format context
-    AVStream* stream = this->m_formatContext->streams[this->m_audioStream];
-    if (stream->duration != AV_NOPTS_VALUE) {
-	this->m_streamDuration = stream->duration;
-    } else if (this->m_formatContext->duration != AV_NOPTS_VALUE) {
-	// Convert from AV_TIME_BASE to stream time_base
-	this->m_streamDuration = av_rescale_q (this->m_formatContext->duration, AV_TIME_BASE_Q, stream->time_base);
-    }
-    sLog.out ("AudioStream: stream duration: ", this->m_streamDuration, " (time_base: ", stream->time_base.num, "/", stream->time_base.den, ")");
 
     // get the decoder for it and alloc the required context
     const AVCodec* aCodec
@@ -351,10 +334,12 @@ void AudioStream::queuePacket (AVPacket* pkt) {
     AVPacket* clone = av_packet_alloc ();
 
     if (clone == nullptr) {
-	av_packet_unref (clone);
+	av_packet_unref (pkt);
 	return;
     }
 
+    // move the reference into the clone. The original packet is left empty
+    // and can be reused by the read thread on the next av_read_frame call.
     av_packet_move_ref (clone, pkt);
 
     SDL_LockMutex (this->m_queue->mutex);
@@ -362,7 +347,8 @@ void AudioStream::queuePacket (AVPacket* pkt) {
     SDL_UnlockMutex (this->m_queue->mutex);
 
     if (!gotQueued) {
-	av_packet_free (&pkt);
+	// doQueue takes ownership of the packet, so only free the clone if it was rejected
+	av_packet_free (&clone);
     }
 }
 
@@ -387,7 +373,6 @@ bool AudioStream::doQueue (AVPacket* pkt) {
     this->m_queue->nb_packets++;
     this->m_queue->size += entry.packet->size + sizeof (entry);
     this->m_queue->duration += entry.packet->duration;
-    this->m_totalDurationRead += entry.packet->duration;
 
     SDL_CondSignal (this->m_queue->cond);
 
@@ -401,7 +386,7 @@ bool AudioStream::dequeuePacket () {
 
     bool packetTransferred = false;
 
-    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
+    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning && this->m_initialized.load ()) {
 #if FF_API_FIFO_OLD_API
 	int ret = -1;
 
@@ -430,8 +415,9 @@ bool AudioStream::dequeuePacket () {
 	    break;
 	}
 
-	// make the thread wait if nothing was available
-	SDL_CondWait (this->m_queue->cond, this->m_queue->mutex);
+	// make the thread wait if nothing was available. The timeout makes sure a
+	// stopped/destroyed stream can never leave this thread waiting forever.
+	SDL_CondWaitTimeout (this->m_queue->cond, this->m_queue->mutex, 100);
     }
 
     SDL_UnlockMutex (this->m_queue->mutex);
@@ -450,17 +436,23 @@ void AudioStream::setRepeat (const bool newRepeat) { this->m_repeat = newRepeat;
 
 bool AudioStream::isRepeat () const { return this->m_repeat; }
 
-void AudioStream::setOnFinishedCallback (std::function<void()> callback) {
-    this->m_onFinishedCallback = std::move (callback);
-}
-
 ReadStreamSharedPtr& AudioStream::getBuffer () { return this->m_buffer; }
 
 SDL_cond* AudioStream::getWaitCondition () const { return this->m_queue->wait; }
 
-size_t AudioStream::getQueueSize () const { return this->m_queue->size; }
+size_t AudioStream::getQueueSize () const {
+    SDL_LockMutex (this->m_queue->mutex);
+    const size_t size = this->m_queue->size;
+    SDL_UnlockMutex (this->m_queue->mutex);
+    return size;
+}
 
-int AudioStream::getQueuePacketCount () const { return this->m_queue->nb_packets; }
+int AudioStream::getQueuePacketCount () const {
+    SDL_LockMutex (this->m_queue->mutex);
+    const int count = this->m_queue->nb_packets;
+    SDL_UnlockMutex (this->m_queue->mutex);
+    return count;
+}
 
 AVRational AudioStream::getTimeBase () const {
     if (this->m_audioStream == NO_AUDIO_STREAM) {
@@ -470,17 +462,35 @@ AVRational AudioStream::getTimeBase () const {
     return this->m_formatContext->streams[this->m_audioStream]->time_base;
 }
 
-int64_t AudioStream::getQueueDuration () const { return this->m_queue->duration; }
+int64_t AudioStream::getQueueDuration () const {
+    SDL_LockMutex (this->m_queue->mutex);
+    const int64_t duration = this->m_queue->duration;
+    SDL_UnlockMutex (this->m_queue->mutex);
+    return duration;
+}
 
 SDL_mutex* AudioStream::getMutex () const { return this->m_queue->mutex; }
 
 void AudioStream::stop () {
-    if (!this->isInitialized ()) {
+    // stop the read thread
+    this->m_initialized.store (false);
+
+    if (this->m_queue == nullptr) {
 	return;
     }
 
-    // stop the threads running
-    this->m_initialized = false;
+    // wake the read thread if it's waiting for the queue to drain
+    if (this->m_queue->wait != nullptr) {
+	SDL_CondBroadcast (this->m_queue->wait);
+    }
+
+    // wake anything waiting for packets (the audio callback) and mark the stream as done
+    if (this->m_queue->mutex != nullptr && this->m_queue->cond != nullptr) {
+	SDL_LockMutex (this->m_queue->mutex);
+	this->m_finished.store (true);
+	SDL_CondBroadcast (this->m_queue->cond);
+	SDL_UnlockMutex (this->m_queue->mutex);
+    }
 }
 
 int AudioStream::resampleAudio (uint8_t* out_buf, const int out_size) {
@@ -606,7 +616,7 @@ int AudioStream::resampleAudio (uint8_t* out_buf, const int out_size) {
 
 int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
     // block until there's any data in the buffers
-    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
+    while (this->m_audioContext.getApplicationContext ().state.general.keepRunning && this->m_initialized.load ()) {
 	while (this->m_audioPktSize > 0 && this->m_audioContext.getApplicationContext ().state.general.keepRunning) {
 	    int got_frame = 0;
 	    int ret = avcodec_receive_frame (this->getContext (), this->m_decodeFrame);
@@ -652,7 +662,7 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 	// Try to get next packet; if none transferred AND stream finished, signal EOF
 	const bool packetTransferred = this->dequeuePacket ();
 	if (!packetTransferred) {
-	    if (this->m_finished.load () && this->isQueueEmpty ()) {
+	    if ((this->m_finished.load () && this->isQueueEmpty ()) || !this->m_initialized.load ()) {
 		return -1;
 	    }
 	    // No packet transferred but stream not finished - shouldn't happen in normal operation
@@ -664,14 +674,10 @@ int AudioStream::decodeFrame (uint8_t* audioBuffer, const int bufferSize) {
 	this->m_audioPktSize = this->m_decodePacket->size;
     }
 
-    return 0;
+    return -1;
 }
 
 AudioContext& AudioStream::getAudioContext () const { return this->m_audioContext; }
-
-int64_t AudioStream::getStreamDuration () const { return this->m_streamDuration; }
-
-int64_t AudioStream::getTotalDurationRead () const { return this->m_totalDurationRead.load (); }
 
 void AudioStream::markFinished () {
     // Set finished flag under queue mutex and broadcast condition to wake any waiters
@@ -679,11 +685,6 @@ void AudioStream::markFinished () {
     this->m_finished.store (true);
     SDL_CondBroadcast (this->m_queue->cond);
     SDL_UnlockMutex (this->m_queue->mutex);
-
-    // Invoke finished callback if set (called without holding mutex)
-    if (this->m_onFinishedCallback) {
-	this->m_onFinishedCallback ();
-    }
 }
 
 bool AudioStream::isQueueEmpty () const {

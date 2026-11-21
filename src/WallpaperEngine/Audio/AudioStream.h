@@ -86,11 +86,7 @@ public:
      */
     [[nodiscard]] bool isRepeat () const;
     /**
-     * Set callback to be invoked when stream finishes (EOF reached)
-     */
-    void setOnFinishedCallback (std::function<void()> callback);
-    /**
-     * Stops decoding and playback of the stream
+     * Stops decoding and playback of the stream and wakes any waiting threads
      */
     void stop ();
     /**
@@ -129,16 +125,6 @@ public:
      * @return True if the stream has finished playing (reached EOF and not repeating)
      */
     [[nodiscard]] bool isFinished () const;
-
-    /**
-     * @return The stream duration in stream time_base units
-     */
-    [[nodiscard]] int64_t getStreamDuration () const;
-
-    /**
-     * @return Total duration of packets that have been read
-     */
-    [[nodiscard]] int64_t getTotalDurationRead () const;
 
     /**
      * Marks the stream as finished (called from the read thread)
@@ -187,9 +173,9 @@ private:
     /** The audio context this stream will be played under */
     AudioContext& m_audioContext;
     /** If this stream was properly initialized or not */
-    bool m_initialized = false;
+    std::atomic<bool> m_initialized { false };
     /** Repeat enabled? */
-    bool m_repeat = false;
+    std::atomic<bool> m_repeat { false };
     /** The codec context that contains the original audio format information */
     AVCodecContext* m_context = nullptr;
     /** The format context that controls how data is read off the file */
@@ -230,11 +216,5 @@ private:
     std::atomic<bool> m_finished { false };
     /** Remaining size of the current packet being decoded */
     int m_audioPktSize = 0;
-    /** Callback invoked when stream finishes (EOF reached) */
-    std::function<void()> m_onFinishedCallback;
-    /** Stream duration in stream time_base units (from format context) */
-    int64_t m_streamDuration = 0;
-    /** Total duration of packets that have been read (not just buffered) */
-    std::atomic<int64_t> m_totalDurationRead { 0 };
 };
 } // namespace WallpaperEngine::Audio

@@ -543,8 +543,8 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.action ([this] (const std::string& value) -> void { this->settings.audio.audioprocessing = false; });
 
     audioGroup.add_argument ("--playback-mode")
-	.help ("Audio playback mode: sequential, loop, shuffle")
-	.choices ("sequential", "loop", "shuffle")
+	.help ("Audio playback mode: sequential, loop, shuffle (random is an alias for shuffle)")
+	.choices ("sequential", "loop", "shuffle", "random")
 	.action ([this] (const std::string& value) -> void {
 	    this->settings.audio.playbackMode = value;
 	    this->settings.audio.playbackModeExplicit = true;

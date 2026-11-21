@@ -37,8 +37,6 @@ private:
     bool m_playlistLoop = false;
     bool m_shuffle = false;
     std::mt19937 m_rng { std::random_device {}() };
-    /** Set by AudioStream callback when a track finishes */
-    std::atomic<bool> m_trackFinished { false };
 
     const Sound& m_sound;
 };

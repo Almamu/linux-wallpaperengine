@@ -7,23 +7,47 @@
 
 using namespace WallpaperEngine::Render::Objects;
 
+namespace {
+/**
+ * Translates a Wallpaper Engine playback mode into the playlist flags.
+ * Wallpaper Engine uses "random" for what is commonly called shuffle.
+ */
+void resolvePlaybackMode (const std::string& mode, bool& loop, bool& shuffle) {
+    loop = false;
+    shuffle = false;
+
+    if (mode == "loop") {
+	loop = true;
+    } else if (mode == "random" || mode == "shuffle") {
+	// random playback keeps picking tracks forever, so it also loops
+	loop = true;
+	shuffle = true;
+    }
+}
+} // namespace
+
 CSound::CSound (Wallpapers::CScene& scene, const Sound& sound) : CObject (scene, sound), m_sound (sound) {
     if (this->getContext ().getApp ().getContext ().settings.audio.enabled) {
-	// Resolve effective playback settings: CLI flags > project JSON > defaults
+	// Resolve the effective playback mode. Explicit CLI settings take precedence
+	// over the project's playbackmode; otherwise the project value is used.
 	const auto& audioSettings = this->getContext ().getApp ().getContext ().settings.audio;
-	
-	// Loop: CLI --loop flag > project JSON "loop" > default false
-	this->m_playlistLoop = audioSettings.loop;
-	if (!this->m_playlistLoop && this->m_sound.playbackmode.has_value ()) {
-	    this->m_playlistLoop = (this->m_sound.playbackmode.value () == "loop");
+	const bool cliConfigured
+	    = audioSettings.playbackModeExplicit || audioSettings.loop || audioSettings.shuffle;
+
+	if (cliConfigured) {
+	    bool modeLoop = false;
+	    bool modeShuffle = false;
+
+	    if (audioSettings.playbackModeExplicit) {
+		resolvePlaybackMode (audioSettings.playbackMode, modeLoop, modeShuffle);
+	    }
+
+	    this->m_playlistLoop = audioSettings.loop || modeLoop;
+	    this->m_shuffle = audioSettings.shuffle || modeShuffle;
+	} else if (this->m_sound.playbackmode.has_value ()) {
+	    resolvePlaybackMode (this->m_sound.playbackmode.value (), this->m_playlistLoop, this->m_shuffle);
 	}
-	
-	// Shuffle: CLI --shuffle flag > project JSON "shuffle" > default false
-	this->m_shuffle = audioSettings.shuffle;
-	if (!this->m_shuffle && this->m_sound.playbackmode.has_value ()) {
-	    this->m_shuffle = (this->m_sound.playbackmode.value () == "shuffle");
-	}
-	
+
 	this->load ();
     }
 }
@@ -72,16 +96,6 @@ Audio::AudioStream* CSound::createStreamForTrack (size_t trackIndex) {
 
     // Individual tracks don't loop; the playlist loops as a whole if playbackmode is "loop"
     stream->setRepeat (false);
-
-    // Set callback to signal when this track finishes
-    stream->setOnFinishedCallback ([this] () {
-	this->m_trackFinished.store (true);
-    });
-
-    // Check if stream already finished (short track finished before callback was set)
-    if (stream->isFinished ()) {
-	this->m_trackFinished.store (true);
-    }
 
     // Track this stream for cleanup
     this->m_allStreams.push_back (stream);
@@ -136,20 +150,23 @@ void CSound::playNextTrack () {
     int streamId = this->getScene ().getAudioContext ().addStream (stream);
     this->m_activeStream.insert_or_assign (streamId, stream);
     this->m_currentTrackIndex++;
+
+    sLog.out (
+	"CSound: playing audio track ", this->m_currentTrackIndex, "/", this->m_playOrder.size (), ": ",
+	this->m_trackFiles[actualTrackIndex]
+    );
 }
 
 void CSound::render () {
-    // Check if the current track has finished playing (via callback or isFinished)
-    if (this->m_trackFinished.exchange (false)) {
-	this->playNextTrack ();
+    // Only one track is active at a time. Advance once the read thread reached the
+    // end of the file AND all the queued audio has been played.
+    if (this->m_activeStream.empty ()) {
 	return;
     }
 
-    // Fallback: check isFinished() for any streams that might not have triggered callback
-    for (const auto& stream : this->m_activeStream) {
-	if (stream.second->isFinished ()) {
-	    this->playNextTrack ();
-	    break;
-	}
+    const auto it = this->m_activeStream.begin ();
+
+    if (it->second->isFinished ()) {
+	this->playNextTrack ();
     }
 }
