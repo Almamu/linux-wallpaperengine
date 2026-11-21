@@ -523,8 +523,8 @@ void ApplicationContext::loadSettingsFromArgv () {
     auto& audioSettingsGroup = audioGroup.add_mutually_exclusive_group (false);
 
     audioSettingsGroup.add_argument ("-v", "--volume")
-	.help ("Volume for all the sounds in the background")
-	.default_value (15)
+	.help ("Volume for all the sounds in the background (0-128)")
+	.default_value (64)
 	.store_into (this->settings.audio.volume);
 
     audioSettingsGroup.add_argument ("-s", "--silent")
@@ -541,6 +541,28 @@ void ApplicationContext::loadSettingsFromArgv () {
 	.help ("Disables audio processing for backgrounds")
 	.flag ()
 	.action ([this] (const std::string& value) -> void { this->settings.audio.audioprocessing = false; });
+
+    audioGroup.add_argument ("--playback-mode")
+	.help ("Audio playback mode: sequential, loop, shuffle (random is an alias for shuffle)")
+	.choices ("sequential", "loop", "shuffle", "random")
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.audio.playbackMode = value;
+	    this->settings.audio.playbackModeExplicit = true;
+	});
+
+    audioGroup.add_argument ("--shuffle")
+	.help ("Shuffle audio tracks (can be combined with --loop)")
+	.flag ()
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.audio.shuffle = true;
+	});
+
+    audioGroup.add_argument ("--loop")
+	.help ("Loop audio playlist (can be combined with --shuffle)")
+	.flag ()
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.audio.loop = true;
+	});
 
     auto& screenshotGroup = program.add_group ("Screenshot options");
 

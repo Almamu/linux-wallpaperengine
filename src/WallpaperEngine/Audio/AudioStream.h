@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <functional>
 #include <string>
 
 extern "C" {
@@ -50,9 +52,9 @@ public:
      *
      * WARNING: BLOCKS UNTIL SOME DATA IS READ FROM IT
      *
-     * @return
+     * @return true if a packet was transferred, false if stream finished and queue empty
      */
-    void dequeuePacket ();
+    bool dequeuePacket ();
 
     /**
      * @return The audio context in use for this audio stream
@@ -84,7 +86,7 @@ public:
      */
     [[nodiscard]] bool isRepeat () const;
     /**
-     * Stops decoding and playback of the stream
+     * Stops decoding and playback of the stream and wakes any waiting threads
      */
     void stop ();
     /**
@@ -119,6 +121,15 @@ public:
      * @return The SDL_mutex used for thread synchronization
      */
     [[nodiscard]] SDL_mutex* getMutex () const;
+    /**
+     * @return True if the stream has finished playing (reached EOF and not repeating)
+     */
+    [[nodiscard]] bool isFinished () const;
+
+    /**
+     * Marks the stream as finished (called from the read thread)
+     */
+    void markFinished ();
 
     /**
      * Reads a frame from the audio stream, resamples it to the driver's settings
@@ -162,9 +173,9 @@ private:
     /** The audio context this stream will be played under */
     AudioContext& m_audioContext;
     /** If this stream was properly initialized or not */
-    bool m_initialized = false;
+    std::atomic<bool> m_initialized { false };
     /** Repeat enabled? */
-    bool m_repeat = false;
+    std::atomic<bool> m_repeat { false };
     /** The codec context that contains the original audio format information */
     AVCodecContext* m_context = nullptr;
     /** The format context that controls how data is read off the file */
@@ -201,5 +212,9 @@ private:
     }* m_queue {};
 
     SDL_Thread* m_audioThread = nullptr;
+    /** True when the read thread has finished (EOF reached and not repeating) */
+    std::atomic<bool> m_finished { false };
+    /** Remaining size of the current packet being decoded */
+    int m_audioPktSize = 0;
 };
 } // namespace WallpaperEngine::Audio
