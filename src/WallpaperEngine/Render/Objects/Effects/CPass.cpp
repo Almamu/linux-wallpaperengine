@@ -6,10 +6,13 @@
 
 #include "WallpaperEngine/Render/Helpers/ContextAware.h"
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Effect.h"
 #include "WallpaperEngine/Data/Model/Material.h"
+#include "WallpaperEngine/Data/Model/PropertyAnimation.h"
 // usertextures name user properties, so the pass needs the full Property definition to read them
 #include "WallpaperEngine/Data/Model/Property.h"
+#include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Data/Parsers/TextureParser.h"
 
 #include "WallpaperEngine/Render/CFBO.h"

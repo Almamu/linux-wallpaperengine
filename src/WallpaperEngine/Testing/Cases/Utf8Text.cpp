@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <utility>
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
 #include "WallpaperEngine/Render/Objects/CText.h"

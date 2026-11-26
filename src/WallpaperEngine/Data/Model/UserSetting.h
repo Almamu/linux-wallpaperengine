@@ -2,20 +2,29 @@
 
 #include <memory>
 #include <optional>
+#include <type_traits>
 
-#include "DynamicValue.h"
+#include "ConditionInfo.h"
 #include "PropertyAnimation.h"
 #include "Types.h"
 
 namespace WallpaperEngine::Data::Model {
 struct UserSetting {
+    // Define deletion where DynamicValue is complete so UserSetting can stay an aggregate.
+    struct ValueDeleter : std::default_delete<DynamicValue> {
+	ValueDeleter () = default;
+	template <typename T> requires std::is_convertible_v<T*, DynamicValue*>
+	ValueDeleter (const std::default_delete<T>&) noexcept { }
+	void operator() (DynamicValue* value) const noexcept;
+    };
+
     /**
      * The value of this setting, can be a few different things:
      * - a value connected to the property
      * - a default value
      * - a static value
      */
-    DynamicValueUniquePtr value;
+    std::unique_ptr<DynamicValue, ValueDeleter> value;
     /** The property this setting takes the value from (if specified) */
     PropertySharedPtr property;
     /** Condition required for this setting, this should be possible to run in JS' V8 */
@@ -30,17 +39,11 @@ struct UserSetting {
      * Wallpaper Engine attaches animations to the property itself, so consumers
      * must sample the setting instead of reading DynamicValue directly.
      */
-    [[nodiscard]] float evaluateFloat (double time) const {
-	const float base = this->value->getFloat ();
-	return this->animation != nullptr ? this->animation->evaluateFloat (base, time) : base;
-    }
+    [[nodiscard]] float evaluateFloat (double time) const;
 
     /**
      * Resolve the current vector value, including absolute or relative keyframes.
      */
-    [[nodiscard]] glm::vec3 evaluateVec3 (double time) const {
-	const glm::vec3 base = this->value->getVec3 ();
-	return this->animation != nullptr ? this->animation->evaluateVec3 (base, time) : base;
-    }
+    [[nodiscard]] glm::vec3 evaluateVec3 (double time) const;
 };
 } // namespace WallpaperEngine::Data::Model

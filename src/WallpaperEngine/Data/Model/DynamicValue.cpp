@@ -339,3 +339,15 @@ void DynamicValue::propagate (UpdateSource source) const {
 	callback (*this, source);
     }
 }
+
+void UserSetting::ValueDeleter::operator() (DynamicValue* value) const noexcept { delete value; }
+
+float UserSetting::evaluateFloat (double time) const {
+    const float base = this->value->m_float;
+    return this->animation != nullptr ? this->animation->evaluateFloat (base, time) : base;
+}
+
+glm::vec3 UserSetting::evaluateVec3 (double time) const {
+    const glm::vec3 base = this->value->m_vec3;
+    return this->animation != nullptr ? this->animation->evaluateVec3 (base, time) : base;
+}

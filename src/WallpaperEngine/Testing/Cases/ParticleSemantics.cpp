@@ -1,3 +1,4 @@
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Render/Objects/CParticle.h"
 
 #ifdef CHECK

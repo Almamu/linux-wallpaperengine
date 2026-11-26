@@ -1,6 +1,7 @@
 #include "ScriptableObject.h"
 
 #include "ScriptEngine.h"
+#include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 
 #include <ranges>

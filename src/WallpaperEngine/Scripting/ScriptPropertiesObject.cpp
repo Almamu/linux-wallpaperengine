@@ -3,6 +3,8 @@
 #include "Adapters/ScriptableObjectAdapter.h"
 #include "EngineObject.h"
 #include "ScriptEngine.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
+#include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 

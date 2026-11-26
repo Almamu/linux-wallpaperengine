@@ -19,6 +19,7 @@
 #include "WallpaperEngine/Data/Model/MdlMorph.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 
 using namespace WallpaperEngine;

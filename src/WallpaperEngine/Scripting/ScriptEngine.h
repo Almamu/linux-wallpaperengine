@@ -8,6 +8,7 @@
 #include "SceneObject.h"
 
 #include <chrono>
+#include <functional>
 #include <future>
 #include <list>
 #include <map>
@@ -17,7 +18,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/PropertyAnimation.h"
 #include "WallpaperEngine/Data/Model/Types.h"
 #include "WallpaperEngine/Media/MediaSource.h"

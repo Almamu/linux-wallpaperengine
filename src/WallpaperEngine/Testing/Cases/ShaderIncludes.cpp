@@ -5,9 +5,11 @@
 #include <cstdlib>
 
 #include "WallpaperEngine/Assets/AssetLocator.h"
+#include "WallpaperEngine/Data/Model/UserSetting.h"
 #include "WallpaperEngine/Render/Shaders/GLSLContext.h"
 #include "WallpaperEngine/Render/Shaders/Shader.h"
 #include "WallpaperEngine/Render/Shaders/ShaderUnit.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 using WallpaperEngine::Assets::AssetLocator;
 using WallpaperEngine::Data::Model::ComboMap;

@@ -3,6 +3,7 @@
 #include "CRenderable.h"
 #include "ModelBounds.h"
 #include "ModelData.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Render/Objects/Effects/CPass.h"
 #include "WallpaperEngine/Scripting/ScriptableObject.h"
 

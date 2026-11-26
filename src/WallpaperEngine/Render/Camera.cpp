@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Camera.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "Depth.h"
 
 #include <cmath>

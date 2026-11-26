@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Object.h"
 
 using namespace WallpaperEngine;

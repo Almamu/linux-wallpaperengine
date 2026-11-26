@@ -1,3 +1,4 @@
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
 #include "WallpaperEngine/Data/Parsers/TextureParser.h"
 #include "WallpaperEngine/Data/Utils/BinaryReader.h"

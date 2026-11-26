@@ -562,6 +562,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Render/CFBO.cpp
     src/WallpaperEngine/Render/Objects/Effects/CPass.h
     src/WallpaperEngine/Render/Objects/Effects/CPass.cpp
+    src/WallpaperEngine/Render/Objects/Effects/EffectSwapCommand.cpp
 
     src/WallpaperEngine/WebBrowser/CEF/RenderHandler.cpp
     src/WallpaperEngine/WebBrowser/CEF/RenderHandler.h
@@ -591,6 +592,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Model/MdlMesh.h
     src/WallpaperEngine/Data/Model/MdlAnimation.cpp
     src/WallpaperEngine/Data/Model/MdlAnimation.h
+    src/WallpaperEngine/Data/Model/ConditionInfo.h
     src/WallpaperEngine/Data/Model/UserSetting.h
     src/WallpaperEngine/Data/Model/PropertyAnimation.h
     src/WallpaperEngine/Data/Model/PropertyAnimation.cpp
@@ -634,6 +636,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Data/Builders/ColorBuilder.h
     src/WallpaperEngine/Data/Builders/ColorBuilder.cpp
     src/WallpaperEngine/Data/Builders/UserSettingBuilder.h
+    src/WallpaperEngine/Data/Builders/UserSettingBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.cpp
     src/WallpaperEngine/Data/Builders/VectorBuilder.h
     src/WallpaperEngine/Data/Dumpers/StringPrinter.cpp

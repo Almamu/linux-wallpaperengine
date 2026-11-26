@@ -15,7 +15,6 @@
 #include "WallpaperEngine/Render/Helpers/ContextAware.h"
 #include "WallpaperEngine/Render/Shaders/Shader.h"
 #include "WallpaperEngine/Render/Shaders/ShaderProgramCache.h"
-#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 namespace WallpaperEngine::Render::Objects {
 class CRenderable;

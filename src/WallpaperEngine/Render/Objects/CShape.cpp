@@ -2,6 +2,7 @@
 
 #include "WallpaperEngine/Data/Model/Object.h"
 #include "WallpaperEngine/Render/Camera.h"
+#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>

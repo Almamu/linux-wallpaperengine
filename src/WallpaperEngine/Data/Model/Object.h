@@ -8,7 +8,6 @@
 
 #include <glm/glm.hpp>
 
-#include "DynamicValue.h"
 #include "Effect.h"
 #include "Material.h"
 #include "MdlAnimation.h"

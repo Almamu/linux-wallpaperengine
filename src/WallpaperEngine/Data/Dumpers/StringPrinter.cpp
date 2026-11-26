@@ -2,6 +2,7 @@
 
 #include "StringPrinter.h"
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
 
 using namespace WallpaperEngine::Data::Dumpers;

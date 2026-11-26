@@ -1,5 +1,6 @@
 #include "VolumetricLights.h"
 #include "CScene.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Render/Depth.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Render/Objects/CLight.h"

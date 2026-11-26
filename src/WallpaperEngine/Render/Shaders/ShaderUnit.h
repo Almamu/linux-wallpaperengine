@@ -4,13 +4,17 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "GLSLContext.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
 #include "WallpaperEngine/Data/JSON.h"
-#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 #include "WallpaperEngine/Data/Model/Types.h"
+
+namespace WallpaperEngine::Render::Shaders::Variables {
+class ShaderVariable;
+}
 
 namespace WallpaperEngine::Render::Shaders {
 using JSON = WallpaperEngine::Data::JSON::JSON;

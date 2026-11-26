@@ -1,3 +1,4 @@
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 #ifdef CHECK
 #undef CHECK

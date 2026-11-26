@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConditionInfo.h"
 #include "Types.h"
 
 #include <functional>
@@ -11,13 +12,6 @@
 #include <string>
 
 namespace WallpaperEngine::Data::Model {
-class DynamicValue;
-
-struct ConditionInfo {
-    std::string name;
-    std::string condition;
-};
-
 struct ScriptContext {
     struct Object {
 	int id;
@@ -139,6 +133,9 @@ public:
     void setProperties (std::map<std::string, UserSettingUniquePtr> properties);
 
 private:
+    // A setting samples the cached value and its animation in one call per frame.
+    friend struct UserSetting;
+
     /**
      * Notifies any listeners that the value has changed
      */

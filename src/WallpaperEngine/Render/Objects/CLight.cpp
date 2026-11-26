@@ -1,4 +1,5 @@
 #include "CLight.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Render/CTexture.h"
 #include "WallpaperEngine/Render/Depth.h"
 

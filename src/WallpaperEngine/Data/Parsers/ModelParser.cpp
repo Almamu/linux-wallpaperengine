@@ -2,7 +2,6 @@
 #include "MaterialParser.h"
 #include "MdlParser.h"
 
-#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Material.h"
 #include "WallpaperEngine/Data/Model/Model.h"
 #include "WallpaperEngine/Data/Model/Project.h"

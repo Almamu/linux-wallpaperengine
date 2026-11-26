@@ -1,6 +1,7 @@
 #include "UserSettingParser.h"
 #include "DynamicValueParser.h"
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/PropertyAnimation.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"

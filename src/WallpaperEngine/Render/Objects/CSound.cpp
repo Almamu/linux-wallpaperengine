@@ -9,6 +9,7 @@
 #include "CSound.h"
 
 #include "WallpaperEngine/Audio/Drivers/AudioDriver.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/FileSystem/Container.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/Camera.h"

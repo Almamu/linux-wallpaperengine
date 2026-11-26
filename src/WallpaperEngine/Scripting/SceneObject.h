@@ -1,7 +1,8 @@
 #pragma once
 #include "quickjs.h"
-#include "WallpaperEngine/Data/Model/UserSetting.h"
+#include "WallpaperEngine/Data/Model/Types.h"
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace WallpaperEngine::Render::Wallpapers {

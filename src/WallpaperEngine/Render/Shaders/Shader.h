@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "../TextureProvider.h"
-#include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 
 #include "GLSLContext.h"
 #include "ShaderUnit.h"

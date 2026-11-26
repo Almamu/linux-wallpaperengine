@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Parsers/MdlParser.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
 #include "WallpaperEngine/Data/Model/Project.h"

@@ -1,6 +1,7 @@
 #include "VectorAdapter.h"
 
 #include "../ScriptEngine.h"
+#include "WallpaperEngine/Data/Model/DynamicValue.h"
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 
