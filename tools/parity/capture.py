@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Capture native/fork temporal video on a private headless Gamescope display.
 
-The machine's audited native reference adapter supplies preparation and X11
+The native reference adapter supplies private preparation and X11
 ownership enumeration. Its path/hash are recorded; there is no display fallback.
 """
 import argparse
@@ -21,8 +21,9 @@ import time
 from parity import asset_digest, compare, probe, sha256, write_json
 from determinism import apply_substitutions, preflight, template
 
-DEFAULT_ADAPTER = Path(__file__).resolve().parents[2] / '.claude/tools/native/reference_harness.py'
+DEFAULT_ADAPTER = Path(__file__).resolve().with_name('native_adapter.py')
 LOCK = '/tmp/lwe-render-fix-build.lock'
+NATIVE_VOLUMETRICS = 'ultra'  # Fork light volumes use QUALITY 4.
 
 
 def private_root(path):
@@ -40,12 +41,18 @@ def adapter_at(path):
 
 
 def private_environment(environ, root):
+    runtime = root / 'runtime'
+    if runtime.is_symlink():
+        raise ValueError('Private runtime directory must not be a symlink')
+    runtime.mkdir(mode=0o700, exist_ok=True)
+    runtime.chmod(0o700)
     env = dict(environ, LWE_HOST_DISPLAY=environ.get('DISPLAY', ''))
     for key in list(env):
-        if key.startswith('WPE_') or key in ('DISPLAY', 'WAYLAND_DISPLAY', 'LD_PRELOAD',
+        if key.startswith(('WPE_', 'DBUS_SESSION_BUS_', 'DBUS_STARTER_')) or key in ('DISPLAY', 'WAYLAND_DISPLAY', 'LD_PRELOAD',
                                           'WINEPREFIX', 'LWE_SOCKET'):
             env.pop(key)
     env.update(WPE_CONTROL_SOCKET=str(root / 'control.sock'), WPE_LOG_FILE='off',
+               XDG_RUNTIME_DIR=str(runtime),
                PULSE_SERVER='unix:' + str(root / 'no-pulse.sock'),
                PIPEWIRE_REMOTE=str(root / 'no-pipewire.sock'))
     return env
@@ -92,6 +99,9 @@ def check_input_boundary(item, expected):
 
 def prepare(args):
     root = private_root(args.root)
+    renderer = getattr(args, 'native_renderer', 'dxvk')
+    if renderer not in ('dxvk', 'wined3d'):
+        raise ValueError('Select native renderer dxvk or wined3d')
     item = args.item.resolve()
     metadata = json.loads((item / 'project.json').read_text(encoding='utf-8-sig'))
     if metadata.get('type', '').lower() not in ('scene', 'video', 'web'):
@@ -104,10 +114,11 @@ def prepare(args):
     set_properties(root / 'item/project.json', overrides)
     config_path = root / 'app/config.json'
     config = json.loads(config_path.read_text())
-    # Explicit common controls only. Remaining copied native quality controls
-    # stay visible in the snapshot and require evidence before a parity verdict.
+    # Match the fork's fixed volume sampling and shadow filter quality.
+    # Remaining copied controls stay visible and need independent parity evidence.
     config['steamuser']['general']['user'].update(
         fps=args.fps, msaa='none', postprocessing=args.post_processing,
+        volumetrics=NATIVE_VOLUMETRICS, shadows='medium',
         autostart=False, autostartscheduler=False, audioinputvolume=0,
         playbackfocus='run', playbackfullscreen='run', playbackmaximized='run')
     config['steamuser']['wproperties'] = {}
@@ -119,7 +130,8 @@ def prepare(args):
         source_files=source, captured_files=source_manifest(root / 'item'),
         property_overrides=overrides, width=args.width, height=args.height, fps=args.fps,
         config_sha256=sha256(config_path),
-        post_processing=args.post_processing, msaa='off',
+        post_processing=args.post_processing, msaa='off', native_renderer=renderer,
+        native_volumetrics=NATIVE_VOLUMETRICS,
         adapter=dict(path=str(args.adapter.resolve()), sha256=sha256(args.adapter)),
         caveats=['Private property overrides modify both copies identically; source assets remain unchanged.',
                  'Web network/storage/browser clocks and media integration are uncontrolled.',
@@ -130,6 +142,13 @@ def prepare(args):
     write_json(root / 'controls.json', template({key: scenario['item'][key] for key in
                                                ('id', 'project_sha256', 'asset_digest')}))
     return scenario
+
+
+def validate_native_quality(root, scenario):
+    user = json.loads((root / 'app/config.json').read_text())['steamuser']['general']['user']
+    if (scenario.get('native_volumetrics') != NATIVE_VOLUMETRICS
+            or user.get('volumetrics') != NATIVE_VOLUMETRICS or user.get('shadows') != 'medium'):
+        raise ValueError('Prepared native quality must be volumetrics=ultra, shadows=medium; use a new private root')
 
 
 def video_command(display, xid, width, height, fps, frames, output):
@@ -160,11 +179,15 @@ def stop_group(proc):
         pass
 
 
-def native_environment(env, root, adapter):
+def native_environment(env, root, adapter, renderer='dxvk'):
+    if renderer not in ('dxvk', 'wined3d'):
+        raise ValueError('Scenario must select native renderer dxvk or wined3d; prepare again')
     return dict(env, STEAM_COMPAT_DATA_PATH=str(root / 'compat'),
         STEAM_COMPAT_CLIENT_INSTALL_PATH=str(adapter.STEAM), SteamAppId='431960',
         SteamGameId='431960', PROTON_LOG='1', PROTON_LOG_DIR=str(root),
-        PROTON_ENABLE_WAYLAND='0', DXVK_LOG_PATH=str(root))
+        PROTON_ENABLE_WAYLAND='0', DXVK_LOG_PATH=str(root),
+        PROTON_USE_WINED3D='1' if renderer == 'wined3d' else '0', PROTON_USE_WINED3D11='0',
+        WINEDLLOVERRIDES='d3d11,dxgi=n,b' if renderer == 'dxvk' else 'd3d11,dxgi=b')
 
 
 def stop_native(root, adapter, env):
@@ -193,6 +216,32 @@ def mapped_identity(pid, role):
     return [dict(path=path, sha256=sha256(path)) for path in selected]
 
 
+def native_renderer_sources(proton, renderer):
+    wine = proton / 'files/lib/wine'
+    if renderer == 'dxvk':
+        return [wine / 'dxvk/x86_64-windows' / name for name in ('d3d11.dll', 'dxgi.dll')]
+    if renderer == 'wined3d':
+        return [wine / 'x86_64-windows' / name for name in ('d3d11.dll', 'dxgi.dll', 'wined3d.dll')]
+    raise ValueError('Native renderer selection is missing or invalid')
+
+
+def verify_native_renderer(artifacts, renderer, root, adapter):
+    names = ('d3d11.dll', 'dxgi.dll', 'wined3d.dll')
+    sources = native_renderer_sources(adapter.PROTON, renderer)
+    system32 = root / 'compat/pfx/drive_c/windows/system32'
+    actual = sorted((entry for entry in artifacts if Path(entry['path']).name.lower() in names),
+                    key=lambda entry: Path(entry['path']).name.lower())
+    if len(actual) != len(sources):
+        raise RuntimeError(f'Native renderer {renderer} did not load the expected DLL paths and hashes; refusing fallback')
+    for entry, source in zip(actual, sources):
+        allowed = {str(system32 / source.name)}
+        if renderer == 'wined3d':
+            allowed.add(str(source.resolve(strict=True)))
+        if entry['path'] not in allowed or entry['sha256'] != sha256(source):
+            raise RuntimeError(f'Native renderer {renderer} loaded an unexpected {source.name}; refusing fallback')
+    return dict(renderer=renderer, libraries=actual)
+
+
 def owned_window(x11, root, role, proc):
     for xid in x11.named():
         props = subprocess.run(['xprop', '-id', xid, '_NET_WM_PID'],
@@ -215,8 +264,44 @@ def owned_window(x11, root, role, proc):
     return None
 
 
+def wait_scene_ready(log_path, marker, proc, role, deadline, start_offset=0, start_inode=None):
+    """Observe the fixture's first update in new log bytes, not frame presentation."""
+    offset, inode, pending = start_offset, start_inode, b''
+    pattern = re.compile(rb'(?:^|[ \t])' + re.escape(marker.encode()) + rb' (.+)$')
+    while time.monotonic() < deadline:
+        code = proc.poll()
+        if code not in (None, 0) or role == 'candidate' and code is not None:
+            raise RuntimeError(f'{role} exited before its scene update marker: {code}')
+        try:
+            with log_path.open('rb') as stream:
+                info = os.fstat(stream.fileno())
+                if (inode is not None and inode != info.st_ino) or info.st_size < offset:
+                    offset, pending = 0, b''
+                inode = info.st_ino
+                stream.seek(offset)
+                chunk = stream.read(65536)
+                offset += len(chunk)
+        except FileNotFoundError:
+            chunk = b''
+        lines = (pending + chunk).split(b'\n')
+        pending = lines.pop()
+        for line in lines:
+            match = pattern.search(line.rstrip(b'\r'))
+            if not match:
+                continue
+            data = json.loads(match[1])
+            if not isinstance(data, dict) or any(
+                    isinstance(data.get(key), bool) or not isinstance(data.get(key), (int, float))
+                    or not math.isfinite(data[key]) or data[key] < 0 for key in ('runtime', 'at')):
+                raise ValueError(f'Invalid {role} scene update marker payload')
+            return data
+        time.sleep(min(.02, max(0, deadline - time.monotonic())))
+    raise TimeoutError(f'{role} readiness timeout; no new scene update marker {marker}')
+
+
 def worker(args, scenario):
     root, out, role = args.root, args.out, args.worker
+    validate_native_quality(root, scenario)
     adapter = adapter_at(Path(scenario['adapter']['path']))
     adapter.validate_display(os.environ.get('DISPLAY', ''), os.environ.get('LWE_HOST_DISPLAY', ''))
     if (root / 'app/bin/wallpaperui.exe').exists():
@@ -227,7 +312,7 @@ def worker(args, scenario):
     width, height, fps = (scenario[key] for key in ('width', 'height', 'fps'))
     adapter.TITLE = 'LWE Private Native Probe' if role == 'reference' else 'wallpaperengine'
     if role == 'reference':
-        env = native_environment(env, root, adapter)
+        env = native_environment(env, root, adapter, scenario.get('native_renderer'))
         command = [str(adapter.PROTON / 'proton'), 'runinprefix', adapter.win(root / 'app/wallpaper64.exe'),
                    '-silent', '-nowallpapers', '-control', 'openWallpaper', '-file',
                    adapter.win(root / 'item/project.json'), '-playInWindow', adapter.TITLE,
@@ -243,7 +328,6 @@ def worker(args, scenario):
                   host_display=env.get('LWE_HOST_DISPLAY'), status='capture_failed')
     config_before = (root / 'app/config.json').read_bytes()
     native_log = root / 'app/log.txt'
-    log_before = native_log.read_bytes() if role == 'reference' and native_log.exists() else b''
     (root / 'control.sock').unlink(missing_ok=True)
     proc = None
     x11 = adapter.X11()
@@ -265,6 +349,10 @@ def worker(args, scenario):
         x11.lib.XFlush.argtypes = [ctypes.c_void_p]
         x11.lib.XWarpPointer(x11.display, 0, x11.root, 0, 0, 0, 0, width // 2, height // 2)
         x11.lib.XFlush(x11.display)
+        if role == 'reference':
+            # The app can truncate and refill its log before we get an XID.
+            # Begin with a fresh private log regardless of its open mode.
+            native_log.unlink(missing_ok=True)
         with (out / f'{role}-engine.log').open('w') as log:
             result['launch_monotonic_ns'] = time.monotonic_ns()
             proc = subprocess.Popen(command, cwd=root / 'app' if role == 'reference' else args.binary.parent,
@@ -283,12 +371,24 @@ def worker(args, scenario):
             else:
                 raise TimeoutError(f'{role} readiness timeout; no owned full-size drawable')
             result.update(xid=found[0], pid=found[1], window_ready_monotonic_ns=time.monotonic_ns())
+            marker = scenario.get('fixture', {}).get('ready_marker')
+            if marker:
+                ready_log = native_log if role == 'reference' else out / f'{role}-engine.log'
+                payload = wait_scene_ready(ready_log, marker, proc, role, deadline,
+                    start_inode=None if role == 'reference' else os.fstat(log.fileno()).st_ino)
+                result.update(scene_ready_monotonic_ns=time.monotonic_ns(),
+                    scene_ready=dict(marker=marker, log_path=str(ready_log), payload=payload,
+                        scope='First fixture SceneScript update; not a presentation fence or visual parity proof.'))
+            result['warmup_after'] = 'scene_first_update' if marker else 'owned_window'
             time.sleep(args.warmup)
             if owned_window(x11, root, role, proc) != found or x11.size(found[0]) != [width, height]:
                 raise RuntimeError('Owned window changed before capture')
             # Native creates its window before loading the graphics driver.
             # Bind the recording after warmup, then verify its closing boundary.
             result['mapped_artifacts'] = mapped_identity(found[1], role)
+            if role == 'reference':
+                result['native_renderer_verified'] = verify_native_renderer(
+                    result['mapped_artifacts'], scenario['native_renderer'], root, adapter)
             output = out / f'{role}.mkv'
             frames = round(args.duration * fps)
             recording = video_command(env['DISPLAY'], found[0], width, height, fps, frames, output)
@@ -310,8 +410,7 @@ def worker(args, scenario):
             result['generated_shader_cache'] = check_input_boundary(root / 'item', scenario['captured_files'])
             result['inputs_unchanged_after_capture'] = True
             if role == 'reference' and native_log.exists():
-                log_after = native_log.read_bytes()
-                new_log = log_after[len(log_before):] if log_after.startswith(log_before) else log_after
+                new_log = native_log.read_bytes()
                 (out / 'reference-application.log').write_bytes(new_log)
                 if re.search(rb'shader[^\n]*error:|error X\d{4}', new_log, re.I):
                     raise RuntimeError('Native shader compilation failed; inspect reference-application.log')
@@ -339,6 +438,9 @@ def worker(args, scenario):
 
 
 def run_pair(args, scenario):
+    if scenario.get('native_renderer') not in ('dxvk', 'wined3d'):
+        raise ValueError('Scenario must select native renderer dxvk or wined3d; prepare again')
+    validate_native_quality(args.root, scenario)
     out = private_root(args.out)
     out.mkdir(parents=True, exist_ok=False)
     root = args.root
@@ -361,13 +463,15 @@ def run_pair(args, scenario):
         if sha256(Path(scenario['adapter']['path'])) != scenario['adapter']['sha256']:
             raise ValueError('Native adapter changed since preparation; prepare again')
         write_json(out / 'binaries.json', dict(native=sha256(root / 'app/wallpaper64.exe'),
+                   native_renderer=scenario['native_renderer'],
                    candidate=sha256(args.binary), candidate_path=str(args.binary),
                    native_base_assets=asset_digest(source_manifest(root / 'app/assets')),
                    proton=sha256(adapter.PROTON / 'proton'),
                    proton_version=(adapter.PROTON / 'version').read_text() if (adapter.PROTON / 'version').exists() else None))
         try:
             for role in ('reference', 'candidate'):
-                command = ['gamescope', '--backend', 'headless', '-W', str(scenario['width']),
+                command = ['dbus-run-session', '--', 'gamescope', '--backend', 'headless', '--disable-color-management',
+                    '-W', str(scenario['width']),
                     '-H', str(scenario['height']), '-w', str(scenario['width']), '-h', str(scenario['height']),
                     '--', sys.executable, str(Path(__file__).resolve()), 'pair', '--root', str(root),
                     '--out', str(out), '--binary', str(args.binary), '--duration', str(args.duration),
@@ -414,6 +518,7 @@ def main():
     prep.add_argument('--height', type=int, default=540)
     prep.add_argument('--fps', type=int, default=30)
     prep.add_argument('--post-processing', choices=['disabled', 'enabled', 'ultra'], default='enabled')
+    prep.add_argument('--native-renderer', choices=['dxvk', 'wined3d'], default='dxvk')
     prep.add_argument('--properties', type=Path)
     apply = commands.add_parser('apply-controls', help='Apply reviewed exact substitutions to private loose inputs')
     apply.add_argument('--root', type=Path, required=True)

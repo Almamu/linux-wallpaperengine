@@ -35,6 +35,8 @@ __pycache__/
 /tools/parity/*
 !/tools/parity/parity.py
 !/tools/parity/capture.py
+!/tools/parity/native_adapter.py
+!/tools/parity/test_native_adapter.py
 !/tools/parity/test_parity.py
 !/tools/parity/test_capture.py
 !/tools/parity/determinism.py
