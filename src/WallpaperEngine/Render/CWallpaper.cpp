@@ -465,7 +465,8 @@ void CWallpaper::renderWithColorSpace (
 }
 
 void CWallpaper::render (
-    const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition, const glm::ivec2& logicalSize
+    const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition, const glm::ivec2& logicalSize,
+    const glm::ivec2& presentationSize
 ) {
     // Get current frame counter from the driver to avoid redundant scene renders
     const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
@@ -552,7 +553,12 @@ void CWallpaper::render (
 	ustart, vstart, uend, vstart, ustart, vend, ustart, vend, uend, vstart, uend, vend,
     };
 
-    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
+    // Offscreen consumers retain the displayed crop/camera while reducing only
+    // the final presentation pass, after the scene has rendered at its usual size.
+    if (presentationSize.x > 0 && presentationSize.y > 0)
+	glViewport (0, 0, presentationSize.x, presentationSize.y);
+    else
+	glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
 
     glBindFramebuffer (GL_FRAMEBUFFER, this->m_destFramebuffer);
 

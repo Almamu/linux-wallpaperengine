@@ -126,6 +126,7 @@ WallpaperApplication::~WallpaperApplication () {
     // destroy queued results while the render context is still current and alive.
     this->stopSwitchWorker ();
     this->makeAnyViewportCurrent ();
+    this->releaseLockscreenFrames ();
     {
 	std::lock_guard lock (this->m_switchMutex);
 	this->m_switchRequests.clear ();
@@ -674,6 +675,18 @@ void WallpaperApplication::processControlSocket () {
 		reply = this->processComparisonCommand (command.substr (11));
 	    } catch (const std::exception& error) {
 		reply = "err " + std::string (error.what ()) + "\n";
+	    }
+	}
+
+	if (command == "lockscreen-stream" || command.starts_with ("lockscreen-stream ")) {
+	    const char* runtime = std::getenv ("XDG_RUNTIME_DIR");
+	    if (!runtime || runtime[0] == '\0') {
+		reply = "err XDG_RUNTIME_DIR is required for lockscreen frames\n";
+	    } else if (!this->m_lockscreenStream.renew (
+		           command.size () > 18 ? command.substr (18) : "", std::chrono::steady_clock::now ())) {
+		reply = "err expected: lockscreen-stream <fps: 0..60>\n";
+	    } else {
+		reply = "ok\n";
 	    }
 	}
 
@@ -2009,6 +2022,8 @@ void WallpaperApplication::render () {
     // IPC must remain serviceable while fullscreen-paused or waiting for an output
     // to resume frame callbacks. A queued switch is application work, not a frame.
     this->processControlSocket ();
+    const bool lockscreenActive = this->getLockscreenStreamFPS () > 0;
+    if (!lockscreenActive && !this->m_lockscreenFrames.empty ()) this->releaseLockscreenFrames ();
     if (!this->m_buildingSwitch) this->processPreparedSwitches ();
 
     static time_t seconds;
@@ -2016,7 +2031,7 @@ void WallpaperApplication::render () {
 
     if (this->m_isPaused) {
 	usleep (FULLSCREEN_CHECK_WAIT_TIME);
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if (!lockscreenActive && this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
 	    return;
 	}
 	m_renderContext->setPause (false);
@@ -2091,7 +2106,7 @@ void WallpaperApplication::render () {
 	}
 #endif /* DEMOMODE */
 	// check for fullscreen windows and wait until there's none fullscreen
-	if (this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
+	if (!lockscreenActive && this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
 	    this->m_isPaused = true;
 	    this->m_pauseStart = std::chrono::steady_clock::now ();
 
@@ -2159,6 +2174,7 @@ void WallpaperApplication::show () {
     // cleanup() call SDL_Quit first, which can hang or invalidate SDL state
     // underneath AudioStream teardown.
     this->cancelComparison ();
+    this->releaseLockscreenFrames ();
     this->m_renderContext.reset ();
 
     cleanup ();
@@ -2168,9 +2184,97 @@ bool WallpaperApplication::abnormalTermination () const {
     return this->m_videoDriver->abnormalTermination ();
 }
 
-void WallpaperApplication::update (Render::Drivers::Output::OutputViewport* viewport) {
+void WallpaperApplication::update (Render::Drivers::Output::OutputViewport* viewport, bool present) {
     // render the scene
-    m_renderContext->render (viewport);
+    if (present) m_renderContext->render (viewport);
+    if (std::chrono::steady_clock::now () >= this->getLockscreenFrameDeadline (viewport->name))
+	this->exportLockscreenFrame (viewport);
+}
+
+int WallpaperApplication::getLockscreenStreamFPS () const {
+    return this->m_lockscreenStream.fps (std::chrono::steady_clock::now ());
+}
+
+std::chrono::steady_clock::time_point WallpaperApplication::getLockscreenFrameDeadline (const std::string& screen) const {
+    if (this->getLockscreenStreamFPS () == 0) return std::chrono::steady_clock::time_point::max ();
+    const auto frame = this->m_lockscreenFrames.find (screen);
+    return frame == this->m_lockscreenFrames.end () ? std::chrono::steady_clock::time_point {} : frame->second.nextFrame;
+}
+
+void WallpaperApplication::exportLockscreenFrame (Render::Drivers::Output::OutputViewport* viewport) {
+    using Clock = std::chrono::steady_clock;
+    const int fps = this->getLockscreenStreamFPS ();
+    if (fps == 0) return;
+    auto& frame = this->m_lockscreenFrames[viewport->name];
+    frame.nextFrame = Clock::now () + std::chrono::duration_cast<Clock::duration> (std::chrono::duration<double> (1.0 / fps));
+    const auto found = this->m_renderContext->getWallpapers ().find (viewport->name);
+    if (found == this->m_renderContext->getWallpapers ().end ()) return;
+    const auto [width, height] = LockscreenStream::frameSize (viewport->viewport.z, viewport->viewport.w);
+    if (width == 0 || height == 0) return;
+    viewport->makeCurrent ();
+    LoadingGLState glState;
+    glState.prepareOutgoingFrame (0, 0);
+    if (frame.framebuffer == 0) {
+	glGenFramebuffers (1, &frame.framebuffer);
+	glGenTextures (1, &frame.texture);
+    }
+    glBindFramebuffer (GL_FRAMEBUFFER, frame.framebuffer);
+    if (frame.width != width || frame.height != height) {
+	glBindTexture (GL_TEXTURE_2D, frame.texture);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame.texture, 0);
+	if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+	    sLog.error ("Cannot create lockscreen framebuffer for ", viewport->name);
+	    return;
+	}
+	frame.width = width;
+	frame.height = height;
+	frame.pixels.resize (size_t (width) * height * 4);
+    }
+    const auto& wallpaper = found->second;
+    const auto destination = wallpaper->m_destFramebuffer;
+    const auto overlay = wallpaper->m_fps;
+    const auto loadTimes = wallpaper->m_loadTimes;
+    const auto loadDetails = wallpaper->m_loadDetails;
+    const auto transition = wallpaper->m_transitionMode;
+    Data::Utils::ScopeGuard restoreWallpaper ([&] {
+	wallpaper->setDestinationFramebuffer (destination);
+	wallpaper->setFpsOverlay (overlay);
+	wallpaper->setLoadOverlay (loadTimes, loadDetails);
+	wallpaper->m_transitionMode = transition;
+    });
+    wallpaper->setDestinationFramebuffer (frame.framebuffer);
+    wallpaper->setFpsOverlay (-1.0f);
+    wallpaper->setLoadOverlay ({ -1.0f }, false);
+    wallpaper->m_transitionMode = Render::TransitionMode_None;
+    const bool bottomUp = this->getOutput ().renderVFlip ();
+    wallpaper->render (viewport->viewport, bottomUp, viewport->globalPosition,
+		       viewport->logicalSize, { width, height });
+    glBindFramebuffer (GL_READ_FRAMEBUFFER, frame.framebuffer);
+    glBindBuffer (GL_PIXEL_PACK_BUFFER, 0);
+    glPixelStorei (GL_PACK_ALIGNMENT, 4);
+    glPixelStorei (GL_PACK_ROW_LENGTH, 0);
+    glPixelStorei (GL_PACK_SKIP_PIXELS, 0);
+    glPixelStorei (GL_PACK_SKIP_ROWS, 0);
+    glReadPixels (0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, frame.pixels.data ());
+    const char* runtime = std::getenv ("XDG_RUNTIME_DIR");
+    // X11 root presentation sends readback rows directly to a top-down XImage.
+    if (runtime && !LockscreenStream::writeFrame (std::string (runtime) + "/linux-wallpaperengine-lock",
+						 viewport->name, width, height, frame.pixels, bottomUp))
+	sLog.error ("Cannot write lockscreen frame for ", viewport->name);
+}
+
+void WallpaperApplication::releaseLockscreenFrames () {
+    if (this->m_lockscreenFrames.empty ()) return;
+    if (this->makeAnyViewportCurrent ()) {
+	for (const auto& [screen, frame] : this->m_lockscreenFrames) {
+	    glDeleteFramebuffers (1, &frame.framebuffer);
+	    glDeleteTextures (1, &frame.texture);
+	}
+    }
+    this->m_lockscreenFrames.clear ();
 }
 
 void WallpaperApplication::signal (int) {

@@ -576,11 +576,20 @@ WaylandOpenGLDriver::~WaylandOpenGLDriver () {
 
 void WaylandOpenGLDriver::dispatchEventQueue () {
     using Clock = std::chrono::steady_clock;
-    const auto frameInterval = std::max (
-	Clock::duration (1), std::chrono::duration_cast<Clock::duration> (
-	    std::chrono::duration<double> (1.0 / std::max (1, this->m_context.settings.render.maximumFPS))
-	)
-    );
+    const auto frameInterval = [] (int fps) {
+	return std::max (Clock::duration (1), std::chrono::duration_cast<Clock::duration> (
+	    std::chrono::duration<double> (1.0 / fps)
+	));
+    };
+    const int desktopFPS = std::max (1, this->m_context.settings.render.maximumFPS);
+    const int streamFPS = this->getApp ().getLockscreenStreamFPS ();
+    const auto presentationInterval = frameInterval (desktopFPS);
+    const auto generationInterval = frameInterval (std::max (desktopFPS, streamFPS));
+    const auto advanceDeadline = [] (Clock::time_point previous, Clock::time_point now, Clock::duration interval) {
+	if (previous == Clock::time_point {}) return now + interval;
+	// Keep the phase across late wakes and skip missed intervals after a stall.
+	return previous + interval * ((now - previous) / interval + 1);
+    };
 
     const auto pacingOutput = [&] {
 	Output::WaylandOutputViewport* first = nullptr;
@@ -602,7 +611,7 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
 	// until that fixed deadline; the slower output still runs in this batch.
 	if (first && output->frameBudget () == 1 && firstDeadline > now
 	    && firstDeadline - now < output->lastRenderDuration
-	    && output->lastRenderDuration + first->lastRenderDuration < frameInterval) {
+	    && output->lastRenderDuration + first->lastRenderDuration < presentationInterval) {
 	    return std::max (output->nextFrameTime, firstDeadline);
 	}
 	return output->nextFrameTime;
@@ -636,6 +645,10 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     const auto waitFirstDeadline = waitFirst ? waitFirst->nextFrameTime : Clock::time_point {};
     for (const auto& viewport : this->getOutput ().getViewports () | std::views::values) {
 	const auto* output = static_cast<Output::WaylandOutputViewport*> (viewport);
+	const auto streamDeadline = this->getApp ().getLockscreenFrameDeadline (output->name);
+	if (streamDeadline != Clock::time_point::max ()) {
+	    wait = std::min (wait, std::max (Clock::duration::zero (), streamDeadline - now));
+	}
 	if (output->frameCredits > 0) {
 	    wait = std::min (
 		wait, std::max (Clock::duration::zero (), deadline (output, waitFirst, waitFirstDeadline, now) - now)
@@ -676,7 +689,9 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     bool rendered = false;
     const auto renderOutput = [&] (Output::WaylandOutputViewport* output) {
 	const auto frameStart = Clock::now ();
-	if (output->frameCredits <= 0 || frameStart < deadline (output, first, firstDeadline, frameStart)) {
+	const bool present = output->frameCredits > 0
+	    && frameStart >= deadline (output, first, firstDeadline, frameStart);
+	if (!present && frameStart < this->getApp ().getLockscreenFrameDeadline (output->name)) {
 	    return;
 	}
 	const bool newFrame = frameStart >= m_nextFrameToken;
@@ -689,19 +704,22 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
 	    // Reuse shared scenes/textures across staggered output callbacks in
 	    // the same interval. Empty event wakes never consume screenshot frames.
 	    m_frameCounter++;
-	    if (m_nextFrameToken == Clock::time_point {}) {
-		m_nextFrameToken = frameStart + frameInterval;
-	    } else {
-		// Keep a shared schedule instead of accumulating each wake's lateness.
-		// Skip missed intervals after a stall; never queue catch-up frames.
-		m_nextFrameToken += frameInterval * ((frameStart - m_nextFrameToken) / frameInterval + 1);
-	    }
+	    m_nextFrameToken = advanceDeadline (m_nextFrameToken, frameStart, generationInterval);
 	}
-	--output->frameCredits;
-	output->nextFrameTime = m_nextFrameToken;
+	if (present) {
+	    --output->frameCredits;
+	    // A faster feed may advance the scene before the display is due.
+	    // Keep each output's presentation cap through changes in the lease.
+	    const auto nextPresentation = advanceDeadline (output->nextFrameTime, frameStart, presentationInterval);
+	    output->nextFrameTime = streamFPS > desktopFPS
+		? nextPresentation
+		: std::max (m_nextFrameToken, nextPresentation);
+	}
 	output->rendering = true;
-	this->getApp ().update (output);
-	output->lastRenderDuration = Clock::now () - frameStart;
+	// A session lock can suppress callbacks indefinitely. The leased feed uses
+	// an offscreen target and never swaps a hidden surface or fabricates credits.
+	this->getApp ().update (output, present);
+	if (present) output->lastRenderDuration = Clock::now () - frameStart;
 	output->rendering = false;
 	rendered = true;
     };

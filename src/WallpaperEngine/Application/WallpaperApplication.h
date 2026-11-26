@@ -4,6 +4,7 @@
 #include <random>
 
 #include "WallpaperEngine/Application/ApplicationContext.h"
+#include "WallpaperEngine/Application/LockscreenStream.h"
 #include "WallpaperEngine/Application/PlaylistState.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
 
@@ -83,9 +84,11 @@ public:
     /**
      * Renders a frame
      */
-    void update (Render::Drivers::Output::OutputViewport* viewport);
+    void update (Render::Drivers::Output::OutputViewport* viewport, bool present = true);
     /** Finish owned CPU mip records on the existing loader; never submits GL work. */
     void queueTextureStreams (std::vector<std::shared_ptr<Render::TextureMipStream>> streams);
+    [[nodiscard]] int getLockscreenStreamFPS () const;
+    [[nodiscard]] std::chrono::steady_clock::time_point getLockscreenFrameDeadline (const std::string& screen) const;
     /**
      * Gets the output
      */
@@ -171,6 +174,18 @@ private:
      * @param filename
      */
     void takeScreenshot (const std::filesystem::path& filename) const;
+    void exportLockscreenFrame (Render::Drivers::Output::OutputViewport* viewport);
+    void releaseLockscreenFrames ();
+
+    struct LockscreenFrame {
+	GLuint framebuffer = 0;
+	GLuint texture = 0;
+	int width = 0, height = 0;
+	std::vector<uint8_t> pixels;
+	std::chrono::steady_clock::time_point nextFrame {};
+    };
+    LockscreenStream m_lockscreenStream;
+    std::map<std::string, LockscreenFrame> m_lockscreenFrames;
 
     struct ActivePlaylist {
 	ApplicationContext::PlaylistDefinition definition;

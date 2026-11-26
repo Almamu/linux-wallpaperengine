@@ -54,7 +54,7 @@ public:
      */
     void render (
 	const glm::ivec4& viewport, const bool vflip, const glm::ivec2& globalPosition = { 0, 0 },
-	const glm::ivec2& logicalSize = { 0, 0 }
+	const glm::ivec2& logicalSize = { 0, 0 }, const glm::ivec2& presentationSize = { 0, 0 }
     );
 
     /**

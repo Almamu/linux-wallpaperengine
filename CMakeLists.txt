@@ -386,6 +386,7 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Application/PlaylistState.h
     src/WallpaperEngine/Application/WallpaperApplication.cpp
     src/WallpaperEngine/Application/WallpaperApplication.h
+    src/WallpaperEngine/Application/LockscreenStream.h
 
     src/WallpaperEngine/Assets/AssetLoadException.cpp
     src/WallpaperEngine/Assets/AssetLoadException.h
