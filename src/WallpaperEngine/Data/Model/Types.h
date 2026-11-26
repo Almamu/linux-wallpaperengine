@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace WallpaperEngine::Data::Model {
+struct Color;
 struct Project;
 class Wallpaper;
 class Scene;

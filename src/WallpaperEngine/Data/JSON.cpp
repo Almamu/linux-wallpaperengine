@@ -1,5 +1,6 @@
 #include "JSON.h"
 
+#include "WallpaperEngine/Data/Builders/ColorBuilder.h"
 #include "WallpaperEngine/Data/Parsers/UserSettingParser.h"
 
 #include "WallpaperEngine/Logging/Log.h"
@@ -9,6 +10,15 @@
 using namespace WallpaperEngine::Data::JSON;
 using namespace WallpaperEngine::Data::Model;
 using namespace WallpaperEngine::Data::Parsers;
+
+Color JsonExtensions::get () const { return ColorBuilder::parse (this->base ().get<std::string> ()); }
+
+UserSettingUniquePtr JsonExtensions::color (const std::string& key, const Properties& properties, Color defaultValue) const {
+    if (!this->optional (key).has_value ()) {
+	return UserSettingBuilder::fromValue<Color> (defaultValue);
+    }
+    return this->color (key, properties);
+}
 
 namespace {
 struct CompatibleJSON {

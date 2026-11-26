@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../Builders/ColorBuilder.h"
 #include "../Utils/TypeCaster.h"
 #include "DynamicValue.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -11,7 +10,6 @@
 
 namespace WallpaperEngine::Data::Model {
 using namespace WallpaperEngine::Data::Utils;
-using namespace WallpaperEngine::Data::Builders;
 
 struct PropertyData {
     std::string name;
@@ -90,9 +88,7 @@ public:
     }
 
     using Property::update;
-    void update (const std::string& value, UpdateSource source) override {
-	this->update (ColorBuilder::parse (value), source);
-    }
+    void update (const std::string& value, UpdateSource source) override;
 
     [[nodiscard]] std::string dump () const override {
 	std::stringstream ss;

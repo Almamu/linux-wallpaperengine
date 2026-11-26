@@ -1,4 +1,5 @@
 #include "DynamicValueParser.h"
+#include "WallpaperEngine/Data/Builders/ColorBuilder.h"
 
 #include "UserSettingParser.h"
 #include "WallpaperEngine/Data/Model/DynamicValue.h"

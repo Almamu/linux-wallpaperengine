@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Builders/ColorBuilder.h"
-
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
 #include <nlohmann/json.hpp>
@@ -57,7 +55,7 @@ public:
     [[nodiscard]] glm::vec<length, type, qualifier> get () const {
 	return VectorBuilder::parse<length, type, qualifier> (this->base ().get<std::string> ());
     }
-    [[nodiscard]] Model::Color get () const { return ColorBuilder::parse (this->base ().get<std::string> ()); }
+    [[nodiscard]] Model::Color get () const;
     [[nodiscard]] base_type require (const std::string& key, const std::string& message) const {
 	Utils::JsonTelemetry::recordAccess (key);
 	auto base = this->base ();
@@ -147,17 +145,7 @@ public:
     }
     [[nodiscard]] UserSettingUniquePtr color (const std::string& key, const Properties& properties) const;
     [[nodiscard]] UserSettingUniquePtr
-    color (const std::string& key, const Properties& properties, Color defaultValue) const {
-	const auto value = this->optional (key);
-
-	if (!value.has_value ()) {
-	    return UserSettingBuilder::fromValue<Color> (defaultValue);
-	}
-
-	// performs a second lookup, but handles the actual call to UserSettingParser outside of this header
-	// this resolving the include loop
-	return this->color (key, properties);
-    }
+    color (const std::string& key, const Properties& properties, Color defaultValue) const;
 
     template <int length, typename type, glm::qualifier qualifier> operator glm::vec<length, type, qualifier> () const {
 	return get<length, type, qualifier> ();

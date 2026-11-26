@@ -1,4 +1,5 @@
 #include "DynamicValue.h"
+#include "Color.h"
 #include "UserSetting.h"
 
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"

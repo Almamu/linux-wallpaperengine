@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Color.h"
 #include "Types.h"
 
 #include <functional>
