@@ -40,6 +40,10 @@ __pycache__/
 !/tools/parity/native_shader_manifest.py
 !/tools/parity/compare_shader_manifests.py
 !/tools/parity/test_shader_manifests.py
+!/tools/parity/deep_sea_fixtures.py
+!/tools/parity/deep_sea_sweep.py
+!/tools/parity/test_deep_sea_fixtures.py
+!/tools/parity/test_deep_sea_sweep.py
 !/tools/parity/test_parity.py
 !/tools/parity/test_capture.py
 !/tools/parity/determinism.py
