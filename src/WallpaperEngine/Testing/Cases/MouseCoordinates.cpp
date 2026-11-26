@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <limits>
 
 using WallpaperEngine::Data::Model::CameraTransform;
 using WallpaperEngine::Render::Camera;
@@ -458,20 +459,44 @@ TEST_CASE ("Camera object transform follows its world-space parent rig") {
     CHECK (camera.zoom == Catch::Approx (1.25f));
 }
 
-TEST_CASE ("3D transparent sorting preserves fixed slots and orders blended models back to front") {
-    using SortClass = WallpaperEngine::Render::RenderSortClass;
+TEST_CASE ("3D automatic sorting draws the stable first phase before depth-sorted deferred objects") {
     const std::vector<CScene::TransparentSortKey> keys = {
-	{ .sortable = true, .renderClass = SortClass::Translucent, .cameraDepth = -2.0f },
-	{ .sortable = false, .renderClass = SortClass::Translucent, .cameraDepth = -100.0f },
-	{ .sortable = true, .renderClass = SortClass::Opaque, .cameraDepth = -20.0f },
-	{ .sortable = true, .renderClass = SortClass::Additive, .cameraDepth = -10.0f },
-	{ .sortable = true, .renderClass = SortClass::Translucent, .cameraDepth = -9.0f },
-	{ .sortable = true, .renderClass = SortClass::Opaque, .cameraDepth = -1.0f },
+	{ .sortable = true, .cameraDepth = -2.0f },
+	{ .sortable = false, .cameraDepth = -100.0f },
+	{ .sortable = true, .cameraDepth = -20.0f },
+	{ .sortable = true, .cameraDepth = -10.0f },
+	{ .sortable = false, .cameraDepth = -9.0f },
+	{ .sortable = true, .cameraDepth = -10.0f },
+	{ .sortable = true, .sortLast = true },
+	{ .sortable = false, .cameraDepth = 0.0f },
     };
 
     const std::vector<size_t> permutation = CScene::calculateTransparentSortPermutation (keys);
     REQUIRE (permutation.size () == keys.size ());
-    CHECK (permutation == std::vector<size_t> { 2, 1, 5, 4, 0, 3 });
+    CHECK (permutation == std::vector<size_t> { 1, 4, 7, 2, 3, 5, 0, 6 });
+}
+
+TEST_CASE ("Deferred objects retain their prior frame order when moving depths become equal") {
+    const std::vector<CScene::TransparentSortKey> keys = {
+	{ .sortable = true, .cameraDepth = -10.0f, .previousOrder = 2 },
+	{ .sortable = false, .cameraDepth = -50.0f },
+	{ .sortable = true, .cameraDepth = -10.0f, .previousOrder = 0 },
+	{ .sortable = true, .cameraDepth = -10.0f, .previousOrder = 1 },
+	{ .sortable = true, .cameraDepth = -10.0f }, // A newly inserted deferred layer.
+    };
+    CHECK (CScene::calculateTransparentSortPermutation (keys) == std::vector<size_t> { 1, 2, 3, 0, 4 });
+}
+
+TEST_CASE ("Fullscreen deferred images sort last even with nonfinite layer depths") {
+    const std::vector<CScene::TransparentSortKey> keys = {
+	{ .sortable = true, .sortLast = true, .previousOrder = 0 },
+	{ .sortable = true, .cameraDepth = std::numeric_limits<float>::infinity (), .previousOrder = 1 },
+	{ .sortable = true, .cameraDepth = 2.0f, .previousOrder = 2 },
+	{ .sortable = true, .cameraDepth = -std::numeric_limits<float>::infinity (), .previousOrder = 3 },
+	{ .sortable = true, .cameraDepth = std::numeric_limits<float>::quiet_NaN (), .previousOrder = 4 },
+	{ .sortable = true, .sortLast = true, .previousOrder = 5 },
+    };
+    CHECK (CScene::calculateTransparentSortPermutation (keys) == std::vector<size_t> { 1, 3, 4, 2, 0, 5 });
 }
 
 TEST_CASE ("Shader parallax position is independent of camera translation amount") {

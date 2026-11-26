@@ -55,11 +55,11 @@ void main() { gl_Position = mul(vec4(a_Position, 1), g_ModelViewProjectionMatrix
 def run(engine, root):
     results = []
     # Body starts between blended entries: it must still render first. Additive
-    # entries separated by glass also detect duplicate per-class submissions.
+    # entries separated by glass expose regrouping when scene sorting is enabled.
     order = ["lamp", "body", "glass", "detail"]
     cases = [("lamp-under-glass", order, False, False, False, (51, 64, 26)),
              ("lamp-over-glass", ["glass", "body", "lamp", "detail"], False, False, False, (51, 115, 26)),
-             ("automatic-scene-sorting", order, True, False, False, (51, 115, 26)),
+             ("automatic-scene-sorting", order, True, False, False, (51, 64, 26)),
              ("custom-scene-order", order, True, True, False, (51, 64, 26)),
              ("coplanar-lamps-do-not-add-color-twice", order, False, False, True, (51, 26, 0)),
              ("coplanar-lamps-with-scene-sorting", order, True, False, True, (51, 26, 0))]

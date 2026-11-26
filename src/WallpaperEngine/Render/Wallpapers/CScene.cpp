@@ -715,6 +715,7 @@ void CScene::destroyObjects () noexcept {
     }
 
     this->m_objectsByRenderOrder.clear ();
+    this->m_deferredRenderOrder.clear ();
     this->m_objectsByCursorOrder.clear ();
     this->m_objects.clear ();
     this->m_lightObjects.clear ();
@@ -1139,11 +1140,7 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	if (!enabledByDebug (entry.object)) {
 	    return;
 	}
-	if (entry.modelClass.has_value ()) {
-	    dynamic_cast<Objects::CModel*> (entry.object)->render (*entry.modelClass);
-	} else {
-	    entry.object->render ();
-	}
+	entry.object->render ();
     };
 
     // Wallpaper Engine renders a composition layer's child subtree into the
@@ -1462,54 +1459,45 @@ size_t CScene::chooseCameraPathIndex (
 
 std::vector<size_t>
 CScene::calculateTransparentSortPermutation (const std::vector<TransparentSortKey>& keys) {
-    std::vector<size_t> permutation (keys.size ());
-    std::iota (permutation.begin (), permutation.end (), 0);
+    std::vector<size_t> permutation;
+    permutation.reserve (keys.size ());
 
-    std::vector<size_t> sortableSlots;
     std::vector<size_t> sortedEntries;
     for (size_t index = 0; index < keys.size (); index++) {
 	if (keys[index].sortable) {
-	    sortableSlots.push_back (index);
 	    sortedEntries.push_back (index);
+	} else {
+	    permutation.push_back (index);
 	}
     }
 
     std::stable_sort (sortedEntries.begin (), sortedEntries.end (), [&keys] (const size_t left, const size_t right) {
 	const TransparentSortKey& lhs = keys[left];
 	const TransparentSortKey& rhs = keys[right];
-	if (lhs.renderClass != rhs.renderClass) {
-	    return lhs.renderClass < rhs.renderClass;
+	if (lhs.sortLast != rhs.sortLast) {
+	    return rhs.sortLast;
 	}
-	if (lhs.renderClass == RenderSortClass::Opaque) {
-	    return false;
+	if (!lhs.sortLast) {
+	    const float leftDepth = std::isfinite (lhs.cameraDepth) ? lhs.cameraDepth : 0.0f;
+	    const float rightDepth = std::isfinite (rhs.cameraDepth) ? rhs.cameraDepth : 0.0f;
+	    if (leftDepth != rightDepth) {
+		return leftDepth < rightDepth;
+	    }
 	}
-	const float leftDepth = std::isfinite (lhs.cameraDepth) ? lhs.cameraDepth : 0.0f;
-	const float rightDepth = std::isfinite (rhs.cameraDepth) ? rhs.cameraDepth : 0.0f;
-	return leftDepth < rightDepth;
+	return lhs.previousOrder < rhs.previousOrder;
     });
 
-    for (size_t index = 0; index < sortableSlots.size (); index++) {
-	permutation[sortableSlots[index]] = sortedEntries[index];
-    }
+    permutation.insert (permutation.end (), sortedEntries.begin (), sortedEntries.end ());
     return permutation;
 }
 
-std::vector<CScene::FrameRenderEntry> CScene::buildFrameRenderOrder () const {
+std::vector<CScene::FrameRenderEntry> CScene::buildFrameRenderOrder () {
     const bool automaticSorting = this->getScene ().camera.projection.isPerspective
 	&& this->getScene ().transparentSorting && !this->getScene ().customSortOrder;
     std::vector<FrameRenderEntry> entries;
     entries.reserve (this->m_objectsByRenderOrder.size ());
     for (CObject* object : this->m_objectsByRenderOrder) {
-	if (auto* model = dynamic_cast<Objects::CModel*> (object); automaticSorting && model != nullptr) {
-	    // A background model may combine opaque walls and transparent windows.
-	    // Sort each class separately so its walls cannot paint over particles
-	    // when its transparent passes are submitted later in the frame.
-	    for (const RenderSortClass renderClass : model->getRenderSortClasses ()) {
-		entries.push_back ({ .object = object, .modelClass = renderClass });
-	    }
-	} else {
-	    entries.push_back ({ .object = object });
-	}
+	entries.push_back ({ .object = object });
     }
     if (!automaticSorting) {
 	return entries;
@@ -1518,35 +1506,52 @@ std::vector<CScene::FrameRenderEntry> CScene::buildFrameRenderOrder () const {
     std::vector<TransparentSortKey> keys;
     keys.reserve (entries.size ());
     const glm::mat4& view = this->m_camera->getLookAt ();
+    const glm::vec3 cameraBackward (view[0][2], view[1][2], view[2][2]);
     for (const FrameRenderEntry& entry : entries) {
-	const CObject* object = entry.object;
-	// Blended particles must follow opaque geometry too. Leaving an emitter in
-	// its authored slot lets later scenery paint over bubbles in open water,
-	// preserving them only where an earlier character already wrote depth.
-	const bool sortable = entry.modelClass.has_value () || object->getObject ().is<Particle> ();
-	float cameraDepth = 0.0f;
-	if (sortable) {
-	    // Native 1401865c0 sorts model layers by their origin property, before
-	    // the parent transform. Using the world origin moves Sonic's parented
-	    // boost shell ahead of its additive skybox, so its invisible surface
-	    // writes depth and cuts a black hole in the background (3759507080).
-	    const glm::vec4 origin = entry.modelClass.has_value ()
-		? glm::vec4 (object->getObject ().origin->evaluateVec3 (this->getElapsedTime ()), 1.0f)
-		: object->resolveWorldMatrix () * glm::vec4 (0.0f, 0.0f, 0.0f, 1.0f);
-	    cameraDepth = (view * origin).z;
+	CObject* const object = entry.object;
+	// Native 14018aac0 first traverses objects without flag 0x100, then
+	// depth-sorts the deferred list. A model with any opaque/coverage pass
+	// remains one complete first-phase draw, including its blended passes.
+	bool deferred = object->getObject ().is<Particle> ()
+	    || dynamic_cast<const Objects::CLight*> (object) != nullptr
+	    || dynamic_cast<const Objects::CText*> (object) != nullptr;
+	bool fullscreen = false;
+	if (const auto* model = dynamic_cast<const Objects::CModel*> (object)) {
+	    const auto& classes = model->getRenderSortClasses ();
+	    deferred = std::ranges::find (classes, RenderSortClass::Opaque) == classes.end ();
+	} else if (const auto* image = dynamic_cast<const Objects::CImage*> (object)) {
+	    const auto& data = image->getImage ();
+	    const auto& passes = data.model->material->passes;
+	    deferred = (data.model->passthrough && !data.copyBackground)
+		|| (!passes.empty () && passes.front ()->blending != BlendingMode_Normal
+		    && passes.front ()->blending != BlendingMode_AlphaToCoverage);
+	    fullscreen = data.model->fullscreen;
 	}
+	float cameraDepth = 0.0f;
+	if (deferred && !fullscreen) {
+	    // Native 1401865c0 projects local origins onto the view axis without
+	    // camera translation, which can round distinct depths into a tie.
+	    const glm::vec3 origin = object->getObject ().origin->evaluateVec3 (this->getElapsedTime ());
+	    cameraDepth = glm::dot (origin, cameraBackward);
+	}
+	const auto previous = this->m_deferredRenderOrder.find (object);
 	keys.push_back (TransparentSortKey {
-	    .sortable = sortable,
-	    .renderClass = entry.modelClass.has_value () ? *entry.modelClass
-		: sortable ? object->getRenderSortClass () : RenderSortClass::Opaque,
+	    .sortable = deferred,
 	    .cameraDepth = cameraDepth,
+	    .sortLast = fullscreen,
+	    .previousOrder = previous == this->m_deferredRenderOrder.end ()
+		? std::numeric_limits<size_t>::max () : previous->second,
 	});
     }
 
     const std::vector<size_t> permutation = calculateTransparentSortPermutation (keys);
     std::vector<FrameRenderEntry> result = entries;
+    this->m_deferredRenderOrder.clear ();
     for (size_t index = 0; index < permutation.size (); index++) {
 	result[index] = entries[permutation[index]];
+	if (keys[permutation[index]].sortable) {
+	    this->m_deferredRenderOrder.emplace (result[index].object, index);
+	}
     }
     return result;
 }
@@ -2336,6 +2341,7 @@ void CScene::destroyQueuedLayers () {
 	if (it == m_objects.end ()) continue;
 	auto* object = it->second;
 	std::erase (m_objectsByRenderOrder, object);
+	m_deferredRenderOrder.erase (object);
 	std::erase (m_objectsByCursorOrder, object);
 	std::erase_if (m_lightObjects, [object] (const auto* light) { return light == object; });
 	m_objects.erase (it);

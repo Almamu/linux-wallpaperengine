@@ -10,6 +10,7 @@
 #include <array>
 #include <chrono>
 #include <functional>
+#include <limits>
 #include <set>
 #include <optional>
 #include <random>
@@ -171,15 +172,17 @@ public:
     advanceCameraPath (const CameraPath& path, CameraPathPlayback current, float deltaTime);
 
     struct TransparentSortKey {
+	/** Deferred objects follow the stable first traversal. */
 	bool sortable = false;
-	RenderSortClass renderClass = RenderSortClass::Opaque;
-	/** View-space Z: more-negative values are farther from the camera. */
+	/** Local origin projected onto the camera's backward axis. */
 	float cameraDepth = 0.0f;
+	bool sortLast = false;
+	/** Native reuses the previously sorted deferred list for equal depths. */
+	size_t previousOrder = std::numeric_limits<size_t>::max ();
     };
 
-    /** Return source indices in their per-frame draw slots. Non-sortable entries
-     * remain fixed; opaque entries stay stable, followed by blended entries
-     * ordered back-to-front and additive entries last. */
+    /** Return the stable first traversal followed by deferred objects ordered
+     * back-to-front, with flagged fullscreen images last. */
     [[nodiscard]] static std::vector<size_t>
     calculateTransparentSortPermutation (const std::vector<TransparentSortKey>& keys);
 
@@ -342,10 +345,8 @@ private:
     [[nodiscard]] const CameraPathSource* findActiveCameraPathSource () const;
     struct FrameRenderEntry {
 	CObject* object;
-	/** Only automatically sorted models split their opaque and blended passes. */
-	std::optional<RenderSortClass> modelClass = std::nullopt;
     };
-    [[nodiscard]] std::vector<FrameRenderEntry> buildFrameRenderOrder () const;
+    [[nodiscard]] std::vector<FrameRenderEntry> buildFrameRenderOrder ();
 
     std::unique_ptr<Scripting::ScriptEngine> m_scriptEngine;
     std::unique_ptr<Camera> m_camera;
@@ -371,6 +372,7 @@ private:
     std::set<int> m_objectsInCreation = {};
     std::map<int, CObject*> m_objects = {};
     std::vector<CObject*> m_objectsByRenderOrder = {};
+    std::map<CObject*, size_t> m_deferredRenderOrder;
     /** Authored stacking order, independent of dependency-driven render scheduling. */
     std::vector<CObject*> m_objectsByCursorOrder = {};
     std::vector<Objects::CLight*> m_lightObjects = {};
