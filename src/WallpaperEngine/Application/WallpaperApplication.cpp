@@ -11,6 +11,7 @@
 #include "WallpaperEngine/Render/RenderContext.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
+#include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
 
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
 #include "WallpaperEngine/Data/Parsers/ProjectParser.h"

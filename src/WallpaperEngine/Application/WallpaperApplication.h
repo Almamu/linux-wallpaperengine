@@ -17,7 +17,6 @@
 #include "WallpaperEngine/Audio/Drivers/SDLAudioDriver.h"
 
 #include "WallpaperEngine/Input/InputContext.h"
-#include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
 
 #include "WallpaperEngine/Data/Assets/Types.h"
 #include "WallpaperEngine/Data/Model/Types.h"
@@ -32,6 +31,10 @@
 namespace WallpaperEngine::Render {
 struct TextureMipStream;
 class CWallpaper;
+}
+
+namespace WallpaperEngine::WebBrowser {
+class WebBrowserContext;
 }
 
 namespace WallpaperEngine::Application {
@@ -305,7 +308,7 @@ private:
     std::unique_ptr<WallpaperEngine::Render::RenderContext> m_renderContext = nullptr;
     std::unique_ptr<WallpaperEngine::Render::Drivers::VideoDriver> m_videoDriver = nullptr;
     std::unique_ptr<WallpaperEngine::Render::Drivers::Detectors::FullScreenDetector> m_fullScreenDetector = nullptr;
-    std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext = nullptr;
+    std::unique_ptr<WallpaperEngine::WebBrowser::WebBrowserContext> m_browserContext;
     std::unique_ptr<WallpaperEngine::Media::MediaSource> m_mediaSource = nullptr;
     std::mt19937 m_playlistRng { std::random_device {}() };
 

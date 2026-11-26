@@ -145,6 +145,21 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN;\$ORIGIN/lib;\$ORIGIN/lib64")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+
+# Batch the pinned SDK's generated Release bridge sources. Keep handwritten
+# sources separate so their local macros and initialization stay isolated.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18 AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT DEFINED CMAKE_UNITY_BUILD AND NOT DEFINED api_version)
+    set_target_properties(libcef_dll_wrapper PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 8)
+    get_target_property(WPENGINE_CEF_WRAPPER_SOURCES libcef_dll_wrapper SOURCES)
+    foreach(WPENGINE_CEF_SOURCE IN LISTS WPENGINE_CEF_WRAPPER_SOURCES)
+        if(WPENGINE_CEF_SOURCE MATCHES "[.]cc$" AND NOT WPENGINE_CEF_SOURCE MATCHES "^(cpptoc|ctocpp)/")
+            set_source_files_properties("${CEF_LIBCEF_DLL_WRAPPER_PATH}/${WPENGINE_CEF_SOURCE}"
+                TARGET_DIRECTORY libcef_dll_wrapper PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+        endif()
+    endforeach()
+endif()
+
 add_subdirectory(src/External/glslang-WallpaperEngine glslang)
 add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
 add_subdirectory(src/External/kissfft kissfft)
@@ -836,6 +851,24 @@ if(TARGET linux-wallpaperengine-objects)
     target_include_directories(linux-wallpaperengine-objects PRIVATE ${WPENGINE_ENGINE_INCLUDE_DIRS})
     target_link_libraries(linux-wallpaperengine-objects PRIVATE ${WPENGINE_ENGINE_LIBRARIES})
     REPLACED_SET_COMMON_TARGET_PROPERTIES(linux-wallpaperengine-objects)
+endif()
+
+# Stage the large Linux CEF binary independently of engine relinks.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(LWE_CEF_LIBRARY "${CEF_BINARY_DIR}/libcef.so")
+    set(LWE_CEF_STAGED_LIBRARY "${TARGET_OUTPUT_DIRECTORY}/libcef.so")
+    set(LWE_CEF_LIBRARY_SELECTION "${CMAKE_CURRENT_BINARY_DIR}/cef-library-source.txt")
+    # A configuration or distribution switch may select an older source file.
+    file(GENERATE OUTPUT "${LWE_CEF_LIBRARY_SELECTION}" CONTENT "${LWE_CEF_LIBRARY}\n")
+    add_custom_command(OUTPUT "${LWE_CEF_STAGED_LIBRARY}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${TARGET_OUTPUT_DIRECTORY}"
+        COMMAND ${CMAKE_COMMAND} -E copy "${LWE_CEF_LIBRARY}" "${LWE_CEF_STAGED_LIBRARY}.tmp"
+        COMMAND ${CMAKE_COMMAND} -E rename "${LWE_CEF_STAGED_LIBRARY}.tmp" "${LWE_CEF_STAGED_LIBRARY}"
+        DEPENDS "${LWE_CEF_LIBRARY}" "${LWE_CEF_LIBRARY_SELECTION}"
+        VERBATIM)
+    add_custom_target(lwe-cef-library DEPENDS "${LWE_CEF_STAGED_LIBRARY}")
+    add_dependencies(linux-wallpaperengine-lib lwe-cef-library)
+    list(REMOVE_ITEM CEF_BINARY_FILES libcef.so)
 endif()
 
 COPY_FILES(linux-wallpaperengine-lib "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
