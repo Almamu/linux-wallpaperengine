@@ -979,13 +979,6 @@ std::string ShaderUnit::generateLightingV1 () const {
 		      "            vec4 projectedCoords = CalculateProjectedCoordsPoint(worldPos,\n"
 		      "                g_LPoint_Origin[" + index + "].xyz,\n"
 		      "                g_LFeature_ShadowPointProjection[" + index + "], pointAtlasTransform);\n"
-		      // The stock helper targets Direct3D's top-left texture orientation. Keep
-		      // its native 2x3 face selection, but flip Y within the selected OpenGL cell.
-		      "            float pointCellHeight = pointAtlasTransform.w / 3.0;\n"
-		      "            float pointRelativeY = projectedCoords.y - pointAtlasTransform.y;\n"
-		      "            float pointRow = floor(clamp(pointRelativeY / pointCellHeight, 0.0, 2.999));\n"
-		      "            float pointRowY = pointAtlasTransform.y + pointRow * pointCellHeight;\n"
-		      "            projectedCoords.y = pointRowY + pointCellHeight - (projectedCoords.y - pointRowY);\n"
 		      "#if !REVERSEDEPTH\n"
 		      "            projectedCoords.z = projectedCoords.z * 0.5 + 0.5 - 0.0015;\n"
 		      "#endif\n"
@@ -1018,21 +1011,17 @@ std::string ShaderUnit::generateLightingV1 () const {
 	}
 	if (shadowFeature >= 0) {
 	    const std::string featureIndex = std::to_string (shadowFeature);
+	    // Caster rasterization already mirrors Y into native atlas coordinates.
+	    // Keep finite out-of-tile spot samples, which can reach adjacent features.
 	    code += "        float shadowFactor = 1.0;\n"
 		    "        if (g_LSpot_ShadowEnabled[" + index + "] > 0.5) {\n"
 		    "            vec3 projectedCoords = CalculateProjectedCoords(worldPos,\n"
 		    "                g_LFeature_ShadowProjection[" + featureIndex + "]);\n"
-		    // CalculateProjectedCoords follows Direct3D texture orientation and depth.
-		    // The atlas uses bottom-left Y; conventional fallback also remaps Z.
-		    "            projectedCoords.y = 1.0 - projectedCoords.y;\n"
 		    "#if !REVERSEDEPTH\n"
 		    "            projectedCoords.z = projectedCoords.z * 0.5 + 0.5 - 0.0015;\n"
 		    "#endif\n"
-		    "            if (all(greaterThanEqual(projectedCoords, vec3(0.0))) &&\n"
-		    "                all(lessThanEqual(projectedCoords, vec3(1.0)))) {\n"
-		    "                shadowFactor = PerformShadowMapping(projectedCoords,\n"
-		    "                    g_LFeature_ShadowProjectionTransform[" + featureIndex + "]);\n"
-		    "            }\n"
+		    "            shadowFactor = PerformShadowMapping(projectedCoords,\n"
+		    "                g_LFeature_ShadowProjectionTransform[" + featureIndex + "]);\n"
 		    "        }\n";
 	} else {
 	    code += "        float shadowFactor = 1.0;\n";
@@ -1083,9 +1072,6 @@ std::string ShaderUnit::generateLightingV1 () const {
 		      "                projectedCoords1.w);\n"
 		      "            projectedCoords1.xyz = mix(projectedCoords1.xyz, projectedCoords3.xyz,\n"
 		      "                projectedCoords2.w);\n"
-		      // CalculateProjectedCoordsCascades uses Direct3D texture Y while preserving
-		      // clip-space Z for its cascade bounds test. Convert only after selection.
-		      "            projectedCoords1.y = 1.0 - projectedCoords1.y;\n"
 		      "#if !REVERSEDEPTH\n"
 		      "            projectedCoords1.z = projectedCoords1.z * 0.5 + 0.5 - 0.0015;\n"
 		      "#endif\n"

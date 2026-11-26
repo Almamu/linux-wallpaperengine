@@ -30,6 +30,8 @@ public:
     [[nodiscard]] glm::vec3 getWorldPosition () const;
     /** world-space direction the light points at (directional lights); +X at zero angles */
     [[nodiscard]] glm::vec3 getWorldDirection () const;
+    /** Native spot lighting retains authored and inherited scale in its forward axis. */
+    [[nodiscard]] glm::vec3 getWorldForwardAxis () const;
     /** world-space second endpoint of a tube light */
     [[nodiscard]] glm::vec3 getTubeEndPosition () const;
     /** light color premultiplied by intensity, zeroed while the light is invisible */

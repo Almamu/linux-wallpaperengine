@@ -145,24 +145,24 @@ CScene::CScene (
 	    const auto* light = object->as<Data::Model::Light> ();
 	    switch (light->type) {
 		case LightData::Type_Directional:
-		    this->m_lights.directionalCount++;
 		    // Directional cascades currently use a perspective camera frustum.
-		    if (light->castShadow && isPerspective) {
+		    if (light->castShadow && isPerspective && this->m_lights.directionalCount < 32) {
 			this->m_lights.directionalShadowCount++;
 		    }
+		    this->m_lights.directionalCount++;
 		    break;
 		case LightData::Type_Spot:
-		    this->m_lights.spotCount++;
-		    if (light->castShadow) {
+		    if (light->castShadow && this->m_lights.spotCount < 32) {
 			this->m_lights.spotShadowCount++;
 		    }
+		    this->m_lights.spotCount++;
 		    break;
 		case LightData::Type_Tube: this->m_lights.tubeCount++; break;
 		case LightData::Type_Point:
-		    this->m_lights.pointCount++;
-		    if (light->castShadow) {
+		    if (light->castShadow && this->m_lights.pointCount < 32) {
 			this->m_lights.pointShadowCount++;
 		    }
+		    this->m_lights.pointCount++;
 		    break;
 	    }
 	}
@@ -200,6 +200,7 @@ CScene::CScene (
 	int directional = 0;
 	int point = 0;
 	int spot = 0;
+	int tube = 0;
 	int directionalFeature = 0;
 	int spotFeature = this->m_lights.directionalShadowCount * 3;
 	for (const auto& object : scene->objects) {
@@ -209,123 +210,30 @@ CScene::CScene (
 
 	    const auto* light = object->as<Data::Model::Light> ();
 	    if (light->type == LightData::Type_Directional) {
-		if (light->castShadow && isPerspective) {
+		this->m_authoredLightSlots.emplace (light->id, directional);
+		if (light->castShadow && isPerspective && directional < 32) {
 		    this->m_lights.directionalShadowFeatures[directional]
 			= glm::ivec3 (directionalFeature, directionalFeature + 1, directionalFeature + 2);
 		    directionalFeature += 3;
-		    if (directional < 32) {
-			this->m_lights.directionalShadowMask |= uint32_t (1) << directional;
-		    }
+		    this->m_lights.directionalShadowMask |= uint32_t (1) << directional;
 		}
 		directional++;
 	    } else if (light->type == LightData::Type_Point) {
+		this->m_authoredLightSlots.emplace (light->id, point);
 		if (light->castShadow && point < 32) {
 		    this->m_lights.pointShadowMask |= uint32_t (1) << point;
 		}
 		point++;
 	    } else if (light->type == LightData::Type_Spot) {
+		this->m_authoredLightSlots.emplace (light->id, spot);
 		if (light->useCookie && spot < 32) this->m_lights.spotCookieMask |= uint32_t (1) << spot;
-		if (light->castShadow) {
+		if (light->castShadow && spot < 32) {
 		    this->m_lights.spotShadowFeatures[spot] = spotFeature++;
-		    if (spot < 32) {
-			this->m_lights.spotShadowMask |= uint32_t (1) << spot;
-		    }
+		    this->m_lights.spotShadowMask |= uint32_t (1) << spot;
 		}
 		spot++;
-	    }
-	}
-
-	if (this->m_lights.shadowViewCount > 0) {
-	    int grid = static_cast<int> (std::ceil (std::sqrt (this->m_lights.shadowViewCount)));
-	    std::vector<glm::ivec2> pointBlocks (this->m_lights.pointCount, glm::ivec2 (-1));
-	    std::vector<glm::ivec2> featureCells (this->m_lights.shadowFeatureCount, glm::ivec2 (-1));
-
-	    while (true) {
-		std::vector<bool> occupied (grid * grid, false);
-		const auto reserveBlock = [&occupied, grid] (const int width, const int height)
-		    -> std::optional<glm::ivec2> {
-		    for (int y = 0; y <= grid - height; y++) {
-			for (int x = 0; x <= grid - width; x++) {
-			    bool available = true;
-			    for (int row = 0; row < height && available; row++) {
-				for (int column = 0; column < width; column++) {
-				    available = !occupied[(y + row) * grid + x + column];
-				    if (!available) {
-					break;
-				    }
-				}
-			    }
-			    if (!available) {
-				continue;
-			    }
-			    for (int row = 0; row < height; row++) {
-				for (int column = 0; column < width; column++) {
-				    occupied[(y + row) * grid + x + column] = true;
-				}
-			    }
-			    return glm::ivec2 (x, y);
-			}
-		    }
-		    return std::nullopt;
-		};
-
-		bool packed = true;
-		for (int pointIndex = 0; pointIndex < this->m_lights.pointCount && pointIndex < 32; pointIndex++) {
-		    if ((this->m_lights.pointShadowMask & (uint32_t (1) << pointIndex)) == 0) {
-			continue;
-		    }
-		    const auto block = reserveBlock (2, 3);
-		    if (!block.has_value ()) {
-			packed = false;
-			break;
-		    }
-		    pointBlocks[pointIndex] = *block;
-		}
-		for (int feature = 0; packed && feature < this->m_lights.shadowFeatureCount; feature++) {
-		    const auto cell = reserveBlock (1, 1);
-		    if (!cell.has_value ()) {
-			packed = false;
-			break;
-		    }
-		    featureCells[feature] = *cell;
-		}
-		if (packed) {
-		    break;
-		}
-		grid++;
-	    }
-
-	    const int tileSize = SHADOW_ATLAS_SIZE / glm::max (grid, 1);
-	    for (int pointIndex = 0; pointIndex < this->m_lights.pointCount; pointIndex++) {
-		const glm::ivec2 block = pointBlocks[pointIndex];
-		if (block.x < 0) {
-		    continue;
-		}
-		this->m_lights.pointShadowTransforms[pointIndex] = glm::vec4 (
-		    static_cast<float> (block.x * tileSize) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (block.y * tileSize) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (tileSize * 2) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (tileSize * 3) / SHADOW_ATLAS_SIZE
-		);
-		for (int face = 0; face < 6; face++) {
-		    this->m_lights.pointShadowViewports[pointIndex][face] = glm::ivec4 (
-			(block.x + face % 2) * tileSize, (block.y + face / 2) * tileSize, tileSize, tileSize
-		    );
-		}
-	    }
-	    for (int feature = 0; feature < this->m_lights.shadowFeatureCount; feature++) {
-		const glm::ivec2 cell = featureCells[feature];
-		const glm::ivec4 viewport (
-		    cell.x * tileSize + SHADOW_ATLAS_GUARD, cell.y * tileSize + SHADOW_ATLAS_GUARD,
-		    tileSize - SHADOW_ATLAS_GUARD * 2, tileSize - SHADOW_ATLAS_GUARD * 2
-		);
-		this->m_lights.shadowViewports[feature] = viewport;
-		this->m_lights.shadowTransforms[feature] = glm::vec4 (
-		    static_cast<float> (viewport.x) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (viewport.y) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (viewport.z) / SHADOW_ATLAS_SIZE,
-		    static_cast<float> (viewport.w) / SHADOW_ATLAS_SIZE
-		);
+	    } else if (light->type == LightData::Type_Tube) {
+		this->m_authoredLightSlots.emplace (light->id, tube++);
 	    }
 	}
     }
@@ -458,9 +366,10 @@ CScene::CScene (
     const uint32_t sceneHeight = this->m_camera->getHeight ();
 
     if (this->m_lights.shadowViewCount > 0) {
+	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &this->m_shadowAtlasMaxExtent);
 	this->_rt_shadowAtlas = this->create (
 	    "_rt_shadowAtlas", TextureFormat_ARGB8888, TextureFlags_ClampUVsBorder, 1.0,
-	    { SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE }, { SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE }, false, true,
+	    { 2, 2 }, { 2, 2 }, false, true,
             1, this->getCamera ().usesReverseDepth ()
 	);
     } else {
@@ -503,7 +412,10 @@ CScene::CScene (
     m_lightObjects.clear ();
     for (const auto& object : scene->objects) {
 	if (const auto found = m_objects.find (object->id); found != m_objects.end ()) {
-	    if (auto* light = dynamic_cast<Objects::CLight*> (found->second)) m_lightObjects.push_back (light);
+	    if (auto* light = dynamic_cast<Objects::CLight*> (found->second)) {
+		m_lightObjects.push_back (light);
+		if (light->getLight ().castShadow) m_shadowLightOrder.push_back (light);
+	    }
 	}
     }
     for (auto* light : m_lightObjects) light->initializeCookie ();
@@ -709,6 +621,7 @@ void CScene::destroyObjects () noexcept {
     this->m_videoActivity.clear ();
     // bloom object is in the objects list, so no need to explicitly delete it
     this->m_bloomObject = nullptr;
+    this->m_shadowLightOrder.clear ();
 
     for (const auto& val : this->m_objects | std::views::values) {
 	delete val;
@@ -1060,9 +973,6 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	texture->updateUserAnimation (getElapsedTime (), m_sceneFrame);
     }
 
-    // refresh light uniform state after scripts have moved the lights
-    this->updateLightState ();
-
     // Material init hooks can append or reorder layers; destruction waits for the next frame.
     // Prepare this frame's existing models once. Init-created models join the next preparation.
     const auto modelsToPrepare = this->m_objectsByRenderOrder;
@@ -1071,6 +981,7 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     }
 
     // Render light-space depth before any material pass samples _rt_shadowAtlas.
+    this->updateLightState ();
     this->renderShadowAtlas ();
 
     // update every cached texture instead of walking image objects: textures that
@@ -1854,32 +1765,122 @@ void CScene::applyLightCombos (ComboMap& combos) const {
     }
 }
 
-void CScene::updateLightState () {
-    const bool reverseDepth = this->getCamera ().usesReverseDepth ();
-    int directional = 0;
-    int point = 0;
-    int spot = 0;
-    int tube = 0;
+void CScene::updateShadowAtlasLayout () {
+    auto& lights = this->m_lights;
+    if (lights.shadowViewCount == 0) return;
 
+    std::fill (lights.shadowTransforms.begin (), lights.shadowTransforms.end (), glm::vec4 (0));
+    std::fill (lights.pointShadowTransforms.begin (), lights.pointShadowTransforms.end (), glm::vec4 (0));
+    const int rows = this->m_shadowAtlasMaxExtent / SHADOW_FEATURE_SIZE;
+    const int columns = std::min (rows, SHADOW_ATLAS_MAX_WIDTH / SHADOW_FEATURE_SIZE);
+    if (columns <= 0) return;
+    const size_t capacity = static_cast<size_t> (columns) * rows;
+
+    const auto& view = this->getCamera ().getLookAt ();
+    const auto forward = -glm::vec3 (view[0][2], view[1][2], view[2][2]);
+    const double time = this->getElapsedTime ();
+    const auto depth = [forward, time] (const Light& light) {
+	const float value = glm::dot (light.origin->evaluateVec3 (time), forward);
+	return std::isnan (value) ? 0.0f : value;
+    };
+
+    // Native sorts its persistent light list before visibility filtering.
+    std::stable_sort (this->m_shadowLightOrder.begin (), this->m_shadowLightOrder.end (),
+	[&depth] (const auto* a, const auto* b) {
+	    const auto& first = a->getLight ();
+	    const auto& second = b->getLight ();
+	    if (first.type != second.type) return first.type < second.type;
+	    if (first.useCookie != second.useCookie) return first.useCookie;
+	    return depth (first) < depth (second);
+	});
+
+    struct Region {
+	int point;
+	int feature;
+    };
+    std::vector<Region> regions;
+    for (const auto* light : this->m_shadowLightOrder) {
+	if (regions.size () == capacity) break;
+	const auto& data = light->getLight ();
+	if (!data.groupVisible->value->getBool () || !light->isVisibleThroughParents ()) continue;
+	const int slot = this->m_authoredLightSlots.at (light->getId ());
+	if (data.type == LightData::Type_Point) {
+	    if (slot < 32 && (lights.pointShadowMask & (uint32_t (1) << slot)))
+		regions.push_back ({ slot, -1 });
+	} else if (data.type == LightData::Type_Spot) {
+	    const int feature = lights.spotShadowFeatures[slot];
+	    if (feature >= 0) regions.push_back ({ -1, feature });
+	} else if (data.type == LightData::Type_Directional && capacity - regions.size () >= 3) {
+	    const auto features = lights.directionalShadowFeatures[slot];
+	    if (features.x >= 0) {
+		for (int cascade = 0; cascade < 3; cascade++)
+		    regions.push_back ({ -1, features[cascade] });
+	    }
+	}
+    }
+
+    // Medium quality packs one square per point, spot or cascade in rows.
+    // Each point's six faces share the same square.
+    const int count = static_cast<int> (regions.size ());
+    const int width = std::max (2, std::min (count, columns) * SHADOW_FEATURE_SIZE);
+    const int height = std::max (2, ((count + columns - 1) / columns) * SHADOW_FEATURE_SIZE);
+    if (width > static_cast<int> (this->_rt_shadowAtlas->getRealWidth ())
+	|| height > static_cast<int> (this->_rt_shadowAtlas->getRealHeight ())) {
+	// Resize the existing texture so material aliases and uniform providers stay valid.
+	this->find ("_rt_shadowAtlas")->resize (width, height);
+    }
+    const glm::vec4 atlasSize (this->_rt_shadowAtlas->getRealWidth (), this->_rt_shadowAtlas->getRealHeight (),
+	this->_rt_shadowAtlas->getRealWidth (), this->_rt_shadowAtlas->getRealHeight ());
+    for (int index = 0; index < count; index++) {
+	const auto& region = regions[index];
+	const glm::ivec4 viewport ((index % columns) * SHADOW_FEATURE_SIZE, (index / columns) * SHADOW_FEATURE_SIZE,
+	    SHADOW_FEATURE_SIZE, SHADOW_FEATURE_SIZE);
+	const auto transform = glm::vec4 (viewport) / atlasSize;
+	if (region.point >= 0) {
+	    lights.pointShadowTransforms[region.point] = transform;
+	    for (int face = 0; face < 6; face++) {
+		lights.pointShadowViewports[region.point][face] = glm::ivec4 (
+		    viewport.x + (face % 2) * (SHADOW_FEATURE_SIZE / 2),
+		    viewport.y + (face / 2) * (SHADOW_FEATURE_SIZE / 3), SHADOW_FEATURE_SIZE / 2, SHADOW_FEATURE_SIZE / 3
+		);
+	    }
+	} else {
+	    lights.shadowTransforms[region.feature] = transform;
+	    lights.shadowViewports[region.feature] = viewport;
+	}
+    }
+}
+
+void CScene::updateLightState () {
+    this->updateShadowAtlasLayout ();
+    const auto& camera = this->getCamera ();
+    const bool reverseDepth = camera.usesReverseDepth ();
+    auto& lights = this->m_lights;
+    // Shader masks and uniform storage retain their authored slots after deletion.
+    const glm::vec4 dark (0.0f, 0.0f, 0.0f, 1.0f);
+    std::fill (lights.directionalColors.begin (), lights.directionalColors.end (), dark);
+    std::fill (lights.pointColors.begin (), lights.pointColors.end (), dark);
+    std::fill (lights.spotColors.begin (), lights.spotColors.end (), dark);
+    std::fill (lights.tubeColors.begin (), lights.tubeColors.end (), dark);
+    std::fill (lights.directionalShadowEnabled.begin (), lights.directionalShadowEnabled.end (), 0.0f);
+    std::fill (lights.pointShadowEnabled.begin (), lights.pointShadowEnabled.end (), 0.0f);
+    std::fill (lights.spotShadowEnabled.begin (), lights.spotShadowEnabled.end (), 0.0f);
+    std::fill (lights.shadowFeatureEnabled.begin (), lights.shadowFeatureEnabled.end (), 0.0f);
     m_lightCookie.reset ();
 
     for (const auto* light : this->m_lightObjects) {
 	const auto& data = light->getLight ();
+	const auto authored = this->m_authoredLightSlots.find (light->getId ());
+	if (authored == this->m_authoredLightSlots.end ()) continue;
+	const int slot = authored->second;
 
-	if (data.type == LightData::Type_Directional && directional < this->m_lights.directionalCount) {
-	    // the shader expects the direction towards the light
-	    this->m_lights.directionalDirections[directional] = glm::vec4 (-light->getWorldDirection (), 0.0f);
+	if (data.type == LightData::Type_Directional) {
+	    // The shader expects the direction towards the light.
+	    lights.directionalDirections[slot] = glm::vec4 (-light->getWorldDirection (), 0.0f);
 	    // The legacy versioned shaders multiply radiance by this neutral radius squared.
-	    this->m_lights.directionalColors[directional] = glm::vec4 (light->getPremultipliedColor (), 1.0f);
-	    this->m_lights.directionalShadowEnabled[directional] = 0.0f;
-
-	    const glm::ivec3 features = this->m_lights.directionalShadowFeatures[directional];
-	    if (data.castShadow && features.x >= 0) {
-		const float enabled
-		    = data.groupVisible->value->getBool () && light->isVisibleThroughParents () ? 1.0f : 0.0f;
-		this->m_lights.directionalShadowEnabled[directional] = enabled;
-
-		const Camera& camera = this->getCamera ();
+	    lights.directionalColors[slot] = glm::vec4 (light->getPremultipliedColor (), 1.0f);
+	    const glm::ivec3 features = lights.directionalShadowFeatures[slot];
+	    if (features.x >= 0 && lights.shadowTransforms[features.x].z > 0.0f) {
 		const float cameraNear = std::max (camera.getNearZ (), 0.0001f);
 		const float cameraFar = std::max (camera.getFarZ (), cameraNear + 0.0001f);
 		glm::vec3 cascadeFar = glm::abs (data.cascadeDistances);
@@ -1889,80 +1890,68 @@ void CScene::updateLightState () {
 
 		for (int cascade = 0; cascade < 3; cascade++) {
 		    const int feature = features[cascade];
-                if (reverseDepth) {
-                    this->m_lights.shadowMatrices[feature] = light->getDirectionalShadowProjection (
-                        camera.getEye (), camera.getLookAt (), cascade, this->m_lights.shadowViewports[feature].z
-                    );
-                } else {
-                    // Retain conventional fitting without applying orthographic zoom to perspective coverage.
-                    this->m_lights.shadowMatrices[feature] = Objects::CLight::calculateDirectionalShadowViewProjection (
-                        camera.getEye (), camera.getCenter (), camera.getUp (), camera.getFov (),
-                        camera.getWidth () / std::max (camera.getHeight (), 1.0f), 1.0f, cameraNear,
-                        cascadeFar[cascade], light->getWorldDirection (), this->m_lights.shadowViewports[feature].z
-                    );
-                }
-		    this->m_lights.shadowFeatureEnabled[feature] = enabled;
+		    if (reverseDepth) {
+			lights.shadowMatrices[feature] = light->getDirectionalShadowProjection (
+			    camera.getEye (), camera.getLookAt (), cascade, SHADOW_FEATURE_SIZE
+			);
+		    } else {
+			// Orthographic zoom does not apply to perspective frustum fitting.
+			lights.shadowMatrices[feature] = Objects::CLight::calculateDirectionalShadowViewProjection (
+			    camera.getEye (), camera.getCenter (), camera.getUp (), camera.getFov (),
+			    camera.getWidth () / std::max (camera.getHeight (), 1.0f), 1.0f, cameraNear,
+			    cascadeFar[cascade], light->getWorldDirection (), SHADOW_FEATURE_SIZE
+			);
+		    }
+		    lights.shadowFeatureEnabled[feature] = 1.0f;
 		}
+		lights.directionalShadowEnabled[slot] = 1.0f;
 	    }
-	    directional++;
-	} else if (data.type == LightData::Type_Point && point < this->m_lights.pointCount) {
-	    this->m_lights.pointOrigins[point]
-		= glm::vec4 (light->getWorldPosition (), data.exponent->value->getFloat ());
-	    this->m_lights.pointColors[point]
-		= glm::vec4 (light->getPremultipliedColor (), data.radius->value->getFloat ());
-	    this->m_lights.pointShadowEnabled[point] = 0.0f;
-	    if (data.castShadow && point < 32 && (this->m_lights.pointShadowMask & (uint32_t (1) << point)) != 0) {
-		const float radius = data.radius->value->getFloat ();
+	} else if (data.type == LightData::Type_Point) {
+	    const auto origin = light->getWorldPosition ();
+	    const float radius = data.radius->value->getFloat ();
+	    lights.pointOrigins[slot] = glm::vec4 (origin, data.exponent->value->getFloat ());
+	    lights.pointColors[slot] = glm::vec4 (light->getPremultipliedColor (), radius);
+	    if (lights.pointShadowTransforms[slot].z > 0.0f) {
 		const float sourceSize = data.sourceSize->evaluateFloat (this->getElapsedTime ());
-		const bool orthographic = this->getCamera ().isOrthogonal ();
-		this->m_lights.pointShadowProjections[point]
+		const bool orthographic = camera.isOrthogonal ();
+		lights.pointShadowProjections[slot]
 		    = Objects::CLight::calculatePointShadowProjectionInfo (radius, sourceSize, orthographic, reverseDepth);
-		this->m_lights.pointShadowMatrices[point]
-		    = Objects::CLight::calculatePointShadowViewProjections (light->getWorldPosition (), radius, sourceSize, orthographic, reverseDepth);
-		this->m_lights.pointShadowEnabled[point]
-		    = data.groupVisible->value->getBool () && light->isVisibleThroughParents () ? 1.0f : 0.0f;
+		lights.pointShadowMatrices[slot]
+		    = Objects::CLight::calculatePointShadowViewProjections (origin, radius, sourceSize, orthographic, reverseDepth);
+		lights.pointShadowEnabled[slot] = 1.0f;
 	    }
-	    point++;
-	} else if (data.type == LightData::Type_Spot && spot < this->m_lights.spotCount) {
+	} else if (data.type == LightData::Type_Spot) {
 	    const glm::vec2 cones = Objects::CLight::calculateSpotConeCosines (
 		data.innerCone->value->getFloat (), data.outerCone->value->getFloat ()
 	    );
-	    this->m_lights.spotOrigins[spot] = glm::vec4 (light->getWorldPosition (), cones.x);
-	    this->m_lights.spotDirections[spot] = glm::vec4 (light->getWorldDirection (), cones.y);
-	    this->m_lights.spotColors[spot]
-		= glm::vec4 (light->getPremultipliedColor (), data.radius->value->getFloat ());
-	    this->m_lights.spotExponents[spot] = glm::vec4 (data.exponent->value->getFloat (), 0.0f, 0.0f, 0.0f);
-	    if (data.useCookie) {
-		this->m_lights.spotCookieMatrices[spot] = light->getCookieProjection ();
+	    lights.spotOrigins[slot] = glm::vec4 (light->getWorldPosition (), cones.x);
+	    lights.spotDirections[slot] = glm::vec4 (light->getWorldForwardAxis (), cones.y);
+	    lights.spotColors[slot] = glm::vec4 (light->getPremultipliedColor (), data.radius->value->getFloat ());
+	    lights.spotExponents[slot] = glm::vec4 (data.exponent->value->getFloat (), 0.0f, 0.0f, 0.0f);
+	    if (slot < 32 && (lights.spotCookieMask & (uint32_t (1) << slot))) {
+		lights.spotCookieMatrices[slot] = light->getCookieProjection ();
 		if (light->isVisibleThroughParents () && data.groupVisible->value->getBool ()) {
 		    m_lightCookie = light->getCookie ();
 		}
 	    }
 
-	    const int feature = this->m_lights.spotShadowFeatures[spot];
-	    if (data.castShadow && feature >= 0) {
-		this->m_lights.shadowMatrices[feature] = (reverseDepth || data.useCookie) ? light->getCookieProjection (reverseDepth)
+	    const int feature = lights.spotShadowFeatures[slot];
+	    if (feature >= 0 && lights.shadowTransforms[feature].z > 0.0f) {
+		lights.shadowMatrices[feature] = (reverseDepth || data.useCookie) ? light->getCookieProjection (reverseDepth)
 		    : Objects::CLight::calculateSpotShadowViewProjection (
-		    light->getWorldPosition (), light->getWorldDirection (), data.outerCone->value->getFloat (),
-		    data.radius->value->getFloat ()
-		);
-		this->m_lights.spotShadowEnabled[spot]
-		    = data.groupVisible->value->getBool () && light->isVisibleThroughParents () ? 1.0f : 0.0f;
-		this->m_lights.shadowFeatureEnabled[feature] = this->m_lights.spotShadowEnabled[spot];
-	    } else {
-		this->m_lights.spotShadowEnabled[spot] = 0.0f;
+			light->getWorldPosition (), light->getWorldDirection (), data.outerCone->value->getFloat (),
+			data.radius->value->getFloat ()
+		    );
+		lights.spotShadowEnabled[slot] = 1.0f;
+		lights.shadowFeatureEnabled[feature] = 1.0f;
 	    }
-	    spot++;
-	} else if (data.type == LightData::Type_Tube && tube < this->m_lights.tubeCount) {
-	    this->m_lights.tubeOriginsA[tube]
-		= glm::vec4 (light->getWorldPosition (), data.exponent->value->getFloat ());
-	    this->m_lights.tubeOriginsB[tube] = glm::vec4 (light->getTubeEndPosition (), 0.0f);
-	    this->m_lights.tubeColors[tube]
-		= glm::vec4 (light->getPremultipliedColor (), data.radius->value->getFloat ());
-	    tube++;
+	} else if (data.type == LightData::Type_Tube) {
+	    lights.tubeOriginsA[slot] = glm::vec4 (light->getWorldPosition (), data.exponent->value->getFloat ());
+	    lights.tubeOriginsB[slot] = glm::vec4 (light->getTubeEndPosition (), 0.0f);
+	    lights.tubeColors[slot] = glm::vec4 (light->getPremultipliedColor (), data.radius->value->getFloat ());
 	}
     }
-    this->m_lights.updateLegacyPointLights ();
+    lights.updateLegacyPointLights ();
 }
 
 void CScene::SceneLights::updateLegacyPointLights () {
@@ -1997,7 +1986,9 @@ void CScene::renderShadowAtlas () {
     const bool reverseDepth = this->_rt_shadowAtlas->usesReverseDepth ();
     const ClipDepthScope clipDepth (reverseDepth);
     glBindFramebuffer (GL_FRAMEBUFFER, this->_rt_shadowAtlas->getFramebuffer ());
-    glViewport (0, 0, SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE);
+    // The full retained atlas must clear even when the caller uses a scissor.
+    const GLboolean scissor = glIsEnabled (GL_SCISSOR_TEST);
+    glDisable (GL_SCISSOR_TEST);
     glColorMask (false, false, false, false);
     glDisable (GL_BLEND);
     glEnable (GL_DEPTH_TEST);
@@ -2007,6 +1998,9 @@ void CScene::renderShadowAtlas () {
     glClear (GL_DEPTH_BUFFER_BIT);
     glEnable (GL_POLYGON_OFFSET_FILL);
     glPolygonOffset (reverseDepth ? -4.0f : 2.0f, reverseDepth ? 0.0f : 4.0f);
+    // Keep native atlas coordinates across cells, including out-of-tile samples.
+    glm::mat4 shadowClip (1.0f);
+    shadowClip[1][1] = -1.0f;
 
     for (int feature = 0; feature < this->m_lights.shadowFeatureCount; feature++) {
 	if (this->m_lights.shadowFeatureEnabled[feature] < 0.5f) {
@@ -2016,7 +2010,7 @@ void CScene::renderShadowAtlas () {
 	const glm::ivec4& viewport = this->m_lights.shadowViewports[feature];
 	glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
         // Native biases only the caster matrix; receivers use the original VP.
-        glm::mat4 casterProjection = this->m_lights.shadowMatrices[feature];
+        glm::mat4 casterProjection = shadowClip * this->m_lights.shadowMatrices[feature];
         if (reverseDepth) casterProjection[3][2] -= 0.0005f;
 
 	for (auto* object : this->m_objectsByRenderOrder) {
@@ -2035,9 +2029,10 @@ void CScene::renderShadowAtlas () {
 	for (int face = 0; face < 6; face++) {
 	    const glm::ivec4& viewport = this->m_lights.pointShadowViewports[point][face];
 	    glViewport (viewport.x, viewport.y, viewport.z, viewport.w);
+	    const glm::mat4 casterProjection = shadowClip * this->m_lights.pointShadowMatrices[point][face];
 	    for (auto* object : this->m_objectsByRenderOrder) {
 		if (auto* model = dynamic_cast<Objects::CModel*> (object); model != nullptr) {
-		    model->renderShadow (this->m_lights.pointShadowMatrices[point][face]);
+		    model->renderShadow (casterProjection);
 		    this->loadingCheckpoint ();
 		}
 	    }
@@ -2050,6 +2045,7 @@ void CScene::renderShadowAtlas () {
     glColorMask (true, true, true, true);
     glDepthMask (true);
     glUseProgram (GL_NONE);
+    if (scissor) glEnable (GL_SCISSOR_TEST);
 
 #if !NDEBUG
     glPopDebugGroup ();
@@ -2344,6 +2340,7 @@ void CScene::destroyQueuedLayers () {
 	m_deferredRenderOrder.erase (object);
 	std::erase (m_objectsByCursorOrder, object);
 	std::erase_if (m_lightObjects, [object] (const auto* light) { return light == object; });
+	std::erase_if (m_shadowLightOrder, [object] (const auto* light) { return light == object; });
 	m_objects.erase (it);
 	delete object;
 	std::erase_if (m_runtimeLayerData, [id] (const auto& data) { return data->id == id; });

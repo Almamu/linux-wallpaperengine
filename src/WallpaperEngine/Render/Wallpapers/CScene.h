@@ -225,7 +225,7 @@ public:
 	int tubeCount = 0;
 	/** Matrix features: three per shadowed directional light and one per shadowed spot. */
 	int shadowFeatureCount = 0;
-	/** Total square atlas cells, including six cells per point-shadow block. */
+	/** Total shadow views, including six faces per shadowed point light. */
 	int shadowViewCount = 0;
 	uint32_t directionalShadowMask = 0;
 	uint32_t pointShadowMask = 0;
@@ -255,7 +255,7 @@ public:
 	std::vector<std::array<glm::ivec4, 6>> pointShadowViewports = {};
 	/** xyz = world-space position, w = cos(inner cone angle) */
 	std::vector<glm::vec4> spotOrigins = {};
-	/** xyz = direction the spotlight points, w = cos(outer cone angle) */
+	/** xyz = the spotlight's scaled forward axis, w = cos(outer cone angle) */
 	std::vector<glm::vec4> spotDirections = {};
 	/** rgb = color premultiplied by intensity, w = radius */
 	std::vector<glm::vec4> spotColors = {};
@@ -281,6 +281,12 @@ public:
     };
 
     [[nodiscard]] const SceneLights& getLights () const;
+    /** Per-type shader slot in authored order. Runtime lights have no slot. */
+    [[nodiscard]] std::optional<int> getAuthoredLightSlot (const int id) const {
+	const auto slot = this->m_authoredLightSlots.find (id);
+	if (slot == this->m_authoredLightSlots.end ()) return std::nullopt;
+	return slot->second;
+    }
     void applyLightCombos (ComboMap& combos) const;
 
     struct SceneFog {
@@ -334,6 +340,7 @@ private:
     Render::CObject* createObject (const Object& object);
     Render::CObject* dispatchObjectType (const Object& object);
     void addObjectToRenderOrder (const Object& object);
+    void updateShadowAtlasLayout ();
     void updateLightState ();
     void renderShadowAtlas ();
     void registerFogScripts ();
@@ -376,6 +383,9 @@ private:
     /** Authored stacking order, independent of dependency-driven render scheduling. */
     std::vector<CObject*> m_objectsByCursorOrder = {};
     std::vector<Objects::CLight*> m_lightObjects = {};
+    /** Per-type uniform indices assigned when the authored shader masks are built. */
+    std::map<int, int> m_authoredLightSlots;
+    std::vector<const Objects::CLight*> m_shadowLightOrder;
     SceneLights m_lights = {};
     std::unique_ptr<VolumetricLights> m_volumetricLights;
     SceneFog m_fog = {};
@@ -414,13 +424,14 @@ private:
     std::shared_ptr<const CFBO> _rt_8FrameBuffer = nullptr;
     std::shared_ptr<const CFBO> _rt_Bloom = nullptr;
     std::shared_ptr<const CFBO> _rt_shadowAtlas = nullptr;
+    GLint m_shadowAtlasMaxExtent = 0;
     std::shared_ptr<const CFBO> m_lightCookieAlias;
     std::shared_ptr<const TextureProvider> m_lightCookie;
     GLuint m_lightCookieSampler = GL_NONE;
     std::shared_ptr<const CFBO> m_compositionRenderTarget = nullptr;
     bool m_compositionAlphaMax = false;
 
-    static constexpr int SHADOW_ATLAS_SIZE = 2048;
-    static constexpr int SHADOW_ATLAS_GUARD = 2;
+    static constexpr int SHADOW_FEATURE_SIZE = 256;
+    static constexpr int SHADOW_ATLAS_MAX_WIDTH = 8192;
 };
 } // namespace WallpaperEngine::Render::Wallpaper

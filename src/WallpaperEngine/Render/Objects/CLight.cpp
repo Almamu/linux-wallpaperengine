@@ -130,7 +130,11 @@ glm::vec3 CLight::getWorldPosition () const {
 glm::vec3 CLight::getWorldDirection () const {
     // base forward is +X: matches the sun tracking script in workshop scene 3589454154,
     // which steers the light with a yaw of (-atan2(z, x) - 180°) towards the origin
-    return glm::normalize (glm::mat3 (this->resolveLightMatrix ()) * glm::vec3 (1.0f, 0.0f, 0.0f));
+    return glm::normalize (this->getWorldForwardAxis ());
+}
+
+glm::vec3 CLight::getWorldForwardAxis () const {
+    return glm::vec3 (this->resolveLightMatrix ()[0]);
 }
 
 glm::vec3 CLight::getTubeEndPosition () const {
@@ -355,7 +359,10 @@ CLight::calculatePointShadowViewProjections (
 
     std::array<glm::mat4, 6> result {};
     for (size_t face = 0; face < result.size (); face++) {
-	result[face] = projection * glm::lookAt (origin, origin + directions[face], up[face]);
+	// Form the basis before translating: origin + direction can round back to origin.
+	glm::mat4 view = glm::lookAt (glm::vec3 (0.0f), directions[face], up[face]);
+	view[3] = view * glm::vec4 (-origin, 1.0f);
+	result[face] = projection * view;
     }
     return result;
 }

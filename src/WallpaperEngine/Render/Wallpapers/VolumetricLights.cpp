@@ -28,26 +28,12 @@ GLuint compile (CScene& scene, const std::string& name, const ComboMap& combos, 
         vertex += " }\n";
     }
     std::string fragment = shader.fragment ();
-    if (combos.contains ("COOKIE") && combos.at ("SHADOW") != 0) {
-        // Cookie UVs retain native texture Y. Only the GL shadow atlas needs
-        // the opposite Y orientation after the cookie has been sampled.
-        const std::string transform = "uvs.xy *= VAR_SHADOWMAP_TRANSFORMS.zw;";
-        const auto offset = fragment.find (transform);
-        if (offset != std::string::npos) fragment.insert (offset, "uvs.y = 1.0 - uvs.y;\n");
-    }
     if (combos.contains ("POINTLIGHT") && combos.at ("SHADOW") != 0) {
-        // The native cube helper selects a 2x3 atlas cell in D3D coordinates.
-        // Match the surface-light cell conversion, without its receiver bias:
-        // native volumetric sampling compares the unmodified projected depth.
+        // Native volumetric sampling has no surface-light receiver bias.
         // Shader compatibility can wrap the initializer in an explicit float cast.
         const std::string sample = "float shadowSample =";
         const auto offset = fragment.find (sample);
         if (offset != std::string::npos) fragment.insert (offset,
-            "float pointCellHeight = VAR_SHADOWMAP_TRANSFORMS.w / 3.0;\n"
-            "float pointRelativeY = uvs.y - VAR_SHADOWMAP_TRANSFORMS.y;\n"
-            "float pointRow = floor(clamp(pointRelativeY / pointCellHeight, 0.0, 2.999));\n"
-            "float pointRowY = VAR_SHADOWMAP_TRANSFORMS.y + pointRow * pointCellHeight;\n"
-            "uvs.y = pointRowY + pointCellHeight - (uvs.y - pointRowY);\n"
             "#if !REVERSEDEPTH\nuvs.z = uvs.z * 0.5 + 0.5;\n#endif\n");
     }
     const auto [vert, frag] = Shaders::GLSLContext::get ().toGlsl (vertex, fragment);
@@ -264,12 +250,10 @@ void VolumetricLights::render (
     const auto viewProjection = nativeClip (camera.usesReverseDepth ()) * camera.getRasterProjection () * camera.getLookAt ();
     const auto& lights = m_scene.getLights ();
     const double time = m_scene.getElapsedTime ();
-    size_t spot = 0, pointIndex = 0;
     for (const auto* light : lightObjects) {
         const auto& data = light->getLight ();
         const bool point = data.type == LightData::Type_Point;
         if (!point && data.type != LightData::Type_Spot) continue;
-        const size_t index = point ? pointIndex++ : spot++;
         if (std::ranges::find (batch, light) == batch.end ()) continue;
         if (!data.castVolumetrics->value->getBool () || data.density->evaluateFloat (time) <= 0
             || glm::length (light->getPremultipliedColor ()) <= 0) continue;
@@ -302,8 +286,9 @@ void VolumetricLights::render (
         matrix (m_backProgram, "g_ViewProjectionMatrix", viewProjection);
         matrix (m_backProgram, "g_AltViewProjectionMatrix", volumeTransform);
         draw (m_backProgram, false, cookie, point);
+        // Native tests containment at a fixed distance along the view ray.
         const auto cameraPoint = camera.getEye () + glm::normalize (camera.getCenter () - camera.getEye ())
-            * (point ? 0.2f : cookie ? 0.1f : camera.getNearZ ());
+            * (cookie ? 0.1f : 0.2f);
         const auto delta = cameraPoint - origin;
         const float axial = glm::dot (delta, direction);
         const glm::vec4 clipPoint = lightProjection * glm::vec4 (cameraPoint, 1.0f);
@@ -312,10 +297,11 @@ void VolumetricLights::render (
             && std::abs (clipPoint.y) <= clipPoint.w && clipPoint.z >= 0 && clipPoint.z <= clipPoint.w
             : axial >= 0 && axial <= radius
             && glm::length (delta - direction * axial) <= axial * std::tan (glm::radians (data.outerCone->evaluateFloat (time)));
-        // Script-created lights can outnumber the scene's load-time shadow slots.
-        const int feature = !point && index < lights.spotShadowFeatures.size () ? lights.spotShadowFeatures[index] : -1;
-        const bool shadow = point ? index < lights.pointShadowEnabled.size () && lights.pointShadowEnabled[index] > .5f
-            : feature >= 0 && index < lights.spotShadowEnabled.size () && lights.spotShadowEnabled[index] > .5f;
+        // Atlas slots follow authored light identity through removals.
+        const auto slot = m_scene.getAuthoredLightSlot (light->getId ());
+        const int feature = !point && slot ? lights.spotShadowFeatures[*slot] : -1;
+        const bool shadow = slot && (point ? lights.pointShadowEnabled[*slot] > .5f
+            : feature >= 0 && lights.spotShadowEnabled[*slot] > .5f);
         const GLuint program = frontProgram (shadow, inside, cookie, point);
         glBindFramebuffer (GL_FRAMEBUFFER, m_lightBuffer->getFramebuffer ());
         glDisable (GL_DEPTH_TEST);
@@ -330,17 +316,17 @@ void VolumetricLights::render (
         matrix (program, "g_AltViewProjectionMatrix", volumeTransform);
         matrix (program, "g_EffectModelMatrix", glm::inverse (viewProjection));
         auto samplingProjection = shadow && !point ? nativeClip (camera.usesReverseDepth ()) * lights.shadowMatrices[feature] : lightProjection;
-        // Raster/depth reconstruction uses flipped clip Y, image cookies do not.
-        if (cookie) for (int column = 0; column < 4; ++column) samplingProjection[column][1] *= -1;
+        // Shadow and cookie sampling retain native texture Y; raster reconstruction does not.
+        if ((shadow && !point) || cookie) for (int column = 0; column < 4; ++column) samplingProjection[column][1] *= -1;
         matrix (program, "g_AltModelMatrix", samplingProjection);
         vector (program, "g_RenderVar0", shadow
-            ? (point ? lights.pointShadowTransforms[index] : lights.shadowTransforms[feature]) : glm::vec4 (0));
+            ? (point ? lights.pointShadowTransforms[*slot] : lights.shadowTransforms[feature]) : glm::vec4 (0));
         const auto cones = Objects::CLight::calculateSpotConeCosines (data.innerCone->evaluateFloat (time), data.outerCone->evaluateFloat (time));
         vector (program, "g_RenderVar1", { radius * .99f, cones.x, cones.y, data.intensity->evaluateFloat (time) });
         vector (program, "g_RenderVar2", glm::vec4 (origin, data.density->evaluateFloat (time)));
         vector (program, "g_RenderVar3", point
-            ? (index < lights.pointShadowProjections.size () ? lights.pointShadowProjections[index] : glm::vec4 (0))
-            : glm::vec4 (direction, 0));
+            ? (slot ? lights.pointShadowProjections[*slot] : glm::vec4 (0))
+            : glm::vec4 (light->getWorldForwardAxis (), 0));
         vector (program, "g_RenderVar4", glm::vec4 (data.color->evaluateVec3 (time), data.volumetricsExponent->evaluateFloat (time)));
         vector (program, "g_Texture1Resolution", { m_size.x, m_size.y, m_size.x, m_size.y });
         vector (program, "g_Texture3Resolution", *m_back->getResolution ());

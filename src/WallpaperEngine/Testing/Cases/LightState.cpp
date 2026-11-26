@@ -147,6 +147,24 @@ TEST_CASE ("Point shadow projection info reconstructs the raster depth projectio
     CHECK (info.w == Catch::Approx (expected[3][3]));
 }
 
+TEST_CASE ("Point shadow face bases survive large world-space translations", "[lighting][point-shadow]") {
+    // At this position, float(origin + unitAxis) can round back to origin.
+    const glm::vec3 origin (33554432.0f);
+    const auto matrices = CLight::calculatePointShadowViewProjections (origin, 64.0f);
+    const std::array<glm::vec3, 6> offsets = {
+	glm::vec3 (16, 0, 0), glm::vec3 (-16, 0, 0),
+	glm::vec3 (0, 16, 0), glm::vec3 (0, -16, 0),
+	glm::vec3 (0, 0, 16), glm::vec3 (0, 0, -16),
+    };
+    for (size_t face = 0; face < matrices.size (); ++face) {
+	const auto clip = matrices[face] * glm::vec4 (origin + offsets[face], 1.0f);
+	CHECK (clip.x == Catch::Approx (0.0f).margin (1e-6));
+	CHECK (clip.y == Catch::Approx (0.0f).margin (1e-6));
+	CHECK (clip.w == Catch::Approx (16.0f));
+	CHECK (std::isfinite (clip.z));
+    }
+}
+
 TEST_CASE ("Point source size preserves native defaults and near clipping", "[lighting][source-size]") {
     using namespace WallpaperEngine::Data::Model;
     using WallpaperEngine::Data::Parsers::ObjectParser;
