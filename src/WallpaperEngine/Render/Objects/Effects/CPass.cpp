@@ -847,9 +847,8 @@ void CPass::setupShaders () {
 
     this->m_combos.insert_or_assign ("HDR", this->m_renderable.getScene ().isHdr () ? 1 : 0);
 
-    // genericimage3/4 use this combo to perform the authored cutout/discard.
-    // GL_SAMPLE_ALPHA_TO_COVERAGE then adds multisample edge smoothing when the
-    // target supports it; the shader discard remains correct without MSAA.
+    // This combo selects the shader's coverage path. Multisampled targets use
+    // the resulting alpha through GL_SAMPLE_ALPHA_TO_COVERAGE.
     this->m_combos.insert_or_assign (
 	"ALPHATOCOVERAGE", this->m_pass.blending == BlendingMode_AlphaToCoverage ? 1 : 0
     );

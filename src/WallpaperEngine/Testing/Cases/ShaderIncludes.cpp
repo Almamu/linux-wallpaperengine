@@ -1,8 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <cctype>
+#include <cstdlib>
+
 #include "WallpaperEngine/Assets/AssetLocator.h"
 #include "WallpaperEngine/Render/Shaders/GLSLContext.h"
+#include "WallpaperEngine/Render/Shaders/Shader.h"
 #include "WallpaperEngine/Render/Shaders/ShaderUnit.h"
 
 using WallpaperEngine::Assets::AssetLocator;
@@ -11,9 +15,26 @@ using WallpaperEngine::Data::Model::ShaderConstantMap;
 using WallpaperEngine::Data::Model::TextureMap;
 using WallpaperEngine::FileSystem::Container;
 using WallpaperEngine::Render::Shaders::GLSLContext;
+using WallpaperEngine::Render::Shaders::Shader;
 using WallpaperEngine::Render::Shaders::ShaderUnit;
 
 namespace {
+constexpr auto nativeCoverageRemap =
+    "out_FragColor.a=(clamp((out_FragColor.a-0.5)/max(fwidth(out_FragColor.a),0.0001)+0.5,0.0,1.0));";
+
+std::string preprocessFragmentMain (const AssetLocator& assets, const std::string& name, const ComboMap& combos) {
+    const ShaderConstantMap constants;
+    const TextureMap textures;
+    const ComboMap overrides;
+    Shader shader (assets, name, combos, overrides, textures, textures, constants);
+    auto source = GLSLContext::get ().preprocess (GLSLContext::UnitType_Fragment, shader.fragment ());
+    std::erase_if (source, [] (unsigned char character) { return std::isspace (character); });
+    // Ignore the shared clip() helpers emitted before the fragment entry point.
+    const auto main = source.find ("voidmain(");
+    REQUIRE (main != std::string::npos);
+    return source.substr (main);
+}
+
 std::unique_ptr<AssetLocator> shaderAssets (const std::string& header, const std::string& nestedHeader = "") {
     auto container = std::make_unique<Container> ();
     container->getVFS ().add ("shaders/test_ordering.h", header);
@@ -136,6 +157,60 @@ TEST_CASE ("native clip discards fragments with a negative component", "[shader]
         CHECK_THAT (translated.second, Catch::Matchers::ContainsSubstring ("discard"));
         CHECK_THAT (translated.second, Catch::Matchers::ContainsSubstring (
             type == "float" ? "< 0.0" : "lessThan"));
+    }
+}
+
+TEST_CASE ("stock generic4 writes coverage alpha without a shader cutoff", "[.][shader][generic4-a2c]") {
+    // The production compatibility rule recognizes the original fragment by its full contents.
+    const auto* root = std::getenv ("LWE_TEST_STOCK_ASSETS");
+    if (!root) SKIP ("Set LWE_TEST_STOCK_ASSETS to the Wallpaper Engine assets directory from Steam build 23967692");
+
+    auto container = std::make_unique<Container> ();
+    container->mount (root, "/");
+    const AssetLocator assets (std::move (container));
+
+    for (const int coverage : { 0, 1 }) {
+        CAPTURE (coverage);
+        const auto fragment = preprocessFragmentMain (assets, "generic4", { { "ALPHATOCOVERAGE", coverage } });
+        CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("out_FragColor=albedo;"));
+        CHECK ((fragment.find (nativeCoverageRemap) != std::string::npos) == (coverage == 1));
+        CHECK_THAT (fragment, !Catch::Matchers::ContainsSubstring ("if(out_FragColor.a<0.5)discard;"));
+    }
+}
+
+TEST_CASE ("custom generic4 and other shaders retain authored coverage and alpha-test cutoffs", "[shader][generic4-a2c]") {
+    const std::string source = R"(
+uniform vec4 g_TestAlbedo;
+void main() {
+    vec4 albedo = g_TestAlbedo;
+#if ALPHATEST
+    if (albedo.a < 0.25) discard;
+#endif
+	gl_FragColor = albedo;
+#if ALPHATOCOVERAGE
+	gl_FragColor.a = saturate((gl_FragColor.a - 0.5) / max(fwidth(gl_FragColor.a), 0.0001) + 0.5);
+#if GLSL
+	if (gl_FragColor.a < 0.5) discard;
+#endif
+#endif
+}
+)";
+    auto container = std::make_unique<Container> ();
+    for (const std::string name : { "generic4", "custom-a2c" }) {
+        container->getVFS ().add ("shaders/" + name + ".vert", "void main() { gl_Position = vec4(0.0); }");
+        container->getVFS ().add ("shaders/" + name + ".frag", source);
+    }
+    const AssetLocator assets (std::move (container));
+
+    for (const std::string name : { "generic4", "custom-a2c" }) {
+        for (const int alphaTest : { 0, 1 }) {
+            CAPTURE (name, alphaTest);
+            const ComboMap combos { { "ALPHATOCOVERAGE", 1 }, { "ALPHATEST", alphaTest } };
+            const auto fragment = preprocessFragmentMain (assets, name, combos);
+            CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring (nativeCoverageRemap));
+            CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("if(out_FragColor.a<0.5)discard;"));
+            CHECK ((fragment.find ("if(albedo.a<0.25)discard;") != std::string::npos) == (alphaTest == 1));
+        }
     }
 }
 

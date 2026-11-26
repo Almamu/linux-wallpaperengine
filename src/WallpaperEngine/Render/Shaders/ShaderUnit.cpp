@@ -107,6 +107,18 @@ std::string spliceShaderLines (std::string source) {
     }
     return source;
 }
+
+bool isStockGeneric4 (std::string_view source) {
+    // FNV-1a of the Steam generic4.frag (build 23967692), with LF line endings.
+    // A project can override the stock filename with its own shader.
+    uint64_t hash = 14695981039346656037ULL;
+    for (size_t i = 0; i < source.size (); ++i) {
+	const auto byte = static_cast<unsigned char> (source[i]);
+	if (byte == '\r' && i + 1 < source.size () && source[i + 1] == '\n') continue;
+	hash = (hash ^ byte) * 1099511628211ULL;
+    }
+    return hash == 0xf8cc40571b3dae05ULL;
+}
 } // namespace
 
 ShaderUnit::ShaderUnit (
@@ -124,6 +136,16 @@ ShaderUnit::ShaderUnit (
 void ShaderUnit::preprocess () {
     this->m_preprocessed = spliceShaderLines (this->m_content);
     this->m_includes = "";
+
+    // Native generic4 writes coverage alpha and lets the target sample count
+    // determine coverage. Remove the stock GLSL-only cutoff before caching.
+    if (this->m_type == GLSLContext::UnitType_Fragment
+	&& (this->m_file == "generic4" || this->m_file == "generic4.frag") && isStockGeneric4 (this->m_content)) {
+	constexpr std::string_view discard = "if (gl_FragColor.a < 0.5) discard;";
+	if (const auto pos = this->m_preprocessed.find (discard); pos != std::string::npos) {
+	    this->m_preprocessed.erase (pos, discard.size ());
+	}
+    }
 
     // CPU puppet skinning supplies native mask alpha separately from color alpha:
     // clippingmaskimage4 uses raw target weights, without spatial modifiers.
