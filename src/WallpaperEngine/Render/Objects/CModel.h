@@ -8,7 +8,9 @@
 
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x3.hpp>
+#include <array>
 #include <limits>
+#include <map>
 #include <vector>
 
 namespace WallpaperEngine::Render::Objects {
@@ -31,7 +33,7 @@ public:
     /** Submit one material class when a perspective scene sorts model passes. */
     void render (RenderSortClass renderClass);
     [[nodiscard]] const std::vector<RenderSortClass>& getRenderSortClasses () const;
-    /** Draw opaque mesh depth from a spotlight into the scene shadow atlas. */
+    /** Draw opaque/cutout model depth into the scene shadow atlas. */
     void renderShadow (const glm::mat4& lightViewProjection);
 
     [[nodiscard]] const Model3D& getModel () const;
@@ -79,6 +81,11 @@ public:
     [[nodiscard]] static std::vector<size_t> calculatePassRenderPermutation (const std::vector<BlendingMode>& modes);
 
 private:
+    struct ShadowCaster {
+	Effects::CPass* pass = nullptr;
+	int leavesUVMode = -1;
+    };
+
     struct SubmeshBuffers {
 	GLuint vertexBuffer = GL_NONE;
 	GLuint indexBuffer = GL_NONE;
@@ -87,10 +94,20 @@ private:
 	GLenum indexType = GL_UNSIGNED_INT;
 	GLuint shadowVao = GL_NONE;
 	uint32_t shadowVertexTag = 0;
-	bool castsShadow = false;
-	bool shadowCulling = false;
-	Effects::CPass* shadowAlphaPass = nullptr;
+	ShadowCaster shadowCaster;
         std::vector<float> morphVertices;
+    };
+
+    struct ShadowProgram {
+	std::shared_ptr<const Shaders::ShaderProgramCache::SharedProgram> interface;
+	std::shared_ptr<const Shaders::ShaderProgramCache::SharedProgram> program;
+	GLint lightViewProjection = -1;
+	GLint model = -1;
+	GLint bones = -1;
+	GLint albedo = -1;
+	GLint alphaToCoverage = -1;
+	GLint time = -1;
+	std::array<GLint, 11> foliageUniforms {};
     };
 
     void setupGeometryCallback (Effects::CPass* pass, size_t submeshIndex);
@@ -98,7 +115,7 @@ private:
     void unregisterMaterialProperties (size_t index, const Material& material);
     void setupMaterialPasses (const std::vector<const Material*>& materials);
     void syncModelDataMaterials ();
-    void setupShadowProgram ();
+    void setupShadowProgram (int leavesUVMode = -1);
     void renderPasses (std::optional<RenderSortClass> renderClass);
     void updateAnimationPose (bool stepPhysics = false) const;
     void updateMorphBuffers ();
@@ -144,19 +161,13 @@ private:
 
     std::vector<Effects::CPass*> m_passes = {};
     std::vector<RenderSortClass> m_renderSortClasses = {};
-    // Location queries only; identical depth shaders share it and draw through m_sharedShadowProgram.
-    std::shared_ptr<const Shaders::ShaderProgramCache::SharedProgram> m_shadowProgram;
-    std::shared_ptr<const Shaders::ShaderProgramCache::SharedProgram> m_sharedShadowProgram;
+    // -1 is ordinary model depth; foliage variants retain their authored leaf UV mode.
+    std::map<int, ShadowProgram> m_shadowPrograms;
     std::optional<Data::Model::MdlAnimationBounds> m_renderBounds;
     ModelBounds m_shadowBounds;
     ModelBounds::Box m_posedShadowBounds;
     bool m_frameVisible = false;
     bool m_mainViewVisible = true;
-    GLint m_shadowLightViewProjection = -1;
-    GLint m_shadowModel = -1;
-    GLint m_shadowBones = -1;
-    GLint m_shadowAlbedo = -1;
-    GLint m_shadowAlphaToCoverage = -1;
     bool m_initialized = false;
 
     /** model objects carry no per-object tint/alpha; materials do that via constants */

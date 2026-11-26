@@ -5,11 +5,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <numeric>
 #include <ranges>
 #include <sstream>
-#include <tuple>
+#include <string_view>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,6 +26,58 @@ using namespace WallpaperEngine::Render::Objects;
 using WallpaperEngine::Render::RenderSortClass;
 
 namespace {
+constexpr std::array<std::pair<const char*, const char*>, 11> foliageShadowUniforms {{
+    { "g_SpeedLeaves", "foliagespeedleaves" }, { "g_SpeedBase", "foliagespeedbase" },
+    { "g_StrengthLeaves", "strengthleaves" }, { "g_StrengthBase", "strengthbase" },
+    { "g_Phase", "foliagephase" }, { "g_FoliageScale", "foliagescale" },
+    { "g_Direction", "scrolldirection" }, { "g_CutOff", "foliagecutoff" },
+    { "g_TreeHeight", "foliageheight" }, { "g_TreeRadius", "foliageradius" },
+    { "g_FoliageUVBounds", "foliageuvbounds" }
+}};
+
+int foliageLeavesUVMode (const Effects::CPass& pass) {
+    const auto& shader = *pass.getShader ();
+    // A project-local foliage4 can replace the stock vertex shader.
+    if (!std::ranges::all_of (foliageShadowUniforms, [&shader] (const auto& uniform) {
+	const auto* parameter = shader.findParameter (uniform.second).vertex;
+	return parameter != nullptr && parameter->getName () == uniform.first;
+    })) return -1;
+
+    const auto& vertex = shader.getVertex ();
+    const auto& fragment = shader.getFragment ();
+    for (const auto* combos : { &pass.getOverride ().combos, &vertex.getCombos (), &vertex.getDiscoveredCombos (),
+	&fragment.getCombos (), &fragment.getDiscoveredCombos () }) {
+	const auto mode = std::ranges::find_if (*combos, [] (const auto& combo) {
+	    return std::ranges::equal (combo.first, std::string_view ("LEAVESUVMODE"),
+		[] (unsigned char letter, char uppercase) { return std::toupper (letter) == uppercase; });
+	});
+	if (mode != combos->end ()) {
+	    // Other values use the stock helper's unweighted leaf path.
+	    return mode->second >= 1 && mode->second <= 4 ? mode->second : 0;
+	}
+    }
+    return 0;
+}
+
+glm::vec4 foliageShadowValue (const Effects::CPass& pass, const char* name, const double time) {
+    const UserSetting* setting = nullptr;
+    if (const auto found = pass.getOverride ().constants.find (name); found != pass.getOverride ().constants.end ()) {
+	setting = found->second.get ();
+    } else if (const auto found = pass.getPass ().constants.find (name); found != pass.getPass ().constants.end ()) {
+	setting = found->second.get ();
+    }
+    const auto parameter = pass.getShader ()->findParameter (name);
+    glm::vec4 value = setting ? setting->value->getVec4 () : parameter.vertex->getVec4 ();
+    if (setting && setting->animation) {
+	for (int channel = 0; channel < 4; ++channel) {
+	    value[channel] = setting->animation->relative
+		? value[channel] + setting->animation->evaluateChannel (channel, time, 0.0f)
+		: setting->animation->evaluateChannel (channel, time, value[channel]);
+	}
+    }
+    return value;
+}
+
 bool supportsModelMorphShader (const std::string& shader) {
     // Stock generic3/4 and model_vertex_v1 consumers apply the same local
     // position/normal deltas before skinning and any shader-specific motion.
@@ -544,24 +597,14 @@ void CModel::setupMaterialPasses (const std::vector<const Material*>& materials)
 	const auto& material = materials[submeshIndex];
 	const auto opaquePass = std::find_if (material->passes.begin (), material->passes.end (), [] (const auto& pass) {
 	    return pass->blending == BlendingMode_Normal
-		|| (pass->blending == BlendingMode_AlphaToCoverage && pass->shader == "generic4");
+		|| (pass->blending == BlendingMode_AlphaToCoverage
+		    && (pass->shader == "generic4" || pass->shader == "foliage4"));
 	});
-	m_submeshes[submeshIndex].castsShadow = opaquePass != material->passes.end ();
-	m_submeshes[submeshIndex].shadowCulling = m_submeshes[submeshIndex].castsShadow && (*opaquePass)->cullmode == CullingMode_Normal;
-	m_submeshes[submeshIndex].shadowAlphaPass = nullptr;
+	auto& caster = m_submeshes[submeshIndex].shadowCaster;
+	caster = {};
 
 	for (const auto& cur : materials[submeshIndex]->passes) {
 	    ComboMap runtimeCombos;
-	    // Thin translucent model surfaces must receive light from either side of
-	    // their authored normal. Otherwise a back-lit sheet collapses to black
-	    // RGB while its alpha still occludes what is behind it (most visibly the
-	    // Saturn ring in workshop 3589454154). generic4 already contains the
-	    // stock DOUBLESIDEDLIGHTING branch; select it for translucent model
-	    // passes unless the material explicitly authored a value.
-	    if (cur->shader == "generic4" && cur->blending == BlendingMode_Translucent
-		&& !cur->combos.contains ("DOUBLESIDEDLIGHTING")) {
-		runtimeCombos.emplace ("DOUBLESIDEDLIGHTING", 1);
-	    }
             if (m_morphingEnabled && supportsModelMorphShader (cur->shader)) {
                 // Position/normal morphs are already applied to the shared color/shadow VBO.
                 runtimeCombos.insert_or_assign ("MORPHING", 0);
@@ -591,9 +634,12 @@ void CModel::setupMaterialPasses (const std::vector<const Material*>& materials)
 		);
 	    }
 	    this->setupGeometryCallback (pass.get (), submeshIndex);
-	    if (opaquePass != material->passes.end () && cur.get () == opaquePass->get ()
-		&& cur->blending == BlendingMode_AlphaToCoverage) {
-		m_submeshes[submeshIndex].shadowAlphaPass = pass.get ();
+	    if (opaquePass != material->passes.end () && cur.get () == opaquePass->get ()) {
+		caster.pass = pass.get ();
+		if (cur->shader == "foliage4" && getScene ().getLights ().shadowViewCount > 0) {
+		    caster.leavesUVMode = foliageLeavesUVMode (*pass);
+		    if (caster.leavesUVMode >= 0) setupShadowProgram (caster.leavesUVMode);
+		}
 	    }
 
 	    this->m_passes.push_back (pass.release ());
@@ -680,7 +726,7 @@ void CModel::syncModelDataMaterials () {
     auto previousClasses = std::move (m_renderSortClasses);
     auto previousPasses = std::move (m_passes);
     std::vector<SubmeshBuffers> previousSubmeshes;
-    std::vector<std::tuple<bool, bool, Effects::CPass*>> previousShadow;
+    std::vector<ShadowCaster> previousShadow;
     if (structureChanged) {
         previousSubmeshes = std::move (m_submeshes);
         m_submeshes.resize (materials.size ());
@@ -695,7 +741,7 @@ void CModel::syncModelDataMaterials () {
         }
     } else {
         for (const auto& buffers : m_submeshes)
-            previousShadow.emplace_back (buffers.castsShadow, buffers.shadowCulling, buffers.shadowAlphaPass);
+            previousShadow.push_back (buffers.shadowCaster);
     }
     try {
         if (materials.empty () || m_materials.empty () || materials[0] != m_materials[0]) {
@@ -714,9 +760,7 @@ void CModel::syncModelDataMaterials () {
             m_submeshes = std::move (previousSubmeshes);
         } else {
             for (size_t index = 0; index < m_submeshes.size (); ++index) {
-                m_submeshes[index].castsShadow = std::get<0> (previousShadow[index]);
-                m_submeshes[index].shadowCulling = std::get<1> (previousShadow[index]);
-                m_submeshes[index].shadowAlphaPass = std::get<2> (previousShadow[index]);
+                m_submeshes[index].shadowCaster = previousShadow[index];
             }
         }
         m_texture = previousTexture;
@@ -767,7 +811,8 @@ std::vector<size_t> CModel::calculatePassRenderPermutation (const std::vector<Bl
     return permutation;
 }
 
-void CModel::setupShadowProgram () {
+void CModel::setupShadowProgram (const int leavesUVMode) {
+    if (m_shadowPrograms.contains (leavesUVMode)) return;
     std::ostringstream vertex;
     vertex << "#version 330 core\n"
 	      "layout(location = 0) in vec3 a_Position;\n"
@@ -777,6 +822,17 @@ void CModel::setupShadowProgram () {
 	vertex << "layout(location = 1) in uvec4 a_BlendIndices;\n"
 		  "layout(location = 2) in vec4 a_BlendWeights;\n"
 		  "uniform mat4x3 u_Bones[" << this->m_gpuSkinBones.size () << "];\n";
+    }
+    if (leavesUVMode >= 0) {
+	vertex << "#define LEAVESUVMODE " << leavesUVMode << "\n"
+		  "#define CAST4 vec4\n"
+		  "#define saturate(value) clamp(value, 0.0, 1.0)\n"
+	       << getAssetLocator ().includeShader ("common_foliage.h") << "\n"
+		  "uniform float g_Time;\n";
+	for (size_t index = 0; index < foliageShadowUniforms.size (); ++index) {
+	    vertex << (index == foliageShadowUniforms.size () - 1 ? "uniform vec2 " : "uniform float ")
+		   << foliageShadowUniforms[index].first << ";\n";
+	}
     }
     vertex << "uniform mat4 u_LightViewProjection;\n"
 	      "uniform mat4 u_Model;\n"
@@ -790,8 +846,15 @@ void CModel::setupShadowProgram () {
 		  "        + u_Bones[a_BlendIndices.w] * a_BlendWeights.w;\n"
 		  "    localPosition = skin * vec4(localPosition, 1.0);\n";
     }
-    vertex << "    gl_Position = u_LightViewProjection * u_Model * vec4(localPosition, 1.0);\n"
-	      "}\n";
+    vertex << "    vec4 worldPosition = u_Model * vec4(localPosition, 1.0);\n";
+    if (leavesUVMode >= 0) {
+	// The stock caster deforms world space after skinning, retaining the
+	// original local position for the height/radius weights.
+	vertex << "    worldPosition.xyz += CalcFoliageAnimation(worldPosition.xyz, a_Position, a_TexCoord,\n"
+		  "        g_Direction, g_Time, g_SpeedLeaves, g_SpeedBase, g_StrengthLeaves, g_StrengthBase,\n"
+		  "        g_Phase, g_FoliageScale, g_CutOff, g_TreeHeight, g_TreeRadius, g_FoliageUVBounds);\n";
+    }
+    vertex << "    gl_Position = u_LightViewProjection * worldPosition;\n}\n";
 
     static const std::string fragment = "#version 330 core\n"
 	"uniform bool u_AlphaToCoverage;\n"
@@ -805,19 +868,24 @@ void CModel::setupShadowProgram () {
 	"    }\n"
 	"}\n";
     std::shared_ptr<Shaders::ShaderProgramCache::SharingGroup> group;
-    this->m_shadowProgram = this->getScene ().getContext ().getShaderProgramCache ().interfaceProgram (
+
+    const auto interface = this->getScene ().getContext ().getShaderProgramCache ().interfaceProgram (
 	vertex.str (), fragment, group
     );
-    // Identical depth shaders upload their complete matrix/bone layout on every draw.
-    this->m_sharedShadowProgram = Shaders::ShaderProgramCache::shareProgram (
-	this->m_shadowProgram->id, group, "model-shadow"
-    );
-
-    this->m_shadowLightViewProjection = glGetUniformLocation (this->m_shadowProgram->id, "u_LightViewProjection");
-    this->m_shadowModel = glGetUniformLocation (this->m_shadowProgram->id, "u_Model");
-    this->m_shadowBones = glGetUniformLocation (this->m_shadowProgram->id, "u_Bones");
-    this->m_shadowAlbedo = glGetUniformLocation (this->m_shadowProgram->id, "u_Albedo");
-    this->m_shadowAlphaToCoverage = glGetUniformLocation (this->m_shadowProgram->id, "u_AlphaToCoverage");
+    ShadowProgram program;
+    program.interface = interface;
+    program.program = Shaders::ShaderProgramCache::shareProgram (interface->id, group, "model-shadow");
+    if (!program.program) program.program = interface;
+    program.lightViewProjection = glGetUniformLocation (interface->id, "u_LightViewProjection");
+    program.model = glGetUniformLocation (interface->id, "u_Model");
+    program.bones = glGetUniformLocation (interface->id, "u_Bones");
+    program.albedo = glGetUniformLocation (interface->id, "u_Albedo");
+    program.alphaToCoverage = glGetUniformLocation (interface->id, "u_AlphaToCoverage");
+    program.time = glGetUniformLocation (interface->id, "g_Time");
+    for (size_t index = 0; index < foliageShadowUniforms.size (); ++index) {
+	program.foliageUniforms[index] = glGetUniformLocation (interface->id, foliageShadowUniforms[index].first);
+    }
+    m_shadowPrograms.emplace (leavesUVMode, std::move (program));
 }
 
 void CModel::setupGeometryCallback (Effects::CPass* pass, size_t submeshIndex) {
@@ -1250,47 +1318,54 @@ void CModel::renderPasses (const std::optional<RenderSortClass> renderClass) {
 }
 
 void CModel::renderShadow (const glm::mat4& lightViewProjection) {
-    if (!this->m_frameVisible || !this->m_shadowProgram
+    if (!this->m_frameVisible || this->m_shadowPrograms.empty ()
         || (m_modelData && m_structureRevision != m_modelData->structureRevision)
-	|| !this->m_model.castShadow->value->getBool ()
-	|| !(m_renderBounds ? modelAnimationVolumeIntersects (*m_renderBounds, m_modelMatrix, lightViewProjection,
-            getScene ().getCamera ().usesReverseDepth ())
-            : m_posedShadowBounds.intersects (lightViewProjection * m_modelMatrix))) {
+	|| !this->m_model.castShadow->value->getBool ()) {
 	return;
     }
 
-    // The atlas has one depth sample; cutout coverage is handled by the fragment discard.
-    glDisable (GL_SAMPLE_ALPHA_TO_COVERAGE);
-    // Every depth draw uploads its full layout, so the query program is safe as a fallback.
-    glUseProgram (this->m_sharedShadowProgram ? this->m_sharedShadowProgram->id : this->m_shadowProgram->id);
-    glUniformMatrix4fv (
-	this->m_shadowLightViewProjection, 1, GL_FALSE, glm::value_ptr (lightViewProjection)
-    );
-    glUniformMatrix4fv (this->m_shadowModel, 1, GL_FALSE, glm::value_ptr (this->m_modelMatrix));
-    glUniform1i (this->m_shadowAlbedo, 0);
-    if (this->m_skinningEnabled && this->m_shadowBones >= 0 && !this->m_gpuSkinBones.empty ()) {
-	glUniformMatrix4x3fv (
-	    this->m_shadowBones, static_cast<GLsizei> (this->m_gpuSkinBones.size ()), GL_FALSE,
-	    glm::value_ptr (this->m_gpuSkinBones.front ())
-	);
-    }
-
+    // Rest/animation bounds do not include shader-driven foliage displacement.
+    const bool boundsIntersect = m_renderBounds
+	? modelAnimationVolumeIntersects (*m_renderBounds, m_modelMatrix, lightViewProjection, getScene ().getCamera ().usesReverseDepth ())
+	: m_posedShadowBounds.intersects (lightViewProjection * m_modelMatrix);
     for (size_t submeshIndex = 0; submeshIndex < this->m_submeshes.size (); submeshIndex++) {
 	auto& buffers = this->m_submeshes[submeshIndex];
+	const auto& caster = buffers.shadowCaster;
 	const auto& layout = m_modelData ? m_modelData->shapes[submeshIndex].layout : m_model.mesh;
 	const auto stride = static_cast<GLsizei> (layout.strideBytes);
-	if (!buffers.castsShadow || (m_modelData ? m_modelData->shapes[submeshIndex].drawCount == 0
-	    : buffers.indexCount == 0 && buffers.vertexCount == 0)
+	if (!caster.pass || (!boundsIntersect && caster.leavesUVMode < 0)
+	    || (m_modelData ? m_modelData->shapes[submeshIndex].drawCount == 0 : buffers.indexCount == 0 && buffers.vertexCount == 0)
 	    || layout.positionOffset == MdlMesh::AttributeAbsent) {
 	    continue;
 	}
-	glUniform1i (this->m_shadowAlphaToCoverage, buffers.shadowAlphaPass != nullptr);
-	if (buffers.shadowAlphaPass != nullptr && !buffers.shadowAlphaPass->bindAlbedoTexture ()) continue;
-	if (buffers.shadowCulling) {
-	    glEnable (GL_CULL_FACE);
-	} else {
-	    glDisable (GL_CULL_FACE);
+	const auto& program = m_shadowPrograms.at (caster.leavesUVMode);
+	glUseProgram (program.program->id);
+	glUniformMatrix4fv (program.lightViewProjection, 1, GL_FALSE, glm::value_ptr (lightViewProjection));
+	glUniformMatrix4fv (program.model, 1, GL_FALSE, glm::value_ptr (m_modelMatrix));
+	glUniform1i (program.albedo, 0);
+	if (m_skinningEnabled && program.bones >= 0 && !m_gpuSkinBones.empty ()) {
+	    glUniformMatrix4x3fv (program.bones, static_cast<GLsizei> (m_gpuSkinBones.size ()), GL_FALSE,
+		glm::value_ptr (m_gpuSkinBones.front ()));
 	}
+	if (caster.leavesUVMode >= 0) {
+	    glUniform1f (program.time, getScene ().getTime ());
+	    for (size_t index = 0; index < foliageShadowUniforms.size (); ++index) {
+		const auto value = foliageShadowValue (*caster.pass,
+		    foliageShadowUniforms[index].second, getScene ().getElapsedTime ());
+		if (index == foliageShadowUniforms.size () - 1) {
+		    glUniform2fv (program.foliageUniforms[index], 1, glm::value_ptr (value));
+		} else {
+		    glUniform1f (program.foliageUniforms[index], value.x);
+		}
+	    }
+	}
+	const bool alphaToCoverage = caster.pass->getBlendingMode () == BlendingMode_AlphaToCoverage;
+	glUniform1i (program.alphaToCoverage, alphaToCoverage);
+	if (alphaToCoverage && !caster.pass->bindAlbedoTexture ()) continue;
+	// The atlas has one depth sample; cutout coverage is handled by the fragment discard.
+	glDisable (GL_SAMPLE_ALPHA_TO_COVERAGE);
+	// Native's ordinary shadow raster state disables culling, including normal materials.
+	glDisable (GL_CULL_FACE);
 	// Shadows have no output flip; retain authored winding changes here too.
 	glFrontFace (this->getScene ().getCamera ().isOrthogonal () ? GL_CW : GL_CCW);
 
