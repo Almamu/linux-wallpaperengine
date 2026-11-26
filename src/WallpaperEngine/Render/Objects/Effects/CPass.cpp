@@ -824,6 +824,12 @@ GLuint CPass::getProgramID () const { return this->m_programID; }
 
 uint64_t CPass::getShaderRevision () const { return this->m_shaderRevision; }
 
+void CPass::setRuntimeCombos (const ComboMap& combos) {
+    if (combos.empty ()) return;
+    for (const auto& [name, value] : combos) m_runtimeCombos.insert_or_assign (name, value);
+    if (m_shaderInitialized) this->rebuildShaders ();
+}
+
 void CPass::setGeometryCallback (
     GeometryCallback setupAttribs, GeometryCallback drawGeometry, GeometryCallback cleanupAttribs
 ) {
@@ -860,9 +866,8 @@ void CPass::setupShaders () {
 	"SCENE_ORTHO", this->m_renderable.getScene ().getScene ().camera.projection.isPerspective ? 0 : 1
     );
 
-    // FOG_COMPUTED is a separate authored image-shader combo, not an alias for
-    // FOG. Native genericimage4 leaves it off even when FOG defaults to 1;
-    // inferring it here bakes scene fog into reusable image composites.
+    // CImage supplies FOG_COMPUTED only to modern scene presentation passes.
+    // Inferring it here would bake fog into reusable image composites.
     // generic4 model shaders select fog directly with FOG_DIST/FOG_HEIGHT.
     this->m_fogCombos = this->fogCombos ();
     this->m_combos.insert_or_assign ("FOG_DIST", this->m_fogCombos.x);

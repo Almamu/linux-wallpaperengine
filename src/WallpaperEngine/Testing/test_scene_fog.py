@@ -137,12 +137,14 @@ def run(engine, root):
 
 def check_geometry(engine, root):
     results = []
-    for kind in ("image", "model", "particle", "model-binding"):
+    for kind in ("image", "modern-image", "model", "particle", "model-binding"):
         probe = root / ("stock-" + kind)
         settings = {"fogdistance": scripted(False, "true"), "fogdistancestart": 1,
                     "fogdistanceend": 5, "fogdistancecolor": "1 0 0"}
-        if kind == "image":
+        if kind in ("image", "modern-image"):
             scene = fixture(probe, settings)
+            if kind == "modern-image":
+                scene["version"] = 3
             (probe / "shaders/probe.vert").unlink()
             (probe / "shaders/probe.frag").unlink()
             scene["camera"]["eye"] = "0 0 3"
@@ -194,8 +196,8 @@ void main() {
         scene["general"].update(settings)
         image, _ = capture(engine, probe, scene, ("--msaa", "off"))
         actual = image.getpixel((160, 90))
-        # Native genericimage4 does not infer FOG_COMPUTED from its FOG=1
-        # metadata. Models and custom shaders consume the scene fog directly.
+        # The legacy image omits scene.version. The modern image's generated
+        # presentation pass must pick up fog enabled by the scene script.
         expected = (0, 0, 255) if kind == "image" else (64, 0, 191)
         passed = max(abs(a - b) for a, b in zip(actual, expected)) <= 1
         results.append(dict(name=f"stock {kind} geometry after fog enable", actual=actual,

@@ -3,12 +3,14 @@
 #include "CRenderable.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <limits>
 #include <optional>
 #include <ranges>
 #include <sstream>
+#include <string_view>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,6 +41,8 @@ using namespace WallpaperEngine::Data::Builders;
 using namespace WallpaperEngine::Data::Utils;
 
 namespace {
+const glm::vec4 neutralCompositeColor (1.0f);
+
 bool usesLegacyAnimationUvs (const Render::TextureProvider& texture) {
     const auto* compiled = dynamic_cast<const Render::CTexture*> (&texture);
     if (compiled == nullptr || !compiled->isAnimated ()) return false;
@@ -498,6 +502,9 @@ CImage::~CImage () {
     }
     if (this->m_puppetSpacePosition != GL_NONE) {
 	glDeleteBuffers (1, &this->m_puppetSpacePosition);
+    }
+    if (this->m_puppetPrelightingPosition != GL_NONE) {
+	glDeleteBuffers (1, &this->m_puppetPrelightingPosition);
     }
     if (this->m_puppetTexCoordFirstPass != GL_NONE && this->m_puppetTexCoordFirstPass != this->m_puppetTexCoord) {
 	glDeleteBuffers (1, &this->m_puppetTexCoordFirstPass);
@@ -1309,12 +1316,18 @@ void CImage::setupPuppetRangeGeometryCallback (
     pass->setGeometryCallback (
 	[this, pass, texCoordBuffer] () {
 	    const GLint position = glGetAttribLocation (pass->getProgramID (), "a_Position");
+	    const GLint positionC1 = glGetAttribLocation (pass->getProgramID (), "a_PositionC1");
 	    const GLint texCoord = glGetAttribLocation (pass->getProgramID (), "a_TexCoord");
 
 	    if (position >= 0) {
 		glEnableVertexAttribArray (position);
 		glBindBuffer (GL_ARRAY_BUFFER, this->m_puppetSpacePosition);
 		glVertexAttribPointer (position, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	    }
+	    if (positionC1 >= 0 && this->m_puppetPrelightingPosition != GL_NONE) {
+		glEnableVertexAttribArray (positionC1);
+		glBindBuffer (GL_ARRAY_BUFFER, this->m_puppetPrelightingPosition);
+		glVertexAttribPointer (positionC1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	    }
 
 	    const auto& combos = pass->getShader ()->getCombos ();
@@ -1364,11 +1377,13 @@ void CImage::setupPuppetRangeGeometryCallback (
 	    const GLint color = glGetAttribLocation (pass->getProgramID (), "a_Color");
 	    if (color >= 0) glDisableVertexAttribArray (color);
 	    const GLint position = glGetAttribLocation (pass->getProgramID (), "a_Position");
+	    const GLint positionC1 = glGetAttribLocation (pass->getProgramID (), "a_PositionC1");
 	    const GLint texCoord = glGetAttribLocation (pass->getProgramID (), "a_TexCoord");
 
 	    if (position >= 0) {
 		glDisableVertexAttribArray (position);
 	    }
+	    if (positionC1 >= 0) glDisableVertexAttribArray (positionC1);
 
 	    if (texCoord >= 0) {
 		glDisableVertexAttribArray (texCoord);
@@ -1553,6 +1568,7 @@ bool CImage::setupPuppetClippingPasses (
 	    );
 	    this->m_puppetClippingPasses.push_back (pass);
 	    configurePass (*pass);
+	    if (&finalPass == m_fogPass) pass->addUniform ("g_Color4", &neutralCompositeColor);
 	    pass->setBlendingMode (finalPass.getBlendingMode ());
 	    pass->setDepthtestMode (finalPass.getDepthtestMode ());
 	    pass->setDepthwriteMode (finalPass.getDepthwriteMode ());
@@ -1681,6 +1697,14 @@ void CImage::setup () {
 
     const auto& debug = this->getScene ().getContext ().getApp ().getContext ().settings.render.debug;
 
+    const auto& scene = this->getScene ().getScene ();
+    const auto fogCanEnable = [] (const SceneData::Fog::Layer& layer) {
+	return layer.enabled->value->getBool () || layer.enabled->value->getScriptSource ().has_value ()
+	    || layer.enabled->property != nullptr;
+    };
+    const bool fogPresentation = scene.version > 2 && scene.camera.projection.isPerspective && shouldRenderFinalPass (true)
+	&& (fogCanEnable (scene.fog.distance) || fogCanEnable (scene.fog.height));
+
     // Build the binary-compatible channelmap prepass before the base material:
     // the base pass receives _rt_imageLayerAlbedo_<id> instead of the source
     // texture when a channelmap submesh is present.
@@ -1718,13 +1742,73 @@ void CImage::setup () {
 	);
 	this->m_passes.push_back (pass);
 	if (prelighting) {
-	    // Stock prelighting separates world-space illumination from the offscreen
-	    // MVP, preserving the image/effect matrices used to populate the texture.
 	    this->m_prelightingPass = pass;
-	    pass->addUniform ("g_AltModelMatrix", &this->m_prelightingModelMatrix);
-	    pass->addUniform ("g_AltNormalModelMatrix", &this->m_sceneNormalModelMatrix);
-	    pass->addUniform ("g_AltViewProjectionMatrix", &this->m_sceneViewProjectionMatrix);
 	}
+    }
+
+    // Native applies image fog in a generated scene-final pass. Scene versions
+    // through 2 use the older passthrough shader, whose fragment has no fog.
+    // Resolve FOG after shader metadata defaults, just like the native material.
+    const auto fragmentComboEnabled = [] (const CPass& pass, std::string_view name) {
+	const auto& shader = *pass.getShader ();
+	for (const auto* combos : { &pass.getOverride ().combos, &shader.getCombos (),
+	    &shader.getFragment ().getDiscoveredCombos (), &shader.getVertex ().getDiscoveredCombos () }) {
+	    const auto combo = std::ranges::find_if (*combos, [name] (const auto& entry) {
+		return std::ranges::equal (entry.first, name, [] (unsigned char authored, char canonical) {
+		    return std::toupper (authored) == canonical;
+		});
+	    });
+	    if (combo != combos->end ()) return combo->second != 0;
+	}
+	return false;
+    };
+    const bool finalFog = fogPresentation && !m_passes.empty () && fragmentComboEnabled (*m_passes.front (), "FOG");
+    ComboMap finalFogCombos;
+
+    if (finalFog) {
+	finalFogCombos.emplace ("FOG_COMPUTED", 1);
+	if (m_passes.front ()->getBlendingMode () == BlendingMode_AlphaToCoverage) {
+	    // The final pass inherits GPU coverage from the source. Its shader also
+	    // needs the discard path for single-sample scene targets.
+	    finalFogCombos.emplace ("ALPHATOCOVERAGE", 1);
+	}
+	for (auto* source : m_passes) {
+	    ComboMap sourceCombos;
+	    // The generated pass owns fog; the base passes still feed exported textures.
+	    if (fragmentComboEnabled (*source, "FOG_COMPUTED")) sourceCombos.emplace ("FOG_COMPUTED", 0);
+
+	    const auto& shader = source->getPass ().shader;
+	    if (source == m_passes.front () && m_prelightingPass == nullptr && !m_image.model->passthrough
+		&& (shader == "genericimage4" || shader == "genericimage3" || shader == "genericimage2")
+		&& (fragmentComboEnabled (*source, "LIGHTING") || fragmentComboEnabled (*source, "REFLECTION"))) {
+		m_prelightingPass = source;
+		sourceCombos.emplace ("PRELIGHTING", 1);
+		if (m_hasPuppetMesh && shader == "genericimage4") sourceCombos.emplace ("PRELIGHTINGDUALVERTEX", 1);
+	    }
+
+	    if (sourceCombos.contains ("PRELIGHTINGDUALVERTEX")) {
+		// Native 140266fa0 adds an immutable raster stream while the main
+		// position is skinned. Our main stream already contains the CPU pose.
+		std::vector<GLfloat> rasterPositions = m_puppetRawPositions;
+		const auto& auxiliary = m_image.model->puppetMesh->submeshes.front ().auxiliaryPositions;
+		if (auxiliary.size () * 3 == rasterPositions.size ()) {
+		    rasterPositions.clear ();
+		    for (const auto& position : auxiliary)
+			rasterPositions.insert (rasterPositions.end (), { position.x, position.y, position.z });
+		}
+		glGenBuffers (1, &m_puppetPrelightingPosition);
+		glBindBuffer (GL_ARRAY_BUFFER, m_puppetPrelightingPosition);
+		glBufferData (GL_ARRAY_BUFFER, rasterPositions.size () * sizeof (GLfloat), rasterPositions.data (), GL_STATIC_DRAW);
+	    }
+	    source->setRuntimeCombos (sourceCombos);
+	}
+    }
+    if (m_prelightingPass != nullptr) {
+	// Keep world-space illumination separate from the offscreen image MVP,
+	// including a formerly direct puppet now followed by scene fog.
+	m_prelightingPass->addUniform ("g_AltModelMatrix", &m_prelightingModelMatrix);
+	m_prelightingPass->addUniform ("g_AltNormalModelMatrix", &m_sceneNormalModelMatrix);
+	m_prelightingPass->addUniform ("g_AltViewProjectionMatrix", &m_sceneViewProjectionMatrix);
     }
 
     // prepare the passes list
@@ -1896,15 +1980,14 @@ void CImage::setup () {
             && !this->getImage ().model->puppetMesh->clippingDescriptors.empty ();
 	this->m_materials.colorBlending.material
 	    = MaterialParser::load (this->getScene ().getScene ().project,
-                hasClipping ? "materials/util/effectpassthrough_4.json" : "materials/util/effectpassthrough.json");
+                hasClipping || finalFog ? "materials/util/effectpassthrough_4.json" : "materials/util/effectpassthrough.json");
 	this->m_materials.colorBlending.override = std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
             .id = -1,
-            .combos = {
-                {"BLENDMODE", this->m_image.colorBlendMode->value->getInt()},
-            },
+            .combos = finalFogCombos,
             .constants = {},
             .textures = {},
         });
+	this->m_materials.colorBlending.override->combos.emplace ("BLENDMODE", this->m_image.colorBlendMode->value->getInt ());
 
 	this->m_passes.push_back (new CPass (
 	    *this, std::make_shared<FBOProvider> (this), **this->m_materials.colorBlending.material->passes.begin (),
@@ -1912,8 +1995,8 @@ void CImage::setup () {
 	));
 	// The base material already applied the layer tint and opacity. Applying
 	// them again here suppresses faint layers such as Godzilla's 13% shadow.
-	static const glm::vec4 neutralColor (1.0f);
-	this->m_passes.back ()->addUniform ("g_Color4", &neutralColor);
+	this->m_passes.back ()->addUniform ("g_Color4", &neutralCompositeColor);
+	if (finalFog) this->m_fogPass = this->m_passes.back ();
     }
 
     // puppet-warped images with effects get a dedicated composite pass: effect shaders can
@@ -1926,20 +2009,20 @@ void CImage::setup () {
     // sample the background in scene coordinates, not fill a local image target
     // with a miniature copy of the entire scene.
     if ((debug.baseOnly || this->m_image.colorBlendMode->value->getInt () <= 0)
-        && (this->isCompositionLayer ()
+        && (finalFog || this->isCompositionLayer ()
 	    || ((this->m_hasPuppetMesh || !m_passVisibility.empty ()) && this->m_passes.size () > 1))) {
 	const bool hasClipping = this->getImage ().model->puppetMesh.has_value ()
 	    && !this->getImage ().model->puppetMesh->clippingDescriptors.empty ();
 	this->m_materials.compatibilityMaterials.emplace_back (
 	    MaterialParser::load (
 		this->getScene ().getScene ().project,
-		hasClipping ? "materials/util/effectpassthrough_4.json" : "materials/util/effectpassthrough.json"
+		hasClipping || finalFog ? "materials/util/effectpassthrough_4.json" : "materials/util/effectpassthrough.json"
 	    )
 	);
 	this->m_materials.compatibilityOverrides.emplace_back (
 	    std::make_unique<ImageEffectPassOverride> (ImageEffectPassOverride {
 		.id = -1,
-		.combos = {},
+		.combos = finalFogCombos,
 		.constants = {},
 		.textures = {},
 	    })
@@ -1950,9 +2033,9 @@ void CImage::setup () {
 	    **this->m_materials.compatibilityMaterials.back ()->passes.begin (),
 	    *this->m_materials.compatibilityOverrides.back (), std::nullopt, std::nullopt
 	));
-	// This pass only places the effected pixels onto the puppet mesh.
-	static const glm::vec4 neutralColor (1.0f);
-	this->m_passes.back ()->addUniform ("g_Color4", &neutralColor);
+	// The source already applied the image tint and opacity.
+	this->m_passes.back ()->addUniform ("g_Color4", &neutralCompositeColor);
+	if (finalFog) this->m_fogPass = this->m_passes.back ();
     }
 
     // If there is more than one pass, the first pass renders only to an intermediate FBO while the
@@ -2067,6 +2150,11 @@ void CImage::setupPasses () {
 	first = false;
 
 	pass->setModelMatrix (&this->m_modelMatrix);
+	if (pass == m_prelightingPass && m_puppetPrelightingPosition != GL_NONE) {
+	    projection = &m_puppetPrelightingProjection;
+	    inverseProjection = &m_puppetPrelightingProjectionInverse;
+	    setupPuppetGeometryCallback (pass, m_puppetAlbedoFBO == nullptr);
+	}
 	pass->setViewProjectionMatrix (pass == this->m_prelightingPass
 	    ? &this->m_sceneViewProjectionMatrix : &this->m_viewProjectionMatrix);
 	pass->setEffectTextureProjectionMatrix (
@@ -2385,11 +2473,10 @@ void CImage::render () {
 
     auto cur = this->m_activePasses.begin ();
     const auto end = this->m_activePasses.end ();
-    // Native exports the effected image before its layer blend samples the scene.
-    // Baking that presentation pass into a hidden texture adds the background a
-    // second time when another layer consumes it (Razer's radial light mask).
-    const bool skipSceneBlending = !m_finalPassDrawsToScene && m_finalPassRouting.has_value ()
-	&& m_materials.colorBlending.material != nullptr;
+    // Native exports the effected image before its final scene blend and fog.
+    // Consumers apply their own fog; reusable textures must retain their color.
+    const bool skipScenePresentation = !m_finalPassDrawsToScene && m_finalPassRouting.has_value ()
+	&& (m_materials.colorBlending.material != nullptr || m_finalPassRouting->pass == m_fogPass);
     auto command = m_swapCommands.begin ();
     for (size_t index = 0; index <= renderPassCount; ++index) {
 	for (; command != m_swapCommands.end () && command->beforePass == index; ++command) {
@@ -2400,7 +2487,7 @@ void CImage::render () {
 	}
 	if (cur == end || *cur != m_passes[index]) continue;
 	auto* pass = *cur++;
-	if (skipSceneBlending && pass == m_finalPassRouting->pass) continue;
+	if (skipScenePresentation && pass == m_finalPassRouting->pass) continue;
 	glColorMask (true, true, true, true);
 	if (m_finalPassRouting && pass == m_finalPassRouting->pass && this->m_finalPassDrawsToScene) {
 	    if (this->m_hasPuppetClipping) {
@@ -2414,16 +2501,23 @@ void CImage::render () {
 	    );
 	}
 
+	if (pass == m_passes.front () && m_fogPass != nullptr
+	    && (m_puppetPrelightingPosition != GL_NONE || pass->getPass ().blending == BlendingMode_AlphaToCoverage)) {
+	    // Exporting the final effect can fill pixels outside the sparse rest
+	    // mesh or cutout. Start the source texture fresh each frame.
+	    m_mainFBO->clear (glm::vec4 (0.0f));
+	}
 	pass->render ();
     }
 
-    // Hidden layers publish their completed effect chain through the named _a
-    // texture. An even number of passes ends on _b; without this copy consumers
-    // see the penultimate result (Lucy's clouds stay still while the land scrolls).
+    // Export the completed effect chain through the named _a texture, before
+    // scene fog even when the source is visible. An even pass count ends on _b;
+    // otherwise consumers see the penultimate result instead of the last effect.
     // Preserve the working-buffer routes: visible layers and explicit effect
     // bindings may also depend on them. No additional texture allocation is needed.
-    if (renderPassCount == m_passes.size () && !m_finalPassDrawsToScene && m_finalPassRouting.has_value ()) {
-	const auto result = skipSceneBlending
+    if (renderPassCount == m_passes.size () && m_finalPassRouting.has_value ()
+	&& (!m_finalPassDrawsToScene || m_finalPassRouting->pass == m_fogPass)) {
+	const auto result = skipScenePresentation || m_finalPassRouting->pass == m_fogPass
 	    ? std::static_pointer_cast<const CFBO> (m_finalPassRouting->input)
 	    : m_finalPassRouting->offscreenTarget;
 	if (result != m_mainFBO) {
@@ -2755,6 +2849,13 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
 	: glm::ortho<float> (0.0, size.x, 0.0, size.y);
     this->m_modelViewProjectionCopyInverse = glm::inverse (this->m_modelViewProjectionCopy);
     this->m_modelMatrix = glm::ortho<float> (0.0, size.x, 0.0, size.y);
+    if (m_puppetPrelightingPosition != GL_NONE) {
+	// Rest/auxiliary XYZ is centered and Y-up; image targets use 0..size.
+	m_puppetPrelightingProjection = glm::scale (
+	    glm::translate (m_modelViewProjectionCopy, glm::vec3 (size * 0.5f, 0.0f)), glm::vec3 (1, -1, 1)
+	);
+	m_puppetPrelightingProjectionInverse = glm::inverse (m_puppetPrelightingProjection);
+    }
 }
 
 CImage::ResolvedTransform CImage::updateGeometryBuffers () {
@@ -2804,7 +2905,7 @@ void CImage::updateScreenSpacePosition () {
 	const bool prelightingDrawsToScene = this->m_finalPassDrawsToScene && this->m_finalPassRouting.has_value ()
 	    && this->m_finalPassRouting->pass == this->m_prelightingPass;
 	this->m_prelightingModelMatrix = this->m_sceneModelMatrix;
-	if (this->m_prelightingPass != nullptr && !prelightingDrawsToScene) {
+	if (this->m_prelightingPass != nullptr && !prelightingDrawsToScene && m_puppetPrelightingPosition == GL_NONE) {
 	    // The first effect input is drawn in 0..size texture coordinates.
 	    // Lighting and reflections still need the quad's centered, aligned
 	    // coordinates transformed through the real 3D layer hierarchy.
@@ -2896,7 +2997,7 @@ void CImage::updateScreenSpacePosition () {
 	this->m_prelightingModelMatrix = this->m_sceneModelMatrix;
 	const bool drawsToScene = this->m_finalPassDrawsToScene && this->m_finalPassRouting.has_value ()
 	    && this->m_finalPassRouting->pass == this->m_prelightingPass;
-	if (!drawsToScene) {
+	if (!drawsToScene && m_puppetPrelightingPosition == GL_NONE) {
 	    // Match each copy-space corner (0..size) to its authored scene-space
 	    // corner before applying rotation, depth and parallax.
 	    this->m_prelightingModelMatrix = glm::translate (

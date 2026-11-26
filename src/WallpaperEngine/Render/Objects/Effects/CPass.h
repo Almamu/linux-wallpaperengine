@@ -78,6 +78,7 @@ public:
     [[nodiscard]] Render::Shaders::Shader* getShader () const;
     [[nodiscard]] GLuint getProgramID () const;
     [[nodiscard]] uint64_t getShaderRevision () const;
+    void setRuntimeCombos (const ComboMap& combos);
 
     // Custom geometry rendering support (for particles, etc.)
     using GeometryCallback = std::function<void ()>;

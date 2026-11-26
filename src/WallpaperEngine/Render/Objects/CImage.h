@@ -204,6 +204,7 @@ private:
     GLuint m_texcoordCopy;
     GLuint m_texcoordPass;
     GLuint m_puppetSpacePosition = GL_NONE;
+    GLuint m_puppetPrelightingPosition = GL_NONE;
     size_t m_puppetPositionBufferBytes = 0;
     GLuint m_puppetVertexColor = GL_NONE;
     size_t m_puppetColorBufferBytes = 0;
@@ -282,6 +283,8 @@ private:
     glm::mat4 m_framebufferReadProjection = glm::mat4 (1.0f);
     glm::mat4 m_modelViewProjectionPassInverse = {};
     glm::mat4 m_modelViewProjectionCopyInverse = {};
+    glm::mat4 m_puppetPrelightingProjection = glm::mat4 (1.0f);
+    glm::mat4 m_puppetPrelightingProjectionInverse = glm::mat4 (1.0f);
 
     glm::mat4 m_modelMatrix = {};
     glm::mat4 m_viewProjectionMatrix = {};
@@ -289,6 +292,8 @@ private:
     glm::mat4 m_sceneViewProjectionMatrix = glm::mat4 (1.0f);
     glm::mat3 m_sceneNormalModelMatrix = glm::mat3 (1.0f);
     Effects::CPass* m_prelightingPass = nullptr;
+    /** Presentation-only fog; hidden image composites export its input. */
+    Effects::CPass* m_fogPass = nullptr;
     glm::mat4 m_prelightingModelMatrix = glm::mat4 (1.0f);
 
     /** rotation-only local->world matrix (and its inverse) fed to effect passes as
