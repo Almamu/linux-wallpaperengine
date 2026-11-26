@@ -296,8 +296,8 @@ PRINT_CEF_CONFIG()
 
 # Embed scene-script builtins (builtins.js) into a generated header, so the JS can
 # live in its own file (lint/syntax-highlight friendly) instead of an inline literal.
-# Added to the global include_directories so both the library and the tests target
-# (which recompiles the common sources) can find the generated header.
+# Added to the global include_directories so all engine targets can find the
+# generated header.
 set(WPENGINE_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(WPENGINE_BUILTINS_JS "${CMAKE_CURRENT_SOURCE_DIR}/src/WallpaperEngine/Scripting/resources/builtins.js")
 file(READ "${WPENGINE_BUILTINS_JS}" WPENGINE_SCRIPT_BUILTINS)
@@ -666,11 +666,29 @@ set(COMMON_SOURCES
     src/WallpaperEngine/Maths.h
     src/WallpaperEngine/Maths.cpp)
 
+set(WPENGINE_COMMON_INPUTS ${COMMON_SOURCES})
+# Tests omit desktop backends and always use ERRORONLY=0 and DEMOMODE=0.
+# Wayland-only builds use different GLEW headers. CEF sets NDEBUG for Release
+# engine objects, so reuse them only when the tests also compile with NDEBUG.
+string(TOUPPER "${CMAKE_BUILD_TYPE};${CMAKE_CONFIGURATION_TYPES}" WPENGINE_BUILD_CONFIGS)
+separate_arguments(WPENGINE_RELEASE_FLAGS NATIVE_COMMAND "${CMAKE_CXX_FLAGS_RELEASE}")
+if(BUILD_TESTING AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SIZEOF_VOID_P EQUAL 8
+        AND ERRORONLY STREQUAL "0" AND DEMOMODE STREQUAL "0" AND NOT DEFINED api_version
+        AND (X11_SUPPORT_FOUND OR NOT WAYLAND_SUPPORT_FOUND)
+        AND (NOT "RELEASE" IN_LIST WPENGINE_BUILD_CONFIGS OR "-DNDEBUG" IN_LIST WPENGINE_RELEASE_FLAGS))
+    # GLFWOpenGLDriver references X11Output when ENABLE_X11 is defined.
+    set(WPENGINE_GLFW_DRIVER src/WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.cpp)
+    set(WPENGINE_OBJECT_SOURCES ${COMMON_SOURCES})
+    list(REMOVE_ITEM WPENGINE_OBJECT_SOURCES ${WPENGINE_GLFW_DRIVER})
+    add_library(linux-wallpaperengine-objects OBJECT ${WPENGINE_OBJECT_SOURCES})
+    set(WPENGINE_COMMON_INPUTS ${WPENGINE_GLFW_DRIVER} $<TARGET_OBJECTS:linux-wallpaperengine-objects>)
+endif()
+
 if(BUILD_TESTING)
     add_executable(
         tests
 
-        ${COMMON_SOURCES}
+        ${WPENGINE_COMMON_INPUTS}
 
         src/WallpaperEngine/Testing/Cases/Example.cpp
         src/WallpaperEngine/Testing/Cases/ApplicationLanguage.cpp
@@ -719,12 +737,12 @@ endif()
 add_library(
     linux-wallpaperengine-lib SHARED
 
-    ${COMMON_SOURCES}
+    ${WPENGINE_COMMON_INPUTS}
     ${WAYLAND_SOURCES}
     ${X11_SOURCES}
     ${DEMOMODE_SOURCES})
 
-target_link_libraries (linux-wallpaperengine-lib PUBLIC
+set(WPENGINE_ENGINE_LIBRARIES
     ${OPENGL_LIBRARIES}
     GLEW::GLEW
     ${GLUT_LIBRARIES}
@@ -752,39 +770,13 @@ target_link_libraries (linux-wallpaperengine-lib PUBLIC
     ${WPENGINE_SCRIPT_RUNTIME}
     lwe-sound-spatial)
 
+target_link_libraries(linux-wallpaperengine-lib PUBLIC ${WPENGINE_ENGINE_LIBRARIES})
+
 if (BUILD_TESTING)
-    target_link_libraries (tests PRIVATE
-        Catch2::Catch2WithMain
-        ${OPENGL_LIBRARIES}
-        GLEW::GLEW
-        ${GLUT_LIBRARIES}
-        ${ZLIB_LIBRARIES}
-        ${LZ4_LIBRARY}
-        ${SDL2_LIBRARIES}
-        ${FFMPEG_LIBRARIES}
-        ${MPV_LIBRARY}
-        ${PULSEAUDIO_LIBRARY}
-        Freetype::Freetype
-        msdfgen::msdfgen
-        Fontconfig::Fontconfig
-        PkgConfig::HARFBUZZ
-        ${WAYLAND_LIBRARIES}
-        ${X11_LIBRARIES}
-        ${DBUS_LIBRARIES}
-        kissfft
-        glslang
-        spirv-cross-core
-        spirv-cross-glsl
-        glfw
-        libcef_lib
-        libcef_dll_wrapper
-        argparse
-        ${WPENGINE_SCRIPT_RUNTIME}
-    lwe-sound-spatial)
+    target_link_libraries(tests PRIVATE Catch2::Catch2WithMain ${WPENGINE_ENGINE_LIBRARIES})
 endif()
 
-target_compile_definitions(linux-wallpaperengine-lib PUBLIC ERRORONLY=${ERRORONLY})
-target_compile_definitions(linux-wallpaperengine-lib PUBLIC DEMOMODE=${DEMOMODE})
+set(WPENGINE_ENGINE_DEFINITIONS ERRORONLY=${ERRORONLY} DEMOMODE=${DEMOMODE})
 
 if (BUILD_TESTING)
     # tests should give as much output as possible
@@ -793,25 +785,27 @@ if (BUILD_TESTING)
 endif()
 
 if(X11_SUPPORT_FOUND)
-    target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_X11)
+    list(APPEND WPENGINE_ENGINE_DEFINITIONS ENABLE_X11)
 
     # make sure some of the X11 functions we'll use are available
     check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
 
     if(HAVE_XSETIOERROREXITHANDLER)
-        target_compile_definitions(linux-wallpaperengine-lib PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
+        list(APPEND WPENGINE_ENGINE_DEFINITIONS HAVE_XSETIOERROREXITHANDLER=1)
     endif()
 endif()
 
 if(WAYLAND_SUPPORT_FOUND)
-    target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_WAYLAND)
+    list(APPEND WPENGINE_ENGINE_DEFINITIONS ENABLE_WAYLAND)
 endif()
 
 if(WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
-    target_compile_definitions(linux-wallpaperengine-lib PUBLIC GLEW_EGL)
+    list(APPEND WPENGINE_ENGINE_DEFINITIONS GLEW_EGL)
 endif()
 
-target_include_directories(linux-wallpaperengine-lib PUBLIC
+target_compile_definitions(linux-wallpaperengine-lib PUBLIC ${WPENGINE_ENGINE_DEFINITIONS})
+
+set(WPENGINE_ENGINE_INCLUDE_DIRS
     src
     src/External/glslang-WallpaperEngine
     src/External/SPIRV-Cross-WallpaperEngine
@@ -829,6 +823,19 @@ target_include_directories(linux-wallpaperengine-lib PUBLIC
     ${CMAKE_SOURCE_DIR}
     ${X11_INCLUDES}
     ${WAYLAND_OUTPUT_DIR})
+
+target_include_directories(linux-wallpaperengine-lib PUBLIC ${WPENGINE_ENGINE_INCLUDE_DIRS})
+
+if(TARGET linux-wallpaperengine-objects)
+    # Match the shared library's compilation while keeping the test executable's
+    # own compile and link settings. Each final target links the dependencies.
+    set_target_properties(linux-wallpaperengine-objects PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_compile_definitions(linux-wallpaperengine-objects PRIVATE
+        ${WPENGINE_ENGINE_DEFINITIONS} linux_wallpaperengine_lib_EXPORTS)
+    target_include_directories(linux-wallpaperengine-objects PRIVATE ${WPENGINE_ENGINE_INCLUDE_DIRS})
+    target_link_libraries(linux-wallpaperengine-objects PRIVATE ${WPENGINE_ENGINE_LIBRARIES})
+    REPLACED_SET_COMMON_TARGET_PROPERTIES(linux-wallpaperengine-objects)
+endif()
 
 COPY_FILES(linux-wallpaperengine-lib "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
 COPY_FILES(linux-wallpaperengine-lib "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
