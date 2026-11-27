@@ -56,6 +56,7 @@ __pycache__/
 !/tools/tests/test_lockscreen_stream.py
 !/tools/tests/test_lockscreen_wayland.py
 !/tools/tests/test_wayland_pacing.py
+!/tools/tests/test_particle_emission_duration.py
 !/tools/tests/scene_render.py
 !/tools/tests/test_model_volumetric_order.py
 !/tools/tests/test_image_composite_fog.py
