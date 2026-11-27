@@ -68,16 +68,17 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 
     // getWindow() returns a GLFWwindow*, which is not an X11 window id. Our window only has one
     // if GLFW itself is running on X11 (it may be running natively on Wayland)
-    auto* glfwWindow = dynamic_cast<GLFWOpenGLDriver&> (this->m_driver).getWindow ();
     Window ourWindow = None;
     Window parentWindow = None;
 
+#ifdef HAVE_GLFWGETX11WINDOW
 #if GLFW_VERSION_MAJOR > 3 || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4)
     if (glfwGetPlatform () == GLFW_PLATFORM_X11)
 #endif
     {
-	ourWindow = glfwGetX11Window (glfwWindow);
+	ourWindow = glfwGetX11Window (dynamic_cast<GLFWOpenGLDriver&> (this->m_driver).getWindow ());
     }
+#endif /* HAVE_GLFWGETX11WINDOW */
 
     if (ourWindow != None) {
 	Window root, *schildren = nullptr;
