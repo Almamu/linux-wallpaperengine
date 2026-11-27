@@ -1344,6 +1344,8 @@ void CPass::setupTextureUniforms () {
 
     // resolve the main texture
     std::shared_ptr<const TextureProvider> texture = this->resolveTexture (this->m_renderable.getTexture (), 0);
+    // A material can leave slot zero empty and use the shader's declared texture.
+    if (!texture) texture = this->resolveTexture0 ();
     // register all the texture uniforms with correct values
     this->addUniform ("g_Texture0", 0);
     this->addUniform ("g_Texture1", 1);
@@ -1373,7 +1375,7 @@ void CPass::setupTextureUniforms () {
 	this->addUniform ("g_Texture" + std::to_string (index) + "MipMapInfo", &this->m_textureMipMapCounts[index]);
     }
 
-    this->m_texture0Resolution = *texture->getResolution ();
+    this->m_texture0Resolution = texture ? *texture->getResolution () : glm::vec4 (1.0f);
     this->addUniform ("g_Texture0Resolution", &this->m_texture0Resolution);
 
     const auto registerTexelUniform = [this] (const int index, const TextureProvider& provider) {
@@ -1382,7 +1384,7 @@ void CPass::setupTextureUniforms () {
 	this->m_textureTexels.insert_or_assign (index, glm::vec4 (1.0f / width, 1.0f / height, width, height));
 	this->addUniform ("g_Texture" + std::to_string (index) + "Texel", &this->m_textureTexels.at (index));
     };
-    registerTexelUniform (0, *texture);
+    if (texture) registerTexelUniform (0, *texture);
 
     for (const auto& [textureIndex, expectedTexture] : this->m_textures) {
 	std::ostringstream namestream;
@@ -1390,6 +1392,7 @@ void CPass::setupTextureUniforms () {
 	namestream << "g_Texture" << textureIndex << "Resolution";
 
 	texture = this->resolveTexture (expectedTexture->texture, textureIndex, texture);
+	if (!texture) continue;
 	if (m_effectFBOBindings && m_binds.contains (textureIndex) && m_binds.at (textureIndex) != "previous") {
 	    m_effectTextureResolutions[textureIndex] = *texture->getResolution ();
 	    this->addUniform (namestream.str (), &m_effectTextureResolutions.at (textureIndex));
