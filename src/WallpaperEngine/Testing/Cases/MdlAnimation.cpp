@@ -546,6 +546,81 @@ TEST_CASE ("MDL match-loop closure uses native quaternion interpolation", "[mdl]
     CHECK (end.worldBones[0][0].y == Catch::Approx (0));
 }
 
+TEST_CASE ("MDL pose interpolation uses the native seconds remainder at authored sample times", "[mdl][animation]") {
+    MdlAnimationData data;
+    data.bones.resize (1);
+    MdlAnimationClip clip { .mode = "loop", .frameCount = 39 };
+    auto& frames = clip.boneFrames.emplace_back (40);
+    for (size_t index = 0; index < frames.size (); ++index) {
+	frames[index].translation.x = static_cast<float> (index);
+    }
+
+    // At Rayman's held frame 20 and at frame 3 of a 24 FPS clip the quotient
+    // rounds to the requested index, while the seconds remainder is nearly a step.
+    for (const auto& [fps, frame, expected] : std::array {
+	    std::array {30.0f, 19.75f, 19.75f}, std::array {30.0f, 20.0f, 21.0f},
+	    std::array {30.0f, 20.25f, 20.25f}, std::array {30.0f, 38.75f, 38.75f},
+	    std::array {30.0f, 39.0f, 39.0f}, std::array {24.0f, 3.0f, 4.0f},
+	    std::array {24.0f, 3.25f, 3.25f}, std::array {24.0f, 5.0f, 5.0f},
+	}) {
+	CAPTURE (fps, frame);
+	clip.fps = fps;
+	const auto pose = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .frame = frame }});
+	CHECK (pose.worldBones[0][3].x == Catch::Approx (expected).margin (0.00001f));
+    }
+
+    clip.fps = 30.0f;
+    // The puppet clock supplies elapsed seconds alongside its rounded frame.
+    const auto advancing = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = 0.1f, .frame = 3.0f }});
+    CHECK (advancing.worldBones[0][3].x == Catch::Approx (4.0f));
+    const auto rawTime = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = 0.1f }});
+    CHECK (rawTime.worldBones[0][3].x == Catch::Approx (4.0f));
+    const auto reverse = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = -0.25f / 30.0f }});
+    CHECK (reverse.worldBones[0][3].x == Catch::Approx (38.75f));
+    const auto wrapped = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = 39.0f / 30.0f }});
+    CHECK (wrapped.worldBones[0][3].x == Catch::Approx (0.0f));
+    clip.mode = "mirror";
+    const auto mirrored = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = 39.25f / 30.0f }});
+    CHECK (mirrored.worldBones[0][3].x == Catch::Approx (38.75f));
+    clip.mode = "single";
+    const auto finished = MdlAnimationEvaluator::evaluate (data, {{ .animation = &clip, .time = 39.25f / 30.0f }});
+    CHECK (finished.worldBones[0][3].x == Catch::Approx (39.0f));
+}
+
+TEST_CASE ("MDL interpolated scalars follow the same time sample as the pose", "[mdl][animation]") {
+    MdlAnimationData data { .dependencyCount = 1 };
+    MdlAnimationClip clip { .fps = 24.0f, .frameCount = 5 };
+    const std::vector<float> samples { 0, 0, 0, 0.25f, 0.75f, 1.0f };
+    clip.dependencyTracks = { samples };
+    clip.blendTracks = { samples };
+    clip.morphTracks = {{ { .target = 0, .frames = samples } }};
+    const std::vector<MdlActiveAnimation> layers {{ .animation = &clip, .frame = 3.0f }};
+
+    const auto pose = MdlAnimationEvaluator::evaluate (data, layers);
+    CHECK (pose.dependencyWeights.at (0) == Catch::Approx (0.75f));
+    CHECK (pose.blendWeights.at (0) == Catch::Approx (0.75f));
+    CHECK (pose.puppetMorphWeights.at (0) == Catch::Approx (0.75f));
+    const auto morphs = MdlAnimationEvaluator::evaluateModelMorphs (layers);
+    CHECK (morphs.at (0).weights.at (0) == Catch::Approx (0.75f));
+}
+
+TEST_CASE ("MDL nonadditive layers blend rotations along the shortest quaternion path", "[mdl][animation]") {
+    MdlAnimationData data;
+    data.bones.resize (1);
+    const MdlAnimationClip base { .boneFrames = {{ MdlBoneFrame {} }} };
+    const MdlAnimationClip overlay { .boneFrames = {{ {
+	.rotation = -glm::angleAxis (glm::radians (120.0f), glm::vec3 (0, 0, 1)),
+    } }} };
+
+    for (const float weight : { 0.25f, 0.75f }) {
+	CAPTURE (weight);
+	const auto pose = MdlAnimationEvaluator::evaluate (data, {{ .animation = &base }, { .animation = &overlay, .weight = weight }});
+	const bool firstQuarter = weight == 0.25f;
+	CHECK (pose.worldBones[0][0].x == Catch::Approx ((firstQuarter ? 23.0f : -1.0f) / 26.0f).margin (1e-6f));
+	CHECK (pose.worldBones[0][0].y == Catch::Approx ((firstQuarter ? 7.0f : 15.0f) * std::sqrt (3.0f) / 26.0f).margin (1e-6f));
+    }
+}
+
 TEST_CASE ("MDL animation evaluator interpolates and composes parent bones") {
     const auto animationData = MdlAnimationParser::parse (makeAnimatedModelSections (), "synthetic.mdl");
     const std::vector<MdlActiveAnimation> active {

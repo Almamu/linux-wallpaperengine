@@ -2600,7 +2600,7 @@ float CImage::getPuppetAnimationLayerFrame (const size_t index) const {
     const auto found = this->m_puppetLayerPlayback.find (layer->id);
     if (found == this->m_puppetLayerPlayback.end ()) return 0.0f;
     const auto* animation = this->findPuppetAnimationClip (found->second.animation);
-    return animation != nullptr ? found->second.time * animation->fps : 0.0f;
+    return animation != nullptr && animation->fps > 0.0f ? found->second.time / (1.0f / animation->fps) : 0.0f;
 }
 
 void CImage::setPuppetAnimationLayerFrame (const size_t index, const float frame) {
@@ -2611,8 +2611,8 @@ void CImage::setPuppetAnimationLayerFrame (const size_t index, const float frame
     }
     auto& playback = this->m_puppetLayerPlayback[layer->id];
     const auto* animation = this->findPuppetAnimationClip (playback.animation);
-    if (animation == nullptr || animation->fps <= 0.0f) return;
-    playback.time = frame / animation->fps;
+    if (animation == nullptr || !(animation->fps > 0.0f)) return;
+    playback.time = frame * (1.0f / animation->fps);
     playback.stopped = false;
 }
 

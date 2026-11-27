@@ -45,11 +45,13 @@ MdlBoneFrame matrixPose (const glm::mat4& matrix) {
 }
 
 MdlBoneFrame blendPose (const MdlBoneFrame& from, const MdlBoneFrame& to, const float weight) {
-    MdlBoneFrame result;
-    result.translation = glm::mix (from.translation, to.translation, weight);
-    result.rotation = glm::normalize (glm::slerp (from.rotation, to.rotation, weight));
-    result.scale = glm::mix (from.scale, to.scale, weight);
-    return result;
+    // Native uses shortest-hemisphere nlerp for adjacent poses and partial replacement layers.
+    const auto toRotation = glm::dot (from.rotation, to.rotation) < 0.0f ? -to.rotation : to.rotation;
+    return {
+	.translation = glm::mix (from.translation, to.translation, weight),
+	.rotation = glm::normalize (from.rotation * (1.0f - weight) + toRotation * weight),
+	.scale = glm::mix (from.scale, to.scale, weight),
+    };
 }
 
 /** Playhead position in frames, wrapped according to the clip's play mode. */
@@ -81,20 +83,37 @@ float sampleFrame (const MdlActiveAnimation& layer) {
     return frame;
 }
 
-MdlBoneFrame samplePose (const MdlActiveAnimation& layer, const std::vector<MdlBoneFrame>& frames) {
+struct FrameInterpolation {
+    size_t first;
+    float blend;
+};
+
+FrameInterpolation sampleInterpolatedFrame (const MdlActiveAnimation& layer) {
     const float frame = sampleFrame (layer);
-    const auto firstFrame = static_cast<size_t> (frame);
-    const float blend = frame - static_cast<float> (firstFrame);
-    const auto& current = frames[std::min (firstFrame, frames.size () - 1)];
-    const auto& next = frames[std::min (firstFrame + 1, frames.size () - 1)];
-    // Native 1401f89a0 uses shortest-hemisphere nlerp between authored frames,
-    // including the baked closing frame of a match-loop clip.
-    const auto nextRotation = glm::dot (current.rotation, next.rotation) < 0.0f ? -next.rotation : next.rotation;
-    return {
-	.translation = glm::mix (current.translation, next.translation, blend),
-	.rotation = glm::normalize (current.rotation * (1.0f - blend) + nextRotation * blend),
-	.scale = glm::mix (current.scale, next.scale, blend),
-    };
+    const auto& clip = *layer.animation;
+    // Native 140170580 truncates the seconds quotient and computes the weight
+    // with a separate remainder. The quotient can round up at an authored frame.
+    // A playhead clamped to the end still samples the closing frame directly.
+    if (clip.fps > 0.0f && frame > 0.0f && frame < static_cast<float> (clip.frameCount)) {
+	const float step = 1.0f / clip.fps;
+	// Puppet layers supply folded seconds alongside their explicit frame.
+	// For time-only layers retain seconds when the playhead needed no wrapping.
+	const bool hasSeconds = layer.frame ? layer.time > 0.0f : frame == layer.time * clip.fps;
+	const float seconds = hasSeconds ? layer.time : frame * step;
+	if (step > 0.0f && std::isfinite (seconds)) {
+	    const auto first = static_cast<size_t> (seconds / step);
+	    return { std::min (first, static_cast<size_t> (clip.frameCount) - 1), std::fmod (seconds, step) / step };
+	}
+    }
+    const auto first = static_cast<size_t> (frame);
+    return { first, frame - static_cast<float> (first) };
+}
+
+MdlBoneFrame samplePose (const MdlActiveAnimation& layer, const std::vector<MdlBoneFrame>& frames) {
+    const auto [first, blend] = sampleInterpolatedFrame (layer);
+    const auto& current = frames[std::min (first, frames.size () - 1)];
+    const auto& next = frames[std::min (first + 1, frames.size () - 1)];
+    return blendPose (current, next, blend);
 }
 
 void composeLayer (
@@ -926,11 +945,9 @@ glm::mat4 stepSpring (
 
 /** Same playhead and interpolation as the bones, on a scalar track instead of a pose. */
 float sampleScalarTrack (const MdlActiveAnimation& layer, const std::vector<float>& track) {
-    const float frame = sampleFrame (layer);
-    const auto firstFrame = static_cast<size_t> (frame);
-    const float blend = frame - static_cast<float> (firstFrame);
-    const float current = track[std::min (firstFrame, track.size () - 1)];
-    const float next = track[std::min (firstFrame + 1, track.size () - 1)];
+    const auto [first, blend] = sampleInterpolatedFrame (layer);
+    const float current = track[std::min (first, track.size () - 1)];
+    const float next = track[std::min (first + 1, track.size () - 1)];
     return glm::mix (current, next, blend);
 }
 std::vector<float> sampleDependencies (
@@ -1041,7 +1058,7 @@ MdlPose MdlAnimationEvaluator::evaluate (
 	    const auto sampled = samplePose (layer, frames);
 	    if (!layer.additive && layer.weight >= 1.0f) {
 		// A full replacement needs neither the reference decomposition nor a
-		// second spherical interpolation whose result is already the sample.
+		// second blend whose result is already the sample.
 		local = sampled;
 		local->rotation = glm::normalize (local->rotation);
 	    } else {
