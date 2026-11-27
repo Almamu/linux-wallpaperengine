@@ -165,8 +165,9 @@ CWeb::CWeb (
     this->m_renderHandler = new WebBrowser::CEF::RenderHandler (this);
 
     CefBrowserSettings browserSettings;
-    // documentaion says that 60 fps is maximum value
-    browserSettings.windowless_frame_rate = std::max (60, context.getApp ().getContext ().settings.render.maximumFPS);
+    // CEF uses integer microseconds between frames, so keep the interval positive.
+    browserSettings.windowless_frame_rate
+	= std::clamp (context.getApp ().getContext ().settings.render.maximumFPS, 1, 1'000'000);
 
     this->m_client = new WebBrowser::CEF::BrowserClient (m_renderHandler, browserContext);
     // use the custom scheme for the wallpaper's files; the workshop id is the host
