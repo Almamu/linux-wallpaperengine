@@ -2078,6 +2078,15 @@ void ShaderUnit::parseParameterConfiguration (
     // auto range = data.find ("range");
     const auto combo = data.find ("combo");
 
+    // CPass binds texture resolutions from the actual textures at draw time.
+    static const std::regex textureResolution (R"(g_Texture[0-9]Resolution)");
+    const auto annotationType = data.find ("type");
+    if (type == "vec4" && annotationType != data.end () && *annotationType == "resolution"
+        && std::regex_match (name, textureResolution) && data.find ("material") == data.end ()
+        && data.find ("default") == data.end () && combo == data.end ()) {
+        return;
+    }
+
     // this is not a real parameter
     auto constant = this->m_constants.end ();
 

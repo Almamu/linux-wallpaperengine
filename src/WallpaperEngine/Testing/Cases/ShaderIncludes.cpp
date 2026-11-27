@@ -476,6 +476,55 @@ TEST_CASE ("shader parameter declarations accept aligned whitespace", "[shader][
     }
 }
 
+TEST_CASE ("engine-bound texture resolutions accept resolution metadata", "[shader][parameter][regression]") {
+    const auto assets = shaderAssets ("");
+    const ShaderConstantMap constants;
+    const TextureMap textures;
+    const ComboMap combos;
+    for (const std::string name : { "g_Texture0Resolution", "g_Texture9Resolution" }) {
+        CAPTURE (name);
+        const std::string source =
+            "uniform vec4 " + name + "; // {\"type\":\"resolution\"}\n"
+            "uniform float u_Width; // {\"material\":\"Width\",\"default\":3}\n"
+            "void main() { gl_FragColor = vec4(u_Width / " + name + ".y); }\n";
+        ShaderUnit unit (
+            GLSLContext::UnitType_Fragment, "texture_resolution.frag", source, *assets, constants, textures,
+            textures, combos, combos
+        );
+        const auto& parameters = unit.getParameters ();
+        REQUIRE (parameters.size () == 1);
+        CHECK (parameters[0]->getIdentifierName () == "Width");
+        CHECK (parameters[0]->getFloat () == 3.0f);
+        const auto translated = GLSLContext::get ().toGlsl (
+            "#version 330\nvoid main() { gl_Position = vec4(0.0); }\n", unit.compile ()
+        );
+        CHECK_THAT (translated.second, Catch::Matchers::ContainsSubstring (name));
+    }
+}
+
+TEST_CASE ("resolution metadata keeps validation for other uniforms", "[shader][parameter][regression]") {
+    const auto assets = shaderAssets ("");
+    const ShaderConstantMap constants;
+    const TextureMap textures;
+    const ComboMap combos;
+    for (const std::string declaration : {
+             "vec3 g_Texture0Resolution; // {\"type\":\"resolution\"}",
+             "vec4 g_Texture10Resolution; // {\"type\":\"resolution\"}",
+             "vec4 u_Resolution; // {\"type\":\"resolution\"}",
+             "vec4 g_Texture0Resolution; // {\"type\":\"color\"}",
+             "vec4 g_Texture0Resolution; // {\"type\":\"resolution\",\"combo\":\"FEATURE\"}",
+             "vec4 g_Texture0Resolution; // {\"type\":\"resolution\",\"material\":\"Width\"}",
+             "float u_Width; // {\"material\":\"Width\"}",
+         }) {
+        CAPTURE (declaration);
+        const std::string source = "uniform " + declaration + "\nvoid main() { gl_FragColor = vec4(1.0); }\n";
+        CHECK_THROWS (ShaderUnit (
+            GLSLContext::UnitType_Fragment, "invalid_resolution.frag", source, *assets, constants, textures,
+            textures, combos, combos
+        ));
+    }
+}
+
 TEST_CASE ("vector shader defaults accept numbers without dropping the layer", "[shader][parameter][regression]") {
     const auto assets = shaderAssets ("");
     const ShaderConstantMap constants;
