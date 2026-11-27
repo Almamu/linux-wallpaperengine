@@ -12,6 +12,7 @@
 
 #include <GL/glew.h>
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
@@ -4110,6 +4111,19 @@ OperatorFunc CParticle::createOscillatePositionOperator (const OscillatePosition
 
 // ========== RENDERING ==========
 
+static bool ropeFacesEye (const std::string& orientation) {
+    return orientation != "fixed" && orientation != "upright";
+}
+
+static std::array<uint32_t, 6> ropeQuadIndices (const std::string& orientation, const WallpaperEngine::Render::Camera& camera) {
+    // Screen ropes use midpoint-minus-eye facing. The 3D particle basis alone
+    // reflects Y when the perspective projection does not flip it back.
+    if (ropeFacesEye (orientation) && (camera.isOrthogonal () || camera.isYFlipped ())) {
+	return { 0, 1, 2, 2, 3, 0 };
+    }
+    return { 0, 2, 1, 2, 0, 3 };
+}
+
 void CParticle::setupPass () {
     if (!m_particle.material || !m_particle.material->material || m_particle.material->material->passes.empty ()) {
 	sLog.error ("No valid material for particle ", m_particle.name);
@@ -4124,8 +4138,7 @@ void CParticle::setupPass () {
     if (m_useRopeRenderer) {
 	m_passOverride->shaderOverride = "genericropeparticle";
 	const auto& orientation = m_particle.renderers[0].orientation;
-	m_passOverride->combos["LWE_ROPE_SCREEN_FACING"]
-	    = orientation != "fixed" && orientation != "upright";
+	m_passOverride->combos["LWE_ROPE_SCREEN_FACING"] = ropeFacesEye (orientation);
     }
     if (const auto texture = getTexture (); texture && texture->isAnimated ()) {
 	m_passOverride->combos["SPRITESHEET"] = 1;
@@ -4466,9 +4479,7 @@ void CParticle::applyParallaxToModelMatrix () {
 void CParticle::updateParticleViewProjection () {
     const auto& camera = getScene ().getCamera ();
     const bool perspective = getScene ().getScene ().camera.projection.isPerspective;
-    const bool facesEye = m_useRopeRenderer
-        ? m_particle.renderers[0].orientation != "fixed" && m_particle.renderers[0].orientation != "upright"
-        : m_useTrailRenderer;
+    const bool facesEye = m_useRopeRenderer ? ropeFacesEye (m_particle.renderers[0].orientation) : m_useTrailRenderer;
     if ((m_particle.flags & 4) != 0) {
 	// Native flag-4 draws replace the projection in both scene modes. The
 	// perspective producer derives its virtual FOV from the ordinary Y scale.
@@ -4691,6 +4702,7 @@ void CParticle::renderRopeTrail () {
 	return;
     }
 
+    const auto quadIndices = ropeQuadIndices (m_particle.renderers[0].orientation, getScene ().getCamera ());
     const int subdivision = std::max (1, m_ropeSubdivision);
     uint32_t vertexIndex = 0;
     uint32_t indexOffset = 0;
@@ -4864,12 +4876,7 @@ void CParticle::renderRopeTrail () {
 	    addVertex (1.0f, 1.0f);
 	    addVertex (0.0f, 1.0f);
 
-	    m_indices[indexOffset++] = baseVertex + 0;
-	    m_indices[indexOffset++] = baseVertex + 2;
-	    m_indices[indexOffset++] = baseVertex + 1;
-	    m_indices[indexOffset++] = baseVertex + 2;
-	    m_indices[indexOffset++] = baseVertex + 0;
-	    m_indices[indexOffset++] = baseVertex + 3;
+	    for (const uint32_t index : quadIndices) m_indices[indexOffset++] = baseVertex + index;
 	}
     }
 
@@ -4938,6 +4945,7 @@ void CParticle::renderRope () {
     // [22-25] a_Color:          colorStart.rgba
 
     const uint32_t numSegments = aliveCount - 1;
+    const auto quadIndices = ropeQuadIndices (m_particle.renderers[0].orientation, getScene ().getCamera ());
     const int subdivision = std::max (1, m_ropeSubdivision);
 
     // Catmull-Rom spline evaluation
@@ -5087,13 +5095,7 @@ void CParticle::renderRope () {
 	addRopeVertex (1.0f, 1.0f); // right at end
 	addRopeVertex (0.0f, 1.0f); // left at end
 
-	// 2 triangles
-	m_indices[indexOffset++] = baseVertex + 0;
-	m_indices[indexOffset++] = baseVertex + 2;
-	m_indices[indexOffset++] = baseVertex + 1;
-	m_indices[indexOffset++] = baseVertex + 2;
-	m_indices[indexOffset++] = baseVertex + 0;
-	m_indices[indexOffset++] = baseVertex + 3;
+	for (const uint32_t index : quadIndices) m_indices[indexOffset++] = baseVertex + index;
     }
 
     m_activeIndexCount = static_cast<GLsizei> (indexOffset);
