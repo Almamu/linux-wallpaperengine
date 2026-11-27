@@ -7,6 +7,9 @@
 #include "WallpaperEngine/Render/Drivers/GLFWOpenGLDriver.h"
 #include "WallpaperEngine/Render/Drivers/VideoFactories.h"
 
+#define GLFW_EXPOSE_NATIVE_X11
+#include <GLFW/glfw3native.h>
+
 namespace WallpaperEngine::Render::Drivers::Detectors {
 void CustomXIOErrorExitHandler (Display* dsp, void* userdata) {
     const auto context = static_cast<X11FullScreenDetector*> (userdata);
@@ -63,10 +66,20 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 	return false;
     }
 
-    const auto ourWindow = reinterpret_cast<Window> (dynamic_cast<GLFWOpenGLDriver&> (this->m_driver).getWindow ());
-    Window parentWindow;
+    // getWindow() returns a GLFWwindow*, which is not an X11 window id. Our window only has one
+    // if GLFW itself is running on X11 (it may be running natively on Wayland)
+    auto* glfwWindow = dynamic_cast<GLFWOpenGLDriver&> (this->m_driver).getWindow ();
+    Window ourWindow = None;
+    Window parentWindow = None;
 
+#if GLFW_VERSION_MAJOR > 3 || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4)
+    if (glfwGetPlatform () == GLFW_PLATFORM_X11)
+#endif
     {
+	ourWindow = glfwGetX11Window (glfwWindow);
+    }
+
+    if (ourWindow != None) {
 	Window root, *schildren = nullptr;
 	unsigned int num_children;
 
@@ -94,6 +107,11 @@ bool X11FullScreenDetector::anythingFullscreen () const {
 	}
 
 	if (attribs.map_state != IsViewable) {
+	    continue;
+	}
+
+	// input-only windows draw nothing, but window managers and XWayland keep screen-sized ones around
+	if (attribs.c_class == InputOnly) {
 	    continue;
 	}
 
