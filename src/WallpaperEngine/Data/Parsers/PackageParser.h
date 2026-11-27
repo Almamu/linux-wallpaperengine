@@ -12,6 +12,6 @@ public:
     static PackageUniquePtr parse (ReadStreamSharedPtr stream);
 
 private:
-    static FileEntryList parseFileList (const BinaryReader& stream, uint32_t fileSize);
+    static FileEntryList parseFileList (const BinaryReader& stream, uint64_t fileSize);
 };
 }

@@ -4,15 +4,28 @@
 #include "WallpaperEngine/FileSystem/Adapters/Directory.h"
 #include "WallpaperEngine/Assets/AssetLoadException.h"
 #include "WallpaperEngine/Assets/AssetLocator.h"
+#include "WallpaperEngine/Data/Parsers/PackageParser.h"
+#include "WallpaperEngine/Data/Utils/MemoryStream.h"
 #include "WallpaperEngine/WebBrowser/CEF/ResourceRange.h"
+#include <algorithm>
+#include <array>
 #include <fstream>
+#include <sstream>
+#include <string_view>
 #include <tuple>
 #include <unistd.h>
 
 using namespace WallpaperEngine::Data::Assets;
+using WallpaperEngine::Data::Parsers::PackageParser;
+using WallpaperEngine::Data::Utils::BinaryReader;
+using WallpaperEngine::Data::Utils::MemoryStream;
 using WallpaperEngine::FileSystem::Adapters::PackageAdapter;
 
 namespace {
+struct SequentialBuffer : std::streambuf {
+    explicit SequentialBuffer (std::string& bytes) { setg (bytes.data (), bytes.data (), bytes.data () + bytes.size ()); }
+};
+
 PackageAdapter buildAdapter (const std::initializer_list<std::string> filenames) {
     auto package = std::make_unique<Package> ();
 
@@ -21,6 +34,48 @@ PackageAdapter buildAdapter (const std::initializer_list<std::string> filenames)
     }
 
     return PackageAdapter (std::move (package));
+}
+
+std::string packageBytes (const bool padded) {
+    constexpr std::array files {
+	std::pair { std::string_view ("first"), std::string_view ("alpha") },
+	std::pair { std::string_view ("second.txt"), std::string_view ("beta") },
+    };
+
+    std::string bytes;
+    const auto appendUInt32 = [&] (const size_t value) {
+	for (unsigned shift = 0; shift < 32; shift += 8) {
+	    bytes.push_back (static_cast<char> (value >> shift));
+	}
+    };
+    const auto appendString = [&] (std::string_view value) {
+	appendUInt32 (value.size ());
+	bytes.append (value);
+    };
+    const auto padding = [padded] (const size_t length) { return padded ? (4 - length % 4) % 4 : 0; };
+
+    appendString (padded ? "PKGV0021" : "PKGV0024");
+    appendUInt32 (files.size ());
+
+    size_t offset = 0;
+    if (padded) {
+	offset = bytes.size ();
+	for (const auto& [name, content] : files) {
+	    offset += 12 + name.size () + padding (name.size ());
+	}
+    }
+
+    for (const auto& [name, content] : files) {
+	appendString (name);
+	bytes.append (padding (name.size ()), '\0');
+	appendUInt32 (offset);
+	appendUInt32 (content.size ());
+	offset += content.size ();
+    }
+    for (const auto& [name, content] : files) {
+	bytes.append (content);
+    }
+    return bytes;
 }
 } // namespace
 
@@ -37,6 +92,83 @@ TEST_CASE ("package lookups ignore case") {
 
     REQUIRE_FALSE (adapter.exists ("sounds/missing.mp3"));
     REQUIRE_FALSE (adapter.exists ("rayman.json"));
+}
+
+TEST_CASE ("both package index layouts deliver complete entries", "[assets][package-bounds]") {
+    for (const bool padded : { false, true }) {
+	CAPTURE (padded);
+	const auto stream = std::make_shared<std::istringstream> (packageBytes (padded));
+	const PackageAdapter adapter (PackageParser::parse (stream));
+	std::string contents;
+	std::getline (*adapter.open ("first"), contents);
+	CHECK (contents == "alpha");
+	std::getline (*adapter.open ("second.txt"), contents);
+	CHECK (contents == "beta");
+    }
+}
+
+TEST_CASE ("both package index layouts reject incomplete files", "[assets][package-bounds]") {
+    for (const bool padded : { false, true }) {
+	CAPTURE (padded);
+	const std::string complete = packageBytes (padded);
+	for (const auto size : { complete.size () / 2, complete.size () - 1 }) {
+	    CAPTURE (size);
+	    const auto stream = std::make_shared<std::istringstream> (complete.substr (0, size));
+	    CHECK_THROWS (PackageParser::parse (stream));
+	}
+    }
+}
+
+TEST_CASE ("binary reader supports exact reads on sequential streams", "[assets][package-bounds]") {
+    std::string bytes ("\x03\0\0\0one" "two\0end", 14);
+    SequentialBuffer buffer (bytes);
+    const BinaryReader reader (std::make_shared<std::istream> (&buffer));
+
+    CHECK (reader.nextSizedString () == "one");
+    CHECK (reader.nextNullTerminatedString () == "two");
+    char block[3];
+    reader.next (block, sizeof (block));
+    CHECK (std::string_view (block, sizeof (block)) == "end");
+    CHECK_THROWS (reader.nextUInt32 ());
+}
+
+TEST_CASE ("package parsing requires a seekable stream", "[assets][package-bounds]") {
+    auto bytes = packageBytes (false);
+    SequentialBuffer buffer (bytes);
+    CHECK_THROWS (PackageParser::parse (std::make_shared<std::istream> (&buffer)));
+}
+
+TEST_CASE ("binary reader rejects incomplete fields", "[assets][package-bounds]") {
+    SECTION ("float") {
+	const BinaryReader reader (std::make_shared<std::istringstream> ("ab"));
+	CHECK_THROWS (reader.nextFloat ());
+    }
+    SECTION ("sized string") {
+	const BinaryReader reader (std::make_shared<std::istringstream> (std::string ("\x03\0\0\0ab", 6)));
+	CHECK_THROWS (reader.nextSizedString ());
+    }
+    SECTION ("null terminated string") {
+	const BinaryReader reader (std::make_shared<std::istringstream> ("ab"));
+	CHECK_THROWS (reader.nextNullTerminatedString ());
+    }
+}
+
+TEST_CASE ("memory stream seeks are bounded and leave the cursor intact on failure", "[assets][package-bounds]") {
+    auto buffer = std::make_unique<char[]> (3);
+    std::copy_n ("abc", 3, buffer.get ());
+    MemoryStream stream (std::move (buffer), 3);
+
+    REQUIRE (stream.seekg (std::streampos (1)).good ());
+    CHECK (stream.get () == 'b');
+    CHECK (stream.seekg (-3, std::ios::cur).fail ());
+    stream.clear ();
+    CHECK (stream.tellg () == std::streampos (2));
+    CHECK (stream.seekg (1, std::ios::end).fail ());
+    stream.clear ();
+    CHECK (stream.tellg () == std::streampos (2));
+    REQUIRE (stream.seekg (0, std::ios::end).good ());
+    REQUIRE (stream.seekg (-3, std::ios::cur).good ());
+    CHECK (stream.get () == 'a');
 }
 
 TEST_CASE ("loose assets resolve Windows casing while preserving exact matches", "[assets][directory]") {

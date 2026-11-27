@@ -12,14 +12,31 @@ struct MemoryStream : std::istream, private std::streambuf {
 
     std::streambuf::pos_type
     seekoff (std::streambuf::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which) override {
-	if (dir == std::ios_base::cur) {
-	    gbump (off);
-	} else if (dir == std::ios_base::end) {
-	    setg (eback (), egptr () + off, egptr ());
-	} else if (dir == std::ios_base::beg) {
-	    setg (eback (), eback () + off, egptr ());
+	const std::streambuf::pos_type failed = std::streambuf::off_type (-1);
+	if (!(which & std::ios_base::in)) {
+	    return failed;
 	}
-	return gptr () - eback ();
+
+	const std::streambuf::off_type length = egptr () - eback ();
+	std::streambuf::off_type origin = 0;
+	if (dir == std::ios_base::cur) {
+	    origin = gptr () - eback ();
+	} else if (dir == std::ios_base::end) {
+	    origin = length;
+	} else if (dir != std::ios_base::beg) {
+	    return failed;
+	}
+
+	if (off < -origin || off > length - origin) {
+	    return failed;
+	}
+	const auto position = origin + off;
+	setg (eback (), eback () + position, egptr ());
+	return position;
+    }
+
+    std::streambuf::pos_type seekpos (std::streambuf::pos_type pos, std::ios_base::openmode which) override {
+	return seekoff (static_cast<std::streambuf::off_type> (pos), std::ios_base::beg, which);
     }
 
     [[nodiscard]] size_t size () const { return this->egptr () - this->eback (); }
