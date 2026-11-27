@@ -9,15 +9,22 @@
 using namespace WallpaperEngine::Audio;
 
 int audio_read_thread (void* arg) {
-    SDL_mutex* waitMutex = SDL_CreateMutex ();
     auto* stream = static_cast<AudioStream*> (arg);
-    AVPacket* packet = av_packet_alloc ();
-    int ret = 0;
-
+    SDL_mutex* waitMutex = SDL_CreateMutex ();
     if (waitMutex == nullptr) {
-	sLog.exception ("Cannot create mutex for audio playback waiting");
+	sLog.error ("Cannot create mutex for audio playback waiting");
+	stream->queueDecoderFlush ();
+	return -1;
+    }
+    AVPacket* packet = av_packet_alloc ();
+    if (packet == nullptr) {
+	SDL_DestroyMutex (waitMutex);
+	sLog.error ("Cannot allocate packet for audio playback");
+	stream->queueDecoderFlush ();
+	return -1;
     }
 
+    int ret = 0;
     while (ret >= 0 && stream->getAudioContext ().getApplicationContext ().state.general.keepRunning
 	   && stream->isInitialized ()) {
 	// give the cpu some time to play the queued frames if there's enough info there
@@ -307,6 +314,9 @@ void AudioStream::loadCustomContent (const char* filename) {
 
     // initialize an SDL thread to read the file
     this->m_audioThread = SDL_CreateThread (audio_read_thread, filename, this);
+    if (this->m_audioThread == nullptr) {
+	sLog.exception ("Cannot create audio playback reader: ", SDL_GetError ());
+    }
 }
 
 void AudioStream::initialize () {
@@ -316,6 +326,9 @@ void AudioStream::initialize () {
 #else
     this->m_queue->packetList = av_fifo_alloc2 (1, sizeof (MyAVPacketList), AV_FIFO_FLAG_AUTO_GROW);
 #endif
+    if (this->m_queue->packetList == nullptr) {
+	sLog.exception ("Cannot allocate audio packet queue");
+    }
 
     this->configureResampler ();
 
@@ -323,6 +336,9 @@ void AudioStream::initialize () {
     this->m_queue->mutex = SDL_CreateMutex ();
     this->m_queue->cond = SDL_CreateCond ();
     this->m_queue->wait = SDL_CreateCond ();
+    if (this->m_queue->mutex == nullptr || this->m_queue->cond == nullptr || this->m_queue->wait == nullptr) {
+	sLog.exception ("Cannot initialize audio packet queue synchronization: ", SDL_GetError ());
+    }
 
     this->m_decodeFrame = av_frame_alloc ();
     this->m_decodePacket = av_packet_alloc ();
@@ -407,7 +423,7 @@ void AudioStream::queuePacket (AVPacket* pkt) {
     AVPacket* clone = av_packet_alloc ();
 
     if (clone == nullptr) {
-	av_packet_unref (clone);
+	av_packet_unref (pkt);
 	return;
     }
 
@@ -450,9 +466,10 @@ bool AudioStream::doQueue (AVPacket* pkt, const bool flushDecoder) {
     }
 #endif
 
-    this->m_queue->nb_packets++;
-    this->m_queue->size += (entry.packet != nullptr ? entry.packet->size : 0) + sizeof (entry);
-    this->m_queue->duration += entry.packet != nullptr ? entry.packet->duration : 0;
+    this->m_queue->nb_packets.fetch_add (1, std::memory_order_relaxed);
+    this->m_queue->size.fetch_add ((entry.packet != nullptr ? entry.packet->size : 0) + sizeof (entry),
+				   std::memory_order_relaxed);
+    this->m_queue->duration.fetch_add (entry.packet != nullptr ? entry.packet->duration : 0, std::memory_order_relaxed);
 
     SDL_CondSignal (this->m_queue->cond);
 
@@ -477,9 +494,10 @@ bool AudioStream::dequeuePacket () {
 #endif
 
     if (ret >= 0) {
-	this->m_queue->nb_packets--;
-	this->m_queue->size -= (entry.packet != nullptr ? entry.packet->size : 0) + sizeof (entry);
-	this->m_queue->duration -= entry.packet != nullptr ? entry.packet->duration : 0;
+	this->m_queue->nb_packets.fetch_sub (1, std::memory_order_relaxed);
+	this->m_queue->size.fetch_sub ((entry.packet != nullptr ? entry.packet->size : 0) + sizeof (entry),
+				       std::memory_order_relaxed);
+	this->m_queue->duration.fetch_sub (entry.packet != nullptr ? entry.packet->duration : 0, std::memory_order_relaxed);
 
 	if (entry.flushDecoder) {
 	    this->m_decoderFlushPending = true;
@@ -526,9 +544,9 @@ ReadStreamSharedPtr& AudioStream::getBuffer () { return this->m_buffer; }
 
 SDL_cond* AudioStream::getWaitCondition () const { return this->m_queue->wait; }
 
-size_t AudioStream::getQueueSize () const { return this->m_queue->size; }
+size_t AudioStream::getQueueSize () const { return this->m_queue->size.load (std::memory_order_relaxed); }
 
-int AudioStream::getQueuePacketCount () const { return this->m_queue->nb_packets; }
+int AudioStream::getQueuePacketCount () const { return this->m_queue->nb_packets.load (std::memory_order_relaxed); }
 
 AVRational AudioStream::getTimeBase () const {
     if (this->m_audioStream == NO_AUDIO_STREAM) {
@@ -538,9 +556,9 @@ AVRational AudioStream::getTimeBase () const {
     return this->m_formatContext->streams[this->m_audioStream]->time_base;
 }
 
-int64_t AudioStream::getQueueDuration () const { return this->m_queue->duration; }
+int64_t AudioStream::getQueueDuration () const { return this->m_queue->duration.load (std::memory_order_relaxed); }
 
-bool AudioStream::isQueueEmpty () const { return this->m_queue->nb_packets == 0; }
+bool AudioStream::isQueueEmpty () const { return this->getQueuePacketCount () == 0; }
 
 SDL_mutex* AudioStream::getMutex () const { return this->m_queue->mutex; }
 

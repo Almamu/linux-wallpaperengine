@@ -273,9 +273,10 @@ private:
 #else
 	AVFifo* packetList = nullptr;
 #endif
-	int nb_packets = 0;
-	size_t size = 0;
-	int64_t duration = 0;
+	// These counts are also read outside the queue lock by the reader and mixer.
+	std::atomic<int> nb_packets = 0;
+	std::atomic<size_t> size = 0;
+	std::atomic<int64_t> duration = 0;
 	SDL_mutex* mutex = nullptr;
 	SDL_cond* wait = nullptr;
 	SDL_cond* cond = nullptr;
