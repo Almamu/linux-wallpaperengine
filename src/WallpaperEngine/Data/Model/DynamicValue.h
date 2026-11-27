@@ -96,6 +96,7 @@ public:
      * @return The de-register function to call when the listener is no longer needed
      */
     void connect (DynamicValue* other);
+    void connect (DynamicValue* other, std::optional<UnderlyingType> scalarVectorType);
 
     /**
      * Disconnects the current instance from all the connections to stop notifying
@@ -140,6 +141,7 @@ private:
      * Notifies any listeners that the value has changed
      */
     void propagate (UpdateSource source) const;
+    void copyValue (const DynamicValue& other, UpdateSource source, UnderlyingType type);
 
     std::shared_ptr<bool> m_aliveFlag = std::make_shared<bool> (true);
     std::list<std::function<void (const DynamicValue&, UpdateSource)>> m_listeners = {};

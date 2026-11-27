@@ -212,7 +212,19 @@ TEST_CASE ("Slider user bindings splat every vector component", "[user-property-
 		{ { "scalar", property } });
 	    authored[i] = UserSettingParser::parse (JSON { { "value", seeds[i] } }, {});
 	}
+	const auto scalar = UserSettingParser::parse (
+	    JSON { { "value", 0.125f }, { "user", "scalar" } }, { { "scalar", property } });
 	const auto check = [&] (float expected) {
+	    CHECK (bound[0]->value->getType () == DynamicValue::Vec2);
+	    CHECK (bound[1]->value->getType () == DynamicValue::Vec3);
+	    CHECK (bound[2]->value->getType () == DynamicValue::Vec4);
+	    CHECK (bound[0]->value->getVec4 () == glm::vec4 (expected));
+	    CHECK (bound[1]->value->getVec4 () == glm::vec4 (expected));
+	    CHECK (scalar->value->getType () == DynamicValue::Float);
+	    CHECK (scalar->value->getFloat () == expected);
+	    CHECK (authored[0]->value->getType () == DynamicValue::Vec2);
+	    CHECK (authored[1]->value->getType () == DynamicValue::Vec3);
+	    CHECK (authored[2]->value->getType () == DynamicValue::Vec4);
 	    CHECK (bound[0]->value->getVec2 () == glm::vec2 (expected, expected));
 	    CHECK (bound[1]->value->getVec3 () == glm::vec3 (expected, expected, expected));
 	    CHECK (bound[2]->value->getVec4 () == glm::vec4 (expected, expected, expected, expected));
@@ -224,7 +236,9 @@ TEST_CASE ("Slider user bindings splat every vector component", "[user-property-
 	std::array<DynamicValue::UpdateSource, 3> sources;
 	std::array<std::function<void ()>, 3> disconnect;
 	for (size_t i = 0; i < bound.size (); ++i) {
-	    disconnect[i] = bound[i]->value->listen ([&, i] (const DynamicValue&, DynamicValue::UpdateSource source) {
+	    disconnect[i] = bound[i]->value->listen ([&, i] (const DynamicValue& value, DynamicValue::UpdateSource source) {
+		const DynamicValue::UnderlyingType type[] = { DynamicValue::Vec2, DynamicValue::Vec3, DynamicValue::Vec4 };
+		CHECK (value.getType () == type[i]);
 		sources[i] = source;
 	    });
 	}

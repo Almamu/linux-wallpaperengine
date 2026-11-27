@@ -138,7 +138,12 @@ UserSettingUniquePtr UserSettingParser::parse (const json& data, const Propertie
 	    value->attachCondition (condition.value ());
 	}
 
-	value->connect (property.get ());
+	// Sliders splat into authored vector values. Keep that shape for SceneScript
+	// while retaining the slider's existing numeric lanes and update source.
+	const auto type = value->getType ();
+	const bool vectorSlider = !expectColor && !condition && property->is<PropertySlider> ()
+	    && (type == DynamicValue::Vec2 || type == DynamicValue::Vec3 || type == DynamicValue::Vec4);
+	value->connect (property.get (), vectorSlider ? std::optional { type } : std::nullopt);
     }
 
     return std::make_unique<UserSetting> (UserSetting {

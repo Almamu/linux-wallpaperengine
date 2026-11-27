@@ -239,6 +239,10 @@ void DynamicValue::update (const Model::Color& newValue, UpdateSource source) {
 }
 
 void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
+    this->copyValue (other, source, other.getType ());
+}
+
+void DynamicValue::copyValue (const DynamicValue& other, UpdateSource source, UnderlyingType type) {
     this->m_vec2 = other.getVec2 ();
     this->m_vec3 = other.getVec3 ();
     this->m_vec4 = other.getVec4 ();
@@ -246,7 +250,7 @@ void DynamicValue::update (const DynamicValue& other, UpdateSource source) {
     this->m_int = other.getInt ();
     this->m_bool = other.getBool ();
     this->m_string = other.getString ();
-    this->m_type = other.getType ();
+    this->m_type = type;
 
     if (this->m_condition.has_value () && other.getType () == UnderlyingType::String) {
 	const bool boolValue = this->m_condition.value ().condition == other.getString ();
@@ -286,12 +290,17 @@ std::function<void ()> DynamicValue::listen (const std::function<void (const Dyn
     };
 }
 
-void DynamicValue::connect (DynamicValue* other) {
-    const auto lambda = [this] (const DynamicValue& other, UpdateSource source) {
+void DynamicValue::connect (DynamicValue* other) { this->connect (other, std::nullopt); }
+
+void DynamicValue::connect (DynamicValue* other, std::optional<UnderlyingType> scalarVectorType) {
+    const auto lambda = [this, scalarVectorType] (const DynamicValue& other, UpdateSource source) {
 	// null is a special case, copying everything to 0 is different,
 	// so calling the update without parameters is required
-	if (other.getType () == UnderlyingType::Null) {
+	const auto type = other.getType ();
+	if (type == UnderlyingType::Null) {
 	    this->update (source);
+	} else if (scalarVectorType && (type == UnderlyingType::Float || type == UnderlyingType::Int)) {
+	    this->copyValue (other, source, *scalarVectorType);
 	} else {
 	    this->update (other, source);
 	}
