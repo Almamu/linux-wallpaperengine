@@ -1532,6 +1532,11 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
 	if (!module.initialized || (target != nullptr && target != &module)) {
 	    continue;
 	}
+	if (!media.available && !module.lastMedia.has_value ()) {
+	    // Remember the empty baseline for the first real change.
+	    module.lastMedia = media;
+	    continue;
+	}
 	auto* previous = this->m_runningModule;
 	ScopeGuard restore ([&] { this->m_runningModule = previous; });
 	this->m_runningModule = &module;
@@ -1542,7 +1547,7 @@ void ScriptEngine::notifyMediaUpdate (const Media::MediaSource::MediaInfo& media
 	    }
 	    JS_FreeValue (ctx, result);
 	};
-	// Newly initialized modules intentionally receive the complete current state.
+	// Newly initialized modules receive a complete snapshot when media is available.
 	// Later position polls must not restart cover transitions or playback handlers.
 	const auto& last = module.lastMedia;
 	const bool initial = target != nullptr || !last.has_value ();
