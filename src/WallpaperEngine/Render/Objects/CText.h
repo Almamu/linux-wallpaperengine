@@ -78,6 +78,7 @@ struct TextShapedGlyph {
     int xOffset;
     int yOffset;
     bool safeBreak;
+    float inkLeft = right; // equal to right when the glyph has no ink
 };
 
 struct TextShapedLine {
@@ -88,6 +89,8 @@ struct TextShapedLine {
 std::vector<TextShapedGlyph> shapeTextLine (
     const std::string& text, const std::function<FT_Face (uint32_t)>& fontForGlyph
 );
+float measureMsdfTextRowWidth (const std::vector<TextShapedGlyph>& glyphs, float spacing);
+float computeTextRowOffset (const std::string& align, float width, float widest, bool roundCenter);
 std::vector<TextShapedLine> layoutShapedTextLines (
     const std::string& text, const TextLayoutLimits& limits,
     const std::function<std::vector<TextShapedGlyph> (const std::string&)>& shape, float spacing = 0.0f

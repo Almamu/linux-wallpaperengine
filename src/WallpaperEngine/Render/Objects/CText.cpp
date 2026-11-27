@@ -229,6 +229,7 @@ std::vector<TextShapedGlyph> WallpaperEngine::Render::Objects::shapeTextLine (
             const int xOffset = positions[i].x_offset >> 6;
             const int yOffset = positions[i].y_offset >> 6;
             float right = static_cast<float> (xOffset);
+            float left = right;
             if (FT_Load_Glyph (face, infos[i].codepoint, FT_LOAD_NO_BITMAP) == 0) {
                 FT_Glyph glyph;
                 if (FT_Get_Glyph (face->glyph, &glyph) == 0) {
@@ -236,17 +237,43 @@ std::vector<TextShapedGlyph> WallpaperEngine::Render::Objects::shapeTextLine (
                     FT_Glyph_Get_CBox (glyph, FT_GLYPH_BBOX_PIXELS, &bounds);
                     FT_Done_Glyph (glyph);
                     right += static_cast<float> (bounds.xMax);
+                    left = bounds.yMin < bounds.yMax ? xOffset + static_cast<float> (bounds.xMin) : right;
                 }
             }
             glyphs.push_back ({ face, infos[i].codepoint, codes[source], offsets[source], offsets[start],
                 static_cast<float> (positions[i].x_advance >> 6), right, xOffset, yOffset,
-                (infos[i].mask & HB_GLYPH_FLAG_UNSAFE_TO_BREAK) == 0 });
+                (infos[i].mask & HB_GLYPH_FLAG_UNSAFE_TO_BREAK) == 0, left });
         }
         hb_buffer_destroy (buffer);
         hb_font_destroy (font);
         start = end;
     }
     return glyphs;
+}
+
+float WallpaperEngine::Render::Objects::measureMsdfTextRowWidth (
+    const std::vector<TextShapedGlyph>& glyphs, float spacing
+) {
+    float pen = 0.0f;
+    // The native row range starts at the pen origin. Blank glyphs still
+    // contribute their position, while the advance past the last glyph does not.
+    float left = 0.0f;
+    float right = 0.0f;
+    for (const auto& glyph : glyphs) {
+        left = std::min (left, pen + glyph.inkLeft);
+        right = std::max (right, pen + glyph.right);
+        pen += glyph.advance + spacing;
+    }
+    return right - left;
+}
+
+float WallpaperEngine::Render::Objects::computeTextRowOffset (
+    const std::string& align, float width, float widest, bool roundCenter
+) {
+    if (align == "left") return 0.0f;
+    if (align == "right") return widest - width;
+    const float center = (widest - width) * 0.5f;
+    return roundCenter ? std::round (center) : center;
 }
 
 std::vector<TextShapedLine> WallpaperEngine::Render::Objects::layoutShapedTextLines (
@@ -1457,23 +1484,17 @@ void CText::rebuildTextureFrom (const std::string& text) {
     }
 
     float maxLineWidth = 0.0f;
+    float fallbackWidth = 0.0f;
     for (auto& line : lines) {
         for (const auto& glyph : line.glyphs) line.width += glyph.advance + m_lastSpacing.x;
+        fallbackWidth = std::max (fallbackWidth, line.width);
+        if (m_usingMsdf) line.width = measureMsdfTextRowWidth (line.glyphs, m_lastSpacing.x);
 	maxLineWidth = std::max (maxLineWidth, line.width);
     }
 
     // The same alignment also controls how shorter rows sit inside the generated block.
     for (auto& line : lines) {
-	if (m_text.alignment == "left") {
-	    line.x = 0;
-	} else if (m_text.alignment == "right") {
-	    line.x = maxLineWidth - line.width;
-	} else {
-	    line.x = (maxLineWidth - line.width) * 0.5f;
-	    if (m_lastSpacing.x == 0.0f) {
-		line.x = std::round (line.x);
-	    }
-	}
+	line.x = computeTextRowOffset (m_text.alignment, line.width, maxLineWidth, !m_usingMsdf && m_lastSpacing.x == 0.0f);
     }
 
     // FreeType translates scalable glyph outlines at 26.6 precision. Keep the
@@ -1551,7 +1572,7 @@ void CText::rebuildTextureFrom (const std::string& text) {
 	// A scripted layer is initially represented by a space. Keep a meaningful,
 	// transparent surface and native font-metric alignment until it gets real glyphs.
 	inkLeft = 0;
-	inkRight = std::max (1, static_cast<int> (std::ceil (maxLineWidth)));
+	inkRight = std::max (1, static_cast<int> (std::ceil (fallbackWidth)));
 	const float lastBaseline = static_cast<float> (lines.size () - 1) * lineHeight;
 	inkTop = -ascender + static_cast<int> (std::floor (std::min (0.0f, lastBaseline)));
 	inkBottom = -descender + static_cast<int> (std::ceil (std::max (0.0f, lastBaseline)));

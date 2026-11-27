@@ -239,3 +239,42 @@ TEST_CASE ("text horizontal alignment includes the pen origin before positive be
     CHECK (computeTextAlignmentOffset ("left", "center", bounds, 63, -16, 78, 1).x == 29.0f);
     CHECK (computeTextAlignmentOffset ("right", "center", bounds, 63, -16, 78, 1).x == -23.0f);
 }
+
+TEST_CASE ("MSDF text rows preserve the fractional center inferred from measured ink", "[text][msdf][alignment]") {
+    using WallpaperEngine::Render::Objects::measureMsdfTextRowWidth;
+    using WallpaperEngine::Render::Objects::TextShapedGlyph;
+
+    const auto row = [] (float advance, float left, float right) {
+        return std::vector<TextShapedGlyph> { { .advance = advance, .right = right, .inkLeft = left } };
+    };
+    const auto time = row (143.0f, 0.0f, 143.0f);
+    const auto date = row (169.0f, -1.0f, 169.0f);
+    const auto weekday = row (138.0f, 0.0f, 138.0f);
+    CHECK (measureMsdfTextRowWidth (time, 0.0f) == 143.0f);
+    CHECK (measureMsdfTextRowWidth (date, 0.0f) == 170.0f);
+    CHECK (measureMsdfTextRowWidth (weekday, 0.0f) == 138.0f);
+    CHECK ((measureMsdfTextRowWidth (date, 0.0f) - measureMsdfTextRowWidth (time, 0.0f)) * 0.5f == 13.5f);
+}
+
+TEST_CASE ("MSDF row width includes the origin and blank glyph pens", "[text][msdf][alignment]") {
+    using WallpaperEngine::Render::Objects::computeTextRowOffset;
+    using WallpaperEngine::Render::Objects::measureMsdfTextRowWidth;
+    using WallpaperEngine::Render::Objects::TextShapedGlyph;
+
+    const std::vector<TextShapedGlyph> leadingBearing {
+        { .advance = 21.0f, .right = 23.0f, .inkLeft = 2.0f },
+        { .advance = 21.0f, .right = 20.0f, .inkLeft = 0.0f },
+    };
+    const TextShapedGlyph space { .advance = 7.0f, .right = 0.0f, .inkLeft = 0.0f };
+    const std::vector<TextShapedGlyph> trailingSpaces {
+        { .advance = 22.0f, .right = 22.0f, .inkLeft = -1.0f }, space, space, space,
+    };
+    REQUIRE (measureMsdfTextRowWidth (leadingBearing, 0.0f) == 41.0f);
+    const float width = measureMsdfTextRowWidth (trailingSpaces, 0.0f);
+    REQUIRE (width == 37.0f);
+    CHECK (computeTextRowOffset ("left", width, 127.0f, false) == 0.0f);
+    CHECK (computeTextRowOffset ("center", width, 127.0f, false) == 45.0f);
+    CHECK (computeTextRowOffset ("right", width, 127.0f, false) == 90.0f);
+    CHECK (computeTextRowOffset ("center", 36.0f, 127.0f, false) == 45.5f);
+    CHECK (computeTextRowOffset ("center", 36.0f, 127.0f, true) == 46.0f);
+}
