@@ -297,6 +297,7 @@ private:
     /** Presentation-only fog; hidden image composites export its input. */
     Effects::CPass* m_fogPass = nullptr;
     Effects::CPass* m_selfDependencyPresentation = nullptr;
+    Effects::CPass* m_retainedEffectPresentation = nullptr;
     glm::mat4 m_prelightingModelMatrix = glm::mat4 (1.0f);
 
     /** rotation-only local->world matrix (and its inverse) fed to effect passes as

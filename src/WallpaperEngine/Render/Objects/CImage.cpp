@@ -42,6 +42,7 @@ using namespace WallpaperEngine::Data::Utils;
 
 namespace {
 const glm::vec4 neutralCompositeColor (1.0f);
+const glm::mat3 identityNormal (1.0f);
 
 bool usesLegacyAnimationUvs (const Render::TextureProvider& texture) {
     const auto* compiled = dynamic_cast<const Render::CTexture*> (&texture);
@@ -2025,8 +2026,6 @@ void CImage::setup () {
     // manipulate a_Position in image space (e.g. pulse, foliagesway), so hijacking the last
     // effect pass with scene-space puppet geometry mangles the mesh (gojo in 3100265648);
     // a passthrough pass is position-neutral and safe to warp
-    // A stable final pass also lets scripted effects switch without moving scene
-    // geometry or depth/blend state onto a different effect shader.
     // The color-blending pass already provides stable final geometry. It must
     // sample the background in scene coordinates, not fill a local image target
     // with a miniature copy of the entire scene.
@@ -2036,10 +2035,18 @@ void CImage::setup () {
         && !model.fullscreen && !model.passthrough && !model.solidlayer && !this->isCompositionLayer ()
         && dynamic_cast<const CTexture*> (this->m_texture.get ()) != nullptr && !this->m_texture->isAnimated ()
         && std::ranges::find (dependencies, this->m_image.id) != dependencies.end ();
+    const bool dynamicEffects = !m_passVisibility.empty () && m_passes.size () > 1;
+    const bool separatePresentation = finalFog || selfDependency || isCompositionLayer ()
+	|| (m_hasPuppetMesh && m_passes.size () > 1)
+	|| (dynamicEffects && (model.fullscreen || model.passthrough || model.solidlayer
+	    || m_prelightingPass != nullptr || !m_swapCommands.empty ()
+	    || std::ranges::any_of (m_passes, [] (const auto* pass) { return pass->getTarget ().has_value (); })));
+    // On an ordinary image the last active effect uses the scene quad directly.
+    // Keep a separate draw available if a consumer needs its uncomposited texture.
+    const bool retainedPresentation = dynamicEffects && !separatePresentation;
     // A self-dependent image finishes its authored chain in its local target before compositing.
     if ((debug.baseOnly || this->m_image.colorBlendMode->value->getInt () <= 0)
-        && (finalFog || selfDependency || this->isCompositionLayer ()
-	    || ((this->m_hasPuppetMesh || !m_passVisibility.empty ()) && this->m_passes.size () > 1))) {
+	&& (separatePresentation || retainedPresentation)) {
 	const bool hasClipping = this->getImage ().model->puppetMesh.has_value ()
 	    && !this->getImage ().model->puppetMesh->clippingDescriptors.empty ();
 	this->m_materials.compatibilityMaterials.emplace_back (
@@ -2060,36 +2067,16 @@ void CImage::setup () {
 	this->m_passes.push_back (new CPass (
 	    *this, std::make_shared<FBOProvider> (this),
 	    **this->m_materials.compatibilityMaterials.back ()->passes.begin (),
-	    *this->m_materials.compatibilityOverrides.back (), std::nullopt, std::nullopt
+	    *this->m_materials.compatibilityOverrides.back (), std::nullopt, std::nullopt, {}, retainedPresentation
 	));
-	// The source already applied the image tint and opacity.
-	this->m_passes.back ()->addUniform ("g_Color4", &neutralCompositeColor);
+	if (retainedPresentation) {
+	    this->m_retainedEffectPresentation = this->m_passes.back ();
+	} else {
+	    // The source already applied the image tint and opacity.
+	    this->m_passes.back ()->addUniform ("g_Color4", &neutralCompositeColor);
+	}
 	if (finalFog) this->m_fogPass = this->m_passes.back ();
 	if (selfDependency) this->m_selfDependencyPresentation = this->m_passes.back ();
-    }
-
-    // If there is more than one pass, the first pass renders only to an intermediate FBO while the
-    // last pass draws the layer geometry into the scene. Move explicitly enabled depth state from
-    // the base material to that final composite pass. Keeping an effect's usual depthtest=disabled
-    // there lets a depth-tested background layer overwrite 3D models in front of it (Ventura 4K,
-    // Workshop 3298178668). Leave all-disabled 2D effect chains untouched: forcing their state
-    // breaks full-resolution blur results followed by another effect (Legendaries of Hoenn,
-    // Workshop 3101147701).
-    if (this->m_passes.size () > 1) {
-	const auto first = this->m_passes.begin ();
-	const auto last = std::find_if (m_passes.rbegin (), m_passes.rend (),
-	    [this] (auto* pass) { return !m_copyPasses.contains (pass); });
-
-	(*last)->setBlendingMode ((*first)->getBlendingMode ());
-	(*first)->setBlendingMode (BlendingMode_Normal);
-	if ((*first)->getDepthtestMode () == DepthtestMode_Enabled) {
-	    (*last)->setDepthtestMode (DepthtestMode_Enabled);
-	    (*first)->setDepthtestMode (DepthtestMode_Disabled);
-	}
-	if ((*first)->getDepthwriteMode () == DepthwriteMode_Enabled) {
-	    (*last)->setDepthwriteMode (DepthwriteMode_Enabled);
-	    (*first)->setDepthwriteMode (DepthwriteMode_Disabled);
-	}
     }
 
     CRenderable::setup ();
@@ -2099,7 +2086,10 @@ void CImage::setup () {
 }
 
 void CImage::updateEffectVisibility () {
+    const bool retainedPresentation = m_retainedEffectPresentation != nullptr
+	&& (getScene ().isRenderTargetRetained (m_mainFBO) || getScene ().isRenderTargetRetained (m_subFBO));
     const auto enabled = [&] (Effects::CPass* pass) {
+	if (pass == m_retainedEffectPresentation) return retainedPresentation;
 	const auto entry = m_passVisibility.find (pass);
 	return entry == m_passVisibility.end ()
 	    || (entry->second->value->getBool () && !m_failedEffects.contains (entry->second));
@@ -2119,6 +2109,7 @@ void CImage::updateEffectVisibility () {
 	if (!enabled (pass)) continue;
 	try {
 	    pass->initialize ();
+	    if (pass == m_retainedEffectPresentation) pass->addUniform ("g_Color4", &neutralCompositeColor);
 	    this->getScene ().loadingCheckpoint ();
 	} catch (const std::exception& error) {
 	    const auto entry = m_passVisibility.find (pass);
@@ -2143,6 +2134,9 @@ bool CImage::usesReverseProjection (const glm::mat4* projection) const {
 void CImage::setupPasses () {
     m_currentMainFBO = m_mainFBO;
     m_currentSubFBO = m_subFBO;
+    if (m_finalPassDrawsToScene) {
+	m_finalPassRouting->pass->addUniform ("g_NormalModelMatrix", &identityNormal);
+    }
     m_finalPassRouting.reset ();
     m_finalPassDrawsToScene = false;
     // do a pass on everything and setup proper inputs and values
@@ -2155,6 +2149,29 @@ void CImage::setupPasses () {
     auto end = this->m_activePasses.end ();
     const auto lastMaterial = std::find_if (m_activePasses.rbegin (), m_activePasses.rend (),
 	[this] (auto* pass) { return !m_copyPasses.contains (pass); });
+    // A pass that was final can become intermediate after an effect toggle.
+    // Start from authored state, then apply the base blend and enabled depth
+    // modes to the current last material so layer depth ordering still holds.
+    for (auto* pass : m_activePasses) {
+	const auto& material = pass->getPass ();
+	pass->setBlendingMode (material.blending);
+	pass->setDepthtestMode (material.depthtest);
+	pass->setDepthwriteMode (material.depthwrite);
+    }
+    if (lastMaterial != m_activePasses.rend () && *lastMaterial != m_activePasses.front ()) {
+	auto* firstPass = m_activePasses.front ();
+	auto* lastPass = *lastMaterial;
+	lastPass->setBlendingMode (firstPass->getBlendingMode ());
+	firstPass->setBlendingMode (BlendingMode_Normal);
+	if (firstPass->getDepthtestMode () == DepthtestMode_Enabled) {
+	    lastPass->setDepthtestMode (DepthtestMode_Enabled);
+	    firstPass->setDepthtestMode (DepthtestMode_Disabled);
+	}
+	if (firstPass->getDepthwriteMode () == DepthwriteMode_Enabled) {
+	    lastPass->setDepthwriteMode (DepthwriteMode_Enabled);
+	    firstPass->setDepthwriteMode (DepthwriteMode_Disabled);
+	}
+    }
     bool first = true;
     bool inTargetEffectSequence = false;
     std::shared_ptr<const TextureProvider> effectInput = nullptr;
@@ -2190,10 +2207,9 @@ void CImage::setupPasses () {
 	pass->setEffectTextureProjectionMatrix (
 	    &this->m_effectTextureProjectionMatrix, &this->m_effectTextureProjectionMatrixInverse
 	);
-	if (!isFirstPass) {
-	    // Intermediate quads draw in NDC, but background reads follow the layer's scene placement.
-	    pass->addUniform ("g_EffectModelViewProjectionMatrix", &this->m_framebufferReadProjection);
-	}
+	// Intermediate quads draw in NDC, but background reads follow the layer's scene placement.
+	pass->addUniform ("g_EffectModelViewProjectionMatrix",
+	    isFirstPass ? projection : &this->m_framebufferReadProjection);
 
 	writesToTarget = this->configurePassTarget (pass, drawTo, asInput, effectInput, inTargetEffectSequence);
 	if (!writesToTarget && this->shouldRenderFinalPass (lastMaterial != m_activePasses.rend () && pass == *lastMaterial)) {
@@ -2294,7 +2310,6 @@ void CImage::updateFinalPassVisibility (const bool force) {
 	pass->setModelMatrix (&this->m_modelMatrix);
 	pass->setViewProjectionMatrix (pass == this->m_prelightingPass
 	    ? &this->m_sceneViewProjectionMatrix : &this->m_viewProjectionMatrix);
-	static const glm::mat3 identityNormal (1.0f);
 	pass->addUniform ("g_NormalModelMatrix", &identityNormal);
 	pass->setGeometryCallback ({}, {}, {});
 	return;
