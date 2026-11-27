@@ -3,6 +3,7 @@
 #include <glm/vec2.hpp>
 
 #include <string_view>
+#include <variant>
 
 #include "CFBO.h"
 #include "WallpaperEngine/Data/Model/Effect.h"
@@ -21,6 +22,9 @@ public:
     );
     std::shared_ptr<CFBO> alias (const std::string& newName, const std::string& original);
     std::shared_ptr<CFBO> alias (const std::string& newName, std::shared_ptr<CFBO> original);
+    /** Expose a layer-owned target to the scene without extending its lifetime. */
+    void publish (const std::string& name, const std::shared_ptr<CFBO>& target);
+    void pruneExpiredTargets ();
     [[nodiscard]] std::shared_ptr<CFBO> find (const std::string& name) const;
 
     /** Set the scene supersampling factor inherited by child effect providers. */
@@ -50,7 +54,7 @@ private:
     const FBOProvider* m_parent;
     float m_renderScale = 1.0f;
     TextureFormat m_backbufferFormat = TextureFormat_ARGB8888;
-    std::map<std::string, std::shared_ptr<CFBO>> m_fbos = {};
+    std::map<std::string, std::variant<std::shared_ptr<CFBO>, std::weak_ptr<CFBO>>> m_fbos = {};
     /** Scene-local declared targets; physical storage belongs to its effect references. */
     mutable std::map<std::string, std::weak_ptr<CFBO>> m_sharedTargets = {};
 };

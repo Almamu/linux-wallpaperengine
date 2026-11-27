@@ -116,23 +116,39 @@ std::shared_ptr<CFBO> FBOProvider::create (
     const bool scalable = !isFixedSizeTarget (name);
     const auto scaledRealSize = calculateTargetSize (realSize, this->m_renderScale, scalable);
     const auto scaledTextureSize = calculateTargetSize (textureSize, this->m_renderScale, scalable);
-    return this->m_fbos[name] = std::make_shared<CFBO> (
-	       name, format, flags, scale, scaledRealSize.x, scaledRealSize.y, scaledTextureSize.x,
-	       scaledTextureSize.y, withDepthBuffer, depthTexture, samples, reverseDepth
-	   );
+    auto target = std::make_shared<CFBO> (
+	name, format, flags, scale, scaledRealSize.x, scaledRealSize.y, scaledTextureSize.x,
+	scaledTextureSize.y, withDepthBuffer, depthTexture, samples, reverseDepth
+    );
+    this->m_fbos[name] = target;
+    return target;
 }
 
 std::shared_ptr<CFBO> FBOProvider::alias (const std::string& newName, const std::string& original) {
-    return this->m_fbos[newName] = this->m_fbos[original];
+    return this->alias (newName, this->find (original));
 }
 
 std::shared_ptr<CFBO> FBOProvider::alias (const std::string& newName, std::shared_ptr<CFBO> original) {
-    return this->m_fbos[newName] = std::move (original);
+    this->m_fbos[newName] = original;
+    return original;
+}
+
+void FBOProvider::publish (const std::string& name, const std::shared_ptr<CFBO>& target) {
+    this->m_fbos[name] = std::weak_ptr<CFBO> (target);
+}
+
+void FBOProvider::pruneExpiredTargets () {
+    std::erase_if (this->m_fbos, [] (const auto& entry) {
+	const auto* published = std::get_if<std::weak_ptr<CFBO>> (&entry.second);
+	return published != nullptr && published->expired ();
+    });
+    std::erase_if (this->m_sharedTargets, [] (const auto& entry) { return entry.second.expired (); });
 }
 
 std::shared_ptr<CFBO> FBOProvider::find (const std::string& name) const {
     if (const auto it = this->m_fbos.find (name); it != this->m_fbos.end ()) {
-	return it->second;
+	if (const auto* owned = std::get_if<std::shared_ptr<CFBO>> (&it->second)) return *owned;
+	if (auto target = std::get<std::weak_ptr<CFBO>> (it->second).lock ()) return target;
     }
 
     if (this->m_parent == nullptr) {

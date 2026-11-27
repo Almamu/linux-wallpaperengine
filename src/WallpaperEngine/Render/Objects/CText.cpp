@@ -607,10 +607,12 @@ void CText::setupEffectChain () {
     const auto targetSize = FBOProvider::calculateTargetSize (surface, getScene ().getRenderScale ());
     if (m_publishedFBO == nullptr) {
         const std::string base = "_rt_imageLayerComposite_" + std::to_string (getId ());
-        m_publishedFBO = getScene ().create (
-            base + "_a", getScene ().getColorFormat (), TextureFlags_ClampUVs, 1, surface, surface
+        m_publishedFBO = std::make_shared<CFBO> (
+            base + "_a", getScene ().getColorFormat (), TextureFlags_ClampUVs, 1,
+            targetSize.x, targetSize.y, targetSize.x, targetSize.y
         );
-        getScene ().alias (base + "_b", m_publishedFBO);
+        getScene ().publish (m_publishedFBO->getName (), m_publishedFBO);
+        getScene ().publish (base + "_b", m_publishedFBO);
     } else {
         m_publishedFBO->resize (targetSize.x, targetSize.y);
     }
@@ -1813,8 +1815,7 @@ bool CText::isVolumetricBarrier () const {
     // then admits visible layers or retained/LED sources (image flags0x1100).
     return this->m_valid && !this->m_text.text->value->getString ().empty ()
 	&& (CObject::isVolumetricBarrier () || this->m_text.ledSource->value->getBool ()
-	    || (this->m_publishedFBO != nullptr
-		&& this->getScene ().isRenderTargetRetained (*this->m_publishedFBO)));
+	    || this->getScene ().isRenderTargetRetained (this->m_publishedFBO));
 }
 
 void CText::render () {

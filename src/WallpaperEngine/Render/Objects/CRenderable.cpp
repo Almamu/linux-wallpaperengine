@@ -31,7 +31,7 @@ void CRenderable::detectTexture (const Material& material) {
 		this->m_texture = this->getScene ().getMipMappedFramebuffer ();
 	    }
 	    if (const auto target = std::dynamic_pointer_cast<const CFBO> (this->m_texture)) {
-		this->getScene ().retainRenderTarget (*target);
+	    this->getScene ().retainRenderTarget (target);
 	    }
 	} else {
 	    this->m_texture = this->getScene ().resolveTexture (textureName);

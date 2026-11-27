@@ -799,6 +799,29 @@ TEST_CASE ("Automatic texture quality uses native scene and output thresholds", 
 }
 
 
+TEST_CASE ("published layer targets survive their producer only while a consumer owns them", "[.][gl][fbo][layer-target-lifetime]") {
+    TextureGLContext context;
+    using WallpaperEngine::Render::FBOProvider;
+    FBOProvider scene (nullptr);
+    const auto before = CFBO::getLiveCount ();
+    {
+        FBOProvider producer (&scene);
+        auto target = producer.create ("local", TextureFormat_ARGB8888, 0, 1, { 4, 4 }, { 4, 4 });
+        scene.publish ("layer", target);
+        scene.publish ("layer-alias", target);
+        CHECK (scene.find ("layer-alias") == target);
+        scene.alias ("consumer", "layer");
+    }
+    scene.pruneExpiredTargets ();
+    REQUIRE (scene.find ("layer"));
+    CHECK (CFBO::getLiveCount () == before + 1);
+    scene.alias ("consumer", std::shared_ptr<CFBO> {});
+    scene.pruneExpiredTargets ();
+    CHECK_FALSE (scene.find ("layer"));
+    CHECK_FALSE (scene.find ("layer-alias"));
+    CHECK (CFBO::getLiveCount () == before);
+}
+
 TEST_CASE ("declared effect storage shares per scene and releases with its last effect", "[.][gl][texture][fbo][sharing]") {
     TextureGLContext context;
     using WallpaperEngine::Render::FBOProvider;

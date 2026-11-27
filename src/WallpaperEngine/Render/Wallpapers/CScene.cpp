@@ -458,6 +458,13 @@ CScene::~CScene () {
     if (m_lightCookieSampler != GL_NONE) glDeleteSamplers (1, &m_lightCookieSampler);
 }
 
+void CScene::retainRenderTarget (const std::shared_ptr<const CFBO>& target) {
+    // Only published composites participate in hidden-layer render decisions.
+    if (target && target->getName ().starts_with ("_rt_imageLayerComposite_")) {
+	this->m_sampledRenderTargets.insert (target);
+    }
+}
+
 GLuint CScene::getLightCookieSampler () {
     if (m_lightCookieSampler == GL_NONE) {
 	glGenSamplers (1, &m_lightCookieSampler);
@@ -1031,8 +1038,9 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	    text->prepareRenderEffects ();
 	}
 	for (const int dependency : object->getObject ().dependencies) {
-	    m_sampledRenderTargets.insert ("_rt_imageLayerComposite_" + std::to_string (dependency) + "_a");
-	    m_sampledRenderTargets.insert ("_rt_imageLayerComposite_" + std::to_string (dependency) + "_b");
+	    const auto name = "_rt_imageLayerComposite_" + std::to_string (dependency);
+	    this->retainRenderTarget (this->find (name + "_a"));
+	    this->retainRenderTarget (this->find (name + "_b"));
 	}
     }
 
@@ -2311,6 +2319,7 @@ Render::CObject* CScene::createLayer (JSON layer, const std::string& workshopId)
 
 	Render::CObject* renderObject = this->createObject (*raw);
 	if (renderObject == nullptr) {
+	    this->pruneExpiredTargets ();
 	    return nullptr;
 	}
 
@@ -2321,6 +2330,7 @@ Render::CObject* CScene::createLayer (JSON layer, const std::string& workshopId)
 	    this->m_scriptEngine->initializeQueuedScripts (scriptable);
 	return renderObject;
     } catch (const std::exception& e) {
+	this->pruneExpiredTargets ();
 	sLog.error ("createLayer failed: ", e.what ());
 	return nullptr;
     }
@@ -2332,6 +2342,7 @@ bool CScene::destroyLayer (CObject* layer) {
 }
 
 void CScene::destroyQueuedLayers () {
+    if (m_layersToDestroy.empty ()) return;
     for (const int id : m_layersToDestroy) {
 	const auto it = m_objects.find (id);
 	if (it == m_objects.end ()) continue;
@@ -2346,6 +2357,8 @@ void CScene::destroyQueuedLayers () {
 	std::erase_if (m_runtimeLayerData, [id] (const auto& data) { return data->id == id; });
     }
     m_layersToDestroy.clear ();
+    this->pruneExpiredTargets ();
+    std::erase_if (m_sampledRenderTargets, [] (const auto& target) { return target.expired (); });
 }
 
 int CScene::getScriptableLayerIndex (const CObject* layer) const {

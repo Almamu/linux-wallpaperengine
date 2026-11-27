@@ -43,7 +43,7 @@ void CLight::initializeCookie () {
 	if (name.starts_with ("_rt_") || name.starts_with ("_alias_")) {
 	    m_cookie = getScene ().find (name);
 	    if (const auto target = std::dynamic_pointer_cast<const CFBO> (m_cookie)) {
-		getScene ().retainRenderTarget (*target);
+		getScene ().retainRenderTarget (target);
 	    }
 	} else {
 	    try { m_cookie = getScene ().resolveTexture (name); }

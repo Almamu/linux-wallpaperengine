@@ -155,7 +155,7 @@ std::shared_ptr<const CFBO> CPass::resolveFBO (const std::string& name) const {
 	sLog.exception ("Tried to resolve and FBO without any luck: ", name);
     }
 
-    this->m_renderable.getScene ().retainRenderTarget (*fbo);
+    this->m_renderable.getScene ().retainRenderTarget (fbo);
     return fbo;
 }
 

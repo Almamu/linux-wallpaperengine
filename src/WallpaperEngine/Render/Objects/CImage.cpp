@@ -226,10 +226,11 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     // shadowing that target leaves childless water/ripple layers with an empty input.
     if (this->isCompositionLayer () && scene.hasAuthoredChildren (image.id)) {
 	const glm::vec2 compositionSize = scene.getOutputSize ();
-	this->m_compositionFBO = scene.create (
+	this->m_compositionFBO = this->create (
 	    "_rt_compositionLayer_" + std::to_string (image.id), scene.getColorFormat (),
 	    TextureFlags_ClampUVs | interpolationFlags, 1.0f, compositionSize, compositionSize, true, false, 1, scene.getCamera ().usesReverseDepth ()
 	);
+	scene.publish (this->m_compositionFBO->getName (), this->m_compositionFBO);
 	// Every pass created for this image receives an FBOProvider parented to the
 	// image, so this alias also redirects an authored texture slot named
 	// _rt_FullFrameBuffer, not only CRenderable's primary input.
@@ -345,12 +346,14 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ().id << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ().id << "_b";
 
-    this->m_currentMainFBO = this->m_mainFBO = scene.create (
+    this->m_currentMainFBO = this->m_mainFBO = this->create (
 	nameA.str (), scene.getColorFormat (), this->m_texture->getFlags () | interpolationFlags, 1, m_effectSize, m_effectSize
     );
-    this->m_currentSubFBO = this->m_subFBO = scene.create (
+    this->m_currentSubFBO = this->m_subFBO = this->create (
 	nameB.str (), scene.getColorFormat (), this->m_texture->getFlags () | interpolationFlags, 1, m_effectSize, m_effectSize
     );
+    scene.publish (this->m_mainFBO->getName (), this->m_mainFBO);
+    scene.publish (this->m_subFBO->getName (), this->m_subFBO);
 
     // build a list of vertices, these might need some change later (or maybe invert the camera)
     GLfloat sceneSpacePosition[] = { this->m_pos.x, this->m_pos.y, 0.0f, this->m_pos.x, this->m_pos.w, 0.0f,
@@ -2402,8 +2405,8 @@ void CImage::prepareRenderEffects () {
 bool CImage::isVolumetricBarrier () const {
     // Native image gate 1401ea2d0 admits retained/LED sources even when hidden.
     return CObject::isVolumetricBarrier () || this->m_image.ledSource->value->getBool ()
-	|| (this->m_mainFBO != nullptr && this->getScene ().isRenderTargetRetained (*this->m_mainFBO))
-	|| (this->m_subFBO != nullptr && this->getScene ().isRenderTargetRetained (*this->m_subFBO));
+	|| this->getScene ().isRenderTargetRetained (this->m_mainFBO)
+	|| this->getScene ().isRenderTargetRetained (this->m_subFBO);
 }
 
 void CImage::render () {
@@ -2420,8 +2423,8 @@ void CImage::render () {
     size_t renderPassCount = this->m_passes.size ();
     if (!this->m_finalPassDrawsToScene && !this->m_hasPuppetMesh && this->m_compositionFBO == nullptr
 	&& !this->m_image.ledSource->value->getBool ()
-	&& !this->getScene ().isRenderTargetRetained (*this->m_mainFBO)
-	&& !this->getScene ().isRenderTargetRetained (*this->m_subFBO)) {
+	&& !this->getScene ().isRenderTargetRetained (this->m_mainFBO)
+	&& !this->getScene ().isRenderTargetRetained (this->m_subFBO)) {
 	// Keep the complete prefix feeding persistent targets and swap commands.
 	// Only the unused presentation tail can be dropped: a hidden fluid/ripple
 	// simulation must still see the same inputs and advance every frame.

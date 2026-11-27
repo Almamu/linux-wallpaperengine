@@ -112,10 +112,10 @@ public:
     [[nodiscard]] static std::optional<glm::vec2> prepareStaticAutoCollisionBounds (const Scene& scene);
     /** Previous completed scene, before bloom; allocated only when a material requests it. */
     [[nodiscard]] std::shared_ptr<CFBO> getMipMappedFramebuffer ();
-    /** Retain hidden layer outputs referenced by material/shader texture inputs. */
-    void retainRenderTarget (const CFBO& target) { m_sampledRenderTargets.insert (target.getName ()); }
-    [[nodiscard]] bool isRenderTargetRetained (const CFBO& target) const {
-	return m_sampledRenderTargets.contains (target.getName ());
+    /** Keep the producer drawing hidden outputs sampled by material/shader inputs. */
+    void retainRenderTarget (const std::shared_ptr<const CFBO>& target);
+    [[nodiscard]] bool isRenderTargetRetained (const std::shared_ptr<const CFBO>& target) const {
+	return m_sampledRenderTargets.contains (target);
     }
     [[nodiscard]] glm::ivec2 getFramebufferSize () const override;
     [[nodiscard]] WallpaperState::TextureUVs getPresentationUVs () const override;
@@ -333,7 +333,7 @@ private:
     void updateVideoActivity ();
     mutable std::map<std::string, std::shared_ptr<const CTexture>> m_userTextures;
     std::vector<Objects::Effects::CPass*> m_userTexturePasses;
-    std::set<std::string> m_sampledRenderTargets;
+    std::set<std::weak_ptr<const CFBO>, std::owner_less<>> m_sampledRenderTargets;
     /** Release raw-owned render objects, including during constructor unwinding. */
     void destroyObjects () noexcept;
     void destroyQueuedLayers ();
