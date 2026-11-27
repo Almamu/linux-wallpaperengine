@@ -344,6 +344,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     this->m_pos.z -= scene_width / 2;
     this->m_pos.w = scene_height / 2 - this->m_pos.w;
 
+    this->m_hasPuppetMesh = this->loadPuppetMesh (size);
+
     // register both FBOs into the scene
     std::ostringstream nameA, nameB;
 
@@ -351,11 +353,13 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     nameA << "_rt_imageLayerComposite_" << this->getImage ().id << "_a";
     nameB << "_rt_imageLayerComposite_" << this->getImage ().id << "_b";
 
+    const uint32_t targetFlags = this->usesAnimatedMeshComposite () ? TextureFlags_ClampUVs
+	: this->m_texture->getFlags () | interpolationFlags;
     this->m_currentMainFBO = this->m_mainFBO = this->create (
-	nameA.str (), scene.getColorFormat (), this->m_texture->getFlags () | interpolationFlags, 1, m_effectSize, m_effectSize
+	nameA.str (), scene.getColorFormat (), targetFlags, 1, m_effectSize, m_effectSize
     );
     this->m_currentSubFBO = this->m_subFBO = this->create (
-	nameB.str (), scene.getColorFormat (), this->m_texture->getFlags () | interpolationFlags, 1, m_effectSize, m_effectSize
+	nameB.str (), scene.getColorFormat (), targetFlags, 1, m_effectSize, m_effectSize
     );
     scene.publish (this->m_mainFBO->getName (), this->m_mainFBO);
     scene.publish (this->m_subFBO->getName (), this->m_subFBO);
@@ -459,8 +463,6 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
-    this->m_hasPuppetMesh = this->loadPuppetMesh (size);
-
     // The native image flags select an inset only for ordinary scene quads.
     // Preserve the existing UV conventions for atlas frames and movie textures.
     const auto* source = dynamic_cast<const CTexture*> (this->m_texture.get ());
@@ -544,6 +546,11 @@ CImage::~CImage () {
 	    glDeleteBuffers (1, buffer);
 	}
     }
+}
+
+bool CImage::usesAnimatedMeshComposite () const {
+    return this->m_hasPuppetMesh && this->m_puppetBlendWeights.empty () && this->m_puppetOverlayIndexCount == 0
+	&& this->m_texture->isAnimated ();
 }
 
 bool CImage::loadPuppetMesh (const glm::vec2& size) {
@@ -2043,8 +2050,10 @@ void CImage::setup () {
         && dynamic_cast<const CTexture*> (this->m_texture.get ()) != nullptr && !this->m_texture->isAnimated ()
         && std::ranges::find (dependencies, this->m_image.id) != dependencies.end ();
     const bool dynamicEffects = !m_passVisibility.empty () && m_passes.size () > 1;
+    // Extract an animated frame at image resolution before the static mesh minifies it.
+    // The local frame has one mip and uses the mesh's authored UVs on presentation.
     const bool separatePresentation = finalFog || selfDependency || isCompositionLayer ()
-	|| (m_hasPuppetMesh && m_passes.size () > 1)
+	|| (m_hasPuppetMesh && m_passes.size () > 1) || this->usesAnimatedMeshComposite ()
 	|| (dynamicEffects && (model.fullscreen || model.passthrough || model.solidlayer
 	    || m_prelightingPass != nullptr || !m_swapCommands.empty ()
 	    || std::ranges::any_of (m_passes, [] (const auto* pass) { return pass->getTarget ().has_value (); })));

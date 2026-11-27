@@ -161,6 +161,7 @@ private:
     };
 
     bool loadPuppetMesh (const glm::vec2& size);
+    [[nodiscard]] bool usesAnimatedMeshComposite () const;
     void loadPuppetOverlay (const WallpaperEngine::Data::Model::MdlMesh& mesh, const glm::vec2& size);
     void setupPuppetAlbedoPasses ();
     void renderPuppetAlbedo ();
