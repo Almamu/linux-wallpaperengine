@@ -1281,8 +1281,9 @@ void CModel::updateMatrices () {
     this->m_modelViewProjectionMatrixInverse = glm::inverse (this->m_modelViewProjectionMatrix);
     this->m_normalMatrix = Render::Utils::calculateNormalModelMatrix (this->m_modelMatrix);
     if (!perspective && camera.isOrthogonal ()) {
-	const float depth = glm::max (glm::abs (camera.getNearZ ()), glm::abs (camera.getFarZ ()));
-	this->m_eyePosition = glm::vec3 (0.0f, 0.0f, depth);
+	// The orthographic shader eye is at Z=2000. Use the model's centered, Y-reflected basis.
+	const auto& eye = camera.getEye ();
+	this->m_eyePosition = glm::vec3 (eye.x, -eye.y, 2000.0f);
     } else if (!perspective) {
 	this->m_eyePosition = camera.getEye ();
     }
