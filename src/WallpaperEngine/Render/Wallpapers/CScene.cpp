@@ -495,6 +495,17 @@ double CScene::getRenderTime () const {
     return this->isLoading () ? this->m_loadingRenderTime : this->getContext ().getDriver ().getRenderTime ();
 }
 
+double CScene::getTextureAnimationSceneTime () const {
+    return this->m_textureAnimationStart
+	? std::max (0.0, this->getFrameRenderTime () - *this->m_textureAnimationStart) : 0.0;
+}
+
+void CScene::onFirstFrameSubmitted () {
+    if (!this->m_textureAnimationStart) {
+	this->m_textureAnimationStart = this->getContext ().getDriver ().getRenderTime ();
+    }
+}
+
 std::chrono::steady_clock::time_point CScene::getTimerTime () const {
     return this->isLoading () ? this->m_loadingTimerTime : std::chrono::steady_clock::now ();
 }

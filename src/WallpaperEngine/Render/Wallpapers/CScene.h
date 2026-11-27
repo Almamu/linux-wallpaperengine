@@ -68,6 +68,7 @@ public:
     [[nodiscard]] double getFrameRenderTime () const {
         return this->m_previousSceneTime.value_or (this->m_loadingRenderTime);
     }
+    [[nodiscard]] double getTextureAnimationSceneTime () const;
     [[nodiscard]] std::chrono::steady_clock::time_point getTimerTime () const;
     void prepareFirstFrame ();
     void holdLoading ();
@@ -317,6 +318,7 @@ public:
 
 protected:
     void renderFrame (const glm::ivec4& viewport) override;
+    void onFirstFrameSubmitted () override;
     void updateMouse (const glm::ivec4& viewport);
     [[nodiscard]] float getSceneFadeAlpha () const override;
 
@@ -401,6 +403,7 @@ private:
     float m_loadingRenderTime = 0.0f;
     std::chrono::steady_clock::time_point m_loadingTimerTime;
     std::optional<double> m_previousSceneTime = std::nullopt;
+    std::optional<double> m_textureAnimationStart;
     float m_sceneDeltaTime = 0.0f;
     float m_previousSceneDeltaTime = 0.0f;
     double m_sceneElapsedTime = 0.0;

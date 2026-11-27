@@ -50,6 +50,9 @@ void CRenderable::setup () {
     }
 
     this->m_textureAnimationPlayback = {};
+    if (this->getObject ().is<Data::Model::Image> ()) {
+	this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Scene;
+    }
     this->m_textureAnimationPlayback.anchorRenderTime = this->getTextureAnimationRenderTime ();
 }
 
@@ -95,8 +98,12 @@ double CRenderable::getControlledTextureAnimationTime () const {
     }
 
     const auto& playback = this->m_textureAnimationPlayback;
-    const double now = static_cast<double> (this->getTextureAnimationRenderTime ());
-    if (playback.joined) {
+    if (playback.clock == TextureAnimationPlayback::Clock::Scene) {
+	return wrapAnimationTime (this->getScene ().getTextureAnimationSceneTime (), this->m_animationTime);
+    }
+
+    const double now = this->getTextureAnimationRenderTime ();
+    if (playback.clock == TextureAnimationPlayback::Clock::Driver) {
 	return wrapAnimationTime (now * playback.rate, this->m_animationTime);
     }
 
@@ -107,7 +114,7 @@ double CRenderable::getControlledTextureAnimationTime () const {
 void CRenderable::detachTextureAnimationClock () {
     this->m_textureAnimationPlayback.anchorTime = this->getControlledTextureAnimationTime ();
     this->m_textureAnimationPlayback.anchorRenderTime = this->getTextureAnimationRenderTime ();
-    this->m_textureAnimationPlayback.joined = false;
+    this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Detached;
 }
 
 void CRenderable::setTextureAnimationRate (const float rate) {
@@ -125,7 +132,7 @@ void CRenderable::playTextureAnimation () {
     }
 
     this->m_textureAnimationPlayback.anchorRenderTime = this->getTextureAnimationRenderTime ();
-    this->m_textureAnimationPlayback.joined = false;
+    this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Detached;
     this->m_textureAnimationPlayback.playing = true;
 }
 
@@ -145,13 +152,12 @@ void CRenderable::stopTextureAnimation () {
 
     this->m_textureAnimationPlayback.anchorTime = 0.0;
     this->m_textureAnimationPlayback.anchorRenderTime = this->getTextureAnimationRenderTime ();
-    this->m_textureAnimationPlayback.joined = false;
+    this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Detached;
     this->m_textureAnimationPlayback.playing = false;
 }
 
 bool CRenderable::isTextureAnimationPlaying () const {
-    return this->hasTextureAnimation ()
-	&& (this->m_textureAnimationPlayback.joined || this->m_textureAnimationPlayback.playing);
+    return this->hasTextureAnimation () && this->m_textureAnimationPlayback.playing;
 }
 
 size_t CRenderable::getTextureAnimationFrame () const {
@@ -184,7 +190,7 @@ void CRenderable::setTextureAnimationFrame (const size_t requestedFrame) {
 
     this->m_textureAnimationPlayback.anchorTime = frameTime;
     this->m_textureAnimationPlayback.anchorRenderTime = this->getTextureAnimationRenderTime ();
-    this->m_textureAnimationPlayback.joined = false;
+    this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Detached;
 }
 
 void CRenderable::joinTextureAnimation () {
@@ -192,7 +198,7 @@ void CRenderable::joinTextureAnimation () {
 	return;
     }
 
-    this->m_textureAnimationPlayback.joined = true;
+    this->m_textureAnimationPlayback.clock = TextureAnimationPlayback::Clock::Driver;
     this->m_textureAnimationPlayback.playing = true;
 }
 

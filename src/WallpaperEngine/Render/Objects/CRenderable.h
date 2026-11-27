@@ -59,7 +59,8 @@ protected:
     double m_animationTime = 0.0;
 
     struct TextureAnimationPlayback {
-	bool joined = true;
+	enum class Clock { Driver, Scene, Detached };
+	Clock clock = Clock::Driver;
 	bool playing = true;
 	float rate = 1.0f;
 	double anchorTime = 0.0;

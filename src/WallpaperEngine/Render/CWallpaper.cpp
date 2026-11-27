@@ -472,8 +472,9 @@ void CWallpaper::render (
     const uint32_t currentFrame = this->getContext ().getDriver ().getFrameCounter ();
     // Both sides of a transition advance normally; shared/span scenes still update
     // only once per driver frame.
+    const bool firstFrame = this->m_lastRenderedFrame == UINT32_MAX;
     const bool needsSceneRender = !this->m_firstFramePrepared
-	&& (this->m_lastRenderedFrame == UINT32_MAX || currentFrame != this->m_lastRenderedFrame);
+	&& (firstFrame || currentFrame != this->m_lastRenderedFrame);
     const glm::ivec4 sceneViewport = this->m_spanInfo.has_value ()
 	? glm::ivec4 { 0, 0, this->m_spanInfo->totalBounds.z, this->m_spanInfo->totalBounds.w }
 	: viewport;
@@ -624,6 +625,7 @@ void CWallpaper::render (
     // write the framebuffer as is to the screen
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texCoordBuffer);
     glDrawArrays (GL_TRIANGLES, 0, 6);
+    if (firstFrame) this->onFirstFrameSubmitted ();
 
 #if !NDEBUG
     glPopDebugGroup ();

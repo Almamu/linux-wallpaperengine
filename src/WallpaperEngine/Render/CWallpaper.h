@@ -182,6 +182,8 @@ protected:
      * Renders a frame of the wallpaper
      */
     virtual void renderFrame (const glm::ivec4& viewport) = 0;
+    /** Called after submitting the first output draw, including a prepared frame. */
+    virtual void onFirstFrameSubmitted () { }
 
     /**
      * Setups OpenGL's framebuffers for ping-pong and scene rendering
