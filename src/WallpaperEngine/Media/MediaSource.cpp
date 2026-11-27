@@ -1,5 +1,7 @@
 #include "MediaSource.h"
 
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
+
 #include <ranges>
 
 using namespace WallpaperEngine::Media;
@@ -28,14 +30,17 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
+    if (m_updating || std::chrono::steady_clock::now () <= m_nextUpdate) {
 	return;
     }
 
+    m_updating = true;
+    // Listeners can call update again or throw while the current poll is running.
+    Data::Utils::ScopeGuard finishPoll ([this] {
+	this->m_nextUpdate = std::chrono::steady_clock::now () + this->m_updateInterval;
+	this->m_updating = false;
+    });
     this->performUpdate ();
-    // Throttle to the configured interval. Without this m_nextUpdate stays at its
-    // default (the epoch) and performUpdate runs every frame.
-    m_nextUpdate = std::chrono::steady_clock::now () + m_updateInterval;
 }
 
 std::function<void ()> MediaSource::addMetadataListener (std::function<void (const MediaInfo&)> listener) {

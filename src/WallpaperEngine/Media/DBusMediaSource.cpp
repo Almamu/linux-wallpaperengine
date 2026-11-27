@@ -3,7 +3,25 @@
 #include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Logging/Log.h"
 
+#include <stdexcept>
+
 using namespace WallpaperEngine::Media;
+
+namespace {
+constexpr const char* mediaMatchRules[] = {
+    "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'",
+    "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',"
+    "member='NameOwnerChanged',arg0namespace='org.mpris.MediaPlayer2'",
+};
+
+class UnavailableMediaSource final : public MediaSource {
+public:
+    using MediaSource::MediaSource;
+
+protected:
+    void performUpdate () override { }
+};
+}
 
 DBusHandlerResult dbus_message_filter (DBusConnection* connection, DBusMessage* message, void* user_data) {
     return static_cast<DBusMediaSource*> (user_data)->handleMessage (message);
@@ -87,6 +105,15 @@ DBusHandlerResult DBusMediaSource::handleMessage (DBusMessage* message) {
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
+std::unique_ptr<MediaSource> DBusMediaSource::createOrFallback (std::chrono::milliseconds updateInterval) {
+    try {
+	return std::make_unique<DBusMediaSource> (updateInterval);
+    } catch (const std::exception& error) {
+	sLog.error ("Continuing without media information (MPRIS): ", error.what ());
+	return std::make_unique<UnavailableMediaSource> (updateInterval);
+    }
+}
+
 DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : MediaSource (updateInterval) {
     DBusError err;
 
@@ -96,31 +123,33 @@ DBusMediaSource::DBusMediaSource (std::chrono::milliseconds updateInterval) : Me
     this->m_connection = dbus_bus_get (DBUS_BUS_SESSION, &err);
 
     if (!this->m_connection) {
-	sLog.exception ("Could not connect to DBus: ", err.message);
+	throw std::runtime_error (err.message ? err.message : "Could not connect to the D-Bus session bus");
     }
 
-    dbus_connection_add_filter (this->m_connection, dbus_message_filter, this, nullptr);
+    if (!dbus_connection_add_filter (this->m_connection, dbus_message_filter, this, nullptr)) {
+	dbus_connection_unref (this->m_connection);
+	throw std::runtime_error ("Could not register the D-Bus media message filter");
+    }
+    Data::Utils::ScopeGuard cleanup ([this] { this->disconnect (); });
 
-    dbus_bus_add_match (
-	this->m_connection, "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'",
-	nullptr
-    );
-    dbus_bus_add_match (
-	this->m_connection,
-	"type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',"
-	"member='NameOwnerChanged',arg0namespace='org.mpris.MediaPlayer2'",
-	nullptr
-    );
-
+    for (const auto* rule : mediaMatchRules) {
+	dbus_bus_add_match (this->m_connection, rule, nullptr);
+    }
     dbus_connection_flush (this->m_connection);
 
     this->detectPlayer ();
     this->fetchMetadata ();
+    cleanup.cancel ();
 }
 
-DBusMediaSource::~DBusMediaSource () {
-    dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
+DBusMediaSource::~DBusMediaSource () { this->disconnect (); }
 
+void DBusMediaSource::disconnect () noexcept {
+    dbus_connection_remove_filter (this->m_connection, dbus_message_filter, this);
+    for (const auto* rule : mediaMatchRules) {
+	dbus_bus_remove_match (this->m_connection, rule, nullptr);
+    }
+    dbus_connection_flush (this->m_connection);
     dbus_connection_unref (this->m_connection);
 }
 

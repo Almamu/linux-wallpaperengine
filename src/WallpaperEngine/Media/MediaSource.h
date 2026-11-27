@@ -3,6 +3,8 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
+#include <optional>
 #include <string>
 
 namespace WallpaperEngine::Media {
@@ -58,5 +60,8 @@ protected:
     MediaInfo m_mediaInfo;
     std::chrono::milliseconds m_updateInterval;
     std::chrono::time_point<std::chrono::steady_clock> m_nextUpdate;
+
+private:
+    bool m_updating = false;
 };
 }

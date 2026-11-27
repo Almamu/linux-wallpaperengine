@@ -147,8 +147,7 @@ WallpaperApplication::~WallpaperApplication () {
 }
 
 void WallpaperApplication::initializeSubsystems () {
-    // initialize player dbus (update every 2 seconds)
-    m_mediaSource = std::make_unique<WallpaperEngine::Media::DBusMediaSource> (std::chrono::milliseconds (2000));
+    m_mediaSource = WallpaperEngine::Media::DBusMediaSource::createOrFallback (std::chrono::milliseconds (2000));
 }
 
 AssetLocatorUniquePtr WallpaperApplication::setupAssetLocator (const std::string& bg) const {

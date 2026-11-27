@@ -9,6 +9,8 @@ public:
     explicit DBusMediaSource (std::chrono::milliseconds updateInterval);
     ~DBusMediaSource () override;
 
+    static std::unique_ptr<MediaSource> createOrFallback (std::chrono::milliseconds updateInterval);
+
     void parseMetadata (DBusMessageIter& variant);
     void parsePlaybackStatus (DBusMessageIter& variant, const char* sender);
     void parsePosition (DBusMessageIter& variant);
@@ -31,5 +33,8 @@ protected:
     bool m_playerListChanged = false;
 
     DBusConnection* m_connection;
+
+private:
+    void disconnect () noexcept;
 };
 }

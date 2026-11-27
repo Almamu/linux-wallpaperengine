@@ -3,7 +3,7 @@
 LWE_TEST_LIBRARY=build-release/output/liblinux-wallpaperengine-lib.so \
     python3 src/WallpaperEngine/Testing/test_media_source.py
 Requires a C++ compiler, pkg-config, dbus-daemon, dbus-python and PyGObject.
-The helper compiles the current DBusMediaSource.cpp without rebuilding shared targets.
+The helper compiles the current media sources without rebuilding shared targets.
 """
 import json
 import os
@@ -23,10 +23,69 @@ PROBE = r'''
 #include <optional>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
+#include <string_view>
 #include <thread>
 #include "WallpaperEngine/Media/DBusMediaSource.h"
-int main() {
-    WallpaperEngine::Media::DBusMediaSource media(std::chrono::milliseconds(20));
+using namespace WallpaperEngine::Media;
+using namespace std::chrono_literals;
+
+class PollProbe final : public MediaSource {
+public:
+    using MediaSource::MediaSource;
+    int polls = 0;
+    void expireInterval() { m_nextUpdate = {}; }
+
+protected:
+    void performUpdate() override {
+        ++polls;
+        fireMetadataListeners();
+    }
+};
+
+int testPollReentry() {
+    PollProbe source(1h);
+    source.addMetadataListener([&](const auto&) {
+        if (source.polls == 1) source.update();
+    });
+    source.update();
+    return source.polls == 1 ? 0 : 1;
+}
+
+int testPollException() {
+    PollProbe source(1h);
+    auto removeListener = source.addMetadataListener([](const auto&) {
+        throw std::runtime_error("poll failed");
+    });
+    try {
+        source.update();
+        return 1;
+    } catch (const std::runtime_error&) {
+    }
+    removeListener();
+    source.update();
+    if (source.polls != 1) return 2;
+    source.expireInterval();
+    source.update();
+    return source.polls == 2 ? 0 : 3;
+}
+
+int main(int argc, char* argv[]) {
+    const std::string_view mode = argc > 1 ? argv[1] : "";
+    if (mode == "poll-reentry") return testPollReentry();
+    if (mode == "poll-exception") return testPollException();
+    const auto source = DBusMediaSource::createOrFallback(20ms);
+    auto& media = *source;
+    if (mode == "idle") {
+        int notices = 0;
+        auto removeMetadata = media.addMetadataListener([&](const auto&) { ++notices; });
+        auto removeArt = media.addAlbumArtListener([&](const auto&) { ++notices; });
+        media.update();
+        removeMetadata();
+        removeArt();
+        const auto& info = media.getMediaInfo();
+        return !info.available && info.playbackState == MediaSource::Stopped && notices == 0 ? 0 : 1;
+    }
     for (;;) {
         media.update();
         const auto& info = media.getMediaInfo();
@@ -39,7 +98,7 @@ int main() {
                   << ",\"duration\":" << info.duration
                   << ",\"available\":" << (info.available ? "true" : "false")
                   << "}" << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(10ms);
     }
 }
 '''
@@ -101,9 +160,10 @@ class MediaSource(unittest.TestCase):
         cls.binary = Path(cls.build.name) / 'probe'
         flags = subprocess.check_output(['pkg-config', '--cflags', '--libs', 'dbus-1'], text=True).split()
         subprocess.run([
-            'c++', '-std=c++20', '-include', 'memory', '-include', 'optional', '-DNDEBUG',
+            'c++', '-std=c++20', '-DNDEBUG',
             '-I', str(root / 'src'), '-I', str(root / 'src/External/json/include'),
             str(source), str(root / 'src/WallpaperEngine/Media/DBusMediaSource.cpp'),
+            str(root / 'src/WallpaperEngine/Media/MediaSource.cpp'),
             str(library), '-Wl,-rpath,' + str(library.parent), *flags, '-o', str(cls.binary),
         ], check=True, capture_output=True, text=True)
 
@@ -152,6 +212,17 @@ class MediaSource(unittest.TestCase):
             if predicate(last):
                 return last
         self.fail(f'Media condition not reached; last snapshot: {last}')
+
+    def test_missing_session_bus_keeps_media_idle(self):
+        env = dict(self.env, DBUS_SESSION_BUS_ADDRESS=f'unix:path={self.build.name}/missing-bus')
+        result = subprocess.run([self.binary, 'idle'], env=env, capture_output=True, text=True, timeout=3)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_poll_interval_survives_exception_and_reentry(self):
+        for mode in ('poll-reentry', 'poll-exception'):
+            with self.subTest(mode=mode):
+                result = subprocess.run([self.binary, mode], capture_output=True, text=True, timeout=3)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_active_player_selection_ignores_foreign_signals_and_tracks_owner_lifecycle(self):
         paused = self.player('lwe_test_paused', 'Paused')
