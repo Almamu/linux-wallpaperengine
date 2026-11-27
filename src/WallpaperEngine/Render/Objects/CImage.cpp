@@ -50,6 +50,10 @@ bool usesLegacyAnimationUvs (const Render::TextureProvider& texture) {
     return version == Data::Assets::AnimatedVersion_TEXS0001 || version == Data::Assets::AnimatedVersion_TEXS0002;
 }
 
+std::array<GLfloat, 12> imageQuadTexcoords (float left, float bottom, float right, float top) {
+    return { left, top, left, bottom, right, top, right, top, left, bottom, right, bottom };
+}
+
 glm::vec2 rotateVec2 (const glm::vec2& value, float angle) {
     const float cosAngle = std::cos (angle);
     const float sinAngle = std::sin (angle);
@@ -421,7 +425,7 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 	}
     }
 
-    GLfloat texcoordCopy[] = { x, height, x, y, width, height, width, height, x, y, width, y };
+    const auto texcoordCopy = imageQuadTexcoords (x, y, width, height);
 
     GLfloat copySpacePosition[] = { realX,     realHeight, 0.0f, realX, realY, 0.0f, realWidth, realHeight, 0.0f,
 				    realWidth, realHeight, 0.0f, realX, realY, 0.0f, realWidth, realY,      0.0f };
@@ -448,13 +452,27 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 
     glGenBuffers (1, &this->m_texcoordCopy);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordCopy);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordCopy), texcoordCopy, GL_STATIC_DRAW);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordCopy), texcoordCopy.data (), GL_STATIC_DRAW);
 
     glGenBuffers (1, &this->m_texcoordPass);
     glBindBuffer (GL_ARRAY_BUFFER, this->m_texcoordPass);
     glBufferData (GL_ARRAY_BUFFER, sizeof (texcoordPass), texcoordPass, GL_STATIC_DRAW);
 
     this->m_hasPuppetMesh = this->loadPuppetMesh (size);
+
+    // The native image flags select an inset only for ordinary scene quads.
+    // Preserve the existing UV conventions for atlas frames and movie textures.
+    const auto* source = dynamic_cast<const CTexture*> (this->m_texture.get ());
+    if (!image.model->fullscreen && !image.model->passthrough && !image.model->solidlayer && !this->m_hasPuppetMesh
+	&& source != nullptr && !source->isAnimated () && source->getSpritesheetFrames () == 0
+	&& (source->getFlags () & (TextureFlags_Video | TextureFlags_Volume)) == 0) {
+	const auto& header = source->getHeader ();
+	if (header.textureWidth != 0 && header.textureHeight != 0) {
+	    // Native uses the authored storage extent even when the scene pass samples an effect target.
+	    this->m_sceneTexcoordInset = 0.15f / glm::vec2 (header.textureWidth, header.textureHeight);
+	    glGenBuffers (1, &this->m_texcoordScene);
+	}
+    }
 
     // compute the center of the image in scene space for rotation
     this->m_sceneCenter
@@ -500,6 +518,7 @@ CImage::~CImage () {
     glDeleteBuffers (1, &this->m_passSpacePosition);
     glDeleteBuffers (1, &this->m_texcoordCopy);
     glDeleteBuffers (1, &this->m_texcoordPass);
+    glDeleteBuffers (1, &this->m_texcoordScene);
     if (this->m_puppetVertexColor != GL_NONE) {
 	glDeleteBuffers (1, &this->m_puppetVertexColor);
     }
@@ -2172,14 +2191,20 @@ void CImage::setupPasses () {
 	if (!writesToTarget && this->shouldRenderFinalPass (lastMaterial != m_activePasses.rend () && pass == *lastMaterial)) {
 	    // Keep the offscreen route as well as the scene route. A layer may become
 	    // visible after scripts initialize, or hide while another layer samples it.
+	    const bool samplesSourceTexture = isFirstPass && this->m_puppetAlbedoFBO == nullptr;
+	    // Native honors nopadding on the direct source quad only.
+	    const bool inset = this->m_texcoordScene != GL_NONE
+		&& (!samplesSourceTexture || !this->m_image.model->nopadding);
 	    this->m_finalPassRouting = FinalPassRouting {
 		.pass = pass,
 		.offscreenTarget = drawTo,
 		.input = asInput,
 		.offscreenPosition = spacePosition,
+		.offscreenTexcoord = texcoord,
+		.sceneTexcoord = inset ? this->m_texcoordScene : texcoord,
 		.offscreenProjection = projection,
 		.offscreenProjectionInverse = inverseProjection,
-		.samplesSourceTexture = isFirstPass && this->m_puppetAlbedoFBO == nullptr,
+		.samplesSourceTexture = samplesSourceTexture,
 		.sceneBlending = this->m_material.passes.front ()->blending,
 	    };
 	}
@@ -2241,6 +2266,7 @@ void CImage::updateFinalPassVisibility (const bool force) {
     const auto& route = *this->m_finalPassRouting;
     Effects::CPass* pass = route.pass;
     this->m_finalPassDrawsToScene = visible;
+    pass->setTexCoord (visible ? route.sceneTexcoord : route.offscreenTexcoord);
     // A hidden layer publishes RGBA, including transparent pixels. Blending
     // against an earlier ping-pong result resurrects keyed-out backgrounds.
     // Native linear dodge applies addition only once. Its generated shader
@@ -2819,7 +2845,7 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
 	}
     }
 
-    const std::array<GLfloat, 12> texcoordCopy = { x, height, x, y, width, height, width, height, x, y, width, y };
+    const auto texcoordCopy = imageQuadTexcoords (x, y, width, height);
     const std::array<GLfloat, 18> copySpacePosition
 	= { realX,     realHeight, 0.0f, realX, realY, 0.0f, realWidth, realHeight, 0.0f,
 	    realWidth, realHeight, 0.0f, realX, realY, 0.0f, realWidth, realY,      0.0f };
@@ -2843,6 +2869,12 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     uploadIfChanged (this->m_effectSpacePosition, effectSpacePosition, this->m_cachedEffectSpacePosition);
     uploadIfChanged (this->m_copySpacePosition, copySpacePosition, this->m_cachedCopySpacePosition);
     uploadIfChanged (this->m_texcoordCopy, texcoordCopy, this->m_cachedTexcoordCopy);
+    if (this->m_finalPassDrawsToScene && this->m_finalPassRouting->sceneTexcoord == this->m_texcoordScene) {
+	const auto& inset = this->m_sceneTexcoordInset;
+	const glm::vec2 upper = this->m_finalPassRouting->samplesSourceTexture ? glm::vec2 (width, height) : glm::vec2 (1.0f);
+	const auto texcoordScene = imageQuadTexcoords (inset.x, inset.y, upper.x - inset.x, upper.y - inset.y);
+	uploadIfChanged (this->m_texcoordScene, texcoordScene, this->m_cachedTexcoordScene);
+    }
     this->m_geometryBufferCacheValid = true;
 
     this->m_sceneCenter

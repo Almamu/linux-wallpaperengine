@@ -203,6 +203,8 @@ private:
     GLuint m_passSpacePosition;
     GLuint m_texcoordCopy;
     GLuint m_texcoordPass;
+    GLuint m_texcoordScene = GL_NONE;
+    glm::vec2 m_sceneTexcoordInset = {};
     GLuint m_puppetSpacePosition = GL_NONE;
     GLuint m_puppetPrelightingPosition = GL_NONE;
     size_t m_puppetPositionBufferBytes = 0;
@@ -337,6 +339,7 @@ private:
     std::array<GLfloat, 18> m_cachedEffectSpacePosition = {};
     std::array<GLfloat, 18> m_cachedCopySpacePosition = {};
     std::array<GLfloat, 12> m_cachedTexcoordCopy = {};
+    std::array<GLfloat, 12> m_cachedTexcoordScene = {};
     bool m_geometryBufferCacheValid = false;
 
     bool m_initialized = false;
@@ -345,6 +348,8 @@ private:
 	std::shared_ptr<const CFBO> offscreenTarget;
 	std::shared_ptr<const TextureProvider> input;
 	GLuint offscreenPosition;
+	GLuint offscreenTexcoord;
+	GLuint sceneTexcoord;
 	const glm::mat4* offscreenProjection;
 	const glm::mat4* offscreenProjectionInverse;
 	bool samplesSourceTexture;

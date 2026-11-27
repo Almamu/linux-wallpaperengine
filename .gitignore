@@ -62,6 +62,7 @@ __pycache__/
 !/tools/tests/scene_render.py
 !/tools/tests/test_model_volumetric_order.py
 !/tools/tests/test_image_composite_fog.py
+!/tools/tests/test_image_quad_uv.py
 !/tools/tests/volume_scene.py
 !/tools/tests/shadow_depth.py
 !/tools/tests/test_shadow_depth.py
