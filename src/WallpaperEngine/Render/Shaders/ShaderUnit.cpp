@@ -343,6 +343,19 @@ vec2 lwe_LegacyProjectedUV(vec2 uv, float clipY, float clipW, int slot) {
 )");
 }
 
+void normalizeAudioSampleConditions (std::string& source) {
+    if (source.find ("AUDIOSAMPLES") == std::string::npos) return;
+    // The stock HLSL preprocessor selects these branches despite reporting the
+    // trailing semicolon. Preserve the selected branch when translating to GLSL.
+    static const std::regex terminator (
+	R"((^|\n)[ \t]*#[ \t]*elif[ \t]+AUDIOSAMPLES[ \t]*==[ \t]*(?:32|64)[ \t]*(;)[ \t\r]*(?=\n|$))"
+    );
+    const std::string code = maskShaderComments (source);
+    for (std::sregex_iterator it (code.begin (), code.end (), terminator), end; it != end; ++it) {
+	source[it->position (2)] = ' ';
+    }
+}
+
 void flattenPackedAudioSpectrumIndices (std::string& source) {
     if (source.find ("g_AudioSpectrum") == std::string::npos) return;
 
@@ -2490,6 +2503,7 @@ const std::string& ShaderUnit::compile () {
 	// independently of scene/project versions. Authored source definitions may
 	// replace it; the duplicate-macro pass below preserves that behavior in GLSL.
 	compatResult = "#undef SHADERVERSION\n#define SHADERVERSION 69\n" + this->m_preprocessed;
+	normalizeAudioSampleConditions (compatResult);
 	if (m_type == GLSLContext::UnitType_Vertex
 	    && compatResult.find ("in_ParticleTrailLength") != std::string::npos
 	    && compatResult.find ("trailRightStart") != std::string::npos) {

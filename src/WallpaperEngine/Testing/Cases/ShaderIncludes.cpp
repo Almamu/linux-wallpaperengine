@@ -92,6 +92,41 @@ TEST_CASE ("native depth buffer sampling compiles without a comparison sampler",
     CHECK_THAT (translated.second, Catch::Matchers::ContainsSubstring ("texelFetch"));
 }
 
+TEST_CASE ("trailing terminators preserve native audio sample branch selection", "[shader][audio-elif]") {
+    const std::string fragment = R"(
+void main() {
+#if AUDIOSAMPLES == 16
+    float bandWidth = 0.0625;
+#elif AUDIOSAMPLES == 32;
+    float bandWidth = 0.03125;
+#elif AUDIOSAMPLES == 64;
+    float bandWidth = 0.015625;
+#endif
+    gl_FragColor = vec4(bandWidth);
+}
+)";
+    for (const auto& [samples, reciprocal] : std::map<int, std::string> {
+	     { 16, "0.0625" }, { 32, "0.03125" }, { 64, "0.015625" }
+	 }) {
+	CAPTURE (samples);
+	const auto sources = compileLinked (
+	    "void main() { gl_Position = vec4(0.0); }", fragment, { { "AUDIOSAMPLES", samples } }
+	);
+	const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+	REQUIRE_FALSE (translated.second.empty ());
+	CHECK_THAT (translated.second, Catch::Matchers::ContainsSubstring (reciprocal));
+    }
+
+    const auto control = compileLinked (
+	"void main() { gl_Position = vec4(0.0); }",
+	"/*\n#elif AUDIOSAMPLES == 32;\n*/\n"
+	"#if 1\nvoid main() { gl_FragColor = vec4(1.0); }\n"
+	"#elif AUDIOSAMPLES == 64; + 1\n#endif\n", {}
+    );
+    CHECK_THAT (control.second, Catch::Matchers::ContainsSubstring ("/*\n#elif AUDIOSAMPLES == 32;\n*/"));
+    CHECK_THAT (control.second, Catch::Matchers::ContainsSubstring ("#elif AUDIOSAMPLES == 64; + 1"));
+}
+
 TEST_CASE ("native varying declarations ignore component suffixes", "[shader][varying-suffix]") {
     for (const std::string suffix : { "", ".xy", ".rgba" }) {
 	for (const bool vertexSuffix : { false, true }) {
