@@ -2,6 +2,7 @@
 #include "../Model/Property.h"
 
 #include <algorithm>
+#include <optional>
 
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
@@ -72,6 +73,9 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
 	const auto value = option.find ("value");
 	return value != option.end () && value->is_boolean ();
     });
+    const auto defaultValue = it.require ("value", "Combo property must have a value");
+    auto defaultKey = comboValueKey (defaultValue, hasBooleanOption);
+    std::optional<std::string> authoredOptionKey;
     ComboData combo;
     for (auto& cur : options) {
 	if (!cur.is_object ()) {
@@ -86,16 +90,26 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
 	if (inserted && hasBooleanOption && (value.is_boolean () || value.is_number ())) {
 	    combo.webLiteralValues.insert (option->first);
 	}
+	// JSON equality preserves boolean and string identity while matching 1 to 1.0.
+	if (hasBooleanOption && value == defaultValue && (!authoredOptionKey || option->first == defaultKey)) {
+	    authoredOptionKey = option->first;
+	}
     }
 
-    const auto value = it.require ("value", "Combo property must have a value");
+    if (authoredOptionKey) {
+	defaultKey = std::move (*authoredOptionKey);
+	const bool literal = defaultValue.is_boolean () || defaultValue.is_number ();
+	if (literal != combo.webLiteralValues.contains (defaultKey)) {
+	    combo.authoredDefaultIsLiteral = literal;
+	}
+    }
 
     return std::make_shared<PropertyCombo> (
 	PropertyData {
 	    .name = name,
 	    .text = it.optional<std::string> ("text", ""),
 	},
-	std::move (combo), comboValueKey (value, hasBooleanOption)
+	std::move (combo), defaultKey
     );
 }
 

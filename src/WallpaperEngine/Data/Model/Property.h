@@ -5,6 +5,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -26,6 +27,7 @@ struct SliderData {
 struct ComboData {
     std::map<std::string, std::string> values;
     std::set<std::string> webLiteralValues = {};
+    std::optional<bool> authoredDefaultIsLiteral = {};
 };
 
 class Property : public DynamicValue, public TypeCaster, public PropertyData {
@@ -117,13 +119,19 @@ public:
 	    return;
 	}
 
-	// search for the value in the combo options or default to the textual value
+	if (source != UpdateSource::Initialization) {
+	    this->authoredDefaultIsLiteral.reset ();
+	}
 	this->DynamicValue::update (value, source);
     }
 
     [[nodiscard]] const std::string* getSelectedWebLiteral () const {
-	const auto selection = this->webLiteralValues.find (this->getString ());
-	return selection != this->webLiteralValues.end () ? &*selection : nullptr;
+	const auto& value = this->getString ();
+	if (!this->authoredDefaultIsLiteral.value_or (this->webLiteralValues.contains (value))) {
+	    return nullptr;
+	}
+	const auto selection = this->values.find (value);
+	return selection != this->values.end () ? &selection->first : nullptr;
     }
 
     [[nodiscard]] std::string dump () const override {

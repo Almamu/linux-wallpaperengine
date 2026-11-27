@@ -163,6 +163,40 @@ TEST_CASE ("Boolean combo options preserve the authored web callback values", "[
     CHECK (legacyCombo->getSelectedWebLiteral () == nullptr);
 }
 
+TEST_CASE ("Boolean combos preserve the typed default before textual overrides", "[property-combo]") {
+    using WallpaperEngine::Data::Model::PropertyCombo;
+    for (const bool defaultIsBoolean : { false, true }) {
+	const JSON literal = false;
+	const JSON text = "false";
+	const JSON& initial = defaultIsBoolean ? literal : text;
+	const JSON& first = defaultIsBoolean ? text : literal;
+	const auto property = PropertyParser::parse (
+	    JSON { { "type", "combo" }, { "value", initial },
+		   { "options", JSON::array ({ { { "label", "First" }, { "value", first } },
+					       { { "label", "Second" }, { "value", initial } } }) } }, "collision"
+	);
+	const auto* combo = property->as<PropertyCombo> ();
+	REQUIRE (combo != nullptr);
+	CHECK (property->getString () == "false");
+	CHECK ((combo->getSelectedWebLiteral () != nullptr) == defaultIsBoolean);
+	property->update (std::string ("false"), DynamicValue::UpdateSource::User);
+	CHECK (property->getString () == "false");
+	CHECK ((combo->getSelectedWebLiteral () != nullptr) != defaultIsBoolean);
+    }
+
+    const auto property = PropertyParser::parse (JSON::parse (R"({
+        "type":"combo", "value":1.0, "options":[
+            {"label":"Disabled","value":false}, {"label":"One","value":1}
+        ]
+    })"), "numericDefault");
+    const auto* combo = property->as<PropertyCombo> ();
+    REQUIRE (combo != nullptr);
+    CHECK (property->getString () == "1");
+    const auto* literal = combo->getSelectedWebLiteral ();
+    REQUIRE (literal != nullptr);
+    CHECK (*literal == "1");
+}
+
 TEST_CASE ("Slider user bindings splat every vector component", "[user-property-binding]") {
     using WallpaperEngine::Data::Model::UserSettingUniquePtr;
     const char* seeds[] = { "0.125 0.375", "0.125 0.375 0.625", "0.125 0.375 0.625 0.875" };
