@@ -282,6 +282,13 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 	    // Scene storage follows output pixels; an implicit layer quad still spans
 	    // the authored canvas, independently of that storage resolution.
 	    size = { scene_width, scene_height };
+	} else if (scene.getScene ().version == 0 && !image.sizeSpecified && !image.model->fullscreen
+	    && !image.model->passthrough && !image.model->solidlayer && !image.model->autosize
+	    && !image.model->instanced && !image.model->puppet.has_value () && !this->isCompositionLayer ()
+	    && dynamic_cast<const CTexture*> (this->m_texture.get ()) != nullptr
+	    && image.model->width.value_or (0) > 0 && image.model->height.value_or (0) > 0) {
+	    // Legacy layers can declare their quad extent in the model instead of the object.
+	    size = { *image.model->width, *image.model->height };
 	} else {
 	    size.x = static_cast<float> (this->m_texture->getRealWidth ());
 	    size.y = static_cast<float> (this->m_texture->getRealHeight ());
