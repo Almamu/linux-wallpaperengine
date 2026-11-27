@@ -1339,8 +1339,9 @@ float CScene::calculateSceneDeltaTime (
 ) {
     // Loading and shader compilation happen before this scene can present its first frame.
     // Charging that time to a new scene skips one-shot entrances on cold starts and switches.
+    // Native dispatch also caps long frame gaps before advancing the scene clock.
     return previousSceneTime.has_value ()
-        ? static_cast<float> (glm::max (0.0, currentTime - *previousSceneTime)) : 0.0f;
+        ? static_cast<float> (std::clamp (currentTime - *previousSceneTime, 0.0, 0.25)) : 0.0f;
 }
 
 float CScene::getSceneFadeAlpha () const {

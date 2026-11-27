@@ -66,6 +66,7 @@ __pycache__/
 !/tools/tests/test_image_quad_uv.py
 !/tools/tests/test_image_self_dependency.py
 !/tools/tests/test_texture_animation_scene_start.py
+!/tools/tests/test_scene_clock_stall.py
 !/tools/tests/volume_scene.py
 !/tools/tests/shadow_depth.py
 !/tools/tests/test_shadow_depth.py
