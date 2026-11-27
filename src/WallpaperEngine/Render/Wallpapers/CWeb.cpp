@@ -5,6 +5,7 @@
 #include "WallpaperEngine/WebBrowser/CEF/WPSchemeHandlerFactory.h"
 
 #include "WallpaperEngine/Audio/Drivers/Recorders/PlaybackRecorder.h"
+#include "WallpaperEngine/Data/Builders/VectorBuilder.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/Wallpaper.h"
@@ -249,40 +250,51 @@ void CWeb::pushBridgeData () {
 		+ std::to_string (this->getContext ().getApp ().getContext ().settings.render.maximumFPS) + "})",
 	    url, 0
 	);
-	std::string props = "{";
-	bool first = true;
-	for (const auto& [name, prop] : this->getWeb ().project.properties) {
-	    std::string value;
+	using Data::JSON::JSON;
+	const auto& web = this->getWeb ();
+	auto props = JSON::object ();
+	for (const auto& [name, prop] : web.project.properties) {
+	    const auto definition = web.propertyDefinitions.find (name);
+	    if (definition == web.propertyDefinitions.end ()) {
+		continue;
+	    }
+	    auto descriptor = *definition;
 	    try {
 		if (dynamic_cast<const Data::Model::PropertyColor*> (prop.get ()) != nullptr) {
 		    const glm::vec3 v = prop->getVec3 ();
-		    char b[64];
-		    snprintf (b, sizeof (b), "\"%.4f %.4f %.4f\"", v.x, v.y, v.z);
-		    value = b;
+		    const auto& authored = descriptor.at ("value").get_ref<const std::string&> ();
+		    if (authored.find (',') != std::string::npos
+			|| Data::Builders::VectorBuilder::componentCount (authored) != 3
+			|| Data::Builders::VectorBuilder::parse<glm::vec3> (authored) != v) {
+			char b[64];
+			snprintf (b, sizeof (b), "%.4f %.4f %.4f", v.x, v.y, v.z);
+			descriptor["value"] = b;
+		    }
 		} else if (dynamic_cast<const Data::Model::PropertyBoolean*> (prop.get ()) != nullptr) {
-		    value = prop->getBool () ? "true" : "false";
+		    descriptor["value"] = prop->getBool ();
 		} else if (dynamic_cast<const Data::Model::PropertySlider*> (prop.get ()) != nullptr) {
-		    char b[32];
-		    snprintf (b, sizeof (b), "%.6g", prop->getFloat ());
-		    value = b;
-		} else if (dynamic_cast<const Data::Model::PropertyText*> (prop.get ()) != nullptr) {
-		    continue; // text properties are UI labels, not values
-		} else {
+		    if (descriptor.at ("value").get<float> () != prop->getFloat ()) {
+			descriptor["value"] = prop->getFloat ();
+		    }
+		} else if (!prop->is<Data::Model::PropertyText> ()) {
 		    const auto* combo = dynamic_cast<const Data::Model::PropertyCombo*> (prop.get ());
 		    const auto* literal = combo != nullptr ? combo->getSelectedWebLiteral () : nullptr;
-		    value = literal != nullptr ? *literal : "\"" + jsEscape (prop->getString ()) + "\"";
+		    if (literal != nullptr) {
+			descriptor["value"] = JSON::parse (*literal);
+		    } else if (!prop->is<Data::Model::PropertyFile> () || descriptor.contains ("value")
+			       || !prop->getString ().empty ()) {
+			descriptor["value"] = prop->getString ();
+		    }
 		}
 	    } catch (...) {
 		continue;
 	    }
-	    if (!first) {
-		props += ",";
-	    }
-	    first = false;
-	    props += "\"" + jsEscape (name) + "\":{\"value\":" + value + "}";
+	    props[name] = std::move (descriptor);
 	}
-	props += "}";
-	frame->ExecuteJavaScript ("window.__wpApplyProps&&window.__wpApplyProps(" + props + ")", url, 0);
+	const auto serialized = props.dump (-1, ' ', true, JSON::error_handler_t::replace);
+	frame->ExecuteJavaScript (
+	    "window.__wpApplyProps&&window.__wpApplyProps(JSON.parse(\"" + jsEscape (serialized) + "\"))", url, 0
+	);
     }
 
     // Media (now-playing) from the native MPRIS MediaSource, delivered to the page ~twice a second.

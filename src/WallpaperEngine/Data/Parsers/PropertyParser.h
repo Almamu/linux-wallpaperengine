@@ -8,10 +8,10 @@ using namespace WallpaperEngine::Data::Model;
 
 class PropertyParser {
 public:
-    static PropertySharedPtr parse (const JSON& it, const std::string& name);
+    static PropertySharedPtr parse (const JSON& it, const std::string& name, bool web = false);
 
 private:
-    static PropertySharedPtr parseCombo (const JSON& it, const std::string& name);
+    static PropertySharedPtr parseCombo (const JSON& it, const std::string& name, bool web);
     static PropertySharedPtr parseColor (const JSON& it, const std::string& name);
     static PropertySharedPtr parseBoolean (const JSON& it, const std::string& name);
     static PropertySharedPtr parseSlider (const JSON& it, const std::string& name);

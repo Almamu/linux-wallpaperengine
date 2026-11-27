@@ -19,7 +19,7 @@ std::string comboValueKey (const JSON& value, bool preserveNumber) {
 }
 } // namespace
 
-PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name) {
+PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name, bool web) {
     // type might not be included, in which case means the same as a group
     const auto type = it.optional ("type");
 
@@ -33,7 +33,7 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name
 	return parseSlider (it, name);
     }
     if (type == "combo") {
-	return parseCombo (it, name);
+	return parseCombo (it, name, web);
     }
     if (type == "text") {
 	return parseText (it, name);
@@ -60,21 +60,21 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name
     return nullptr;
 }
 
-PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string& name) {
+PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string& name, bool web) {
     const auto options = it.require ("options", "Combo property must have options");
 
     if (!options.is_array ()) {
 	sLog.exception ("Property combo options should be an array");
     }
 
-    // Boolean-containing combos can use strict type checks in web scripts. Ordinary
-    // combos keep their existing string values for bindings and web callbacks.
-    const bool hasBooleanOption = std::ranges::any_of (options, [] (const JSON& option) {
+    // Web scripts receive typed option values. Keep the previous normalizing
+    // behavior for ordinary scene combo bindings.
+    const bool preserveTypes = web || std::ranges::any_of (options, [] (const JSON& option) {
 	const auto value = option.find ("value");
 	return value != option.end () && value->is_boolean ();
     });
     const auto defaultValue = it.require ("value", "Combo property must have a value");
-    auto defaultKey = comboValueKey (defaultValue, hasBooleanOption);
+    auto defaultKey = comboValueKey (defaultValue, preserveTypes);
     std::optional<std::string> authoredOptionKey;
     ComboData combo;
     for (auto& cur : options) {
@@ -85,13 +85,13 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
 	const auto value = cur.require ("value", "Combo option must have a value");
 
 	const auto [option, inserted] = combo.values.emplace (
-	    comboValueKey (value, hasBooleanOption), cur.require ("label", "Combo option must have a label")
+	    comboValueKey (value, preserveTypes), cur.require ("label", "Combo option must have a label")
 	);
-	if (inserted && hasBooleanOption && (value.is_boolean () || value.is_number ())) {
+	if (inserted && preserveTypes && (value.is_boolean () || value.is_number ())) {
 	    combo.webLiteralValues.insert (option->first);
 	}
 	// JSON equality preserves boolean and string identity while matching 1 to 1.0.
-	if (hasBooleanOption && value == defaultValue && (!authoredOptionKey || option->first == defaultKey)) {
+	if (preserveTypes && value == defaultValue && (!authoredOptionKey || option->first == defaultKey)) {
 	    authoredOptionKey = option->first;
 	}
     }

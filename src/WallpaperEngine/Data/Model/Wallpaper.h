@@ -10,6 +10,7 @@
 #include "Material.h"
 #include "CameraPath.h"
 #include "Types.h"
+#include "WallpaperEngine/Data/JSON.h"
 #include "WallpaperEngine/Data/Utils/TypeCaster.h"
 
 namespace WallpaperEngine::Data::Model {
@@ -38,6 +39,9 @@ public:
     explicit Web (WallpaperData data) noexcept : Wallpaper (std::move (data)) { }
 
     ~Web () override = default;
+
+    // Web callbacks receive authored descriptors with the current property values.
+    JSON::JSON propertyDefinitions;
 };
 
 struct SceneData {

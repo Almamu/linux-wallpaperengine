@@ -21,6 +21,6 @@ public:
 
 private:
     static Project::Type parseType (const std::string& type);
-    static Properties parseProperties (const std::optional<JSON>& data);
+    static Properties parseProperties (const std::optional<JSON>& properties, bool web);
 };
 } // namespace WallpaperEngine::Data::Parsers
