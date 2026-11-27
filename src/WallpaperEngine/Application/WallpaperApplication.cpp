@@ -1949,43 +1949,51 @@ void WallpaperApplication::prepareOutputs () {
 	);
     }
 
-    // Set up span groups: one shared wallpaper per group, registered for each viewport
+    this->refreshSpanGeometry ();
+
+    recordStartupPhase ("startup.scene_build", sceneBuildStart);
+}
+
+void WallpaperApplication::refreshSpanGeometry () {
+    const auto& wallpapers = m_renderContext->getWallpapers ();
     for (const auto& spanGroup : this->m_context.settings.general.spanGroups) {
 	if (spanGroup.screens.empty ()) {
 	    continue;
 	}
 
-	const std::string groupKey = "span:" + spanGroup.screens.front ();
-	const auto bgIt = this->m_backgrounds.find (groupKey);
-	if (bgIt == this->m_backgrounds.end ()) {
-	    continue;
-	}
-
 	const auto geometry = m_renderContext->getSpanGeometry (spanGroup.screens);
 	if (!geometry) {
-	    sLog.error ("No viewports found for span group, skipping");
 	    continue;
 	}
-	WallpaperEngine::Render::CWallpaper::SpanInfo spanInfo;
-	spanInfo.totalBounds = geometry->bounds;
+	const Render::CWallpaper::SpanInfo spanInfo { .totalBounds = geometry->bounds };
 
-	// Create one shared wallpaper with the span group's scaling mode
-	auto sharedWallpaper = WallpaperEngine::Render::CWallpaper::fromWallpaper (
+	bool registered = false;
+	for (const auto& screen : spanGroup.screens) {
+	    const auto wallpaper = wallpapers.find (screen);
+	    if (wallpaper == wallpapers.end ()) continue;
+	    registered = true;
+	    if (wallpaper->second->getSpanInfo ()) {
+		wallpaper->second->setSpanInfo (spanInfo);
+		break;
+	    }
+	}
+	if (registered) continue;
+
+	// The first available member can appear after startup. Register a single
+	// shared wallpaper for all members, including those still disconnected.
+	const std::string groupKey = "span:" + spanGroup.screens.front ();
+	const auto bgIt = this->m_backgrounds.find (groupKey);
+	if (bgIt == this->m_backgrounds.end ()) continue;
+	std::shared_ptr<Render::CWallpaper> shared = Render::CWallpaper::fromWallpaper (
 	    *bgIt->second->wallpaper, *m_renderContext, *m_audioContext, m_browserContext.get (), spanGroup.scaling,
 	    spanGroup.clamp, groupKey
 	);
-
-	// Convert to shared_ptr so it can be registered for multiple viewports
-	std::shared_ptr<WallpaperEngine::Render::CWallpaper> shared (std::move (sharedWallpaper));
+	if (m_isPaused) shared->setPause (true);
 	shared->setSpanInfo (spanInfo);
-
-	// Register the same wallpaper for each screen in the span group
 	for (const auto& screenName : spanGroup.screens) {
 	    m_renderContext->setWallpaper (screenName, shared);
 	}
     }
-
-    recordStartupPhase ("startup.scene_build", sceneBuildStart);
 }
 
 void WallpaperApplication::setupOpenGLDebugging () {
@@ -2042,6 +2050,11 @@ void WallpaperApplication::render () {
 
     if (this->m_isPaused) {
 	usleep (FULLSCREEN_CHECK_WAIT_TIME);
+	this->m_videoDriver->dispatchPendingEvents ();
+	if (this->m_videoDriver->closeRequested ()) {
+	    this->m_context.state.general.keepRunning = false;
+	    return;
+	}
 	if (!lockscreenActive && this->m_fullScreenDetector->anythingFullscreen () && this->m_context.state.general.keepRunning) {
 	    return;
 	}

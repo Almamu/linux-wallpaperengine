@@ -30,7 +30,7 @@ namespace Output {
 
     class WaylandOutputViewport final : public OutputViewport {
     public:
-	WaylandOutputViewport (WaylandOpenGLDriver* driver, uint32_t waylandName, struct wl_registry* registry);
+	WaylandOutputViewport (WaylandOpenGLDriver* driver, uint32_t waylandName, struct wl_registry* registry, uint32_t version);
 
 	/**
 	 * @return The wayland driver
@@ -43,6 +43,8 @@ namespace Output {
 	uint32_t waylandName;
 	int scale = 1;
 	bool initialized = false;
+	bool removed = false;
+	int setupAttempts = 0;
 	bool rendering = false;
 	// New surfaces need a first frame before the compositor can send a callback.
 	int frameCredits = 1;
@@ -65,7 +67,8 @@ namespace Output {
 	bool hasXdgLogicalPosition = false;
 	zxdg_output_v1* xdgOutput = nullptr;
 
-	void setupLS ();
+	void setupLS (bool allowSDRFallback);
+	void destroyLS ();
 	void setupXdgOutput (zxdg_output_manager_v1* manager);
 
 	/**
@@ -79,7 +82,6 @@ namespace Output {
 	void swapOutput () override;
         bool supportsScRGB () const override;
         void setScRGBPresentation (bool enabled) override;
-        void destroyColorManagement ();
 
 	int frameBudget () const;
 
@@ -90,6 +92,7 @@ namespace Output {
 
     private:
 	WaylandOpenGLDriver* m_driver = nullptr;
+	wl_cursor_theme* m_cursorTheme = nullptr;
         wp_color_management_surface_v1* m_colorSurface = nullptr;
         bool m_scRGBPresentation = false;
     };

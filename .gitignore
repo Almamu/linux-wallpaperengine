@@ -31,6 +31,7 @@ __pycache__/
 # Local documentation and tools (upstream files remain tracked)
 /docs/
 /tools/*
+!/tools/wayland-hotplug-test.sh
 !/tools/parity/
 /tools/parity/*
 !/tools/parity/parity.py

@@ -47,7 +47,10 @@ int fakePoll(pollfd*, int, const timespec* t, void*) {
     return 0;
 }
 struct wl_callback {};
-struct wl_output {};
+struct wl_output { uint32_t version; };
+struct zxdg_output_v1 {};
+uint32_t wl_output_get_version(wl_output* output) { return output->version; }
+constexpr uint32_t WL_OUTPUT_NAME_SINCE_VERSION=4, WL_OUTPUT_DONE_SINCE_VERSION=2;
 constexpr uint32_t WL_OUTPUT_MODE_CURRENT=1;
 void wl_callback_destroy(wl_callback*) {}
 float g_Time = 0;
@@ -58,6 +61,7 @@ struct WaylandOutputViewport {
     WaylandOpenGLDriver* m_driver;
     int frameCredits=1, refreshRate=0;
     std::string name;
+    wl_output* output=nullptr;
     int scale=1;
     bool initialized=false;
     void* layerSurface=nullptr;
@@ -78,6 +82,8 @@ struct WaylandOpenGLDriver {
     Context m_context;
     struct { void* display=nullptr; } m_waylandContext;
     bool m_requestedExit=false;
+    bool m_abnormalExit=false;
+    int outputUpdates=0;
     uint32_t m_frameCounter=0;
     FakeClock::time_point m_nextFrameToken {};
     FakeClock::duration m_lastFrameWait {};
@@ -114,7 +120,11 @@ struct WaylandOpenGLDriver {
     App& getApp() { return app; }
     Outputs& getOutput() { return outputs; }
     float getRenderTime() { return std::chrono::duration<float>(FakeClock::now().time_since_epoch()).count(); }
-    void dispatchEventQueue();
+    void processOutputChanges() { ++outputUpdates; }
+    void onOutputChanged() { ++outputUpdates; }
+    void dispatchEvents(bool renderFrames);
+    void dispatchEventQueue() { dispatchEvents(true); }
+    void dispatchPendingEvents() { dispatchEvents(false); }
 };
 '''
 
@@ -217,6 +227,35 @@ int main(int argc, char** argv) {
         driver.dispatchEventQueue();
         assert(FakeClock::now()>before);
         assert(driver.m_lastFrameWait==0ns); // Poll overhead is not idle frame time.
+    } else if(test=="surface_size") {
+        // The compositor already configured a surface in logical coordinates.
+        fast.layerSurface=&fast;
+        fast.size={3822,1600};
+        fast.viewport={0,0,3822,1600};
+        fast.frameCredits=2;
+        mode(&fast,nullptr,WL_OUTPUT_MODE_CURRENT,3440,1440,60000);
+        assert(fast.refreshRate==60000 && fast.frameCredits==1);
+        assert(fast.size.x==3822 && fast.size.y==1600);
+        assert((fast.viewport == std::array<int,4>{0,0,3822,1600}));
+        scale(&fast,nullptr,2);
+        assert((fast.viewport == std::array<int,4>{0,0,7644,3200}));
+    } else if(test=="legacy_name") {
+        for (uint32_t version : {1u, 2u, 3u, 4u}) {
+            wl_output output{version};
+            fast.output=&output;
+            fast.name="core-name";
+            fast.initialized=false;
+            driver.outputUpdates=0;
+            xdgOutputName(&fast,nullptr,"xdg-name");
+            assert(fast.name==(version<4 ? "xdg-name" : "core-name"));
+            assert(fast.initialized==(version==1));
+            assert(driver.outputUpdates==(version<4 ? 1 : 0));
+        }
+    } else if(test=="paused_events") {
+        driver.dispatchPendingEvents();
+        assert(driver.outputUpdates==1);
+        assert(driver.app.draws.empty() && driver.m_frameCounter==0);
+        assert(fast.frameCredits==1 && slow.frameCredits==1);
     } else if(test=="drift") {
         driver.outputs.viewports.erase("A-slow");
         wakeDelay=100us;
@@ -318,15 +357,17 @@ class WaylandPacing(unittest.TestCase):
         cls.addClassCleanup(cls.directory.cleanup)
         root = Path(__file__).resolve().parents[2] / 'src/WallpaperEngine/Render/Drivers'
         dispatch = function((root / 'WaylandOpenGLDriver.cpp').read_text(),
-                            'void WaylandOpenGLDriver::dispatchEventQueue ()')
+                            'void WaylandOpenGLDriver::dispatchEvents (bool renderFrames)')
         viewport = (root / 'Output/WaylandOutputViewport.cpp').read_text()
         budget = function(viewport, 'int WaylandOutputViewport::frameBudget () const')
         callback = function(viewport, 'static void surfaceFrameCallback (')
         mode = function(viewport, 'static void mode (')
+        scale = function(viewport, 'static void scale (')
+        xdg_name = function(viewport, 'static void xdgOutputName (')
         dispatch = dispatch.replace('using Clock = std::chrono::steady_clock;',
                                     'using Clock = FakeClock;').replace('ppoll (', 'fakePoll (')
         source = Path(cls.directory.name) / 'probe.cpp'
-        source.write_text(STUB + budget + '\n' + callback + '\n' + mode + '\n' + dispatch + CHECKS)
+        source.write_text('\n'.join((STUB, budget, callback, mode, scale, xdg_name, dispatch, CHECKS)))
         cls.binary = source.with_suffix('')
         subprocess.run(['c++', '-std=c++20', '-O2', str(source), '-o', str(cls.binary)], check=True)
 
@@ -341,6 +382,15 @@ class WaylandPacing(unittest.TestCase):
 
     def test_refresh_and_extreme_fps_budget(self):
         subprocess.run([self.binary, 'budget'], check=True)
+
+    def test_mode_change_keeps_configured_size_and_scale_updates_viewport(self):
+        subprocess.run([self.binary, 'surface_size'], check=True)
+
+    def test_paused_event_dispatch_updates_outputs_without_spending_frames(self):
+        subprocess.run([self.binary, 'paused_events'], check=True)
+
+    def test_legacy_output_name_schedules_connector_matching(self):
+        subprocess.run([self.binary, 'legacy_name'], check=True)
 
     def test_late_wakes_do_not_accumulate_fps_drift(self):
         subprocess.run([self.binary, 'drift'], check=True)

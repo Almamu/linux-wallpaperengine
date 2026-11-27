@@ -88,6 +88,7 @@ public:
      * Renders a frame
      */
     void update (Render::Drivers::Output::OutputViewport* viewport, bool present = true);
+    void refreshSpanGeometry ();
     /** Finish owned CPU mip records on the existing loader; never submits GL work. */
     void queueTextureStreams (std::vector<std::shared_ptr<Render::TextureMipStream>> streams);
     [[nodiscard]] int getLockscreenStreamFPS () const;

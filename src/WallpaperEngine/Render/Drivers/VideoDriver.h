@@ -95,6 +95,8 @@ public:
      * Process events on the driver and renders a frame
      */
     virtual void dispatchEventQueue () = 0;
+    /** Process driver events without rendering while the application is paused. */
+    virtual void dispatchPendingEvents () {}
     /**
      * @return The app that owns this driver
      */

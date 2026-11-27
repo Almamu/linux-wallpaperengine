@@ -22,6 +22,7 @@ extern "C" {
 #include <cerrno>
 #include <poll.h>
 #include <string.h>
+#include <utility>
 
 using namespace WallpaperEngine::Render::Drivers;
 
@@ -34,11 +35,17 @@ static void handlePointerEnter (
     const auto driver = static_cast<WaylandOpenGLDriver*> (data);
     const auto viewport = driver->surfaceToViewport (surface);
     driver->viewportInFocus = viewport;
+    if (!viewport) {
+	return;
+    }
     viewport->mousePos = {
 	wl_fixed_to_double (surface_x) * viewport->scale,
 	(viewport->size.y - wl_fixed_to_double (surface_y)) * viewport->scale,
     };
     viewport->hasMousePosition = true;
+    if (!viewport->cursorSurface || !viewport->pointer) {
+	return;
+    }
     wl_surface_set_buffer_scale (viewport->cursorSurface, viewport->scale);
     wl_surface_attach (viewport->cursorSurface, wl_cursor_image_get_buffer (viewport->pointer->images[0]), 0, 0);
     wl_pointer_set_cursor (
@@ -129,9 +136,7 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->shm
 	    = static_cast<wl_shm*> (wl_registry_bind (registry, name, &wl_shm_interface, 1));
     } else if (strcmp (interface, wl_output_interface.name) == 0) {
-	driver->m_screens.emplace_back (
-	    new WallpaperEngine::Render::Drivers::Output::WaylandOutputViewport (driver, name, registry)
-	);
+	driver->onOutputAdded (name, version);
     } else if (strcmp (interface, zwlr_layer_shell_v1_interface.name) == 0) {
 	driver->getWaylandContext ()->layerShell
 	    = static_cast<zwlr_layer_shell_v1*> (wl_registry_bind (registry, name, &zwlr_layer_shell_v1_interface, 1));
@@ -145,12 +150,14 @@ handleGlobal (void* data, struct wl_registry* registry, uint32_t name, const cha
 	driver->getWaylandContext ()->xdgOutputManager = static_cast<zxdg_output_manager_v1*> (
 	    wl_registry_bind (registry, name, &zxdg_output_manager_v1_interface, std::min (version, 3u))
 	);
+	driver->onXdgOutputManagerBound ();
     }
 }
 
 static void handleGlobalRemoved (void* data, struct wl_registry* registry, uint32_t id) {
-    static_cast<WaylandOpenGLDriver*> (data)->getWaylandContext ()->colorManagement.removeGlobal (id);
-    // todo: outputs
+    const auto driver = static_cast<WaylandOpenGLDriver*> (data);
+    driver->getWaylandContext ()->colorManagement.removeGlobal (id);
+    driver->onOutputRemoved (id);
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -383,54 +390,130 @@ void WaylandOpenGLDriver::finishEGL () const {
 }
 
 void WaylandOpenGLDriver::onLayerClose (Output::WaylandOutputViewport* viewport) {
-    sLog.error ("Compositor closed our LS, freeing data...");
+    sLog.out ("Compositor closed the wallpaper surface for ", viewport->name);
+    releaseLayerSurface (viewport);
+    getOutput ().reset ();
+    onOutputChanged ();
+}
 
-    if (viewport->frameCallback) {
-	wl_callback_destroy (viewport->frameCallback);
-	viewport->frameCallback = nullptr;
+void WaylandOpenGLDriver::onOutputAdded (uint32_t name, uint32_t version) {
+    auto* viewport = new Output::WaylandOutputViewport (this, name, m_waylandContext.registry, version);
+    m_screens.push_back (viewport);
+    if (m_waylandContext.xdgOutputManager) {
+	viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
     }
-    if (this->viewportInFocus == viewport) {
-	this->viewportInFocus = nullptr;
-    }
+}
 
-    if (viewport->eglSurface) {
-	eglDestroySurface (m_eglContext.display, viewport->eglSurface);
+void WaylandOpenGLDriver::onXdgOutputManagerBound () {
+    for (auto* viewport : m_screens) {
+	if (viewport->output && !viewport->xdgOutput) {
+	    viewport->setupXdgOutput (m_waylandContext.xdgOutputManager);
+	}
     }
+}
 
-    if (viewport->eglWindow) {
-	wl_egl_window_destroy (viewport->eglWindow);
+void WaylandOpenGLDriver::onOutputRemoved (uint32_t name) {
+    const auto found = std::ranges::find_if (m_screens, [name] (const auto* viewport) {
+	return viewport->waylandName == name && !viewport->removed;
+    });
+    if (found == m_screens.end ()) {
+	return;
     }
+    auto* viewport = *found;
+    sLog.out ("Output ", viewport->name, " removed");
+    // A setup roundtrip may deliver removal of the output currently being set up.
+    // Release its objects now and keep the viewport alive until that call returns.
+    viewport->removed = true;
+    releaseOutput (viewport);
+    getOutput ().reset ();
+    onOutputChanged ();
+}
 
-    if (viewport->layerSurface) {
-	zwlr_layer_surface_v1_destroy (viewport->layerSurface);
+void WaylandOpenGLDriver::releaseLayerSurface (Output::WaylandOutputViewport* viewport) {
+    if (viewportInFocus == viewport) {
+	viewportInFocus = nullptr;
     }
+    if (viewport->eglSurface != EGL_NO_SURFACE && eglGetCurrentSurface (EGL_DRAW) == viewport->eglSurface) {
+	bool current = false;
+	for (const auto* other : m_screens) {
+	    if (other != viewport && other->eglSurface != EGL_NO_SURFACE
+		&& eglMakeCurrent (m_eglContext.display, other->eglSurface, other->eglSurface, m_eglContext.context)) {
+		current = true;
+		break;
+	    }
+	}
+	// Keep the render context available for cleanup and non-presentation GL work
+	// while all outputs are absent, on drivers that support a surfaceless context.
+	if (!current && !eglMakeCurrent (m_eglContext.display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext.context)) {
+	    eglMakeCurrent (m_eglContext.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	}
+    }
+    viewport->destroyLS ();
+}
 
+void WaylandOpenGLDriver::releaseOutput (Output::WaylandOutputViewport* viewport) {
+    releaseLayerSurface (viewport);
     if (viewport->xdgOutput) {
 	zxdg_output_v1_destroy (viewport->xdgOutput);
 	viewport->xdgOutput = nullptr;
     }
-
-    viewport->destroyColorManagement ();
-    if (viewport->surface) {
-	wl_surface_destroy (viewport->surface);
+    if (viewport->output) {
+	if (wl_output_get_version (viewport->output) >= WL_OUTPUT_RELEASE_SINCE_VERSION) {
+	    wl_output_release (viewport->output);
+	} else {
+	    wl_output_destroy (viewport->output);
+	}
+	viewport->output = nullptr;
     }
+}
 
-    // remove the output from the list
-    std::erase (this->m_screens, viewport);
+void WaylandOpenGLDriver::removeDisconnectedOutputs () {
+    std::erase_if (m_screens, [] (auto* viewport) {
+	if (!viewport->removed) {
+	    return false;
+	}
+	delete viewport;
+	return true;
+    });
+}
 
-    // This process drives a single output; with its last layer surface gone there is nothing left
-    // to render, so request an abnormal exit and let the launcher relaunch us instead of lingering
-    // invisibly (the compositor closes the surface on output disable / reload / hotplug).
-    if (this->m_screens.empty ()) {
-	this->m_requestedExit = true;
-	this->m_abnormalExit = true;
+void WaylandOpenGLDriver::processOutputChanges () {
+    if (!std::exchange (m_outputChangePending, false)) {
+	return;
     }
-
-    // reset the viewports
-    this->getOutput ().reset ();
-
-    // finally free memory used by the viewport
-    delete viewport;
+    constexpr int maxAttempts = 3;
+    const auto screens = m_screens; // setup can dispatch further additions and removals
+    for (auto* viewport : screens) {
+	if (viewport->removed || viewport->layerSurface || !viewport->initialized || viewport->setupAttempts >= maxAttempts
+	    || !isOutputRequested (viewport->name)) {
+	    continue;
+	}
+	++viewport->setupAttempts;
+	try {
+	    // The EGL context already owns wallpaper resources. Only startup can replace it with SDR.
+	    viewport->setupLS (false);
+	} catch (const std::exception&) {
+	    releaseLayerSurface (viewport);
+	    getOutput ().reset ();
+	}
+	if (wl_display_get_error (m_waylandContext.display) != 0) {
+	    m_requestedExit = m_abnormalExit = true;
+	    break;
+	}
+	if (viewport->layerSurface) {
+	    viewport->setupAttempts = 0;
+	} else if (!viewport->removed && viewport->setupAttempts < maxAttempts) {
+	    onOutputChanged ();
+	}
+    }
+    removeDisconnectedOutputs ();
+    if (!m_requestedExit) {
+	try {
+	    getApp ().refreshSpanGeometry ();
+	} catch (const std::exception& error) {
+	    sLog.error ("Cannot prepare a newly connected span group: ", error.what ());
+	}
+    }
 }
 
 WaylandOpenGLDriver::WaylandOpenGLDriver (ApplicationContext& context, WallpaperApplication& app) :
@@ -460,47 +543,35 @@ void WaylandOpenGLDriver::initWaylandRegistry () {
 	sLog.exception ("Failed to bind to required interfaces");
     }
 
-    // If xdg-output-manager is available, use it to get logical output positions
-    if (m_waylandContext.xdgOutputManager) {
-	for (const auto& o : this->m_screens) {
-	    o->setupXdgOutput (m_waylandContext.xdgOutputManager);
-	}
-	wl_display_roundtrip (m_waylandContext.display);
-    } else if (!m_context.settings.general.spanGroups.empty ()) {
+    if (!m_waylandContext.xdgOutputManager && !m_context.settings.general.spanGroups.empty ()) {
 	sLog.error ("zxdg_output_manager_v1 is unavailable; screen-span positions will be incorrect.");
     }
+    // Also receive the names of outputs bound during the first roundtrip.
+    wl_display_roundtrip (m_waylandContext.display);
+}
+
+bool WaylandOpenGLDriver::isOutputRequested (const std::string& name) const {
+    if (name.empty ()) {
+	return false;
+    }
+    if (m_context.settings.general.screenBackgrounds.contains (name)) {
+	return true;
+    }
+    return std::ranges::any_of (m_context.settings.general.spanGroups, [&name] (const auto& group) {
+	return std::ranges::find (group.screens, name) != group.screens.end ();
+    });
 }
 
 void WaylandOpenGLDriver::setupOutputLayerSurfaces () {
-    bool any = false;
-
-    for (const auto& o : this->m_screens) {
-	bool shouldSetup = m_context.settings.general.screenBackgrounds.contains (o->name);
-
-	// also check if this screen is in any span group
-	if (!shouldSetup) {
-	    for (const auto& spanGroup : m_context.settings.general.spanGroups) {
-		for (const auto& screen : spanGroup.screens) {
-		    if (screen == o->name) {
-			shouldSetup = true;
-			break;
-		    }
-		}
-		if (shouldSetup) {
-		    break;
-		}
-	    }
+    const auto screens = m_screens; // setup can dispatch further additions and removals
+    for (auto* viewport : screens) {
+	if (!viewport->removed && isOutputRequested (viewport->name)) {
+	    viewport->setupLS (true);
 	}
-
-	if (!shouldSetup) {
-	    continue;
-	}
-
-	o->setupLS ();
-	any = true;
     }
+    removeDisconnectedOutputs ();
 
-    if (!any) {
+    if (getOutput ().getViewports ().empty ()) {
 	sLog.error ("No outputs could be initialized, please check the parameters and try again");
 	sLog.error ("Detected outputs:");
 
@@ -539,13 +610,10 @@ void WaylandOpenGLDriver::initGLEW () {
 }
 
 WaylandOpenGLDriver::~WaylandOpenGLDriver () {
-    // destroy xdg outputs
-    for (const auto& screen : this->m_screens) {
-        screen->destroyColorManagement ();
-	if (screen->xdgOutput) {
-	    zxdg_output_v1_destroy (screen->xdgOutput);
-	    screen->xdgOutput = nullptr;
-	}
+    const auto screens = std::exchange (m_screens, {});
+    for (auto* viewport : screens) {
+	releaseOutput (viewport);
+	delete viewport;
     }
 
     // stop EGL
@@ -574,7 +642,11 @@ WaylandOpenGLDriver::~WaylandOpenGLDriver () {
     }
 }
 
-void WaylandOpenGLDriver::dispatchEventQueue () {
+void WaylandOpenGLDriver::dispatchEventQueue () { dispatchEvents (true); }
+
+void WaylandOpenGLDriver::dispatchPendingEvents () { dispatchEvents (false); }
+
+void WaylandOpenGLDriver::dispatchEvents (bool renderFrames) {
     using Clock = std::chrono::steady_clock;
     const auto frameInterval = [] (int fps) {
 	return std::max (Clock::duration (1), std::chrono::duration_cast<Clock::duration> (
@@ -624,7 +696,7 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     auto* display = m_waylandContext.display;
     while (wl_display_prepare_read (display) != 0) {
 	if (wl_display_dispatch_pending (display) < 0) {
-	    m_requestedExit = true;
+	    m_requestedExit = m_abnormalExit = true;
 	    return;
 	}
     }
@@ -632,14 +704,15 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     const int flushed = wl_display_flush (display);
     if (flushed < 0 && errno != EAGAIN) {
 	wl_display_cancel_read (display);
-	m_requestedExit = true;
+	m_requestedExit = m_abnormalExit = true;
 	return;
     }
     pollfd events { wl_display_get_fd (display), static_cast<short> (POLLIN | (flushed < 0 ? POLLOUT : 0)), 0 };
     // Bookkeeping events must not spend a frame's FPS budget. Wait for events
     // or the earliest ready output's deadline, with a bounded idle heartbeat
     // for IPC/CEF even when all outputs are hidden or the FPS cap is very low.
-    auto wait = std::chrono::duration_cast<Clock::duration> (std::chrono::milliseconds (16));
+    auto wait = renderFrames ? std::chrono::duration_cast<Clock::duration> (std::chrono::milliseconds (16))
+			     : Clock::duration::zero ();
     const auto now = Clock::now ();
     const auto* waitFirst = pacingOutput ();
     const auto waitFirstDeadline = waitFirst ? waitFirst->nextFrameTime : Clock::time_point {};
@@ -663,24 +736,27 @@ void WaylandOpenGLDriver::dispatchEventQueue () {
     m_lastFrameWait = wait > Clock::duration::zero () ? Clock::now () - waitStart : Clock::duration::zero ();
     if (ready > 0 && (events.revents & POLLIN)) {
 	if (wl_display_read_events (display) < 0) {
-	    m_requestedExit = true;
+	    m_requestedExit = m_abnormalExit = true;
 	}
     } else {
 	wl_display_cancel_read (display);
     }
     if ((ready < 0 && pollError != EINTR) || (events.revents & (POLLERR | POLLHUP | POLLNVAL))) {
-	m_requestedExit = true;
+	m_requestedExit = m_abnormalExit = true;
     }
     if (events.revents & POLLOUT) {
 	if (wl_display_flush (display) < 0 && errno != EAGAIN) {
-	    m_requestedExit = true;
+	    m_requestedExit = m_abnormalExit = true;
 	}
     }
     if (!m_requestedExit && wl_display_dispatch_pending (display) < 0) {
-	m_requestedExit = true;
+	m_requestedExit = m_abnormalExit = true;
     }
 
-    if (m_requestedExit) {
+    if (!m_requestedExit) {
+	processOutputChanges ();
+    }
+    if (m_requestedExit || !renderFrames) {
 	return;
     }
 
@@ -772,6 +848,9 @@ void* WaylandOpenGLDriver::getProcAddress (const char* name) const {
 WaylandOpenGLDriver::WaylandContext* WaylandOpenGLDriver::getWaylandContext () { return &this->m_waylandContext; }
 
 Output::WaylandOutputViewport* WaylandOpenGLDriver::surfaceToViewport (const wl_surface* surface) const {
+    if (!surface) {
+	return nullptr;
+    }
     for (const auto& o : m_screens) {
 	if (o->surface == surface) {
 	    return o;

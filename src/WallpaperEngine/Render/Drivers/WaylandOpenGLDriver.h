@@ -78,6 +78,7 @@ public:
     uint32_t getFrameCounter () const override;
     std::chrono::steady_clock::duration getLastFrameWait () const override;
     void dispatchEventQueue () override;
+    void dispatchPendingEvents () override;
     [[nodiscard]] void* getProcAddress (const char* name) const override;
     bool makeBuildContextCurrent () override;
     void releaseBuildContext () override;
@@ -85,6 +86,10 @@ public:
     // Only used during surface setup, before any wallpaper GL resources exist.
     bool fallbackToSDR ();
     void onLayerClose (Output::WaylandOutputViewport*);
+    void onOutputAdded (uint32_t name, uint32_t version);
+    void onOutputRemoved (uint32_t name);
+    void onXdgOutputManagerBound ();
+    void onOutputChanged () { m_outputChangePending = true; }
     Output::WaylandOutputViewport* surfaceToViewport (const wl_surface*) const;
 
     Output::WaylandOutputViewport* viewportInFocus = nullptr;
@@ -107,11 +112,18 @@ private:
     /** The Wayland context in use */
     WaylandContext m_waylandContext = {};
     mutable bool m_requestedExit;
-    /** Set when the compositor closed our last layer surface, so the process exits non-zero to be relaunched. */
+    /** The display connection failed and cannot recover within this process. */
     bool m_abnormalExit = false;
+    bool m_outputChangePending = false;
 
     void initWaylandRegistry ();
     void setupOutputLayerSurfaces ();
+    bool isOutputRequested (const std::string& name) const;
+    void releaseLayerSurface (Output::WaylandOutputViewport* viewport);
+    void releaseOutput (Output::WaylandOutputViewport* viewport);
+    void removeDisconnectedOutputs ();
+    void processOutputChanges ();
+    void dispatchEvents (bool renderFrames);
     void initEGL ();
     EGLContext createEGLContext ();
     void initGLEW ();
