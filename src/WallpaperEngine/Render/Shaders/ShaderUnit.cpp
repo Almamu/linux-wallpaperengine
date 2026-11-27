@@ -376,6 +376,47 @@ void flattenPackedAudioSpectrumIndices (std::string& source) {
     }
 }
 
+void narrowRgbProducts (std::string& source) {
+    // HLSL truncates the wider operand of a component-wise product. The scalar
+    // tail of this constructor is its alpha, so only narrow the RGB product.
+    static const std::regex product (
+	R"(\b(?:vec4|float4)\s*\(\s*([A-Za-z_]\w*)\s*\*\s*([A-Za-z_]\w*)\s*,\s*[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\s*\))"
+    );
+    if (!std::regex_search (source, product)) return;
+
+    const std::string code = maskShaderComments (source);
+    const auto width = [&code] (const std::string& name) {
+	const std::regex declaration (R"(\b([A-Za-z_]\w*)\s+)" + name + R"(\b\s*(?=[=;,\)\[])(\[)?)");
+	const std::regex ambiguous (R"(#\s*define\s+)" + name + R"(\b|,\s*)" + name + R"(\b\s*(?=[=;,\[]))");
+	if (std::regex_search (code, ambiguous)) return 0;
+	int agreedWidth = 0;
+	for (std::sregex_iterator match (code.begin (), code.end (), declaration), end; match != end; ++match) {
+	    const std::string type = (*match)[1].str ();
+	    if ((*match)[2].matched || (type != "vec3" && type != "float3" && type != "vec4" && type != "float4")) {
+		return 0;
+	    }
+	    const int declaredWidth = type.back () - '0';
+	    // Includes can reuse common names. Narrow only when all declarations
+	    // agree, including declarations inside inactive combo branches.
+	    if (agreedWidth != 0 && agreedWidth != declaredWidth) return 0;
+	    agreedWidth = declaredWidth;
+	}
+	return agreedWidth;
+    };
+    std::vector<size_t> swizzles;
+    for (std::sregex_iterator match (code.begin (), code.end (), product), end; match != end; ++match) {
+	const int left = width ((*match)[1].str ());
+	const int right = width ((*match)[2].str ());
+	if ((left == 3 && right == 4) || (left == 4 && right == 3)) {
+	    const int wider = left == 4 ? 1 : 2;
+	    swizzles.push_back (match->position (wider) + match->length (wider));
+	}
+    }
+    for (const size_t position : swizzles | std::views::reverse) {
+	source.insert (position, ".xyz");
+    }
+}
+
 // Keep native GLSL min/max overloads. Only the HLSL literal-first max idiom
 // needs reordering: its literal is known to be scalar, while the other argument
 // may be a vector. Each argument is still evaluated once and constants remain
@@ -2476,6 +2517,7 @@ const std::string& ShaderUnit::compile () {
 	}
 	if (adaptReflectionProjection) adaptLegacyReflectionProjection (compatResult);
 	flattenPackedAudioSpectrumIndices (compatResult);
+	narrowRgbProducts (compatResult);
 	compatResult = this->applyNumericParameterCallCompatibility (std::move (compatResult));
 	compatResult = this->applyNumericInitializerCompatibility (std::move (compatResult));
 	compatResult = this->applyNonConstantInitializerCompatibility (std::move (compatResult));

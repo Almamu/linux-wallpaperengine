@@ -111,6 +111,44 @@ TEST_CASE ("native varying declarations ignore component suffixes", "[shader][va
     }
 }
 
+TEST_CASE ("native RGB products truncate a wider vector before constructing RGBA", "[shader][vector-product]") {
+    const std::string vertex =
+	"varying lowp vec3 color;\n"
+	"void main() { gl_Position = vec4(0.0); color = vec3(0.25, 0.5, 0.75); }\n";
+    const std::string fragment =
+	"varying lowp vec3 color;\n"
+	"vec3 convertColor(vec3 color) { return abs(color); }\n"
+	"uniform vec4 tint;\n"
+	"void main() {\n"
+	"    vec4 sampleColor = tint;\n";
+
+    for (const std::string product : { "color * sampleColor", "sampleColor * color" }) {
+	CAPTURE (product);
+	const auto sources = compileLinked (
+	    vertex,
+	    fragment + "    gl_FragColor = vec4(" + product + ", 1.0);\n"
+	    "    gl_FragColor.a = sampleColor.a;\n}\n", {}
+	);
+	const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+	REQUIRE_FALSE (translated.second.empty ());
+	CHECK_THAT (sources.second, Catch::Matchers::ContainsSubstring ("sampleColor.xyz"));
+	CHECK_THAT (sources.second, Catch::Matchers::ContainsSubstring ("sampleColor.a"));
+    }
+
+    const auto control = compileLinked (
+	vertex, fragment + "    gl_FragColor = vec4(color * sampleColor.rgb, 1.0);\n}\n", {}
+    );
+    REQUIRE_FALSE (GLSLContext::get ().toGlsl (control.first, control.second).second.empty ());
+    CHECK_THAT (control.second, Catch::Matchers::ContainsSubstring ("color * sampleColor.rgb"));
+
+    const auto shadowed = compileLinked (
+	vertex, "varying lowp vec3 color;\nuniform vec4 otherColor;\n"
+	"void main() { vec3 temp = vec3(0.5), otherColor = temp; gl_FragColor = vec4(color * otherColor, 1.0); }", {}
+    );
+    REQUIRE_FALSE (GLSLContext::get ().toGlsl (shadowed.first, shadowed.second).second.empty ());
+    CHECK_THAT (shadowed.second, Catch::Matchers::ContainsSubstring ("color * otherColor, 1.0"));
+}
+
 TEST_CASE ("varying suffix normalization preserves conditional types and expression swizzles", "[shader][varying-suffix]") {
     const std::string declarations =
         "#if SMALL\nvarying vec2 v_Size.xy;\n#else\nvarying vec4 v_Size.rgba;\n#endif\n"
