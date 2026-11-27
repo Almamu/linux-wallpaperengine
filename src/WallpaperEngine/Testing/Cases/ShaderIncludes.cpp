@@ -127,6 +127,81 @@ void main() {
     CHECK_THAT (control.second, Catch::Matchers::ContainsSubstring ("#elif AUDIOSAMPLES == 64; + 1"));
 }
 
+TEST_CASE ("numeric negation preserves scalar and vector shader arguments", "[shader][typed-expression]") {
+    const auto sources = compileLinked (
+	R"(
+uniform float amount;
+varying vec2 uv;
+void main() {
+    float selected = amount;
+    bool accept = amount > 0.0;
+    float choice = amount > 0.0 ? !selected : selected;
+    uv = vec2(!selected, selected) + vec2(selected, !selected) + vec2(choice) + vec2(!accept, accept);
+    gl_Position = vec4(0.0);
+}
+)",
+	"varying vec2 uv;\nvoid main() { gl_FragColor = vec4(uv, 0.0, 1.0); }", {}
+    );
+    const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+    REQUIRE_FALSE (translated.first.empty ());
+    CHECK_THAT (sources.first, Catch::Matchers::ContainsSubstring ("float(selected == 0.0)"));
+    CHECK_THAT (sources.first, Catch::Matchers::ContainsSubstring ("vec2(!accept, accept)"));
+}
+
+TEST_CASE ("vec2 texture-resolution division narrows both componentwise operands", "[shader][typed-expression]") {
+    const auto sources = compileLinked (
+	R"(
+uniform vec4 g_Texture0Resolution;
+uniform vec4 g_Texture1Resolution;
+uniform vec2 pixelOffset;
+varying vec2 uv;
+void main() {
+    vec2 fit = (g_Texture1Resolution - g_Texture0Resolution) * 0.5 / g_Texture0Resolution;
+    vec2 delta = pixelOffset / g_Texture0Resolution;
+    vec4 widthControl = g_Texture1Resolution / g_Texture0Resolution;
+    uv = fit + delta + widthControl.zw;
+    gl_Position = vec4(0.0);
+}
+)",
+	"varying vec2 uv;\nvoid main() { gl_FragColor = vec4(uv, 0.0, 1.0); }", {}
+    );
+    const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+    REQUIRE_FALSE (translated.first.empty ());
+    CHECK_THAT (sources.first, Catch::Matchers::ContainsSubstring ("* 0.5) / g_Texture0Resolution.xy"));
+    CHECK_THAT (sources.first, Catch::Matchers::ContainsSubstring ("g_Texture1Resolution / g_Texture0Resolution"));
+}
+
+TEST_CASE ("a scalar step sample broadcasts to both components of a vec2 edge", "[shader][typed-expression]") {
+    const auto sources = compileLinked (
+	"varying vec2 uv;\nvoid main() { gl_Position = vec4(0.0); uv = vec2(0.1, 2.1); }",
+	R"(
+varying vec2 uv;
+void main() {
+    vec2 gate = step(abs(floor(uv)) + 0.001, 1);
+    float scalar = step(uv.x, 1.0);
+    gl_FragColor = vec4(gate, scalar, 1.0);
+}
+)", {}
+    );
+    const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+    REQUIRE_FALSE (translated.second.empty ());
+    CHECK_THAT (sources.second, Catch::Matchers::ContainsSubstring ("step(abs(floor(uv)) + 0.001, vec2(1))"));
+    CHECK_THAT (sources.second, Catch::Matchers::ContainsSubstring ("step(uv.x, 1.0)"));
+
+    const auto custom = compileLinked (
+	"void main() { gl_Position = vec4(0.0); }",
+	R"(
+vec2 step(vec2 edge, float sampleValue) { return edge - sampleValue; }
+void main() {
+    vec2 value = step(vec2(0.5), 1);
+    gl_FragColor = vec4(value, 0.0, 1.0);
+}
+)", {}
+    );
+    REQUIRE_FALSE (GLSLContext::get ().toGlsl (custom.first, custom.second).second.empty ());
+    CHECK_THAT (custom.second, Catch::Matchers::ContainsSubstring ("step(vec2(0.5),float( 1))"));
+}
+
 TEST_CASE ("native varying declarations ignore component suffixes", "[shader][varying-suffix]") {
     for (const std::string suffix : { "", ".xy", ".rgba" }) {
 	for (const bool vertexSuffix : { false, true }) {

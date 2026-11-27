@@ -430,6 +430,108 @@ void flattenPackedAudioSpectrumIndices (std::string& source) {
     }
 }
 
+int agreedShaderFloatWidth (const std::string& code, const std::string& name) {
+    const std::regex declaration (R"(\b([A-Za-z_]\w*)\s+)" + name + R"(\b\s*(?=[=;,\)\[])(\[)?)");
+    const std::regex ambiguous (R"(#\s*define\s+)" + name + R"(\b|,\s*)" + name + R"(\b\s*(?=[=;,\[]))");
+    if (std::regex_search (code, ambiguous)) return 0;
+    int agreedWidth = 0;
+    for (std::sregex_iterator match (code.begin (), code.end (), declaration), end; match != end; ++match) {
+	const std::string type = (*match)[1].str ();
+	const bool vector = type == "vec2" || type == "float2" || type == "vec3" || type == "float3"
+	    || type == "vec4" || type == "float4";
+	if ((*match)[2].matched || (!vector && type != "float")) return 0;
+	const int declaredWidth = vector ? type.back () - '0' : 1;
+	// Includes can reuse common names. Narrow only when all declarations
+	// agree, including declarations inside inactive combo branches.
+	if (agreedWidth != 0 && agreedWidth != declaredWidth) return 0;
+	agreedWidth = declaredWidth;
+    }
+    return agreedWidth;
+}
+
+void lowerNumericNegations (std::string& source) {
+    // The scalar's type is established before turning a logical result into
+    // a numeric one. Boolean uses and ambiguous declarations stay as written.
+    static const std::regex ternary (R"(\?\s*(!\s*)([A-Za-z_]\w*)\s*:\s*\2\b)");
+    static const std::regex pair (
+	R"(\b(?:vec2|float2)\s*\(\s*(!\s*)?([A-Za-z_]\w*)\s*,\s*(!\s*)?([A-Za-z_]\w*)\s*\))"
+    );
+    if (source.find ('!') == std::string::npos || (!std::regex_search (source, ternary) && !std::regex_search (source, pair))) {
+	return;
+    }
+
+    const std::string code = maskShaderComments (source);
+    std::map<size_t, size_t> replacements;
+    const auto record = [&] (const std::smatch& match, int marker, int name) {
+	if (!match[marker].matched || agreedShaderFloatWidth (code, match[name].str ()) != 1) return;
+	replacements.emplace (match.position (marker), match.position (name) + match.length (name));
+    };
+    for (std::sregex_iterator it (code.begin (), code.end (), ternary), end; it != end; ++it) {
+	record (*it, 1, 2);
+    }
+    for (std::sregex_iterator it (code.begin (), code.end (), pair), end; it != end; ++it) {
+	record (*it, 1, 2);
+	record (*it, 3, 4);
+    }
+    for (const auto& [position, end] : replacements | std::views::reverse) {
+	source.insert (end, " == 0.0)");
+	source.replace (position, 1, "float(");
+    }
+}
+
+void narrowTextureResolutionDivisions (std::string& source) {
+    // The vec2 initializer keeps the first two components of its final
+    // component-wise division. Narrow both inputs without changing precedence.
+    static const std::regex division (
+	R"(\b(?:vec2|float2)[ \t]+[A-Za-z_]\w*[ \t]*=[ \t]*([^;\r\n]*[^\s;])[ \t]*/[ \t]*(g_Texture[0-9]+Resolution)[ \t]*;)"
+    );
+    if (source.find ("Resolution") == std::string::npos || !std::regex_search (source, division)) return;
+
+    const std::string code = maskShaderComments (source);
+    std::vector<std::smatch> divisions;
+    for (std::sregex_iterator it (code.begin (), code.end (), division), end; it != end; ++it) {
+	if (agreedShaderFloatWidth (code, (*it)[2].str ()) != 4) continue;
+	int depth = 0;
+	bool multiplicative = true;
+	for (const char token : (*it)[1].str ()) {
+	    if (depth == 0 && std::string_view ("+-?:=,<>!&|^%").find (token) != std::string_view::npos) {
+		multiplicative = false;
+		break;
+	    }
+	    if (token == '(' || token == '[') ++depth;
+	    if (token == ')' || token == ']') --depth;
+	}
+	if (multiplicative && depth == 0) divisions.push_back (*it);
+    }
+    for (const auto& match : divisions | std::views::reverse) {
+	source.insert (match.position (2) + match.length (2), ".xy");
+	source.insert (match.position (1) + match.length (1), ")");
+	source.insert (match.position (1), "vec2(");
+    }
+}
+
+void broadcastScalarStepSamples (std::string& source) {
+    static const std::regex stepCall (
+	R"(\b(?:vec2|float2)\s+[A-Za-z_]\w*[ \t]*=[ \t]*step\s*\([^;\r\n]+,\s*([+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+))\s*\)\s*;)"
+    );
+    if (source.find ("step") == std::string::npos || !std::regex_search (source, stepCall)) return;
+
+    const std::string code = maskShaderComments (source);
+    static const std::regex customStep (
+	R"(#\s*define\s+step\b|\b[A-Za-z_]\w*\s+step\s*\([^;]*\)\s*[{;])"
+    );
+    if (std::regex_search (code, customStep)) return;
+
+    std::vector<std::smatch> samples;
+    for (std::sregex_iterator it (code.begin (), code.end (), stepCall), end; it != end; ++it) {
+	samples.push_back (*it);
+    }
+    for (const auto& match : samples | std::views::reverse) {
+	source.insert (match.position (1) + match.length (1), ")");
+	source.insert (match.position (1), "vec2(");
+    }
+}
+
 void narrowRgbProducts (std::string& source) {
     // HLSL truncates the wider operand of a component-wise product. The scalar
     // tail of this constructor is its alpha, so only narrow the RGB product.
@@ -439,28 +541,10 @@ void narrowRgbProducts (std::string& source) {
     if (!std::regex_search (source, product)) return;
 
     const std::string code = maskShaderComments (source);
-    const auto width = [&code] (const std::string& name) {
-	const std::regex declaration (R"(\b([A-Za-z_]\w*)\s+)" + name + R"(\b\s*(?=[=;,\)\[])(\[)?)");
-	const std::regex ambiguous (R"(#\s*define\s+)" + name + R"(\b|,\s*)" + name + R"(\b\s*(?=[=;,\[]))");
-	if (std::regex_search (code, ambiguous)) return 0;
-	int agreedWidth = 0;
-	for (std::sregex_iterator match (code.begin (), code.end (), declaration), end; match != end; ++match) {
-	    const std::string type = (*match)[1].str ();
-	    if ((*match)[2].matched || (type != "vec3" && type != "float3" && type != "vec4" && type != "float4")) {
-		return 0;
-	    }
-	    const int declaredWidth = type.back () - '0';
-	    // Includes can reuse common names. Narrow only when all declarations
-	    // agree, including declarations inside inactive combo branches.
-	    if (agreedWidth != 0 && agreedWidth != declaredWidth) return 0;
-	    agreedWidth = declaredWidth;
-	}
-	return agreedWidth;
-    };
     std::vector<size_t> swizzles;
     for (std::sregex_iterator match (code.begin (), code.end (), product), end; match != end; ++match) {
-	const int left = width ((*match)[1].str ());
-	const int right = width ((*match)[2].str ());
+	const int left = agreedShaderFloatWidth (code, (*match)[1].str ());
+	const int right = agreedShaderFloatWidth (code, (*match)[2].str ());
 	if ((left == 3 && right == 4) || (left == 4 && right == 3)) {
 	    const int wider = left == 4 ? 1 : 2;
 	    swizzles.push_back (match->position (wider) + match->length (wider));
@@ -2607,6 +2691,9 @@ const std::string& ShaderUnit::compile () {
 	}
 	if (adaptReflectionProjection) adaptLegacyReflectionProjection (compatResult);
 	flattenPackedAudioSpectrumIndices (compatResult);
+	lowerNumericNegations (compatResult);
+	narrowTextureResolutionDivisions (compatResult);
+	broadcastScalarStepSamples (compatResult);
 	narrowRgbProducts (compatResult);
 	compatResult = this->applyNumericParameterCallCompatibility (std::move (compatResult));
 	compatResult = this->applyNumericInitializerCompatibility (std::move (compatResult));
