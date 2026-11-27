@@ -2030,8 +2030,15 @@ void CImage::setup () {
     // The color-blending pass already provides stable final geometry. It must
     // sample the background in scene coordinates, not fill a local image target
     // with a miniature copy of the entire scene.
+    const auto& model = *this->m_image.model;
+    const auto& dependencies = this->m_image.dependencies;
+    const bool selfDependency = !scene.camera.projection.isPerspective && !this->m_hasPuppetMesh
+        && !model.fullscreen && !model.passthrough && !model.solidlayer && !this->isCompositionLayer ()
+        && dynamic_cast<const CTexture*> (this->m_texture.get ()) != nullptr && !this->m_texture->isAnimated ()
+        && std::ranges::find (dependencies, this->m_image.id) != dependencies.end ();
+    // A self-dependent image finishes its authored chain in its local target before compositing.
     if ((debug.baseOnly || this->m_image.colorBlendMode->value->getInt () <= 0)
-        && (finalFog || this->isCompositionLayer ()
+        && (finalFog || selfDependency || this->isCompositionLayer ()
 	    || ((this->m_hasPuppetMesh || !m_passVisibility.empty ()) && this->m_passes.size () > 1))) {
 	const bool hasClipping = this->getImage ().model->puppetMesh.has_value ()
 	    && !this->getImage ().model->puppetMesh->clippingDescriptors.empty ();
@@ -2058,6 +2065,7 @@ void CImage::setup () {
 	// The source already applied the image tint and opacity.
 	this->m_passes.back ()->addUniform ("g_Color4", &neutralCompositeColor);
 	if (finalFog) this->m_fogPass = this->m_passes.back ();
+	if (selfDependency) this->m_selfDependencyPresentation = this->m_passes.back ();
     }
 
     // If there is more than one pass, the first pass renders only to an intermediate FBO while the
@@ -2504,8 +2512,10 @@ void CImage::render () {
     const auto end = this->m_activePasses.end ();
     // Native exports the effected image before its final scene blend and fog.
     // Consumers apply their own fog; reusable textures must retain their color.
+    const bool presentsLocalComposite = m_finalPassRouting.has_value ()
+	&& (m_finalPassRouting->pass == m_fogPass || m_finalPassRouting->pass == m_selfDependencyPresentation);
     const bool skipScenePresentation = !m_finalPassDrawsToScene && m_finalPassRouting.has_value ()
-	&& (m_materials.colorBlending.material != nullptr || m_finalPassRouting->pass == m_fogPass);
+	&& (m_materials.colorBlending.material != nullptr || presentsLocalComposite);
     auto command = m_swapCommands.begin ();
     for (size_t index = 0; index <= renderPassCount; ++index) {
 	for (; command != m_swapCommands.end () && command->beforePass == index; ++command) {
@@ -2545,8 +2555,8 @@ void CImage::render () {
     // Preserve the working-buffer routes: visible layers and explicit effect
     // bindings may also depend on them. No additional texture allocation is needed.
     if (renderPassCount == m_passes.size () && m_finalPassRouting.has_value ()
-	&& (!m_finalPassDrawsToScene || m_finalPassRouting->pass == m_fogPass)) {
-	const auto result = skipScenePresentation || m_finalPassRouting->pass == m_fogPass
+	&& (!m_finalPassDrawsToScene || presentsLocalComposite)) {
+	const auto result = skipScenePresentation || presentsLocalComposite
 	    ? std::static_pointer_cast<const CFBO> (m_finalPassRouting->input)
 	    : m_finalPassRouting->offscreenTarget;
 	if (result != m_mainFBO) {
