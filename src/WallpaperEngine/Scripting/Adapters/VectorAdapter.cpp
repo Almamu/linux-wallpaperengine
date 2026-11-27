@@ -272,6 +272,22 @@ template auto vector_get<3> (JSContext* ctx, int argc, JSValueConst* argv) -> de
 template auto vector_get<4> (JSContext* ctx, int argc, JSValueConst* argv) -> decltype (auto);
 
 template <int components>
+int vector_get_own_property (JSContext* ctx, JSPropertyDescriptor* descriptor, JSValueConst object, JSAtom atom) {
+    JSClassID classId = 0;
+    auto* container = static_cast<VectorOpaqueContainer<components>*> (JS_GetAnyOpaque (object, &classId));
+    if (!container || container->magic != static_cast<int> (VEC_OPAQUE_MAGIC + components)) return 0;
+    const int index = container->adapter.componentIndex (atom);
+    if (index < 0) return 0;
+    if (descriptor != nullptr) {
+	VEC_MAGIC_CHECK_ERROR (container, components);
+	*descriptor = { .flags = JS_PROP_WRITABLE | JS_PROP_ENUMERABLE,
+	    .value = JS_NewFloat64 (ctx, vector_get<components> (container->value)[index]),
+	    .getter = JS_UNDEFINED, .setter = JS_UNDEFINED };
+    }
+    return 1;
+}
+
+template <int components>
 JSValue vector_property_get (JSContext* ctx, JSValueConst obj_val, JSAtom atom, JSValueConst receiver) {
     JSClassID classId = 0;
 
@@ -925,6 +941,7 @@ VectorAdapter<components>::VectorAdapter (ScriptEngine& engine) :
     ObjectAdapter (engine), m_instanceId (++VectorAdapterInstanceId), m_name ("Vec" + std::to_string (components)),
     m_exoticMethods (
 	{
+	    .get_own_property = vector_get_own_property<components>,
 	    .get_property = vector_property_get<components>,
 	    .set_property = vector_property_set<components>,
 	}

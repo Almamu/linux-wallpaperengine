@@ -325,6 +325,18 @@ static bool hasOrdinaryOwnProperty (Native* n, JSObjectRef obj, JSStringRef name
     }
     return JSValueToBoolean (n->ctx->jsc, result);
 }
+static bool hasNativeOwn (JSContextRef, JSObjectRef obj, JSStringRef name) {
+    auto* n = static_cast<Native*> (JSObjectGetPrivate (obj));
+    if (!n || !n->id || n->queryingOwnProperty) return false;
+    auto* c = n->ctx;
+    const auto& cls = *n->rt.load ()->classes.at (n->id);
+    const JSAtom atom = propertyAtom (c, name);
+    Holder selfHandle { 0, c, obj, n };
+    const JSValue self = JS_MKPTR (JS_TAG_OBJECT, &selfHandle);
+    const int found = cls.exotic.get_own_property (c, nullptr, self, atom);
+    JS_FreeAtom (c, atom);
+    return found > 0;
+}
 static JSValueRef getNative (JSContextRef jc, JSObjectRef obj, JSStringRef name, JSValueRef* ex) {
     auto* n = static_cast<Native*> (JSObjectGetPrivate (obj));
     if (!n || !n->id || n->queryingOwnProperty) {
@@ -640,6 +652,7 @@ int JS_NewClass (JSRuntime* rt, JSClassID id, const JSClassDef* def) {
     d.className = def->class_name;
     d.attributes = kJSClassAttributeNoAutomaticPrototype;
     d.finalize = collected;
+    if (cls->exotic.get_own_property) d.hasProperty = hasNativeOwn;
     d.getProperty = getNative;
     d.setProperty = setNative;
     cls->klass = JSClassCreate (&d);

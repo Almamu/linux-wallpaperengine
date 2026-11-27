@@ -1047,6 +1047,12 @@ void ScriptEngine::callLifecycleHook (const std::string& key, LoadedModule& load
 	    if (std::isfinite (weight)) model->applyScriptBlend (*blend, weight, time);
 	}
     } else {
+	// Native layer visibility keeps its current value when update() returns a number.
+	if (update && JS_IsNumber (result) && loaded.object != nullptr && key.starts_with ("visible_")) {
+	    const auto& properties = loaded.object->getProperties ();
+	    const auto visibility = properties.find ("visible");
+	    if (visibility != properties.end () && visibility->second.key == key) return;
+	}
 	jsToDynamicValue (this->m_context, result, loaded.value);
     }
 }
