@@ -1,4 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <utility>
 
 #include "WallpaperEngine/Data/Model/DynamicValue.h"
@@ -6,11 +8,26 @@
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
 #include "WallpaperEngine/Render/Objects/CText.h"
 
+using WallpaperEngine::Render::Objects::blitTextBitmap;
 using WallpaperEngine::Render::Objects::computeTextAlignmentOffset;
 using WallpaperEngine::Render::Objects::computeTextEffectLayout;
 using WallpaperEngine::Render::Objects::layoutTextLines;
 using WallpaperEngine::Render::Objects::nextUtf8Codepoint;
 using WallpaperEngine::Render::Objects::TextGlyphMetrics;
+
+TEST_CASE ("classic text coverage honors bitmap pitch and monochrome packing", "[text][bitmap]") {
+    unsigned char gray[] = { 24, 128, 255, 0, 255, 77 };
+    FT_Bitmap bitmap { .rows = 2, .width = 2, .pitch = -3, .buffer = gray, .pixel_mode = FT_PIXEL_MODE_GRAY };
+    std::vector<uint8_t> coverage { 40, 30, 0, 64 };
+    blitTextBitmap (bitmap, { 0, 0 }, { 2, 2 }, coverage);
+    CHECK (coverage == std::vector<uint8_t> { 40, 255, 24, 160 });
+
+    unsigned char mono[] = { 0x81, 0x80, 0xFF };
+    bitmap = { .rows = 1, .width = 9, .pitch = 3, .buffer = mono, .pixel_mode = FT_PIXEL_MODE_MONO };
+    coverage.assign (8, 32);
+    blitTextBitmap (bitmap, { -1, 0 }, { 8, 1 }, coverage);
+    CHECK (coverage == std::vector<uint8_t> { 32, 32, 32, 32, 32, 32, 255, 255 });
+}
 
 TEST_CASE ("text spacing defaults to zero and preserves signed fractional pixels", "[text][spacing]") {
     const WallpaperEngine::Data::Model::Project project {};

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <limits>
 #include <mutex>
@@ -1211,7 +1212,8 @@ FT_Face CText::fontForGlyph (const uint32_t code) {
 unsigned int CText::currentFontSize () const {
     // Native keeps fractional points in FreeType's 26.6 units at 300 DPI.
     // Converting to whole pixels first changes both ink and padded line bounds.
-    return static_cast<unsigned int> (std::clamp (m_text.pointSize->value->getFloat (), 1.0f, 256.0f) * 64.0f);
+    const float points = m_text.pointSize->value->getFloat ();
+    return std::isfinite (points) ? static_cast<unsigned int> (std::clamp (points, 1.0f, 256.0f) * 64.0f) : 64u;
 }
 
 TextLayoutLimits CText::currentLayoutLimits () const {
@@ -1382,6 +1384,31 @@ std::optional<glm::mat3> CText::transformAttachmentToTexture (
         camera.getEye ().z, size, receiverEye);
 }
 
+void WallpaperEngine::Render::Objects::blitTextBitmap (
+    const FT_Bitmap& bitmap, const glm::ivec2 origin, const glm::ivec2 size, std::vector<uint8_t>& coverage
+) {
+    const bool monochrome = bitmap.pixel_mode == FT_PIXEL_MODE_MONO;
+    if (bitmap.rows == 0 || bitmap.buffer == nullptr || (!monochrome && bitmap.pixel_mode != FT_PIXEL_MODE_GRAY)) {
+	return;
+    }
+
+    const std::ptrdiff_t pitch = bitmap.pitch;
+    const auto* top = pitch < 0 ? bitmap.buffer - pitch * static_cast<std::ptrdiff_t> (bitmap.rows - 1) : bitmap.buffer;
+    for (unsigned int row = 0; row < bitmap.rows; ++row) {
+	const int y = origin.y + static_cast<int> (row);
+	if (y < 0 || y >= size.y) continue;
+	const auto* source = top + pitch * static_cast<std::ptrdiff_t> (row);
+	for (unsigned int col = 0; col < bitmap.width; ++col) {
+	    const int x = origin.x + static_cast<int> (col);
+	    if (x < 0 || x >= size.x) continue;
+	    const unsigned int incoming = monochrome ? ((source[col / 8] & (0x80u >> (col % 8))) ? 255 : 0) : source[col];
+	    // Overlapping glyphs accumulate source-over coverage, including transparent edges.
+	    auto& pixel = coverage[static_cast<size_t> (y) * size.x + x];
+	    pixel = incoming + (pixel * (255 - incoming) + 127) / 255;
+	}
+    }
+}
+
 void CText::rebuildTextureFrom (const std::string& text) {
     // Wallpaper Engine lays out a glyph mesh, then aligns that mesh around the layer
     // origin from its actual bounds and the font's ascender/descender. The serialized
@@ -1534,48 +1561,37 @@ void CText::rebuildTextureFrom (const std::string& text) {
     constexpr int kInkMargin = 4;
     const int x0 = inkLeft - kInkMargin;
     const int y0 = inkTop - kInkMargin;
-    const int width = std::max (1, inkRight - inkLeft + kInkMargin * 2);
-    const int height = std::max (1, inkBottom - inkTop + kInkMargin * 2);
-    std::vector<uint8_t> pixels (m_usingMsdf ? 0 : static_cast<size_t> (width) * height, 0);
-
-    if (!m_usingMsdf) {
-
-    for (size_t i = 0; i < lines.size (); i++) {
-	const auto& line = lines[i];
-	float penX = line.x;
-	const float baseline = static_cast<float> (i) * lineHeight;
-
-	for (const auto& glyph : line.glyphs) {
-            const float x = penX + glyph.xOffset;
-            const float y = baseline - glyph.yOffset;
-	    const auto slot = loadPositionedGlyph (glyph, x, y);
-	    if (slot == nullptr) {
-		continue;
+    const int64_t width = std::max<int64_t> (1, int64_t { inkRight } - inkLeft + kInkMargin * 2);
+    const int64_t height = std::max<int64_t> (1, int64_t { inkBottom } - inkTop + kInkMargin * 2);
+    GLint maximumSize = 0;
+    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &maximumSize);
+    constexpr int64_t kMaxCoveragePixels = 16 * 1024 * 1024;
+    const bool grayRasterOmitted = !m_usingMsdf
+	&& (width > maximumSize || height > maximumSize || width > kMaxCoveragePixels / height);
+    glm::ivec2 rasterSize (1);
+    std::vector<uint8_t> pixels;
+    if (grayRasterOmitted) {
+	// A transparent texel keeps the layer usable if a live value fits again.
+	sLog.error ("CText: grayscale bitmap exceeds raster limits for '", m_text.name, "': ", width, "x", height);
+	pixels.push_back (0);
+    } else if (!m_usingMsdf) {
+	rasterSize = { static_cast<int> (width), static_cast<int> (height) };
+	pixels.resize (static_cast<size_t> (rasterSize.x) * rasterSize.y);
+	for (size_t i = 0; i < lines.size (); i++) {
+	    const auto& line = lines[i];
+	    float penX = line.x;
+	    const float baseline = static_cast<float> (i) * lineHeight;
+	    for (const auto& glyph : line.glyphs) {
+		const float x = penX + glyph.xOffset;
+		const float y = baseline - glyph.yOffset;
+		const auto slot = loadPositionedGlyph (glyph, x, y);
+		if (slot == nullptr) continue;
+		const int originX = static_cast<int> (std::floor (x)) + slot->bitmap_left - x0;
+		const int originY = static_cast<int> (std::floor (y)) - slot->bitmap_top - y0;
+		blitTextBitmap (slot->bitmap, { originX, originY }, rasterSize, pixels);
+		penX += glyph.advance + m_lastSpacing.x;
 	    }
-
-	    const auto& bmp = slot->bitmap;
-	    const int originX = static_cast<int> (std::floor (x)) + slot->bitmap_left - x0;
-	    const int originY = static_cast<int> (std::floor (y)) - slot->bitmap_top - y0;
-
-	    for (unsigned int row = 0; row < bmp.rows; ++row) {
-		for (unsigned int col = 0; col < bmp.width; ++col) {
-		    const int dstX = originX + static_cast<int> (col);
-		    const int dstY = originY + static_cast<int> (row);
-		    if (dstX < 0 || dstX >= width || dstY < 0 || dstY >= height) {
-			continue;
-		    }
-		    // Glyph bitmaps overlap when ink extends past the advance (italic text
-		    // and display-clock fonts). Transparent texels in the next glyph must
-		    // not erase the previous one; accumulate coverage as source-over alpha.
-		    auto& coverage = pixels[static_cast<size_t> (dstY) * width + dstX];
-		    const unsigned int incoming = bmp.buffer[row * bmp.pitch + col];
-		    coverage = incoming + (coverage * (255 - incoming) + 127) / 255;
-		}
-	    }
-
-	    penX += glyph.advance + m_lastSpacing.x;
 	}
-    }
     }
     FT_Set_Transform (m_ftFace, nullptr, nullptr);
 
@@ -1587,8 +1603,6 @@ void CText::rebuildTextureFrom (const std::string& text) {
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     std::vector<glm::ivec2> atlasOrigins;
     if (m_usingMsdf) {
-        GLint maximumSize;
-        glGetIntegerv (GL_MAX_TEXTURE_SIZE, &maximumSize);
         int atlasWidth = std::min (1024, maximumSize);
         for (const auto* image : glyphImages) atlasWidth = std::max (atlasWidth, image->width + 1);
         int x = 0, y = 0, rowHeight = 0;
@@ -1614,8 +1628,8 @@ void CText::rebuildTextureFrom (const std::string& text) {
         glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, atlas.data ());
         m_textureSize = { atlasWidth, atlasHeight };
     } else {
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels.data ());
-        m_textureSize = { width, height };
+        glTexImage2D (GL_TEXTURE_2D, 0, GL_RED, rasterSize.x, rasterSize.y, 0, GL_RED, GL_UNSIGNED_BYTE, pixels.data ());
+        m_textureSize = rasterSize;
     }
     if (firstUpload) {
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1637,10 +1651,13 @@ void CText::rebuildTextureFrom (const std::string& text) {
     );
     // The glyph VBO uses +y down; the recovered native offset is in FreeType's +y-up space.
     m_quadOffset = { nativeOffset.x, -nativeOffset.y };
-    const TextEffectLayout effectLayout = computeTextEffectLayout (
-	m_text.alignment, m_text.verticalalign, glyphBounds, static_cast<float> (ascender),
-	static_cast<float> (descender), static_cast<float> (lineHeight), lines.size (), m_lastPadding
-    );
+    // Oversized classic text also uses a bounded effect surface for sampled layers.
+    const TextEffectLayout effectLayout = grayRasterOmitted
+	? TextEffectLayout { glm::vec2 (1.0f), glm::vec2 (0.0f), glm::vec2 (0.0f) }
+	: computeTextEffectLayout (
+	    m_text.alignment, m_text.verticalalign, glyphBounds, static_cast<float> (ascender),
+	    static_cast<float> (descender), static_cast<float> (lineHeight), lines.size (), m_lastPadding
+	);
     m_effectSurface = glm::max (effectLayout.surfaceSize, glm::vec2 (1.0f));
     m_effectRasterOffset = effectLayout.rasterOffset;
     m_effectCompositeOffset = effectLayout.compositeOffset;

@@ -163,11 +163,16 @@ TEST_CASE ("text backgrounds retain native defaults and live padding values") {
     CHECK (text->backgroundColor->value->getVec3 () == glm::vec3 (0.0f));
     CHECK (text->backgroundBrightness->value->getFloat () == 1.0f);
     CHECK (glm::vec2 (text->padding->value->getVec3 ()) == glm::vec2 (32.0f));
-    for (const JSON padding : { JSON (8), JSON ("-12 -8") }) {
+    for (const auto& [padding, expected] : std::vector<std::pair<JSON, glm::vec2>> {
+	     { JSON (8), glm::vec2 (8) },
+	     { JSON (32.75), glm::vec2 (32.75f) },
+	     { JSON ("-12 -8"), glm::vec2 (-12, -8) },
+	     { JSON (nullptr), glm::vec2 (32) },
+	 }) {
 	data["padding"] = padding;
 	const auto object = ObjectParser::parse (data, project);
 	auto& value = *object->as<Text> ()->padding->value;
-	CHECK (glm::vec2 (value.getVec3 ()) == (padding.is_number () ? glm::vec2 (8) : glm::vec2 (-12, -8)));
+	CHECK (glm::vec2 (value.getVec3 ()) == expected);
 	value.update (glm::vec2 (24, 16), DynamicValue::Script);
 	CHECK (glm::vec2 (value.getVec3 ()) == glm::vec2 (24, 16));
     }

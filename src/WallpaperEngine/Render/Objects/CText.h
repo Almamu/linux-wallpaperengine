@@ -25,6 +25,7 @@
 // Forward-declare FreeType types to avoid leaking the header into users.
 struct FT_LibraryRec_;
 struct FT_FaceRec_;
+struct FT_Bitmap_;
 typedef struct FT_LibraryRec_* FT_Library;
 typedef struct FT_FaceRec_* FT_Face;
 
@@ -48,6 +49,11 @@ using namespace WallpaperEngine::Data::Model;
  *  Malformed bytes decode as U+FFFD one byte at a time. No overlong/range validation —
  *  the result only feeds glyph lookup, where a bogus codepoint just misses the charmap. */
 uint32_t nextUtf8Codepoint (const std::string& text, size_t& offset);
+
+/** Composite a FreeType coverage bitmap over the classic text raster. */
+void blitTextBitmap (
+    const FT_Bitmap_& bitmap, glm::ivec2 origin, glm::ivec2 size, std::vector<uint8_t>& coverage
+);
 
 struct TextLayoutLimits {
     float width = 0.0f; // zero disables wrapping
