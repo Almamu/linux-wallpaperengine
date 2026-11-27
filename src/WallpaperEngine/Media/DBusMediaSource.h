@@ -16,9 +16,8 @@ public:
     void parsePosition (DBusMessageIter& variant);
     DBusHandlerResult handleMessage (DBusMessage* message);
 
-    void update () override;
-
 protected:
+    void dispatchPendingEvents () override;
     void performUpdate () override;
     void fetchMetadata ();
     void detectPlayer ();

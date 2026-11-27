@@ -253,7 +253,7 @@ void DBusMediaSource::parsePosition (DBusMessageIter& variant) {
     }
 }
 
-void DBusMediaSource::update () {
+void DBusMediaSource::dispatchPendingEvents () {
     // drain any dbus events
     dbus_connection_read_write (this->m_connection, 0);
 
@@ -265,7 +265,6 @@ void DBusMediaSource::update () {
 	this->detectPlayer ();
 	this->fetchMetadata ();
     }
-    this->MediaSource::update ();
 }
 
 DBusMessage* DBusMediaSource::dbusMessage (

@@ -30,16 +30,20 @@ MediaSource::~MediaSource () {
 }
 
 void MediaSource::update () {
-    if (m_updating || std::chrono::steady_clock::now () <= m_nextUpdate) {
+    if (m_updating) {
 	return;
     }
 
     m_updating = true;
-    // Listeners can call update again or throw while the current poll is running.
-    Data::Utils::ScopeGuard finishPoll ([this] {
-	this->m_nextUpdate = std::chrono::steady_clock::now () + this->m_updateInterval;
-	this->m_updating = false;
-    });
+    // Both incoming signals and periodic polls can invoke a listener that calls update().
+    Data::Utils::ScopeGuard finishUpdate ([this] { this->m_updating = false; });
+    this->dispatchPendingEvents ();
+    if (std::chrono::steady_clock::now () <= m_nextUpdate) {
+	return;
+    }
+    Data::Utils::ScopeGuard finishPoll (
+	[this] { this->m_nextUpdate = std::chrono::steady_clock::now () + this->m_updateInterval; }
+    );
     this->performUpdate ();
 }
 

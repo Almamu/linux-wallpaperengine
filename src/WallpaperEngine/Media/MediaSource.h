@@ -51,6 +51,7 @@ protected:
     void fireMetadataListeners ();
     void fireAlbumArtListeners ();
     virtual void performUpdate () = 0;
+    virtual void dispatchPendingEvents () { }
 
     std::shared_ptr<bool> m_aliveFlag;
     uint32_t m_metadataListenerId = 0;

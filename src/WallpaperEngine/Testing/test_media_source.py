@@ -76,6 +76,25 @@ int main(int argc, char* argv[]) {
     if (mode == "poll-exception") return testPollException();
     const auto source = DBusMediaSource::createOrFallback(20ms);
     auto& media = *source;
+    if (mode == "signal-reentry") {
+        bool sawFirst = false, sawSecond = false, changedDuringListener = false;
+        media.addMetadataListener([&](const auto& info) {
+            if (!sawFirst && info.title == "First queued track") {
+                sawFirst = true;
+                media.update();
+                changedDuringListener = info.title != "First queued track";
+            }
+            if (info.title == "Second queued track") sawSecond = true;
+        });
+        std::cout << "READY" << std::endl;
+        std::cin.get();
+        const auto deadline = std::chrono::steady_clock::now() + 2s;
+        while (!sawSecond && std::chrono::steady_clock::now() < deadline) {
+            media.update();
+            std::this_thread::sleep_for(10ms);
+        }
+        return sawFirst && sawSecond && !changedDuringListener ? 0 : 1;
+    }
     if (mode == "idle") {
         int notices = 0;
         auto removeMetadata = media.addMetadataListener([&](const auto&) { ++notices; });
@@ -223,6 +242,15 @@ class MediaSource(unittest.TestCase):
             with self.subTest(mode=mode):
                 result = subprocess.run([self.binary, mode], capture_output=True, text=True, timeout=3)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_signal_listener_reentry_preserves_current_track(self):
+        player = self.player('lwe_test_reentry', 'Playing')
+        probe = self.child([self.binary, 'signal-reentry'], env=self.env)
+        self.assertEqual(probe.stdout.readline().strip(), 'READY')
+        for title in ('First queued track', 'Second queued track'):
+            self.command(player, 'Playing', {'xesam:title': title})
+        stdout, stderr = probe.communicate('\n', timeout=4)
+        self.assertEqual(probe.returncode, 0, stdout + stderr)
 
     def test_active_player_selection_ignores_foreign_signals_and_tracks_owner_lifecycle(self):
         paused = self.player('lwe_test_paused', 'Paused')
