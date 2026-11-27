@@ -640,10 +640,18 @@ if(X11_SUPPORT_FOUND)
     target_compile_definitions(linux-wallpaperengine-lib PUBLIC ENABLE_X11)
 
     # make sure some of the X11 functions we'll use are available
+    include(CheckLibraryExists)
     check_function_exists(XSetIOErrorExitHandler HAVE_XSETIOERROREXITHANDLER)
 
     if(HAVE_XSETIOERROREXITHANDLER)
         target_compile_definitions(linux-wallpaperengine-lib PUBLIC HAVE_XSETIOERROREXITHANDLER=1)
+    endif()
+
+    # GLFW builds without the X11 backend (3.3 for Wayland) don't provide the X11 native API
+    check_library_exists(glfw glfwGetX11Window "" HAVE_GLFWGETX11WINDOW)
+
+    if(HAVE_GLFWGETX11WINDOW)
+        target_compile_definitions(linux-wallpaperengine-lib PUBLIC HAVE_GLFWGETX11WINDOW=1)
     endif()
 endif()
 
