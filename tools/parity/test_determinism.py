@@ -52,7 +52,7 @@ class DeterminismTests(unittest.TestCase):
         self.assertFalse(result['determinism_verified'])
 
     def test_private_input_substitution_is_hash_checked_and_does_not_edit_source(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir='/tmp') as directory:
             root = Path(directory)
             (root / 'item/shaders').mkdir(parents=True)
             path = root / 'item/shaders/noise.frag'
@@ -70,7 +70,7 @@ class DeterminismTests(unittest.TestCase):
             self.assertNotEqual(changes[0]['before_sha256'], changes[0]['after_sha256'])
 
     def test_private_substitution_cannot_escape_item_or_partially_apply(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir='/tmp') as directory:
             root = Path(directory)
             (root / 'item').mkdir()
             path = root / 'item/a.frag'

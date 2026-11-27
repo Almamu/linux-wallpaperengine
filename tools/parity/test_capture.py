@@ -14,7 +14,7 @@ import capture
 
 class CaptureTests(unittest.TestCase):
     def test_prepare_pins_native_volume_and_shadow_quality_without_changing_original(self):
-        with tempfile.TemporaryDirectory(prefix='parity-quality-') as directory:
+        with tempfile.TemporaryDirectory(prefix='parity-quality-', dir='/tmp') as directory:
             base = Path(directory)
             original = base / 'original-config.json'
             original.write_text(json.dumps({'steamuser': {'general': {'user': {
@@ -91,7 +91,7 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(env['LWE_HOST_DISPLAY'], ':1')
 
     def test_headless_launch_creates_a_private_bus_before_gamescope(self):
-        with tempfile.TemporaryDirectory(prefix='parity-launch-') as directory:
+        with tempfile.TemporaryDirectory(prefix='parity-launch-', dir='/tmp') as directory:
             root = Path(directory)
             (root / 'app/assets').mkdir(parents=True)
             (root / 'app/config.json').write_text(json.dumps({'steamuser': {'general': {'user': {

@@ -24,7 +24,7 @@ class SweepTests(unittest.TestCase):
         processes = patch.object(self.sweep, 'private_processes', return_value=[])
         processes.start()
         self.addCleanup(processes.stop)
-        self.temporary = tempfile.TemporaryDirectory(prefix='deep-sea-sweep-test-')
+        self.temporary = tempfile.TemporaryDirectory(prefix='deep-sea-sweep-test-', dir='/tmp')
         self.addCleanup(self.temporary.cleanup)
         self.base = Path(self.temporary.name)
         self.fixtures = []

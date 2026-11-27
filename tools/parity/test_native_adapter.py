@@ -16,7 +16,7 @@ class NativeAdapterTests(unittest.TestCase):
 
     def test_prepare_preserves_originals_and_omits_selector_and_external_prefix_links(self):
         adapter = self.adapter()
-        with tempfile.TemporaryDirectory(prefix='parity-adapter-') as directory:
+        with tempfile.TemporaryDirectory(prefix='parity-adapter-', dir='/tmp') as directory:
             base = Path(directory)
             app, compat, proton = (base / name for name in ('source-app', 'source-compat', 'proton'))
             (app / 'bin').mkdir(parents=True)
@@ -75,14 +75,14 @@ class NativeAdapterTests(unittest.TestCase):
 
     def test_prepare_rejects_existing_root_and_paths_outside_tmp(self):
         adapter = self.adapter()
-        with tempfile.TemporaryDirectory(prefix='parity-adapter-') as directory:
+        with tempfile.TemporaryDirectory(prefix='parity-adapter-', dir='/tmp') as directory:
             for root in (Path(directory), Path('/tmp'), Path.home() / 'parity-rejected'):
                 with self.subTest(root=root), self.assertRaises((ValueError, FileExistsError)):
                     adapter.prepare(root, 320, 180)
 
     def test_prepare_never_replaces_dlls_in_a_linked_proton_directory(self):
         adapter = self.adapter()
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir='/tmp') as directory:
             base = Path(directory)
             app, compat, proton = (base / name for name in ('app', 'compat', 'proton'))
             app.mkdir()
