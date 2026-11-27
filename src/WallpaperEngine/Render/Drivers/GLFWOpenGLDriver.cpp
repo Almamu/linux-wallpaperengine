@@ -37,8 +37,9 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (const char* windowTitle, ApplicationContext&
     glfwWindowHintString (GLFW_X11_CLASS_NAME, "linux-wallpaperengine");
     glfwWindowHintString (GLFW_X11_INSTANCE_NAME, "linux-wallpaperengine");
 
+    const bool explicitWindow = context.settings.render.mode == ApplicationContext::EXPLICIT_WINDOW;
     // for forced window mode, we can set some hints that'll help position the window
-    if (context.settings.render.mode == Application::ApplicationContext::EXPLICIT_WINDOW) {
+    if (explicitWindow) {
 	glfwWindowHint (GLFW_RESIZABLE, GLFW_FALSE);
 	glfwWindowHint (GLFW_DECORATED, GLFW_FALSE);
 	glfwWindowHint (GLFW_FLOATING, GLFW_TRUE);
@@ -48,8 +49,11 @@ GLFWOpenGLDriver::GLFWOpenGLDriver (const char* windowTitle, ApplicationContext&
     glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif /* DEBUG */
 
-    // create window, size doesn't matter as long as we don't show it
-    this->m_window = glfwCreateWindow (640, 480, windowTitle, nullptr, nullptr);
+    // Allocate the requested drawable before the first render.
+    const auto& geometry = context.settings.render.window.geometry;
+    const auto initialSize = explicitWindow && geometry.z > 0 && geometry.w > 0
+	? glm::ivec2 (geometry.z, geometry.w) : glm::ivec2 (640, 480);
+    this->m_window = glfwCreateWindow (initialSize.x, initialSize.y, windowTitle, nullptr, nullptr);
 
     if (this->m_window == nullptr) {
 	sLog.exception ("Cannot create window");
