@@ -334,6 +334,7 @@ private:
      * so keep a stable, pointer-backed value and refresh it before every draw.
      */
     glm::vec4 m_effectiveColor4 = {};
+    int m_singleSampleCoverageHeight = 0;
 
     // Location queries only; identical passes share this GL object. Draws use
     // m_sharedProgram, or m_privateProgram once this pass cannot share.

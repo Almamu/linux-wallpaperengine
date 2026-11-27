@@ -748,6 +748,13 @@ void CPass::render () {
     this->m_sceneTexelSizeHalf = this->m_sceneTexelSize * 0.5f;
     const glm::vec2 outputSize = this->m_renderable.getScene ().getOutputSize ();
     this->m_screen = glm::vec3 (outputSize, outputSize.x / outputSize.y);
+    const bool singleSampleCoverage = this->getBlendingMode () == BlendingMode_AlphaToCoverage
+	&& drawTo->getDrawSamples () == 1;
+    this->m_singleSampleCoverageHeight = singleSampleCoverage ? static_cast<int> (drawTo->getRealHeight ()) : 0;
+    // A flipped presentation already places framebuffer row zero at the top.
+    if (singleSampleCoverage && this->getContext ().getOutput ().renderVFlip ()) {
+	this->m_singleSampleCoverageHeight = -this->m_singleSampleCoverageHeight;
+    }
     this->setupRenderUniforms ();
     this->setupRenderReferenceUniforms ();
     this->setupRenderAttributes ();
@@ -1433,6 +1440,7 @@ void CPass::adjustTextureUsageCounts (const bool increment) const {
 
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
+    this->addUniform ("lwe_SingleSampleCoverageHeight", &this->m_singleSampleCoverageHeight);
 
     const auto& renderable = this->m_renderable;
     const auto& scene = this->m_renderable.getScene ();

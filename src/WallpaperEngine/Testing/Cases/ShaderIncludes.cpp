@@ -162,7 +162,7 @@ TEST_CASE ("native clip discards fragments with a negative component", "[shader]
     }
 }
 
-TEST_CASE ("stock generic4 writes coverage alpha without a shader cutoff", "[.][shader][generic4-a2c]") {
+TEST_CASE ("stock generic4 selects its coverage fallback at draw time", "[.][shader][generic4-a2c]") {
     // The production compatibility rule recognizes the original fragment by its full contents.
     const auto* root = std::getenv ("LWE_TEST_STOCK_ASSETS");
     if (!root) SKIP ("Set LWE_TEST_STOCK_ASSETS to the Wallpaper Engine assets directory from Steam build 23967692");
@@ -176,6 +176,16 @@ TEST_CASE ("stock generic4 writes coverage alpha without a shader cutoff", "[.][
         const auto fragment = preprocessFragmentMain (assets, "generic4", { { "ALPHATOCOVERAGE", coverage } });
         CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("out_FragColor=albedo;"));
         CHECK ((fragment.find (nativeCoverageRemap) != std::string::npos) == (coverage == 1));
+        for (const char* fallback : {
+            "if(lwe_SingleSampleCoverageHeight!=0){",
+            "if(lwe_SingleSampleCoverageHeight>0){coveragePixel.y=lwe_SingleSampleCoverageHeight-1-coveragePixel.y;}",
+            "constvec4coverageThresholds=vec4(0.125,0.625,0.875,0.375);",
+            "2*(coveragePixel.y&1)+(coveragePixel.x&1)",
+            "if(out_FragColor.a<coverageThresholds[coveragePhase])discard;"
+        }) {
+            CAPTURE (fallback);
+            CHECK ((fragment.find (fallback) != std::string::npos) == (coverage == 1));
+        }
         CHECK_THAT (fragment, !Catch::Matchers::ContainsSubstring ("if(out_FragColor.a<0.5)discard;"));
     }
 }
@@ -211,6 +221,7 @@ void main() {
             const auto fragment = preprocessFragmentMain (assets, name, combos);
             CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring (nativeCoverageRemap));
             CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("if(out_FragColor.a<0.5)discard;"));
+            CHECK_THAT (fragment, !Catch::Matchers::ContainsSubstring ("lwe_SingleSampleCoverageHeight"));
             CHECK ((fragment.find ("if(albedo.a<0.25)discard;") != std::string::npos) == (alphaTest == 1));
         }
     }

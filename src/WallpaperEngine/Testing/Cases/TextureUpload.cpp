@@ -668,6 +668,7 @@ TEST_CASE ("multisample framebuffers resolve coverage and preserve render mode s
     }
 
     SECTION ("alpha-to-coverage affects resolved sample coverage") {
+	REQUIRE (target.getDrawSamples () == 4);
 	glBindFramebuffer (GL_FRAMEBUFFER, target.getDrawFramebuffer ());
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable (GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -676,6 +677,22 @@ TEST_CASE ("multisample framebuffers resolve coverage and preserve render mode s
 	const auto pixel = centerPixel ();
 	CHECK (pixel[0] > 0);
 	CHECK (pixel[0] < 255);
+    }
+
+    SECTION ("alpha-to-coverage has no effect on the single-sample draw attachment") {
+	target.setMultisampleRendering (false);
+	REQUIRE (target.getSamples () == 4);
+	REQUIRE (target.getDrawSamples () == 1);
+	glBindFramebuffer (GL_FRAMEBUFFER, target.getDrawFramebuffer ());
+	GLint sampleBuffers = 0;
+	glGetIntegerv (GL_SAMPLE_BUFFERS, &sampleBuffers);
+	REQUIRE (sampleBuffers == 0);
+	glClearColor (0, 0, 0, 0);
+	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable (GL_SAMPLE_ALPHA_TO_COVERAGE);
+	drawSolid ({ 1, 1, 1, 0 }, 0.5f);
+	glDisable (GL_SAMPLE_ALPHA_TO_COVERAGE);
+	CHECK (centerPixel () == std::array<unsigned char, 4> { 255, 255, 255, 0 });
     }
 
     SECTION ("resize reallocates every attachment and updates accounting") {

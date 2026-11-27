@@ -137,13 +137,25 @@ void ShaderUnit::preprocess () {
     this->m_preprocessed = spliceShaderLines (this->m_content);
     this->m_includes = "";
 
-    // Native generic4 writes coverage alpha and lets the target sample count
-    // determine coverage. Remove the stock GLSL-only cutoff before caching.
+    // OpenGL skips alpha-to-coverage on single-sample targets. Emulate the
+    // ordered 2x2 mask measured on the D3D11/DXVK reference (RTX 3080); D3D
+    // leaves the actual coverage conversion to the hardware.
     if (this->m_type == GLSLContext::UnitType_Fragment
 	&& (this->m_file == "generic4" || this->m_file == "generic4.frag") && isStockGeneric4 (this->m_content)) {
 	constexpr std::string_view discard = "if (gl_FragColor.a < 0.5) discard;";
 	if (const auto pos = this->m_preprocessed.find (discard); pos != std::string::npos) {
-	    this->m_preprocessed.erase (pos, discard.size ());
+	    this->m_preprocessed.replace (pos, discard.size (),
+		"if (lwe_SingleSampleCoverageHeight != 0) {\n"
+		"    ivec2 coveragePixel = ivec2(gl_FragCoord.xy);\n"
+		"    if (lwe_SingleSampleCoverageHeight > 0) {\n"
+		"        coveragePixel.y = lwe_SingleSampleCoverageHeight - 1 - coveragePixel.y;\n"
+		"    }\n"
+		"    const vec4 coverageThresholds = vec4(0.125, 0.625, 0.875, 0.375);\n"
+		"    int coveragePhase = 2 * (coveragePixel.y & 1) + (coveragePixel.x & 1);\n"
+		"    if (gl_FragColor.a < coverageThresholds[coveragePhase]) discard;\n"
+		"}");
+	    this->m_preprocessed.insert (0,
+		"#if ALPHATOCOVERAGE\nuniform int lwe_SingleSampleCoverageHeight;\n#endif\n");
 	}
     }
 

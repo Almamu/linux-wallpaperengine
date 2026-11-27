@@ -26,6 +26,7 @@ public:
     [[nodiscard]] GLuint getDrawFramebuffer () const;
     [[nodiscard]] GLuint getDepthbuffer () const;
     [[nodiscard]] uint32_t getSamples () const;
+    [[nodiscard]] uint32_t getDrawSamples () const { return m_multisampleRendering ? m_samples : 1; }
     [[nodiscard]] bool usesReverseDepth () const { return m_reverseDepth; }
     [[nodiscard]] float getFarDepth () const { return m_reverseDepth ? 0.0f : 1.0f; }
     [[nodiscard]] GLenum getDepthInternalFormat () const { return m_reverseDepth || m_samples > 1 ? GL_DEPTH_COMPONENT32F : GL_DEPTH_COMPONENT24; }
