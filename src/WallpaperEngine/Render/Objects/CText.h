@@ -256,6 +256,9 @@ private:
     glm::mat4 m_colorBlendMVP { 1.0f };
     int m_colorBlendMode = 0;
     GLuint m_ndcPosition = 0;
+    GLuint m_sceneEffectPosition = 0;
+    glm::mat4 m_sceneEffectMVP { 1.0f };
+    glm::mat4 m_sceneEffectMVPInverse { 1.0f };
     GLuint m_passTexCoord = 0;
     GLuint m_compositeVao = 0;
     GLuint m_compositeVbo = 0;

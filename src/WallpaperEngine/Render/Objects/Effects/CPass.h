@@ -93,6 +93,7 @@ public:
     void addUniform (const std::string& name, const glm::mat4* value, int count = 1);
     void addUniform (const std::string& name, const glm::mat4x3* value, int count = 1);
     [[nodiscard]] bool samplesLegacyReflection () const;
+    [[nodiscard]] bool samplesRenderTarget (const CFBO& target) const;
 
 private:
     bool m_reverseDepth = false;

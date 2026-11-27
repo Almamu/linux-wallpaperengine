@@ -478,6 +478,25 @@ std::shared_ptr<const TextureProvider> CPass::resolveChainEntry (const TextureCh
     return entry.legacyReflection ? this->m_renderable.getScene ().getLegacyReflectionTarget () : entry.texture;
 }
 
+bool CPass::samplesRenderTarget (const CFBO& target) const {
+    if (m_input.get () == &target || m_previousInput.get () == &target) return true;
+    const auto samplerActive = [this] (const int index) {
+	return index < 0 || index >= static_cast<int> (m_activeSamplers.size ()) || m_activeSamplers[index];
+    };
+    for (const auto& [index, name] : m_binds) {
+	if (!samplerActive (index) || name == "previous") continue;
+	const auto& resolved = m_effectFBOBindings ? m_effectFBOBindings->resolveName (name) : name;
+	if (m_fboProvider->find (resolved).get () == &target) return true;
+    }
+    for (const auto& [index, first] : m_textures) {
+	if (!samplerActive (index)) continue;
+	for (auto entry = first.get (); entry != nullptr; entry = entry->next.get ()) {
+	    if (resolveChainEntry (*entry).get () == &target) return true;
+	}
+    }
+    return false;
+}
+
 bool CPass::samplesLegacyReflection () const {
     for (const auto& first : this->m_textures | std::views::values) {
 	for (auto entry = first.get (); entry != nullptr; entry = entry->next.get ()) {

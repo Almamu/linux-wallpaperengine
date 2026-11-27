@@ -646,7 +646,7 @@ void CText::setupEffectChain () {
     }
     m_effectHost->setTexture (m_fboA);
 
-    // NDC quad + texcoords for the intermediate passes, same layout as CImage's pass buffers
+    // Local passes and copy commands use an untransformed NDC quad.
     constexpr GLfloat passPosition[]
 	= { -1.0, 1.0, 0.0f, -1.0, -1.0, 0.0f, 1.0, 1.0, 0.0f, 1.0, 1.0, 0.0f, -1.0, -1.0, 0.0f, 1.0, -1.0, 0.0f };
     constexpr GLfloat passTexcoord[] = { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f };
@@ -657,6 +657,19 @@ void CText::setupEffectChain () {
     glGenBuffers (1, &m_passTexCoord);
     glBindBuffer (GL_ARRAY_BUFFER, m_passTexCoord);
     glBufferData (GL_ARRAY_BUFFER, sizeof (passTexcoord), passTexcoord, GL_STATIC_DRAW);
+
+    if (!m_text.effects.empty ()) {
+	const float hx = surface.x * 0.5f;
+	const float hy = surface.y * 0.5f;
+	// The last authored pass uses a centered, Y-up quad in text surface pixels.
+	const GLfloat scenePosition[] = {
+	    -hx, -hy, 0.0f, -hx, hy, 0.0f, hx, -hy, 0.0f,
+	    hx, -hy, 0.0f, -hx, hy, 0.0f, hx, hy, 0.0f,
+	};
+	glGenBuffers (1, &m_sceneEffectPosition);
+	glBindBuffer (GL_ARRAY_BUFFER, m_sceneEffectPosition);
+	glBufferData (GL_ARRAY_BUFFER, sizeof (scenePosition), scenePosition, GL_STATIC_DRAW);
+    }
 
     // Build material/copy passes; swaps run between draws without consuming a target.
     for (const auto& effect : m_text.effects) {
@@ -712,7 +725,7 @@ void CText::setupEffectChain () {
 		}
 		cpass->setPosition (m_ndcPosition);
 		cpass->setTexCoord (m_passTexCoord);
-		// matrices keep CPass' shared identity defaults: intermediate passes are 1:1 blits
+		// Intermediate passes use CPass' identity matrices.
 
 		m_effectPasses.push_back (cpass);
 		m_passVisibility.emplace (cpass, effect->visible.get ());
@@ -920,6 +933,10 @@ void CText::destroyEffectChain () {
 	glDeleteBuffers (1, &m_ndcPosition);
 	m_ndcPosition = 0;
     }
+    if (m_sceneEffectPosition != 0) {
+	glDeleteBuffers (1, &m_sceneEffectPosition);
+	m_sceneEffectPosition = 0;
+    }
     if (m_passTexCoord != 0) {
 	glDeleteBuffers (1, &m_passTexCoord);
 	m_passTexCoord = 0;
@@ -931,12 +948,25 @@ void CText::renderEffectChain (const glm::mat4& mvp, const float brightness, con
     const ClipDepthScope localDepth (false);
     updateEffectVisibility ();
     const glm::vec4 color = m_text.color->value->getVec4 ();
+    const auto sceneTarget = getScene ().getActiveRenderTarget ();
+    auto* scenePass = m_activeEffectPasses.empty () ? nullptr : m_activeEffectPasses.back ();
+    if (!drawToScene || scenePass == nullptr || scenePass->getTarget () || m_copyPasses.contains (scenePass)
+	|| m_colorBlendPass || m_text.ledSource->value->getBool () || getScene ().isRenderTargetRetained (m_publishedFBO)) {
+	scenePass = nullptr;
+    }
 
     // the scene sets its clear color once at setup, not per frame — leaking ours would
     // make every subsequent scene clear transparent black (same pattern as CFBO's ctor)
     GLfloat previousClearColor[4];
     glGetFloatv (GL_COLOR_CLEAR_VALUE, previousClearColor);
     const GLboolean depthWasEnabled = glIsEnabled (GL_DEPTH_TEST);
+    const auto restoreState = [&] {
+	glBindVertexArray (0);
+	glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
+	if (depthWasEnabled == GL_TRUE) glEnable (GL_DEPTH_TEST);
+	else glDisable (GL_DEPTH_TEST);
+    };
 
     // Native clears opaque backgrounds into the effect input, then draws the
     // glyph with the layer's opacity. Its translucent material also blends alpha.
@@ -999,8 +1029,47 @@ void CText::renderEffectChain (const glm::mat4& mvp, const float brightness, con
 	    if (!m_failedEffects.contains (command->visible)) command->execute ();
 	}
 	if (index < m_effectPasses.size () && pass != m_activeEffectPasses.end () && *pass == m_effectPasses[index]) {
-	    (*pass++)->render ();
+	    auto* current = *pass++;
+	    if (current == scenePass && current->samplesRenderTarget (*sceneTarget)) {
+		// Swaps have now resolved any explicit binds for this frame.
+		scenePass = nullptr;
+	    }
+	    if (current != scenePass) {
+		current->render ();
+		continue;
+	    }
+
+	    // Terminal material geometry lives in the scene. Applying pixel offsets to
+	    // the local NDC quad would move its vertices well outside the text surface.
+	    m_sceneEffectMVP = glm::scale (
+		glm::translate (mvp, glm::vec3 (m_effectCompositeOffset, 0.0f)), glm::vec3 (1.0f, -1.0f, 1.0f)
+	    );
+	    m_sceneEffectMVPInverse = glm::inverse (m_sceneEffectMVP);
+	    glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, getScene ().isRenderingToComposition () ? GL_TRUE : GL_FALSE);
+	    current->setDestination (sceneTarget);
+	    current->setPosition (m_sceneEffectPosition);
+	    current->setModelViewProjectionMatrix (&m_sceneEffectMVP, sceneTarget->usesReverseDepth ());
+	    current->setModelViewProjectionMatrixInverse (&m_sceneEffectMVPInverse);
+	    current->setBlendingMode (BlendingMode_Translucent);
+	    current->setDepthtestMode (depthTestEnabled () ? DepthtestMode_Enabled : DepthtestMode_Disabled);
+	    current->setDepthwriteMode (DepthwriteMode_Disabled);
+	    current->render ();
+
+	    // It can become an intermediate pass again when an effect is enabled.
+	    static const glm::mat4 identity (1.0f);
+	    const auto& authored = current->getPass ();
+	    current->setDestination (m_effectResult);
+	    current->setPosition (m_ndcPosition);
+	    current->setModelViewProjectionMatrix (&identity);
+	    current->setModelViewProjectionMatrixInverse (&identity);
+	    current->setBlendingMode (authored.blending);
+	    current->setDepthtestMode (authored.depthtest);
+	    current->setDepthwriteMode (authored.depthwrite);
 	}
+    }
+    if (scenePass != nullptr) {
+	restoreState ();
+	return;
     }
 
     // Publish the finished layer through a stable target. A later
@@ -1027,7 +1096,6 @@ void CText::renderEffectChain (const glm::mat4& mvp, const float brightness, con
     glDrawArrays (GL_TRIANGLES, 0, 6);
 
     // Visibility controls the scene draw, not the offscreen layer used by others.
-    const auto sceneTarget = this->getScene ().getActiveRenderTarget ();
     glBindFramebuffer (GL_FRAMEBUFFER, sceneTarget->getDrawFramebuffer ());
     glViewport (0, 0, sceneTarget->getRealWidth (), sceneTarget->getRealHeight ());
     glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, getScene ().isRenderingToComposition () ? GL_TRUE : GL_FALSE);
@@ -1061,16 +1129,8 @@ void CText::renderEffectChain (const glm::mat4& mvp, const float brightness, con
         glUniformMatrix4fv (m_cuMVP, 1, GL_FALSE, glm::value_ptr (mvp));
         glDrawArrays (GL_TRIANGLES, 0, 6);
     }
-    glBindVertexArray (0);
-
     // restore the state this chain touched that nothing downstream re-sets per draw
-    glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor (previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
-    if (depthWasEnabled == GL_TRUE) {
-	glEnable (GL_DEPTH_TEST);
-    } else {
-	glDisable (GL_DEPTH_TEST);
-    }
+    restoreState ();
 }
 
 bool CText::depthTestEnabled () const {
