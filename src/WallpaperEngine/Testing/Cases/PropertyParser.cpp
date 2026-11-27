@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "WallpaperEngine/Data/Builders/ColorBuilder.h"
+#include "WallpaperEngine/Data/Builders/VectorBuilder.h"
 #include "WallpaperEngine/Data/Model/Project.h"
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Model/PropertyAnimation.h"
@@ -168,7 +169,7 @@ TEST_CASE ("User text bindings preserve numeric-looking strings", "[user-propert
 	JSON { { "value", "authored caption" }, { "user", "caption" } }, { { "caption", property } });
     CHECK (setting->value->getType () == DynamicValue::String);
     CHECK (setting->value->getString () == "01");
-    for (const std::string text : { "0.5", "0.125 0.375", "song title with spaces", "" }) {
+    for (const std::string text : { "0.5", "0.125 0.375", "1,000", "song title with spaces", "" }) {
 	property->update (text, DynamicValue::UpdateSource::User);
 	CHECK (setting->value->getType () == DynamicValue::String);
 	CHECK (setting->value->getString () == text);
@@ -176,6 +177,9 @@ TEST_CASE ("User text bindings preserve numeric-looking strings", "[user-propert
     const auto authoredNumber = UserSettingParser::parse (JSON { { "value", "0.5" } }, {});
     CHECK (authoredNumber->value->getType () == DynamicValue::Float);
     CHECK (authoredNumber->value->getFloat () == 0.5f);
+    const auto authoredLabel = UserSettingParser::parse (JSON { { "value", "1,000" } }, {});
+    CHECK (authoredLabel->value->getType () == DynamicValue::String);
+    CHECK (authoredLabel->value->getString () == "1,000");
     const auto authoredVector = UserSettingParser::parse (JSON { { "value", "0.125 0.375" } }, {});
     CHECK (authoredVector->value->getType () == DynamicValue::Vec2);
     CHECK (authoredVector->value->getVec2 () == glm::vec2 (0.125f, 0.375f));
@@ -519,6 +523,46 @@ TEST_CASE ("Legacy byte colors remain supported") {
     CHECK (orange.g == Catch::Approx (128.0f / 255.0f));
     CHECK (orange.b == Catch::Approx (0.0f));
     CHECK (orange.a == Catch::Approx (1.0f));
+}
+
+TEST_CASE ("CSS hex colors decode RGB and RGBA channels", "[color-parsing]") {
+    const auto rgb = ColorBuilder::parse ("#FF8000");
+    CHECK (rgb.r == Catch::Approx (1.0f));
+    CHECK (rgb.g == Catch::Approx (128.0f / 255.0f));
+    CHECK (rgb.b == Catch::Approx (0.0f));
+    CHECK (rgb.a == Catch::Approx (1.0f));
+    CHECK (ColorBuilder::parse ("#f80", 0.5f).a == Catch::Approx (127.0f / 255.0f));
+    CHECK (ColorBuilder::parse ("#f80a", 0.5f).a == Catch::Approx (10.0f / 15.0f));
+    CHECK (ColorBuilder::parse ("#ff8000A0", 0.5f).a == Catch::Approx (160.0f / 255.0f));
+    CHECK_THROWS (ColorBuilder::parse ("#ff00zz"));
+    CHECK_THROWS (ColorBuilder::parse ("#12345"));
+}
+
+TEST_CASE ("Typed vectors and colors accept mixed whitespace and comma separators", "[color-parsing][material-vectors]") {
+    using WallpaperEngine::Data::Builders::VectorBuilder;
+    using ScalarVector = glm::vec<1, float, glm::defaultp>;
+    CHECK (VectorBuilder::parse<ScalarVector> (" +1.5 ").x == 1.5f);
+    CHECK (VectorBuilder::parse<glm::ivec2> ("-1 , 2") == glm::ivec2 (-1, 2));
+    CHECK (VectorBuilder::parse<glm::vec3> ("1.0, 2.0\t3.0\r\n") == glm::vec3 (1.0f, 2.0f, 3.0f));
+    CHECK (VectorBuilder::parse<glm::vec4> ("1,2,3,4,5") == glm::vec4 (1.0f, 2.0f, 3.0f, 4.0f));
+    CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1,,2"));
+    CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1,2,"));
+    CHECK_THROWS (VectorBuilder::parse<glm::vec2> ("1,2x"));
+
+    const auto color = ColorBuilder::parse ("0.1, 0.2, 0.3", 0.7f);
+    CHECK (color.r == Catch::Approx (0.1f));
+    CHECK (color.g == Catch::Approx (0.2f));
+    CHECK (color.b == Catch::Approx (0.3f));
+    CHECK (color.a == Catch::Approx (0.7f));
+}
+
+TEST_CASE ("Invalid color updates leave the property available for subsequent overrides", "[color-parsing]") {
+    const auto property = PropertyParser::parse (JSON { { "type", "color" }, { "value", "0 1 0" } }, "scheme");
+    CHECK_THROWS (property->update (std::string ("1 0 x"), DynamicValue::UpdateSource::User));
+    CHECK_THROWS (property->update (std::string ("nan 0 0"), DynamicValue::UpdateSource::User));
+    CHECK (property->getVec3 () == glm::vec3 (0.0f, 1.0f, 0.0f));
+    property->update (std::string ("#f00"), DynamicValue::UpdateSource::User);
+    CHECK (property->getVec3 () == glm::vec3 (1.0f, 0.0f, 0.0f));
 }
 
 

@@ -1,9 +1,16 @@
 #pragma once
 
+#include <array>
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <glm/detail/qualifier.hpp>
 #include <glm/detail/type_vec1.hpp>
+#include <limits>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <type_traits>
 
 #include "WallpaperEngine/Data/Utils/SFINAE.h"
 #include "WallpaperEngine/Logging/Log.h"
@@ -20,16 +27,19 @@ class VectorBuilder {
      * @param str
      * @return
      */
-    template <typename type> static type convert (const char* str);
+    template <typename type> static type convert (const char* str, char** end);
+
+    struct Components {
+	std::array<std::string_view, 5> values;
+	int count = 0;
+    };
+
+    static Components split (const std::string& str);
 
 public:
     /**
-     * Takes the string and returns the vector size (2, 3 or 4)
-     *
-     * TODO: THIS SHOULD BE MOVED, RENAMED OR PLACED SOMEWHERE WHERE IT MAKES MORE SENSE
-     *
-     * @param str
-     * @return
+     * Legacy space-based size hint for untyped values. A number containing a
+     * comma, such as a formatted label, must not be inferred as a vector.
      */
     static int preparseSize (const std::string& str) {
 	const char* p = str.c_str ();
@@ -52,10 +62,12 @@ public:
 	return 4;
     }
 
+    /** Counts typed components, up to four, with the same separators as parse. */
+    static int componentCount (const std::string& str);
+
     /**
      * Takes a string value and parses it into a glm::vec.
-     * This particular parsing uses spaces as separators and basic std::strto* functions
-     * for the actual parsing of the values.
+     * Values can be separated by whitespace or commas.
      *
      * @tparam length Vector length
      * @tparam type Vector storage type
@@ -70,50 +82,24 @@ public:
 	// ensure a valid type is used, only 1 to 4 vectors are supported
 	static_assert (length >= 1 && length <= 4, "Invalid vector length");
 
-	const char* p = str.c_str ();
-
-	// get up to 4 spaces
-	const char* first = strchr (p, ' ');
-	const char* second = first ? strchr (first + 1, ' ') : nullptr;
-	const char* third = second ? strchr (second + 1, ' ') : nullptr;
-
-	// validate lengths against what was found in the strings
-	if constexpr (length == 1) {
-	    if (first != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 2) {
-	    if (first == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
-
-	    if (second != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 3) {
-	    if (first == nullptr || second == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
-	    if (third != nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too many values, expected: ", length, ")");
-	    }
-	} else if constexpr (length == 4) {
-	    if (first == nullptr || second == nullptr || third == nullptr) {
-		sLog.exception ("Invalid vector format: " + str + " (too few values, expected: ", length, ")");
-	    }
+	const auto components = split (str);
+	// Keep vec4's existing truncation of extra components.
+	if (components.count < length || (length < 4 && components.count > length)) {
+	    throw std::invalid_argument (
+		"Invalid vector format: " + str + " (expected " + std::to_string (length) + " values)"
+	    );
 	}
 
-	// lengths validated, values can be used directly without issues
-	if constexpr (length == 1) {
-	    return { convert<type> (p) };
-	} else if constexpr (length == 2) {
-	    return { convert<type> (p), convert<type> (first + 1) };
-	} else if constexpr (length == 3) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1) };
-	} else if constexpr (length == 4) {
-	    return { convert<type> (p), convert<type> (first + 1), convert<type> (second + 1),
-		     convert<type> (third + 1) };
+	glm::vec<length, type, qualifier> value {};
+	for (int i = 0; i < length; ++i) {
+	    const auto component = components.values [i];
+	    char* end = nullptr;
+	    value [i] = convert<type> (component.data (), &end);
+	    if (end != component.data () + component.size ()) {
+		throw std::invalid_argument ("Invalid vector component in " + str);
+	    }
 	}
+	return value;
     }
     template <typename T, typename std::enable_if_t<is_glm_vec<T>::value, int> = 0>
     [[nodiscard]] static T parse (const std::string& str) {
@@ -125,32 +111,39 @@ public:
     }
 };
 
-template <> inline float VectorBuilder::convert<float> (const char* str) { return std::strtof (str, nullptr); }
+template <> inline float VectorBuilder::convert<float> (const char* str, char** end) { return std::strtof (str, end); }
 
-template <> inline int VectorBuilder::convert<int> (const char* str) { return std::stoi (str); }
-
-template <> inline unsigned int VectorBuilder::convert<unsigned int> (const char* str) {
-    return std::strtoul (str, nullptr, 10);
+template <> inline int VectorBuilder::convert<int> (const char* str, char** end) {
+    errno = 0;
+    const auto value = std::strtol (str, end, 10);
+    if (errno == ERANGE || value < std::numeric_limits<int>::min () || value > std::numeric_limits<int>::max ()) {
+	throw std::out_of_range ("Vector integer out of range");
+    }
+    return static_cast<int> (value);
 }
 
-template <> inline double VectorBuilder::convert<double> (const char* str) { return std::strtod (str, nullptr); }
-
-template <> inline uint8_t VectorBuilder::convert<uint8_t> (const char* str) { return std::strtoul (str, nullptr, 10); }
-
-template <> inline uint16_t VectorBuilder::convert<uint16_t> (const char* str) {
-    return std::strtoul (str, nullptr, 10);
+template <> inline unsigned int VectorBuilder::convert<unsigned int> (const char* str, char** end) {
+    return std::strtoul (str, end, 10);
 }
 
-template <> inline uint64_t VectorBuilder::convert<uint64_t> (const char* str) {
-    return std::strtoull (str, nullptr, 10);
+template <> inline double VectorBuilder::convert<double> (const char* str, char** end) { return std::strtod (str, end); }
+
+template <> inline uint8_t VectorBuilder::convert<uint8_t> (const char* str, char** end) { return std::strtoul (str, end, 10); }
+
+template <> inline uint16_t VectorBuilder::convert<uint16_t> (const char* str, char** end) {
+    return std::strtoul (str, end, 10);
 }
 
-template <> inline int8_t VectorBuilder::convert<int8_t> (const char* str) { return std::strtol (str, nullptr, 10); }
+template <> inline uint64_t VectorBuilder::convert<uint64_t> (const char* str, char** end) {
+    return std::strtoull (str, end, 10);
+}
 
-template <> inline int16_t VectorBuilder::convert<int16_t> (const char* str) { return std::strtol (str, nullptr, 10); }
+template <> inline int8_t VectorBuilder::convert<int8_t> (const char* str, char** end) { return std::strtol (str, end, 10); }
 
-template <> inline int64_t VectorBuilder::convert<int64_t> (const char* str) { return std::strtoll (str, nullptr, 10); }
+template <> inline int16_t VectorBuilder::convert<int16_t> (const char* str, char** end) { return std::strtol (str, end, 10); }
 
-template <> inline bool VectorBuilder::convert<bool> (const char* str) { return std::strtoul (str, nullptr, 10) > 0; }
+template <> inline int64_t VectorBuilder::convert<int64_t> (const char* str, char** end) { return std::strtoll (str, end, 10); }
 
-} // namespace WallpaperEngine::Data::Parsers
+template <> inline bool VectorBuilder::convert<bool> (const char* str, char** end) { return std::strtoul (str, end, 10) > 0; }
+
+} // namespace WallpaperEngine::Data::Builders

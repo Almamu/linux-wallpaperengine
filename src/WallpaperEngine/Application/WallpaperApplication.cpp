@@ -1632,7 +1632,11 @@ void WallpaperApplication::setupPropertiesForProject (const Project& project) {
 	if (override != this->m_context.settings.general.properties.end ()) {
 	    sLog.out ("Applying override value for ", key);
 
-	    cur->update (override->second, DynamicValue::UpdateSource::User);
+	    try {
+		cur->update (override->second, DynamicValue::UpdateSource::User);
+	    } catch (const std::exception& error) {
+		sLog.error ("Ignoring override value '", override->second, "' for ", key, ": ", error.what ());
+	    }
 	}
 
 	if (this->m_context.settings.general.onlyListProperties) {
