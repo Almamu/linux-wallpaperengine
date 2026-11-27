@@ -201,13 +201,16 @@ void ShaderUnit::preprocessVariables () {
 	std::string line = this->m_preprocessed.substr (start, end - start);
 	const size_t combo = line.find ("// [COMBO] ");
 	const size_t uniform = line.find ("uniform");
-	const size_t comment = line.find ("// ");
+	const size_t comment = line.find ("//");
+	const size_t annotation = comment == std::string::npos ? std::string::npos
+	    : line.find_first_not_of (" \t\r", comment + 2);
 	const size_t semicolon = line.find (';');
 
 	if (combo != std::string::npos) {
 	    this->parseComboConfiguration (line.substr (combo + strlen ("// [COMBO] ")), 0);
 	} else if (
-	    uniform != std::string::npos && comment != std::string::npos && semicolon != std::string::npos &&
+	    uniform != std::string::npos && annotation != std::string::npos && semicolon != std::string::npos
+	    && line[annotation] == '{' &&
 	    // this check ensures that the comment is after the semicolon (so it's not a commented-out line)
 	    // this needs further refining as it's not taking into account block comments
 	    uniform < semicolon && semicolon < comment
@@ -223,7 +226,7 @@ void ShaderUnit::preprocessVariables () {
 		    name = std::move (token);
 		}
 		if (!type.empty ()) {
-		    this->parseParameterConfiguration (type, name, line.substr (comment + 2));
+		    this->parseParameterConfiguration (type, name, line.substr (annotation));
 		}
 	    }
 	}

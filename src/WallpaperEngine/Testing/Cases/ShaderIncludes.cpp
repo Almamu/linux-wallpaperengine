@@ -618,6 +618,33 @@ TEST_CASE ("shader parameter declarations accept aligned whitespace", "[shader][
     }
 }
 
+TEST_CASE ("shader parameter annotations accept optional whitespace after the comment delimiter",
+           "[shader][parameter][compact-comments]") {
+    const auto assets = shaderAssets ("");
+    const ShaderConstantMap constants;
+    const TextureMap textures;
+    const ComboMap combos;
+    for (const std::string space : { "", " ", "\t", " \t  " }) {
+        CAPTURE (space);
+        const std::string source =
+            "    uniform float u_Opacity; //" + space + "{\"material\":\"Alpha\",\"default\":0.3}\n"
+            "uniform float u_Prose; // Authored example {\"material\":\"Prose\",\"default\":0.5}\n"
+            "// uniform float u_Removed; //{\"material\":\"Removed\",\"default\":0.7}\n"
+            "void main() { gl_FragColor = vec4(u_Opacity); }\n";
+        ShaderUnit unit (
+            GLSLContext::UnitType_Fragment, "compact_comments.frag", source, *assets, constants, textures,
+            textures, combos, combos
+        );
+        const auto& parameters = unit.getParameters ();
+        CHECK (parameters.size () == 1);
+        if (parameters.size () == 1) {
+            CHECK (parameters[0]->getName () == "u_Opacity");
+            CHECK (parameters[0]->getIdentifierName () == "Alpha");
+            CHECK (parameters[0]->getFloat () == 0.3f);
+        }
+    }
+}
+
 TEST_CASE ("engine-bound texture resolutions accept resolution metadata", "[shader][parameter][regression]") {
     const auto assets = shaderAssets ("");
     const ShaderConstantMap constants;
