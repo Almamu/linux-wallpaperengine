@@ -130,7 +130,12 @@ JSValue ScriptEngine::dynamicToJs (DynamicValue& value, const bool snapshotVecto
 // independent degree-valued snapshots.
 static bool isAnglesProperty (const std::string& key) { return key.rfind ("angles_", 0) == 0; }
 
-static std::string normalizeSceneScriptModuleSyntax (const std::string& source) {
+struct LoweredSceneScript {
+    std::string body;
+    bool exportsWorkshopId;
+};
+
+static LoweredSceneScript normalizeSceneScriptModuleSyntax (const std::string& source) {
     // Workshop scripts may put an aliased import in the middle of a minified
     // line: `setup();import*as math from'WEMath';export function update...`.
     // Lower declarations, not entire lines or text inside strings/comments.
@@ -155,6 +160,9 @@ static std::string normalizeSceneScriptModuleSyntax (const std::string& source) 
 	    || (c >= 128 && unicodeWhitespaceLength (pos) == 0);
     };
     std::string output, imports;
+    enum class ExportPrefix { None, Keyword, Declaration };
+    auto exportPrefix = ExportPrefix::None;
+    bool exportsWorkshopId = false;
     int depth = 0;
     bool expressionExpected = true;
     for (size_t pos = 0; pos < source.size ();) {
@@ -168,6 +176,7 @@ static std::string normalizeSceneScriptModuleSyntax (const std::string& source) 
 		if (next == '\\' && pos < source.size ()) ++pos;
 		else if (next == c) break;
 	    }
+	    exportPrefix = ExportPrefix::None;
 	    expressionExpected = false;
 	} else if (c == '/' && pos < source.size () && source[pos] == '/') {
 	    while (pos < source.size () && source[pos] != '\n') ++pos;
@@ -184,10 +193,22 @@ static std::string normalizeSceneScriptModuleSyntax (const std::string& source) 
 		else if (next == '/' && !characterClass) break;
 	    }
 	    while (pos < source.size () && identifier (pos)) ++pos;
+	    exportPrefix = ExportPrefix::None;
 	    expressionExpected = false;
 	} else if (identifier (begin)) {
 	    while (pos < source.size () && identifier (pos)) ++pos;
 	    const std::string_view token (source.data () + begin, pos - begin);
+	    if (depth == 0 && token == "export") {
+		exportPrefix = ExportPrefix::Keyword;
+		expressionExpected = true;
+		continue;
+	    }
+	    if (exportPrefix == ExportPrefix::Keyword && (token == "let" || token == "const" || token == "var")) {
+		exportPrefix = ExportPrefix::Declaration;
+	    } else {
+		exportsWorkshopId |= exportPrefix == ExportPrefix::Declaration && token == "__workshopId";
+		exportPrefix = ExportPrefix::None;
+	    }
 	    if (depth == 0 && token == "import") {
 		std::match_results<std::string::const_iterator> match;
 		if (std::regex_search (source.begin () + begin, source.end (), match, namespaceImport,
@@ -200,21 +221,18 @@ static std::string normalizeSceneScriptModuleSyntax (const std::string& source) 
 		    continue;
 		}
 	    }
-	    if (depth == 0 && token == "export") {
-		expressionExpected = true;
-		continue;
-	    }
 	    expressionExpected = token == "return" || token == "throw" || token == "case"
 		|| token == "typeof" || token == "void" || token == "delete" || token == "yield"
 		|| token == "await" || token == "in" || token == "instanceof";
 	} else if (!std::isspace (static_cast<unsigned char> (c))) {
+	    exportPrefix = ExportPrefix::None;
 	    if (c == '{') ++depth;
 	    if (c == '}') --depth;
 	    expressionExpected = c != ')' && c != ']' && c != '.';
 	}
 	output.append (source, begin, pos - begin);
     }
-    return imports + output;
+    return { imports + output, exportsWorkshopId };
 }
 
 static JSValue anglesToJs (WallpaperEngine::Scripting::Adapters::VectorAdapter<3>& adapter, const DynamicValue& value) {
@@ -579,7 +597,7 @@ ScriptLayerHandle ScriptEngine::createLayerScript (
     const ScriptLayerHandle id = this->m_nextLayerId++;
 
     // WE scripts arrive as ES modules; run them as isolated plain scripts.
-    std::string body = normalizeSceneScriptModuleSyntax (scriptSource);
+    const std::string body = normalizeSceneScriptModuleSyntax (scriptSource).body;
 
     // The IIFE gives every layer its own closure for top-level vars and
     // functions, so two layers that both define `function update()` or a
@@ -844,7 +862,7 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
     // evaluate an IIFE that hands back the script's lifecycle hooks. The closure also captures
     // `thisLayer` per script instead of relying on a shared global that the last queued object
     // would otherwise overwrite.
-    std::string body = normalizeSceneScriptModuleSyntax (*source);
+    const auto [body, exportsWorkshopId] = normalizeSceneScriptModuleSyntax (*source);
 
     JSValue layer = object == nullptr ? JS_UNDEFINED : this->m_adapters.object->instantiate (*object);
     JS_SetPropertyStr (this->m_context, this->m_globalThis, "__propScriptLayer", layer);
@@ -930,6 +948,9 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 	    << "    cursorUp: (typeof cursorUp === 'function') ? cursorUp : null,\n"
 	    << "    cursorClick: (typeof cursorClick === 'function') ? cursorClick : null,\n"
 	    << "    animationEvent: (typeof animationEvent === 'function') ? animationEvent : null,\n"
+	    // Resolve the exported binding in this module's closure when a hook calls createLayer.
+	    << (exportsWorkshopId ? "    get __workshopId() { return __workshopId; },\n"
+				  : "    __workshopId: null,\n")
 	    << "  };\n"
 	    << "})()";
 
@@ -1209,9 +1230,14 @@ std::string ScriptEngine::getRunningModuleWorkshopId () const {
     std::string result;
 
     if (JS_IsString (wid)) {
-	const char* str = JS_ToCString (this->m_context, wid);
+	size_t length = 0;
+	const char* str = JS_ToCStringLen (this->m_context, &length, wid);
 	if (str != nullptr) {
-	    result = str;
+	    const std::string_view id (str, length);
+	    // The workshop id is one numeric directory component in the asset path.
+	    if (id.find_first_not_of ("0123456789") == std::string_view::npos) {
+		result = id;
+	    }
 	    JS_FreeCString (this->m_context, str);
 	}
     }
