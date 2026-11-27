@@ -1577,7 +1577,7 @@ ParticleChild ObjectParser::parseParticleChild (const JSON& it, const Project& p
     return ParticleChild {
 	.type = type,
 	.name = name,
-	.maxCount = it.optional ("maxcount", 20),
+	.maxCount = it.optional ("maxcount", type == "eventspawn" ? 10 : 20),
 	.controlPointStartIndex = it.optional ("controlpointstartindex", 0),
 	.probability = it.optional ("probability", 1.0f),
 	.angles = parseVec3 ("angles", glm::vec3 (0.0f)),

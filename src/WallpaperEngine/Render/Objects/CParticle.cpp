@@ -483,8 +483,8 @@ const ParticleInstanceOverride& CParticle::getInstanceOverride () const {
 
 void CParticle::setupChildren () {
     const auto supported = [] (const ParticleChild& child) {
-	return (child.type == "static" || ((child.type == "eventfollow" || child.type == "eventdeath") && child.maxCount > 0))
-	    && !child.particleFile.empty ();
+	return (child.type == "static" || ((child.type == "eventfollow" || child.type == "eventspawn"
+	    || child.type == "eventdeath") && child.maxCount > 0)) && !child.particleFile.empty ();
     };
     size_t remainingChildren = std::ranges::count_if (m_particle.children, supported);
     for (const auto& child : m_particle.children) {
@@ -533,8 +533,8 @@ void CParticle::setupChildren () {
 		FollowChildSystem system { .definition = std::move (definition), .settings = &child, .instances = {} };
 		// Prepare a bounded pool on the load worker. Spawning an event child must
 		// never parse assets or compile shaders in the middle of a rendered frame.
-		const auto capacity = child.type == "eventdeath" ? child.maxCount
-		    : std::min (child.maxCount, static_cast<int> (m_maxParticles));
+		const auto capacity = child.type == "eventfollow"
+		    ? std::min (child.maxCount, static_cast<int> (m_maxParticles)) : child.maxCount;
 		for (int i = 0; i < capacity; ++i) {
 		    if (root->m_childSystemCount >= branchEnd) break;
 		    ++root->m_childSystemCount;
@@ -922,15 +922,18 @@ bool CParticle::hasPendingEmission () const {
 }
 
 void CParticle::spawnEventChild (FollowChildSystem& child, const ParticleInstance& particle) {
-    if (WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) >= child.settings->probability) return;
+    const bool eventSpawn = child.settings->type == "eventspawn";
+    if (!eventSpawn && WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) >= child.settings->probability) return;
     const auto slot = std::find_if (child.instances.begin (), child.instances.end (), [] (const auto& instance) {
 	return instance.parentSerial == 0 && !instance.renderer->hasLivingParticles ();
     });
     if (slot == child.instances.end ()) return;
+    if (eventSpawn && WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, 1.0f) > child.settings->probability) return;
+    // A detached child still occupies its pool slot until its own simulation finishes.
     slot->parentSerial = particle.serial;
     auto& renderer = *slot->renderer;
     renderer.stop ();
-    renderer.m_eventParentSerial = particle.serial;
+    renderer.m_eventParentSerial = eventSpawn ? 0 : particle.serial;
     renderer.m_simulationTime = 0.0f;
     renderer.m_propagateColorOverride = m_propagateColorOverride;
     // Native samples raw overrides on first activation. Recycling retains
@@ -942,7 +945,9 @@ void CParticle::spawnEventChild (FollowChildSystem& child, const ParticleInstanc
     }
     const glm::mat4 flipY = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
     const glm::mat4 parentToLocal = glm::inverse (flipY * renderer.resolveWorldMatrix () * flipY);
-    renderer.m_followPosition = glm::vec3 (parentToLocal * glm::vec4 (particle.position, 1.0f));
+    // Eventspawn composes its authored child transform after the birth translation.
+    // Transform the anchor as a displacement so the child origin remains applied.
+    renderer.m_followPosition = glm::vec3 (parentToLocal * glm::vec4 (particle.position, eventSpawn ? 0.0f : 1.0f));
     renderer.m_time = getScene ().getFrameRenderTime ();
     renderer.play ();
     renderer.prewarm (firstActivation);
@@ -950,9 +955,7 @@ void CParticle::spawnEventChild (FollowChildSystem& child, const ParticleInstanc
 
 void CParticle::updateFollowChildren (const uint32_t firstNewParticle) {
     for (auto& child : m_followChildren) {
-	if (child.settings->type == "eventdeath") {
-	    continue;
-	}
+	if (child.settings->type != "eventfollow") continue;
 	for (uint32_t i = firstNewParticle; i < m_particleCount; ++i) {
 	    if (m_particles[i].isAlive ()) spawnEventChild (child, m_particles[i]);
 	}
@@ -1317,16 +1320,25 @@ void CParticle::finalizeParticleBirths (const uint32_t firstNewParticle, const u
         if (usesNativeParticleSlots ())
             m_remapSlots[m_particles[i].remapSlot].serial = m_particles[i].serial;
     }
-    if ((m_particle.flags & 1) == 0) return;
-    const glm::mat4 flipY = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
-    const glm::mat4 localToWorld = firstNewParticle < firstManual
-        ? flipY * particleWorldMatrix () * flipY : m_pendingBirthTransform;
-    for (uint32_t i = firstNewParticle; i < m_particleCount; ++i) {
-        auto& particle = m_particles[i];
-        const auto& transform = i < firstManual ? localToWorld : m_pendingBirthTransform;
-        particle.position = glm::vec3 (transform * glm::vec4 (particle.position, 1.0f));
-        particle.previousPosition = glm::vec3 (transform * glm::vec4 (particle.previousPosition, 1.0f));
-        particle.velocity = glm::mat3 (transform) * particle.velocity;
+    if (firstNewParticle == m_particleCount) return;
+    if ((m_particle.flags & 1) != 0) {
+        const glm::mat4 flipY = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
+        const glm::mat4 localToWorld = firstNewParticle < firstManual
+            ? flipY * particleWorldMatrix () * flipY : m_pendingBirthTransform;
+        for (uint32_t i = firstNewParticle; i < m_particleCount; ++i) {
+            auto& particle = m_particles[i];
+            const auto& transform = i < firstManual ? localToWorld : m_pendingBirthTransform;
+            particle.position = glm::vec3 (transform * glm::vec4 (particle.position, 1.0f));
+            particle.previousPosition = glm::vec3 (transform * glm::vec4 (particle.previousPosition, 1.0f));
+            particle.velocity = glm::mat3 (transform) * particle.velocity;
+        }
+    }
+    // Spawn children capture the initialized position before parent operators run.
+    for (auto& child : m_followChildren) {
+        if (child.settings->type != "eventspawn") continue;
+        for (uint32_t i = firstNewParticle; i < m_particleCount; ++i) {
+            if (m_particles[i].isAlive ()) spawnEventChild (child, m_particles[i]);
+        }
     }
 }
 
