@@ -2,6 +2,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -10,6 +11,25 @@
 
 namespace WallpaperEngine::Audio::Drivers::Recorders {
 namespace {
+    void disconnectCaptureWhenReady (pa_stream* stream, void* /*userdata*/) {
+	if (pa_stream_get_state (stream) == PA_STREAM_READY) {
+	    pa_stream_set_state_callback (stream, nullptr, nullptr);
+	    pa_stream_disconnect (stream);
+	}
+    }
+
+    void releaseCaptureStream (pa_stream* stream) {
+	const auto state = pa_stream_get_state (stream);
+	pa_stream_set_read_callback (stream, nullptr, nullptr);
+	// A creating stream cannot disconnect until it has a server-side channel.
+	// PulseAudio keeps it alive after unref, so retire it on READY without recorder state.
+	pa_stream_set_state_callback (stream, state == PA_STREAM_CREATING ? &disconnectCaptureWhenReady : nullptr, nullptr);
+	if (state == PA_STREAM_READY) {
+	    pa_stream_disconnect (stream);
+	}
+	pa_stream_unref (stream);
+    }
+
     void appendCaptureFrames (
 	PulseAudioPlaybackRecorder::PulseAudioData& recorder, const float* data, std::size_t frameCount
     ) {
@@ -20,24 +40,21 @@ namespace {
 	    return;
 	}
 
-	while (frameCount > 0) {
-	    const std::size_t framesToCopy = std::min (frameCount, recorder.frameCount - recorder.currentWriteFrame);
-	    float* destination = recorder.writeBuffer.data () + recorder.currentWriteFrame * channelCount;
-	    const std::size_t samplesToCopy = framesToCopy * channelCount;
-	    if (data == nullptr) {
-		std::fill_n (destination, samplesToCopy, 0.0f);
-	    } else {
-		std::memcpy (destination, data, samplesToCopy * sizeof (float));
-		data += samplesToCopy;
-	    }
+	// The native recorder releases the packet once the active PCM window is full.
+	const std::size_t framesToCopy = std::min (frameCount, recorder.frameCount - recorder.currentWriteFrame);
+	float* destination = recorder.writeBuffer.data () + recorder.currentWriteFrame * channelCount;
+	const std::size_t samplesToCopy = framesToCopy * channelCount;
+	if (data == nullptr) {
+	    std::fill_n (destination, samplesToCopy, 0.0f);
+	} else {
+	    std::memcpy (destination, data, samplesToCopy * sizeof (float));
+	}
 
-	    recorder.currentWriteFrame += framesToCopy;
-	    frameCount -= framesToCopy;
-	    if (recorder.currentWriteFrame == recorder.frameCount) {
-		recorder.audioBuffer.swap (recorder.writeBuffer);
-		recorder.currentWriteFrame = 0;
-		recorder.fullFrameReady = true;
-	    }
+	recorder.currentWriteFrame += framesToCopy;
+	if (recorder.currentWriteFrame == recorder.frameCount) {
+	    recorder.audioBuffer.swap (recorder.writeBuffer);
+	    recorder.currentWriteFrame = 0;
+	    recorder.fullFrameReady = true;
 	}
     }
 } // namespace
@@ -81,26 +98,30 @@ void pa_stream_read_cb (pa_stream* stream, const size_t /*nbytes*/, void* userda
 }
 
 void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userdata) {
-    if (info == nullptr) {
+    if (info == nullptr || info->default_sink_name == nullptr) {
 	return;
     }
 
     auto* recorder = static_cast<PulseAudioPlaybackRecorder::PulseAudioData*> (userdata);
-    if (recorder->captureStream != nullptr) {
-	pa_stream_disconnect (recorder->captureStream);
-	pa_stream_unref (recorder->captureStream);
-	recorder->captureStream = nullptr;
-    }
-
     pa_sample_spec spec {};
     spec.format = PA_SAMPLE_FLOAT32NE;
     spec.rate = info->sample_spec.rate == 0 ? 44100 : info->sample_spec.rate;
     spec.channels = static_cast<uint8_t> (std::clamp<unsigned int> (info->sample_spec.channels, 1, 2));
 
-    const std::size_t rateMultiplier = std::max<std::size_t> (spec.rate / 44100, 1);
+    std::string monitorName (info->default_sink_name);
+    monitorName += ".monitor";
+    if (recorder->captureStream != nullptr) {
+	if (PA_STREAM_IS_GOOD (pa_stream_get_state (recorder->captureStream)) && recorder->monitorName == monitorName
+	    && recorder->sampleRate == spec.rate && recorder->channelCount == spec.channels) {
+	    return;
+	}
+	releaseCaptureStream (recorder->captureStream);
+    }
+
+    recorder->monitorName = monitorName;
     recorder->sampleRate = spec.rate;
     recorder->channelCount = spec.channels;
-    recorder->frameCount = WallpaperEngineSpectrumAnalyzer::BaseFrameCount * rateMultiplier;
+    recorder->frameCount = WallpaperEngineSpectrumAnalyzer::windowForSampleRate (spec.rate).pcmFrames;
     recorder->currentWriteFrame = 0;
     recorder->fullFrameReady = false;
     recorder->audioBuffer.assign (recorder->frameCount * recorder->channelCount, 0.0f);
@@ -122,9 +143,6 @@ void pa_server_info_cb (pa_context* ctx, const pa_server_info* info, void* userd
 
     pa_stream_set_state_callback (recorder->captureStream, &pa_stream_notify_cb, userdata);
     pa_stream_set_read_callback (recorder->captureStream, &pa_stream_read_cb, userdata);
-
-    std::string monitorName (info->default_sink_name);
-    monitorName += ".monitor";
 
     pa_buffer_attr attributes {};
     const size_t bytesPerSecond = pa_bytes_per_second (&spec);
@@ -152,7 +170,9 @@ void pa_context_notify_cb (pa_context* ctx, void* userdata) {
 	    {
 		pa_context_set_subscribe_callback (ctx, pa_context_subscribe_cb, userdata);
 		pa_operation* subscription = pa_context_subscribe (
-		    ctx, static_cast<pa_subscription_mask_t> (PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SOURCE),
+		    ctx, static_cast<pa_subscription_mask_t> (
+			PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SERVER
+		    ),
 		    nullptr, nullptr
 		);
 		if (subscription != nullptr) {
@@ -178,8 +198,13 @@ PulseAudioPlaybackRecorder::PulseAudioPlaybackRecorder () {
     this->m_captureData.writeBuffer.assign (this->m_captureData.frameCount * this->m_captureData.channelCount, 0.0f);
 
     if (const char* scale = std::getenv ("WPE_AUDIO_SCALE")) {
-	const float parsed = std::atof (scale);
-	if (parsed > 0.0f) {
+	char* end = nullptr;
+	const float parsed = std::strtof (scale, &end);
+	const bool hasNumber = end != scale;
+	while (std::isspace (static_cast<unsigned char> (*end))) {
+	    ++end;
+	}
+	if (hasNumber && *end == '\0') {
 	    this->m_spectrumAnalyzer.setInputVolume (parsed);
 	}
     }
@@ -217,8 +242,7 @@ PulseAudioPlaybackRecorder::PulseAudioPlaybackRecorder () {
 
 PulseAudioPlaybackRecorder::~PulseAudioPlaybackRecorder () {
     if (this->m_captureData.captureStream != nullptr) {
-	pa_stream_disconnect (this->m_captureData.captureStream);
-	pa_stream_unref (this->m_captureData.captureStream);
+	releaseCaptureStream (this->m_captureData.captureStream);
     }
     if (this->m_context != nullptr) {
 	pa_context_disconnect (this->m_context);

@@ -4,6 +4,7 @@
 #include "WallpaperEngineSpectrumAnalyzer.h"
 #include <cstdint>
 #include <pulse/pulseaudio.h>
+#include <string>
 #include <vector>
 
 namespace WallpaperEngine::Audio::Drivers::Recorders {
@@ -18,12 +19,13 @@ public:
 	std::vector<float> audioBuffer;
 	std::vector<float> writeBuffer;
 	std::size_t currentWriteFrame = 0;
-	std::size_t frameCount = WallpaperEngineSpectrumAnalyzer::BaseFrameCount;
+	std::size_t frameCount = WallpaperEngineSpectrumAnalyzer::BasePcmFrameCount;
 	uint32_t sampleRate = 44100;
 	unsigned int channelCount = 2;
 	uint64_t formatGeneration = 0;
 	bool fullFrameReady = false;
 	pa_stream* captureStream = nullptr;
+	std::string monitorName;
     };
 
     PulseAudioPlaybackRecorder ();

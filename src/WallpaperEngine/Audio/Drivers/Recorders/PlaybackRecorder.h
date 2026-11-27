@@ -35,10 +35,7 @@ protected:
     [[nodiscard]] float elapsedUpdateSeconds ();
 
 private:
-    float m_peakEnvelope[2][8] = {
-	{ 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
-	{ 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
-    };
+    float m_peakEnvelope[2][8] = { { 0 } };
     float m_intermediateSpectrum[2][64] = { { 0 } };
     std::chrono::steady_clock::time_point m_lastUpdate {};
 };

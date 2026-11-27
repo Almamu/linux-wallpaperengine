@@ -16,7 +16,7 @@ float PlaybackRecorder::elapsedUpdateSeconds () {
 
     const float elapsed = std::chrono::duration<float> (now - this->m_lastUpdate).count ();
     this->m_lastUpdate = now;
-    return std::clamp (elapsed, 0.0f, 1.0f);
+    return elapsed;
 }
 
 void PlaybackRecorder::setRawSpectrum (const float* left, const float* right, const float deltaSeconds) {
@@ -31,7 +31,7 @@ void PlaybackRecorder::setRawSpectrum (const float* left, const float* right, co
     std::memmove (this->rawAudio64Left, left, sizeof (this->rawAudio64Left));
     std::memmove (this->rawAudio64Right, right, sizeof (this->rawAudio64Right));
 
-    const float dt = std::clamp (deltaSeconds, 0.0f, 1.0f);
+    const float dt = std::clamp (deltaSeconds, 0.0001f, 0.25f);
     const float interpolation = std::min (dt * kIntermediateRate, 1.0f);
     const float maxOutputDelta = std::min (dt * kOutputSlewRate, 1.0f);
     float* const output[2] = { this->audio64Left, this->audio64Right };
