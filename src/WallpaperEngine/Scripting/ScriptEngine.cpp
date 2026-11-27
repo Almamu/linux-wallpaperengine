@@ -907,14 +907,23 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 	    // var-ref graph can be invalidated by those generated setup closures during QuickJS GC.
 	    << "  'use strict';\n"
 	    << "  var thisLayer = globalThis.__propScriptLayer;\n"
-	    // Material properties control their own timelines. Keep thisLayer bound
-	    // to the owner while thisObject resolves animation names within its pass.
+	    // Keep thisLayer on the owning layer. Model material scripts resolve
+	    // registered uniform names and animations against their own pass.
 	    << "  var __animationScope = globalThis.__propScriptAnimationScope;\n"
 	    << "  var __propertyName = globalThis.__propScriptPropertyName;\n"
+	    << "  var __modelMaterial = __animationScope.startsWith('material_');\n"
+	    << "  function __materialKey(target, key) {\n"
+	    << "    if (!__modelMaterial || typeof key !== 'string') return key;\n"
+	    << "    var scoped = __animationScope + key;\n"
+	    << "    return Reflect.get(target, scoped, target) === undefined ? key : scoped;\n"
+	    << "  }\n"
 	    << "  var thisObject = globalThis.__propScriptSceneOwner || ((__animationScope || globalThis.__propScriptPropertyAnimated || __propertyName.indexOf('_fx') >= 0) ? new Proxy(thisLayer, { get: function(target, key) {\n"
 	    << "    if (key === 'getAnimation') return function(name) { return target.getAnimation(name === undefined ? __propertyName : __animationScope + name); };\n"
-	    << "    var result = Reflect.get(target, key, target);\n"
+	    << "    var result = Reflect.get(target, __materialKey(target, key), target);\n"
 	    << "    return typeof result === 'function' ? result.bind(target) : result;\n"
+	    << "  }, set: function(target, key, value, receiver) {\n"
+	    << "    var scoped = __materialKey(target, key);\n"
+	    << "    return Reflect.set(target, scoped, value, scoped === key ? receiver : target);\n"
 	    << "  } }) : thisLayer);\n"
 	    // WE's scriptProperties builder doubles as the values object (scripts read
 	    // scriptProperties.<name> without calling finish()), so the shim collects slider
