@@ -660,10 +660,10 @@ void CParticle::rebaseRenderTime (double offset) {
 	for (auto& instance : child.instances) instance.renderer->rebaseRenderTime (offset);
 }
 
-void CParticle::render () {
+bool CParticle::updateForRender () {
     m_frameSimulationDelta = 0.0f;
     if (!m_initialized) {
-	return;
+	return false;
     }
     if (m_instanceParametersDirty || m_instanceParameterTimelines) {
 	auto& rate = *getInstanceOverride ().rate->value;
@@ -681,7 +681,7 @@ void CParticle::render () {
     // the layer update publishes its current matrix even while integration is held.
     const glm::mat4 pointReflection = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
     m_commonControlPointTransform = pointReflection * particleWorldMatrix () * pointReflection;
-    if (!visible) return;
+    if (!visible) return false;
 
     // All systems in this scene frame share one double driver sample. Narrow only
     // the interval; float timestamps lose individual frames after long uptimes.
@@ -712,6 +712,39 @@ void CParticle::render () {
 	m_simulationTime += dt;
 	update (dt);
     }
+    return true;
+}
+
+void CParticle::renderReflection (const glm::mat4& view, const glm::vec3& eye) {
+    // Layer-image emitters read an earlier layer's composite during the ordinary traversal.
+    if (!m_pass || m_particleParent != nullptr || (m_particle.flags & (1 | 4)) != 0
+	|| !getScene ().getScene ().camera.projection.isPerspective
+	|| !m_useTrailRenderer || m_useRopeRenderer || m_hasRefract
+	|| !m_particle.children.empty () || !m_children.empty () || !m_followChildren.empty ()
+	|| m_pass->getPass ().shader != "genericparticle" || m_pass->getBlendingMode () != BlendingMode_Additive
+	|| std::ranges::any_of (m_particle.emitters, [](const ParticleEmitter& emitter) {
+	    return emitter.name == "layerimage";
+	})) return;
+
+    const uint32_t frame = getScene ().getSceneFrame ();
+    if (m_reflectionPreparedFrame != frame) {
+	m_reflectionFrameVisible = updateForRender ();
+	m_reflectionPreparedFrame = frame;
+    }
+    if (!m_reflectionFrameVisible || m_particleCount == 0) return;
+
+    const ReflectionView reflection { view, eye };
+    glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+    renderSprites (&reflection);
+    glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
+void CParticle::render () {
+    // The planar pass may already have consumed manual births and advanced this frame.
+    const bool visible = m_reflectionPreparedFrame == getScene ().getSceneFrame ()
+	? m_reflectionFrameVisible : updateForRender ();
+    if (!visible) return;
+
     // Render particles
     if (m_particleCount > 0 && m_particle.material) {
 	// Scene alpha belongs to the compositor, just as for image/model draws.
@@ -4411,9 +4444,10 @@ void CParticle::setupParticleUniforms () {
     }
 }
 
-void CParticle::updateMatrices () {
-    const float width = getScene ().getCamera ().getWidth ();
-    const float height = getScene ().getCamera ().getHeight ();
+void CParticle::updateMatrices (const ReflectionView* reflection) {
+    const auto& camera = getScene ().getCamera ();
+    const float width = camera.getWidth ();
+    const float height = camera.getHeight ();
     const glm::mat4 flipY = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
 
     // Scene layer transforms use a top-left origin and Y-down coordinates, while
@@ -4438,7 +4472,15 @@ void CParticle::updateMatrices () {
 	: m_worldModelMatrix * flipY * particleWorldMatrix () * flipY;
     m_modelMatrixInverse = glm::inverse (m_modelMatrix);
 
-    this->updateParticleViewProjection ();
+    const glm::mat4& view = reflection ? reflection->view : camera.getLookAt ();
+    if (reflection) {
+	glm::mat4 projection = camera.getRasterProjection ();
+	if (camera.isYFlipped ()) projection[1][1] *= -1.0f;
+	m_viewProjectionMatrix = projection * view;
+	m_eyePosition = reflection->eye;
+    } else {
+	this->updateParticleViewProjection ();
+    }
     m_mvpMatrix = m_viewProjectionMatrix * m_modelMatrix;
     m_mvpMatrixInverse = glm::inverse (m_mvpMatrix);
 
@@ -4453,7 +4495,7 @@ void CParticle::updateMatrices () {
     if (is3D) {
 	// Sprite corners are expanded in particle-local space. Express the camera's
 	// basis there while preserving the layer's in-plane roll and authored size.
-	const glm::mat4 cameraWorld = glm::inverse (getScene ().getCamera ().getLookAt ());
+	const glm::mat4 cameraWorld = glm::inverse (view);
 	const glm::mat3 viewToLocal = calculateBillboardParticleOrientation (m_modelMatrixInverse, cameraWorld, 0.0f);
 	const float roll = (m_particle.flags & 1) != 0 ? 0.0f
 	    : m_particle.angles->evaluateVec3 (getScene ().getElapsedTime ()).z;
@@ -4620,7 +4662,7 @@ void CParticle::updateParticleRenderVars () {
     }
 }
 
-void CParticle::renderSprites () {
+void CParticle::renderSprites (const ReflectionView* reflection) {
     if (m_particleCount == 0 || m_pass == nullptr) {
 	return;
     }
@@ -4713,7 +4755,7 @@ void CParticle::renderSprites () {
     );
 
     // Update matrices and uniform data
-    updateMatrices ();
+    updateMatrices (reflection);
 
     // For REFRACT: blit current scene content into the copy FBO before rendering.
     // This gives the shader a snapshot of what's behind the particles for refraction,
@@ -4737,7 +4779,10 @@ void CParticle::renderSprites () {
 
     // The perspective projection or upright 2D sprite tangents reflect Y.
     // Trail tangents come from velocity and retain their 2D winding.
-    const bool reflectedWinding = is3D ? getScene ().getCamera ().isYFlipped () : !m_useTrailRenderer;
+    // In the planar pass the reflected eye rebuilds the trail's facing in its
+    // local basis. With the unflipped target projection the quad uses CCW.
+    const bool reflectedWinding = !reflection
+	&& (is3D ? getScene ().getCamera ().isYFlipped () : !m_useTrailRenderer);
     if (reflectedWinding) glFrontFace (GL_CW);
 
     // CPass::render() handles: FBO binding, texture setup, uniforms, blending, draw call, cleanup

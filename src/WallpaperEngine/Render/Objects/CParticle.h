@@ -289,6 +289,7 @@ public:
 
     void setup () override;
     void render () override;
+    void renderReflection (const glm::mat4& view, const glm::vec3& eye);
     void rebaseRenderTime (double offset) override;
     void update (float dt);
     void play ();
@@ -379,14 +380,18 @@ protected:
     OperatorFunc createOscillatePositionOperator (const OscillatePositionOperator& op);
 
     // Rendering
-    void renderSprites ();
+    struct ReflectionView {
+	const glm::mat4& view;
+	const glm::vec3& eye;
+    };
+    void renderSprites (const ReflectionView* reflection = nullptr);
     void renderRope ();
     void renderRopeTrail ();
     void updateRopeTrailHistory (float dt);
     void setupPass ();
     void setupGeometryCallbacks ();
     void setupParticleUniforms ();
-    void updateMatrices ();
+    void updateMatrices (const ReflectionView* reflection = nullptr);
     void applyParallaxToModelMatrix ();
     void updateParticleViewProjection ();
     void updateParticleRenderVars ();
@@ -396,6 +401,7 @@ protected:
     [[nodiscard]] glm::vec3 adjustInstanceColor (const glm::vec3& color) const;
 
 private:
+    bool updateForRender ();
     const Particle& m_particle;
     CParticle* m_particleParent = nullptr;
     std::array<bool, PARTICLE_CONTROL_POINT_COUNT> m_controlPointOverridesChanged {};
@@ -495,6 +501,8 @@ private:
     double m_time { 0.0 };
     float m_simulationTime { 0.0f };
     float m_frameSimulationDelta { 0.0f };
+    std::optional<uint32_t> m_reflectionPreparedFrame;
+    bool m_reflectionFrameVisible = false;
     float m_remapSystemTime = 0.0f;
     float m_remapLayerTime = 0.0f;
     float m_remapDelta = 0.0f;

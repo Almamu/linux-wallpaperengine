@@ -889,9 +889,9 @@ void CScene::renderLegacyReflection (const glm::vec3& clearColor) {
     }
     if (!renderSettings.planarReflections) return;
 
-    // The model poses and shared textures are ready. Only the view and winding
-    // change during this traversal, and the requesting model cannot read from
-    // the attachment it would be writing to.
+    // The model poses and shared textures are ready. Eligible sprite trails
+    // prepare their frame here before drawing it in both views. Consumers
+    // cannot read from the attachment they would be writing to.
     const glm::mat4 mirror = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
     const glm::mat4 view = this->m_camera->getLookAt () * mirror;
     glm::vec3 eye = this->m_camera->getEye ();
@@ -904,6 +904,7 @@ void CScene::renderLegacyReflection (const glm::vec3& clearColor) {
 	    || (renderSettings.debug.objectFilter && id != *renderSettings.debug.objectFilter)
 	    || std::ranges::find (renderSettings.debug.skipObjects, id) != renderSettings.debug.skipObjects.end ()) continue;
 	if (auto* model = dynamic_cast<Objects::CModel*> (object)) model->renderReflection (view, eye);
+	else if (auto* particle = dynamic_cast<Objects::CParticle*> (object)) particle->renderReflection (view, eye);
     }
 }
 

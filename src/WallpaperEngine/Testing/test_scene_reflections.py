@@ -66,6 +66,15 @@ def material(shader, textures=None):
     return {"passes": [result]}
 
 
+def planar_mesh(root, name, points):
+    vertices = b"".join(struct.pack("<12f", x, y, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0)
+                        for x, y in points)
+    indices = struct.pack("<3H", 0, 1, 2)
+    (root / f"models/{name}.mdl").write_bytes(
+        b"MDLV0013\0" + struct.pack("<3I", 15, 1, 1) + f"materials/{name}.json\0".encode()
+        + struct.pack("<2I", 0, len(vertices)) + vertices + struct.pack("<I", len(indices)) + indices)
+
+
 def capture(engine, root, scene, extra_args=()):
     write_json(root / "scene.json", scene)
     picture, control = root / "result.png", root / "control.sock"
@@ -355,12 +364,7 @@ void main() {
             ("green", [(0.52, 0.43), (1.0, 0.43), (0.76, 0.85)]),
             ("probe", [(-1.0, -1.0), (3.0, -1.0), (-1.0, 3.0)]),
         ):
-            vertices = b"".join(struct.pack("<12f", x, y, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0)
-                                for x, y in points)
-            indices = struct.pack("<3H", 0, 1, 2)
-            (directory / f"models/{mesh}.mdl").write_bytes(
-                b"MDLV0013\0" + struct.pack("<3I", 15, 1, 1) + f"materials/{mesh}.json\0".encode()
-                + struct.pack("<2I", 0, len(vertices)) + vertices + struct.pack("<I", len(indices)) + indices)
+            planar_mesh(directory, mesh, points)
         scene["camera"]["eye"] = "0 0 4"
         scene["general"].update(orthogonalprojection=None, fov=45, clearcolor="0.25 0.125 0.5")
         scene["objects"] = [
@@ -392,17 +396,105 @@ void main() {
         print(f"PASS legacy planar reflection {name}", flush=True)
 
 
+def check_reflected_sprite_trails(engine, root):
+    results = {}
+    for steps in (4, 10):
+        ordinary = {}
+        for name in ("eligible", "excluded", "disabled"):
+            directory = root / f"{name}-{steps}"
+            scene = prepare(directory, """
+uniform sampler2D g_Texture1;
+varying vec3 v_ScreenPos;
+void main() {
+    vec2 uv = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+    gl_FragColor = vec4(0, texSample2D(g_Texture1, uv).r, 0, 1);
+}
+""")
+            (directory / "shaders/probe.vert").write_text("""
+attribute vec3 a_Position;
+varying vec3 v_ScreenPos;
+void main() {
+    gl_Position = vec4(a_Position.xy, 0.5, 1.0);
+    v_ScreenPos = gl_Position.xyw;
+}
+""")
+            write_json(directory / "materials/probe.json", material("probe", ["single", "_rt_Reflection"]))
+            planar_mesh(directory, "probe", [(-1, -1), (3, -1), (-1, 3)])
+            texture(directory / "materials/red.tex", [(255, 0, 0)])
+            trail_pass = {
+                "shader": "genericparticle", "textures": ["red"], "blending": "additive",
+                "depthtest": "enabled", "depthwrite": "disabled", "cullmode": "nocull"}
+            trail = {
+                "maxcount": 1,
+                "emitter": [{"name": "sphererandom", "instantaneous": 1, "rate": 0,
+                             "distancemin": 0, "distancemax": 0}],
+                "initializer": [{"name": "lifetimerandom", "min": 100, "max": 100},
+                                {"name": "sizerandom", "min": 0.8, "max": 0.8},
+                                {"name": "velocityrandom", "min": "1 0.2 0", "max": "1 0.2 0"}],
+                "operator": [{"name": "movement", "drag": 0, "gravity": "0 0 0"}],
+                "renderer": [{"name": "spritetrail", "length": 1}]}
+            for culling in ("nocull", "normal"):
+                path = f"materials/trail-{culling}.json"
+                write_json(directory / path, {"passes": [dict(trail_pass, cullmode=culling)]})
+                write_json(directory / f"particles/trail-{culling}.json", dict(trail, material=path))
+            # Match the simulation interval across runs despite startup and frame-pacing jitter.
+            timing = """let ticks = 0, steps = 0;
+export function init(v) { thisLayer.instance.rate = 0; return v; }
+export function update(v) {
+    ++ticks;
+    thisLayer.instance.rate = 0;
+    if (ticks >= 4 && steps < STEPS && engine.frametime > 0 && engine.frametime < 0.095) {
+        thisLayer.instance.rate = 0.05 / engine.frametime;
+        ++steps;
+    }
+    return v;
+}
+""".replace("STEPS", str(steps))
+            scene["camera"]["eye"] = "0 0 10"
+            scene["general"].update(orthogonalprojection=None, nearz=0.1, fov=45, hdr=False)
+            scene["objects"] = [{"id": 1, "name": "Reflection readback", "model": "models/probe.mdl"}]
+            for identifier, culling, x in ((2, "nocull", -1), (3, "normal", 1)):
+                scene["objects"].append({
+                    "id": identifier, "name": f"Moving sprite trail ({culling})",
+                    "particle": f"particles/trail-{culling}.json", "origin": f"{x} 1.5 0",
+                    "reflected": name != "excluded", "visible": {"value": True, "script": timing},
+                })
+            options = ("--reflection", "disabled") if name == "disabled" else ()
+            picture, stats = capture(engine, directory, scene, ("--msaa", "off", *options))
+            assert "_rt_Reflection@320x180x" in stats, (name, stats)
+            direct = picture.split()[0].point(lambda value: 255 if value > 192 else 0)
+            reflected = picture.split()[1].point(lambda value: 255 if value > 192 else 0)
+            assert direct.getbbox() is not None and direct.getbbox()[3] < 90, (name, direct.getbbox())
+            ordinary[name] = direct.tobytes()
+            results[name, steps] = (direct.crop((0, 0, 160, 180)).getbbox(), reflected.getbbox(),
+                                    reflected.crop((160, 0, 320, 180)).getbbox())
+        assert ordinary["eligible"] == ordinary["excluded"] == ordinary["disabled"], results
+    assert results["eligible", 10][0][0] > results["eligible", 4][0][0] + 3, results
+    for (name, steps), (direct, reflected, culled) in results.items():
+        print(f"Sprite trail {name}, {steps} steps, ordinary bounds {direct}, reflection bounds {reflected}, "
+              f"normal-culling reflection bounds {culled}", flush=True)
+        if name == "eligible":
+            assert reflected is not None and reflected[1] > 90, (name, reflected)
+            assert culled is not None and culled[1] > 90, (name, culled)
+        else:
+            assert reflected is None, (name, reflected)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("engine", type=Path)
     parser.add_argument("--artifacts", type=Path)
     parser.add_argument("--uniforms-only", action="store_true")
     parser.add_argument("--inactive-reflections-only", action="store_true")
-    parser.add_argument("--legacy-planar-only", action="store_true")
+    tests = parser.add_mutually_exclusive_group()
+    tests.add_argument("--legacy-planar-only", action="store_true")
+    tests.add_argument("--legacy-particles-only", action="store_true")
     args = parser.parse_args()
     def run_checks(directory):
         if args.legacy_planar_only:
             check_legacy_planar(args.engine.resolve(), directory)
+        elif args.legacy_particles_only:
+            check_reflected_sprite_trails(args.engine.resolve(), directory)
         else:
             run(args.engine.resolve(), directory, args.uniforms_only, args.inactive_reflections_only)
     if args.artifacts:
