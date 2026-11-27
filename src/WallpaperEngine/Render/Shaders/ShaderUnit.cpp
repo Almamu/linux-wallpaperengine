@@ -255,6 +255,39 @@ std::string maskShaderComments (const std::string& source) {
     return code;
 }
 
+void flattenPackedAudioSpectrumIndices (std::string& source) {
+    if (source.find ("g_AudioSpectrum") == std::string::npos) return;
+
+    // Audio rings can address a flat spectrum uniform as groups of four bands.
+    // The renderer uploads a scalar array, so unite the quotient and remainder
+    // of the same band index before GLSL type-checks the subscripts.
+    static const std::regex packedIndex (
+	R"(\b(g_AudioSpectrum(?:16|32|64)(?:Left|Right))[ \t]*\[[ \t]*([A-Za-z_]\w*)[ \t]*/[ \t]*4[ \t]*\][ \t]*\[[ \t]*\2[ \t]*%[ \t]*4[ \t]*\])");
+    const std::string code = maskShaderComments (source);
+    const auto first = std::sregex_iterator (code.begin (), code.end (), packedIndex);
+    const auto end = std::sregex_iterator ();
+    if (first == end) return;
+
+    static const std::regex spectrumUniform (
+	R"(\buniform\s+(?:(?:lowp|mediump|highp)\s+)?float\s+(g_AudioSpectrum(16|32|64)(?:Left|Right))\s*\[\s*\2\s*\]\s*;)");
+    std::set<std::string> flatUniforms;
+    for (auto it = std::sregex_iterator (code.begin (), code.end (), spectrumUniform); it != end; ++it) {
+	flatUniforms.insert ((*it)[1].str ());
+    }
+
+    // Record offsets against the original text and edit from the end.
+    std::vector<std::smatch> replacements;
+    for (auto it = first; it != end; ++it) {
+	if (flatUniforms.contains ((*it)[1].str ())
+	    && source.compare (it->position (), it->length (), code, it->position (), it->length ()) == 0) {
+	    replacements.push_back (*it);
+	}
+    }
+    for (auto it = replacements.rbegin (); it != replacements.rend (); ++it) {
+	source.replace (it->position (), it->length (), (*it)[1].str () + "[int(" + (*it)[2].str () + ")]");
+    }
+}
+
 // Keep native GLSL min/max overloads. Only the HLSL literal-first max idiom
 // needs reordering: its literal is known to be scalar, while the other argument
 // may be a vector. Each argument is still evaluated once and constants remain
@@ -2350,6 +2383,7 @@ const std::string& ShaderUnit::compile () {
 	    this->m_final.clear ();
 	    compatResult = GLSLContext::get ().preprocess (this->m_type, compatResult);
 	}
+	flattenPackedAudioSpectrumIndices (compatResult);
 	compatResult = this->applyNumericParameterCallCompatibility (std::move (compatResult));
 	compatResult = this->applyNumericInitializerCompatibility (std::move (compatResult));
 	compatResult = this->applyNonConstantInitializerCompatibility (std::move (compatResult));

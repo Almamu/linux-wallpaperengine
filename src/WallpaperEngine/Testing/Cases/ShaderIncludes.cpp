@@ -811,6 +811,35 @@ TEST_CASE ("matching conditional TexCoord widths stay synchronized", "[shader][c
     CHECK (translated.second.find ("in vec2 v_TexCoord;") != std::string::npos);
 }
 
+TEST_CASE ("packed audio spectrum indexing preserves the flat band index", "[shader][audio-spectrum]") {
+    const std::string fragment = compileFragment (
+	"",
+	"uniform float g_AudioSpectrum64Left[64];\n"
+	"uniform float g_AudioSpectrum64Right[64];\n"
+	"uniform vec4 packed[16];\n"
+	"// g_AudioSpectrum64Left[barID / 4][barID % 4]\n"
+	"float volume(float barID) {\n"
+	"    return g_AudioSpectrum64Left[barID / 4][barID % 4];\n"
+	"}\n"
+	"void main() {\n"
+	"    int band = int(gl_FragCoord.x) % 64;\n"
+	"    gl_FragColor = vec4(volume(float(band)), g_AudioSpectrum64Right[band], packed[band / 4][band % 4], 1.0);\n"
+	"}\n"
+    );
+    CHECK (fragment.find ("return g_AudioSpectrum64Left[int(barID)];") != std::string::npos);
+    CHECK (fragment.find ("// g_AudioSpectrum64Left[barID / 4][barID % 4]") != std::string::npos);
+    CHECK (fragment.find ("g_AudioSpectrum64Right[band]") != std::string::npos);
+    CHECK (fragment.find ("packed[band / 4][band % 4]") != std::string::npos);
+
+    const auto translated = GLSLContext::get ().toGlsl (
+	"#version 330\nvoid main() { gl_Position = vec4(0.0); }\n", fragment
+    );
+    REQUIRE_FALSE (translated.second.empty ());
+    const auto compiledFragment = translated.second.substr (0, translated.second.find ("\n#if 0"));
+    CHECK (compiledFragment.find ("uniform float g_AudioSpectrum64Left[64];") != std::string::npos);
+    CHECK (compiledFragment.find ("g_AudioSpectrum64Left[int(") != std::string::npos);
+}
+
 TEST_CASE ("min max preserve native vector scalar overloads", "[shader][minmax]") {
     struct NumericType {
         const char* vectorPrefix;
