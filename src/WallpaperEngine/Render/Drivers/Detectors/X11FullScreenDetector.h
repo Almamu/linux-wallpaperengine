@@ -25,7 +25,10 @@ namespace Detectors {
 	void stop ();
 
 	Display* m_display = nullptr;
-	Window m_root;
+	Window m_root = None;
+	Window m_window = None;
+	Atom m_windowType = None;
+	Atom m_desktopType = None;
 	std::map<std::string, glm::ivec4> m_screens = {};
 	VideoDriver& m_driver;
     };
