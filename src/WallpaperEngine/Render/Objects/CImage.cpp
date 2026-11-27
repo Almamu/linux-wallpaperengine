@@ -43,6 +43,7 @@ using namespace WallpaperEngine::Data::Utils;
 namespace {
 const glm::vec4 neutralCompositeColor (1.0f);
 const glm::mat3 identityNormal (1.0f);
+constexpr float imageQuadInset = 0.15f;
 
 bool usesLegacyAnimationUvs (const Render::TextureProvider& texture) {
     const auto* compiled = dynamic_cast<const Render::CTexture*> (&texture);
@@ -485,8 +486,8 @@ CImage::CImage (Wallpapers::CScene& scene, const Image& image) :
 	&& (source->getFlags () & (TextureFlags_Video | TextureFlags_Volume)) == 0) {
 	const auto& header = source->getHeader ();
 	if (header.textureWidth != 0 && header.textureHeight != 0) {
-	    // Native uses the authored storage extent even when the scene pass samples an effect target.
-	    this->m_sceneTexcoordInset = 0.15f / glm::vec2 (header.textureWidth, header.textureHeight);
+	    // Raw sources and final effect targets retain the authored storage extent.
+	    this->m_sceneTexcoordInset = imageQuadInset / glm::vec2 (header.textureWidth, header.textureHeight);
 	    glGenBuffers (1, &this->m_texcoordScene);
 	}
     }
@@ -2929,8 +2930,13 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     uploadIfChanged (this->m_copySpacePosition, copySpacePosition, this->m_cachedCopySpacePosition);
     uploadIfChanged (this->m_texcoordCopy, texcoordCopy, this->m_cachedTexcoordCopy);
     if (sceneQuad) {
-	const auto& inset = this->m_sceneTexcoordInset;
-	const glm::vec2 upper = this->m_finalPassRouting->samplesSourceTexture ? glm::vec2 (width, height) : glm::vec2 (1.0f);
+	const bool samplesSource = this->m_finalPassRouting->samplesSourceTexture;
+	// Only a CTexture can allocate m_texcoordScene. For direct compiled JPEG draws,
+	// its resolution stores the authored base mip even when GL samples a lower mip.
+	const auto& source = static_cast<const CTexture&> (*this->m_texture);
+	const glm::vec2 inset = samplesSource && source.getHeader ().freeImageFormat == FIF_JPEG
+	    ? imageQuadInset / glm::vec2 (*source.getResolution ()) : m_sceneTexcoordInset;
+	const glm::vec2 upper = samplesSource ? glm::vec2 (width, height) : glm::vec2 (1.0f);
 	const auto texcoordScene = imageQuadTexcoords (inset.x, inset.y, upper.x - inset.x, upper.y - inset.y);
 	uploadIfChanged (m_texcoordScene, sceneQuadTriangles (texcoordScene), m_cachedTexcoordScene);
     }
