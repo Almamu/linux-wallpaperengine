@@ -714,6 +714,37 @@ TEST_CASE ("writable fragment inputs preserve conditional types across cached va
     }
 }
 
+TEST_CASE ("writable fragment TexCoord is widened before the local copy is made", "[shader][texcoord-width]") {
+    const auto [vertex, fragment] = compileLinked (
+        "varying vec4 v_TexCoord;\n"
+        "void main() { v_TexCoord = vec4(0.25, 0.5, 0.75, 1.0); gl_Position = vec4(0.0); }\n",
+        "varying vec2 v_TexCoord;\n"
+        "void main() { vec2 uv = v_TexCoord; v_TexCoord.x *= 2.0;\n"
+        "gl_FragColor = vec4(uv, v_TexCoord.x, v_TexCoord.y); }\n", {}
+    );
+    CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("vec4 v_TexCoord = vec4(v_TexCoord);"));
+    const auto translated = GLSLContext::get ().toGlsl (vertex, fragment);
+    REQUIRE_FALSE (translated.first.empty ());
+    REQUIRE_FALSE (translated.second.empty ());
+}
+
+TEST_CASE ("power assignment splats a scalar only into its locally declared vector", "[shader][compat]") {
+    for (const int audio : { 0, 1 }) {
+        const auto [vertex, fragment] = compileLinked (
+            "void main() { gl_Position = vec4(0.0); }\n",
+            "void main() {\nvec2 wave = vec2(0.0);\n"
+            "#if AUDIO\nwave = pow(0.5, 2.0);\n#else\nwave = pow(0.25, 0.5);\n#endif\n"
+            "{ float wave = 0.0; wave = pow(0.5, 2.0); gl_FragColor = vec4(wave); }\n"
+            "gl_FragColor.xy = wave;\n}\n", { { "AUDIO", audio } }
+        );
+        CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("wave = vec2(pow("));
+        CHECK_THAT (fragment, Catch::Matchers::ContainsSubstring ("float wave = float(0.0); wave = pow("));
+        const auto translated = GLSLContext::get ().toGlsl (vertex, fragment);
+        REQUIRE_FALSE (translated.first.empty ());
+        REQUIRE_FALSE (translated.second.empty ());
+    }
+}
+
 TEST_CASE ("authored local copies of fragment inputs are left intact", "[shader][varying]") {
     // Lens Flare Sun (Last Train, 2488626583) declares unused vec4 inputs
     // then shadows them with scalar locals. Chromatic Aberration also makes
@@ -757,6 +788,26 @@ TEST_CASE ("authored local copies of vertex inputs are left intact", "[shader][a
     const auto translated = GLSLContext::get ().toGlsl (vertex, fragment);
     CHECK_FALSE (translated.first.empty ());
     CHECK_FALSE (translated.second.empty ());
+}
+
+TEST_CASE ("uniform comparisons only collapse identical macro branches", "[shader][compat]") {
+    const std::string prefix =
+        "uniform vec4 g_Resolution;\n"
+        "#if g_Resolution.x < g_Resolution.y\n"
+        "#define scale (g_Resolution.xy)\n"
+        "#else\n";
+    const std::string suffix = "#endif\nvoid main() { gl_FragColor = vec4(scale, 0.0, 1.0); }\n";
+    const std::string vertexSource = "void main() { gl_Position = vec4(0.0); }\n";
+    const auto [vertex, fragment] = compileLinked (
+        vertexSource, prefix + "#define scale (g_Resolution.xy)\n" + suffix, {}
+    );
+    CHECK_THAT (fragment, !Catch::Matchers::ContainsSubstring ("#if g_Resolution.x"));
+    REQUIRE_FALSE (GLSLContext::get ().toGlsl (vertex, fragment).second.empty ());
+
+    const auto different = compileLinked (
+        vertexSource, prefix + "#define scale (g_Resolution.yx)\n" + suffix, {}
+    );
+    CHECK_THAT (different.second, Catch::Matchers::ContainsSubstring ("#if g_Resolution.x"));
 }
 
 TEST_CASE ("each conditional fragment entry point gets writable inputs", "[shader][varying]") {

@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -266,6 +267,46 @@ std::string maskShaderComments (const std::string& source) {
         else ++i;
     }
     return code;
+}
+
+void convertVectorPowerAssignments (std::string& source) {
+    if (source.find ("pow") == std::string::npos) return;
+    const std::string code = maskShaderComments (source);
+    static const std::regex assignment (R"((?:^|[;{}\r\n])[ \t]*([A-Za-z_]\w*)\s*=\s*(pow\s*\())");
+    static const std::regex vectorType (R"(vec[234]|float[234])");
+    std::vector<std::tuple<size_t, size_t, std::string>> conversions;
+    for (std::sregex_iterator it (code.begin (), code.end (), assignment), end; it != end; ++it) {
+        const size_t destination = (*it).position (1);
+        const size_t open = code.find_last_of ("{}", destination);
+        if (open == std::string::npos || code[open] != '{') continue;
+        const auto prefix = code.substr (open + 1, destination - open - 1);
+        const std::regex declaration ("(?:^|[;\\r\\n])[ \\t]*(?:const[ \\t]+)?([A-Za-z_]\\w*)[ \\t]+"
+            + (*it)[1].str () + "\\s*(?=[=;,\\[])");
+        std::sregex_iterator local (prefix.begin (), prefix.end (), declaration);
+        if (local == end) continue;
+        const auto type = (*local)[1].str ();
+        const auto typePosition = static_cast<size_t> (local->position (1));
+        // Only an unconditional declaration in the same block establishes the
+        // destination type. A shadow or a combo-specific type stays untouched.
+        if (++local != end || prefix.find ('#') < typePosition || !std::regex_match (type, vectorType)) continue;
+
+        const size_t rhs = (*it).position (2);
+        size_t close = rhs + (*it).length (2);
+        for (int depth = 1; close < code.size () && depth && code[close] != ';'; ++close) {
+            if (code[close] == '(') ++depth;
+            else if (code[close] == ')') --depth;
+        }
+        const size_t terminator = code.find_first_not_of (" \t\r\n", close);
+        if (terminator == std::string::npos || code[terminator] != ';' || code[close - 1] != ')') continue;
+        // HLSL assigns a scalar power result to each component. An explicit
+        // constructor also preserves same-width results and legal truncation.
+        conversions.emplace_back (rhs, close, type);
+    }
+    for (auto it = conversions.rbegin (); it != conversions.rend (); ++it) {
+        const auto& [begin, end, type] = *it;
+        source.insert (end, ")");
+        source.insert (begin, type + "(");
+    }
 }
 
 void adaptLegacyReflectionProjection (std::string& source) {
@@ -1702,6 +1743,7 @@ std::string ShaderUnit::applyNumericInitializerCompatibility (std::string source
 std::string ShaderUnit::applyVectorBuiltinCompatibility (std::string source) const {
     const std::string original = source;
     source = reorderLiteralMax (std::move (source));
+    convertVectorPowerAssignments (source);
 
     // These are the recurring HLSL idioms found by the corpus validator. Keep the rules
     // syntax-directed: guessing types from identifier names across combo branches can corrupt
@@ -1850,7 +1892,32 @@ std::string ShaderUnit::applyNonConstantInitializerCompatibility (std::string so
     return source;
 }
 
+static void collapseIdenticalUniformMacroBranches (std::string& source) {
+    // Uniforms are evaluated at runtime, not by the GLSL preprocessor. A
+    // conditional whose only two definitions agree doesn't need a branch.
+    static const std::regex sameDefinitions (
+        R"((^|\n)[ \t]*#[ \t]*if[ \t]+([A-Za-z_]\w*)\.[xyzwrgba][ \t]*(?:<=|>=|<|>)[ \t]*\2\.[xyzwrgba][ \t]*\r?\n)"
+        R"(([ \t]*#[ \t]*define[ \t]+[A-Za-z_]\w*[ \t]+[^\\\r\n]+)\r?\n[ \t]*#[ \t]*else[ \t]*\r?\n)"
+        R"(\3\r?\n[ \t]*#[ \t]*endif[ \t]*\r?(?=\n|$))"
+    );
+    if (!std::regex_search (source, sameDefinitions)) return;
+    const std::string code = maskShaderComments (source);
+    std::vector<std::smatch> replacements;
+    for (std::sregex_iterator it (code.begin (), code.end (), sameDefinitions), end; it != end; ++it) {
+        const std::regex uniform (R"(\buniform\s+(?:(?:lowp|mediump|highp)\s+)?vec[234]\s+)"
+            + (*it)[2].str () + R"(\s*;)");
+        if (!std::regex_search (code, uniform)) continue;
+        replacements.push_back (*it);
+    }
+    for (auto it = replacements.rbegin (); it != replacements.rend (); ++it) {
+        const size_t leadingNewline = (*it)[1].length ();
+        source.replace (it->position () + leadingNewline, it->length () - leadingNewline,
+            source.substr (it->position (3), (*it)[3].length ()));
+    }
+}
+
 std::string ShaderUnit::applyDuplicateMacroCompatibility (std::string source) const {
+    collapseIdenticalUniformMacroBranches (source);
     static const std::regex definePattern (R"(^\s*#\s*define\s+([A-Za-z_][A-Za-z0-9_]*))");
     std::set<std::string> defined;
     std::istringstream input (source);
@@ -2529,8 +2596,8 @@ const std::string& ShaderUnit::compile () {
 	compatResult = this->applyMissingFragmentVaryingCompatibility (std::move (compatResult));
 	compatResult = this->applyFloatTernaryCompatibility (std::move (compatResult));
 	compatResult = this->applyBooleanArithmeticCompatibility (std::move (compatResult));
-	compatResult = this->applyWritableInputs (std::move (compatResult));
 	compatResult = this->applyFragmentTexCoordCompatibility (std::move (compatResult));
+	compatResult = this->applyWritableInputs (std::move (compatResult));
 	compatResult = this->applyVectorBuiltinCompatibility (std::move (compatResult));
 	if (expandMacros) {
 	    compatResult = this->applyHeaderMacroCompatibility (this->m_final + compatResult);
