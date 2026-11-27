@@ -4,8 +4,10 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 
 #include "SPIRV/GlslangToSpv.h"
 #include "glslang/Include/ResourceLimits.h"
@@ -123,6 +125,67 @@ TBuiltInResource BuiltInResource = { .maxLights = 32,
 				     } };
 
 namespace {
+class VertexCompiler final : public spirv_cross::CompilerGLSL {
+public:
+    using CompilerGLSL::CompilerGLSL;
+
+    void initializePartialVaryings () {
+	struct OutputWrites {
+	    uint32_t allLanes;
+	    uint32_t entryLanes = 0;
+	    bool partialStore = false;
+	};
+	std::unordered_map<uint32_t, OutputWrites> outputs;
+	for (const auto& resource : get_shader_resources ().stage_outputs) {
+	    const auto& type = get_type (resource.type_id);
+	    if (type.basetype == spirv_cross::SPIRType::Float && type.columns == 1
+		&& type.array.empty () && type.vecsize > 1) {
+		outputs.emplace (resource.id, OutputWrites { (1u << type.vecsize) - 1u });
+	    }
+	}
+	if (outputs.empty ()) return;
+
+	struct Component {
+	    uint32_t output;
+	    uint32_t lane;
+	};
+	std::unordered_map<uint32_t, Component> components;
+	const auto& entry = get<spirv_cross::SPIRFunction> (ir.default_entry_point);
+	for (const auto block : entry.blocks) {
+	    for (const auto& instruction : get<spirv_cross::SPIRBlock> (block).ops) {
+		const auto* operands = stream (instruction);
+		if ((instruction.op == spv::OpAccessChain || instruction.op == spv::OpInBoundsAccessChain)
+		    && instruction.length == 4 && outputs.contains (operands[2])) {
+		    const auto* index = maybe_get<spirv_cross::SPIRConstant> (operands[3]);
+		    const uint32_t lane = index && index->scalar () < 4 ? 1u << index->scalar () : 0;
+		    components.emplace (operands[1], Component { operands[2], lane });
+		} else if (instruction.op == spv::OpStore) {
+		    if (const auto component = components.find (operands[0]); component != components.end ()) {
+			auto& output = outputs.at (component->second.output);
+			output.partialStore = true;
+			if (block == entry.entry_block) output.entryLanes |= component->second.lane;
+		    } else if (const auto output = outputs.find (operands[0]);
+			       output != outputs.end () && block == entry.entry_block) {
+			output->second.entryLanes = output->second.allLanes;
+		    }
+		}
+	    }
+	}
+
+	// Stock supplies zero for unwritten interpolator lanes. Seed only partial
+	// outputs without a complete entry-block write; later authored stores win.
+	for (const auto& [id, writes] : outputs) {
+	    if (!writes.partialStore || writes.entryLanes == writes.allLanes) continue;
+	    auto& variable = get<spirv_cross::SPIRVariable> (id);
+	    if (variable.initializer) continue;
+	    const uint32_t type = get_variable_data_type_id (variable);
+	    const auto zero = ir.increase_bound_by (1);
+	    ir.make_constant_null (zero, type, false);
+	    get<spirv_cross::SPIRVariable> (id).initializer = zero;
+	}
+    }
+};
+
 std::unique_ptr<glslang::TShader> parseTranslationStage (
     const EShLanguage stage, const char* const* source, bool& loweredScalarSwizzle
 ) {
@@ -242,7 +305,8 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
 	std::vector<uint32_t> spirv;
 	glslang::GlslangToSpv (*program.getIntermediate (EShLangVertex), spirv);
 
-	spirv_cross::CompilerGLSL vertexCompiler (spirv);
+	VertexCompiler vertexCompiler (spirv);
+	vertexCompiler.initializePartialVaryings ();
 	spirv_cross::CompilerGLSL::Options options;
 	options.version = 330;
 	options.es = false;

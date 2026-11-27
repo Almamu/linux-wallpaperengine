@@ -1186,6 +1186,55 @@ TEST_CASE ("matching conditional TexCoord widths stay synchronized", "[shader][c
     CHECK (translated.second.find ("in vec2 v_TexCoord;") != std::string::npos);
 }
 
+TEST_CASE ("unwritten vertex varying lanes read as zero", "[shader][partial-varying]") {
+    const std::string vertex = R"(
+varying vec4 v_MaskUV;
+varying vec3 v_Probe;
+varying vec4 v_Full;
+void main() {
+    v_MaskUV.xy = vec2(.25, .5);
+    v_Probe.x = .625;
+#if MASK
+    v_MaskUV.zw = vec2(.75, .25);
+    v_Probe.yz = vec2(.25, .75);
+#endif
+    v_Full = vec4(.25, .5, .75, 1.);
+    gl_Position = vec4(0.0);
+}
+)";
+    const std::string fragment = R"(
+varying vec4 v_MaskUV;
+varying vec3 v_Probe;
+varying vec4 v_Full;
+void main() { gl_FragColor = v_MaskUV + vec4(v_Probe, 1.) + v_Full; }
+)";
+    for (const int mask : { 0, 1 }) {
+	CAPTURE (mask);
+	const auto sources = compileLinked (vertex, fragment, { { "MASK", mask } });
+	const auto translated = GLSLContext::get ().toGlsl (sources.first, sources.second);
+	REQUIRE_FALSE (translated.first.empty ());
+	REQUIRE_FALSE (translated.second.empty ());
+	const std::string executable = translated.first.substr (0, translated.first.find ("#if 0"));
+	INFO (executable);
+	const auto checkInitializer = [&] (const std::string& name, const std::string& type, bool expected) {
+	    std::smatch assigned;
+	    const std::regex initStore ("\\b" + name + R"(\s*=\s*(_[0-9]+_init)\s*;)");
+	    const bool found = std::regex_search (executable, assigned, initStore);
+	    CHECK (found == expected);
+	    if (found) {
+		CHECK_THAT (executable, Catch::Matchers::ContainsSubstring (
+		    "const " + type + " " + assigned[1].str () + " = " + type + "(0.0);"
+		));
+	    }
+	};
+	checkInitializer ("v_MaskUV", "vec4", mask == 0);
+	checkInitializer ("v_Probe", "vec3", mask == 0);
+	checkInitializer ("v_Full", "vec4", false);
+	CHECK ((executable.find ("v_MaskUV.z") != std::string::npos) == (mask == 1));
+	CHECK ((executable.find ("v_Probe.y") != std::string::npos) == (mask == 1));
+    }
+}
+
 TEST_CASE ("packed audio spectrum indexing preserves the flat band index", "[shader][audio-spectrum]") {
     const std::string fragment = compileFragment (
 	"",
