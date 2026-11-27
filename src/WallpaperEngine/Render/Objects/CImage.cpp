@@ -558,10 +558,12 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	}
 
 	const auto& body = mesh.submeshes.front ();
+	const bool hasBlendIndices = body.blendIndicesOffset != MdlMesh::AttributeAbsent;
+	const bool hasBlendWeights = body.blendWeightsOffset != MdlMesh::AttributeAbsent;
+	// An image-bound MDL can define an indexed mesh without skeletal deformation.
 	if (body.strideBytes == 0 || body.vertices.size () * sizeof (float) % body.strideBytes != 0
-	    || body.blendIndicesOffset == MdlMesh::AttributeAbsent
-	    || body.blendWeightsOffset == MdlMesh::AttributeAbsent || body.uvOffset == MdlMesh::AttributeAbsent) {
-	    throw std::runtime_error ("puppet body does not use a supported skinned vertex layout");
+	    || hasBlendIndices != hasBlendWeights || body.uvOffset == MdlMesh::AttributeAbsent) {
+	    throw std::runtime_error ("puppet body does not use a supported vertex layout");
 	}
 
 	const size_t vertexCount = body.vertices.size () * sizeof (float) / body.strideBytes;
@@ -571,9 +573,11 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	this->m_puppetRawPositions.clear ();
 	this->m_puppetRawPositions.reserve (vertexCount * 3);
 	this->m_puppetBlendIndices.clear ();
-	this->m_puppetBlendIndices.reserve (vertexCount * 4);
 	this->m_puppetBlendWeights.clear ();
-	this->m_puppetBlendWeights.reserve (vertexCount * 4);
+	if (hasBlendIndices) {
+	    this->m_puppetBlendIndices.reserve (vertexCount * 4);
+	    this->m_puppetBlendWeights.reserve (vertexCount * 4);
+	}
 	texcoords.reserve (vertexCount * 2);
 	indices.reserve (body.indices.size ());
 
@@ -590,20 +594,22 @@ bool CImage::loadPuppetMesh (const glm::vec2& size) {
 	    this->m_puppetRawPositions.insert (
 		this->m_puppetRawPositions.end (), { position.x, position.y, position.z }
 	    );
-	    for (int component = 0; component < 4; component++) {
-		uint32_t value;
-		std::memcpy (
-		    &value, vertex + body.blendIndicesOffset + component * sizeof (uint32_t), sizeof (value)
-		);
-		this->m_puppetBlendIndices.push_back (value);
-	    }
-	    for (int component = 0; component < 4; component++) {
-		float weight;
-		std::memcpy (&weight, vertex + body.blendWeightsOffset + component * sizeof (float), sizeof (weight));
-		if (!std::isfinite (weight) || weight < 0.0f) {
-		    throw std::runtime_error ("puppet vertex contains an invalid blend weight");
+	    if (hasBlendIndices) {
+		for (int component = 0; component < 4; component++) {
+		    uint32_t value;
+		    std::memcpy (
+			&value, vertex + body.blendIndicesOffset + component * sizeof (uint32_t), sizeof (value)
+		    );
+		    this->m_puppetBlendIndices.push_back (value);
 		}
-		this->m_puppetBlendWeights.push_back (weight);
+		for (int component = 0; component < 4; component++) {
+		    float weight;
+		    std::memcpy (&weight, vertex + body.blendWeightsOffset + component * sizeof (float), sizeof (weight));
+		    if (!std::isfinite (weight) || weight < 0.0f) {
+			throw std::runtime_error ("puppet vertex contains an invalid blend weight");
+		    }
+		    this->m_puppetBlendWeights.push_back (weight);
+		}
 	    }
 	    float u;
 	    float v;
@@ -1019,6 +1025,7 @@ void CImage::updatePuppetPositionBuffer (const glm::vec2& size, const bool stepR
 	body, pose.puppetMorphWeights, pose.puppetMorphMask, this->m_puppetWorldBones
     );
 
+    const bool hasSkinWeights = !this->m_puppetBlendWeights.empty ();
     const bool ropeAdmitted = !this->m_puppetPublishedSceneBones.empty ();
     const bool mapRopeToScene = ropeAdmitted && !this->getImage ().model->fullscreen;
     glm::mat4 puppetToDraw (1.0f);
@@ -1052,7 +1059,7 @@ void CImage::updatePuppetPositionBuffer (const glm::vec2& size, const bool stepR
 	if (!morphTargets.empty ()) {
 	    glm::vec3 unmorphedSkinned (0.0f);
 	    const size_t vertex = index / 3;
-	    if ((body.flags & 0x2000) != 0) {
+	    if (hasSkinWeights && (body.flags & 0x2000) != 0) {
 		// Modifiers use raw weighted skinning, before any target changes position.
 		for (size_t influence = 0; influence < 4; ++influence) {
 		    const float weight = this->m_puppetBlendWeights[vertex * 4 + influence];
@@ -1068,7 +1075,7 @@ void CImage::updatePuppetPositionBuffer (const glm::vec2& size, const bool stepR
 	}
 
 	if (morphColor) this->m_puppetColors.push_back ({ glm::vec4 (1, 1, 1, vertexAlpha), maskAlpha });
-	if (!this->m_puppetSkinBones.empty ()) {
+	if (hasSkinWeights && !this->m_puppetSkinBones.empty ()) {
 	    const size_t vertex = index / 3;
 	    const glm::vec4 rest (position, 1.0f);
 	    glm::vec4 posed (0.0f);
