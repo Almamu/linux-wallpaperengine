@@ -19,6 +19,7 @@ public:
     ~CVideo () override;
 
     const Data::Model::Video& getVideo () const;
+    [[nodiscard]] bool isReadyForScreenshot () const;
 
     [[nodiscard]] int getWidth () const override;
     [[nodiscard]] int getHeight () const override;

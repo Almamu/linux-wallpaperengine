@@ -28,10 +28,9 @@ CVideo::CVideo (
     const std::filesystem::path videopath
 	= this->getVideo ().project.assetLocator->physicalPath (this->getVideo ().filename);
 
-    // create a player with a small framebuffer
-    // this will be changed after mpv starts playback and sees the video resolution
+    // Match the allocated attachment until mpv reports the decoded dimensions.
     this->m_player = std::make_unique<GLPlayer> (
-	this->getContext (), this->CWallpaper::getWallpaperTexture (), videopath, 64, 64,
+	this->getContext (), this->CWallpaper::getWallpaperTexture (), videopath, this->getWidth (), this->getHeight (),
 	this->CWallpaper::getWallpaperFramebuffer ()
     );
     // The output driver paces presentation. Waiting for an MP4 frame here also
@@ -128,8 +127,10 @@ void CVideo::renderFrame (const glm::ivec4& viewport) {
 	}
     }
 
-    this->m_player->render ();
+    this->m_player->render (this->getContext ().getApp ().getContext ().settings.screenshot.take);
 }
+
+bool CVideo::isReadyForScreenshot () const { return this->m_player->hasScreenshotFrame (); }
 
 const Data::Model::Video& CVideo::getVideo () const { return *this->getWallpaperData ().as<Data::Model::Video> (); }
 

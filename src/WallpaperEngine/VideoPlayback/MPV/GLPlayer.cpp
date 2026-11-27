@@ -404,7 +404,9 @@ void GLPlayer::processEvent (const mpv_event& event) const {
 	} else if (property->format == MPV_FORMAT_INT64 && property->data != nullptr) {
 	    const int64_t value = *static_cast<int64_t*> (property->data);
 	    if (value > 0) {
-		auto& dimension = std::string_view (property->name) == "dwidth" ? this->m_width : this->m_height;
+		const bool width = std::string_view (property->name) == "dwidth";
+		auto& dimension = width ? this->m_width : this->m_height;
+		(width ? this->m_videoWidthReported : this->m_videoHeightReported) = true;
 		this->m_dimensionsChanged |= dimension != value;
 		dimension = value;
 	    }
@@ -412,7 +414,7 @@ void GLPlayer::processEvent (const mpv_event& event) const {
     }
 }
 
-void GLPlayer::render () const {
+void GLPlayer::render (const bool trackScreenshotFrame) const {
     // rendering should only happen if the texture is in use
     if (this->m_handle == nullptr) {
 	return;
@@ -437,6 +439,14 @@ void GLPlayer::render () const {
 	this->m_dimensionsChanged = false;
     }
     const GLint format = hdr ? GL_RGBA16F : GL_RGBA8;
+    bool decodedFrame = false;
+    if (trackScreenshotFrame && !this->m_hasDecodedScreenshotFrame) {
+	mpv_render_frame_info frame {};
+	constexpr auto frameFlags = MPV_RENDER_FRAME_INFO_PRESENT | MPV_RENDER_FRAME_INFO_REDRAW;
+	decodedFrame = mpv_render_context_get_info (
+	    this->m_renderContext, { MPV_RENDER_PARAM_NEXT_FRAME_INFO, &frame }
+	) >= 0 && (frame.flags & frameFlags) == MPV_RENDER_FRAME_INFO_PRESENT;
+    }
     if (configuring) {
         // A partially applied set of target options has no publishable encoding.
         // Service libmpv without drawing it; black is valid in either destination.
@@ -444,7 +454,10 @@ void GLPlayer::render () const {
         int block = 0;
         mpv_render_param pending[] = { { MPV_RENDER_PARAM_SKIP_RENDERING, &skip },
             { MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &block }, { MPV_RENDER_PARAM_INVALID, nullptr } };
-        mpv_render_context_render (this->m_renderContext, pending);
+        const int error = mpv_render_context_render (this->m_renderContext, pending);
+        // A skipped frame can be redrawn once configuration finishes.
+        this->m_hasDecodedScreenshotFrame |= error >= 0 && decodedFrame;
+        this->m_hasScreenshotFrame = false;
         this->clearOutputFrame ();
         const std::lock_guard lock (this->m_playbackMutex);
         this->m_hdrFrame = false;
@@ -473,6 +486,7 @@ void GLPlayer::render () const {
 
     const int error = mpv_render_context_render (this->m_renderContext, params);
     if (error < 0 && this->m_hdrEnabled) {
+        this->m_hasScreenshotFrame = false;
         this->clearOutputFrame ();
         const std::lock_guard lock (this->m_playbackMutex);
         this->m_hdrFrame = false;
@@ -483,7 +497,18 @@ void GLPlayer::render () const {
         return;
     }
     const std::lock_guard lock (this->m_playbackMutex);
+    if (error >= 0 && trackScreenshotFrame) {
+	this->m_hasDecodedScreenshotFrame |= decodedFrame;
+	// Capture only once the decoded size has reached the actual GL draw.
+	this->m_hasScreenshotFrame = this->m_hasDecodedScreenshotFrame && this->m_videoWidthReported
+	    && this->m_videoHeightReported && !this->m_dimensionsChanged;
+    }
     this->m_hdrFrame = hdr;
+}
+
+bool GLPlayer::hasScreenshotFrame () const {
+    const std::lock_guard lock (this->m_playbackMutex);
+    return this->m_hasScreenshotFrame && !this->m_dimensionsChanged;
 }
 
 void GLPlayer::clearOutputFrame () const {
@@ -665,6 +690,10 @@ void GLPlayer::stop () {
     this->m_hdrSource = false;
     this->m_hdrConfigured = false;
     this->m_hdrFrame = false;
+    this->m_hasDecodedScreenshotFrame = false;
+    this->m_hasScreenshotFrame = false;
+    this->m_videoWidthReported = false;
+    this->m_videoHeightReported = false;
     this->m_hdrConfigurationEnd = 0;
     this->m_hdrConfigurationBroken = false;
     this->m_audioFadeNextTick.reset ();

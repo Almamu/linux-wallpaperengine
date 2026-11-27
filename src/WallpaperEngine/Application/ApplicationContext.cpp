@@ -695,7 +695,7 @@ void ApplicationContext::loadSettingsFromArgv () {
 	});
 
     screenshotGroup.add_argument ("--screenshot-delay")
-	.help ("Frames to wait before taking the screenshot")
+	.help ("Minimum rendered frames before capture (video wallpapers also wait for a video frame)")
 	.default_value<uint32_t> (5)
 	.store_into (this->settings.screenshot.delay);
 

@@ -78,7 +78,8 @@ public:
     void setHDRPresentation (bool enabled) const;
     [[nodiscard]] bool hasHDRSource () const;
     [[nodiscard]] bool isHDRFrame () const;
-    void render () const;
+    void render (bool trackScreenshotFrame = false) const;
+    [[nodiscard]] bool hasScreenshotFrame () const;
 
     int getWidth () const;
     int getHeight () const;
@@ -118,6 +119,10 @@ protected:
     mutable bool m_hdrPresentation = false;
     mutable bool m_hdrConfigured = false;
     mutable bool m_hdrFrame = false;
+    mutable bool m_hasDecodedScreenshotFrame = false;
+    mutable bool m_hasScreenshotFrame = false;
+    mutable bool m_videoWidthReported = false;
+    mutable bool m_videoHeightReported = false;
     mutable bool m_hdrDisabled = false;
     mutable bool m_hdrConfigurationBroken = false;
     mutable bool m_hdrConfigurationTarget = false;

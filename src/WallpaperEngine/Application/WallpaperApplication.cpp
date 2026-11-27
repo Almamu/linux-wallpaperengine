@@ -349,12 +349,8 @@ void WallpaperApplication::resetScreenshotState () {
 	return;
     }
 
-    this->m_nextFrameScreenshot = this->m_context.settings.screenshot.delay;
-
-    if (this->m_videoDriver != nullptr) {
-	this->m_nextFrameScreenshot += this->m_videoDriver->getFrameCounter ();
-    }
-
+    this->m_screenshotStartFrame = this->m_videoDriver ? this->m_videoDriver->getFrameCounter () : 0;
+    this->m_screenshotReadyDeadline = {};
     this->m_screenShotTaken = false;
 }
 
@@ -1706,7 +1702,16 @@ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename
 
 	// make room for storing the pixel of this viewport
 	// Scenes rasterize at output resolution; their authored canvas can be tiny.
-	const auto readSize = wallpaper->getFramebufferSize ();
+	auto readSize = wallpaper->getFramebufferSize ();
+	if (dynamic_cast<const Render::Wallpapers::CVideo*> (wallpaper.get ()) != nullptr) {
+	    // The decode thread can publish a new size before the video attachment has been resized.
+	    GLint texture = 0;
+	    glGetIntegerv (GL_TEXTURE_BINDING_2D, &texture);
+	    glBindTexture (GL_TEXTURE_2D, wallpaper->getWallpaperTexture ());
+	    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &readSize.x);
+	    glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &readSize.y);
+	    glBindTexture (GL_TEXTURE_2D, static_cast<GLuint> (texture));
+	}
 	const int readWidth = readSize.x;
 	const int readHeight = readSize.y;
 	const auto bufferSize = readWidth * readHeight * 3;
@@ -2137,8 +2142,34 @@ void WallpaperApplication::render () {
 	return;
     }
 
-    if (this->m_videoDriver->getFrameCounter () < this->m_nextFrameScreenshot) {
+    const uint32_t elapsedFrames = this->m_videoDriver->getFrameCounter () - this->m_screenshotStartFrame;
+    if (elapsedFrames < this->m_context.settings.screenshot.delay) {
 	return;
+    }
+
+    const auto& wallpapers = this->m_renderContext->getWallpapers ();
+    const auto& viewports = this->m_renderContext->getOutput ().getViewports ();
+    if (viewports.empty ()) {
+	return;
+    }
+
+    const bool waitingForVideo = std::ranges::any_of (viewports, [&wallpapers] (const auto& entry) {
+	const auto wallpaper = wallpapers.find (entry.first);
+	if (wallpaper == wallpapers.end ()) {
+	    return false;
+	}
+
+	const auto* video = dynamic_cast<const Render::Wallpapers::CVideo*> (wallpaper->second.get ());
+	return video && !video->isReadyForScreenshot ();
+    });
+    if (waitingForVideo) {
+	const auto now = std::chrono::steady_clock::now ();
+	if (this->m_screenshotReadyDeadline == std::chrono::steady_clock::time_point {}) {
+	    this->m_screenshotReadyDeadline = now + std::chrono::seconds (3);
+	}
+	if (now < this->m_screenshotReadyDeadline) {
+	    return;
+	}
     }
 
     this->takeScreenshot (this->m_context.settings.screenshot.path);
