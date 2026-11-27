@@ -34,6 +34,7 @@ public:
 	std::function<std::string (const std::string&)> metadataLoader, bool deferMipmaps = false
     );
     static MipmapSharedPtr parseMipmap (const BinaryReader& file, const Texture& header, bool deferDecompression = false);
+    static DecodedPixelsPtr decodeCompiledImage (FIF format, const char* data, int size, int& width, int& height);
     /**
      * Unpacks retained LZ4 and decodes image-format (FIF) mipmaps so the render
      * thread only has to upload them, meant to run off the render thread

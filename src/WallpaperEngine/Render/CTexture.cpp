@@ -130,7 +130,7 @@ CTexture::CTexture (
 	}
 
 	for (const auto& mipmap : mipmaps | std::views::drop (skipped)) {
-	    stbi_uc* handle = nullptr;
+	    DecodedPixelsPtr pixels;
 	    const void* dataptr = mipmap->uncompressedData.get ();
 	    int width = mipmap->width;
 	    int height = mipmap->height;
@@ -140,17 +140,16 @@ CTexture::CTexture (
 	    if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
 		if (mipmap->decodedData != nullptr) {
 		    // pixels were pre-decoded off the render thread (TextureParser::decodeMipmaps),
-		    // so the expensive stbi work is skipped entirely
+		    // so the encoded image only needs to be uploaded
 		    dataptr = mipmap->decodedData.get ();
 		    width = mipmap->decodedWidth;
 		    height = mipmap->decodedHeight;
 		} else {
-		    int fileChannels;
-
-		    dataptr = handle = stbi_load_from_memory (
-			reinterpret_cast<unsigned char*> (mipmap->uncompressedData.get ()), mipmap->uncompressedSize,
-			&width, &height, &fileChannels, 4
+		    pixels = Data::Parsers::TextureParser::decodeCompiledImage (
+			this->m_header->freeImageFormat, mipmap->uncompressedData.get (), mipmap->uncompressedSize,
+			width, height
 		    );
+		    dataptr = pixels.get ();
 		}
 		if (dataptr == nullptr) {
 		    sLog.exception ("Cannot decode texture image");
@@ -201,9 +200,7 @@ CTexture::CTexture (
 		    sLog.exception ("Cannot load texture, unknown format", this->m_header->format);
 	    }
 
-	    // stbi_image buffer won't be used anymore, so free memory
 	    if (this->m_header->freeImageFormat != FIF_UNKNOWN) {
-		stbi_image_free (handle);
 		// pre-decoded pixels are on the GPU now, don't keep them in RAM
 		mipmap->decodedData.reset ();
 		mipmap->decodedWidth = 0;

@@ -20,6 +20,7 @@ extern "C" {
 }
 
 #include "TextureParser.h"
+#include "TextureJpegDecoder.h"
 #include "WallpaperEngine/Data/Assets/Texture.h"
 #include "WallpaperEngine/Logging/Log.h"
 
@@ -28,6 +29,19 @@ using namespace WallpaperEngine::Data::Parsers;
 
 void WallpaperEngine::Data::Assets::freeDecodedPixels (void* pixels) {
     stbi_image_free (pixels);
+}
+
+DecodedPixelsPtr TextureParser::decodeCompiledImage (FIF format, const char* data, int size, int& width, int& height) {
+    if (!data || size <= 0) return nullptr;
+    const auto* bytes = reinterpret_cast<const unsigned char*> (data);
+    if (format == FIF_JPEG) {
+	// Wallpaper Engine's accurate JPEG decode uses IJG's RGB reconstruction.
+	// Both the private decoder and the bundled stb use malloc-owned pixels.
+	if (DecodedPixelsPtr pixels { lwe_decode_tex_jpeg (bytes, size, &width, &height) }; pixels) {
+	    return pixels;
+	}
+    }
+    return DecodedPixelsPtr (stbi_load_from_memory (bytes, size, &width, &height, nullptr, 4));
 }
 
 namespace {
@@ -254,7 +268,8 @@ void checkPayloadSize (const BinaryReader& file, int stored, int unpacked) {
     }
 }
 
-void decodeMipmap (Mipmap& mipmap, const bool imageFormat = true, const bool toleratePatchErrors = true) {
+void decodeMipmap (Mipmap& mipmap, const FIF format, const bool toleratePatchErrors = true) {
+    const bool imageFormat = format != FIF_UNKNOWN;
     const auto decodeBase = [&] {
 	if (mipmap.compressedData && !mipmap.uncompressedData) {
 	// Publish only complete output. Optional LZ4/allocation failure leaves this
@@ -270,18 +285,16 @@ void decodeMipmap (Mipmap& mipmap, const bool imageFormat = true, const bool tol
 	}
 	}
 	if (!imageFormat || !mipmap.uncompressedData || mipmap.decodedData) return;
-	int width = 0, height = 0, fileChannels = 0;
-	stbi_uc* pixels = stbi_load_from_memory (
-	reinterpret_cast<unsigned char*> (mipmap.uncompressedData.get ()), mipmap.uncompressedSize, &width, &height,
-	&fileChannels, 4
-	);
+	int width = 0, height = 0;
+	auto pixels = TextureParser::decodeCompiledImage (
+	    format, mipmap.uncompressedData.get (), mipmap.uncompressedSize, width, height);
 
 	// on failure leave the mipmap untouched, the render thread will retry and report
 	if (pixels == nullptr) {
 	return;
 	}
 
-	mipmap.decodedData.reset (pixels);
+	mipmap.decodedData = std::move (pixels);
 	mipmap.decodedWidth = width;
 	mipmap.decodedHeight = height;
     };
@@ -393,7 +406,7 @@ void decodeMipmap (Mipmap& mipmap, const bool imageFormat = true, const bool tol
 }
 
 /** Every mipmap of the texture that still has to be decoded, appended to out */
-void collectDecodable (Texture& texture, std::vector<std::pair<Mipmap*, bool>>& out) {
+void collectDecodable (Texture& texture, std::vector<std::pair<Mipmap*, FIF>>& out) {
     // Videos are fed to the player as-is. Raw textures may still own packed LZ4.
     if (texture.isVideoMp4 || texture.flags & TextureFlags_Video) {
 	return;
@@ -403,7 +416,7 @@ void collectDecodable (Texture& texture, std::vector<std::pair<Mipmap*, bool>>& 
 	for (const auto& mipmap : mipmaps) {
 	    const bool imageFormat = texture.freeImageFormat != FIF_UNKNOWN;
 	    if (mipmap->compressedData || (imageFormat && !mipmap->decodedData && mipmap->uncompressedData)) {
-		out.emplace_back (mipmap.get (), imageFormat);
+		out.emplace_back (mipmap.get (), texture.freeImageFormat);
 	    }
 	}
     }
@@ -411,11 +424,11 @@ void collectDecodable (Texture& texture, std::vector<std::pair<Mipmap*, bool>>& 
 } // namespace
 
 void TextureParser::decodeMipmaps (Texture& texture) {
-    std::vector<std::pair<Mipmap*, bool>> pending;
+    std::vector<std::pair<Mipmap*, FIF>> pending;
     collectDecodable (texture, pending);
 
-    for (const auto& [mipmap, imageFormat] : pending) {
-	decodeMipmap (*mipmap, imageFormat);
+    for (const auto& [mipmap, format] : pending) {
+	decodeMipmap (*mipmap, format);
     }
 }
 
@@ -434,14 +447,14 @@ bool TextureParser::canStreamMipmaps (const Texture& texture) {
 }
 
 void TextureParser::decodeMipmaps (const std::vector<Texture*>& textures, const bool initialMipOnly) {
-    std::vector<std::pair<Mipmap*, bool>> pending;
+    std::vector<std::pair<Mipmap*, FIF>> pending;
     for (Texture* texture : textures) {
 	if (initialMipOnly && canStreamMipmaps (*texture)) {
 	    const auto& mipmaps = texture->images.at (0);
 	    const auto& mipmap = mipmaps[std::min<size_t> (2, mipmaps.size () - 1)];
 	    const bool imageFormat = texture->freeImageFormat != FIF_UNKNOWN;
 	    if (mipmap->compressedData || (imageFormat && !mipmap->decodedData && mipmap->uncompressedData))
-		pending.emplace_back (mipmap.get (), imageFormat);
+		pending.emplace_back (mipmap.get (), texture->freeImageFormat);
 	} else {
 	    collectDecodable (*texture, pending);
 	}
@@ -1071,7 +1084,7 @@ void TextureParser::parseVariantPatches (
     }
     mipmap.variantFormat = header.format;
     if (!deferPatches && !mipmap.variantPatches.empty ())
-	decodeMipmap (mipmap, header.freeImageFormat != FIF_UNKNOWN, false);
+	decodeMipmap (mipmap, header.freeImageFormat, false);
 }
 
 TextureUniquePtr TextureParser::selectVariants (

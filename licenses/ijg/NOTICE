@@ -1,0 +1,5 @@
+This software is based in part on the work of the Independent JPEG Group.
+
+It includes the unmodified decoder sources from IJG release 10 for compiled
+JPEG textures. The IJG README accompanying this notice contains the license,
+copyright and warranty terms.

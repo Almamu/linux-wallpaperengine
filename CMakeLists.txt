@@ -41,6 +41,7 @@ find_package(Fontconfig REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(HARFBUZZ REQUIRED IMPORTED_TARGET harfbuzz)
 include(CMakeModules/PrivateMSDF.cmake)
+include(CMakeModules/PrivateIJG.cmake)
 
 set(ENABLE_OPT OFF)
 set(SPIRV_CROSS_FORCE_PIC ON)
@@ -787,7 +788,8 @@ set(WPENGINE_ENGINE_LIBRARIES
     libcef_dll_wrapper
     argparse
     ${WPENGINE_SCRIPT_RUNTIME}
-    lwe-sound-spatial)
+    lwe-sound-spatial
+    lwe-private-jpeg)
 
 target_link_libraries(linux-wallpaperengine-lib PUBLIC ${WPENGINE_ENGINE_LIBRARIES})
 

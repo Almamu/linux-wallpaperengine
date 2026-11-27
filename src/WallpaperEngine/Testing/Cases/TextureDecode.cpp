@@ -5,6 +5,7 @@
 
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Parsers/PropertyParser.h"
+#include "TextureJpegFixture.h"
 #include <lz4.h>
 #include <stb_image_write.h>
 
@@ -75,6 +76,72 @@ std::unique_ptr<Texture> makePngTexture (const int mipmapCount, const int seed) 
     return texture;
 }
 } // namespace
+
+TEST_CASE ("compiled JPEG mips match native top-down RGBA", "[texture][jpeg]") {
+    using namespace WallpaperEngine::Data::Assets;
+    using TextureJpegFixture::width;
+    using TextureJpegFixture::height;
+    const auto& jpeg = TextureJpegFixture::jpeg;
+    const auto& native = TextureJpegFixture::nativeRgba;
+    static_assert (sizeof (native) == width * height * 4);
+
+    std::string bytes ("TEXV0005", 9);
+    bytes.append ("TEXI0001", 9);
+    for (uint32_t value : { uint32_t (TextureFormat_ARGB8888), uint32_t (TextureFlags_ClampUVs),
+			   width, height, width, height, 0u }) appendValue (bytes, value);
+    bytes.append ("TEXB0003", 9);
+    for (uint32_t value : { 1u, uint32_t (FIF_JPEG), 1u, width, height, 0u,
+			   uint32_t (sizeof (jpeg)), uint32_t (sizeof (jpeg)) }) appendValue (bytes, value);
+    bytes.append (reinterpret_cast<const char*> (jpeg), sizeof (jpeg));
+    const auto parseTexture = [&] {
+	return TextureParser::parse (BinaryReader (std::make_shared<std::istringstream> (bytes, std::ios::binary)));
+    };
+    const auto single = parseTexture ();
+    const auto first = parseTexture ();
+    const auto second = parseTexture ();
+    REQUIRE_FALSE (single->images.at (0).front ()->decodedData);
+    TextureParser::decodeMipmaps (*single);
+    TextureParser::decodeMipmaps (std::vector<Texture*> { first.get (), second.get () });
+    for (const auto* texture : { single.get (), first.get (), second.get () }) {
+	CHECK (texture->freeImageFormat == FIF_JPEG);
+	CHECK (texture->flags == TextureFlags_ClampUVs);
+	const auto& mipmap = *texture->images.at (0).front ();
+	REQUIRE (mipmap.decodedData);
+	CHECK (mipmap.decodedWidth == width);
+	CHECK (mipmap.decodedHeight == height);
+	CHECK (std::memcmp (mipmap.decodedData.get (), native, sizeof (native)) == 0);
+    }
+}
+
+TEST_CASE ("JPEGs outside the compiled decoder scope retain the previous pixels", "[texture][jpeg]") {
+    using namespace WallpaperEngine::Data::Assets;
+    const auto& jpeg = TextureJpegFixture::jpeg;
+    const std::string bytes (reinterpret_cast<const char*> (jpeg), sizeof (jpeg));
+    const auto source = TextureParser::parseImage (bytes, { { "nomip", true } });
+    const auto& expected = *source->images.at (0).front ();
+
+    FIF format = FIF_JPEG;
+    auto payload = bytes;
+    SECTION ("not declared as JPEG") { format = FIF_PNG; }
+    SECTION ("APP1 EXIF orientation") {
+	payload.insert (2, "\xff\xe1\x00\x22" "Exif\0\0" "II\x2a\0\x08\0\0\0"
+	    "\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0", 36);
+    }
+    SECTION ("APP2 ICC marker") { payload.insert (2, "\xff\xe2\x00\x10" "ICC_PROFILE\0\x01\x01", 18); }
+    int width = 0, height = 0;
+    const auto pixels = TextureParser::decodeCompiledImage (format, payload.data (), payload.size (), width, height);
+    REQUIRE (pixels);
+    REQUIRE (width == TextureJpegFixture::width);
+    REQUIRE (height == TextureJpegFixture::height);
+    CHECK (std::memcmp (pixels.get (), expected.uncompressedData.get (), expected.uncompressedSize) == 0);
+}
+
+TEST_CASE ("truncated compiled JPEGs leave no decoded pixels", "[texture][jpeg]") {
+    constexpr char truncated[] = "\xff\xd8\xff\xe0\0\x10" "JFIF";
+    int width = 0, height = 0;
+    CHECK_FALSE (TextureParser::decodeCompiledImage (WallpaperEngine::Data::Assets::FIF_JPEG,
+	truncated, sizeof (truncated) - 1, width, height));
+}
 
 TEST_CASE ("legacy TEXV0004 preserves texture metadata and every mip payload", "[texture][legacy]") {
     using namespace WallpaperEngine::Data::Assets;
