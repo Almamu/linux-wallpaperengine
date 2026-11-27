@@ -34,11 +34,28 @@ struct OpaqueScriptableObjectAdapter {
     unsigned int magic;
     ScriptableObjectAdapter& adapter;
     WallpaperEngine::Scripting::ScriptableObject& object;
+    std::map<std::string, JSValue> animationKeys {};
+
+    JSValue dupAnimationKey (JSContext* ctx, const std::string& name) {
+	if (const auto found = animationKeys.find (name); found != animationKeys.end ()) {
+	    return JS_DupValue (ctx, found->second);
+	}
+	JSValue key = JS_NewString (ctx, name.c_str ());
+	if (!JS_IsException (key)) animationKeys.emplace (name, JS_DupValue (ctx, key));
+	return key;
+    }
+
+    void clearAnimationKeys (JSRuntime* runtime) {
+	for (const auto& [name, key] : animationKeys) JS_FreeValueRT (runtime, key);
+	animationKeys.clear ();
+    }
 };
 
 static void scriptableobject_finalizer (JSRuntime* runtime, JSValueConst value) {
     JSClassID classId = 0;
-    delete static_cast<OpaqueScriptableObjectAdapter*> (JS_GetAnyOpaque (value, &classId));
+    auto* container = static_cast<OpaqueScriptableObjectAdapter*> (JS_GetAnyOpaque (value, &classId));
+    if (container != nullptr) container->clearAnimationKeys (runtime);
+    delete container;
 }
 
 enum AnimationCommand {
@@ -805,7 +822,8 @@ static JSValue model_layer_get_animation (
     for (const auto& [property, entry] : model->getProperties ()) {
 	if (property.starts_with (prefix) && entry.setting != nullptr && entry.setting->animation != nullptr
 	    && entry.setting->animation->name == name) {
-	    JSValue animationKey = JS_NewString (ctx, property.c_str ());
+	    JSValue animationKey = scriptable_container (data[0])->dupAnimationKey (ctx, property);
+	    if (JS_IsException (animationKey)) return animationKey;
 	    JSValue result = property_animation_controller (ctx, data[0], animationKey);
 	    JS_FreeValue (ctx, animationKey);
 	    return result;
@@ -987,7 +1005,10 @@ static JSValue scriptable_get_animation (JSContext* ctx, JSValueConst this_val, 
 	    if (index >= 0) layer = model->getAnimationLayer (static_cast<size_t> (index));
 	}
 	if (layer != nullptr) {
-	    JSValue key = JS_NewString (ctx, layer->key.c_str ());
+	    // Authored layers keep their keys. A one-shot gets a new key on every playback.
+	    JSValue key = layer->settings != nullptr ? scriptable_container (this_val)->dupAnimationKey (ctx, layer->key)
+						    : JS_NewString (ctx, layer->key.c_str ());
+	    if (JS_IsException (key)) return key;
 	    JSValue result = property_animation_controller (ctx, this_val, key);
 	    JS_FreeValue (ctx, key);
 	    return result;
@@ -1524,7 +1545,10 @@ ScriptableObjectAdapter::~ScriptableObjectAdapter () {
 void ScriptableObjectAdapter::invalidate (const ScriptableObject* object) {
     const auto it = m_instances.find (object);
     if (it == m_instances.end ()) return;
-    if (auto* container = scriptable_container (it->second)) container->magic = 0;
+    if (auto* container = scriptable_container (it->second)) {
+	container->magic = 0;
+	container->clearAnimationKeys (m_engine.getRuntime ());
+    }
     JS_FreeValue (m_engine.getContext (), it->second);
     m_instances.erase (it);
 }
