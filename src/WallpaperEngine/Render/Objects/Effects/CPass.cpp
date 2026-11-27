@@ -1,4 +1,5 @@
 #include "CPass.h"
+#include "WallpaperEngine/Render/Shaders/ShaderTranslationError.h"
 #include "WallpaperEngine/Render/Depth.h"
 #include <filesystem>
 #include <sstream>
@@ -1076,6 +1077,9 @@ void CPass::setupShaders () {
     const auto linkInterface = [&] {
 	const auto [vertex, fragment]
 	    = Shaders::GLSLContext::get ().toGlsl (this->m_shader->vertex (), this->m_shader->fragment ());
+	if (vertex.empty () && fragment.empty ()) {
+	    throw Shaders::ShaderTranslationError ("Cannot translate shader: " + shaderName);
+	}
 	this->m_interfaceProgram = scene.getContext ().getShaderProgramCache ().interfaceProgram (
 	    vertex, fragment, this->m_programSharingGroup
 	);

@@ -3,6 +3,7 @@
 #include "CModel.h"
 
 #include "WallpaperEngine/Render/Depth.h"
+#include "WallpaperEngine/Render/Shaders/ShaderTranslationError.h"
 
 #include "WallpaperEngine/Data/Model/Property.h"
 #include "WallpaperEngine/Data/Parsers/ObjectParser.h"
@@ -18,6 +19,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <limits>
+#include <optional>
 #include <utility>
 #if defined(__SSE__)
 #include <xmmintrin.h>
@@ -455,7 +457,13 @@ void CParticle::setup () {
     setupEmitters ();
     setupInitializers ();
     setupOperators ();
-    setupPass ();
+    std::optional<Shaders::ShaderTranslationError> rejectedPass;
+    try {
+	setupPass ();
+    } catch (const Shaders::ShaderTranslationError& error) {
+	if (m_particle.children.empty ()) throw;
+	rejectedPass = error;
+    }
 
     m_controlPoints.resize (PARTICLE_CONTROL_POINT_COUNT);
     for (const auto& cp : m_particle.controlPoints) {
@@ -469,6 +477,19 @@ void CParticle::setup () {
     m_commonControlPointTransform = m_controlPointTransform;
 
     setupChildren ();
+    if (rejectedPass) {
+	if (m_children.empty () && std::ranges::none_of (m_followChildren, [] (const auto& child) {
+		return !child.instances.empty ();
+	    })) {
+	    throw *rejectedPass;
+	}
+	// A rejected parent material still owns the transforms and simulation needed by its children.
+	m_refractFBO.reset ();
+	m_passFBOProvider.reset ();
+	m_hasRefract = false;
+	sLog.error ("Skipping own draw of particle ", m_particle.name, ": ", rejectedPass->what (),
+	    ". Its child systems remain active.");
+    }
     m_initialized = true;
     m_hasPrewarmInTree = m_particle.startTime > 0.0f && std::isfinite (m_particle.startTime);
     m_hasPrewarmInTree |= std::ranges::any_of (m_children, [] (const auto& child) {
@@ -746,7 +767,7 @@ void CParticle::render () {
     if (!visible) return;
 
     // Render particles
-    if (m_particleCount > 0 && m_particle.material) {
+    if (m_particleCount > 0 && m_pass != nullptr) {
 	// Scene alpha belongs to the compositor, just as for image/model draws.
 	// Composition layers need the particle alpha for their later group blend.
 	glColorMask (true, true, true, getScene ().isRenderingToComposition () ? GL_TRUE : GL_FALSE);
