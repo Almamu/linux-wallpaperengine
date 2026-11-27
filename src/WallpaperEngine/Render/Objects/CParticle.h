@@ -395,8 +395,9 @@ protected:
     void applyParallaxToModelMatrix ();
     void updateParticleViewProjection ();
     void updateParticleRenderVars ();
+    void updateInstanceColor (bool allowColorOverride, const glm::vec3& color);
     void updateInstanceParameters (bool allowColorOverride);
-    void activateInstanceParameters ();
+    void activateInstanceParameters (const glm::vec3* colorOnly = nullptr);
     void refreshInstanceParameters (bool suppressColorOverride = false);
     [[nodiscard]] glm::vec3 adjustInstanceColor (const glm::vec3& color) const;
 

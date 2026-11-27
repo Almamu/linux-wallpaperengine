@@ -495,7 +495,21 @@ void CParticle::setup () {
     m_hasPrewarmInTree |= std::ranges::any_of (m_children, [] (const auto& child) {
 	return child.renderer->m_hasPrewarmInTree;
     });
-    if (m_particleParent == nullptr) prewarm (true);
+    if (m_particleParent == nullptr) {
+        const auto& colorSetting = *getInstanceOverride ().colorn;
+        std::optional<glm::vec3> authoredColor;
+        if (m_hasPrewarmInTree && getScene ().isConstructing () && colorSetting.property) {
+            // Initial prewarm runs before the user color is attached natively.
+            // Parse the saved literal without connecting it to the live property.
+            using WallpaperEngine::Data::JSON::JSON;
+            const auto configuration = JSON::parse (m_particle.initialConfiguration);
+            const auto literal = configuration.at ("instanceoverride").user ("colorn", {}, glm::vec3 (-1.0f));
+            authoredColor = literal->value->getVec3 ();
+            activateInstanceParameters (&*authoredColor);
+        }
+        prewarm (true);
+        if (authoredColor) activateInstanceParameters (&colorSetting.value->getVec3 ());
+    }
 }
 
 const ParticleInstanceOverride& CParticle::getInstanceOverride () const {
@@ -621,10 +635,8 @@ void CParticle::prewarm (const bool includePermanentChildren) {
     }
 }
 
-void CParticle::updateInstanceParameters (const bool allowColorOverride) {
+void CParticle::updateInstanceColor (const bool allowColorOverride, const glm::vec3& color) {
     const auto& settings = getInstanceOverride ();
-    m_turbulenceRate = settings.rate->value->getFloat ();
-    const glm::vec3 color = settings.colorn->value->getVec3 ();
     m_colorOverrideActive = allowColorOverride && (m_particle.flags & 8) == 0 && color.x >= 0.0f
 	&& glm::any (glm::greaterThanEqual (glm::abs (color - m_particle.colorReference), glm::vec3 (0.9f / 255.0f)));
     if (m_colorOverrideActive) {
@@ -638,18 +650,25 @@ void CParticle::updateInstanceParameters (const bool allowColorOverride) {
     if (m_colorOverrideActive && (getScene ().getScene ().version < 5 || !m_particle.hasColor)) {
 	m_instanceColor *= color;
     }
+}
+
+void CParticle::updateInstanceParameters (const bool allowColorOverride) {
+    const auto& settings = getInstanceOverride ();
+    m_turbulenceRate = settings.rate->value->getFloat ();
+    updateInstanceColor (allowColorOverride, settings.colorn->value->getVec3 ());
     m_instanceParametersDirty = false;
     if (m_initialized && (m_hasMutatingRemapInitializer || m_hasControlPointOutputOperator))
         updateControlPoints (0.0f, true);
 }
 
-void CParticle::activateInstanceParameters () {
+void CParticle::activateInstanceParameters (const glm::vec3* colorOnly) {
     const bool inherited = m_particleParent == nullptr || m_particleParent->m_propagateColorOverride;
-    updateInstanceParameters (inherited);
+    if (colorOnly) updateInstanceColor (inherited, *colorOnly);
+    else updateInstanceParameters (inherited);
     // First activation copies the parent's propagation bit, even when this
     // child locally opts out. Permanent descendants follow the same rule.
     m_propagateColorOverride = m_particleParent ? inherited : m_colorOverrideActive;
-    for (auto& child : m_children) child.renderer->activateInstanceParameters ();
+    for (auto& child : m_children) child.renderer->activateInstanceParameters (colorOnly);
 }
 
 void CParticle::refreshInstanceParameters (bool suppressColorOverride) {

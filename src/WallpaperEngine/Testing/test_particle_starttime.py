@@ -89,6 +89,45 @@ def check_centers(image, probes):
     return results
 
 
+def build_color_scene(root):
+    scene = prepare(root, perspective=False)
+    scene["general"]["orthogonalprojection"] = {"width": 320, "height": 180}
+    scene["objects"] = []
+    write_json(root / "project.json", {
+        "title": "Particle startup color regression", "type": "scene", "file": "scene.json",
+        "general": {"properties": {"schemecolor": {"type": "color", "value": "0 0 1"}}},
+    })
+    (root / "shaders/genericparticle.frag").write_text(
+        "varying vec4 v_Color;\nvoid main() { gl_FragColor = v_Color; }\n"
+    )
+    bound = {"user": "schemecolor", "value": "1 0 0"}
+    probes = (
+        ("bound prewarm", 45, 120, .1, 0, bound, (255, 0, 0)),
+        ("bound no prewarm", 150, 120, 0, 0, bound, (0, 0, 255)),
+        ("literal prewarm", 255, 120, .1, 0, "0 1 0", (0, 255, 0)),
+        ("bound delayed birth", 45, 55, .1, .25, bound, (0, 0, 255)),
+    )
+    for i, (name, x, y, start, delay, color, _) in enumerate(probes):
+        particle = make_particle(start, 499, speed=0)
+        particle["emitter"][0]["delay"] = delay
+        write_json(root / f"particles/color-{i}.json", particle)
+        scene["objects"].append({
+            "id": i + 1, "name": name, "particle": f"particles/color-{i}.json",
+            "origin": f"{x} {y} 0", "instanceoverride": {"colorn": color},
+        })
+    return scene, probes
+
+
+def check_colors(image, probes):
+    results = {}
+    for name, x, y, _, _, _, expected in probes:
+        actual = image.getpixel((x, image.height - y))
+        passed = actual == expected
+        results[name] = {"actual": actual, "expected": expected, "passed": passed}
+        print(f"{'PASS' if passed else 'FAIL'} {name}: {actual}, expected {expected}", flush=True)
+    return results
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("engine", type=Path)
@@ -100,6 +139,10 @@ if __name__ == "__main__":
             scene, probes = build_scene(root)
             image, _ = capture(args.engine.resolve(), root, scene)
             results = check_centers(image, probes)
+            color_root = root / "colors"
+            color_scene, color_probes = build_color_scene(color_root)
+            color_image, _ = capture(args.engine.resolve(), color_root, color_scene)
+            results.update(check_colors(color_image, color_probes))
             write_json(root / "checks.json", results)
         finally:
             if args.artifacts:
