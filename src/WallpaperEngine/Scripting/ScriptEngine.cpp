@@ -865,7 +865,10 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
     const auto [body, exportsWorkshopId] = normalizeSceneScriptModuleSyntax (*source);
 
     JSValue layer = object == nullptr ? JS_UNDEFINED : this->m_adapters.object->instantiate (*object);
+    JSValue effectOwner = object != nullptr && key.starts_with ("visible_fx")
+        ? this->m_adapters.object->instantiateEffectVisibilityOwner (layer, currentValue) : JS_UNDEFINED;
     JS_SetPropertyStr (this->m_context, this->m_globalThis, "__propScriptLayer", layer);
+    JS_SetPropertyStr (this->m_context, this->m_globalThis, "__propScriptEffectOwner", effectOwner);
     JS_SetPropertyStr (this->m_context, this->m_globalThis, "__propScriptSceneOwner",
         object == nullptr ? this->m_sceneObject->makePropertyOwner (sceneProperty) : JS_UNDEFINED);
     std::string animationScope;
@@ -917,7 +920,12 @@ void ScriptEngine::queueScript (const std::string& key, DynamicValue& currentVal
 	    << "    var scoped = __animationScope + key;\n"
 	    << "    return Reflect.get(target, scoped, target) === undefined ? key : scoped;\n"
 	    << "  }\n"
-	    << "  var thisObject = globalThis.__propScriptSceneOwner || ((__animationScope || globalThis.__propScriptPropertyAnimated || __propertyName.indexOf('_fx') >= 0) ? new Proxy(thisLayer, { get: function(target, key) {\n"
+	    << "  var __effectOwner = globalThis.__propScriptEffectOwner;\n"
+	    << "  if (__effectOwner) __effectOwner.getAnimation = function(name) {\n"
+	    << "    if (name === undefined && !__propertyName) return thisLayer.getAnimation();\n"
+	    << "    return thisLayer.getAnimation(name === undefined ? __propertyName : __animationScope + name);\n"
+	    << "  };\n"
+	    << "  var thisObject = globalThis.__propScriptSceneOwner || __effectOwner || ((__animationScope || globalThis.__propScriptPropertyAnimated || __propertyName.indexOf('_fx') >= 0) ? new Proxy(thisLayer, { get: function(target, key) {\n"
 	    << "    if (key === 'getAnimation') return function(name) { return target.getAnimation(name === undefined ? __propertyName : __animationScope + name); };\n"
 	    << "    var result = Reflect.get(target, __materialKey(target, key), target);\n"
 	    << "    return typeof result === 'function' ? result.bind(target) : result;\n"

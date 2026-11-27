@@ -925,6 +925,29 @@ struct OpaqueEffect {
     int32_t index;
 };
 
+static const ImageEffect* effect_from_receiver (JSValueConst thisVal, int magic) {
+    const auto* receiver = static_cast<const OpaqueEffect*> (JS_GetOpaque (thisVal, magic));
+    if (receiver == nullptr) return nullptr;
+    const auto* effects = scriptable_effects (receiver->owner);
+    if (effects == nullptr || receiver->index < 0 || static_cast<size_t> (receiver->index) >= effects->size ()) {
+	return nullptr;
+    }
+    return (*effects)[receiver->index].get ();
+}
+
+static JSValue effect_get_visible (JSContext* ctx, JSValueConst thisVal, int, JSValueConst*, int magic) {
+    const auto* effect = effect_from_receiver (thisVal, magic);
+    return effect != nullptr ? JS_NewBool (ctx, effect->visible->value->getBool ()) : JS_UNDEFINED;
+}
+
+static JSValue effect_set_visible (JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv, int magic) {
+    const auto* effect = effect_from_receiver (thisVal, magic);
+    if (effect != nullptr && argc > 0 && JS_IsBool (argv[0])) {
+	effect->visible->value->update (JS_ToBool (ctx, argv[0]) != 0, DynamicValue::UpdateSource::User);
+    }
+    return JS_UNDEFINED;
+}
+
 static void effect_finalizer (JSRuntime* runtime, JSValueConst value) {
     JSClassID classId = 0;
     auto* effect = static_cast<OpaqueEffect*> (JS_GetAnyOpaque (value, &classId));
@@ -982,8 +1005,23 @@ JSValue ScriptableObjectAdapter::instantiateEffect (JSValueConst owner, const in
     JS_SetPropertyStr (ctx, result, "executeMaterialFunction",
 	JS_NewCFunctionMagic (ctx, effect_execute_material_function, "executeMaterialFunction", 1,
 	    JS_CFUNC_generic_magic, m_effectClassId));
+    JSAtom visible = JS_NewAtom (ctx, "visible");
+    JS_DefinePropertyGetSet (ctx, result, visible,
+	JS_NewCFunctionMagic (ctx, effect_get_visible, "get visible", 0, JS_CFUNC_generic_magic, m_effectClassId),
+	JS_NewCFunctionMagic (ctx, effect_set_visible, "set visible", 1, JS_CFUNC_generic_magic, m_effectClassId),
+	JS_PROP_ENUMERABLE);
+    JS_FreeAtom (ctx, visible);
     JS_FreeValue (ctx, data[1]);
     return result;
+}
+
+JSValue ScriptableObjectAdapter::instantiateEffectVisibilityOwner (JSValueConst owner, const DynamicValue& value) {
+    const auto* effects = scriptable_effects (owner);
+    if (effects == nullptr) return JS_UNDEFINED;
+    for (size_t index = 0; index < effects->size (); ++index) {
+	if ((*effects)[index]->visible->value.get () == &value) return instantiateEffect (owner, static_cast<int32_t> (index));
+    }
+    return JS_UNDEFINED;
 }
 
 static JSValue scriptable_get_animation (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {

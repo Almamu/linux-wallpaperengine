@@ -12,6 +12,7 @@ public:
     JSValue instantiate (ScriptableObject& object) override;
     JSValue instantiate (Data::Model::DynamicValue& value) override;
     JSValue instantiateEffect (JSValueConst owner, int32_t index);
+    JSValue instantiateEffectVisibilityOwner (JSValueConst owner, const Data::Model::DynamicValue& value);
     void invalidate (const ScriptableObject* object);
 
     // Recover the underlying ScriptableObject from a JS layer value produced by instantiate(),
