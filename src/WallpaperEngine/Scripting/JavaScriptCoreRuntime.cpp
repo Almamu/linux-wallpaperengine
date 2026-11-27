@@ -5,6 +5,7 @@
 #include "quickjs.h"
 #include <JavaScriptCore/JavaScript.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <cstdarg>
@@ -81,13 +82,24 @@ struct JSRuntime {
     std::vector<Native*> collected;
     JSClassID nextClass = 100;
 };
+struct Atom {
+    const std::string* name = nullptr;
+    size_t refs = 0;
+};
+struct AtomNameHash {
+    using is_transparent = void;
+    size_t operator() (std::string_view name) const { return std::hash<std::string_view> {} (name); }
+};
 struct JSContext {
     JSRuntime* rt;
     JSGlobalContextRef jsc;
     JSValue exception = JS_UNINITIALIZED;
     std::unordered_map<JSClassID, JSValue> protos;
-    std::vector<std::string> atoms { std::string () };
-    std::unordered_map<std::string, JSAtom> atomMap;
+    std::vector<Atom> atoms { Atom {} }; // Slot zero is JS_ATOM_NULL.
+    std::vector<JSAtom> freeAtoms;
+    std::unordered_map<std::string, JSAtom, AtomNameHash, std::equal_to<>> atomMap;
+    std::array<JSAtom, 128> recentPropertyAtoms {};
+    size_t nextPropertyAtom = 0;
     std::vector<std::unique_ptr<JSModuleDef>> modules;
     JSObjectRef defineProperty = nullptr, hasOwnProperty = nullptr, stringify = nullptr, functionProto = nullptr;
     JSObjectRef objectProto = nullptr;
@@ -209,6 +221,23 @@ static std::string utf8 (JSStringRef str) {
     s.resize (n ? n - 1 : 0);
     return s;
 }
+static const std::string& atomName (JSContext* c, JSAtom atom) {
+    static const std::string empty;
+    return atom == JS_ATOM_NULL ? empty : *c->atoms.at (atom).name;
+}
+static JSAtom propertyAtom (JSContext* c, JSStringRef name) {
+    const JSAtom atom = JS_NewAtom (c, utf8 (name).c_str ());
+    auto& refs = c->atoms[atom].refs;
+    if (refs == 1) {
+	// Keep a bounded set of names for ordinary repeated layer and vector access.
+	++refs;
+	auto& cached = c->recentPropertyAtoms[c->nextPropertyAtom];
+	JS_FreeAtom (c, cached);
+	cached = atom;
+	c->nextPropertyAtom = (c->nextPropertyAtom + 1) % c->recentPropertyAtoms.size ();
+    }
+    return atom;
+}
 static JSValue nativeValue (Native* n, Holder& temporary) {
     temporary = { 1, n->ctx, nullptr, n };
     return JS_MKPTR (JS_TAG_OBJECT, &temporary);
@@ -309,11 +338,11 @@ static JSValueRef getNative (JSContextRef jc, JSObjectRef obj, JSStringRef name,
     if (hasOrdinaryOwnProperty (n, obj, name, ex)) {
 	return nullptr;
     }
-    auto atom = JS_NewAtom (c, utf8 (name).c_str ());
+    const JSAtom atom = propertyAtom (c, name);
     Holder selfHandle { 0, c, obj, n };
     JSValue self = JS_MKPTR (JS_TAG_OBJECT, &selfHandle);
     JSValue result = cls.exotic.get_property (c, self, atom, self);
-    JS_FreeValue (c, self);
+    JS_FreeAtom (c, atom);
     if (JS_IsException (result)) {
 	passException (c, ex);
 	return JSValueMakeUndefined (jc);
@@ -335,12 +364,11 @@ static bool setNative (JSContextRef jc, JSObjectRef obj, JSStringRef name, JSVal
     if (hasOrdinaryOwnProperty (n, obj, name, ex)) {
 	return false;
     }
-    auto atom = JS_NewAtom (c, utf8 (name).c_str ());
+    const JSAtom atom = propertyAtom (c, name);
     Holder selfHandle { 0, c, obj, n }, valueHandle;
     auto self = JS_MKPTR (JS_TAG_OBJECT, &selfHandle), v = fromJsc (c, value, &valueHandle);
     int result = cls.exotic.set_property (c, self, atom, v, self, JS_PROP_THROW);
-    JS_FreeValue (c, self);
-    JS_FreeValue (c, v);
+    JS_FreeAtom (c, atom);
     if (result < 0) {
 	passException (c, ex);
     }
@@ -654,15 +682,34 @@ void* JS_GetAnyOpaque (JSValue v, JSClassID* id) {
     return *id ? holder (v)->native->opaque : nullptr;
 }
 JSAtom JS_NewAtom (JSContext* c, const char* s) {
-    auto [it, added] = c->atomMap.emplace (s, c->atoms.size ());
-    if (added) {
-	c->atoms.emplace_back (s);
+    if (const auto found = c->atomMap.find (s); found != c->atomMap.end ()) {
+	++c->atoms[found->second].refs;
+	return found->second;
     }
-    return it->second;
+    JSAtom slot;
+    if (c->freeAtoms.empty ()) {
+	slot = c->atoms.size ();
+	c->atoms.emplace_back ();
+    } else {
+	slot = c->freeAtoms.back ();
+	c->freeAtoms.pop_back ();
+    }
+    const auto it = c->atomMap.emplace (s, slot).first;
+    // The map keeps the name's address stable until the final release.
+    c->atoms[slot] = { &it->first, 1 };
+    return slot;
 }
-void JS_FreeAtom (JSContext*, JSAtom) { }
+void JS_FreeAtom (JSContext* c, JSAtom atom) {
+    if (atom == JS_ATOM_NULL) return;
+    auto& entry = c->atoms.at (atom);
+    if (--entry.refs == 0) {
+	c->atomMap.erase (*entry.name);
+	entry.name = nullptr;
+	c->freeAtoms.push_back (atom);
+    }
+}
 const char* JS_AtomToCStringLen (JSContext* c, size_t* len, JSAtom atom) {
-    const auto& s = c->atoms.at (atom);
+    const auto& s = atomName (c, atom);
     if (len) {
 	*len = s.size ();
     }
@@ -701,7 +748,7 @@ JSValue JS_GetPropertyStr (JSContext* c, JSValue v, const char* key) {
     return finish (c, result, ex);
 }
 JSValue JS_GetProperty (JSContext* c, JSValue v, JSAtom a) {
-    return JS_GetPropertyStr (c, v, c->atoms.at (a).c_str ());
+    return JS_GetPropertyStr (c, v, atomName (c, a).c_str ());
 }
 JSValue JS_GetPropertyUint32 (JSContext* c, JSValue v, uint32_t index) {
     JSValueRef ex = nullptr;
@@ -768,7 +815,7 @@ int JS_DefinePropertyGetSet (JSContext* c, JSValue obj, JSAtom atom, JSValue get
     field (c, d, "set", toJsc (c, setter));
     field (c, d, "enumerable", JSValueMakeBoolean (c->jsc, flags & JS_PROP_ENUMERABLE));
     field (c, d, "configurable", JSValueMakeBoolean (c->jsc, flags & JS_PROP_CONFIGURABLE));
-    Str s (c->atoms.at (atom));
+    Str s (atomName (c, atom));
     int r = define (c, obj, s, d);
     JS_FreeValue (c, getter);
     JS_FreeValue (c, setter);

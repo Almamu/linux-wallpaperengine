@@ -77,6 +77,7 @@ void scriptengine_dump (JSContext* ctx, JSValueConst obj) {
 	JS_FreeCString (ctx, value_str);
 	JS_FreeValue (ctx, val);
 	JS_FreeCString (ctx, name);
+	JS_FreeAtom (ctx, props[i].atom);
     }
 
     js_free (ctx, props);

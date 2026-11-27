@@ -175,20 +175,24 @@ scriptable_texture_animation_controller (JSContext* ctx, JSValueConst owner) {
     JSValue result = JS_NewObject (ctx);
 
     const auto defineReadOnly = [&] (const char* name, const int property) {
+	const JSAtom atom = JS_NewAtom (ctx, name);
 	JS_DefinePropertyGetSet (
-	    ctx, result, JS_NewAtom (ctx, name),
+	    ctx, result, atom,
 	    JS_NewCFunctionData (ctx, texture_animation_property_get, 0, property, 1, functionData), JS_UNDEFINED,
 	    JS_PROP_ENUMERABLE
 	);
+	JS_FreeAtom (ctx, atom);
     };
     defineReadOnly ("frameCount", TextureAnimationProperty_FrameCount);
     defineReadOnly ("duration", TextureAnimationProperty_Duration);
+    const JSAtom rate = JS_NewAtom (ctx, "rate");
     JS_DefinePropertyGetSet (
-	ctx, result, JS_NewAtom (ctx, "rate"),
+	ctx, result, rate,
 	JS_NewCFunctionData (ctx, texture_animation_property_get, 0, TextureAnimationProperty_Rate, 1, functionData),
 	JS_NewCFunctionData (ctx, texture_animation_rate_set, 1, TextureAnimationProperty_Rate, 1, functionData),
 	JS_PROP_ENUMERABLE
     );
+    JS_FreeAtom (ctx, rate);
 
     const auto defineMethod = [&] (const char* name, const int command, const int length) {
 	JS_SetPropertyStr (

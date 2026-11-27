@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 #include <string>
+#include <unordered_set>
 #ifdef WPENGINE_JAVASCRIPTCORE
 #include "WallpaperEngine/Scripting/JavaScriptCoreRuntime.h"
 #include <filesystem>
@@ -112,6 +113,29 @@ size_t openTimerDescriptors () {
     return count;
 }
 
+using AtomSlots = std::unordered_set<JSAtom>;
+
+JSValue recordReadAtom (JSContext* context, JSValueConst object, JSAtom atom, JSValueConst) {
+    JSClassID id;
+    static_cast<AtomSlots*> (JS_GetAnyOpaque (object, &id))->insert (atom);
+    const char* name = JS_AtomToCString (context, atom);
+    JSValue result = JS_NewString (context, name);
+    JS_FreeCString (context, name);
+    return result;
+}
+
+int recordWriteAtom (
+    JSContext* context, JSValueConst object, JSAtom atom, JSValueConst value, JSValueConst, int
+) {
+    JSValue name = recordReadAtom (context, object, atom, object);
+    const int matches = JS_IsEqual (context, name, value);
+    JS_FreeValue (context, name);
+    if (matches != 1) {
+	JS_ThrowTypeError (context, "wrong property name");
+	return -1;
+    }
+    return 1;
+}
 }
 
 TEST_CASE ("Script runtime services retired VMs without dispatching the default GLib context", "[script-runtime]") {
@@ -142,6 +166,42 @@ TEST_CASE ("Script runtime services retired VMs without dispatching the default 
     CHECK_FALSE (defaultSourceDispatched);
 }
 
+TEST_CASE ("Script runtime recycles transient native property atoms", "[script-runtime][property-atoms]") {
+    AtomSlots slots;
+    Runtime vm;
+    JSClassID id = 0;
+    JS_NewClassID (vm.runtime, &id);
+    JSClassExoticMethods exotic { .get_property = recordReadAtom, .set_property = recordWriteAtom };
+    const JSClassDef definition { .class_name = "AtomProbe", .exotic = &exotic };
+    REQUIRE (JS_NewClass (vm.runtime, id, &definition) == 0);
+    JSValue object = JS_NewObjectClass (vm.context, id);
+    JS_SetOpaque (object, &slots);
+    JSValue global = JS_GetGlobalObject (vm.context);
+    REQUIRE (JS_SetPropertyStr (vm.context, global, "layer", object) == 1);
+    JS_FreeValue (vm.context, global);
+
+    const JSAtom retained = JS_NewAtom (vm.context, "retained");
+    const JSAtom duplicate = JS_NewAtom (vm.context, "retained");
+    REQUIRE (retained == duplicate);
+    JS_FreeAtom (vm.context, duplicate);
+
+    const char* source = R"JS((function () {
+        for (let i = 0; i < 1024; ++i) {
+            const name = 'optional_dynamic_layer_property_' + i;
+            if (layer[name] !== name) return false;
+            layer[name] = name;
+        }
+        return layer.retained === 'retained';
+    })())JS";
+    JSValue result = JS_Eval (vm.context, source, strlen (source), "transient-atoms.js", JS_EVAL_TYPE_GLOBAL);
+    REQUIRE_FALSE (JS_IsException (result));
+    CHECK (JS_ToBool (vm.context, result) == 1);
+    CHECK (slots.contains (retained));
+    // At most the 128 cached names, the next callback's name, and the retained atom.
+    CHECK (slots.size () <= 130);
+    JS_FreeValue (vm.context, result);
+    JS_FreeAtom (vm.context, retained);
+}
 #endif
 
 TEST_CASE ("Script runtime releases many captured callbacks at shutdown", "[script-runtime]") {
