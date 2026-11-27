@@ -2,6 +2,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 #include <string>
+#ifdef WPENGINE_JAVASCRIPTCORE
+#include "WallpaperEngine/Scripting/JavaScriptCoreRuntime.h"
+#include <filesystem>
+#include <glib.h>
+#include <memory>
+#endif
 
 namespace {
 struct Runtime {
@@ -94,6 +100,49 @@ TEST_CASE ("Script runtime native functions preserve property descriptors", "[sc
     JS_FreeValue (vm.context, result);
     JS_FreeValue (vm.context, global);
 }
+
+#ifdef WPENGINE_JAVASCRIPTCORE
+namespace {
+size_t openTimerDescriptors () {
+    size_t count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator ("/proc/self/fd")) {
+	std::error_code error;
+	if (std::filesystem::read_symlink (entry.path (), error) == "anon_inode:[timerfd]") ++count;
+    }
+    return count;
+}
+
+}
+
+TEST_CASE ("Script runtime services retired VMs without dispatching the default GLib context", "[script-runtime]") {
+    using WallpaperEngine::Scripting::serviceJavaScriptCoreRuntime;
+    bool defaultSourceDispatched = false;
+    const auto destroySource = [] (GSource* source) {
+	g_source_destroy (source);
+	g_source_unref (source);
+    };
+    const std::unique_ptr<GSource, decltype(destroySource)> defaultSource (g_idle_source_new (), destroySource);
+    g_source_set_callback (defaultSource.get (), [] (gpointer data) -> gboolean {
+	*static_cast<bool*> (data) = true;
+	return G_SOURCE_REMOVE;
+    }, &defaultSourceDispatched, nullptr);
+    g_source_attach (defaultSource.get (), g_main_context_default ());
+
+    serviceJavaScriptCoreRuntime ();
+    { Runtime warmup; }
+    if (!serviceJavaScriptCoreRuntime ()) SKIP ("JavaScriptCore main-loop bootstrap is unavailable");
+    const auto baseline = openTimerDescriptors ();
+
+    for (int iteration = 0; iteration < 64; ++iteration) {
+	{ Runtime vm; }
+	serviceJavaScriptCoreRuntime ();
+    }
+
+    CHECK (openTimerDescriptors () == baseline);
+    CHECK_FALSE (defaultSourceDispatched);
+}
+
+#endif
 
 TEST_CASE ("Script runtime releases many captured callbacks at shutdown", "[script-runtime]") {
     for (int iteration = 0; iteration < 3; ++iteration) {

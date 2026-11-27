@@ -11,6 +11,7 @@
 #include "WallpaperEngine/Render/RenderContext.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
+#include "WallpaperEngine/Scripting/JavaScriptCoreRuntime.h"
 #include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
 
 #include "WallpaperEngine/Data/Dumpers/StringPrinter.h"
@@ -140,6 +141,7 @@ WallpaperApplication::~WallpaperApplication () {
     if (this->m_renderContext) {
 	this->m_renderContext.reset ();
     }
+    Scripting::serviceJavaScriptCoreRuntime ();
     this->m_backgrounds.clear ();
     this->m_browserContext.reset ();
 }
@@ -2190,6 +2192,8 @@ void WallpaperApplication::show () {
     setup ();
     while (this->m_context.state.general.keepRunning) {
 	render ();
+	// render() can also be called while a replacement scene is under construction.
+	Scripting::serviceJavaScriptCoreRuntime ();
     }
 
     if (this->m_controlSocket >= 0) {
@@ -2212,6 +2216,7 @@ void WallpaperApplication::show () {
     this->cancelComparison ();
     this->releaseLockscreenFrames ();
     this->m_renderContext.reset ();
+    Scripting::serviceJavaScriptCoreRuntime ();
 
     cleanup ();
 }

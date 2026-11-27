@@ -1,6 +1,7 @@
 // Implements the embedding API used by SceneScript against JavaScriptCore.
 // Keeping this boundary lets the existing adapters and the QuickJS fallback
 // share one implementation. Authored modules are lowered by ScriptEngine.
+#include "JavaScriptCoreRuntime.h"
 #include "quickjs.h"
 #include <JavaScriptCore/JavaScript.h>
 #include <algorithm>
@@ -15,9 +16,41 @@
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+namespace WTF {
+void initializeMainThread () __attribute__ ((weak));
+}
+extern "C" uint32_t webkitThreadSequence ()
+    __asm__ ("_ZN3WTF10ThreadLike15currentSequenceEv") __attribute__ ((weak));
+
+namespace {
+struct RuntimeLoop {
+    std::unique_ptr<GMainContext, decltype(&g_main_context_unref)> context { nullptr, g_main_context_unref };
+    std::vector<JSRuntime*> runtimes;
+    std::atomic_bool finalizersPending = false;
+    bool dispatchWhileActive = false;
+};
+
+thread_local RuntimeLoop runtimeLoop;
+
+bool initializeMainRunLoop () {
+    // Standalone GTK JSC does not initialize the WTF main loop that its full-GC
+    // timer's memory pressure handler needs. The upstream JSC shell does this
+    // before creating a VM. Keep dispatch optional across library versions.
+    static const bool initialized = [] {
+	if (gettid () != getpid () || !WTF::initializeMainThread || !webkitThreadSequence) return false;
+	// WTF requires the main thread to be the first thread it registered.
+	if (webkitThreadSequence () != 1) return false;
+	WTF::initializeMainThread ();
+	return true;
+    }();
+    return initialized;
+}
+}
 
 struct Native;
 struct Holder {
@@ -38,7 +71,8 @@ struct JSModuleDef {
     std::unordered_map<std::string, JSValue> exports;
 };
 struct JSRuntime {
-    JSContextGroupRef group = JSContextGroupCreate ();
+    RuntimeLoop& loop;
+    JSContextGroupRef group = nullptr;
     std::unordered_map<JSClassID, std::unique_ptr<Class>> classes;
     std::vector<JSContext*> contexts;
     std::unordered_set<Native*> natives;
@@ -210,6 +244,7 @@ static void collected (JSObjectRef o) {
 	return;
     }
     rt->collected.push_back (n);
+    rt->loop.finalizersPending.store (true);
 }
 static void drain (JSRuntime* rt) {
     std::vector<Native*> list;
@@ -222,6 +257,23 @@ static void drain (JSRuntime* rt) {
 	delete n;
     }
 }
+
+bool WallpaperEngine::Scripting::serviceJavaScriptCoreRuntime () {
+    auto* context = runtimeLoop.context.get ();
+    // The last group release can leave a VM alive temporarily. Dispatching any
+    // of its remaining callbacks still requires an initialized WTF main loop.
+    if (!context || !runtimeLoop.dispatchWhileActive) return false;
+
+    // Dispatch a bounded number of ready batches before returning to rendering.
+    for (int i = 0; i < 4 && g_main_context_iteration (context, FALSE); ++i) { }
+
+    // GC may queue native wrapper cleanup when a scene has no more JS calls.
+    if (runtimeLoop.finalizersPending.exchange (false)) {
+	for (auto* rt : runtimeLoop.runtimes) drain (rt);
+    }
+    return true;
+}
+
 static bool hasOrdinaryOwnProperty (Native* n, JSObjectRef obj, JSStringRef name, JSValueRef* ex) {
     // QuickJS checks ordinary own descriptors before its exotic hooks. Hide
     // those hooks during this query so JSC sees only the object's own storage.
@@ -403,7 +455,19 @@ static JSClassRef functionClass () {
     return cls;
 }
 extern "C" {
-JSRuntime* JS_NewRuntime () { return new JSRuntime; }
+JSRuntime* JS_NewRuntime () {
+    auto rt = std::make_unique<JSRuntime> (runtimeLoop);
+    if (!runtimeLoop.context) runtimeLoop.context.reset (g_main_context_new ());
+    runtimeLoop.runtimes.push_back (rt.get ());
+
+    // WTF fixes its run loop's GLib context on first use on each thread.
+    // Bind it before the first group and share that context across scenes.
+    g_main_context_push_thread_default (runtimeLoop.context.get ());
+    runtimeLoop.dispatchWhileActive = initializeMainRunLoop ();
+    rt->group = JSContextGroupCreate ();
+    g_main_context_pop_thread_default (runtimeLoop.context.get ());
+    return rt.release ();
+}
 JSContext* JS_NewContext (JSRuntime* rt) {
     auto* c = new JSContext;
     c->rt = rt;
@@ -490,6 +554,7 @@ void JS_FreeRuntime (JSRuntime* rt) {
     for (auto* c : rt->contexts) {
 	delete c;
     }
+    std::erase (rt->loop.runtimes, rt);
     delete rt;
 }
 JSValue JS_DupValue (JSContext*, JSValue v) {
