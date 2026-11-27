@@ -134,6 +134,7 @@ public:
 	    /** Scene geometry multisample count (1 = off) */
 	    uint32_t msaaSamples;
 	    PostProcessing postProcessing;
+	    bool planarReflections;
 	    SwitchPacing switchPacing;
 	    /** Final-output color grading (1.0 = neutral) */
 	    float contrast;
@@ -236,6 +237,7 @@ public:
 	    .textureResolution = TextureResolution::Full,
 	    .msaaSamples = 2,
 	    .postProcessing = PostProcessing::Enabled,
+	    .planarReflections = true,
 	    .switchPacing = SwitchPacing::Adaptive,
 	    .contrast = 1.0f,
 	    .saturation = 1.0f,

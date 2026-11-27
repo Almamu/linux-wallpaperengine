@@ -36,6 +36,7 @@ public:
     [[nodiscard]] const std::vector<RenderSortClass>& getRenderSortClasses () const;
     /** Draw opaque/cutout model depth into the scene shadow atlas. */
     void renderShadow (const glm::mat4& lightViewProjection);
+    void renderReflection (const glm::mat4& view, const glm::vec3& eye);
 
     [[nodiscard]] const Model3D& getModel () const;
     struct AnimationLayer {

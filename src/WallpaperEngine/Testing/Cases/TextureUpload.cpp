@@ -439,6 +439,24 @@ TEST_CASE ("reflection framebuffers allocate the native shortened mip chain", "[
     }
 }
 
+TEST_CASE ("the planar reflection target retains single-sample D16 storage", "[.][gl][texture][fbo][reflection]") {
+    TextureGLContext context;
+    CFBO target ("_rt_Reflection", TextureFormat_ARGB8888, TextureFlags_ClampUVs,
+	1.0f, 64, 36, 64, 36, true, false, 1, true);
+    glBindRenderbuffer (GL_RENDERBUFFER, target.getDepthbuffer ());
+    GLint format = GL_NONE;
+    glGetRenderbufferParameteriv (GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
+    CHECK (format == GL_DEPTH_COMPONENT16);
+    CHECK (target.getDrawSamples () == 1);
+    CHECK (target.getMipMapCount (0) == 1);
+    target.resize (31, 19);
+    glBindRenderbuffer (GL_RENDERBUFFER, target.getDepthbuffer ());
+    glGetRenderbufferParameteriv (GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
+    CHECK (format == GL_DEPTH_COMPONENT16);
+    CHECK (target.getApproximateGpuBytes () == 31u * 19u * 6u);
+    CHECK (glGetError () == GL_NO_ERROR);
+}
+
 TEST_CASE ("reflection mipmaps average copied color and resize without stale levels", "[.][gl][texture][fbo][reflection]") {
     TextureGLContext context;
     CFBO target ("_rt_MipMappedFrameBuffer", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0f, 64, 64, 64, 64);

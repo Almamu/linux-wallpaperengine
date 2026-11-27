@@ -82,6 +82,7 @@ ObjectData ObjectParser::parseBase (const JSON& it, const Project& project) {
     basedata.typedDependencies = parseTypedDependencies (it);
     basedata.initialConfiguration = it.dump ();
     basedata.disablePropagation = it.optional ("disablepropagation", false);
+    basedata.reflected = it.optional ("reflected", true);
 
     return basedata;
 }

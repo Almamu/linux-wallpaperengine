@@ -369,7 +369,8 @@ void CFBO::configureMipmaps (const uint32_t width, const uint32_t height) {
 size_t CFBO::calculateStorageBytes (uint32_t width, uint32_t height) const {
     const size_t levelZeroPixels = static_cast<size_t> (width) * height;
     const size_t texturePixelBytes = this->m_depthTexture ? 4 : colorPixelBytes (this->m_format);
-    size_t bytes = this->m_depthbuffer != GL_NONE ? static_cast<size_t> (width) * height * 4 : 0;
+    size_t bytes = this->m_depthbuffer != GL_NONE
+	? levelZeroPixels * (this->getDepthInternalFormat () == GL_DEPTH_COMPONENT16 ? 2 : 4) : 0;
     for (uint32_t level = 0; level < this->m_mipMapCount; ++level) {
 	bytes += static_cast<size_t> (width) * height * texturePixelBytes;
 	width = std::max (width / 2, 1u);
@@ -643,6 +644,11 @@ GLuint CFBO::getDepthbuffer () const {
 }
 
 uint32_t CFBO::getSamples () const { return this->m_samples; }
+
+GLenum CFBO::getDepthInternalFormat () const {
+    if (this->m_name == "_rt_Reflection" && this->m_samples == 1) return GL_DEPTH_COMPONENT16;
+    return this->m_reverseDepth || this->m_samples > 1 ? GL_DEPTH_COMPONENT32F : GL_DEPTH_COMPONENT24;
+}
 
 void CFBO::setMultisampleRendering (const bool enabled) {
     if (!enabled) this->resolveMultisample ();

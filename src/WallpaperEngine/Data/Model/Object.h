@@ -49,6 +49,8 @@ struct ObjectData {
     std::string initialConfiguration;
     /** Visible hit layers stop cursor events from reaching lower layers. */
     bool disablePropagation = false;
+    /** Whether this object participates in the legacy planar reflection view. */
+    bool reflected = true;
     /** Cameras retain a generic data object but never admit volumetric draws. */
     bool cameraLayer = false;
     /** Typed runtime bindings retain their authored dependency index. */

@@ -104,6 +104,11 @@ CPass::~CPass () {
 }
 
 void CPass::releaseShaders () {
+    if (this->m_hasLegacyReflectionBinding) {
+	this->m_renderable.getScene ().unregisterLegacyReflectionPass (this);
+	this->m_hasLegacyReflectionBinding = false;
+	this->m_usesLegacyReflectionProjection = false;
+    }
     // release the usage counts taken in setupTextureUniforms so videos that are no
     // longer referenced by any pass can stop decoding
     this->adjustTextureUsageCounts (false);
@@ -243,6 +248,7 @@ void CPass::setupRenderFramebuffer (const std::shared_ptr<const CFBO>& drawTo) c
 }
 
 void CPass::setupRenderTexture () {
+    if (this->m_usesLegacyReflectionProjection) this->m_legacyReflectionSamplers = 0;
     // Only explicit effect bindings participate in native swap commands.
     // Material texture references and the provider's physical registry stay fixed.
     if (m_effectFBOBindings) {
@@ -308,7 +314,7 @@ std::shared_ptr<const TextureProvider> CPass::resolveTexture0 () {
     auto chain = it->second;
 
     do {
-	texture0 = chain->texture;
+	texture0 = this->resolveChainEntry (*chain);
 
 	if (texture0 == nullptr) {
 	    if (this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
@@ -382,6 +388,14 @@ void CPass::bindTextureUnit (int index, const std::shared_ptr<const TextureProvi
     const auto bound = cookie && scene.getLightCookie () && scene.getLightCookie ()->isReady ()
 	? scene.getLightCookie () : texture;
     if (samplerActive) {
+	if (this->m_usesLegacyReflectionProjection && index >= 0 && index < 10) {
+	    const int bit = 1 << index;
+	    if (bound.get () == scene.getLegacyReflectionTarget ().get ()) {
+		this->m_legacyReflectionSamplers |= bit;
+	    } else {
+		this->m_legacyReflectionSamplers &= ~bit;
+	    }
+	}
 	scene.markTextureUsed (*bound);
 	glActiveTexture (GL_TEXTURE0 + index);
 	glBindTexture (bound->getTextureTarget (), bound->getTextureID (frame));
@@ -422,7 +436,7 @@ void CPass::bindTextureUnit (int index, const std::shared_ptr<const TextureProvi
 void CPass::bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const TextureProvider>& texture0) {
     for (auto [index, chain] : this->m_textures) {
 	// find the expected texture
-	auto expectedTexture = chain->texture;
+	auto expectedTexture = this->resolveChainEntry (*chain);
 
 	do {
 	    if (expectedTexture == nullptr) {
@@ -440,7 +454,7 @@ void CPass::bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const
 	    }
 
 	    chain = chain->next;
-	    expectedTexture = chain == nullptr ? nullptr : chain->texture;
+	    expectedTexture = chain == nullptr ? nullptr : this->resolveChainEntry (*chain);
 	} while (chain != nullptr);
 
 	if (expectedTexture == nullptr && this->m_previousInput != nullptr && this->m_previousInput->isReady ()) {
@@ -457,6 +471,22 @@ void CPass::bindTextureOverrides (uint32_t currentTexture, std::shared_ptr<const
 	    texture0 = expectedTexture;
 	}
     }
+}
+
+std::shared_ptr<const TextureProvider> CPass::resolveChainEntry (const TextureChainEntry& entry) const {
+    return entry.legacyReflection ? this->m_renderable.getScene ().getLegacyReflectionTarget () : entry.texture;
+}
+
+bool CPass::samplesLegacyReflection () const {
+    for (const auto& first : this->m_textures | std::views::values) {
+	for (auto entry = first.get (); entry != nullptr; entry = entry->next.get ()) {
+	    if (entry->legacyReflection) return true;
+	    if (entry->texture ? entry->texture->isReady ()
+		: (this->m_previousInput && this->m_previousInput->isReady ())
+		    || (this->m_input && this->m_input->isReady ())) break;
+	}
+    }
+    return false;
 }
 
 void CPass::refreshUniformBindings () {
@@ -999,10 +1029,13 @@ void CPass::setupShaders () {
 	overrideTextures.insert_or_assign (index, texture);
     }
 
-    this->m_shader = std::make_unique<Render::Shaders::Shader> (
-	this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos, passTextures,
-	overrideTextures, this->m_override.constants
-    );
+    const auto makeShader = [&] {
+	return std::make_unique<Render::Shaders::Shader> (
+	    this->m_renderable.getAssetLocator (), shaderName, this->m_combos, this->m_override.combos,
+	    passTextures, overrideTextures, this->m_override.constants
+	);
+    };
+    this->m_shader = makeShader ();
 
     // A shader default takes precedence over the image's provisional slot-zero
     // provider, but never over an authored or user-selected slot.
@@ -1039,13 +1072,33 @@ void CPass::setupShaders () {
 	}
     }
 
-    const auto [vertex, fragment]
-	= Shaders::GLSLContext::get ().toGlsl (this->m_shader->vertex (), this->m_shader->fragment ());
-
-    this->m_interfaceProgram = this->m_renderable.getScene ().getContext ().getShaderProgramCache ().interfaceProgram (
-	vertex, fragment, this->m_programSharingGroup
-    );
-    this->m_programID = this->m_interfaceProgram->id;
+    const auto& scene = this->m_renderable.getScene ();
+    const auto linkInterface = [&] {
+	const auto [vertex, fragment]
+	    = Shaders::GLSLContext::get ().toGlsl (this->m_shader->vertex (), this->m_shader->fragment ());
+	this->m_interfaceProgram = scene.getContext ().getShaderProgramCache ().interfaceProgram (
+	    vertex, fragment, this->m_programSharingGroup
+	);
+	this->m_programID = this->m_interfaceProgram->id;
+    };
+    linkInterface ();
+    if (scene.getCamera ().isYFlipped () && this->m_renderable.getObject ().is<Model3D> ()
+	&& scene.supportsLegacyReflection ()) {
+	const auto activeLegacySampler = [this] (const TextureMap& textures) {
+	    return std::ranges::any_of (textures, [this] (const auto& binding) {
+		const auto& [index, name] = binding;
+		return name == "_rt_Reflection"
+		    && glGetUniformLocation (this->m_programID, ("g_Texture" + std::to_string (index)).c_str ()) >= 0;
+	    });
+	};
+	if (activeLegacySampler (mergedTextures (m_pass.textures, m_override.textures))
+	    || activeLegacySampler (m_shader->getVertex ().getTextures ())
+	    || activeLegacySampler (m_shader->getFragment ().getTextures ())) {
+	    this->m_combos.insert_or_assign ("LWE_LEGACY_REFLECTION_UV", 1);
+	    this->m_shader = makeShader ();
+	    linkInterface ();
+	}
+    }
 #if !NDEBUG
     glObjectLabel (GL_PROGRAM, this->m_programID, -1, shaderName.c_str ());
 #endif
@@ -1271,12 +1324,31 @@ void CPass::setupTextureUniforms () {
 	// The returned provider takes ownership before the local prepared hold ends.
 	return scene.resolveTexture (name);
     };
+    // Flag the linked sampler's fallback chain without allocating storage.
+    // Authored and user bindings can mask it before any draw demands a target.
+    std::set<int> legacyReflectionSlots;
+    const auto deferLegacyReflection = [this, &legacyReflectionSlots] (const int index, const std::string& name) {
+	if (name != "_rt_Reflection" || !this->m_renderable.getObject ().is<Model3D> ()
+	    || !this->m_renderable.getScene ().supportsLegacyReflection ()) return false;
+	this->m_hasLegacyReflectionBinding = true;
+	if (glGetUniformLocation (this->m_programID, ("g_Texture" + std::to_string (index)).c_str ()) >= 0) {
+	    const auto previous = this->m_textures.find (index);
+	    this->m_textures[index] = std::make_shared<TextureChainEntry> (TextureChainEntry {
+		.texture = nullptr,
+		.next = previous != this->m_textures.end () ? previous->second : nullptr,
+		.legacyReflection = true,
+	    });
+	    legacyReflectionSlots.insert (index);
+	}
+	return true;
+    };
     // first set default textures extracted from the shader
     // vertex shader doesn't seem to have texture info
     // but for now just set first vertex's textures
     // and then try with fragment's and override any existing
     for (const auto& [index, textureName] : this->m_shader->getVertex ().getTextures ()) {
 	if (m_userTextureProviders.contains (index)) continue;
+	if (deferLegacyReflection (index, textureName)) continue;
 	// Metadata includes inactive branches; only reflected samplers acquire defaults.
 	if (glGetUniformLocation (this->m_programID, ("g_Texture" + std::to_string (index)).c_str ()) < 0) {
 	    continue;
@@ -1296,6 +1368,7 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : this->m_shader->getFragment ().getTextures ()) {
 	if (m_userTextureProviders.contains (index)) continue;
+	if (deferLegacyReflection (index, textureName)) continue;
 	if (glGetUniformLocation (this->m_programID, ("g_Texture" + std::to_string (index)).c_str ()) < 0) {
 	    continue;
 	}
@@ -1316,6 +1389,7 @@ void CPass::setupTextureUniforms () {
 
     for (const auto& [index, textureName] : mergedTextures (m_pass.textures, m_override.textures)) {
 	if (m_userTextureProviders.contains (index)) continue;
+	if (deferLegacyReflection (index, textureName)) continue;
 	try {
 	    auto texture = textureName.find ("_rt_") == 0 || textureName.find ("_alias_") == 0
 		? this->resolveFBO (textureName)
@@ -1347,6 +1421,11 @@ void CPass::setupTextureUniforms () {
 	});
 
 	this->m_textures[index] = chain;
+    }
+    if (this->m_hasLegacyReflectionBinding) {
+	this->m_renderable.getScene ().registerLegacyReflectionPass (this, !legacyReflectionSlots.empty ());
+	this->m_usesLegacyReflectionProjection = !legacyReflectionSlots.empty ()
+	    && this->m_renderable.getScene ().getCamera ().isYFlipped ();
     }
 
     // resolve the main texture
@@ -1398,6 +1477,13 @@ void CPass::setupTextureUniforms () {
 
 	namestream << "g_Texture" << textureIndex << "Resolution";
 
+	if (legacyReflectionSlots.contains (textureIndex)) {
+	    m_effectTextureResolutions[textureIndex] = glm::vec4 (1.0f);
+	    this->addUniform (namestream.str (), &m_effectTextureResolutions.at (textureIndex));
+	    m_textureTexels[textureIndex] = glm::vec4 (1.0f);
+	    this->addUniform ("g_Texture" + std::to_string (textureIndex) + "Texel", &m_textureTexels.at (textureIndex));
+	    continue;
+	}
 	texture = this->resolveTexture (expectedTexture->texture, textureIndex, texture);
 	if (!texture) continue;
 	if (m_effectFBOBindings && m_binds.contains (textureIndex) && m_binds.at (textureIndex) != "previous") {
@@ -1441,6 +1527,9 @@ void CPass::adjustTextureUsageCounts (const bool increment) const {
 void CPass::setupUniforms () {
     this->setupTextureUniforms ();
     this->addUniform ("lwe_SingleSampleCoverageHeight", &this->m_singleSampleCoverageHeight);
+    if (this->m_usesLegacyReflectionProjection) {
+	this->addUniform ("lwe_LegacyReflectionSamplers", &this->m_legacyReflectionSamplers);
+    }
 
     const auto& renderable = this->m_renderable;
     const auto& scene = this->m_renderable.getScene ();

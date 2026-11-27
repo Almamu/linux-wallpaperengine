@@ -41,6 +41,7 @@ public:
     void render ();
     /** Refresh initialized user-image materials, including currently hidden passes. */
     bool updateUserTextures ();
+    void updateFogShader ();
     /** Bind the current standard albedo provider/frame for an alpha-cutout shadow draw. */
     bool bindAlbedoTexture ();
     /** Cold authored dependencies needed when an initialized selection is cleared. */
@@ -91,6 +92,7 @@ public:
     void addUniform (const std::string& name, const glm::mat3* value);
     void addUniform (const std::string& name, const glm::mat4* value, int count = 1);
     void addUniform (const std::string& name, const glm::mat4x3* value, int count = 1);
+    [[nodiscard]] bool samplesLegacyReflection () const;
 
 private:
     bool m_reverseDepth = false;
@@ -99,7 +101,12 @@ private:
     struct TextureChainEntry {
 	std::shared_ptr<const TextureProvider> texture;
 	std::shared_ptr<TextureChainEntry> next;
+	bool legacyReflection = false;
     };
+    [[nodiscard]] std::shared_ptr<const TextureProvider> resolveChainEntry (const TextureChainEntry& entry) const;
+    bool m_hasLegacyReflectionBinding = false;
+    bool m_usesLegacyReflectionProjection = false;
+    int m_legacyReflectionSamplers = 0;
 
     /**
      * Pins (increment) or releases (decrement) every texture this pass references.
@@ -171,7 +178,6 @@ private:
     void setupShaders ();
     void releaseShaders ();
     void rebuildShaders ();
-    void updateFogShader ();
     [[nodiscard]] const std::string& userTextureValue (const std::string& entry) const;
     [[nodiscard]] TextureMap userTextureValues () const;
     [[nodiscard]] glm::ivec2 fogCombos () const;

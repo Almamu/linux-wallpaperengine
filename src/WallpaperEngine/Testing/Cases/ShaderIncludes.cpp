@@ -3,6 +3,7 @@
 
 #include <cctype>
 #include <cstdlib>
+#include <regex>
 
 #include "WallpaperEngine/Assets/AssetLocator.h"
 #include "WallpaperEngine/Data/Model/UserSetting.h"
@@ -224,6 +225,62 @@ void main() {
             CHECK_THAT (fragment, !Catch::Matchers::ContainsSubstring ("lwe_SingleSampleCoverageHeight"));
             CHECK ((fragment.find ("if(albedo.a<0.25)discard;") != std::string::npos) == (alphaTest == 1));
         }
+    }
+}
+
+TEST_CASE ("planar projection correction follows each linked texture slot", "[shader][planar-reflection]") {
+    const std::string vertex = R"(
+varying vec3 v_ScreenPos;
+void main() { gl_Position = vec4(0.0, 0.0, 0.5, 1.0); v_ScreenPos = gl_Position.xyw; }
+)";
+    const std::string fragment = R"(
+varying vec3 v_ScreenPos;
+uniform sampler2D g_Texture1;
+uniform sampler2D g_Texture2;
+uniform vec2 g_Offset;
+#define ReflectionSampler g_Texture1
+#define OtherSampler g_Texture2
+vec4 rawSample() {
+    vec2 ambiguousUV = g_Offset;
+    return texSample2D(g_Texture1, ambiguousUV);
+}
+void mutate(inout vec2 uv) { uv = vec2(0.2, 0.7); }
+void main() {
+    vec2 projectedUV = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+#ifdef HLSL_SM30
+    projectedUV += g_Offset;
+#endif
+    vec2 ambiguousUV = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+    vec2 reassignedUV = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+    reassignedUV = g_Offset;
+    vec2 escapedUV = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+    mutate(escapedUV);
+    gl_FragColor = texSample2D(ReflectionSampler, vec2(projectedUV.x, 1.0 - projectedUV.y) + g_Offset)
+        + texSample2DLod(OtherSampler, projectedUV, 0.0) + texSample2D(g_Texture1, g_Offset)
+        + texSample2D(g_Texture2, ambiguousUV) + texSample2D(g_Texture1, reassignedUV)
+        + texSample2D(g_Texture1, escapedUV) + rawSample();
+}
+)";
+    CHECK_THAT (compileLinked (vertex, fragment, {}).second,
+        !Catch::Matchers::ContainsSubstring ("lwe_LegacyProjectedUV"));
+    for (const bool wide : { false, true }) {
+        CAPTURE (wide);
+        const auto widen = [wide] (std::string source) {
+            if (!wide) return source;
+            source = std::regex_replace (source, std::regex ("vec3 v_ScreenPos"), "vec4 v_ScreenPos");
+            return std::regex_replace (source, std::regex ("gl_Position\\.xyw;"), "vec4(gl_Position.xyw, 0.0);");
+        };
+        const auto [v, f] = compileLinked (widen (vertex), widen (fragment), { { "LWE_LEGACY_REFLECTION_UV", 1 } });
+        auto preprocessed = GLSLContext::get ().preprocess (GLSLContext::UnitType_Fragment, f);
+        std::erase_if (preprocessed, [] (unsigned char character) { return std::isspace (character); });
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("int(1)).x,1.0-lwe_LegacyProjectedUV"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("int(1)).y)+g_Offset"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("int(2)),0.0"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("texture(g_Texture1,g_Offset)"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("texture(g_Texture2,ambiguousUV)"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("texture(g_Texture1,reassignedUV)"));
+        CHECK_THAT (preprocessed, Catch::Matchers::ContainsSubstring ("texture(g_Texture1,escapedUV)"));
+        CHECK_FALSE (GLSLContext::get ().toGlsl (v, f).second.empty ());
     }
 }
 

@@ -828,6 +828,85 @@ std::shared_ptr<CFBO> CScene::getMipMappedFramebuffer () {
     return this->m_mipMappedFramebuffer;
 }
 
+bool CScene::supportsLegacyReflection () const {
+    const auto& scene = this->getScene ();
+    return scene.camera.projection.isPerspective && (!scene.transparentSorting || scene.customSortOrder);
+}
+
+void CScene::registerLegacyReflectionPass (Objects::Effects::CPass* pass, const bool active) {
+    this->m_legacyReflectionShaderPasses.push_back (pass);
+    if (active) this->m_legacyReflectionPasses.push_back (pass);
+}
+
+void CScene::unregisterLegacyReflectionPass (Objects::Effects::CPass* pass) {
+    std::erase (this->m_legacyReflectionPasses, pass);
+    std::erase (this->m_legacyReflectionShaderPasses, pass);
+}
+
+void CScene::renderLegacyReflection (const glm::vec3& clearColor) {
+    if (this->m_legacyReflectionPasses.empty ()) {
+	this->m_legacyReflectionTarget.reset ();
+	return;
+    }
+    std::set<int> consumers;
+    for (const auto* pass : this->m_legacyReflectionPasses) {
+	if (pass->samplesLegacyReflection ()) consumers.insert (pass->getRenderable ().getId ());
+    }
+    if (consumers.empty ()) {
+	this->m_legacyReflectionTarget.reset ();
+	return;
+    }
+    if (!this->m_legacyReflectionTarget) {
+	const auto size = glm::max (glm::uvec2 (this->m_outputSize), glm::uvec2 (2));
+	this->m_legacyReflectionTarget = std::make_shared<CFBO> (
+	    "_rt_Reflection", TextureFormat_ARGB8888, TextureFlags_ClampUVs, 1.0f, size.x, size.y,
+	    size.x, size.y, true, false, 1, this->m_camera->usesReverseDepth ()
+	);
+    }
+
+    const auto& renderSettings = this->getContext ().getApp ().getContext ().settings.render;
+    if (!renderSettings.planarReflections || this->getScene ().clearEnabled->value->getBool ()) {
+	GLint previousDraw = GL_NONE;
+	GLboolean colorMask[4], depthMask;
+	glGetIntegerv (GL_DRAW_FRAMEBUFFER_BINDING, &previousDraw);
+	glGetBooleanv (GL_COLOR_WRITEMASK, colorMask);
+	glGetBooleanv (GL_DEPTH_WRITEMASK, &depthMask);
+	const GLboolean scissor = glIsEnabled (GL_SCISSOR_TEST);
+	glBindFramebuffer (GL_DRAW_FRAMEBUFFER, this->m_legacyReflectionTarget->getDrawFramebuffer ());
+	glDisable (GL_SCISSOR_TEST);
+	glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	const glm::vec4 color (clearColor, 1.0f);
+	glClearBufferfv (GL_COLOR, 0, &color.x);
+	if (renderSettings.planarReflections) {
+	    const float farDepth = this->m_legacyReflectionTarget->getFarDepth ();
+	    glDepthMask (GL_TRUE);
+	    glClearBufferfv (GL_DEPTH, 0, &farDepth);
+	    glDepthMask (depthMask);
+	}
+	glColorMask (colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+	if (scissor) glEnable (GL_SCISSOR_TEST);
+	glBindFramebuffer (GL_DRAW_FRAMEBUFFER, previousDraw);
+    }
+    if (!renderSettings.planarReflections) return;
+
+    // The model poses and shared textures are ready. Only the view and winding
+    // change during this traversal, and the requesting model cannot read from
+    // the attachment it would be writing to.
+    const glm::mat4 mirror = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
+    const glm::mat4 view = this->m_camera->getLookAt () * mirror;
+    glm::vec3 eye = this->m_camera->getEye ();
+    eye.y = -eye.y;
+    this->m_renderingLegacyReflection = true;
+    const Data::Utils::ScopeGuard restore ([this] { this->m_renderingLegacyReflection = false; });
+    for (auto* object : this->m_objectsByRenderOrder) {
+	const int id = object->getId ();
+	if (!object->getObject ().reflected || consumers.contains (id)
+	    || (renderSettings.debug.objectFilter && id != *renderSettings.debug.objectFilter)
+	    || std::ranges::find (renderSettings.debug.skipObjects, id) != renderSettings.debug.skipObjects.end ()) continue;
+	if (auto* model = dynamic_cast<Objects::CModel*> (object)) model->renderReflection (view, eye);
+    }
+}
+
 GLuint CScene::getWallpaperFramebuffer () const {
     return this->m_hdrBloom ? this->m_hdrBloom->output ().getFramebuffer () : CWallpaper::getWallpaperFramebuffer ();
 }
@@ -871,6 +950,10 @@ void CScene::updateOutputSize (const glm::ivec4& viewport) {
 	}
 	if (this->m_mipMappedFramebuffer != nullptr) {
 	    this->m_mipMappedFramebuffer->resize (sceneSize.x, sceneSize.y);
+	}
+	if (this->m_legacyReflectionTarget != nullptr) {
+	    const auto reflectionSize = glm::max (glm::uvec2 (size), glm::uvec2 (2));
+	    this->m_legacyReflectionTarget->resize (reflectionSize.x, reflectionSize.y);
 	}
 	if (!this->m_camera->isOrthogonal ()) {
 	    this->m_camera->setPerspectiveProjection (size.x, size.y, this->m_camera->isYFlipped ());
@@ -1015,6 +1098,9 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     glPopDebugGroup ();
 #endif
 
+    const glm::vec3 clearColor = this->getScene ().colors.clear->evaluateVec3 (this->getElapsedTime ());
+    this->renderLegacyReflection (clearColor);
+
     // bind the vertex array
     glBindVertexArray (this->m_vaoBuffer);
     // Keep ordinary scene geometry multisampled, including after intermediate
@@ -1032,7 +1118,6 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     // framebuffer's stale alpha, which every alpha-blended effect writeback then composites against
     glColorMask (true, true, true, true);
     // Scripts and other scenes can change this context state between frames.
-    const glm::vec3 clearColor = this->getScene ().colors.clear->evaluateVec3 (this->getElapsedTime ());
     glClearColor (clearColor.r, clearColor.g, clearColor.b, 1.0f);
     const GLbitfield colorClear = this->getScene ().clearEnabled->value->getBool () ? GL_COLOR_BUFFER_BIT : 0;
     glClearDepth (m_sceneFBO->getFarDepth ());
@@ -1305,8 +1390,11 @@ void CScene::registerFogScripts () {
 void CScene::updateFogState () {
     const auto& fog = this->getScene ().fog;
     const bool perspective = this->getScene ().camera.projection.isPerspective;
-    this->m_fog.distanceEnabled = perspective && fog.distance.enabled->value->getBool ();
-    this->m_fog.heightEnabled = perspective && fog.height.enabled->value->getBool ();
+    const bool distanceEnabled = perspective && fog.distance.enabled->value->getBool ();
+    const bool heightEnabled = perspective && fog.height.enabled->value->getBool ();
+    const bool flagsChanged = this->m_fog.distanceEnabled != distanceEnabled || this->m_fog.heightEnabled != heightEnabled;
+    this->m_fog.distanceEnabled = distanceEnabled;
+    this->m_fog.heightEnabled = heightEnabled;
     this->m_fog.distanceParams = calculateFogParams (
 	fog.distance.start->value->getFloat (), fog.distance.end->value->getFloat (),
 	fog.distance.startDensity->value->getFloat (), fog.distance.endDensity->value->getFloat ()
@@ -1315,6 +1403,12 @@ void CScene::updateFogState () {
 	fog.height.start->value->getFloat (), fog.height.end->value->getFloat (),
 	fog.height.startDensity->value->getFloat (), fog.height.endDensity->value->getFloat ()
     );
+    if (flagsChanged && !this->m_legacyReflectionShaderPasses.empty ()) {
+	// A rebuild can add or remove a live target sampler. Re-select before the
+	// reflection traversal, and copy because each rebuilt pass re-registers.
+	const auto passes = this->m_legacyReflectionShaderPasses;
+	for (auto* pass : passes) pass->updateFogShader ();
+    }
 }
 
 float CScene::calculateCameraFadeAlpha (const float elapsedTime, const float duration) {
@@ -2174,13 +2268,15 @@ bool CScene::hasAuthoredChildren (const int parentId) const {
 }
 
 std::shared_ptr<const CFBO> CScene::getActiveRenderTarget () const {
+    if (this->m_renderingLegacyReflection) return this->m_legacyReflectionTarget;
     return this->m_compositionRenderTarget != nullptr ? this->m_compositionRenderTarget : this->getFBO ();
 }
 
 std::shared_ptr<const CFBO>
 CScene::resolveRenderTarget (const std::shared_ptr<const CFBO>& requested) const {
-    if (requested == this->getFBO () && this->m_compositionRenderTarget != nullptr) {
-	return this->m_compositionRenderTarget;
+    if ((this->m_renderingLegacyReflection || this->m_compositionRenderTarget != nullptr)
+	&& requested == this->getFBO ()) {
+	return this->getActiveRenderTarget ();
     }
     return requested;
 }

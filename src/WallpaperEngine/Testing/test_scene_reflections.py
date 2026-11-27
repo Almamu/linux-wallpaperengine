@@ -290,15 +290,123 @@ void main() {
     assert not failed, f"{len(failed)} reflection regressions failed: {', '.join(failed)}"
 
 
+def check_legacy_planar(engine, root):
+    for name, options, active in (
+        ("enabled", ("--render-scale", "1.5"), True),
+        ("raw", (), True),
+        ("positive", (), True),
+        ("inverted", (), True),
+        ("mixed", (), True),
+        ("disabled", ("--reflection", "disabled"), True),
+        ("inactive", (), False),
+    ):
+        directory = root / name
+        uv_source = "v_UV" if name == "raw" else "projectedUV"
+        if name == "positive":
+            uv_source += " + vec2(0.0, 0.05)"
+        if name == "inverted":
+            uv_source = "vec2(projectedUV.x, 1.0 - projectedUV.y)"
+        fragment = """
+uniform sampler2D g_Texture1;
+uniform vec4 g_Texture1Resolution;
+uniform float g_Texture1MipMapInfo;
+varying vec3 v_ScreenPos;
+varying vec2 v_UV;
+void main() {
+    vec2 projectedUV = (v_ScreenPos.xy / v_ScreenPos.z) * 0.5 + 0.5;
+    gl_FragColor = g_Texture1MipMapInfo == 1.0 && all(equal(g_Texture1Resolution, vec4(320, 180, 320, 180)))
+        ? texSample2D(g_Texture1, UV_SOURCE) : vec4(1, 1, 0, 1);
+}
+""".replace("UV_SOURCE", uv_source)
+        textures = ["single", "_rt_Reflection"]
+        if name == "mixed":
+            fragment = "uniform sampler2D g_Texture2;\n" + fragment.replace("gl_FragColor =", "vec4 reflectionColor =")
+            fragment = fragment.rstrip().removesuffix("}") + """
+    gl_FragColor = vec4(reflectionColor.r, texSample2D(g_Texture2, projectedUV).g, reflectionColor.b, 1.0);
+}
+"""
+            textures.append("rows")
+        scene = prepare(directory, fragment if active else "void main() { gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); }")
+        if name == "mixed":
+            rows = bytes((0, 255, 0, 255) * 2 + (0, 0, 0, 255) * 2)
+            (directory / "materials/rows.tex").write_bytes(
+                b"TEXV0005\0TEXI0001\0" + struct.pack("<7I", 0, 3, 2, 2, 2, 2, 0)
+                + b"TEXB0001\0" + struct.pack("<5I", 1, 1, 2, 2, len(rows)) + rows)
+        (directory / "shaders/probe.vert").write_text("""
+attribute vec3 a_Position;
+varying vec2 v_UV;
+varying vec3 v_ScreenPos;
+void main() {
+    gl_Position = vec4(a_Position.xy, 0.5, 1.0);
+    v_UV = a_Position.xy * 0.5 + 0.5;
+    v_ScreenPos = gl_Position.xyw;
+}
+""")
+        for shader, color in (("red", "1, 0, 0"), ("green", "0, 1, 0")):
+            (directory / f"shaders/{shader}.vert").write_text(VERTEX)
+            (directory / f"shaders/{shader}.frag").write_text(f"void main() {{ gl_FragColor = vec4({color}, 1); }}")
+            marker = material(shader, ["single"])
+            marker["passes"][0]["cullmode"] = "normal"
+            write_json(directory / f"materials/{shader}.json", marker)
+        write_json(directory / "materials/probe.json", material("probe", textures))
+
+        for mesh, points in (
+            ("red", [(-0.25, 0.43), (0.25, 0.43), (0.0, 0.85)]),
+            ("green", [(0.52, 0.43), (1.0, 0.43), (0.76, 0.85)]),
+            ("probe", [(-1.0, -1.0), (3.0, -1.0), (-1.0, 3.0)]),
+        ):
+            vertices = b"".join(struct.pack("<12f", x, y, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0)
+                                for x, y in points)
+            indices = struct.pack("<3H", 0, 1, 2)
+            (directory / f"models/{mesh}.mdl").write_bytes(
+                b"MDLV0013\0" + struct.pack("<3I", 15, 1, 1) + f"materials/{mesh}.json\0".encode()
+                + struct.pack("<2I", 0, len(vertices)) + vertices + struct.pack("<I", len(indices)) + indices)
+        scene["camera"]["eye"] = "0 0 4"
+        scene["general"].update(orthogonalprojection=None, fov=45, clearcolor="0.25 0.125 0.5")
+        scene["objects"] = [
+            {"id": 1, "name": "reflected marker", "model": "models/red.mdl"},
+            {"id": 2, "name": "excluded marker", "model": "models/green.mdl", "reflected": False},
+            {"id": 3, "name": "reflection consumer", "model": "models/probe.mdl"},
+        ]
+        picture, stats = capture(engine, directory, scene, ("--msaa", "off", *options))
+        colors = list(picture.getdata())
+        assert ("_rt_Reflection@" in stats) == active, (name, stats)
+        if active:
+            assert "_rt_Reflection@320x180x" in stats, (name, stats)
+            if name != "mixed":
+                assert all(abs(a - b) <= 1 for a, b in zip(picture.getpixel((50, 70)), (64, 32, 128))), name
+        if name in ("enabled", "positive", "raw", "inverted", "mixed"):
+            red_rows = [index // picture.width for index, color in enumerate(colors) if color == (255, 0, 0)]
+            assert len(red_rows) > 100, (name, red_rows[:10])
+            if name in ("raw", "inverted"):
+                assert max(red_rows) < picture.height // 2, (name, max(red_rows))
+            elif name == "positive":
+                assert min(red_rows) >= 121, (name, min(red_rows))
+            else:
+                assert 112 <= min(red_rows) <= 114, (name, min(red_rows))
+            if name == "mixed":
+                assert picture.getpixel((50, 50))[1] == 255 and picture.getpixel((50, 130))[1] == 0
+            assert GREEN not in colors, name
+        elif name == "disabled":
+            assert (255, 0, 0) not in colors and GREEN not in colors, name
+        print(f"PASS legacy planar reflection {name}", flush=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("engine", type=Path)
     parser.add_argument("--artifacts", type=Path)
     parser.add_argument("--uniforms-only", action="store_true")
     parser.add_argument("--inactive-reflections-only", action="store_true")
+    parser.add_argument("--legacy-planar-only", action="store_true")
     args = parser.parse_args()
+    def run_checks(directory):
+        if args.legacy_planar_only:
+            check_legacy_planar(args.engine.resolve(), directory)
+        else:
+            run(args.engine.resolve(), directory, args.uniforms_only, args.inactive_reflections_only)
     if args.artifacts:
-        run(args.engine.resolve(), args.artifacts.resolve(), args.uniforms_only, args.inactive_reflections_only)
+        run_checks(args.artifacts.resolve())
     else:
         with tempfile.TemporaryDirectory(prefix="lwe-reflections-") as directory:
-            run(args.engine.resolve(), Path(directory), args.uniforms_only, args.inactive_reflections_only)
+            run_checks(Path(directory))

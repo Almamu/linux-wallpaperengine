@@ -11,6 +11,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -265,6 +266,81 @@ std::string maskShaderComments (const std::string& source) {
         else ++i;
     }
     return code;
+}
+
+void adaptLegacyReflectionProjection (std::string& source) {
+    if (source.find ("v_ScreenPos") == std::string::npos) return;
+    const size_t headerEnd = source.find ('\n', source.find ("#version"));
+    if (headerEnd == std::string::npos) return;
+    const std::string code = maskShaderComments (source);
+    static const std::regex projection (
+	R"(\bvec2\s+([A-Za-z_]\w*)\s*=\s*\(\s*v_ScreenPos\s*\.\s*xy\s*/\s*v_ScreenPos\s*\.\s*z\s*\)\s*\*\s*0\.5\s*\+\s*0\.5\s*;)"
+    );
+    std::map<std::string, std::set<size_t>> allowedReferences;
+    for (std::sregex_iterator it (code.begin (), code.end (), projection), end; it != end; ++it) {
+	allowedReferences.try_emplace ((*it)[1].str (), std::set<size_t> { static_cast<size_t> (it->position (1)) });
+    }
+    if (allowedReferences.empty ()) return;
+
+    static const std::regex lookup (
+	R"(\btexture(?:Lod)?\s*\(\s*g_Texture([0-9])\s*,)"
+    );
+    static const std::regex token (R"([A-Za-z_]\w*|\+\+|--|\S)");
+    static const std::set<std::string_view> constructors { "vec2", "vec3", "vec4", "float", "int", "uint", "bool" };
+    std::map<size_t, std::pair<std::string, std::string>> replacements;
+    for (std::sregex_iterator it (code.begin (), code.end (), lookup), end; it != end; ++it) {
+	const size_t argumentStart = it->position () + it->length ();
+	std::vector<bool> pureContext { true };
+	std::vector<std::pair<size_t, std::string>> references;
+	std::string previous;
+	bool mutates = false;
+	for (std::sregex_iterator part (code.begin () + argumentStart, code.end (), token); part != end; ++part) {
+	    const std::string value = part->str ();
+	    if ((value == ")" || value == ",") && pureContext.size () == 1) break;
+	    if (value == "=" || value == "++" || value == "--") mutates = true;
+	    if (value == "(" || value == "[") {
+		const bool call = value == "(" && !previous.empty ()
+		    && (std::isalpha (static_cast<unsigned char> (previous.front ())) || previous.front () == '_');
+		pureContext.push_back (pureContext.back () && (!call || constructors.contains (previous)));
+	    } else if (value == ")" || value == "]") {
+		if (pureContext.size () == 1) break;
+		pureContext.pop_back ();
+	    } else if (pureContext.back () && allowedReferences.contains (value)) {
+		references.emplace_back (argumentStart + part->position (), value);
+	    }
+	    previous = value;
+	}
+	if (mutates) continue;
+	for (const auto& [position, uv] : references) {
+	    allowedReferences.at (uv).insert (position);
+	    replacements.try_emplace (position, uv, (*it)[1].str ());
+	}
+    }
+    // Rewrite only an immutable local read by texture lookups. Any other
+    // reference may be a second declaration, a write, or an escaped value.
+    static const std::regex identifier (R"(\b[A-Za-z_]\w*\b)");
+    for (std::sregex_iterator it (code.begin (), code.end (), identifier), end; it != end; ++it) {
+	const auto refs = allowedReferences.find (it->str ());
+	if (refs != allowedReferences.end () && !refs->second.contains (it->position ())) allowedReferences.erase (refs);
+    }
+    bool changed = false;
+    for (const auto& [position, replacement] : replacements | std::views::reverse) {
+	const auto& [uv, slot] = replacement;
+	if (!allowedReferences.contains (uv)) continue;
+	source.replace (position, uv.size (),
+	    "lwe_LegacyProjectedUV(" + uv + ", v_ScreenPos.y, v_ScreenPos.z, " + slot + ")");
+	changed = true;
+    }
+    if (!changed) return;
+    // Restore the native projection basis only for a lookup of the legacy target.
+    // Offsets added after projection and raw texture coordinates keep their own units.
+    source.insert (headerEnd + 1, R"(uniform int lwe_LegacyReflectionSamplers;
+vec2 lwe_LegacyProjectedUV(vec2 uv, float clipY, float clipW, int slot) {
+    if ((lwe_LegacyReflectionSamplers & (1 << slot)) != 0)
+        uv.y -= clipY / clipW;
+    return uv;
+}
+)");
 }
 
 void flattenPackedAudioSpectrumIndices (std::string& source) {
@@ -2321,7 +2397,9 @@ const std::string& ShaderUnit::compile () {
     // A native constant macro may contain a trailing semicolon. Wrapping its
     // unexpanded use in a numeric constructor places that semicolon inside the
     // expression. Expand these shaders with their actual combo values first.
-    const bool expandMacros = hasStatementMacro (this->m_preprocessed);
+    const bool adaptReflectionProjection = m_type == GLSLContext::UnitType_Fragment
+	&& this->m_combos.contains ("LWE_LEGACY_REFLECTION_UV");
+    const bool expandMacros = adaptReflectionProjection || hasStatementMacro (this->m_preprocessed);
 
     const std::string& linkedSource = this->m_link != nullptr ? this->m_link->m_preprocessed : sNoLink;
     std::string compatKey;
@@ -2332,6 +2410,7 @@ const std::string& ShaderUnit::compile () {
     compatKey.push_back ('\x1F');
     compatKey.append (std::to_string (linkedSource.size ())).push_back (':');
     compatKey.append (linkedSource);
+    if (adaptReflectionProjection) compatKey.append ("\x1Dlegacy-reflection");
     if (expandMacros) {
 	compatKey.push_back ('\x1E');
 	compatKey.append (this->m_final);
@@ -2395,6 +2474,7 @@ const std::string& ShaderUnit::compile () {
 	    this->m_final.clear ();
 	    compatResult = GLSLContext::get ().preprocess (this->m_type, compatResult);
 	}
+	if (adaptReflectionProjection) adaptLegacyReflectionProjection (compatResult);
 	flattenPackedAudioSpectrumIndices (compatResult);
 	compatResult = this->applyNumericParameterCallCompatibility (std::move (compatResult));
 	compatResult = this->applyNumericInitializerCompatibility (std::move (compatResult));

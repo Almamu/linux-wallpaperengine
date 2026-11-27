@@ -612,6 +612,15 @@ void ApplicationContext::loadSettingsFromArgv () {
 		: value == "ultra" ? PostProcessing::Ultra : PostProcessing::Enabled;
 	});
 
+    performanceGroup.add_argument ("--reflection")
+	.help ("Legacy planar reflections for perspective models: enabled or disabled. Default: enabled.")
+	.choices ("enabled", "disabled")
+	.default_value (std::string ("enabled"))
+	.nargs (1)
+	.action ([this] (const std::string& value) -> void {
+	    this->settings.render.planarReflections = value == "enabled";
+	});
+
     performanceGroup.add_argument ("--switch-pacing")
 	.help ("How live switches load while the outgoing wallpaper keeps playing: adaptive (use each frame's idle "
 	       "time), fixed (2 ms per frame), or off (load in one go; the outgoing wallpaper freezes). Default: adaptive.")

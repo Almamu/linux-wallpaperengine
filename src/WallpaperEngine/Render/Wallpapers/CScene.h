@@ -113,6 +113,11 @@ public:
     [[nodiscard]] static std::optional<glm::vec2> prepareStaticAutoCollisionBounds (const Scene& scene);
     /** Previous completed scene, before bloom; allocated only when a material requests it. */
     [[nodiscard]] std::shared_ptr<CFBO> getMipMappedFramebuffer ();
+    [[nodiscard]] std::shared_ptr<const CFBO> getLegacyReflectionTarget () const { return m_legacyReflectionTarget; }
+    [[nodiscard]] bool supportsLegacyReflection () const;
+    [[nodiscard]] bool isRenderingLegacyReflection () const { return m_renderingLegacyReflection; }
+    void registerLegacyReflectionPass (Objects::Effects::CPass* pass, bool active);
+    void unregisterLegacyReflectionPass (Objects::Effects::CPass* pass);
     /** Keep the producer drawing hidden outputs sampled by material/shader inputs. */
     void retainRenderTarget (const std::shared_ptr<const CFBO>& target);
     [[nodiscard]] bool isRenderTargetRetained (const std::shared_ptr<const CFBO>& target) const {
@@ -362,6 +367,11 @@ private:
     glm::vec2 m_outputSize = { 1, 1 };
     std::optional<glm::ivec2> m_autoCollisionBoundsExtent;
     std::shared_ptr<CFBO> m_mipMappedFramebuffer;
+    std::shared_ptr<CFBO> m_legacyReflectionTarget;
+    std::vector<Objects::Effects::CPass*> m_legacyReflectionPasses;
+    std::vector<Objects::Effects::CPass*> m_legacyReflectionShaderPasses;
+    bool m_renderingLegacyReflection = false;
+    void renderLegacyReflection (const glm::vec3& clearColor);
     void updateOutputSize (const glm::ivec4& viewport);
     bool m_hdrEnabled = false;
     /** Selected once before object construction, independent of later output target resizes. */

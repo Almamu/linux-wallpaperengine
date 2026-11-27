@@ -19,6 +19,7 @@
 #include "WallpaperEngine/Data/Model/MdlMorph.h"
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Data/Parsers/MaterialParser.h"
+#include "WallpaperEngine/Data/Utils/ScopeGuard.h"
 #include "WallpaperEngine/Render/Shaders/Variables/ShaderVariable.h"
 #include "WallpaperEngine/Scripting/ScriptEngine.h"
 
@@ -986,7 +987,10 @@ void CModel::setupGeometryCallback (Effects::CPass* pass, size_t submeshIndex) {
 	    // Compensate only the renderer's output/orthographic Y conversions.
 	    // Authored negative scales can intentionally turn a skybox inside out.
 	    const auto& camera = this->getScene ().getCamera ();
-	    const bool windingReversed = camera.isYFlipped () != camera.isOrthogonal ();
+	    // The planar target uses native texture storage orientation. Its
+	    // only winding change is the world-space mirror, on either output.
+	    const bool windingReversed = this->getScene ().isRenderingLegacyReflection ()
+		|| camera.isYFlipped () != camera.isOrthogonal ();
 	    glFrontFace (windingReversed ? GL_CW : GL_CCW);
 	    const auto& buffers = m_submeshes[submeshIndex];
 	    const auto* shape = m_modelData ? &m_modelData->shapes[submeshIndex] : nullptr;
@@ -1326,7 +1330,7 @@ void CModel::prepareRender () {
 }
 
 void CModel::renderPasses (const std::optional<RenderSortClass> renderClass) {
-    if (!this->m_frameVisible || !m_mainViewVisible
+    if (!this->m_frameVisible || (!m_mainViewVisible && !this->getScene ().isRenderingLegacyReflection ())
         || (m_modelData && m_structureRevision != m_modelData->structureRevision)) return;
 
 #if !NDEBUG
@@ -1351,6 +1355,33 @@ void CModel::renderPasses (const std::optional<RenderSortClass> renderClass) {
 #if !NDEBUG
     glPopDebugGroup ();
 #endif /* DEBUG */
+}
+
+void CModel::renderReflection (const glm::mat4& view, const glm::vec3& eye) {
+    if (!this->m_frameVisible) return;
+    const auto& camera = this->getScene ().getCamera ();
+    glm::mat4 projection = camera.getRasterProjection ();
+    if (camera.isYFlipped ()) projection[1][1] *= -1.0f;
+    const glm::mat4 viewProjection = projection * view;
+    if (m_renderBounds && !modelAnimationVolumeIntersects (
+	*m_renderBounds, m_modelMatrix, viewProjection, camera.usesReverseDepth ()
+    )) return;
+
+    const auto ordinaryViewProjection = this->m_viewProjectionMatrix;
+    const auto ordinaryModelViewProjection = this->m_modelViewProjectionMatrix;
+    const auto ordinaryInverse = this->m_modelViewProjectionMatrixInverse;
+    const auto ordinaryEye = this->m_eyePosition;
+    const Data::Utils::ScopeGuard restore ([&] {
+	this->m_viewProjectionMatrix = ordinaryViewProjection;
+	this->m_modelViewProjectionMatrix = ordinaryModelViewProjection;
+	this->m_modelViewProjectionMatrixInverse = ordinaryInverse;
+	this->m_eyePosition = ordinaryEye;
+    });
+    this->m_viewProjectionMatrix = viewProjection;
+    this->m_modelViewProjectionMatrix = this->m_viewProjectionMatrix * this->m_modelMatrix;
+    this->m_modelViewProjectionMatrixInverse = glm::inverse (this->m_modelViewProjectionMatrix);
+    this->m_eyePosition = eye;
+    this->renderPasses (std::nullopt);
 }
 
 void CModel::renderShadow (const glm::mat4& lightViewProjection) {
