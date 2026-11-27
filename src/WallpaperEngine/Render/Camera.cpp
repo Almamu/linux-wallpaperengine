@@ -20,14 +20,16 @@ Camera::Camera (Wallpapers::CScene& scene, const SceneData::Camera& camera) :
 	.zoom = camera.projection.zoom->evaluateFloat (0.0f),
     };
     this->m_transform = this->m_defaultTransform;
+    this->m_renderEye = this->m_transform.eye;
+    this->m_renderCenter = this->m_transform.center;
     this->m_lookat = glm::lookAt (this->getEye (), this->getCenter (), this->getUp ());
 }
 
 Camera::~Camera () = default;
 
-const glm::vec3& Camera::getCenter () const { return this->m_transform.center; }
+const glm::vec3& Camera::getCenter () const { return this->m_renderCenter; }
 
-const glm::vec3& Camera::getEye () const { return this->m_transform.eye; }
+const glm::vec3& Camera::getEye () const { return this->m_renderEye; }
 
 const glm::vec3& Camera::getUp () const { return this->m_transform.up; }
 
@@ -64,6 +66,8 @@ float Camera::getFarZ () const { return this->m_camera.projection.farz->value->g
 float Camera::getZoom () const { return this->m_transform.zoom; }
 
 CameraTransform Camera::getDefaultTransform () const { return this->m_defaultTransform; }
+
+const CameraTransform& Camera::getUnshakenTransform () const { return this->m_transform; }
 
 void Camera::setDefaultTransform (const CameraTransform& transform, const bool apply) {
     this->m_defaultTransform = transform;
@@ -194,7 +198,28 @@ void Camera::setViewportScale (const glm::vec2 scale) {
 const glm::vec2& Camera::getViewportScale () const { return this->m_viewportScale; }
 
 void Camera::updateMatrices () {
-    this->m_lookat = glm::lookAt (this->getEye (), this->getCenter (), this->getUp ());
+    glm::vec3 shakeOffset (0.0f);
+    const auto& shake = this->m_camera.shake;
+    if (shake.enabled->value->getBool ()) {
+	const double elapsedTime = this->m_scene.getElapsedTime ();
+	const float speed = shake.speed->evaluateFloat (elapsedTime);
+	const float phase = this->m_scene.getTime () * (speed * speed);
+	float amplitude = 0.1f * shake.amplitude->evaluateFloat (elapsedTime);
+	shakeOffset = glm::vec3 (std::cos (phase), std::sin (1.333f * phase), std::sin (phase));
+	if (this->m_isOrthogonal) {
+	    shakeOffset.z = 0.0f;
+	    amplitude *= 0.1f * this->m_height;
+	}
+	const float exponent = std::pow (shake.roughness->evaluateFloat (elapsedTime), 3.0f);
+	if (exponent > 0.001f && exponent != 1.0f) {
+	    const float length = glm::length (shakeOffset);
+	    shakeOffset = (shakeOffset / length) * std::pow (length, exponent);
+	}
+	shakeOffset *= amplitude;
+    }
+    this->m_renderEye = this->m_transform.eye + shakeOffset;
+    this->m_renderCenter = this->m_transform.center + shakeOffset;
+    this->m_lookat = glm::lookAt (this->m_transform.eye, this->m_transform.center, this->m_transform.up);
 
     if (this->m_isOrthogonal) {
 	if (this->m_hasRuntimeTransform) {
@@ -205,6 +230,8 @@ void Camera::updateMatrices () {
 	    const glm::mat4 basis = glm::scale (glm::mat4 (1.0f), glm::vec3 (1.0f, -1.0f, 1.0f));
 	    this->m_lookat = basis * this->m_lookat * basis;
 	}
+	// Authored shake is in the same Y-reflected basis as other 2D camera motion.
+	this->m_lookat = glm::translate (this->m_lookat, glm::vec3 (-shakeOffset.x, shakeOffset.y, 0.0f));
 	const float nearz = this->m_camera.projection.nearz->value->getFloat ();
 	const float farz = this->m_camera.projection.farz->value->getFloat ();
 	const float depth = glm::max (glm::abs (nearz), glm::abs (farz));
@@ -215,12 +242,13 @@ void Camera::updateMatrices () {
 	if (!this->m_hasRuntimeTransform) {
 	    // The top-level 2D camera is only the editor viewport. Cancel its
 	    // lookAt translation as before; authored camera layers and paths are real.
-	    this->m_projection = glm::translate (this->m_projection, this->getEye ());
+	    this->m_projection = glm::translate (this->m_projection, this->m_transform.eye);
 	}
 	m_rasterProjection = m_projection;
 	return;
     }
 
+    this->m_lookat = glm::translate (this->m_lookat, -shakeOffset);
     const float nearz = glm::max (this->getNearZ (), 0.0001f);
     const float farz = this->getFarZ ();
     this->m_projection = glm::perspective (

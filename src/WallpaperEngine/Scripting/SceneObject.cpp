@@ -338,14 +338,14 @@ static JSValue make_script_vec3 (JSContext* ctx, ScriptEngine& engine, const glm
 
 JSValue scene_get_camera_transforms (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     auto* container = get_opaque (this_val);
-    const auto& camera = container->getScene ().getCamera ();
+    const auto& transform = container->getScene ().getCamera ().getUnshakenTransform ();
 
     auto& engine = container->getEngine ();
     JSValue result = JS_NewObject (ctx);
-    JS_SetPropertyStr (ctx, result, "eye", make_script_vec3 (ctx, engine, camera.getEye ()));
-    JS_SetPropertyStr (ctx, result, "center", make_script_vec3 (ctx, engine, camera.getCenter ()));
-    JS_SetPropertyStr (ctx, result, "up", make_script_vec3 (ctx, engine, camera.getUp ()));
-    JS_SetPropertyStr (ctx, result, "zoom", JS_NewFloat64 (ctx, camera.getZoom ()));
+    JS_SetPropertyStr (ctx, result, "eye", make_script_vec3 (ctx, engine, transform.eye));
+    JS_SetPropertyStr (ctx, result, "center", make_script_vec3 (ctx, engine, transform.center));
+    JS_SetPropertyStr (ctx, result, "up", make_script_vec3 (ctx, engine, transform.up));
+    JS_SetPropertyStr (ctx, result, "zoom", JS_NewFloat64 (ctx, transform.zoom));
     return result;
 }
 
@@ -448,15 +448,7 @@ JSValue scene_set_camera_transforms (JSContext* ctx, JSValueConst this_val, int 
 
     auto* container = get_opaque (this_val);
     auto& scene = container->getScene ();
-    const auto& camera = scene.getCamera ();
-
-    CameraTransform transform = {
-	.center = camera.getCenter (),
-	.eye = camera.getEye (),
-	.up = camera.getUp (),
-	.fov = camera.getFov (),
-	.zoom = camera.getZoom (),
-    };
+    CameraTransform transform = scene.getCamera ().getUnshakenTransform ();
 
     const auto readInto = [ctx, &argv] (const char* name, glm::vec3& target) {
 	JSValue value = JS_GetPropertyStr (ctx, argv[0], name);

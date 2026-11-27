@@ -46,6 +46,8 @@ public:
     [[nodiscard]] float getFarZ () const;
     [[nodiscard]] float getZoom () const;
     [[nodiscard]] CameraTransform getDefaultTransform () const;
+    /** SceneScript exchanges the sampled pose before render-only shake. */
+    [[nodiscard]] const CameraTransform& getUnshakenTransform () const;
     /** Replace the resting pose used when no camera path is active. */
     void setDefaultTransform (const CameraTransform& transform, bool apply);
     /** Convert a camera layer's world matrix into the eye/forward/up contract. */
@@ -78,6 +80,8 @@ private:
     glm::mat4 m_lookat = {};
     CameraTransform m_defaultTransform = {};
     CameraTransform m_transform = {};
+    glm::vec3 m_renderEye = {};
+    glm::vec3 m_renderCenter = {};
     /** The editor viewport is canceled out in legacy 2D scenes. A runtime camera
      *  layer or path instead moves the orthographic view and must not be canceled. */
     bool m_hasRuntimeTransform = false;
