@@ -6416,3 +6416,46 @@ TEST_CASE ("static AUTO bounds choose and recenter the first image before framin
         CHECK_FALSE (CScene::prepareStaticAutoCollisionBounds (*scripted->as<Scene> ()).has_value ());
     }
 }
+
+TEST_CASE ("sphere emitter distances distinguish null from omission", "[particle][sphere-distance]") {
+    auto filesystem = std::make_unique<WallpaperEngine::FileSystem::Container> ();
+    filesystem->getVFS ().add ("particles/distances.json", R"({
+        "emitter":[
+            {"name":"sphererandom","distancemin":null,"distancemax":null,"directions":null},
+            {"name":"sphererandom"},
+            {"name":"sphererandom","distancemin":0.25,"distancemax":4.25},
+            {"name":"sphererandom","distancemax":0},
+            {"name":"sphererandom","distancemax":[2,4,8]},
+            {"name":"boxrandom"},
+            {"name":"boxrandom","distancemax":null},
+            {"name":"layerimage"}
+        ]
+    })");
+    WallpaperEngine::Data::Model::Project project {};
+    project.assetLocator = std::make_unique<WallpaperEngine::Assets::AssetLocator> (std::move (filesystem));
+    const auto object = WallpaperEngine::Data::Parsers::ObjectParser::parse (
+        WallpaperEngine::Data::JSON::JSON::parse (R"({"id":1,"particle":"particles/distances.json"})"), project
+    );
+    const auto* particle = object->as<WallpaperEngine::Data::Model::Particle> ();
+    REQUIRE (particle != nullptr);
+    const auto& emitters = particle->emitters;
+    REQUIRE (emitters.size () == 8);
+    CHECK (emitters[0].distanceMin == glm::vec3 (0.0f));
+    CHECK (emitters[0].distanceMax == glm::vec3 (0.0f));
+    CHECK (emitters[0].directions == glm::vec3 (1.0f, 1.0f, 0.0f));
+    CHECK_FALSE (emitters[0].defaultDistanceMax);
+    CHECK (emitters[1].distanceMax.x == 256.0f);
+    CHECK (emitters[1].defaultDistanceMax);
+    CHECK (emitters[2].distanceMin == glm::vec3 (0.25f));
+    CHECK (emitters[2].distanceMax == glm::vec3 (4.25f));
+    CHECK_FALSE (emitters[2].defaultDistanceMax);
+    CHECK (emitters[3].distanceMax == glm::vec3 (0.0f));
+    CHECK_FALSE (emitters[3].defaultDistanceMax);
+    CHECK (emitters[4].distanceMax == glm::vec3 (2.0f, 4.0f, 8.0f));
+    CHECK (emitters[5].distanceMax.x == 256.0f);
+    CHECK (emitters[5].defaultDistanceMax);
+    CHECK (emitters[6].distanceMax == glm::vec3 (0.0f));
+    CHECK_FALSE (emitters[6].defaultDistanceMax);
+    CHECK (emitters[7].distanceMax.x == 256.0f);
+    CHECK_FALSE (emitters[7].defaultDistanceMax);
+}

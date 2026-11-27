@@ -958,14 +958,18 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
 	name = nameIt->get<std::string> ();
     }
 
+    const bool sphere = name == "sphererandom";
+
     // Helper lambda to parse vec3 fields that might be strings, arrays, single numbers, or missing
-    auto parseVec3 = [&] (const char* fieldName, const glm::vec3& defaultValue) -> glm::vec3 {
+    auto parseVec3 = [&] (
+	const char* fieldName, const glm::vec3& defaultValue, const bool nullIsZero = false
+    ) -> glm::vec3 {
 	WallpaperEngine::Data::Utils::JsonTelemetry::recordAccess (fieldName);
 	const auto fieldIt = it.find (fieldName);
 	if (fieldIt == it.end ()) {
 	    return defaultValue;
 	}
-	if (name == "boxrandom" && fieldIt->is_null ()) {
+	if ((name == "boxrandom" || nullIsZero) && fieldIt->is_null ()) {
 	    return glm::vec3 (0.0f);
 	}
 	if (fieldIt->is_string ()) {
@@ -1023,7 +1027,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
 	    .name = name,
 	    .directions = parseVec3 ("directions", glm::vec3 (1.0f, 1.0f, 0.0f)),
 	    .distanceMin = parseVec3 ("distancemin", glm::vec3 (0.0f, 0.0f, 0.0f)),
-	    .distanceMax = parseVec3 ("distancemax", glm::vec3 (256.0f, 256.0f, 0.0f)),
+	    .distanceMax = parseVec3 ("distancemax", glm::vec3 (256.0f, 256.0f, 0.0f), sphere),
 	    .origin = parseVec3 ("origin", glm::vec3 (0.0f)),
 	    .sign = parseIVec3 ("sign", glm::ivec3 (0)),
 	    .instantaneous = it.optional ("instantaneous", 0u),
@@ -1046,7 +1050,7 @@ ParticleEmitter ObjectParser::parseParticleEmitter (const JSON& it) {
 	    .maxPeriodicDuration = it.optional ("maxperiodicduration", 3.0f),
 	    .maxToEmitPerPeriod = it.optional ("maxtoemitperperiod", 0u),
 	    .defaultDirections = name == "boxrandom" && !it.contains ("directions"),
-	    .defaultDistanceMax = name == "boxrandom" && !it.contains ("distancemax"),
+	    .defaultDistanceMax = (name == "boxrandom" || sphere) && !it.contains ("distancemax"),
 	    .offsetMin = parseOffset ("offsetmin"),
 	    .offsetMax = parseOffset ("offsetmax"),
 	};

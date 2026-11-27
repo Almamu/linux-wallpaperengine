@@ -1888,6 +1888,9 @@ EmitterFunc CParticle::createLayerImageEmitter (const ParticleEmitter& emitter, 
 
 EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     includeControlPoint (emitter.controlPoint);
+    // Only an omitted radius uses the projection-specific default.
+    const float maxRadius = emitter.defaultDistanceMax && getScene ().getScene ().camera.projection.isPerspective
+	? 1.0f : emitter.distanceMax.x;
     DynamicValue* countOverride = getInstanceOverride ().count->value.get ();
     DynamicValue* speedOverride = getInstanceOverride ().speed->value.get ();
 
@@ -1900,7 +1903,7 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
     bool limitOnePerFrame = (emitter.flags & 2) != 0;
     bool randomPeriodicEmission = (emitter.flags & 4) != 0;
 
-    return [this, emitter, transformedEmitterOrigin, controlPointIndex, countOverride, speedOverride, limitOnePerFrame,
+    return [this, emitter, maxRadius, transformedEmitterOrigin, controlPointIndex, countOverride, speedOverride, limitOnePerFrame,
 	    randomPeriodicEmission, emissionTimer = 0.0f, delayTimer = emitter.delay, durationTimer = 0.0f,
 	    periodicTimer = 0.0f, emittedThisPeriod = 0u,
 	    remaining
@@ -2007,7 +2010,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 		// 2D disk distribution with random Z offset
 		float angle = WallpaperEngine::Maths::randomFloat (m_rng, 0.0f, glm::two_pi<float> ());
 		float minRadius = emitter.distanceMin.x;
-		float maxRadius = emitter.distanceMax.x;
 
 		// Use sqrt for uniform area distribution in annulus
 		float minRadiusSq = minRadius * minRadius;
@@ -2030,7 +2032,6 @@ EmitterFunc CParticle::createSphereEmitter (const ParticleEmitter& emitter) {
 
 		// Use cubic root for uniform volume distribution
 		float minRadius = emitter.distanceMin.x;
-		float maxRadius = emitter.distanceMax.x;
 		float minRadiusCubed = minRadius * minRadius * minRadius;
 		float maxRadiusCubed = maxRadius * maxRadius * maxRadius;
 		float radius = std::cbrt (WallpaperEngine::Maths::randomFloat (m_rng, minRadiusCubed, maxRadiusCubed));
