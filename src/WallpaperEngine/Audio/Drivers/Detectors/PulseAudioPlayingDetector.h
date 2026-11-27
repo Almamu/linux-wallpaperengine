@@ -21,8 +21,8 @@ public:
     [[nodiscard]] const std::vector<std::string>& getAutomuteIgnore () const;
 
 private:
+    void disconnect ();
     pa_mainloop* m_mainloop = nullptr;
-    pa_mainloop_api* m_mainloopApi = nullptr;
     pa_context* m_context = nullptr;
 };
 } // namespace WallpaperEngine::Audio::Drivers::Detectors

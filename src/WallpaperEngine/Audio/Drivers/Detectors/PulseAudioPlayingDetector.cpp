@@ -2,6 +2,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 
 #include <algorithm>
+#include <chrono>
 #include <string>
 #include <unistd.h>
 
@@ -65,9 +66,9 @@ void defaultSinkInfoCallback (pa_context* context, const pa_server_info* info, v
 	return;
     }
 
-    pa_operation* op = pa_context_get_sink_input_info_list (context, sinkInputInfoCallback, userdata);
-
-    pa_operation_unref (op);
+    if (auto* op = pa_context_get_sink_input_info_list (context, sinkInputInfoCallback, userdata)) {
+	pa_operation_unref (op);
+    }
 }
 
 PulseAudioPlayingDetector::PulseAudioPlayingDetector (
@@ -75,25 +76,41 @@ PulseAudioPlayingDetector::PulseAudioPlayingDetector (
     const Render::Drivers::Detectors::FullScreenDetector& fullscreenDetector
 ) : AudioPlayingDetector (appContext, fullscreenDetector) {
     this->m_mainloop = pa_mainloop_new ();
-    this->m_mainloopApi = pa_mainloop_get_api (this->m_mainloop);
-    this->m_context = pa_context_new (this->m_mainloopApi, "wallpaperengine");
-
-    pa_context_connect (this->m_context, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
-
-    // lock until pulseaudio allows connection
-    while (pa_context_get_state (this->m_context) != PA_CONTEXT_READY) {
-	pa_mainloop_iterate (this->m_mainloop, 1, nullptr);
+    if (this->m_mainloop) {
+	this->m_context = pa_context_new (pa_mainloop_get_api (this->m_mainloop), "wallpaperengine");
     }
+    if (this->m_context && pa_context_connect (this->m_context, nullptr, PA_CONTEXT_NOFLAGS, nullptr) >= 0) {
+	using Clock = std::chrono::steady_clock;
+	const auto deadline = Clock::now () + std::chrono::seconds (1);
+	while (true) {
+	    const auto state = pa_context_get_state (this->m_context);
+	    if (state == PA_CONTEXT_READY) {
+		return;
+	    }
+	    const auto remaining = std::chrono::duration_cast<std::chrono::microseconds> (deadline - Clock::now ());
+	    if (!PA_CONTEXT_IS_GOOD (state) || remaining.count () <= 0
+		|| pa_mainloop_prepare (this->m_mainloop, static_cast<int> (remaining.count ())) < 0
+		|| pa_mainloop_poll (this->m_mainloop) < 0 || pa_mainloop_dispatch (this->m_mainloop) < 0) {
+		break;
+	    }
+	}
+    }
+    this->disconnect ();
+    sLog.error ("PulseAudio connection unavailable. Audio playback detection is disabled");
 }
 
-PulseAudioPlayingDetector::~PulseAudioPlayingDetector () {
+PulseAudioPlayingDetector::~PulseAudioPlayingDetector () { this->disconnect (); }
+
+void PulseAudioPlayingDetector::disconnect () {
     if (this->m_context) {
 	pa_context_disconnect (this->m_context);
 	pa_context_unref (this->m_context);
+	this->m_context = nullptr;
     }
 
     if (this->m_mainloop) {
 	pa_mainloop_free (this->m_mainloop);
+	this->m_mainloop = nullptr;
     }
 }
 
@@ -107,13 +124,22 @@ void PulseAudioPlayingDetector::update () {
 
     // reset playing state
     this->setIsPlaying (false);
+    if (!this->m_context || pa_context_get_state (this->m_context) != PA_CONTEXT_READY) {
+	return;
+    }
 
     // start discovery of sinks
     pa_operation* op = pa_context_get_server_info (this->m_context, defaultSinkInfoCallback, this);
+    if (!op) {
+	return;
+    }
 
-    // wait until all the operations are done
     while (pa_operation_get_state (op) == PA_OPERATION_RUNNING) {
-	pa_mainloop_iterate (this->m_mainloop, 1, nullptr);
+	if (pa_context_get_state (this->m_context) != PA_CONTEXT_READY
+	    || pa_mainloop_iterate (this->m_mainloop, 1, nullptr) < 0) {
+	    pa_operation_cancel (op);
+	    break;
+	}
     }
 
     pa_operation_unref (op);
