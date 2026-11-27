@@ -23,6 +23,33 @@ void main() {
 
 @unittest.skipUnless(os.environ.get('LWE_TEST_BINARY'), 'Set LWE_TEST_BINARY for graphics tests')
 class ImageQuadUV(unittest.TestCase):
+    def test_scene_quad_interpolates_across_the_authored_diagonal(self):
+        with tempfile.TemporaryDirectory(prefix='lwe-image-diagonal-') as directory:
+            root = Path(directory)
+            for folder in ('models', 'materials', 'shaders'):
+                (root / folder).mkdir()
+            pixels = bytes([255]) * (16 * 16 * 4)
+            (root / 'materials/source.tex').write_bytes(
+                b'TEXV0005\0TEXI0001\0' + struct.pack('<7I', 0, 2, 16, 16, 16, 16, 0)
+                + b'TEXB0001\0' + struct.pack('<5I', 1, 1, 16, 16, len(pixels)) + pixels)
+            (root / 'models/probe.json').write_text(json.dumps({'material': 'materials/probe.json'}))
+            (root / 'materials/probe.json').write_text(json.dumps({'passes': [{
+                'shader': 'probe', 'textures': ['source'], 'blending': 'normal', 'cullmode': 'nocull',
+                'depthtest': 'disabled', 'depthwrite': 'disabled'}]}))
+            (root / 'shaders/probe.vert').write_text(PROBE_VERTEX.replace(
+                'v_TexCoord = a_TexCoord;', 'v_TexCoord = vec2(a_TexCoord.x * a_TexCoord.y, 0.0);'))
+            (root / 'shaders/probe.frag').write_text(
+                'varying vec2 v_TexCoord; void main() { gl_FragColor = vec4(v_TexCoord.x, 0.0, 0.0, 1.0); }')
+            scene = {'camera': {'eye': '160 90 100', 'center': '160 90 0', 'up': '0 1 0'},
+                     'general': {'orthogonalprojection': {'width': 320, 'height': 180},
+                                 'clearcolor': '0 0 0', 'bloom': False, 'camerafade': False},
+                     'objects': [{'id': 1, 'name': 'Quad', 'image': 'models/probe.json',
+                                  'origin': '160 90 0', 'size': '64 64'}]}
+            frame, _ = render_scene(self, root, scene)
+            # The center interpolates between the (0,1) and (1,0) vertices.
+            self.assertLess(frame.getpixel((160, 90))[0], 8)
+            self.assertGreater(frame.crop((128, 58, 192, 122)).getextrema()[0][1], 235)
+
     def test_last_visible_effect_samples_the_scene_quad_after_each_toggle(self):
         from PIL import ImageChops
 

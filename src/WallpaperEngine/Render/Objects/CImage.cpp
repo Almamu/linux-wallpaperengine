@@ -55,6 +55,20 @@ std::array<GLfloat, 12> imageQuadTexcoords (float left, float bottom, float righ
     return { left, top, left, bottom, right, top, right, top, left, bottom, right, bottom };
 }
 
+// The scene image quad shares the (0,1)-(1,0) UV edge. Copy and effect-target
+// quads use the other diagonal. Select the same corners for positions and UVs.
+template <size_t N>
+std::array<GLfloat, N> sceneQuadTriangles (const std::array<GLfloat, N>& vertices) {
+    constexpr size_t stride = N / 6;
+    static_assert (N == 12 || N == 18);
+    constexpr std::array<size_t, 6> corners = { 0, 1, 5, 0, 5, 2 };
+    std::array<GLfloat, N> result;
+    for (size_t i = 0; i < corners.size (); ++i) {
+        std::copy_n (vertices.data () + corners[i] * stride, stride, result.data () + i * stride);
+    }
+    return result;
+}
+
 glm::vec2 rotateVec2 (const glm::vec2& value, float angle) {
     const float cosAngle = std::cos (angle);
     const float sinAngle = std::sin (angle);
@@ -2901,20 +2915,24 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
 	cached = values;
     };
 
-    uploadIfChanged (this->m_sceneSpacePosition, sceneSpacePosition, this->m_cachedSceneSpacePosition);
+    const bool sceneQuad = m_finalPassDrawsToScene && m_texcoordScene != GL_NONE
+        && m_finalPassRouting->sceneTexcoord == m_texcoordScene;
+    uploadIfChanged (m_sceneSpacePosition, sceneQuad ? sceneQuadTriangles (sceneSpacePosition) : sceneSpacePosition,
+        m_cachedSceneSpacePosition);
     const glm::vec2 half = size * 0.5f;
     const std::array<GLfloat, 18> effectSpacePosition = {
 	-half.x, -half.y, 0, -half.x, half.y, 0, half.x, -half.y, 0,
 	half.x, -half.y, 0, -half.x, half.y, 0, half.x, half.y, 0
     };
-    uploadIfChanged (this->m_effectSpacePosition, effectSpacePosition, this->m_cachedEffectSpacePosition);
+    uploadIfChanged (m_effectSpacePosition, sceneQuad ? sceneQuadTriangles (effectSpacePosition) : effectSpacePosition,
+        m_cachedEffectSpacePosition);
     uploadIfChanged (this->m_copySpacePosition, copySpacePosition, this->m_cachedCopySpacePosition);
     uploadIfChanged (this->m_texcoordCopy, texcoordCopy, this->m_cachedTexcoordCopy);
-    if (this->m_finalPassDrawsToScene && this->m_finalPassRouting->sceneTexcoord == this->m_texcoordScene) {
+    if (sceneQuad) {
 	const auto& inset = this->m_sceneTexcoordInset;
 	const glm::vec2 upper = this->m_finalPassRouting->samplesSourceTexture ? glm::vec2 (width, height) : glm::vec2 (1.0f);
 	const auto texcoordScene = imageQuadTexcoords (inset.x, inset.y, upper.x - inset.x, upper.y - inset.y);
-	uploadIfChanged (this->m_texcoordScene, texcoordScene, this->m_cachedTexcoordScene);
+	uploadIfChanged (m_texcoordScene, sceneQuadTriangles (texcoordScene), m_cachedTexcoordScene);
     }
     this->m_geometryBufferCacheValid = true;
 
