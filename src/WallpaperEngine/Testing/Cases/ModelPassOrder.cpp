@@ -1,5 +1,6 @@
 #include "WallpaperEngine/Render/Objects/CModel.h"
 #include "WallpaperEngine/Render/Objects/ModelBounds.h"
+#include "WallpaperEngine/Data/Parsers/UserSettingParser.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <bit>
 
@@ -9,9 +10,71 @@
 #endif
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 
 using WallpaperEngine::Data::Model::BlendingMode;
 using WallpaperEngine::Render::Objects::CModel;
+
+TEST_CASE ("Model pose weights sample the authored blend timeline", "[model-animation-blend]") {
+    using namespace WallpaperEngine::Data;
+    using Parsers::UserSettingParser;
+    Model::ImageAnimationLayer settings {};
+    // Rayman - Gemstone Temple, Look Left: the independently triggered blend curve.
+    settings.blend = UserSettingParser::parse (JSON::JSON::parse (R"({"value":0,
+        "animation":{"c0":[
+            {"frame":0,"value":0,"front":{"enabled":true,"x":1,"y":0}},
+            {"frame":10,"value":1,"back":{"enabled":true,"x":-1,"y":0}},
+            {"frame":80,"value":1,"front":{"enabled":true,"x":1,"y":0}},
+            {"frame":90,"value":0,"back":{"enabled":true,"x":-1,"y":0}}],
+        "options":{"fps":30,"length":90,"mode":"single","name":"look","startpaused":true}}})"), {});
+    CModel::AnimationLayer layer { .settings = &settings };
+    auto& curve = *settings.blend->animation;
+    CHECK (layer.evaluateBlend (8.0) == 0.0f);
+    curve.play (8.0);
+    CHECK (layer.evaluateBlend (8.0 + 5.0 / 30.0) == Catch::Approx (0.5f));
+    CHECK (layer.evaluateBlend (9.0) == Catch::Approx (1.0f));
+    layer.blendWrite = { 9.0, 0.0f }; // On this update, the attached blend script returned zero.
+    CHECK (layer.evaluateBlend (9.0) == 0.0f);
+    CHECK (layer.evaluateBlend (9.0 + 1.0 / 30.0) == Catch::Approx (1.0f));
+    layer.setBlend (-0.25f, 9.0);
+    CHECK (layer.evaluateBlend (9.0) == 0.0f);
+    CHECK (layer.evaluateBlend (9.0 + 1.0 / 30.0) == Catch::Approx (1.0f));
+    curve.pause (9.0);
+    CHECK (layer.evaluateBlend (20.0) == Catch::Approx (1.0f));
+    layer.setBlend (0.0f, 20.0);
+    CHECK (layer.evaluateBlend (20.0) == 0.0f);
+    CHECK (layer.evaluateBlend (20.0 + 1.0 / 30.0) == Catch::Approx (1.0f));
+    curve.play (20.0);
+    CHECK (layer.evaluateBlend (20.0 + 55.0 / 30.0) == Catch::Approx (0.5f));
+    CHECK (layer.evaluateBlend (22.0) == 0.0f);
+    CHECK (layer.evaluateBlend (24.0) == 0.0f);
+    curve.play (24.0);
+    CHECK (layer.evaluateBlend (25.0) == Catch::Approx (1.0f));
+    curve.stop (25.0);
+    CHECK (layer.evaluateBlend (26.0) == 0.0f);
+
+    curve.mode = "loop";
+    curve.play (26.0);
+    CHECK (layer.evaluateBlend (29.0) == 0.0f);
+    CHECK (layer.evaluateBlend (30.0) == Catch::Approx (1.0f));
+}
+
+TEST_CASE ("Model layers read live scalar blend for unkeyed and one-shot poses", "[model-animation-blend]") {
+    using namespace WallpaperEngine::Data::Model;
+    ImageAnimationLayer settings { .blend = std::make_unique<UserSetting> (UserSetting {
+        .value = std::make_unique<DynamicValue> (0.25f) }) };
+    CModel::AnimationLayer authored { .settings = &settings };
+    CHECK (authored.evaluateBlend (1.0) == 0.25f);
+    settings.blend->value->update (0.0f, DynamicValue::UpdateSource::Script);
+    CHECK (authored.evaluateBlend (2.0) == 0.0f);
+    authored.setBlend (1.5f, 3.0);
+    CHECK (authored.evaluateBlend (4.0) == 1.0f);
+
+    CModel::AnimationLayer oneShot { .blend = 0.5f, .single = true };
+    CHECK (oneShot.evaluateBlend (2.0) == 0.5f);
+    oneShot.setBlend (0.75f, 3.0);
+    CHECK (oneShot.evaluateBlend (4.0) == 0.75f);
+}
 
 TEST_CASE ("Model passes render opaque before blended while preserving authored order") {
     const std::vector<BlendingMode> modes {

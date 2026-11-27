@@ -21,6 +21,7 @@
 #include "WallpaperEngine/Logging/Log.h"
 #include "WallpaperEngine/Render/CObject.h"
 #include "WallpaperEngine/Render/Objects/CImage.h"
+#include "WallpaperEngine/Render/Objects/CModel.h"
 #include "WallpaperEngine/Render/Objects/CSound.h"
 #include "WallpaperEngine/Render/Wallpapers/CScene.h"
 #include "WallpaperEngine/Scripting/Builtins.generated.h"
@@ -981,29 +982,40 @@ void ScriptEngine::callLifecycleHook (const std::string& key, LoadedModule& load
     ScopeGuard restoreModule ([&] { this->m_runningModule = previousModule; });
     this->m_runningModule = &loaded;
 
+    const bool update = std::string_view (hook) == "update";
+    auto* model = update ? dynamic_cast<Render::Objects::CModel*> (loaded.object) : nullptr;
+    auto* blend = model != nullptr ? model->findAnimatedBlend (loaded.value) : nullptr;
+    const double time = this->m_scene.getElapsedTime ();
     const bool angles = isAnglesProperty (key);
     const glm::vec3 initialDegrees = angles ? glm::degrees (loaded.value.getVec3 ()) : glm::vec3 (0.0f);
     // Scripts retain init/update arguments as base values. They must not follow
     // later property writes, or audio scale multipliers compound every frame.
     JSValue args[] = { angles ? anglesToJs (*this->m_adapters.vec3, loaded.value)
+	: blend != nullptr ? JS_NewFloat64 (this->m_context, blend->settings->blend->evaluateFloat (time))
 	: this->dynamicToJs (loaded.value, true) };
     JSValue result = this->call (loaded.module, 1, args, hook);
 
-    ScopeGuard guard2 ([this, args, result] () {
+    ScopeGuard guard ([this, args, result] () {
 	JS_FreeValue (this->m_context, result);
 	JS_FreeValue (this->m_context, args[0]);
     });
 
     if (JS_IsException (result)) {
 	logJSException (this->m_context, key.c_str ());
-	if (std::string_view (hook) == "update") {
-	    loaded.updateEnabled = false;
-	}
+	if (update) loaded.updateEnabled = false;
 	return;
     }
 
     if (angles) {
 	jsToAngles (this->m_context, result, args[0], loaded.value, initialDegrees);
+    } else if (blend != nullptr) {
+	// A returned weight overrides this pose sample without changing the curve's base value.
+	if (JS_IsNumber (result)) {
+	    double value = 0.0;
+	    JS_ToFloat64 (this->m_context, &value, result);
+	    const float weight = static_cast<float> (value);
+	    if (std::isfinite (weight)) model->applyScriptBlend (*blend, weight, time);
+	}
     } else {
 	jsToDynamicValue (this->m_context, result, loaded.value);
     }
@@ -1245,39 +1257,15 @@ void ScriptEngine::tick () {
 	}
     }
 
-    // run all update methods
+    // Run all update methods through the same property path as the first update.
     for (const auto& entry : this->m_scriptModuleOrder) {
 	const auto& key = *entry.first;
 	auto& module = *entry.second;
 	if (!module.initialized || !module.updateEnabled) {
 	    continue;
 	}
-	auto* previousModule = this->m_runningModule;
-	ScopeGuard restoreModule ([&] { this->m_runningModule = previousModule; });
-	this->m_runningModule = &module;
-
-	const bool angles = isAnglesProperty (key);
-	const glm::vec3 initialDegrees = angles ? glm::degrees (module.value.getVec3 ()) : glm::vec3 (0.0f);
-	JSValue args[] = { angles ? anglesToJs (*this->m_adapters.vec3, module.value)
-	    : this->dynamicToJs (module.value, true) };
-	JSValue result = this->call (module.module, 1, args, "update");
-	ScopeGuard guard ([result, args, this] () {
-	    JS_FreeValue (this->m_context, result);
-	    JS_FreeValue (this->m_context, args[0]);
-	});
-
-	if (JS_IsException (result)) {
-	    logJSException (this->m_context, key.c_str ());
-	    module.updateEnabled = false;
-	    continue;
-	}
-
-	if (angles) {
-	    jsToAngles (this->m_context, result, args[0], module.value, initialDegrees);
-	} else {
-	    jsToDynamicValue (this->m_context, result, module.value);
-	}
-	this->m_scene.loadingCheckpoint ();
+	this->callLifecycleHook (key, module, "update");
+	if (module.updateEnabled) this->m_scene.loadingCheckpoint ();
     }
 }
 

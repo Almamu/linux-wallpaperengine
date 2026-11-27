@@ -772,8 +772,7 @@ static JSValue property_animation_command (
 	case AnimationCommand_GetDuration:
 	    return JS_NewFloat64 (ctx, animation.fps > 0.0f ? animation.length / animation.fps : 0.0f);
 	case AnimationCommand_GetBlend:
-	    return modelLayer == nullptr ? JS_UNDEFINED : JS_NewFloat64 (ctx, modelLayer->settings != nullptr
-		? modelLayer->settings->blend->value->getFloat () : modelLayer->blend);
+	    return modelLayer == nullptr ? JS_UNDEFINED : JS_NewFloat64 (ctx, modelLayer->evaluateBlend (time));
 	case AnimationCommand_GetVisible:
 	    return modelLayer == nullptr ? JS_UNDEFINED : JS_NewBool (ctx, modelLayer->settings != nullptr
 		? modelLayer->settings->visible->value->getBool () : modelLayer->visible);
@@ -791,11 +790,7 @@ static JSValue property_animation_command (
 	    }
 	    if (magic == AnimationCommand_SetFrame) animation.setFrame (static_cast<float> (value), time);
 	    else if (magic == AnimationCommand_SetRate) animation.setRate (static_cast<float> (value), time);
-	    else if (modelLayer != nullptr) {
-		modelLayer->blend = std::clamp (static_cast<float> (value), 0.0f, 1.0f);
-		if (modelLayer->settings != nullptr) modelLayer->settings->blend->value->update (
-		    modelLayer->blend, DynamicValue::UpdateSource::User);
-	    }
+	    else if (modelLayer != nullptr) modelLayer->setBlend (static_cast<float> (value), time);
 	    break;
 	default: break;
     }

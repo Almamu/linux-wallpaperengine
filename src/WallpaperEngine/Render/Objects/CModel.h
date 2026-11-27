@@ -49,6 +49,14 @@ public:
 	bool blendIn = true;
 	bool blendOut = true;
 	float blendTime = 0.5f;
+	struct BlendWrite {
+	    double time;
+	    float value;
+	};
+	std::optional<BlendWrite> blendWrite;
+	[[nodiscard]] bool hasBlendCurve () const;
+	[[nodiscard]] float evaluateBlend (double time) const;
+	void setBlend (float value, double time);
     };
     struct SingleAnimationConfig {
 	bool blendIn = true;
@@ -57,6 +65,8 @@ public:
     };
     void prepareAnimationEvents () override;
     [[nodiscard]] AnimationLayer* findAnimationLayer (const std::string& key);
+    [[nodiscard]] AnimationLayer* findAnimatedBlend (const DynamicValue& property);
+    void applyScriptBlend (AnimationLayer& layer, float value, double time);
     [[nodiscard]] AnimationLayer* getAnimationLayer (const std::string& name);
     [[nodiscard]] AnimationLayer* getAnimationLayer (size_t index);
     [[nodiscard]] size_t getAnimationLayerCount () const;

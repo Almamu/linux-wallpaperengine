@@ -1003,6 +1003,28 @@ void CModel::setupGeometryCallback (Effects::CPass* pass, size_t submeshIndex) {
     );
 }
 
+bool CModel::AnimationLayer::hasBlendCurve () const {
+    if (settings == nullptr || settings->blend->animation == nullptr) return false;
+    const auto& channels = settings->blend->animation->channels;
+    const auto channel = channels.find (0);
+    return channel != channels.end () && !channel->second.empty ();
+}
+
+float CModel::AnimationLayer::evaluateBlend (const double time) const {
+    if (settings == nullptr) return blend;
+    // Live writes take effect immediately. The next scene update samples the
+    // authored property again, even when its playhead is paused.
+    if (blendWrite && blendWrite->time == time) return blendWrite->value;
+    return settings->blend->evaluateFloat (time);
+}
+
+void CModel::AnimationLayer::setBlend (const float value, const double time) {
+    const float weight = std::clamp (value, 0.0f, 1.0f);
+    if (settings == nullptr) blend = weight;
+    else if (hasBlendCurve ()) blendWrite = { time, weight };
+    else settings->blend->value->update (weight, DynamicValue::UpdateSource::User);
+}
+
 void CModel::syncAnimationLayers () const {
     const double time = getScene ().getElapsedTime ();
     for (const auto& layer : m_animationLayers) {
@@ -1046,6 +1068,20 @@ void CModel::prepareAnimationEvents () {
 CModel::AnimationLayer* CModel::findAnimationLayer (const std::string& key) {
     for (const auto& layer : m_animationLayers) if (layer->key == key) return layer.get ();
     return nullptr;
+}
+
+CModel::AnimationLayer* CModel::findAnimatedBlend (const DynamicValue& property) {
+    for (const auto& layer : m_animationLayers) {
+	if (layer->settings != nullptr && layer->settings->blend->value.get () == &property && layer->hasBlendCurve ()) {
+	    return layer.get ();
+	}
+    }
+    return nullptr;
+}
+
+void CModel::applyScriptBlend (AnimationLayer& layer, const float value, const double time) {
+    layer.blendWrite = { time, value };
+    m_poseTime = std::numeric_limits<double>::quiet_NaN ();
 }
 
 CModel::AnimationLayer* CModel::getAnimationLayer (const std::string& name) {
@@ -1124,8 +1160,7 @@ void CModel::updateAnimationPose (const bool stepPhysics) const {
 	if (layer->clip == nullptr) continue;
 	const auto* settings = layer->settings;
 	const bool visible = settings != nullptr ? settings->visible->value->getBool () : layer->visible;
-	float weight = visible ? std::clamp (settings != nullptr ? settings->blend->value->getFloat () : layer->blend,
-	    0.0f, 1.0f) : 0.0f;
+	float weight = visible ? std::clamp (layer->evaluateBlend (sceneTime), 0.0f, 1.0f) : 0.0f;
 	if (layer->single) {
 	    const float elapsed = layer->timeline.elapsedFrame (sceneTime) / layer->timeline.fps;
 	    const float duration = layer->timeline.length / layer->timeline.fps;
