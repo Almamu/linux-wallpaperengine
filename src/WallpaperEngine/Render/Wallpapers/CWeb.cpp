@@ -267,7 +267,9 @@ void CWeb::pushBridgeData () {
 		} else if (dynamic_cast<const Data::Model::PropertyText*> (prop.get ()) != nullptr) {
 		    continue; // text properties are UI labels, not values
 		} else {
-		    value = "\"" + jsEscape (prop->getString ()) + "\"";
+		    const auto* combo = dynamic_cast<const Data::Model::PropertyCombo*> (prop.get ());
+		    const auto* literal = combo != nullptr ? combo->getSelectedWebLiteral () : nullptr;
+		    value = literal != nullptr ? *literal : "\"" + jsEscape (prop->getString ()) + "\"";
 		}
 	    } catch (...) {
 		continue;

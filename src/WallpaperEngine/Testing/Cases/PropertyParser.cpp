@@ -117,6 +117,52 @@ TEST_CASE ("Combo visibility user bindings match exact option strings", "[user-p
     }
 }
 
+TEST_CASE ("Boolean combo options preserve the authored web callback values", "[property-combo]") {
+    using WallpaperEngine::Data::Model::PropertyCombo;
+    const auto property = PropertyParser::parse (JSON::parse (R"({
+        "type":"combo", "value":false, "options":[
+            {"label":"Do Nothing","value":false},
+            {"label":"Hide All","value":true},
+            {"label":"Animate","value":1}
+        ]
+    })"), "hideWhenSilent");
+    const auto* combo = property->as<PropertyCombo> ();
+    REQUIRE (combo != nullptr);
+    CHECK (property->getString () == "false");
+    for (const std::string choice : { "false", "true", "1" }) {
+	property->update (choice, DynamicValue::UpdateSource::User);
+	CHECK (property->getString () == choice);
+	const auto* literal = combo->getSelectedWebLiteral ();
+	REQUIRE (literal != nullptr);
+	CHECK (*literal == choice);
+    }
+
+    const auto fractional = PropertyParser::parse (JSON::parse (R"({
+        "type":"combo", "value":1.5, "options":[
+            {"label":"Disabled","value":false}, {"label":"Multiplier","value":1.5}
+        ]
+    })"), "multiplier");
+    const auto* fractionalCombo = fractional->as<PropertyCombo> ();
+    REQUIRE (fractionalCombo != nullptr);
+    CHECK (fractional->getString () == "1.5");
+    const auto* fractionalLiteral = fractionalCombo->getSelectedWebLiteral ();
+    REQUIRE (fractionalLiteral != nullptr);
+    CHECK (*fractionalLiteral == "1.5");
+
+    const auto legacy = PropertyParser::parse (JSON::parse (R"({
+        "type":"combo", "value":"false", "options":[
+            {"label":"Literal text","value":"false"}, {"label":"Number","value":1.5}
+        ]
+    })"), "legacy");
+    const auto* legacyCombo = legacy->as<PropertyCombo> ();
+    REQUIRE (legacyCombo != nullptr);
+    CHECK (legacy->getString () == "false");
+    CHECK (legacyCombo->getSelectedWebLiteral () == nullptr);
+    legacy->update (std::string ("1"), DynamicValue::UpdateSource::User);
+    CHECK (legacy->getString () == "1");
+    CHECK (legacyCombo->getSelectedWebLiteral () == nullptr);
+}
+
 TEST_CASE ("Slider user bindings splat every vector component", "[user-property-binding]") {
     using WallpaperEngine::Data::Model::UserSettingUniquePtr;
     const char* seeds[] = { "0.125 0.375", "0.125 0.375 0.625", "0.125 0.375 0.625 0.875" };

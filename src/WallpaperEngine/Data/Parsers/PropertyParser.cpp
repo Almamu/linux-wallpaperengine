@@ -1,8 +1,22 @@
 #include "PropertyParser.h"
 #include "../Model/Property.h"
 
+#include <algorithm>
+
 using namespace WallpaperEngine::Data::Parsers;
 using namespace WallpaperEngine::Data::Model;
+
+namespace {
+std::string comboValueKey (const JSON& value, bool preserveNumber) {
+    if (value.is_number ()) {
+	return preserveNumber ? value.dump () : std::to_string (value.get<int> ());
+    }
+    if (value.is_boolean ()) {
+	return value.get<bool> () ? "true" : "false";
+    }
+    return value.get<std::string> ();
+}
+} // namespace
 
 PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name) {
     // type might not be included, in which case means the same as a group
@@ -46,14 +60,19 @@ PropertySharedPtr PropertyParser::parse (const JSON& it, const std::string& name
 }
 
 PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string& name) {
-    std::map<std::string, std::string> optionsMap = {};
-
     const auto options = it.require ("options", "Combo property must have options");
 
     if (!options.is_array ()) {
 	sLog.exception ("Property combo options should be an array");
     }
 
+    // Boolean-containing combos can use strict type checks in web scripts. Ordinary
+    // combos keep their existing string values for bindings and web callbacks.
+    const bool hasBooleanOption = std::ranges::any_of (options, [] (const JSON& option) {
+	const auto value = option.find ("value");
+	return value != option.end () && value->is_boolean ();
+    });
+    ComboData combo;
     for (auto& cur : options) {
 	if (!cur.is_object ()) {
 	    continue;
@@ -61,10 +80,12 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
 
 	const auto value = cur.require ("value", "Combo option must have a value");
 
-	optionsMap.emplace (
-	    value.is_number () ? std::to_string (value.get<int> ()) : value.get<std::string> (),
-	    cur.require ("label", "Combo option must have a label")
+	const auto [option, inserted] = combo.values.emplace (
+	    comboValueKey (value, hasBooleanOption), cur.require ("label", "Combo option must have a label")
 	);
+	if (inserted && hasBooleanOption && (value.is_boolean () || value.is_number ())) {
+	    combo.webLiteralValues.insert (option->first);
+	}
     }
 
     const auto value = it.require ("value", "Combo property must have a value");
@@ -74,8 +95,7 @@ PropertySharedPtr PropertyParser::parseCombo (const JSON& it, const std::string&
 	    .name = name,
 	    .text = it.optional<std::string> ("text", ""),
 	},
-	ComboData { .values = optionsMap },
-	value.is_number () ? std::to_string (value.get<int> ()) : value.get<std::string> ()
+	std::move (combo), comboValueKey (value, hasBooleanOption)
     );
 }
 
