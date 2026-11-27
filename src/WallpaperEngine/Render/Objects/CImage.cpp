@@ -2931,10 +2931,11 @@ void CImage::uploadGeometryBuffers (const glm::vec2& size) {
     uploadIfChanged (this->m_texcoordCopy, texcoordCopy, this->m_cachedTexcoordCopy);
     if (sceneQuad) {
 	const bool samplesSource = this->m_finalPassRouting->samplesSourceTexture;
-	// Only a CTexture can allocate m_texcoordScene. For direct compiled JPEG draws,
-	// its resolution stores the authored base mip even when GL samples a lower mip.
+	// Only a CTexture can allocate m_texcoordScene. For direct compiled JPEG and
+	// PNG draws, its resolution stores the authored base mip at every quality.
 	const auto& source = static_cast<const CTexture&> (*this->m_texture);
-	const glm::vec2 inset = samplesSource && source.getHeader ().freeImageFormat == FIF_JPEG
+	const auto format = source.getHeader ().freeImageFormat;
+	const glm::vec2 inset = samplesSource && (format == FIF_JPEG || format == FIF_PNG)
 	    ? imageQuadInset / glm::vec2 (*source.getResolution ()) : m_sceneTexcoordInset;
 	const glm::vec2 upper = samplesSource ? glm::vec2 (width, height) : glm::vec2 (1.0f);
 	const auto texcoordScene = imageQuadTexcoords (inset.x, inset.y, upper.x - inset.x, upper.y - inset.y);
