@@ -11,5 +11,6 @@ public:
     [[nodiscard]] glm::dvec2 position () const override;
     [[nodiscard]] MouseClickStatus leftClick () const override;
     [[nodiscard]] MouseClickStatus rightClick () const override;
+    [[nodiscard]] glm::dvec2 screenPosition () const override;
 };
 } // namespace WallpaperEngine::Testing::Input

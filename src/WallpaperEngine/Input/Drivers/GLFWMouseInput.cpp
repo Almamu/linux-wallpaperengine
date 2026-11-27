@@ -10,6 +10,7 @@ GLFWMouseInput::GLFWMouseInput (const Render::Drivers::GLFWOpenGLDriver& driver)
 void GLFWMouseInput::update () {
     if (!this->m_driver.getApp ().getContext ().settings.mouse.enabled) {
 	this->m_reportedPosition = { 0, 0 };
+	this->m_cursorPosition = { 0, 0 };
 	return;
     }
 
@@ -19,18 +20,23 @@ void GLFWMouseInput::update () {
     this->m_leftClick = leftClickState == GLFW_RELEASE ? MouseClickStatus::Released : MouseClickStatus::Clicked;
     this->m_rightClick = rightClickState == GLFW_RELEASE ? MouseClickStatus::Released : MouseClickStatus::Clicked;
 
-    // update current mouse position
-    glfwGetCursorPos (this->m_driver.getWindow (), &this->m_mousePosition.x, &this->m_mousePosition.y);
+    glfwGetCursorPos (this->m_driver.getWindow (), &this->m_cursorPosition.x, &this->m_cursorPosition.y);
 
-    // Convert from GLFW coordinate system (Y=0 at top) to OpenGL coordinate system (Y=0 at bottom)
-    const glm::ivec2 framebufferSize = this->m_driver.getFramebufferSize ();
-    this->m_mousePosition.y = static_cast<double> (framebufferSize.y) - this->m_mousePosition.y;
-
-    // interpolate to the new position
-    this->m_reportedPosition = glm::mix (this->m_reportedPosition, this->m_mousePosition, 1.0);
+    // Preserve the existing bottom-left position used by the scene renderer.
+    const glm::dvec2 position { this->m_cursorPosition.x,
+        this->m_driver.getFramebufferSize ().y - this->m_cursorPosition.y };
+    this->m_reportedPosition = glm::mix (this->m_reportedPosition, position, 1.0);
 }
 
 glm::dvec2 GLFWMouseInput::position () const { return this->m_reportedPosition; }
+
+glm::dvec2 GLFWMouseInput::screenPosition () const {
+    // GLFW cursor coordinates are relative to the window's logical content area.
+    glm::ivec2 windowSize;
+    glfwGetWindowSize (this->m_driver.getWindow (), &windowSize.x, &windowSize.y);
+    const auto framebufferSize = this->m_driver.getFramebufferSize ();
+    return this->m_cursorPosition * glm::dvec2 (framebufferSize) / glm::dvec2 (glm::max (windowSize, glm::ivec2 (1)));
+}
 
 WallpaperEngine::Input::MouseClickStatus GLFWMouseInput::leftClick () const { return m_leftClick; }
 

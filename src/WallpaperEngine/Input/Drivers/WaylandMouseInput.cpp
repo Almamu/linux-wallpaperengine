@@ -79,6 +79,16 @@ glm::dvec2 WaylandMouseInput::position () const {
     };
 }
 
+glm::dvec2 WaylandMouseInput::screenPosition () const {
+    const auto* viewport = this->getActiveOutputViewport ();
+    if (!viewport || !this->m_waylandDriver.getApp ().getContext ().settings.mouse.enabled) {
+	return {};
+    }
+
+    const glm::dvec2 position = this->position ();
+    return { position.x, viewport->viewport.w - position.y };
+}
+
 WallpaperEngine::Input::MouseClickStatus WaylandMouseInput::leftClick () const {
     const auto* viewport = this->getActiveOutputViewport ();
     if (viewport && viewport == this->m_waylandDriver.viewportInFocus) {

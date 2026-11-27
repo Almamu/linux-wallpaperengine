@@ -35,6 +35,7 @@ public:
      * @return The status of the mouse's right click
      */
     [[nodiscard]] MouseClickStatus rightClick () const override;
+    [[nodiscard]] glm::dvec2 screenPosition () const override;
 
 private:
     const Render::Drivers::GLFWOpenGLDriver& m_driver;
@@ -42,7 +43,7 @@ private:
     /**
      * The current mouse position
      */
-    glm::dvec2 m_mousePosition = {};
+    glm::dvec2 m_cursorPosition = {};
     glm::dvec2 m_reportedPosition = {};
     MouseClickStatus m_leftClick = Released;
     MouseClickStatus m_rightClick = Released;

@@ -22,15 +22,13 @@ JSValue get_cursor_world_position (JSContext* ctx, JSValueConst this_val, int ar
 JSValue get_cursor_screen_position (JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     JSClassID classId;
     auto* input = static_cast<InputObject*> (JS_GetAnyOpaque (this_val, &classId));
-    auto position = input->getScene ().getMousePositionNormalized ();
-    // the script API reports the cursor in screen pixels (see lib.sceneScript.d.ts), scripts
-    // normalize it against engine.screenResolution themselves
-    const auto& output = input->getScene ().getContext ().getOutput ();
+    const auto& scene = input->getScene ();
+    const glm::dvec2 position = scene.getContext ().getInputContext ().getMouseInput ().screenPosition ();
 
-    JSValue result = input->getScene ().getScriptEngine ().getAdapters ().vec2->instantiate ();
+    JSValue result = scene.getScriptEngine ().getAdapters ().vec2->instantiate ();
 
-    JS_SetPropertyStr (ctx, result, "x", JS_NewFloat64 (ctx, position->x * output.getFullWidth ()));
-    JS_SetPropertyStr (ctx, result, "y", JS_NewFloat64 (ctx, position->y * output.getFullHeight ()));
+    JS_SetPropertyStr (ctx, result, "x", JS_NewFloat64 (ctx, position.x));
+    JS_SetPropertyStr (ctx, result, "y", JS_NewFloat64 (ctx, position.y));
 
     return result;
 }

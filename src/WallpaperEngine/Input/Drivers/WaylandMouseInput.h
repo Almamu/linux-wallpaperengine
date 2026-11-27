@@ -42,6 +42,7 @@ public:
      * @return The status of the mouse's right click
      */
     [[nodiscard]] MouseClickStatus rightClick () const override;
+    [[nodiscard]] glm::dvec2 screenPosition () const override;
 
 private:
     [[nodiscard]] const Render::Drivers::Output::WaylandOutputViewport* getActiveOutputViewport () const;
