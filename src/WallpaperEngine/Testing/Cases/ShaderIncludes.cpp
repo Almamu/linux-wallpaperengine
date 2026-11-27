@@ -481,6 +481,38 @@ TEST_CASE ("audio bar circle masks preserve integer and antialiased amplitudes",
     }
 }
 
+TEST_CASE ("scalar swizzles lower to GLSL 330 constructors", "[shader][scalar-swizzle]") {
+    const std::string vertex = "#version 330\n"
+        "uniform float vertexTone;\nout vec4 v_Tone;\n"
+        "void main() { gl_Position = vec4(0.0); v_Tone = vertexTone.xxxx; }\n";
+    const std::string fragment = "#version 330\n"
+        "uniform float gammaValue;\nuniform sampler2D g_Texture1;\nin vec4 v_Tone;\nout vec4 outColor;\n"
+        "void main() { float g = gammaValue; outColor = texture(g_Texture1, vec2(0.0)).wzyx * g.xxxx + v_Tone; }\n";
+    const auto translated = GLSLContext::get ().toGlsl (vertex, fragment);
+    REQUIRE_FALSE (translated.first.empty ());
+    REQUIRE_FALSE (translated.second.empty ());
+    const auto activeVertex = translated.first.substr (0, translated.first.find ("#if 0\n"));
+    const auto activeFragment = translated.second.substr (0, translated.second.find ("#if 0\n"));
+    CHECK_THAT (activeVertex, Catch::Matchers::ContainsSubstring ("vec4(vertexTone)"));
+    CHECK_THAT (activeFragment, Catch::Matchers::ContainsSubstring ("vec4(g)"));
+    CHECK_THAT (activeFragment, Catch::Matchers::ContainsSubstring (".wzyx"));
+    CHECK_THAT (activeFragment, !Catch::Matchers::ContainsSubstring ("420pack"));
+    CHECK_THAT (activeFragment, !Catch::Matchers::ContainsSubstring ("layout(binding"));
+}
+
+TEST_CASE ("scalar swizzle fallback refuses wrapped selectors", "[shader][scalar-swizzle]") {
+    const std::string vertex = "#version 330\nvoid main() { gl_Position = vec4(0.0); }\n";
+    const auto fragment = [] (std::string_view source) {
+        return "#version 330\nuniform float scalarColor;\nuniform vec2 pairColor;\nout vec4 outColor;\n"
+            "void main() { outColor = " + std::string (source) + "; }\n";
+    };
+    auto& compiler = GLSLContext::get ();
+    CHECK (compiler.toGlsl (vertex, fragment ("scalarColor.yyyy")).second.empty ());
+    CHECK (compiler.toGlsl (vertex, fragment ("scalarColor.xxxx + scalarColor.yyyy")).second.empty ());
+    CHECK (compiler.toGlsl (vertex, fragment ("scalarColor.xxxx + vec4(pairColor.zw, 0.0, 1.0)")).second.empty ());
+    CHECK_FALSE (compiler.toGlsl (vertex, fragment ("vec4(scalarColor) + vec4(pairColor.zw, 0.0, 1.0)")).second.empty ());
+}
+
 TEST_CASE ("shader parameter declarations accept aligned whitespace", "[shader][parameter][regression]") {
     const auto assets = shaderAssets ("");
     const ShaderConstantMap constants;

@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <memory>
+#include <string_view>
 
 #include "SPIRV/GlslangToSpv.h"
 #include "glslang/Include/ResourceLimits.h"
@@ -121,6 +122,47 @@ TBuiltInResource BuiltInResource = { .maxLights = 32,
 					 .generalConstantMatrixVectorIndexing = true,
 				     } };
 
+namespace {
+std::unique_ptr<glslang::TShader> parseTranslationStage (
+    const EShLanguage stage, const char* const* source, bool& loweredScalarSwizzle
+) {
+    const auto makeShader = [&] {
+        auto shader = std::make_unique<glslang::TShader> (stage);
+        shader->setStrings (source, 1);
+        shader->setEntryPoint ("main");
+        shader->setEnvInput (glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 330);
+        shader->setEnvClient (glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+        shader->setEnvTarget (glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+        shader->setAutoMapLocations (true);
+        shader->setAutoMapBindings (true);
+        return shader;
+    };
+    auto shader = makeShader ();
+    if (shader->parse (&BuiltInResource, 100, false, EShMsgDefault)) return shader;
+
+    const std::string_view diagnostics = shader->getInfoLog ();
+    constexpr std::string_view scalarSwizzleUnsupported =
+        "'scalar swizzle' : not supported for this version or the enabled extensions";
+    constexpr std::string_view wrappedSwizzle = "vector swizzle selection out of range";
+    if (diagnostics.find (scalarSwizzleUnsupported) != std::string_view::npos
+        && diagnostics.find (wrappedSwizzle) == std::string_view::npos) {
+        auto retry = makeShader ();
+        retry->setPreamble ("#extension GL_ARB_shading_language_420pack : enable\n");
+        // The bundled compiler warns and wraps out-of-range selectors, including
+        // scalar .yyyy. A successful retry must not rely on that recovery.
+        if (retry->parse (&BuiltInResource, 100, false, EShMsgDefault)
+            && std::string_view (retry->getInfoLog ()).find (wrappedSwizzle) == std::string_view::npos) {
+            loweredScalarSwizzle = true;
+            return retry;
+        }
+    }
+
+    sLog.error (stage == EShLangVertex ? "GLSL vertex unit parsing Failed: " : "GLSL fragment unit parsing Failed: ",
+                diagnostics);
+    return {};
+}
+} // namespace
+
 GLSLContext::GLSLContext () {
     assert (this->sInstance == nullptr);
 
@@ -179,39 +221,18 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
         result = std::move (*cached);
     } else {
         Debug::RenderHealth::count ("shader.disk_glsl_miss");
-	glslang::TShader vertexShader (EShLangVertex);
-
+	bool loweredScalarSwizzle = false;
 	const char* vertexSource = vertex.c_str ();
-	vertexShader.setStrings (&vertexSource, 1);
-	vertexShader.setEntryPoint ("main");
-	vertexShader.setEnvInput (glslang::EShSourceGlsl, EShLangVertex, glslang::EShClientOpenGL, 330);
-	vertexShader.setEnvClient (glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
-	vertexShader.setEnvTarget (glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
-	vertexShader.setAutoMapLocations (true);
-	vertexShader.setAutoMapBindings (true);
-
-	if (!vertexShader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
-	    sLog.error ("GLSL vertex unit parsing Failed: ", vertexShader.getInfoLog ());
-	    return { "", "" };
-	}
-	glslang::TShader fragmentShader (EShLangFragment);
+	auto vertexShader = parseTranslationStage (EShLangVertex, &vertexSource, loweredScalarSwizzle);
+	if (!vertexShader) return { "", "" };
 
 	const char* fragmentSource = fragment.c_str ();
-	fragmentShader.setStrings (&fragmentSource, 1);
-	fragmentShader.setEntryPoint ("main");
-	fragmentShader.setEnvInput (glslang::EShSourceGlsl, EShLangFragment, glslang::EShClientOpenGL, 330);
-	fragmentShader.setEnvClient (glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
-	fragmentShader.setEnvTarget (glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
-	fragmentShader.setAutoMapLocations (true);
-	fragmentShader.setAutoMapBindings (true);
+	auto fragmentShader = parseTranslationStage (EShLangFragment, &fragmentSource, loweredScalarSwizzle);
+	if (!fragmentShader) return { "", "" };
 
-	if (!fragmentShader.parse (&BuiltInResource, 100, false, EShMsgDefault)) {
-	    sLog.error ("GLSL fragment unit parsing Failed: ", fragmentShader.getInfoLog ());
-	    return { "", "" };
-	}
 	glslang::TProgram program;
-	program.addShader (&vertexShader);
-	program.addShader (&fragmentShader);
+	program.addShader (vertexShader.get ());
+	program.addShader (fragmentShader.get ());
 
 	if (!program.link (EShMsgDefault)) {
 	    sLog.error ("Program Linking Failed: ", program.getInfoLog ());
@@ -225,6 +246,9 @@ std::pair<std::string, std::string> GLSLContext::toGlsl (const std::string& vert
 	spirv_cross::CompilerGLSL::Options options;
 	options.version = 330;
 	options.es = false;
+	// Sampler units are set by the renderer. Lowered scalar swizzles need
+	// no 420pack feature in the GLSL 330 sent to the driver.
+	options.enable_420pack_extension = !loweredScalarSwizzle;
 	vertexCompiler.set_common_options (options);
 
 	spirv.clear ();
