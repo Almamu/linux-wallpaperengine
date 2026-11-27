@@ -324,7 +324,7 @@ public:
 protected:
     void renderFrame (const glm::ivec4& viewport) override;
     void onFirstFrameSubmitted () override;
-    void updateMouse (const glm::ivec4& viewport);
+    glm::vec2 updateMouse (const glm::ivec4& viewport);
     [[nodiscard]] float getSceneFadeAlpha () const override;
 
     friend class CWallpaper;
@@ -405,6 +405,7 @@ private:
     glm::vec2 m_mousePosition = {};
     glm::vec2 m_mousePositionLast = {};
     glm::vec2 m_mousePositionNormalized = {};
+    glm::vec2 m_cameraParallaxDisplacement = {};
     glm::vec2 m_parallaxDisplacement = {};
     /** Parallax position fed to shaders via g_ParallaxPosition, 0.5,0.5 = centered */
     glm::vec2 m_parallaxPosition = { 0.5f, 0.5f };

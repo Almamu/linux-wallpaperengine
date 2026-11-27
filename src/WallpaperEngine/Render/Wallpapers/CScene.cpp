@@ -999,7 +999,7 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
     this->updateCameraPath (glm::max (0.0f, this->getDeltaTime ()));
 
     // ensure the virtual mouse position is up to date
-    this->updateMouse (viewport);
+    const glm::vec2 centeredCameraMouse = this->updateMouse (viewport);
 
     // update the parallax position if required
     if (this->getScene ().camera.parallax.enabled->value->getBool ()
@@ -1008,10 +1008,12 @@ void CScene::renderFrame (const glm::ivec4& viewport) {
 	const float delay = this->getScene ().camera.parallax.delay->value->getFloat ();
 	const float alpha = calculateParallaxSmoothingAlpha (delay, this->getDeltaTime ());
 
-	// per-object depth and the global parallax amount are applied by each renderable,
-	// this only tracks the smoothed mouse offset (-1 to 1 across the screen) scaled by
-	// influence; only y is negated because m_mousePosition already has y flipped
-	// relative to x by the viewport UV mapping in updateMouse
+	this->m_cameraParallaxDisplacement = glm::mix (
+	    this->m_cameraParallaxDisplacement, centeredCameraMouse * influence, alpha
+	);
+
+	// Shader parallax follows the framed scene UVs. The vertical UV is flipped
+	// relative to the camera convention used above.
 	const glm::vec2 centeredMouse = {
 	    this->m_mousePosition.x * 2.0f - 1.0f,
 	    1.0f - this->m_mousePosition.y * 2.0f,
@@ -1801,7 +1803,7 @@ void CScene::updateCameraPath (const float deltaTime) {
     this->m_camera->setTransform (transform);
 }
 
-void CScene::updateMouse (const glm::ivec4& viewport) {
+glm::vec2 CScene::updateMouse (const glm::ivec4& viewport) {
     // update virtual mouse position first
     const glm::dvec2 position = this->getContext ().getInputContext ().getMouseInput ().position ();
 
@@ -1828,6 +1830,17 @@ void CScene::updateMouse (const glm::ivec4& viewport) {
 
     this->m_mousePosition.x = this->m_mousePositionNormalized.x;
     this->m_mousePosition.y = uvs.vstart + mouseY * (uvs.vend - uvs.vstart);
+
+    // Cropped axes use output-relative camera motion. The framed coordinates
+    // still apply to uncropped axes, including fitted scenes with margins.
+    const float uRange = uvs.uend - uvs.ustart;
+    const float vRange = uvs.vend - uvs.vstart;
+    constexpr float uncroppedSpan = 1.0f - std::numeric_limits<float>::epsilon ();
+    const float centeredViewportY = static_cast<float> (vRange >= 0.0f ? normalizedMouseY : mouseY) * 2.0f - 1.0f;
+    return {
+	uRange < uncroppedSpan ? static_cast<float> (mouseX) * 2.0f - 1.0f : this->m_mousePosition.x * 2.0f - 1.0f,
+	std::abs (vRange) < uncroppedSpan ? centeredViewportY : 1.0f - this->m_mousePosition.y * 2.0f,
+    };
 }
 
 const CScene::SceneLights& CScene::getLights () const { return this->m_lights; }
@@ -2246,7 +2259,7 @@ const glm::vec2* CScene::getMousePositionLast () const { return &this->m_mousePo
 
 const glm::vec2* CScene::getMousePositionNormalized () const { return &this->m_mousePositionNormalized; }
 
-const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_parallaxDisplacement; }
+const glm::vec2* CScene::getParallaxDisplacement () const { return &this->m_cameraParallaxDisplacement; }
 
 const glm::vec2* CScene::getParallaxPosition () const { return &this->m_parallaxPosition; }
 
