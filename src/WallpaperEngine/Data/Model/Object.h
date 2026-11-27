@@ -911,7 +911,7 @@ struct ParticleData {
     std::string animationMode;
     float sequenceMultiplier;
     uint32_t maxCount;
-    uint32_t startTime;
+    float startTime;
     uint32_t flags;
 
     /** Rounded definition color used as the reference for instance recoloring. */

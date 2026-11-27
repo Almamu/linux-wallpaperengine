@@ -79,6 +79,22 @@ TEST_CASE ("spark lifetimes retain the authored native exponent", "[particle][li
     }
 }
 
+TEST_CASE ("particle start time retains signed fractional seconds", "[particle][starttime]") {
+    WallpaperEngine::Data::Model::Project project {};
+    for (const auto& [authored, expected] : std::initializer_list<std::pair<const char*, float>> {
+        { R"({})", 0.0f }, { R"({"starttime":null})", 0.0f },
+        { R"({"starttime":0.21})", 0.21f }, { R"({"starttime":-2.5})", -2.5f },
+    }) {
+        const auto object = WallpaperEngine::Data::Parsers::ObjectParser::parse (
+            { { "id", 1 }, { "particle", WallpaperEngine::Data::JSON::JSON::parse (authored) } }, project
+        );
+        const auto* particle = object->as<Particle> ();
+        REQUIRE (particle != nullptr);
+        CAPTURE (authored);
+        CHECK (particle->startTime == expected);
+    }
+}
+
 TEST_CASE ("turbulent velocity uses the native scalar time field", "[particle][noise]") {
     using WallpaperEngine::Render::Utils::simplexNoise1D;
     // Values independently decoded from native 14027b090 and its permutation.

@@ -18,6 +18,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <limits>
+#include <utility>
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
@@ -469,6 +470,11 @@ void CParticle::setup () {
 
     setupChildren ();
     m_initialized = true;
+    m_hasPrewarmInTree = m_particle.startTime > 0.0f && std::isfinite (m_particle.startTime);
+    m_hasPrewarmInTree |= std::ranges::any_of (m_children, [] (const auto& child) {
+	return child.renderer->m_hasPrewarmInTree;
+    });
+    if (m_particleParent == nullptr) prewarm (true);
 }
 
 const ParticleInstanceOverride& CParticle::getInstanceOverride () const {
@@ -544,6 +550,52 @@ void CParticle::setupChildren () {
 	    }
 	} catch (const std::exception& error) {
 	    sLog.error ("Cannot load child particle system: ", child.particleFile, " - ", error.what ());
+	}
+    }
+}
+
+void CParticle::prewarm (const bool includePermanentChildren) {
+    if (!m_hasPrewarmInTree) return;
+    const float duration = m_particle.startTime;
+    const bool warmThisSystem = duration > 0.0f && std::isfinite (duration);
+    if (!warmThisSystem && !includePermanentChildren) return;
+
+    // Seed control-point history at the current transform, including when a
+    // pooled child has just been moved to a new parent particle.
+    updateControlPoints ();
+    if (includePermanentChildren) {
+	for (auto& child : m_children) child.renderer->prewarm (true);
+    }
+    if (!warmThisSystem) return;
+
+    // Native 14022f28e calls the local simulation directly, with event dispatch
+    // disabled. The owning scene and playback clocks do not advance.
+    auto eventChildren = std::exchange (m_followChildren, {});
+    const bool hasRopeTrail = std::exchange (m_useRopeTrailRenderer, false);
+    const Data::Utils::ScopeGuard restore ([&] {
+	m_followChildren = std::move (eventChildren);
+	m_useRopeTrailRenderer = hasRopeTrail;
+    });
+    const float step = m_maxParticles < 500 ? 0.05f : 0.20f;
+
+    // Bound work for excessive authored durations. The largest installed
+    // value checked was 300 seconds (about 6,000 steps at the finer interval).
+    constexpr int maximumSteps = 10000;
+    float elapsed = 0.0f;
+    for (int i = 0; i < maximumSteps && elapsed < duration; ++i, elapsed += step) {
+	updateControlPoints (step);
+	update (step);
+    }
+    if (elapsed < duration) {
+	sLog.error ("Particle prewarm reached the ", maximumSteps, "-step limit: ", m_particle.particleFile);
+    }
+    if (hasRopeTrail) {
+	m_ropeHistoryTimer = 0.0f;
+	for (uint32_t i = 0; i < m_particleCount; ++i) {
+	    auto& particle = m_particles[i];
+	    particle.trailLastFrame = { .position = particle.position };
+	    particle.trailLastFrameValid = true;
+	    particle.trailHistory.assign (1, particle.trailLastFrame);
 	}
     }
 }
@@ -850,7 +902,8 @@ void CParticle::spawnEventChild (FollowChildSystem& child, const ParticleInstanc
     renderer.m_propagateColorOverride = m_propagateColorOverride;
     // Native samples raw overrides on first activation. Recycling retains
     // the cache, including any explicit root refresh since the previous use.
-    if (!slot->hasStarted) {
+    const bool firstActivation = !slot->hasStarted;
+    if (firstActivation) {
 	renderer.activateInstanceParameters ();
 	slot->hasStarted = true;
     }
@@ -859,6 +912,7 @@ void CParticle::spawnEventChild (FollowChildSystem& child, const ParticleInstanc
     renderer.m_followPosition = glm::vec3 (parentToLocal * glm::vec4 (particle.position, 1.0f));
     renderer.m_time = getScene ().getFrameRenderTime ();
     renderer.play ();
+    renderer.prewarm (firstActivation);
 }
 
 void CParticle::updateFollowChildren (const uint32_t firstNewParticle) {

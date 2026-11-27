@@ -887,7 +887,7 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 	// Parse numeric fields safely
 	float sequenceMultiplier = 1.0f;
 	uint32_t maxCount = 100;
-	uint32_t startTime = 0;
+	float startTime = 0.0f;
 	uint32_t flags = 0;
 
 	const auto seqMultIt = particleJson.find ("sequencemultiplier");
@@ -902,7 +902,7 @@ ParticleUniquePtr ObjectParser::parseParticle (const JSON& it, const Project& pr
 
 	const auto startTimeIt = particleJson.find ("starttime");
 	if (startTimeIt != particleJson.end () && startTimeIt->is_number ()) {
-	    startTime = startTimeIt->get<uint32_t> ();
+	    startTime = startTimeIt->get<float> ();
 	}
 
 	const auto flagsIt = particleJson.find ("flags");

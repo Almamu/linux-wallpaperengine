@@ -440,6 +440,7 @@ private:
     int m_controlPointStartIndex = 0;
 
     void setupChildren ();
+    void prewarm (bool includePermanentChildren);
     void spawnEventChild (FollowChildSystem& child, const ParticleInstance& particle);
     void updateFollowChildren (uint32_t firstNewParticle);
     [[nodiscard]] bool hasLivingParticles () const;
@@ -464,6 +465,7 @@ private:
     void synchronizeRemapSlots ();
     void publishRemapSlots ();
     uint32_t m_retiredParticleCount { 0 };
+    bool m_hasPrewarmInTree = false;
     bool m_emitting = true;
     uint32_t m_pendingEmission = 0;
     std::vector<ControlPointData> m_pendingControlPoints;
